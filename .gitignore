@@ -55,3 +55,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# IPython Notebooks
+Testing TPOT usage.ipynb
+.ipynb_checkpoints/*

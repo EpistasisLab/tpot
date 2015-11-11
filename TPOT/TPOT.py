@@ -81,10 +81,12 @@ class TPOT:
         self.toolbox.register('expr_mut', gp.genFull, min_=0, max_=2)
         self.toolbox.register('mutate', self.random_mutation_operator)
     
-    def optimize(self, features, classes):
+    def optimize(self, features, classes, feature_names=None):
         '''
             Uses Genetic Programming to optimize a Machine Learning pipeline that
             maximizes classification accuracy on the provided `features` and `classes`.
+            
+            Optionally, name the features in the data frame according to `feature_names`.
             
             Performs a stratified training/testing cross-validaton split to avoid
             overfitting on the provided data.
@@ -92,13 +94,19 @@ class TPOT:
         
         self.best_features_cache = {}
 
-        training_testing_data = pd.DataFrame(features)
+        training_testing_data = pd.DataFrame(data=features, columns=feature_names)
         training_testing_data['class'] = classes
         training_testing_data['guess'] = 0
         
         for column in training_testing_data.columns.values:
             if type(column) != str:
                 training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
+        
+        # Randomize the order of the columns so there is no potential bias introduced by the initial order
+        # of the columns, e.g., the most predictive features at the beginning or end.
+        data_columns = list(training_testing_data.columns.values)
+        np.random.shuffle(data_columns)
+        training_testing_data = training_testing_data[data_columns]
 
         training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(training_testing_data['class'].values,
                                                                              n_iter=1,
@@ -128,6 +136,7 @@ class TPOT:
         print('')
         print('Best pipeline:', hof[0])
         print('')
+        print('Best pipeline 10-fold CV: {}'.format(self.score(training_testing_data.drop(['group', 'guess', 'class'], axis=1).values, training_testing_data['class'].values)))
 
     def score(self, features, classes):
         '''
@@ -337,53 +346,45 @@ class TPOT:
             return gp.mutShrink(individual)
 
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Automatically creates and optimizes Machine Learning pipelines in Python.')
 
-parser = argparse.ArgumentParser(description='Automatically creates and optimizes Machine Learning pipelines in Python.')
+    parser.add_argument('-i', action='store', dest='input_file', required=True,
+                        type=str, help='Data file to optimize the pipeline on.\nEnsure that the class column is labeled as "class".')
 
-parser.add_argument('-i', action='store', dest='input_file', required=True,
-                    type=str, help='Data file to optimize the pipeline on.')
+    parser.add_argument('-is', action='store', dest='input_separator', default='\t',
+                        type=str, help='Character used to separate columns in the input file.')
 
-parser.add_argument('-is', action='store', dest='input_separator', default='\t',
-                    type=str, help='Character used to separate columns in the input file.')
+    parser.add_argument('-g', action='store', dest='generations', default=1000,
+                        type=int, help='Number of generations to run pipeline optimization for.')
 
-parser.add_argument('-g', action='store', dest='generations', default=1000,
-                    type=int, help='Number of generations to run pipeline optimization for.')
+    parser.add_argument('-mr', action='store', dest='mutation_rate', default=0.9,
+                        type=float, help='Mutation rate in the range [0.0, 1.0]')
 
-parser.add_argument('-mr', action='store', dest='mutation_rate', default=0.9,
-                    type=float, help='Mutation rate in the range [0.0, 1.0]')
+    parser.add_argument('-xr', action='store', dest='crossover_rate', default=0.05,
+                        type=float, help='Crossover rate in the range [0.0, 1.0]')
 
-parser.add_argument('-xr', action='store', dest='crossover_rate', default=0.05,
-                    type=float, help='Crossover rate in the range [0.0, 1.0]')
+    parser.add_argument('-p', action='store', dest='population_size', default=100,
+                        type=int, help='Number of individuals in the GP population.')
 
-parser.add_argument('-p', action='store', dest='population_size', default=100,
-                    type=int, help='Number of individuals in the GP population.')
+    parser.add_argument('-s', action='store', dest='rng_seed', default=0,
+                        type=int, help='Random number generator seed for reproducibility.')
 
-parser.add_argument('-s', action='store', dest='rng_seed', default=0,
-                    type=int, help='Random number generator seed for reproducibility.')
+    args = parser.parse_args()
 
-args = parser.parse_args()
+    print('TPOT settings:')
+    for arg in sorted(args.__dict__):
+        print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
 
-print('TPOT settings:')
-for arg in sorted(args.__dict__):
-    print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
+    input_data = pd.read_csv(args.input_file, sep=args.input_separator)
 
-input_data = pd.read_csv(args.input_file, sep=args.input_separator)
+    if 'Class' in input_data.columns.values:
+        input_data.rename(columns={'Class': 'class'}, inplace=True)
 
-if 'Class' in input_data.columns.values:
-    input_data.rename(columns={'Class': 'class'}, inplace=True)
+    random.seed(args.rng_seed)
+    np.random.seed(args.rng_seed)
 
-random.seed(args.rng_seed)
-np.random.seed(args.rng_seed)
+    tpot = TPOT(generations=args.generations, population_size=args.population_size,
+                mutation_rate=args.mutation_rate, crossover_rate=args.crossover_rate)
 
-# Randomize the order of the columns so there is no potential bias introduced by the initial order
-# of the columns, e.g., the most predictive features at the beginning or end.
-data_columns = list(input_data.columns.values)
-np.random.shuffle(data_columns)
-input_data = input_data[data_columns]
-
-tpot = TPOT(generations=args.generations, population_size=args.population_size,
-            mutation_rate=args.mutation_rate, crossover_rate=args.crossover_rate)
-
-tpot.optimize(input_data.drop('class', axis=1).values, input_data['class'].values)
-
-print('Pipeline: {}'.format(tpot.score(input_data.drop('class', axis=1).values, input_data['class'].values)))
+    tpot.optimize(input_data.drop('class', axis=1).values, input_data['class'].values)
