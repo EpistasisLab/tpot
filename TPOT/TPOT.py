@@ -326,9 +326,14 @@ class TPOT:
         
         result = func(training_testing_data)
         result = result[result['group'] == 'testing']
-        sensitivity = len(result[(result['guess'] == 1) & (result['class'] == 1)]) / float(len(result[result['class'] == 1]))
-        specificity = len(result[(result['guess'] == 0) & (result['class'] == 0)]) / float(len(result[result['class'] == 0]))
-        balanced_accuracy = (sensitivity + specificity) / 2.0
+        
+        all_classes = list(set(result['class'].values))
+        all_class_accuracies = []
+        for this_class in all_classes:
+            this_class_accuracy = len(result[(result['guess'] == this_class) & (result['class'] == this_class)]) / float(len(result[result['class'] == this_class]))
+            all_class_accuracies.append(this_class_accuracy)
+
+        balanced_accuracy = np.mean(all_class_accuracies)
         
         return balanced_accuracy,
 
