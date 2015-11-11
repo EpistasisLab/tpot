@@ -92,51 +92,56 @@ class TPOT:
             overfitting on the provided data.
         '''
         
-        self.best_features_cache = {}
+        try:
+            self.best_features_cache = {}
 
-        training_testing_data = pd.DataFrame(data=features, columns=feature_names)
-        training_testing_data['class'] = classes
-        training_testing_data['guess'] = 0
+            training_testing_data = pd.DataFrame(data=features, columns=feature_names)
+            training_testing_data['class'] = classes
+            training_testing_data['guess'] = 0
         
-        for column in training_testing_data.columns.values:
-            if type(column) != str:
-                training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
+            for column in training_testing_data.columns.values:
+                if type(column) != str:
+                    training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
         
-        # Randomize the order of the columns so there is no potential bias introduced by the initial order
-        # of the columns, e.g., the most predictive features at the beginning or end.
-        data_columns = list(training_testing_data.columns.values)
-        np.random.shuffle(data_columns)
-        training_testing_data = training_testing_data[data_columns]
+            # Randomize the order of the columns so there is no potential bias introduced by the initial order
+            # of the columns, e.g., the most predictive features at the beginning or end.
+            data_columns = list(training_testing_data.columns.values)
+            np.random.shuffle(data_columns)
+            training_testing_data = training_testing_data[data_columns]
 
-        training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(training_testing_data['class'].values,
-                                                                             n_iter=1,
-                                                                             train_size=0.75,
-                                                                             test_size=0.25)))
+            training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(training_testing_data['class'].values,
+                                                                                 n_iter=1,
+                                                                                 train_size=0.75,
+                                                                                 test_size=0.25)))
 
-        training_testing_data.loc[training_indeces, 'group'] = 'training'
-        training_testing_data.loc[testing_indeces, 'group'] = 'testing'
+            training_testing_data.loc[training_indeces, 'group'] = 'training'
+            training_testing_data.loc[testing_indeces, 'group'] = 'testing'
 
-        self.toolbox.register('evaluate', self.evaluate_individual, training_testing_data=training_testing_data)
+            self.toolbox.register('evaluate', self.evaluate_individual, training_testing_data=training_testing_data)
 
-        pop = self.toolbox.population(n=self.population_size)
-        hof = tools.HallOfFame(maxsize=1)
-        stats = tools.Statistics(lambda ind: ind.fitness.values)
-        stats.register('Minimum accuracy', np.min)
-        stats.register('Average accuracy', np.mean)
-        stats.register('Maximum accuracy', np.max)
+            pop = self.toolbox.population(n=self.population_size)
+            self.hof = tools.HallOfFame(maxsize=1)
+            stats = tools.Statistics(lambda ind: ind.fitness.values)
+            stats.register('Minimum accuracy', np.min)
+            stats.register('Average accuracy', np.mean)
+            stats.register('Maximum accuracy', np.max)
 
-        print('')
-
-        pop, log = algorithms.eaSimple(population=pop, toolbox=self.toolbox, cxpb=self.crossover_rate,
-                                       mutpb=self.mutation_rate, ngen=self.generations,
-                                       stats=stats, halloffame=hof)
-
-        self.optimized_pipeline = hof[0]
+            print('')
         
-        print('')
-        print('Best pipeline:', hof[0])
-        print('')
-        print('Best pipeline 10-fold CV: {}'.format(self.score(training_testing_data.drop(['group', 'guess', 'class'], axis=1).values, training_testing_data['class'].values)))
+            pop, log = algorithms.eaSimple(population=pop, toolbox=self.toolbox, cxpb=self.crossover_rate,
+                                           mutpb=self.mutation_rate, ngen=self.generations,
+                                           stats=stats, halloffame=self.hof)
+
+            self.optimized_pipeline = self.hof[0]
+        
+            print('')
+            print('Best pipeline:', self.hof[0])
+            print('')
+            print('Best pipeline 10-fold CV: {}'.format(self.score(training_testing_data.drop(['group', 'guess', 'class'], axis=1).values, training_testing_data['class'].values)))
+
+        # Store the best pipeline if the optimization process is ended prematurely
+        except KeyboardInterrupt:
+            self.optimized_pipeline = self.hof[0]
 
     def score(self, features, classes):
         '''
@@ -348,7 +353,6 @@ class TPOT:
             return gp.mutInsert(individual, pset=self.pset)
         else:
             return gp.mutShrink(individual)
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Automatically creates and optimizes Machine Learning pipelines in Python.')
