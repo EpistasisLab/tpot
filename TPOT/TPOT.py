@@ -161,7 +161,7 @@ class TPOT:
                 training_testing_data.loc[training_indeces, 'group'] = 'training'
                 training_testing_data.loc[testing_indeces, 'group'] = 'testing'
                 
-                fold_accuracy.append(self.evaluate_individual(self.optimized_pipeline, training_testing_data.copy()))
+                fold_accuracy.append(self.evaluate_individual(self.optimized_pipeline, training_testing_data.copy())[0])
 
             return np.mean(fold_accuracy)
             
@@ -309,7 +309,7 @@ class TPOT:
 
     def evaluate_individual(self, individual, training_testing_data):
         '''
-            Determines the `individual`'s classification accuracy
+            Determines the `individual`'s classification balanced accuracy
             on the provided data.
         '''
         try:
@@ -321,7 +321,11 @@ class TPOT:
         
         result = func(training_testing_data)
         result = result[result['group'] == 'testing']
-        return sum(result['guess'].values == result['class'].values) / float(len(result)),
+        sensitivity = len(result[(result['guess'] == 1) & (result['class'] == 1)]) / float(len(result[result['class'] == 1]))
+        specificity = len(result[(result['guess'] == 0) & (result['class'] == 0)]) / float(len(result[result['class'] == 0]))
+        balanced_accuracy = (sensitivity + specificity) / 2.0
+        
+        return balanced_accuracy,
 
     def combined_selection_operator(self, individuals, k):
         '''
