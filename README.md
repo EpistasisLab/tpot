@@ -22,13 +22,13 @@ Except for DEAP, all of the necessary Python packages can be installed via the [
 
 DEAP can be installed with `pip` via the command:
 
-```shell
+```Shell
 pip install deap
 ```
 
 **If you don't care about the details and just want to install TPOT, run the following command:**
 
-```shell
+```Shell
 pip install tpot
 ```
 
