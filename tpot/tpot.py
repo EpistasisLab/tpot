@@ -59,7 +59,7 @@ class TPOT:
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.subset_df, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.smart_subset_df, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self.dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
 
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
@@ -257,7 +257,7 @@ class TPOT:
         subset_df2 = input_df[[column for column in ['guess', 'class', 'group'] if column not in subset_df1.columns.values]]
         return subset_df1.join(subset_df2).copy()
     
-    def smart_subset_df(self, input_df, num_pairs):
+    def dt_feature_selection(self, input_df, num_pairs):
         '''
             Uses decision trees to discover the best pair(s) of features to keep.
         '''
