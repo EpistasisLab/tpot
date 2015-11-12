@@ -56,8 +56,9 @@ class TPOT:
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
         
-        random.seed(random_state)
-        np.random.seed(random_state)
+        if random_state > 0:
+            random.seed(random_state)
+            np.random.seed(random_state)
 
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
@@ -450,10 +451,15 @@ if __name__ == '__main__':
     if 'Class' in input_data.columns.values:
         input_data.rename(columns={'Class': 'class'}, inplace=True)
     
+    if args.random_state > 0:
+        random_state = args.random_state
+    else:
+        random_state = None
+    
     training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(input_data['class'].values,
                                                                          n_iter=1,
                                                                          train_size=0.75,
-                                                                         random_state=args.random_state)))
+                                                                         random_state=random_state)))
 
     training_features = input_data.loc[training_indeces].drop('class', axis=1).values
     training_classes = input_data.loc[training_indeces, 'class'].values
