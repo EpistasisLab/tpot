@@ -145,6 +145,38 @@ class TPOT:
         except KeyboardInterrupt:
             self.optimized_pipeline = self.hof[0]
 
+    def predict(self, training_features, training_classes, testing_features):
+        '''
+            Uses the optimized pipeline to predict the classes for a feature set.
+        '''
+        if self.optimized_pipeline == None:
+            raise Exception('A pipeline has not yet been optimized. '
+                            'Please call the optimize() function first.')
+        
+        self.best_features_cache = {}
+
+        training_data = pd.DataFrame(training_features)
+        training_data['class'] = training_classes
+        training_data['group'] = 'training'
+
+        testing_data = pd.DataFrame(testing_features)
+        testing_data['class'] = 0
+        testing_data['group'] = 'testing'
+
+        training_testing_data = pd.concat([training_data, testing_data])
+        most_frequent_class = Counter(training_classes).most_common(1)[0][0]
+        training_testing_data['guess'] = most_frequent_class
+
+        for column in training_testing_data.columns.values:
+            if type(column) != str:
+                training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
+        
+        # Transform the tree expression in a callable function
+        func = self.toolbox.compile(expr=self.optimized_pipeline)
+
+        result = func(training_testing_data)
+        return result[result['group'] == 'testing', 'guess'].values
+
     def score(self, training_features, training_classes, testing_features, testing_classes):
         '''
             Estimates the testing accuracy of the optimized pipeline.
