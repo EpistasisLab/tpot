@@ -394,33 +394,51 @@ class TPOT:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Automatically creates and optimizes Machine Learning pipelines in Python.')
 
+    def positive_integer(value):
+        try:
+            value = int(value)
+        except:
+            raise argparse.ArgumentTypeError('invalid int value: \'{}\''.format(value))
+        if value < 0:
+            raise argparse.ArgumentTypeError('invalid positive int value: \'{}\''.format(value))
+        return value
+    
+    def float_range(value):
+        try:
+            value = float(value)
+        except:
+            raise argparse.ArgumentTypeError('invalid float value: \'{}\''.format(value))
+        if value < 0.0 or value > 1.0:
+            raise argparse.ArgumentTypeError('invalid float value: \'{}\''.format(value))
+        return value
+
     parser.add_argument('-i', action='store', dest='input_file', required=True,
-                        type=str, help='Data file to optimize the pipeline on.\nEnsure that the class column is labeled as "class".')
+                        type=str, help='Data file to optimize the pipeline on. Ensure that the class column is labeled as "class".')
 
     parser.add_argument('-is', action='store', dest='input_separator', default='\t',
                         type=str, help='Character used to separate columns in the input file.')
 
     parser.add_argument('-g', action='store', dest='generations', default=100,
-                        type=int, help='Number of generations to run pipeline optimization for.')
+                        type=positive_integer, help='Number of generations to run pipeline optimization for.')
 
     parser.add_argument('-mr', action='store', dest='mutation_rate', default=0.9,
-                        type=float, help='Mutation rate in the range [0.0, 1.0]')
+                        type=float_range, help='Mutation rate in the range [0.0, 1.0]')
 
     parser.add_argument('-xr', action='store', dest='crossover_rate', default=0.05,
-                        type=float, help='Crossover rate in the range [0.0, 1.0]')
+                        type=float_range, help='Crossover rate in the range [0.0, 1.0]')
 
     parser.add_argument('-p', action='store', dest='population_size', default=100,
-                        type=int, help='Number of individuals in the GP population.')
+                        type=positive_integer, help='Number of individuals in the GP population.')
 
     parser.add_argument('-s', action='store', dest='random_state', default=0,
                         type=int, help='Random number generator seed for reproducibility.')
     
-    parser.add_argument('-v', action='store', dest='verbosity', default=1,
-                        type=int, help='How much information TPOT communicates while it is running.\n0 = none, 1 = minimal, 2 = all')
+    parser.add_argument('-v', action='store', dest='verbosity', default=1, choices=[0, 1, 2],
+                        type=int, help='How much information TPOT communicates while it is running. 0 = none, 1 = minimal, 2 = all')
 
     args = parser.parse_args()
 
-    if args.verbosity == 2:
+    if args.verbosity >= 2:
         print('')
         print('TPOT settings:')
         for arg in sorted(args.__dict__):
