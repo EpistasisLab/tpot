@@ -81,7 +81,7 @@ class TPOT:
         self.toolbox.register('expr_mut', gp.genFull, min_=0, max_=2)
         self.toolbox.register('mutate', self.random_mutation_operator)
     
-    def optimize(self, features, classes, feature_names=None):
+    def fit(self, features, classes, feature_names=None):
         '''
             Uses genetic programming to optimize a Machine Learning pipeline that
             maximizes classification accuracy on the provided `features` and `classes`.
@@ -150,8 +150,7 @@ class TPOT:
             Uses the optimized pipeline to predict the classes for a feature set.
         '''
         if self.optimized_pipeline == None:
-            raise Exception('A pipeline has not yet been optimized. '
-                            'Please call the optimize() function first.')
+            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
         
         self.best_features_cache = {}
 
@@ -182,8 +181,7 @@ class TPOT:
             Estimates the testing accuracy of the optimized pipeline.
         '''
         if self.optimized_pipeline == None:
-            raise Exception('A pipeline has not yet been optimized. '
-                            'Please call the optimize() function first.')
+            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
         
         self.best_features_cache = {}
 
@@ -447,7 +445,7 @@ if __name__ == '__main__':
                 mutation_rate=args.mutation_rate, crossover_rate=args.crossover_rate,
                 verbosity=args.verbosity)
 
-    tpot.optimize(training_features, training_classes)
+    tpot.fit(training_features, training_classes)
 
     if args.verbosity >= 1:
         print('')

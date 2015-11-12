@@ -89,7 +89,7 @@ Now TPOT is ready to work! You can pass TPOT some data with a scikit-learn-like 
 from tpot import TPOT
 
 pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=0)
-pipeline_optimizer.optimize(training_features, training_classes)
+pipeline_optimizer.fit(training_features, training_classes)
 ```
 
 then evaluate the final pipeline as such:
@@ -98,7 +98,7 @@ then evaluate the final pipeline as such:
 from tpot import TPOT
 
 pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=0)
-pipeline_optimizer.optimize(training_features, training_classes)
+pipeline_optimizer.fit(training_features, training_classes)
 pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes)
 ```
 
@@ -143,7 +143,7 @@ X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
                                                     train_size=0.75)
 
 tpot = TPOT(generations=5)
-tpot.optimize(X_train, y_train)
+tpot.fit(X_train, y_train)
 tpot.score(X_test, y_test)
 ```
 
