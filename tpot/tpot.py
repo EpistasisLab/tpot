@@ -44,7 +44,7 @@ class TPOT:
     best_features_cache = {}
 
     def __init__(self, population_size=100, generations=100,
-                 mutation_rate=0.9, crossover_rate=0.05):
+                 mutation_rate=0.9, crossover_rate=0.05, verbosity=0):
         '''
             Sets up the genetic programming algorithm for pipeline optimization.
         '''
@@ -53,6 +53,7 @@ class TPOT:
         self.generations = generations
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
+        self.verbosity = verbosity
 
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
@@ -125,15 +126,20 @@ class TPOT:
             stats.register('Minimum accuracy', np.min)
             stats.register('Average accuracy', np.mean)
             stats.register('Maximum accuracy', np.max)
+            
+            verbose = (self.verbosity == 2)
         
             pop, log = algorithms.eaSimple(population=pop, toolbox=self.toolbox, cxpb=self.crossover_rate,
                                            mutpb=self.mutation_rate, ngen=self.generations,
-                                           stats=stats, halloffame=self.hof)
+                                           stats=stats, halloffame=self.hof, verbose=verbose)
 
             self.optimized_pipeline = self.hof[0]
-        
-            print('')
-            print('Best pipeline:', self.hof[0])
+
+            if self.verbosity == 2:
+                print('')
+
+            if self.verbosity >= 1:
+                print('Best pipeline:', self.hof[0])
 
         # Store the best pipeline if the optimization process is ended prematurely
         except KeyboardInterrupt:
@@ -374,14 +380,18 @@ if __name__ == '__main__':
 
     parser.add_argument('-s', action='store', dest='rng_seed', default=0,
                         type=int, help='Random number generator seed for reproducibility.')
+    
+    parser.add_argument('-v', action='store', dest='verbosity', default=1,
+                        type=int, help='How much information TPOT communicates while it is running.\n0 = none, 1 = minimal, 2 = all')
 
     args = parser.parse_args()
 
-    print('')
-    print('TPOT settings:')
-    for arg in sorted(args.__dict__):
-        print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
-    print('')
+    if args.verbosity == 2:
+        print('')
+        print('TPOT settings:')
+        for arg in sorted(args.__dict__):
+            print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
+        print('')
 
     input_data = pd.read_csv(args.input_file, sep=args.input_separator)
 
@@ -402,12 +412,14 @@ if __name__ == '__main__':
     testing_classes = input_data.loc[testing_indeces, 'class'].values
 
     tpot = TPOT(generations=args.generations, population_size=args.population_size,
-                mutation_rate=args.mutation_rate, crossover_rate=args.crossover_rate)
+                mutation_rate=args.mutation_rate, crossover_rate=args.crossover_rate,
+                verbosity=args.verbosity)
 
     tpot.optimize(training_features, training_classes)
 
-    print('')
-    print('Training accuracy: {}'.format(tpot.score(training_features, training_classes,
-                                         training_features, training_classes)))
-    print('Testing accuracy: {}'.format(tpot.score(training_features, training_classes,
-                                        testing_features, testing_classes)))
+    if args.verbosity >= 1:
+        print('')
+        print('Training accuracy: {}'.format(tpot.score(training_features, training_classes,
+                                             training_features, training_classes)))
+        print('Testing accuracy: {}'.format(tpot.score(training_features, training_classes,
+                                            testing_features, testing_classes)))
