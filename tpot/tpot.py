@@ -44,7 +44,8 @@ class TPOT:
     best_features_cache = {}
 
     def __init__(self, population_size=100, generations=100,
-                 mutation_rate=0.9, crossover_rate=0.05, verbosity=0):
+                 mutation_rate=0.9, crossover_rate=0.05,
+                 random_state=0, verbosity=0):
         '''
             Sets up the genetic programming algorithm for pipeline optimization.
         '''
@@ -54,6 +55,9 @@ class TPOT:
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
+        
+        random.seed(random_state)
+        np.random.seed(random_state)
 
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
@@ -408,7 +412,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', action='store', dest='population_size', default=100,
                         type=int, help='Number of individuals in the GP population.')
 
-    parser.add_argument('-s', action='store', dest='rng_seed', default=0,
+    parser.add_argument('-s', action='store', dest='random_state', default=0,
                         type=int, help='Random number generator seed for reproducibility.')
     
     parser.add_argument('-v', action='store', dest='verbosity', default=1,
@@ -427,13 +431,11 @@ if __name__ == '__main__':
 
     if 'Class' in input_data.columns.values:
         input_data.rename(columns={'Class': 'class'}, inplace=True)
-
-    random.seed(args.rng_seed)
-    np.random.seed(args.rng_seed)
     
     training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(input_data['class'].values,
                                                                          n_iter=1,
-                                                                         train_size=0.75)))
+                                                                         train_size=0.75,
+                                                                         random_state=args.random_state)))
 
     training_features = input_data.loc[training_indeces].drop('class', axis=1).values
     training_classes = input_data.loc[training_indeces, 'class'].values
@@ -443,7 +445,7 @@ if __name__ == '__main__':
 
     tpot = TPOT(generations=args.generations, population_size=args.population_size,
                 mutation_rate=args.mutation_rate, crossover_rate=args.crossover_rate,
-                verbosity=args.verbosity)
+                random_state=args.random_state, verbosity=args.verbosity)
 
     tpot.fit(training_features, training_classes)
 
