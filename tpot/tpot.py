@@ -237,7 +237,8 @@ class TPOT:
 
         rfc = RandomForestClassifier(n_estimators=num_trees,
                                      max_features=max_features,
-                                     random_state=42)
+                                     random_state=42,
+                                     n_jobs=-1)
         rfc.fit(training_features, training_classes)
 
         all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
