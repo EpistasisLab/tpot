@@ -392,7 +392,7 @@ class TPOT:
             return gp.mutShrink(individual)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Automatically creates and optimizes Machine Learning pipelines in Python.')
+    parser = argparse.ArgumentParser(description='A Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.')
 
     def positive_integer(value):
         try:
