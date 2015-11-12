@@ -77,7 +77,7 @@ class TPOT:
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMax)
 
         self.toolbox = base.Toolbox()
-        self.toolbox.register('expr', gp.genHalfAndHalf, pset=self.pset, min_=1, max_=2)
+        self.toolbox.register('expr', gp.genHalfAndHalf, pset=self.pset, min_=2, max_=3) ## CHANGE THIS BACK BEFORE FINAL COMMIT
         self.toolbox.register('individual', tools.initIterate, creator.Individual, self.toolbox.expr)
         self.toolbox.register('population', tools.initRepeat, list, self.toolbox.individual)
         self.toolbox.register('compile', gp.compile, pset=self.pset)
@@ -207,6 +207,35 @@ class TPOT:
                 training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
         
         return self.evaluate_individual(self.optimized_pipeline, training_testing_data)[0]
+
+    def export(self, output_file_name):
+        '''
+            Exports the current optimized pipeline to the provided file as Python code.
+            
+            `output_file_name` should be a string of the file path.
+        '''
+        #if self.optimized_pipeline == None:
+        #    raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
+        
+        output_text = '''import hashlib
+from itertools import combinations
+
+import numpy as np
+import pandas as pd
+
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+'''
+        self.optimized_pipeline = self.toolbox.individual()
+        print(self.optimized_pipeline)
+        
+        print(self.optimized_pipeline[0].keys())
+        
+        exit(1)
+        
+        with open(output_file_name, 'w') as output_file:
+            output_file.write(output_text)
 
     @staticmethod
     def decision_tree(input_df, max_features, max_depth):
