@@ -22,11 +22,15 @@ Except for DEAP, all of the necessary Python packages can be installed via the [
 
 DEAP can be installed with `pip` via the command:
 
-    pip install deap
+```shell
+pip install deap
+```
 
 **If you don't care about the details and just want to install TPOT, run the following command:**
 
-    pip install tpot
+```shell
+pip install tpot
+```
 
 `pip` should be able to sort out all of the dependencies for you.
 
@@ -35,16 +39,16 @@ DEAP can be installed with `pip` via the command:
 Below is a minimal working example with the practice MNIST data set.
 
 ```python
-    from tpot import TPOT
-    from sklearn.datasets import load_digits
-    from sklearn.cross_validation import train_test_split
+from tpot import TPOT
+from sklearn.datasets import load_digits
+from sklearn.cross_validation import train_test_split
 
-    digits = load_digits()
-    X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target, train_size=0.75)
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target, train_size=0.75)
 
-    tpot = TPOT(generations=5)
-    tpot.optimize(X_train, y_train)
-    tpot.score(X_test, y_test)
+tpot = TPOT(generations=5)
+tpot.optimize(X_train, y_train)
+tpot.score(X_test, y_test)
 ```
 
 Running this code should discover a pipeline that achieves >=98% testing accuracy.
