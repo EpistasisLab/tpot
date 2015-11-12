@@ -1,10 +1,20 @@
 # Tree-based Pipeline Optimization Tool (TPOT)
 
-A Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.
+Consider TPOT your **Data Science Assistant**. TPOT is a Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.
+
+TPOT will automate the most tedious part of Machine Learning by intelligently exploring thousands of possible pipelines to find the best one for your data.
+
+![An example machine learning pipeline](https://github.com/rhiever/tpot/tpot-ml-pipeline.png "An example machine learning pipeline")
+
+Once TPOT is finished searching (or you get tired of waiting), it provides you with the Python code for the best pipeline it found so you can tinker with the pipeline from there.
+
+TPOT is built on top of scikit-learn, so all of the code it generates should look familiar... if you're familiar with scikit-learn, anyway.
+
+**TPOT is still under active development** and we encourage you to check back on this repository regularly for updates.
 
 ## License
 
-Please see the [repository license](https://github.com/rhiever/tpot/blob/master/LICENSE) for the licensing and usage information for this library.
+Please see the [repository license](https://github.com/rhiever/tpot/blob/master/LICENSE) for the licensing and usage information for TPOT.
 
 ## Installation
 
@@ -34,7 +44,7 @@ pip install tpot
 
 `pip` should be able to sort out all of the dependencies for you.
 
-## Usage
+## Examples
 
 Below is a minimal working example with the practice MNIST data set.
 
@@ -52,6 +62,10 @@ tpot.score(X_test, y_test)
 ```
 
 Running this code should discover a pipeline that achieves >=98% testing accuracy.
+
+## Want to get involved with TPOT?
+
+We welcome you to [check the existing issues](https://github.com/rhiever/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/rhiever/tpot/issues/new) so we can discuss it.
 
 ## Having problems or have questions about TPOT?
 
