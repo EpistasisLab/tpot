@@ -45,9 +45,8 @@ class TPOT:
 
     def __init__(self, population_size=100, generations=1000,
                  mutation_rate=0.9, crossover_rate=0.05):
-
         '''
-            Sets up the Genetic Programming algorithm for pipeline optimization.
+            Sets up the genetic programming algorithm for pipeline optimization.
         '''
 
         self.population_size = population_size
@@ -83,7 +82,7 @@ class TPOT:
     
     def optimize(self, features, classes, feature_names=None):
         '''
-            Uses Genetic Programming to optimize a Machine Learning pipeline that
+            Uses genetic programming to optimize a Machine Learning pipeline that
             maximizes classification accuracy on the provided `features` and `classes`.
             
             Optionally, name the features in the data frame according to `feature_names`.
@@ -91,7 +90,6 @@ class TPOT:
             Performs a stratified training/testing cross-validaton split to avoid
             overfitting on the provided data.
         '''
-        
         try:
             self.best_features_cache = {}
 
@@ -111,8 +109,7 @@ class TPOT:
 
             training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(training_testing_data['class'].values,
                                                                                  n_iter=1,
-                                                                                 train_size=0.75,
-                                                                                 test_size=0.25)))
+                                                                                 train_size=0.75)))
 
             training_testing_data.loc[training_indeces, 'group'] = 'training'
             training_testing_data.loc[testing_indeces, 'group'] = 'testing'
@@ -125,8 +122,6 @@ class TPOT:
             stats.register('Minimum accuracy', np.min)
             stats.register('Average accuracy', np.mean)
             stats.register('Maximum accuracy', np.max)
-
-            print('')
         
             pop, log = algorithms.eaSimple(population=pop, toolbox=self.toolbox, cxpb=self.crossover_rate,
                                            mutpb=self.mutation_rate, ngen=self.generations,
@@ -136,43 +131,37 @@ class TPOT:
         
             print('')
             print('Best pipeline:', self.hof[0])
-            print('')
-            print('Best pipeline 10-fold CV: {}'.format(self.score(training_testing_data.drop(['group', 'guess', 'class'], axis=1).values, training_testing_data['class'].values)))
 
         # Store the best pipeline if the optimization process is ended prematurely
         except KeyboardInterrupt:
             self.optimized_pipeline = self.hof[0]
 
-    def score(self, features, classes):
+    def score(self, training_features, training_classes, testing_features, testing_classes):
         '''
-            Performs 10-fold cross-validation on the optimized pipeline.
+            Estimates the testing accuracy of the optimized pipeline.
         '''
-        
-        if self.optimized_pipeline != None:
-            self.best_features_cache = {}
-            fold_accuracy = []
-            
-            training_testing_data = pd.DataFrame(features)
-            training_testing_data['class'] = classes
-            
-            for column in training_testing_data.columns.values:
-                if type(column) != str:
-                    training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
-
-            for training_indeces, testing_indeces in StratifiedKFold(training_testing_data['class'].values, 10):
-                training_testing_data['guess'] = 0
-                self.best_features_cache = {}
-
-                training_testing_data.loc[training_indeces, 'group'] = 'training'
-                training_testing_data.loc[testing_indeces, 'group'] = 'testing'
-                
-                fold_accuracy.append(self.evaluate_individual(self.optimized_pipeline, training_testing_data.copy())[0])
-
-            return np.mean(fold_accuracy)
-            
-        else:
+        if self.optimized_pipeline == None:
             raise Exception('A pipeline has not yet been optimized. '
                             'Please call the optimize() function first.')
+        
+        self.best_features_cache = {}
+
+        training_data = pd.DataFrame(training_features)
+        training_data['class'] = training_classes
+        training_data['group'] = 'training'
+
+        testing_data = pd.DataFrame(testing_features)
+        testing_data['class'] = testing_classes
+        testing_data['group'] = 'testing'
+
+        training_testing_data = pd.concat([training_data, testing_data])
+        training_testing_data['guess'] = 0
+
+        for column in training_testing_data.columns.values:
+            if type(column) != str:
+                training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
+        
+        return self.evaluate_individual(self.optimized_pipeline, training_testing_data)[0]
 
     @staticmethod
     def decision_tree(input_df, max_features, max_depth):
@@ -216,8 +205,8 @@ class TPOT:
     def random_forest(input_df, num_trees, max_features):
         if num_trees < 1:
             num_trees = 1
-        elif num_trees > 100:
-            num_trees = 100
+        elif num_trees > 500:
+            num_trees = 500
 
         if max_features < 1:
             max_features = 'auto'
@@ -369,7 +358,7 @@ if __name__ == '__main__':
     parser.add_argument('-is', action='store', dest='input_separator', default='\t',
                         type=str, help='Character used to separate columns in the input file.')
 
-    parser.add_argument('-g', action='store', dest='generations', default=1000,
+    parser.add_argument('-g', action='store', dest='generations', default=100,
                         type=int, help='Number of generations to run pipeline optimization for.')
 
     parser.add_argument('-mr', action='store', dest='mutation_rate', default=0.9,
@@ -386,9 +375,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    print('')
     print('TPOT settings:')
     for arg in sorted(args.__dict__):
         print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
+    print('')
 
     input_data = pd.read_csv(args.input_file, sep=args.input_separator)
 
@@ -397,8 +388,24 @@ if __name__ == '__main__':
 
     random.seed(args.rng_seed)
     np.random.seed(args.rng_seed)
+    
+    training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(input_data['class'].values,
+                                                                         n_iter=1,
+                                                                         train_size=0.75)))
+
+    training_features = input_data.loc[training_indeces].drop('class', axis=1).values
+    training_classes = input_data.loc[training_indeces, 'class'].values
+    
+    testing_features = input_data.loc[testing_indeces].drop('class', axis=1).values
+    testing_classes = input_data.loc[testing_indeces, 'class'].values
 
     tpot = TPOT(generations=args.generations, population_size=args.population_size,
                 mutation_rate=args.mutation_rate, crossover_rate=args.crossover_rate)
 
-    tpot.optimize(input_data.drop('class', axis=1).values, input_data['class'].values)
+    tpot.optimize(training_features, training_classes)
+
+    print('')
+    print('Training accuracy: {}'.format(tpot.score(training_features, training_classes,
+                                         training_features, training_classes)))
+    print('Testing accuracy: {}'.format(tpot.score(training_features, training_classes,
+                                        testing_features, testing_classes)))
