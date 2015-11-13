@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
-import os
-import subprocess
 
 
 def parse_requirements(filename):
@@ -17,34 +15,30 @@ def calculate_version():
 
 
 requirements = parse_requirements('requirements.txt')
-version_git = calculate_version()
-
-
-def get_long_description():
-    readme_file = 'README.md'
-    if not os.path.isfile(readme_file):
-        print('warning: README.md not found')
-        return ''
-    # Try to transform the README from Markdown to reStructuredText.
-    try:
-        from pypandoc import convert
-        read_md = convert(readme_file, 'rst')
-    except ImportError:
-        print('warning: pypandoc module not found, could not convert Markdown to RST')
-        read_md = open(readme_file, 'r').read()
-    return read_md
+package_version = calculate_version()
 
 setup(
     name='TPOT',
-    version=version_git,
+    version=package_version,
     author='Randal S. Olson',
     author_email='rso@randalolson.com',
     packages=find_packages(),
     url='https://github.com/rhiever/tpot',
     license='GNU/GPLv3',
-    description=('A Python tool that automatically creates and optimizes Machine '
-                 'Learning pipelines using genetic programming.'),
-    #long_description=get_long_description(),
+    description=('Tree-based Pipeline Optimization Tool'),
+    long_description='''
+A Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.
+
+Contact
+=============
+If you have any questions or comments about TPOT, please feel free to contact me via:
+
+E-mail: rso@randalolson.com
+
+or Twitter: https://twitter.com/randal_olson
+
+This project is hosted at https://github.com/rhiever/tpot
+''',
     zip_safe=True,
     install_requires=requirements,
     classifiers=[
