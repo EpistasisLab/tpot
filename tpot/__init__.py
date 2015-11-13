@@ -19,4 +19,4 @@ the Twitter Bot library. If not, see http://www.gnu.org/licenses/.
 
 from .tpot import TPOT
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
