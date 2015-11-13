@@ -64,7 +64,7 @@ class TPOT:
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self.subset_df, [pd.DataFrame, int, int], pd.DataFrame)
+        #self.pset.addPrimitive(self.subset_df, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
 
         self.pset.addPrimitive(operator.add, [int, int], int)
@@ -77,7 +77,7 @@ class TPOT:
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMax)
 
         self.toolbox = base.Toolbox()
-        self.toolbox.register('expr', gp.genHalfAndHalf, pset=self.pset, min_=2, max_=3) ## CHANGE THIS BACK BEFORE FINAL COMMIT
+        self.toolbox.register('expr', gp.genHalfAndHalf, pset=self.pset, min_=5, max_=10) ## CHANGE THIS BACK BEFORE FINAL COMMIT
         self.toolbox.register('individual', tools.initIterate, creator.Individual, self.toolbox.expr)
         self.toolbox.register('population', tools.initRepeat, list, self.toolbox.individual)
         self.toolbox.register('compile', gp.compile, pset=self.pset)
