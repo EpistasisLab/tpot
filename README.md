@@ -80,7 +80,7 @@ Some example code with custom TPOT parameters might look like:
 ```Python
 from tpot import TPOT
 
-pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=0)
+pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=2)
 ```
 
 Now TPOT is ready to work! You can pass TPOT some data with a scikit-learn-like interface:
@@ -88,7 +88,7 @@ Now TPOT is ready to work! You can pass TPOT some data with a scikit-learn-like 
 ```Python
 from tpot import TPOT
 
-pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=0)
+pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 ```
 
@@ -97,7 +97,7 @@ then evaluate the final pipeline as such:
 ```Python
 from tpot import TPOT
 
-pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=0)
+pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes)
 ```
@@ -126,7 +126,7 @@ The following parameters will display along with their descriptions:
 An example command-line call to TPOT may look like:
 
 ```Shell
-tpot -i data/mnist.csv -is , -g 100 -s 42 -v 0
+tpot -i data/mnist.csv -is , -g 100 -s 42 -v 2
 ```
 
 ## Examples

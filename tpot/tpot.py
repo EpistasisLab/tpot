@@ -392,7 +392,7 @@ class TPOT:
         else:
             return gp.mutShrink(individual)
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='A Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.')
 
     def positive_integer(value):
@@ -479,3 +479,6 @@ if __name__ == '__main__':
                                              training_features, training_classes)))
         print('Testing accuracy: {}'.format(tpot.score(training_features, training_classes,
                                             testing_features, testing_classes)))
+
+if __name__ == '__main__':
+    main()
