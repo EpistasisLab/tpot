@@ -156,3 +156,7 @@ We welcome you to [check the existing issues](https://github.com/rhiever/tpot/is
 ## Having problems or have questions about TPOT?
 
 Please [check the existing open and closed issues](https://github.com/rhiever/tpot/issues?utf8=%E2%9C%93&q=is%3Aissue) to see if your issue has already been attended to. If it hasn't, please [file a new issue](https://github.com/rhiever/tpot/issues/new) on this repository so we can review your issue.
+
+## Support for TPOT
+
+TPOT was developed in the [Computational Genetics Lab](http://epistasis.org) with funding from the [NIH](http://www.nih.gov). We're incredibly grateful for their support during the development of this project!
