@@ -33,7 +33,7 @@ conda update --yes conda
 # provided versions
 if [[ "$LATEST" == "true" ]]; then
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
-        numpy scipy scikit-learn cython pandas deap
+        numpy scipy scikit-learn cython pandas
 else
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION \
