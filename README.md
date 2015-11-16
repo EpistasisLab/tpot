@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/rhiever/tpot.svg?branch=master)](https://travis-ci.org/rhiever/tpot)
+
 # Tree-based Pipeline Optimization Tool (TPOT)
 
 Consider TPOT your **Data Science Assistant**. TPOT is a Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.
