@@ -117,6 +117,20 @@ class TPOT(object):
 
             Performs a stratified training/testing cross-validaton split to avoid
             overfitting on the provided data.
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix
+        classes: array-like {n_classnames}
+            List of class name strings
+        feature_names: array-like {n_featurenames} (default: None)
+            List of feature name strings
+
+        Returns
+        -------
+        None
+
         """
         try:
             self.best_features_cache_ = {}
@@ -173,8 +187,22 @@ class TPOT(object):
             self.optimized_pipeline_ = self.hof[0]
 
     def predict(self, training_features, training_classes, testing_features):
-        """
-            Uses the optimized pipeline to predict the classes for a feature set.
+        """Uses the optimized pipeline to predict the classes for a feature set.
+
+        Parameters
+        ----------
+        training_features: array-like {n_samples, n_features}
+            Feature matrix of the training set
+        training_classes: array-like {n_classnames}
+            List of class name strings in the training set
+        testing_features: array-like {n_samples, n_features}
+            Feature matrix of the test set
+
+        Returns
+        ----------
+        array-like: {n_samples, n_features}
+            Feature matrix of the `guess` values
+
         """
         if self.optimized_pipeline_ is None:
             raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
@@ -204,8 +232,24 @@ class TPOT(object):
         return result[result['group'] == 'testing', 'guess'].values
 
     def score(self, training_features, training_classes, testing_features, testing_classes):
-        """
-            Estimates the testing accuracy of the optimized pipeline.
+        """Estimates the testing accuracy of the optimized pipeline.
+
+        Parameters
+        ----------
+        training_features: array-like {n_samples, n_features}
+            Feature matrix of the training set
+        training_classes: array-like {n_classnames}
+            List of class name strings in the training set
+        test_features: array-like {n_samples, n_features}
+            Feature matrix of the test set
+        testing_classes: array-like {n_classnames}
+            List of class name strings in the test set
+
+        Returns
+        -------
+        accuracy_score: float
+            The estimated test set accuracy
+
         """
         if self.optimized_pipeline_ is None:
             raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
@@ -232,6 +276,23 @@ class TPOT(object):
 
     @staticmethod
     def decision_tree(input_df, max_features, max_depth):
+        """Fits a decision tree classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the decision tree
+        max_features: int
+            Number of features used to fit the decision tree
+        max_depth: int
+            Maximum depth of the decision tree
+
+        Returns
+        -------
+        input_df:  {n_samples, n_features+['guess']}
+            Returns a modified input DataFrame with the guess column changed.
+
+        """
         if max_features < 1:
             max_features = 'auto'
         elif max_features == 1:
@@ -269,6 +330,23 @@ class TPOT(object):
 
     @staticmethod
     def random_forest(input_df, num_trees, max_features):
+        """Fits a random forest classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the decision tree
+        num_trees: int
+            Number of trees in the random forest
+        max_features: int
+            Number of features used to fit the decision tree
+
+        Returns
+        -------
+        input_df:  {n_samples, n_features+['guess']}
+            Returns a modified input DataFrame with the guess column changed.
+
+        """
         if num_trees < 1:
             num_trees = 1
         elif num_trees > 500:
@@ -308,13 +386,12 @@ class TPOT(object):
 
     @staticmethod
     def combine_dfs(input_df1, input_df2):
+        """Function to combine two DataFrames"""
         return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
 
     @staticmethod
     def subset_df(input_df, start, stop):
-        """
-            Subset the provided DataFrame down to the columns between the `start` and `stop` column indeces.
-        """
+        """Subset the provided DataFrame down to the columns between the `start` and `stop` column indeces."""
         if stop <= start:
             stop = start + 1
 
@@ -323,9 +400,7 @@ class TPOT(object):
         return subset_df1.join(subset_df2).copy()
 
     def dt_feature_selection(self, input_df, num_pairs):
-        """
-            Uses decision trees to discover the best pair(s) of features to keep.
-        """
+        """Uses decision trees to discover the best pair(s) of features to keep."""
 
         num_pairs = min(max(1, num_pairs), 50)
 
@@ -368,10 +443,7 @@ class TPOT(object):
         return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
 
     def evaluate_individual(self, individual, training_testing_data):
-        """
-            Determines the `individual`'s classification balanced accuracy
-            on the provided data.
-        """
+        """Determines the `individual`'s classification balanced accuracy on the provided data."""
         try:
             # Transform the tree expression in a callable function
             func = self.toolbox.compile(expr=individual)
@@ -395,9 +467,7 @@ class TPOT(object):
         return balanced_accuracy,
 
     def combined_selection_operator(self, individuals, k):
-        """
-            Regular selection + elitism.
-        """
+        """ Regular selection + elitism."""
         best_inds = int(0.1 * k)
         rest_inds = k - best_inds
         return (tools.selBest(individuals, 1) * best_inds +
@@ -405,9 +475,7 @@ class TPOT(object):
                                           parsimony_size=2, fitness_first=True))
 
     def random_mutation_operator(self, individual):
-        """
-            Randomly picks a replacement, insert, or shrink mutation.
-        """
+        """Randomly picks a replacement, insert, or shrink mutation."""
         roll = random.random()
         if roll <= 0.333333:
             return gp.mutUniform(individual, expr=self.toolbox.expr_mut, pset=self.pset)
