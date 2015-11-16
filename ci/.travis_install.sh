@@ -39,9 +39,9 @@ else
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION \
         scikit-learn=$SKLEARN_VERSION \
 	      pandas=$PANDAS_VERSION \
-		    deap=$DEAP_VERSION \
         cython
 fi
+pip install deap==$DEAP_VERSION
 
 source activate testenv
 
