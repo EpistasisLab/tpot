@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Copyright 2015 Randal S. Olson
 
 This file is part of the TPOT library.
@@ -15,7 +15,8 @@ WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 the Twitter Bot library. If not, see http://www.gnu.org/licenses/.
-'''
+
+"""
 
 from __future__ import print_function
 import argparse
@@ -39,16 +40,37 @@ from deap import tools
 from deap import gp
 
 class TPOT(object):
+    """
+    Parameters
+    ----------
+    population_size: int (default: 100)
+        Number of initial pipelines
+    generations: int (default: 100)
+        Number of generations to evolve the pipeline
+    mutation_rate: float (default: 0.9)
+        Value to control the mutation rate of a pipeline
+    crossover_rate: float (default: 0.05)
+        Likelihood of swapping elements between pipelines
+    random_state: int (default: 0)
+        Value to initialize a random seed. No random seed if None
+    verbosity: int {0, 1, 2} (default: 0)
+        Verbosity level for output printed to the standard output device
 
+    Attributes
+    ----------
+    best_features_cache: dict
+        Best features, available after calling `fit`
+    optimized_pipeline: object
+        The optimized pipeline, available after calling `fit`
+
+    """
     optimized_pipeline = None
     best_features_cache = {}
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
                  random_state=0, verbosity=0):
-        '''
-            Sets up the genetic programming algorithm for pipeline optimization.
-        '''
+        """Sets up the genetic programming algorithm for pipeline optimization."""
 
         self.population_size = population_size
         self.generations = generations
@@ -87,7 +109,7 @@ class TPOT(object):
         self.toolbox.register('mutate', self.random_mutation_operator)
 
     def fit(self, features, classes, feature_names=None):
-        '''
+        """
             Uses genetic programming to optimize a Machine Learning pipeline that
             maximizes classification accuracy on the provided `features` and `classes`.
 
@@ -95,7 +117,7 @@ class TPOT(object):
 
             Performs a stratified training/testing cross-validaton split to avoid
             overfitting on the provided data.
-        '''
+        """
         try:
             self.best_features_cache = {}
 
@@ -151,9 +173,9 @@ class TPOT(object):
             self.optimized_pipeline = self.hof[0]
 
     def predict(self, training_features, training_classes, testing_features):
-        '''
+        """
             Uses the optimized pipeline to predict the classes for a feature set.
-        '''
+        """
         if self.optimized_pipeline is None:
             raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
 
@@ -182,9 +204,9 @@ class TPOT(object):
         return result[result['group'] == 'testing', 'guess'].values
 
     def score(self, training_features, training_classes, testing_features, testing_classes):
-        '''
+        """
             Estimates the testing accuracy of the optimized pipeline.
-        '''
+        """
         if self.optimized_pipeline is None:
             raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
 
@@ -290,9 +312,9 @@ class TPOT(object):
 
     @staticmethod
     def subset_df(input_df, start, stop):
-        '''
+        """
             Subset the provided DataFrame down to the columns between the `start` and `stop` column indeces.
-        '''
+        """
         if stop <= start:
             stop = start + 1
 
@@ -301,9 +323,9 @@ class TPOT(object):
         return subset_df1.join(subset_df2).copy()
 
     def dt_feature_selection(self, input_df, num_pairs):
-        '''
+        """
             Uses decision trees to discover the best pair(s) of features to keep.
-        '''
+        """
 
         num_pairs = min(max(1, num_pairs), 50)
 
@@ -346,10 +368,10 @@ class TPOT(object):
         return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
 
     def evaluate_individual(self, individual, training_testing_data):
-        '''
+        """
             Determines the `individual`'s classification balanced accuracy
             on the provided data.
-        '''
+        """
         try:
             # Transform the tree expression in a callable function
             func = self.toolbox.compile(expr=individual)
@@ -373,9 +395,9 @@ class TPOT(object):
         return balanced_accuracy,
 
     def combined_selection_operator(self, individuals, k):
-        '''
+        """
             Regular selection + elitism.
-        '''
+        """
         best_inds = int(0.1 * k)
         rest_inds = k - best_inds
         return (tools.selBest(individuals, 1) * best_inds +
@@ -383,9 +405,9 @@ class TPOT(object):
                                           parsimony_size=2, fitness_first=True))
 
     def random_mutation_operator(self, individual):
-        '''
+        """
             Randomly picks a replacement, insert, or shrink mutation.
-        '''
+        """
         roll = random.random()
         if roll <= 0.333333:
             return gp.mutUniform(individual, expr=self.toolbox.expr_mut, pset=self.pset)
