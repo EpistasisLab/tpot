@@ -2,19 +2,11 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-
-def parse_requirements(filename):
-    return list(filter(lambda line: (line.strip())[0] != '#',
-                       [line.strip() for line in open(filename).readlines()]))
-
-
 def calculate_version():
     initpy = open('tpot/__init__.py').read().split('\n')
-    version = next(filter(lambda x: '__version__' in x, initpy)).split('\'')[1]
+    version = list(filter(lambda x: '__version__' in x, initpy))[0].split('\'')[1]
     return version
 
-
-requirements = parse_requirements('requirements.txt')
 package_version = calculate_version()
 
 setup(
@@ -41,7 +33,7 @@ or Twitter: https://twitter.com/randal_olson
 This project is hosted at https://github.com/rhiever/tpot
 ''',
     zip_safe=True,
-    install_requires=requirements,
+    install_requires=['numpy', 'scipy', 'pandas', 'scikit-learn', 'deap'],
     classifiers=[
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
