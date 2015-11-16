@@ -85,7 +85,7 @@ class TPOT(object):
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.subset_df, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
 
@@ -272,7 +272,7 @@ class TPOT(object):
             if type(column) != str:
                 training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
 
-        return self.evaluate_individual(self.optimized_pipeline_, training_testing_data)[0]
+        return self._evaluate_individual(self.optimized_pipeline_, training_testing_data)[0]
 
     @staticmethod
     def decision_tree(input_df, max_features, max_depth):
@@ -385,12 +385,12 @@ class TPOT(object):
         return input_df
 
     @staticmethod
-    def combine_dfs(input_df1, input_df2):
+    def _combine_dfs(input_df1, input_df2):
         """Function to combine two DataFrames"""
         return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
 
     @staticmethod
-    def subset_df(input_df, start, stop):
+    def _subset_df(input_df, start, stop):
         """Subset the provided DataFrame down to the columns between the `start` and `stop` column indeces."""
         if stop <= start:
             stop = start + 1
@@ -399,7 +399,7 @@ class TPOT(object):
         subset_df2 = input_df[[column for column in ['guess', 'class', 'group'] if column not in subset_df1.columns.values]]
         return subset_df1.join(subset_df2).copy()
 
-    def dt_feature_selection(self, input_df, num_pairs):
+    def _dt_feature_selection(self, input_df, num_pairs):
         """Uses decision trees to discover the best pair(s) of features to keep."""
 
         num_pairs = min(max(1, num_pairs), 50)
@@ -442,7 +442,7 @@ class TPOT(object):
 
         return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
 
-    def evaluate_individual(self, individual, training_testing_data):
+    def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s classification balanced accuracy on the provided data."""
         try:
             # Transform the tree expression in a callable function
@@ -466,7 +466,7 @@ class TPOT(object):
 
         return balanced_accuracy,
 
-    def combined_selection_operator(self, individuals, k):
+    def _combined_selection_operator(self, individuals, k):
         """ Regular selection + elitism."""
         best_inds = int(0.1 * k)
         rest_inds = k - best_inds
@@ -474,7 +474,7 @@ class TPOT(object):
                 tools.selDoubleTournament(individuals, k=rest_inds, fitness_size=3,
                                           parsimony_size=2, fitness_first=True))
 
-    def random_mutation_operator(self, individual):
+    def _random_mutation_operator(self, individual):
         """Randomly picks a replacement, insert, or shrink mutation."""
         roll = random.random()
         if roll <= 0.333333:
