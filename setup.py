@@ -17,7 +17,7 @@ setup(
     packages=find_packages(),
     url='https://github.com/rhiever/tpot',
     license='GNU/GPLv3',
-    entry_points={"console_scripts": ["tpot=tpot:main", ]},
+    entry_points={'console_scripts': ['tpot=tpot:main', ]},
     description=('Tree-based Pipeline Optimization Tool'),
     long_description='''
 A Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.
@@ -35,18 +35,14 @@ This project is hosted at https://github.com/rhiever/tpot
     zip_safe=True,
     install_requires=['numpy', 'scipy', 'pandas', 'scikit-learn', 'deap'],
     classifiers=[
-        "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.6",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.2",
-        "Programming Language :: Python :: 3.3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Topic :: Scientific/Engineering :: Artificial Intelligence"
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence'
     ],
     keywords=['pipeline optimization', 'hyperparameter optimization', 'data science', 'machine learning', 'genetic programming', 'evolutionary computation'],
 )
