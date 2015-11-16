@@ -41,9 +41,9 @@ else
 	      pandas=$PANDAS_VERSION \
         cython
 fi
-pip install deap==$DEAP_VERSION
 
 source activate testenv
+pip install deap==$DEAP_VERSION
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
