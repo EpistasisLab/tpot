@@ -86,8 +86,8 @@ class TPOT(object):
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self.subset_df, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self._subset_df, [pd.DataFrame, int, int], pd.DataFrame)
+        self.pset.addPrimitive(self._dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
 
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
@@ -103,10 +103,10 @@ class TPOT(object):
         self.toolbox.register('individual', tools.initIterate, creator.Individual, self.toolbox.expr)
         self.toolbox.register('population', tools.initRepeat, list, self.toolbox.individual)
         self.toolbox.register('compile', gp.compile, pset=self.pset)
-        self.toolbox.register('select', self.combined_selection_operator)
+        self.toolbox.register('select', self._combined_selection_operator)
         self.toolbox.register('mate', gp.cxOnePoint)
         self.toolbox.register('expr_mut', gp.genFull, min_=0, max_=2)
-        self.toolbox.register('mutate', self.random_mutation_operator)
+        self.toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes, feature_names=None):
         """
