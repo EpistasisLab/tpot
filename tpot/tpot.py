@@ -58,14 +58,14 @@ class TPOT(object):
 
     Attributes
     ----------
-    best_features_cache: dict
+    best_features_cache_: dict
         Best features, available after calling `fit`
-    optimized_pipeline: object
+    optimized_pipeline_: object
         The optimized pipeline, available after calling `fit`
 
     """
-    optimized_pipeline = None
-    best_features_cache = {}
+    optimized_pipeline_ = None
+    best_features_cache_ = {}
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
@@ -119,7 +119,7 @@ class TPOT(object):
             overfitting on the provided data.
         """
         try:
-            self.best_features_cache = {}
+            self.best_features_cache_ = {}
 
             training_testing_data = pd.DataFrame(data=features, columns=feature_names)
             training_testing_data['class'] = classes
@@ -160,7 +160,7 @@ class TPOT(object):
                                            mutpb=self.mutation_rate, ngen=self.generations,
                                            stats=stats, halloffame=self.hof, verbose=verbose)
 
-            self.optimized_pipeline = self.hof[0]
+            self.optimized_pipeline_ = self.hof[0]
 
             if self.verbosity == 2:
                 print('')
@@ -170,16 +170,16 @@ class TPOT(object):
 
         # Store the best pipeline if the optimization process is ended prematurely
         except KeyboardInterrupt:
-            self.optimized_pipeline = self.hof[0]
+            self.optimized_pipeline_ = self.hof[0]
 
     def predict(self, training_features, training_classes, testing_features):
         """
             Uses the optimized pipeline to predict the classes for a feature set.
         """
-        if self.optimized_pipeline is None:
+        if self.optimized_pipeline_ is None:
             raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
 
-        self.best_features_cache = {}
+        self.best_features_cache_ = {}
 
         training_data = pd.DataFrame(training_features)
         training_data['class'] = training_classes
@@ -198,7 +198,7 @@ class TPOT(object):
                 training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
 
         # Transform the tree expression in a callable function
-        func = self.toolbox.compile(expr=self.optimized_pipeline)
+        func = self.toolbox.compile(expr=self.optimized_pipeline_)
 
         result = func(training_testing_data)
         return result[result['group'] == 'testing', 'guess'].values
@@ -207,10 +207,10 @@ class TPOT(object):
         """
             Estimates the testing accuracy of the optimized pipeline.
         """
-        if self.optimized_pipeline is None:
+        if self.optimized_pipeline_ is None:
             raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
 
-        self.best_features_cache = {}
+        self.best_features_cache_ = {}
 
         training_data = pd.DataFrame(training_features)
         training_data['class'] = training_classes
@@ -228,7 +228,7 @@ class TPOT(object):
             if type(column) != str:
                 training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
 
-        return self.evaluate_individual(self.optimized_pipeline, training_testing_data)[0]
+        return self.evaluate_individual(self.optimized_pipeline_, training_testing_data)[0]
 
     @staticmethod
     def decision_tree(input_df, max_features, max_depth):
@@ -332,9 +332,9 @@ class TPOT(object):
         # If this set of features has already been analyzed, use the cache.
         # Since the smart subset can be costly, this will save a lot of computation time.
         input_df_columns_hash = hashlib.sha224('-'.join(sorted(input_df.columns.values)).encode('UTF-8')).hexdigest()
-        if input_df_columns_hash in self.best_features_cache:
+        if input_df_columns_hash in self.best_features_cache_:
             best_pairs = []
-            for pair in self.best_features_cache[input_df_columns_hash][:num_pairs]:
+            for pair in self.best_features_cache_[input_df_columns_hash][:num_pairs]:
                 best_pairs += list(pair)
             return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
 
@@ -353,8 +353,8 @@ class TPOT(object):
             return input_df[['guess', 'class', 'group']].copy()
 
         # Keep the best features cache within a reasonable size
-        if len(self.best_features_cache) > 1000:
-            del self.best_features_cache[list(self.best_features_cache.keys())[0]]
+        if len(self.best_features_cache_) > 1000:
+            del self.best_features_cache_[list(self.best_features_cache_.keys())[0]]
 
         # Keep `num_pairs` best pairs of features
         best_pairs = []
@@ -363,7 +363,7 @@ class TPOT(object):
         best_pairs = sorted(list(set(best_pairs)))
 
         # Store the best 50 pairs of features in the cache
-        self.best_features_cache[input_df_columns_hash] = [list(pair) for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:50]]
+        self.best_features_cache_[input_df_columns_hash] = [list(pair) for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:50]]
 
         return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
 
