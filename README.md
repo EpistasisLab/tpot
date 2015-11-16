@@ -60,6 +60,8 @@ TPOT can be used in two ways: via code and via the command line. We will eventua
 
 ### Using TPOT via code
 
+We've taken care to design the TPOT interface to be as similar as possible to scikit-learn.
+
 TPOT can be imported just like any regular Python module. To import TPOT, type:
 
 ```Python
@@ -155,7 +157,7 @@ tpot.fit(X_train, y_train)
 tpot.score(X_train, y_train, X_test, y_test)
 ```
 
-Running this code should discover a pipeline that achieves >=98% testing accuracy.
+Running this code should discover a pipeline that achieves ~98% testing accuracy.
 
 ## Want to get involved with TPOT?
 
