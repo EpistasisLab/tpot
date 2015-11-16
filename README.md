@@ -17,6 +17,8 @@ TPOT will automate the most tedious part of Machine Learning by intelligently ex
 
 Once TPOT is finished searching (or you get tired of waiting), it provides you with the Python code for the best pipeline it found so you can tinker with the pipeline from there.
 
+![An example TPOT pipeline](https://github.com/rhiever/tpot/blob/master/images/tpot-pipeline-example.png "An example TPOT pipeline")
+
 TPOT is built on top of scikit-learn, so all of the code it generates should look familiar... if you're familiar with scikit-learn, anyway.
 
 **TPOT is still under active development** and we encourage you to check back on this repository regularly for updates.
