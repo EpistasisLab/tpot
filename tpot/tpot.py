@@ -40,21 +40,39 @@ from deap import tools
 from deap import gp
 
 class TPOT(object):
-    """
+    """TPOT automatically creates and optimizes Machine Learning pipelines using genetic programming.
+
     Parameters
     ----------
     population_size: int (default: 100)
-        Number of initial pipelines
+        The number of pipelines in the genetic algorithm population.
+        Must be > 0. The more pipelines in the population,
+        the slower TPOT will run, but it's also more likely to
+        find better pipelines.
     generations: int (default: 100)
-        Number of generations to evolve the pipeline
+        The number of generations to run pipeline optimization for. Must be > 0.
+        The more generations you give TPOT to run, the longer it takes,
+        but it's also more likely to find better pipelines.
     mutation_rate: float (default: 0.9)
-        Value to control the mutation rate of a pipeline
+        The mutation rate for the genetic programming algorithm
+        in the range [0.0, 1.0]. This tells the genetic programming algorithm
+        how many pipelines to apply random changes to every generation.
+        We don't recommend that you tweak this parameter unless you
+        know what you're doing.
     crossover_rate: float (default: 0.05)
-        Likelihood of swapping elements between pipelines
+        The crossover rate for the genetic programming algorithm
+        in the range [0.0, 1.0]. This tells the genetic programming
+        algorithm how many pipelines to "breed" every generation.
+        We don't recommend that you tweak this parameter
+        unless you know what you're doing.
     random_state: int (default: 0)
-        Value to initialize a random seed. No random seed if None
+        The random number generator seed for TPOT.
+        Use this to make sure that TPOT will give you the same results
+        each time you run it against the same data set with that seed.
+        No random seed if random_state=None.
     verbosity: int {0, 1, 2} (default: 0)
-        Verbosity level for output printed to the standard output device
+        How much information TPOT communicates while
+        it's running. 0 = none, 1 = minimal, 2 = all
 
     Attributes
     ----------
@@ -71,7 +89,6 @@ class TPOT(object):
                  mutation_rate=0.9, crossover_rate=0.05,
                  random_state=0, verbosity=0):
         """Sets up the genetic programming algorithm for pipeline optimization."""
-
         self.population_size = population_size
         self.generations = generations
         self.mutation_rate = mutation_rate
@@ -109,14 +126,11 @@ class TPOT(object):
         self.toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes, feature_names=None):
-        """
-            Uses genetic programming to optimize a Machine Learning pipeline that
-            maximizes classification accuracy on the provided `features` and `classes`.
-
-            Optionally, name the features in the data frame according to `feature_names`.
-
-            Performs a stratified training/testing cross-validaton split to avoid
-            overfitting on the provided data.
+        """Uses genetic programming to optimize a Machine Learning pipeline that
+           maximizes classification accuracy on the provided `features` and `classes`.
+           Optionally, name the features in the data frame according to `feature_names`.
+           Performs a stratified training/testing cross-validaton split to avoid
+           overfitting on the provided data.
 
         Parameters
         ----------
@@ -401,7 +415,6 @@ class TPOT(object):
 
     def _dt_feature_selection(self, input_df, num_pairs):
         """Uses decision trees to discover the best pair(s) of features to keep."""
-
         num_pairs = min(max(1, num_pairs), 50)
 
         # If this set of features has already been analyzed, use the cache.
@@ -467,7 +480,7 @@ class TPOT(object):
         return balanced_accuracy,
 
     def _combined_selection_operator(self, individuals, k):
-        """ Regular selection + elitism."""
+        """Regular selection + elitism."""
         best_inds = int(0.1 * k)
         rest_inds = k - best_inds
         return (tools.selBest(individuals, 1) * best_inds +
