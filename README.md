@@ -99,7 +99,7 @@ Some example code with custom TPOT parameters might look like:
 ```Python
 from tpot import TPOT
 
-pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=2)
+pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 ```
 
 Now TPOT is ready to work! You can pass TPOT some data with a scikit-learn-like interface:
@@ -107,7 +107,7 @@ Now TPOT is ready to work! You can pass TPOT some data with a scikit-learn-like 
 ```Python
 from tpot import TPOT
 
-pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=2)
+pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 ```
 
@@ -116,7 +116,7 @@ then evaluate the final pipeline as such:
 ```Python
 from tpot import TPOT
 
-pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=2)
+pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes)
 ```
