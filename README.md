@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/rhiever/tpot.svg?branch=master)](https://travis-ci.org/rhiever/tpot)
-[![Code Health](https://landscape.io/github/rhiever/tpot/master/landscape.svg?style=plastic)](https://landscape.io/github/rhiever/tpot/master)
+[![Code Health](https://landscape.io/github/rhiever/tpot/master/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/master)
 [![Coverage Status](https://coveralls.io/repos/rhiever/tpot/badge.svg?branch=master&service=github)](https://coveralls.io/github/rhiever/tpot?branch=master)
 ![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)
 ![Python 3.5](https://img.shields.io/badge/python-3.5-blue.svg)
