@@ -159,7 +159,7 @@ class TPOT(object):
             most_frequent_class = Counter(training_testing_data.loc[training_indeces, 'class'].values).most_common(1)[0][0]
             training_testing_data['guess'] = most_frequent_class
 
-            self.toolbox.register('evaluate', self.evaluate_individual, training_testing_data=training_testing_data)
+            self.toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
             pop = self.toolbox.population(n=self.population_size)
             self.hof = tools.HallOfFame(maxsize=1)
