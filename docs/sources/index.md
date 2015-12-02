@@ -4,13 +4,19 @@ Consider TPOT your **Data Science Assistant**. TPOT is a Python tool that automa
 
 TPOT will automate the most tedious part of Machine Learning by intelligently exploring thousands of possible pipelines to find the best one for your data.
 
-![An example Machine Learning pipeline](https://github.com/rhiever/tpot/blob/master/images/tpot-ml-pipeline.png "An example Machine Learning pipeline")
+<center>
+<img src="https://raw.githubusercontent.com/rhiever/tpot/master/images/tpot-ml-pipeline.png" width=800 alt="An example Machine Learning pipeline" />
 
-<p align="center"><strong>An example Machine Learning pipeline</strong></p>
+<strong>An example Machine Learning pipeline</strong>
+</center>
 
 Once TPOT is finished searching (or you get tired of waiting), it provides you with the Python code for the best pipeline it found so you can tinker with the pipeline from there.
 
-![An example TPOT pipeline](https://github.com/rhiever/tpot/blob/master/images/tpot-pipeline-example.png "An example TPOT pipeline")
+<center>
+<img src="https://raw.githubusercontent.com/rhiever/tpot/master/images/tpot-pipeline-example.png" width=800 alt="An example TPOT pipeline" />
+
+<strong>An example TPOT pipeline</strong>
+</center>
 
 TPOT is built on top of scikit-learn, so all of the code it generates should look familiar... if you're familiar with scikit-learn, anyway.
 
