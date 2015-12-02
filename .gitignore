@@ -64,9 +64,4 @@ docs/_build/
 target/
 
 # IPython Notebooks
-<<<<<<< HEAD
 .ipynb_checkpoints/*
-=======
-Testing TPOT usage.ipynb
-.ipynb_checkpoints/*
->>>>>>> master
