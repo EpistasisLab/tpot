@@ -1,3 +1,10 @@
+[![Build Status](https://travis-ci.org/rhiever/tpot.svg?branch=master)](https://travis-ci.org/rhiever/tpot)
+[![Code Health](https://landscape.io/github/rhiever/tpot/master/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/master)
+[![Coverage Status](https://coveralls.io/repos/rhiever/tpot/badge.svg?branch=master&service=github)](https://coveralls.io/github/rhiever/tpot?branch=master)
+![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)
+![Python 3.5](https://img.shields.io/badge/python-3.5-blue.svg)
+![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
+
 # Tree-based Pipeline Optimization Tool (TPOT)
 
 Consider TPOT your **Data Science Assistant**. TPOT is a Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.
@@ -9,6 +16,8 @@ TPOT will automate the most tedious part of Machine Learning by intelligently ex
 <p align="center"><strong>An example Machine Learning pipeline</strong></p>
 
 Once TPOT is finished searching (or you get tired of waiting), it provides you with the Python code for the best pipeline it found so you can tinker with the pipeline from there.
+
+![An example TPOT pipeline](https://github.com/rhiever/tpot/blob/master/images/tpot-pipeline-example.png "An example TPOT pipeline")
 
 TPOT is built on top of scikit-learn, so all of the code it generates should look familiar... if you're familiar with scikit-learn, anyway.
 
@@ -24,6 +33,8 @@ TPOT is built on top of several existing Python libraries, including:
 
 * NumPy
 
+* SciPy
+
 * pandas
 
 * scikit-learn
@@ -32,25 +43,33 @@ TPOT is built on top of several existing Python libraries, including:
 
 Except for DEAP, all of the necessary Python packages can be installed via the [Anaconda Python distribution](https://www.continuum.io/downloads), which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.
 
+NumPy, SciPy, pandas, and scikit-learn can be installed in Anaconda via the command:
+
+```Shell
+conda install numpy scipy pandas scikit-learn
+```
+
 DEAP can be installed with `pip` via the command:
 
 ```Shell
 pip install deap
 ```
 
-**If you don't care about the details and just want to install TPOT, run the following command:**
+Finally to install TPOT, run the following command:
 
 ```Shell
 pip install tpot
 ```
 
-`pip` should be able to sort out all of the dependencies for you.
+Please [file a new issue](https://github.com/rhiever/tpot/issues/new) if you run into installation problems.
 
 ## Usage
 
 TPOT can be used in two ways: via code and via the command line. We will eventually develop a GUI for TPOT.
 
 ### Using TPOT via code
+
+We've taken care to design the TPOT interface to be as similar as possible to scikit-learn.
 
 TPOT can be imported just like any regular Python module. To import TPOT, type:
 
@@ -80,7 +99,7 @@ Some example code with custom TPOT parameters might look like:
 ```Python
 from tpot import TPOT
 
-pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=0)
+pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 ```
 
 Now TPOT is ready to work! You can pass TPOT some data with a scikit-learn-like interface:
@@ -88,7 +107,7 @@ Now TPOT is ready to work! You can pass TPOT some data with a scikit-learn-like 
 ```Python
 from tpot import TPOT
 
-pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=0)
+pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 ```
 
@@ -97,7 +116,7 @@ then evaluate the final pipeline as such:
 ```Python
 from tpot import TPOT
 
-pipeline_optimizer = TPOT(generations=100, rng_seed=42, verbosity=0)
+pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes)
 ```
@@ -126,7 +145,7 @@ The following parameters will display along with their descriptions:
 An example command-line call to TPOT may look like:
 
 ```Shell
-tpot -i data/mnist.csv -is , -g 100 -s 42 -v 0
+tpot -i data/mnist.csv -is , -g 100 -s 42 -v 2
 ```
 
 ## Examples
@@ -144,10 +163,10 @@ X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
 
 tpot = TPOT(generations=5)
 tpot.fit(X_train, y_train)
-tpot.score(X_test, y_test)
+tpot.score(X_train, y_train, X_test, y_test)
 ```
 
-Running this code should discover a pipeline that achieves >=98% testing accuracy.
+Running this code should discover a pipeline that achieves ~98% testing accuracy.
 
 ## Want to get involved with TPOT?
 
@@ -156,3 +175,7 @@ We welcome you to [check the existing issues](https://github.com/rhiever/tpot/is
 ## Having problems or have questions about TPOT?
 
 Please [check the existing open and closed issues](https://github.com/rhiever/tpot/issues?utf8=%E2%9C%93&q=is%3Aissue) to see if your issue has already been attended to. If it hasn't, please [file a new issue](https://github.com/rhiever/tpot/issues/new) on this repository so we can review your issue.
+
+## Support for TPOT
+
+TPOT was developed in the [Computational Genetics Lab](http://epistasis.org) with funding from the [NIH](http://www.nih.gov). We're incredibly grateful for their support during the development of this project!

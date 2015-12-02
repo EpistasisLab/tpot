@@ -1,3 +1,10 @@
+# Static Documentation
+docs/site/
+
+# System-specific temporary and index files
+.DS_Store
+.swp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -57,4 +64,9 @@ docs/_build/
 target/
 
 # IPython Notebooks
+<<<<<<< HEAD
 .ipynb_checkpoints/*
+=======
+Testing TPOT usage.ipynb
+.ipynb_checkpoints/*
+>>>>>>> master

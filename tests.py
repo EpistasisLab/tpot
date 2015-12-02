@@ -16,7 +16,8 @@ from sklearn.tree import DecisionTreeClassifier
 
 # Set up the iris data set for testing
 mnist_data = load_digits()
-training_features, testing_features, training_classes, testing_classes = train_test_split(mnist_data.data, mnist_data.target, random_state=42)
+training_features, testing_features, training_classes, testing_classes =\
+        train_test_split(mnist_data.data, mnist_data.target, random_state=42)
 
 training_data = pd.DataFrame(training_features)
 training_data['class'] = training_classes
@@ -42,7 +43,7 @@ def test_init():
 
     tpot_obj = TPOT(population_size=500, generations=1000,
                     mutation_rate=0.05, crossover_rate=0.9, verbosity=1)
-    
+
     assert tpot_obj.population_size == 500
     assert tpot_obj.generations == 1000
     assert tpot_obj.mutation_rate == 0.05
@@ -57,10 +58,10 @@ def test_decision_tree():
     tpot_obj = TPOT()
     result = tpot_obj.decision_tree(training_testing_data, 0, 0)
     result = result[result['group'] == 'testing']
-    
+
     dtc = DecisionTreeClassifier(max_features='auto', max_depth=None, random_state=42)
     dtc.fit(training_features, training_classes)
-    
+
     assert np.array_equal(result['guess'].values, dtc.predict(testing_features))
 
 def test_random_forest():
@@ -71,10 +72,10 @@ def test_random_forest():
     tpot_obj = TPOT()
     result = tpot_obj.random_forest(training_testing_data, 100, 0)
     result = result[result['group'] == 'testing']
-    
+
     rfc = RandomForestClassifier(n_estimators=100, max_features='auto', random_state=42, n_jobs=-1)
     rfc.fit(training_features, training_classes)
-    
+
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
 
 def test_combine_dfs():
@@ -89,8 +90,8 @@ def test_combine_dfs():
     combined_df = pd.DataFrame({'a': range(10),
                                 'b': range(10, 20),
                                 'c': range(20, 30)})
-    
-    assert tpot_obj.combine_dfs(df1, df2).equals(combined_df)
+
+    assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
 
 def test_subset_df():
     tpot_obj = TPOT()
@@ -109,14 +110,14 @@ def test_subset_df():
                             'class': range(10),
                             'group': range(10)})
 
-    assert np.array_equal(tpot_obj.subset_df(test_df, 3, 8).columns.values,
+    assert np.array_equal(tpot_obj._subset_df(test_df, 3, 8).columns.values,
                           ['00003', '00004', '00005', '00006', '00007', 'guess', 'class', 'group'])
 
 def test_df_feature_selection():
     tpot_obj = TPOT()
-    
+
     top_10_feature_pairs = ['00002', '00013', '00020', '00021', '00026', '00042',
                             '00043', '00058', '00061', 'class', 'group', 'guess']
-    
-    assert np.array_equal(tpot_obj.dt_feature_selection(training_testing_data, 10).columns.values,
+
+    assert np.array_equal(tpot_obj._dt_feature_selection(training_testing_data, 10).columns.values,
                           top_10_feature_pairs)
