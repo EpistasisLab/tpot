@@ -33,6 +33,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cross_validation import StratifiedShuffleSplit
 
+import deap
 from deap import algorithms
 from deap import base
 from deap import creator
@@ -102,15 +103,9 @@ class TPOT(object):
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
-<<<<<<< HEAD
-        self.pset.addPrimitive(self.combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        #self.pset.addPrimitive(self.subset_df, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
-=======
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._subset_df, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
->>>>>>> master
 
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
@@ -122,13 +117,13 @@ class TPOT(object):
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMax)
 
         self.toolbox = base.Toolbox()
-        self.toolbox.register('expr', gp.genHalfAndHalf, pset=self.pset, min_=5, max_=10) ## CHANGE THIS BACK BEFORE FINAL COMMIT
+        self.toolbox.register('expr', gp.genHalfAndHalf, pset=self.pset, min_=1, max_=3)
         self.toolbox.register('individual', tools.initIterate, creator.Individual, self.toolbox.expr)
         self.toolbox.register('population', tools.initRepeat, list, self.toolbox.individual)
         self.toolbox.register('compile', gp.compile, pset=self.pset)
         self.toolbox.register('select', self._combined_selection_operator)
         self.toolbox.register('mate', gp.cxOnePoint)
-        self.toolbox.register('expr_mut', gp.genFull, min_=0, max_=2)
+        self.toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
         self.toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes, feature_names=None):
@@ -295,33 +290,180 @@ class TPOT(object):
         return self._evaluate_individual(self.optimized_pipeline_, training_testing_data)[0]
 
     def export(self, output_file_name):
-        '''
-            Exports the current optimized pipeline to the provided file as Python code.
-            
-            `output_file_name` should be a string of the file path.
-        '''
-        #if self.optimized_pipeline == None:
-        #    raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
+        """Exports the current optimized pipeline as Python code.
+
+        Parameters
+        ----------
+        output_file_name: string
+            String containing the path and file name of the desired output file
+
+        Returns
+        -------
+        None
+        """
+        if self.optimized_pipeline_ == None:
+            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
         
-        output_text = '''import hashlib
-from itertools import combinations
+        exported_pipeline = self.optimized_pipeline_
+        
+        # Replace all of the mathematical operators with their results
+        while True:
+            for i in range(len(exported_pipeline) - 1, -1, -1):
+                node = exported_pipeline[i]
+                if type(node) == deap.gp.Primitive and node.name in ['add', 'sub', 'mul']:
+                    val1 = int(exported_pipeline[i + 1].name)
+                    val2 = int(exported_pipeline[i + 2].name)
+                    if node.name == 'add':
+                        new_val = val1 + val2
+                    elif node.name == 'sub':
+                        new_val = val1 - val2
+                    else:
+                        new_val = val1 * val2
+
+                    new_val = deap.gp.Terminal(symbolic=new_val, terminal=new_val, ret=new_val)
+                    exported_pipeline = exported_pipeline[:i] + [new_val] + exported_pipeline[i + 3:]
+                    break
+            else:
+                break
+
+        # Unroll the nested function calls into serial code
+        pipeline_list = []
+        result_num = 1
+        while True:
+            for node_index in range(len(exported_pipeline) - 1, -1, -1):
+                node = exported_pipeline[node_index]
+                if type(node) != deap.gp.Primitive:
+                    continue
+
+                node_params = exported_pipeline[node_index + 1:node_index + node.arity + 1]
+
+                new_val = 'result{}'.format(result_num)
+                operator_list = [new_val, node.name]
+                operator_list.extend([x.name for x in node_params])
+                pipeline_list.append(operator_list)
+                result_num += 1
+                new_val = deap.gp.Terminal(symbolic=new_val, terminal=new_val, ret=new_val)
+                exported_pipeline = exported_pipeline[:node_index] + [new_val] + exported_pipeline[node_index + node.arity + 1:]
+                break
+            else:
+                break
+    
+        # Replace the function calls with their corresponding Python code
+        pipeline_text = '''from itertools import combinations
 
 import numpy as np
 import pandas as pd
 
+from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75)))
+
 '''
-        self.optimized_pipeline = self.toolbox.individual()
-        print(self.optimized_pipeline)
+        for operator in pipeline_list:
+            operator_num = int(operator[0].strip('result'))
+            result_name = operator[0]
+            operator_name = operator[1]
+            operator_text = ''
         
-        print(self.optimized_pipeline[0].keys())
+            # Make copies of the data set for each reference to ARG0
+            if operator[2] == 'ARG0':
+                operator[2] = 'result{}'.format(operator_num)
+                operator_text += '\n{} = tpot_data.copy()\n'.format(operator[2])
+
+            if operator[3] == 'ARG0':
+                operator[3] = 'result{}'.format(operator_num)
+                operator_text += '\n{} = tpot_data.copy()\n'.format(operator[3])
+
+
+            # Replace the TPOT functions with their corresponding Python code
+            if operator_name == 'decision_tree':
+                max_features = int(operator[3])
+                max_depth = int(operator[4])
+            
+                if max_features < 1:
+                    max_features = '\'auto\''
+                elif max_features == 1:
+                    max_features = None
+                else:
+                    max_features = 'min({}, len({}.columns) - 1)'.format(max_features, operator[2])
+
+                if max_depth < 1:
+                    max_depth = None
+
+                operator_text += '\n# Perform classification with a decision tree classifier'
+                operator_text += '\ndtc{} = DecisionTreeClassifier(max_features={}, max_depth={})\n'.format(operator_num, max_features, max_depth)
+                operator_text += '''dtc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces]['class'].values)\n'''.format(operator_num, operator[2])
+                if result_name != operator[2]:
+                    operator_text += '{} = {}\n'.format(result_name, operator[2])
+                operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
         
-        exit(1)
+            elif operator_name == 'random_forest':
+                num_trees = int(operator[3])
+                max_features = int(operator[4])
+            
+                if num_trees < 1:
+                    num_trees = 1
+                elif num_trees > 500:
+                    num_trees = 500
+
+                if max_features < 1:
+                    max_features = '\'auto\''
+                elif max_features == 1:
+                    max_features = 'None'
+                else:
+                    max_features = 'min({}, len({}.columns) - 1)'.format(max_features, operator[2])
+            
+                operator_text += '\n# Perform classification with a random forest classifier'
+                operator_text += '\nrfc{} = RandomForestClassifier(n_estimators={}, max_features={})\n'.format(operator_num, num_trees, max_features)
+                operator_text += '''rfc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces]['class'].values)\n'''.format(operator_num, operator[2])
+                if result_name != operator[2]:
+                    operator_text += '{} = {}\n'.format(result_name, operator[2])
+                operator_text += '''{0}['rfc{1}-classification'] = rfc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+        
+            elif operator_name == '_combine_dfs':
+                operator_text += '\n# Combine two DataFrames'
+                operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
+        
+            elif operator_name == '_subset_df':
+                start = int(operator[3])
+                stop = int(operator[4])
+                if stop <= start:
+                    stop = start + 1
+                
+                operator_text += '\n# Subset the data columns'
+                operator_text += '\nsubset_df1 = {0}[sorted({0}.columns.values)[{1}:{2}]]\n'.format(operator[2], start, stop)
+                operator_text += '''subset_df2 = {0}[[column for column in ['class'] if column not in subset_df1.columns.values]]\n'''.format(operator[2])
+                operator_text += '{} = subset_df1.join(subset_df2)\n'.format(result_name)
+        
+            elif operator_name == '_dt_feature_selection':
+                operator_text += '''
+# Decision-tree based feature selection
+training_features = {0}.loc[training_indeces].drop('class', axis=1)
+training_class_vals = {0}.loc[training_indeces, 'class'].values
+
+pair_scores = dict()
+for features in combinations(training_features.columns.values, 2):
+    dtc = DecisionTreeClassifier()
+    training_feature_vals = training_features[list(features)].values
+    dtc.fit(training_feature_vals, training_class_vals)
+    pair_scores[features] = (dtc.score(training_feature_vals, training_class_vals), list(features))
+
+best_pairs = []
+for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:{1}]:
+    best_pairs.extend(list(pair))
+best_pairs = sorted(list(set(best_pairs)))
+
+{2} = {0}[sorted(list(set(best_pairs + ['class'])))]
+'''.format(operator[2], operator[3], result_name)
+        
+            pipeline_text += operator_text
         
         with open(output_file_name, 'w') as output_file:
-            output_file.write(output_text)
+            output_file.write(pipeline_text)
 
     @staticmethod
     def decision_tree(input_df, max_features, max_depth):
