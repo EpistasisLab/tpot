@@ -703,6 +703,9 @@ def main():
     parser.add_argument('-is', action='store', dest='input_separator', default='\t',
                         type=str, help='Character used to separate columns in the input file.')
 
+    parser.add_argument('-o', action='store', dest='output_file', default='',
+                        type=str, help='File to export the final optimized pipeline.')
+
     parser.add_argument('-g', action='store', dest='generations', default=100,
                         type=positive_integer, help='Number of generations to run pipeline optimization for.')
 
@@ -726,7 +729,7 @@ def main():
     if args.verbosity >= 2:
         print('\nTPOT settings:')
         for arg in sorted(args.__dict__):
-            print('{}\t=\t{}\n'.format(arg, args.__dict__[arg]))
+            print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
 
     input_data = pd.read_csv(args.input_file, sep=args.input_separator)
 
@@ -760,6 +763,9 @@ def main():
                                              training_features, training_classes)))
         print('Testing accuracy: {}'.format(tpot.score(training_features, training_classes,
                                             testing_features, testing_classes)))
+    
+    if args.output_file != '':
+        tpot.export(args.output_file)
 
 if __name__ == '__main__':
     main()
