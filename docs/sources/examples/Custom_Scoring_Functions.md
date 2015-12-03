@@ -16,9 +16,11 @@ def precision(result):
     all_class_tps = []
     all_class_tps_fps = []
     for this_class in all_classes:
+        #True Positives are those examples that belong to a class and whose class was guessed correctly
         this_class_tps = len(result[(result['guess'] == this_class) \
             & (result['class'] == this_class)])
         all_class_tps.append(this_class_tps)
+        #False Positives are those examples that were guessed to belong to a class 
         this_class_tps_fps = len(result[(result['guess'] == this_class) \
             | (result['class'] == this_class)])
         all_class_tps_fps.append(this_class_tps_fps)
@@ -33,6 +35,7 @@ def recall(result):
     for this_class in all_classes:
         this_class_tps = len(result[(result['guess'] == this_class) \
             & (result['class'] == this_class)]) 
+        #True Positives and False Negatives are those examples that belong to a specific class regardless of guess
         this_class_tps_fns = len(result[(result['class'] == this_class)])
         all_class_tps.append(this_class_tps)
         all_class_tps_fns.append(this_class_tps_fns)
