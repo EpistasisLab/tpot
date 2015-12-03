@@ -87,7 +87,7 @@ class TPOT(object):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 random_state=0, verbosity=0):
+                 random_state=0, verbosity=0, scoring_function=None):
         """Sets up the genetic programming algorithm for pipeline optimization."""
         self.population_size = population_size
         self.generations = generations
@@ -124,6 +124,12 @@ class TPOT(object):
         self.toolbox.register('mate', gp.cxOnePoint)
         self.toolbox.register('expr_mut', gp.genFull, min_=0, max_=2)
         self.toolbox.register('mutate', self._random_mutation_operator)
+	
+        if not scoring_function:
+            self.scoring_function=self._balanced_accuracy
+        else:
+            self.scoring_function=scoring_function
+
 
     def fit(self, features, classes, feature_names=None):
         """Uses genetic programming to optimize a Machine Learning pipeline that
@@ -178,9 +184,9 @@ class TPOT(object):
             pop = self.toolbox.population(n=self.population_size)
             self.hof = tools.HallOfFame(maxsize=1)
             stats = tools.Statistics(lambda ind: ind.fitness.values)
-            stats.register('Minimum accuracy', np.min)
-            stats.register('Average accuracy', np.mean)
-            stats.register('Maximum accuracy', np.max)
+            stats.register('Minimum score', np.min)
+            stats.register('Average score', np.mean)
+            stats.register('Maximum score', np.max)
 
             verbose = (self.verbosity == 2)
 
@@ -467,17 +473,26 @@ class TPOT(object):
         result = func(training_testing_data)
         result = result[result['group'] == 'testing']
 
+        res = self.scoring_function(result)
+        if isinstance(res, float) or isinstance(res, np.float64) or isinstance(res, np.float32):
+            return res,
+        else:
+            raise Exception('Scoring function does not return a float')
+            
+
+    def _balanced_accuracy(self, result):
+        ''' Default scoring function: take the balanced class accuracy '''
         all_classes = list(set(result['class'].values))
         all_class_accuracies = []
         for this_class in all_classes:
             this_class_accuracy = len(result[(result['guess'] == this_class) \
-                    & (result['class'] == this_class)])\
-                    / float(len(result[result['class'] == this_class]))
+                & (result['class'] == this_class)])\
+                / float(len(result[result['class'] == this_class]))
             all_class_accuracies.append(this_class_accuracy)
 
         balanced_accuracy = np.mean(all_class_accuracies)
 
-        return balanced_accuracy,
+        return balanced_accuracy
 
     def _combined_selection_operator(self, individuals, k):
         """Regular selection + elitism."""
