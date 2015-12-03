@@ -31,6 +31,9 @@ import pandas as pd
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.cross_validation import StratifiedShuffleSplit
 
 from deap import algorithms
@@ -102,6 +105,9 @@ class TPOT(object):
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
+        self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self.svc, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._subset_df, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
@@ -171,7 +177,7 @@ class TPOT(object):
 
             # Default the basic guess to the most frequent class
             most_frequent_class = Counter(training_testing_data.loc[training_indeces, 'class'].values).most_common(1)[0][0]
-            training_testing_data['guess'] = most_frequent_class
+            training_testing_data.loc[:, 'guess'] = most_frequent_class
 
             self.toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
@@ -233,7 +239,7 @@ class TPOT(object):
 
         training_testing_data = pd.concat([training_data, testing_data])
         most_frequent_class = Counter(training_classes).most_common(1)[0][0]
-        training_testing_data['guess'] = most_frequent_class
+        training_testing_data.loc[:, 'guess'] = most_frequent_class
 
         for column in training_testing_data.columns.values:
             if type(column) != str:
@@ -280,7 +286,7 @@ class TPOT(object):
 
         training_testing_data = pd.concat([training_data, testing_data])
         most_frequent_class = Counter(training_classes).most_common(1)[0][0]
-        training_testing_data['guess'] = most_frequent_class
+        training_testing_data.loc[:, 'guess'] = most_frequent_class
 
         for column in training_testing_data.columns.values:
             if type(column) != str:
@@ -303,7 +309,7 @@ class TPOT(object):
 
         Returns
         -------
-        input_df:  {n_samples, n_features+['guess']}
+        input_df:  {n_samples, n_features+['guess', 'group', 'class']}
             Returns a modified input DataFrame with the guess column changed.
 
         """
@@ -317,10 +323,11 @@ class TPOT(object):
         if max_depth < 1:
             max_depth = None
 
-        input_df = input_df.copy()
-
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(input_df.columns) == 3:
             return input_df
+        
+        input_df = input_df.copy()
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
@@ -332,13 +339,13 @@ class TPOT(object):
         dtc.fit(training_features, training_classes)
 
         all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df['guess'] = dtc.predict(all_features)
+        input_df.loc[:, 'guess'] = dtc.predict(all_features)
 
         # Also store the guesses as a synthetic feature
         sf_hash = '-'.join(sorted(input_df.columns.values))
         sf_hash += 'DT-{}-{}'.format(max_features, max_depth)
         sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df[sf_identifier] = input_df['guess'].values
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
 
         return input_df
 
@@ -357,7 +364,7 @@ class TPOT(object):
 
         Returns
         -------
-        input_df:  {n_samples, n_features+['guess']}
+        input_df:  {n_samples, n_features+['guess', 'group', 'class']}
             Returns a modified input DataFrame with the guess column changed.
 
         """
@@ -373,10 +380,11 @@ class TPOT(object):
         elif max_features > len(input_df.columns) - 3:
             max_features = len(input_df.columns) - 3
 
-        input_df = input_df.copy()
-
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(input_df.columns) == 3:
             return input_df
+        
+        input_df = input_df.copy()
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
@@ -388,13 +396,148 @@ class TPOT(object):
         rfc.fit(training_features, training_classes)
 
         all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df['guess'] = rfc.predict(all_features)
+        input_df.loc[:, 'guess'] = rfc.predict(all_features)
 
         # Also store the guesses as a synthetic feature
         sf_hash = '-'.join(sorted(input_df.columns.values))
         sf_hash += 'RF-{}-{}'.format(num_trees, max_features)
         sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df[sf_identifier] = input_df['guess'].values
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
+
+        return input_df
+    
+    @staticmethod
+    def logistic_regression(input_df, C):
+        """Fits a logistic regression classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the decision tree
+        C: int
+            Inverse of regularization strength; must be a positive value. Like in support vector machines, smaller values specify stronger regularization.
+
+        Returns
+        -------
+        input_df:  {n_samples, n_features+['guess', 'group', 'class']}
+            Returns a modified input DataFrame with the guess column changed.
+
+        """
+        if C <= 0:
+            C = 1
+
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
+        if len(input_df.columns) == 3:
+            return input_df
+        
+        input_df = input_df.copy()
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        lrc = LogisticRegression(C=C,
+                                 random_state=42)
+        lrc.fit(training_features, training_classes)
+
+        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
+        input_df.loc[:, 'guess'] = lrc.predict(all_features)
+
+        # Also store the guesses as a synthetic feature
+        sf_hash = '-'.join(sorted(input_df.columns.values))
+        sf_hash += 'LR-{}'.format(C)
+        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
+
+        return input_df
+
+    @staticmethod
+    def svc(input_df, C):
+        """Fits a C-support vector classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the decision tree
+        C: int
+            Penalty parameter C of the error term; must be a positive value.
+
+        Returns
+        -------
+        input_df:  {n_samples, n_features+['guess', 'group', 'class']}
+            Returns a modified input DataFrame with the guess column changed.
+
+        """
+        if C <= 0:
+            C = 1
+
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
+        if len(input_df.columns) == 3:
+            return input_df
+        
+        input_df = input_df.copy()
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        svc = SVC(C=C,
+                  random_state=42)
+        svc.fit(training_features, training_classes)
+
+        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
+        input_df.loc[:, 'guess'] = svc.predict(all_features)
+
+        # Also store the guesses as a synthetic feature
+        sf_hash = '-'.join(sorted(input_df.columns.values))
+        sf_hash += 'SVC-{}'.format(C)
+        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
+
+        return input_df
+
+    @staticmethod
+    def knnc(input_df, n_neighbors):
+        """Fits a k-nearest neighbor classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the decision tree
+        n_neighbors: int
+            Number of neighbors to use by default for k_neighbors queries; must be a positive value.
+
+        Returns
+        -------
+        input_df:  {n_samples, n_features+['guess', 'group', 'class']}
+            Returns a modified input DataFrame with the guess column changed.
+
+        """
+        training_set_size = len(input_df.loc[input_df['group'] == 'training'])
+        
+        if n_neighbors < 1:
+            n_neighbors = 1
+        elif n_neighbors >= training_set_size:
+            n_neighbors = training_set_size - 1
+
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
+        if len(input_df.columns) == 3:
+            return input_df
+        
+        input_df = input_df.copy()
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        knnc = KNeighborsClassifier(n_neighbors=n_neighbors)
+        knnc.fit(training_features, training_classes)
+
+        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
+        input_df.loc[:, 'guess'] = knnc.predict(all_features)
+
+        # Also store the guesses as a synthetic feature
+        sf_hash = '-'.join(sorted(input_df.columns.values))
+        sf_hash += 'kNNC-{}'.format(n_neighbors)
+        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
 
         return input_df
 
@@ -424,7 +567,7 @@ class TPOT(object):
             best_pairs = []
             for pair in self.best_features_cache_[input_df_columns_hash][:num_pairs]:
                 best_pairs += list(pair)
-            return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
+            return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))]
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
@@ -437,8 +580,9 @@ class TPOT(object):
             dtc.fit(training_feature_vals, training_class_vals)
             pair_scores[features] = (dtc.score(training_feature_vals, training_class_vals), list(features))
 
+        # If there are no features (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(pair_scores) == 0:
-            return input_df[['guess', 'class', 'group']].copy()
+            return input_df[['guess', 'class', 'group']]
 
         # Keep the best features cache within a reasonable size
         if len(self.best_features_cache_) > 1000:
