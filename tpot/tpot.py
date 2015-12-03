@@ -267,7 +267,7 @@ class TPOT(object):
 
         """
         if self.optimized_pipeline_ is None:
-            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
+            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
         self.best_features_cache_ = {}
 
@@ -301,8 +301,8 @@ class TPOT(object):
         -------
         None
         """
-        if self.optimized_pipeline_ == None:
-            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
+        if self.optimized_pipeline_ is None:
+            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
         
         exported_pipeline = self.optimized_pipeline_
         
@@ -310,7 +310,7 @@ class TPOT(object):
         while True:
             for i in range(len(exported_pipeline) - 1, -1, -1):
                 node = exported_pipeline[i]
-                if type(node) == deap.gp.Primitive and node.name in ['add', 'sub', 'mul']:
+                if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul']:
                     val1 = int(exported_pipeline[i + 1].name)
                     val2 = int(exported_pipeline[i + 2].name)
                     if node.name == 'add':
@@ -332,7 +332,7 @@ class TPOT(object):
         while True:
             for node_index in range(len(exported_pipeline) - 1, -1, -1):
                 node = exported_pipeline[node_index]
-                if type(node) != deap.gp.Primitive:
+                if type(node) is not deap.gp.Primitive:
                     continue
 
                 node_params = exported_pipeline[node_index + 1:node_index + node.arity + 1]
