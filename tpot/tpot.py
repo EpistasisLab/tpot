@@ -31,6 +31,9 @@ import pandas as pd
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.cross_validation import StratifiedShuffleSplit
 
 import deap
@@ -89,7 +92,30 @@ class TPOT(object):
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
                  random_state=0, verbosity=0, scoring_function=None):
-        """Sets up the genetic programming algorithm for pipeline optimization."""
+        """Sets up the genetic programming algorithm for pipeline optimization.
+
+        Parameters
+        ----------
+        population_size: int (default: 100)
+            The number of pipelines in the genetic algorithm population. Must be > 0. The more pipelines in the population, the slower TPOT will run, but it's also more likely to find better pipelines.
+        generations: int (default: 100)
+            The number of generations to run pipeline optimization for. Must be > 0. The more generations you give TPOT to run, the longer it takes, but it's also more likely to find better pipelines.
+        mutation_rate: float (default: 0.9)
+            The mutation rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to apply random changes to every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
+        crossover_rate: float (default: 0.05)
+            The crossover rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to "breed" every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
+        random_state: int (default: 0)
+            The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
+        verbosity: int (default: 0)
+            How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all
+        scoring_function: function (default: None)
+            Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used.
+
+        Returns
+        -------
+        None
+
+        """
         self.population_size = population_size
         self.generations = generations
         self.mutation_rate = mutation_rate
@@ -103,6 +129,9 @@ class TPOT(object):
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
+        self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self.svc, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._subset_df, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
@@ -143,10 +172,10 @@ class TPOT(object):
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
-        classes: array-like {n_classnames}
-            List of class name strings
-        feature_names: array-like {n_featurenames} (default: None)
-            List of feature name strings
+        classes: array-like {n_samples}
+            List of class labels for prediction
+        feature_names: array-like {n_features} (default: None)
+            List of feature names as strings
 
         Returns
         -------
@@ -178,7 +207,7 @@ class TPOT(object):
 
             # Default the basic guess to the most frequent class
             most_frequent_class = Counter(training_testing_data.loc[training_indeces, 'class'].values).most_common(1)[0][0]
-            training_testing_data['guess'] = most_frequent_class
+            training_testing_data.loc[:, 'guess'] = most_frequent_class
 
             self.toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
@@ -214,19 +243,19 @@ class TPOT(object):
         ----------
         training_features: array-like {n_samples, n_features}
             Feature matrix of the training set
-        training_classes: array-like {n_classnames}
-            List of class name strings in the training set
+        training_classes: array-like {n_samples}
+            List of class labels for prediction in the training set
         testing_features: array-like {n_samples, n_features}
-            Feature matrix of the test set
+            Feature matrix of the testing set
 
         Returns
         ----------
-        array-like: {n_samples, n_features}
-            Feature matrix of the `guess` values
+        array-like: {n_samples}
+            Predicted classes for the testing set
 
         """
         if self.optimized_pipeline_ is None:
-            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
+            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
         self.best_features_cache_ = {}
 
@@ -240,7 +269,7 @@ class TPOT(object):
 
         training_testing_data = pd.concat([training_data, testing_data])
         most_frequent_class = Counter(training_classes).most_common(1)[0][0]
-        training_testing_data['guess'] = most_frequent_class
+        training_testing_data.loc[:, 'guess'] = most_frequent_class
 
         for column in training_testing_data.columns.values:
             if type(column) != str:
@@ -259,12 +288,12 @@ class TPOT(object):
         ----------
         training_features: array-like {n_samples, n_features}
             Feature matrix of the training set
-        training_classes: array-like {n_classnames}
-            List of class name strings in the training set
-        test_features: array-like {n_samples, n_features}
-            Feature matrix of the test set
-        testing_classes: array-like {n_classnames}
-            List of class name strings in the test set
+        training_classes: array-like {n_samples}
+            List of class labels for prediction in the training set
+        testing_features: array-like {n_samples, n_features}
+            Feature matrix of the testing set
+        testing_classes: array-like {n_samples}
+            List of class labels for prediction in the testing set
 
         Returns
         -------
@@ -287,7 +316,7 @@ class TPOT(object):
 
         training_testing_data = pd.concat([training_data, testing_data])
         most_frequent_class = Counter(training_classes).most_common(1)[0][0]
-        training_testing_data['guess'] = most_frequent_class
+        training_testing_data.loc[:, 'guess'] = most_frequent_class
 
         for column in training_testing_data.columns.values:
             if type(column) != str:
@@ -306,6 +335,7 @@ class TPOT(object):
         Returns
         -------
         None
+
         """
         if self.optimized_pipeline_ is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
@@ -480,14 +510,14 @@ best_pairs = sorted(list(set(best_pairs)))
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame for fitting the decision tree
         max_features: int
-            Number of features used to fit the decision tree
+            Number of features used to fit the decision tree; must be a positive value
         max_depth: int
-            Maximum depth of the decision tree
+            Maximum depth of the decision tree; must be a positive value
 
         Returns
         -------
-        input_df:  {n_samples, n_features+['guess']}
-            Returns a modified input DataFrame with the guess column changed.
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
         if max_features < 1:
@@ -500,10 +530,11 @@ best_pairs = sorted(list(set(best_pairs)))
         if max_depth < 1:
             max_depth = None
 
-        input_df = input_df.copy()
-
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(input_df.columns) == 3:
             return input_df
+        
+        input_df = input_df.copy()
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
@@ -515,13 +546,13 @@ best_pairs = sorted(list(set(best_pairs)))
         dtc.fit(training_features, training_classes)
 
         all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df['guess'] = dtc.predict(all_features)
+        input_df.loc[:, 'guess'] = dtc.predict(all_features)
 
         # Also store the guesses as a synthetic feature
         sf_hash = '-'.join(sorted(input_df.columns.values))
         sf_hash += 'DT-{}-{}'.format(max_features, max_depth)
         sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df[sf_identifier] = input_df['guess'].values
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
 
         return input_df
 
@@ -532,16 +563,16 @@ best_pairs = sorted(list(set(best_pairs)))
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the decision tree
+            Input DataFrame for fitting the random forest
         num_trees: int
-            Number of trees in the random forest
+            Number of trees in the random forest; must be a positive value
         max_features: int
-            Number of features used to fit the decision tree
+            Number of features used to fit the decision tree; must be a positive value
 
         Returns
         -------
-        input_df:  {n_samples, n_features+['guess']}
-            Returns a modified input DataFrame with the guess column changed.
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
         if num_trees < 1:
@@ -556,10 +587,11 @@ best_pairs = sorted(list(set(best_pairs)))
         elif max_features > len(input_df.columns) - 3:
             max_features = len(input_df.columns) - 3
 
-        input_df = input_df.copy()
-
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(input_df.columns) == 3:
             return input_df
+        
+        input_df = input_df.copy()
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
@@ -571,24 +603,189 @@ best_pairs = sorted(list(set(best_pairs)))
         rfc.fit(training_features, training_classes)
 
         all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df['guess'] = rfc.predict(all_features)
+        input_df.loc[:, 'guess'] = rfc.predict(all_features)
 
         # Also store the guesses as a synthetic feature
         sf_hash = '-'.join(sorted(input_df.columns.values))
         sf_hash += 'RF-{}-{}'.format(num_trees, max_features)
         sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df[sf_identifier] = input_df['guess'].values
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
+
+        return input_df
+    
+    @staticmethod
+    def logistic_regression(input_df, C):
+        """Fits a logistic regression classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the logistic regression classifier
+        C: int
+            Inverse of regularization strength; must be a positive value. Like in support vector machines, smaller values specify stronger regularization.
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        if C <= 0:
+            C = 1
+
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
+        if len(input_df.columns) == 3:
+            return input_df
+        
+        input_df = input_df.copy()
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        lrc = LogisticRegression(C=C,
+                                 random_state=42)
+        lrc.fit(training_features, training_classes)
+
+        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
+        input_df.loc[:, 'guess'] = lrc.predict(all_features)
+
+        # Also store the guesses as a synthetic feature
+        sf_hash = '-'.join(sorted(input_df.columns.values))
+        sf_hash += 'LR-{}'.format(C)
+        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
+
+        return input_df
+
+    @staticmethod
+    def svc(input_df, C):
+        """Fits a C-support vector classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the C-support vector classifier
+        C: int
+            Penalty parameter C of the error term; must be a positive value
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        if C <= 0:
+            C = 1
+
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
+        if len(input_df.columns) == 3:
+            return input_df
+        
+        input_df = input_df.copy()
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        svc = SVC(C=C,
+                  random_state=42)
+        svc.fit(training_features, training_classes)
+
+        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
+        input_df.loc[:, 'guess'] = svc.predict(all_features)
+
+        # Also store the guesses as a synthetic feature
+        sf_hash = '-'.join(sorted(input_df.columns.values))
+        sf_hash += 'SVC-{}'.format(C)
+        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
+
+        return input_df
+
+    @staticmethod
+    def knnc(input_df, n_neighbors):
+        """Fits a k-nearest neighbor classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the k-nearest neighbor classifier
+        n_neighbors: int
+            Number of neighbors to use by default for k_neighbors queries; must be a positive value
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        training_set_size = len(input_df.loc[input_df['group'] == 'training'])
+        
+        if n_neighbors < 1:
+            n_neighbors = 1
+        elif n_neighbors >= training_set_size:
+            n_neighbors = training_set_size - 1
+
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
+        if len(input_df.columns) == 3:
+            return input_df
+        
+        input_df = input_df.copy()
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        knnc = KNeighborsClassifier(n_neighbors=n_neighbors)
+        knnc.fit(training_features, training_classes)
+
+        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
+        input_df.loc[:, 'guess'] = knnc.predict(all_features)
+
+        # Also store the guesses as a synthetic feature
+        sf_hash = '-'.join(sorted(input_df.columns.values))
+        sf_hash += 'kNNC-{}'.format(n_neighbors)
+        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
 
         return input_df
 
     @staticmethod
     def _combine_dfs(input_df1, input_df2):
-        """Function to combine two DataFrames"""
+        """Function to combine two DataFrames
+        
+        Parameters
+        ----------
+        input_df1: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to combine
+        input_df2: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to combine
+
+        Returns
+        -------
+        combined_df: pandas.DataFrame {n_samples, n_both_features+['guess', 'group', 'class']}
+            Returns a DataFrame containing the features of both input_df1 and input_df2
+
+        """
         return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
 
     @staticmethod
     def _subset_df(input_df, start, stop):
-        """Subset the provided DataFrame down to the columns between the `start` and `stop` column indeces."""
+        """Subset the provided DataFrame down to the columns between [start, stop) column indeces. Note that the columns will be sorted alphabetically by name prior to subsetting.
+        
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to subset
+        start: int
+            The index to begin subsetting (inclusive)
+        stop: int
+            The index to stop subsetting (exclusive)
+
+        Returns
+        -------
+        subsetted_df: pandas.DataFrame {n_samples, abs(stop-start)+['guess', 'group', 'class']}
+            Returns a DataFrame containing the columns in [start, stop) indeces
+
+        """
         if stop <= start:
             stop = start + 1
 
@@ -597,7 +794,21 @@ best_pairs = sorted(list(set(best_pairs)))
         return subset_df1.join(subset_df2).copy()
 
     def _dt_feature_selection(self, input_df, num_pairs):
-        """Uses decision trees to discover the best pair(s) of features to keep."""
+        """Uses decision trees to discover the best pair(s) of features to keep
+        
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to perform feature selection on
+        num_pairs: int
+            The number of best feature pairs to retain
+
+        Returns
+        -------
+        subsetted_df: pandas.DataFrame {n_samples, num_pairs+2+['guess', 'group', 'class']}
+            Returns a DataFrame containing the the num_pairs best feature pairs
+
+        """
         num_pairs = min(max(1, num_pairs), 50)
 
         # If this set of features has already been analyzed, use the cache.
@@ -607,7 +818,7 @@ best_pairs = sorted(list(set(best_pairs)))
             best_pairs = []
             for pair in self.best_features_cache_[input_df_columns_hash][:num_pairs]:
                 best_pairs += list(pair)
-            return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
+            return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))]
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
@@ -620,8 +831,9 @@ best_pairs = sorted(list(set(best_pairs)))
             dtc.fit(training_feature_vals, training_class_vals)
             pair_scores[features] = (dtc.score(training_feature_vals, training_class_vals), list(features))
 
+        # If there are no features (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(pair_scores) == 0:
-            return input_df[['guess', 'class', 'group']].copy()
+            return input_df[['guess', 'class', 'group']]
 
         # Keep the best features cache within a reasonable size
         if len(self.best_features_cache_) > 1000:
