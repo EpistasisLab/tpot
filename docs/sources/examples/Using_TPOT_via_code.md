@@ -33,7 +33,7 @@ from tpot import TPOT
 pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 ```
 
-Now TPOT is ready to work! You can pass TPOT some data with a scikit-learn-like interface:
+Now TPOT is ready to work! You can tell TPOT to optimize a pipeline based on a data set with the `fit` function:
 
 ```Python
 from tpot import TPOT
@@ -42,14 +42,27 @@ pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 ```
 
-then evaluate the final pipeline as such:
+then evaluate the final pipeline with the `score()` function:
 
 ```Python
 from tpot import TPOT
 
 pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
-pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes)
+print(pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes))
 ```
 
 Note that you need to pass the training data to the `score()` function so the pipeline re-trains the scikit-learn models on the training data.
+
+Finally, you can tell TPOT to export the optimized pipeline to a text file with the `export()` function:
+
+```Python
+from tpot import TPOT
+
+pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
+pipeline_optimizer.fit(training_features, training_classes)
+print(pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes))
+pipeline_optimizer.export('tpot_exported_pipeline.py')
+```
+
+Once this code finishes running, `tpot_exported_pipeline.py` will contain the Python code for the optimized pipeline.
