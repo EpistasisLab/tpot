@@ -896,7 +896,21 @@ best_pairs = sorted(list(set(best_pairs)))
         return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
 
     def _evaluate_individual(self, individual, training_testing_data):
-        """Determines the `individual`'s classification balanced accuracy on the provided data."""
+        """Determines the `individual`'s fitness according to its performance on the provided data
+
+        Parameters
+        ----------
+        individual: DEAP individual
+            A list of pipeline operators and model parameters that can be compiled by DEAP into a callable function
+        training_testing_data: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class']}
+            A DataFrame containing the training and testing data for the `individual`'s evaluation
+
+        Returns
+        -------
+        fitness: float
+            Returns a float value indicating the `individual`'s fitness according to its performance on the provided data
+
+        """
         try:
             # Transform the tree expression in a callable function
             func = self.toolbox.compile(expr=individual)
@@ -906,16 +920,28 @@ best_pairs = sorted(list(set(best_pairs)))
 
         result = func(training_testing_data)
         result = result[result['group'] == 'testing']
-
         res = self.scoring_function(result)
+        
         if isinstance(res, float) or isinstance(res, np.float64) or isinstance(res, np.float32):
             return res,
         else:
-            raise Exception('Scoring function does not return a float')
+            raise ValueError('Scoring function does not return a float')
             
 
     def _balanced_accuracy(self, result):
-        """Default scoring function: use the balanced class accuracy"""
+        """Default scoring function: balanced class accuracy
+
+        Parameters
+        ----------
+        result: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class']}
+            A DataFrame containing a pipeline's predictions and the corresponding classes for the testing data
+
+        Returns
+        -------
+        fitness: float
+            Returns a float value indicating the `individual`'s balanced accuracy on the testing data
+
+        """
         all_classes = list(set(result['class'].values))
         all_class_accuracies = []
         for this_class in all_classes:
@@ -929,15 +955,45 @@ best_pairs = sorted(list(set(best_pairs)))
         return balanced_accuracy
 
     def _combined_selection_operator(self, individuals, k):
-        """Regular selection + elitism."""
+        """Perform selection on the population according to their fitness
+
+        Parameters
+        ----------
+        individuals: list
+            A list of individuals to perform selection on
+        k: int
+            The number of individuals to return from the selection phase
+
+        Returns
+        -------
+        fitness: list
+            Returns a list of individuals that were selected
+
+        """
+        
+        # 10% of the new population are copies of the current best-performing pipeline (i.e., elitism)
         best_inds = int(0.1 * k)
+        
+        # The remaining 90% of the new population are selected by tournament selection
         rest_inds = k - best_inds
         return (tools.selBest(individuals, 1) * best_inds +
                 tools.selDoubleTournament(individuals, k=rest_inds, fitness_size=3,
                                           parsimony_size=2, fitness_first=True))
 
     def _random_mutation_operator(self, individual):
-        """Randomly picks a replacement, insert, or shrink mutation."""
+        """Perform a replacement, insert, or shrink mutation on an individual
+
+        Parameters
+        ----------
+        individual: DEAP individual
+            A list of pipeline operators and model parameters that can be compiled by DEAP into a callable function
+
+        Returns
+        -------
+        fitness: list
+            Returns the individual with one of the mutations applied to it
+
+        """
         roll = random.random()
         if roll <= 0.333333:
             return gp.mutUniform(individual, expr=self.toolbox.expr_mut, pset=self.pset)
