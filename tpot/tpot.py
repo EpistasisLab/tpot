@@ -384,24 +384,29 @@ class TPOT(object):
             else:
                 break
 
-        # Replace the function calls with their corresponding Python code
-        pipeline_text = '''from itertools import combinations
-
-import numpy as np
+        # Have the code import all of the necessary modules and functions
+        # operator[1] is the name of the operator
+        operators_used = set([operator[1] for operator in pipeline_list])
+        
+        pipeline_text = '''import numpy as np
 import pandas as pd
 
 from sklearn.cross_validation import StratifiedShuffleSplit
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
+'''
+        if '_dt_feature_selection' in operators_used: pipeline_text += 'from itertools import combinations\n'
+        if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
+        if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
+        if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
+        if 'svc' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
+        if 'knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
 
+        pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75)))
 
 '''
+        # Replace the function calls with their corresponding Python code
         for operator in pipeline_list:
             operator_num = int(operator[0].strip('result'))
             result_name = operator[0]
