@@ -97,15 +97,22 @@ class TPOT(object):
         Parameters
         ----------
         population_size: int (default: 100)
-            The number of pipelines in the genetic algorithm population. Must be > 0. The more pipelines in the population, the slower TPOT will run, but it's also more likely to find better pipelines.
+            The number of pipelines in the genetic algorithm population. Must be > 0.
+            The more pipelines in the population, the slower TPOT will run, but it's also more likely to find better pipelines.
         generations: int (default: 100)
-            The number of generations to run pipeline optimization for. Must be > 0. The more generations you give TPOT to run, the longer it takes, but it's also more likely to find better pipelines.
+            The number of generations to run pipeline optimization for. Must be > 0.
+            The more generations you give TPOT to run, the longer it takes, but it's also more likely to find better pipelines.
         mutation_rate: float (default: 0.9)
-            The mutation rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to apply random changes to every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
+            The mutation rate for the genetic programming algorithm in the range [0.0, 1.0].
+            This tells the genetic programming algorithm how many pipelines to apply random changes to every generation.
+            We don't recommend that you tweak this parameter unless you know what you're doing.
         crossover_rate: float (default: 0.05)
-            The crossover rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to "breed" every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
+            The crossover rate for the genetic programming algorithm in the range [0.0, 1.0].
+            This tells the genetic programming algorithm how many pipelines to "breed" every generation.
+            We don't recommend that you tweak this parameter unless you know what you're doing.
         random_state: int (default: 0)
-            The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
+            The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time
+            you run it against the same data set with that seed.
         verbosity: int (default: 0)
             How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all
         scoring_function: function (default: None)
@@ -567,7 +574,8 @@ best_pairs = sorted(list(set(best_pairs)))
         Returns
         -------
         input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
         if max_features < 1:
@@ -622,7 +630,8 @@ best_pairs = sorted(list(set(best_pairs)))
         Returns
         -------
         input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
         if num_trees < 1:
@@ -677,7 +686,8 @@ best_pairs = sorted(list(set(best_pairs)))
         Returns
         -------
         input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
         if C <= 0.:
@@ -721,7 +731,8 @@ best_pairs = sorted(list(set(best_pairs)))
         Returns
         -------
         input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
         if C <= 0.:
@@ -765,7 +776,8 @@ best_pairs = sorted(list(set(best_pairs)))
         Returns
         -------
         input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
         training_set_size = len(input_df.loc[input_df['group'] == 'training'])
@@ -819,7 +831,8 @@ best_pairs = sorted(list(set(best_pairs)))
 
     @staticmethod
     def _subset_df(input_df, start, stop):
-        """Subset the provided DataFrame down to the columns between [start, stop) column indeces. Note that the columns will be sorted alphabetically by name prior to subsetting.
+        """Subset the provided DataFrame down to the columns between [start, stop) column indeces.
+        Note that the columns will be sorted alphabetically by name prior to subsetting.
         
         Parameters
         ----------
