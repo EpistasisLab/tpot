@@ -129,8 +129,8 @@ class TPOT(object):
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self.svc, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
+        self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._subset_df, [pd.DataFrame, int, int], pd.DataFrame)
@@ -139,8 +139,11 @@ class TPOT(object):
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
         self.pset.addPrimitive(operator.mul, [int, int], int)
+        self.pset.addPrimitive(self._div, [int, int], float)
         for val in range(0, 101):
             self.pset.addTerminal(val, int)
+        for val in [0.1, 0.01, 0.001, 0.0001]:
+            self.pset.addTerminal(val, float)
 
         creator.create('FitnessMax', base.Fitness, weights=(1.0,))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMax)
@@ -346,15 +349,17 @@ class TPOT(object):
         while True:
             for i in range(len(exported_pipeline) - 1, -1, -1):
                 node = exported_pipeline[i]
-                if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul']:
+                if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div']:
                     val1 = int(exported_pipeline[i + 1].name)
                     val2 = int(exported_pipeline[i + 2].name)
                     if node.name == 'add':
                         new_val = val1 + val2
                     elif node.name == 'sub':
                         new_val = val1 - val2
-                    else:
+                    elif node.name == 'mul':
                         new_val = val1 * val2
+                    else:
+                        new_val = self._div(val1, val2)
 
                     new_val = deap.gp.Terminal(symbolic=new_val, terminal=new_val, ret=new_val)
                     exported_pipeline = exported_pipeline[:i] + [new_val] + exported_pipeline[i + 3:]
@@ -469,8 +474,8 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
 
             elif operator_name == 'logistic_regression':
                 C = float(operator[3])
-                if C <= 0:
-                    C = 1
+                if C <= 0.:
+                    C = 0.0001
 
                 operator_text += '\n# Perform classification with a logistic regression classifier'
                 operator_text += '\nlrc{} = LogisticRegression(C={})\n'.format(operator_num, C)
@@ -481,8 +486,8 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
 
             elif operator_name == 'svc':
                 C = float(operator[3])
-                if C <= 0:
-                    C = 1
+                if C <= 0.:
+                    C = 0.0001
 
                 operator_text += '\n# Perform classification with a C-support vector classifier'
                 operator_text += '\nsvc{} = SVC(C={})\n'.format(operator_num, C)
@@ -666,7 +671,7 @@ best_pairs = sorted(list(set(best_pairs)))
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame for fitting the logistic regression classifier
-        C: int
+        C: float
             Inverse of regularization strength; must be a positive value. Like in support vector machines, smaller values specify stronger regularization.
 
         Returns
@@ -675,8 +680,8 @@ best_pairs = sorted(list(set(best_pairs)))
             Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if C <= 0:
-            C = 1
+        if C <= 0.:
+            C = 0.0001
 
         # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(input_df.columns) == 3:
@@ -710,7 +715,7 @@ best_pairs = sorted(list(set(best_pairs)))
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame for fitting the C-support vector classifier
-        C: int
+        C: float
             Penalty parameter C of the error term; must be a positive value
 
         Returns
@@ -719,8 +724,8 @@ best_pairs = sorted(list(set(best_pairs)))
             Returns a modified input DataFrame with the guess column updated according to the classifier's predictions. Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if C <= 0:
-            C = 1
+        if C <= 0.:
+            C = 0.0001
 
         # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(input_df.columns) == 3:
@@ -894,6 +899,28 @@ best_pairs = sorted(list(set(best_pairs)))
         self.best_features_cache_[input_df_columns_hash] = [list(pair) for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:50]]
 
         return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
+
+    @staticmethod
+    def _div(num1, num2):
+        """Divide two numbers
+        
+        Parameters
+        ----------
+        num1: int
+            The dividend
+        num2: int
+            The divisor
+
+        Returns
+        -------
+        result: float
+            Returns num1 / num2, or 0 if num2 == 0
+        
+        """
+        if num2 == 0:
+            return 0.
+        
+        return float(num1) / float(num2)
 
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data
