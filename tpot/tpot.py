@@ -658,7 +658,7 @@ best_pairs = sorted(list(set(best_pairs)))
             
 
     def _balanced_accuracy(self, result):
-        ''' Default scoring function: take the balanced class accuracy '''
+        """Default scoring function: use the balanced class accuracy"""
         all_classes = list(set(result['class'].values))
         all_class_accuracies = []
         for this_class in all_classes:
