@@ -20,6 +20,7 @@ pages:
   - examples/Using_TPOT_via_the_command_line.md
   - examples/Using_TPOT_via_code.md
   - examples/MNIST_Example.md
+  - examples/Custom_Scoring_Functions.md
 - Changelog: changelog.md
 - Installation: installing.md
 - Contributing: contributing.md
