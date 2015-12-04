@@ -102,7 +102,7 @@ from tpot import TPOT
 pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 ```
 
-Now TPOT is ready to work! You can pass TPOT some data with a scikit-learn-like interface:
+Now TPOT is ready to work! You can tell TPOT to optimize a pipeline based on a data set with the `fit` function:
 
 ```Python
 from tpot import TPOT
@@ -111,17 +111,30 @@ pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 ```
 
-then evaluate the final pipeline as such:
+then evaluate the final pipeline with the `score()` function:
 
 ```Python
 from tpot import TPOT
 
 pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
-pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes)
+print(pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes))
 ```
 
 Note that you need to pass the training data to the `score()` function so the pipeline re-trains the scikit-learn models on the training data.
+
+Finally, you can tell TPOT to export the optimized pipeline to a text file with the `export()` function:
+
+```Python
+from tpot import TPOT
+
+pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
+pipeline_optimizer.fit(training_features, training_classes)
+print(pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes))
+pipeline_optimizer.export('tpot_exported_pipeline.py')
+```
+
+Once this code finishes running, `tpot_exported_pipeline.py` will contain the Python code for the optimized pipeline.
 
 ### Using TPOT via the command line
 
@@ -135,6 +148,7 @@ The following parameters will display along with their descriptions:
 
 * `-i` / `INPUT_FILE`: The path to the data file to optimize the pipeline on. Make sure that the class column in the file is labeled as "class".
 * `-is` / `INPUT_SEPARATOR`: The character used to separate columns in the input file. Commas (,) and tabs (\t) are the most common separators.
+* `-o` / `OUTPUT_FILE`: The path to a file that you wish to export the pipeline code into. By default, exporting is disabled.
 * `-g` / `GENERATIONS`: The number of generations to run pipeline optimization for. Must be > 0. The more generations you give TPOT to run, the longer it takes, but it's also more likely to find better pipelines.
 * `-p` / `POPULATION`: The number of pipelines in the genetic algorithm population. Must be > 0. The more pipelines in the population, the slower TPOT will run, but it's also more likely to find better pipelines.
 * `-mr` / `MUTATION_RATE`: The mutation rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to apply random changes to every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
@@ -145,7 +159,7 @@ The following parameters will display along with their descriptions:
 An example command-line call to TPOT may look like:
 
 ```Shell
-tpot -i data/mnist.csv -is , -g 100 -s 42 -v 2
+tpot -i data/mnist.csv -is , -o tpot_exported_pipeline.py -g 100 -s 42 -v 2
 ```
 
 ## Examples
@@ -163,10 +177,11 @@ X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
 
 tpot = TPOT(generations=5)
 tpot.fit(X_train, y_train)
-tpot.score(X_train, y_train, X_test, y_test)
+print(tpot.score(X_train, y_train, X_test, y_test))
+tpot.export('tpot_mnist_pipeline.py')
 ```
 
-Running this code should discover a pipeline that achieves ~98% testing accuracy.
+Running this code should discover a pipeline that achieves ~97% testing accuracy, and the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file.
 
 ## Want to get involved with TPOT?
 

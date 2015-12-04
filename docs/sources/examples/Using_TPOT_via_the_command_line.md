@@ -10,6 +10,7 @@ The following parameters will display along with their descriptions:
 
 * `-i` / `INPUT_FILE`: The path to the data file to optimize the pipeline on. Make sure that the class column in the file is labeled as "class".
 * `-is` / `INPUT_SEPARATOR`: The character used to separate columns in the input file. Commas (,) and tabs (\t) are the most common separators.
+* `-o` / `OUTPUT_FILE`: The path to a file that you wish to export the pipeline code into. By default, exporting is disabled.
 * `-g` / `GENERATIONS`: The number of generations to run pipeline optimization for. Must be > 0. The more generations you give TPOT to run, the longer it takes, but it's also more likely to find better pipelines.
 * `-p` / `POPULATION`: The number of pipelines in the genetic algorithm population. Must be > 0. The more pipelines in the population, the slower TPOT will run, but it's also more likely to find better pipelines.
 * `-mr` / `MUTATION_RATE`: The mutation rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to apply random changes to every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
@@ -20,5 +21,5 @@ The following parameters will display along with their descriptions:
 An example command-line call to TPOT may look like:
 
 ```Shell
-tpot -i data/mnist.csv -is , -g 100 -s 42 -v 2
+tpot -i data/mnist.csv -is , -o tpot_exported_pipeline.py -g 100 -s 42 -v 2
 ```
