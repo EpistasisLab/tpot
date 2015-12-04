@@ -339,9 +339,9 @@ class TPOT(object):
         """
         if self.optimized_pipeline_ is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
-        
+
         exported_pipeline = self.optimized_pipeline_
-        
+
         # Replace all of the mathematical operators with their results
         while True:
             for i in range(len(exported_pipeline) - 1, -1, -1):
@@ -383,7 +383,7 @@ class TPOT(object):
                 break
             else:
                 break
-    
+
         # Replace the function calls with their corresponding Python code
         pipeline_text = '''from itertools import combinations
 
@@ -393,6 +393,9 @@ import pandas as pd
 from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
@@ -404,7 +407,7 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
             result_name = operator[0]
             operator_name = operator[1]
             operator_text = ''
-        
+
             # Make copies of the data set for each reference to ARG0
             if operator[2] == 'ARG0':
                 operator[2] = 'result{}'.format(operator_num)
@@ -414,12 +417,11 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
                 operator[3] = 'result{}'.format(operator_num)
                 operator_text += '\n{} = tpot_data.copy()\n'.format(operator[3])
 
-
             # Replace the TPOT functions with their corresponding Python code
             if operator_name == 'decision_tree':
                 max_features = int(operator[3])
                 max_depth = int(operator[4])
-            
+
                 if max_features < 1:
                     max_features = '\'auto\''
                 elif max_features == 1:
@@ -432,15 +434,15 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
 
                 operator_text += '\n# Perform classification with a decision tree classifier'
                 operator_text += '\ndtc{} = DecisionTreeClassifier(max_features={}, max_depth={})\n'.format(operator_num, max_features, max_depth)
-                operator_text += '''dtc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces]['class'].values)\n'''.format(operator_num, operator[2])
+                operator_text += '''dtc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
                 if result_name != operator[2]:
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-        
+
             elif operator_name == 'random_forest':
                 num_trees = int(operator[3])
                 max_features = int(operator[4])
-            
+
                 if num_trees < 1:
                     num_trees = 1
                 elif num_trees > 500:
@@ -452,29 +454,67 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
                     max_features = 'None'
                 else:
                     max_features = 'min({}, len({}.columns) - 1)'.format(max_features, operator[2])
-            
+
                 operator_text += '\n# Perform classification with a random forest classifier'
                 operator_text += '\nrfc{} = RandomForestClassifier(n_estimators={}, max_features={})\n'.format(operator_num, num_trees, max_features)
-                operator_text += '''rfc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces]['class'].values)\n'''.format(operator_num, operator[2])
+                operator_text += '''rfc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
                 if result_name != operator[2]:
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['rfc{1}-classification'] = rfc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-        
+
+            elif operator_name == 'logistic_regression':
+                C = float(operator[3])
+                if C <= 0:
+                    C = 1
+
+                operator_text += '\n# Perform classification with a logistic regression classifier'
+                operator_text += '\nlrc{} = LogisticRegression(C={})\n'.format(operator_num, C)
+                operator_text += '''lrc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
+                if result_name != operator[2]:
+                    operator_text += '{} = {}\n'.format(result_name, operator[2])
+                operator_text += '''{0}['lrc{1}-classification'] = lrc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+
+            elif operator_name == 'svc':
+                C = float(operator[3])
+                if C <= 0:
+                    C = 1
+
+                operator_text += '\n# Perform classification with a C-support vector classifier'
+                operator_text += '\nsvc{} = SVC(C={})\n'.format(operator_num, C)
+                operator_text += '''svc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
+                if result_name != operator[2]:
+                    operator_text += '{} = {}\n'.format(result_name, operator[2])
+                operator_text += '''{0}['svc{1}-classification'] = svc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+
+            elif operator_name == 'knnc':
+                n_neighbors = int(operator[3])
+                if n_neighbors < 1:
+                    n_neighbors = 1
+                else:
+                    n_neighbors = 'min({}, len(training_indeces))'.format(n_neighbors)
+
+                operator_text += '\n# Perform classification with a k-nearest neighbor classifier'
+                operator_text += '\nknnc{} = KNeighborsClassifier(n_neighbors={})\n'.format(operator_num, n_neighbors)
+                operator_text += '''knnc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
+                if result_name != operator[2]:
+                    operator_text += '{} = {}\n'.format(result_name, operator[2])
+                operator_text += '''{0}['knnc{1}-classification'] = knnc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+
             elif operator_name == '_combine_dfs':
                 operator_text += '\n# Combine two DataFrames'
                 operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
-        
+
             elif operator_name == '_subset_df':
                 start = int(operator[3])
                 stop = int(operator[4])
                 if stop <= start:
                     stop = start + 1
-                
+
                 operator_text += '\n# Subset the data columns'
                 operator_text += '\nsubset_df1 = {0}[sorted({0}.columns.values)[{1}:{2}]]\n'.format(operator[2], start, stop)
                 operator_text += '''subset_df2 = {0}[[column for column in ['class'] if column not in subset_df1.columns.values]]\n'''.format(operator[2])
                 operator_text += '{} = subset_df1.join(subset_df2)\n'.format(result_name)
-        
+
             elif operator_name == '_dt_feature_selection':
                 operator_text += '''
 # Decision-tree based feature selection
@@ -495,9 +535,9 @@ best_pairs = sorted(list(set(best_pairs)))
 
 {2} = {0}[sorted(list(set(best_pairs + ['class'])))]
 '''.format(operator[2], operator[3], result_name)
-        
+
             pipeline_text += operator_text
-        
+
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
 
