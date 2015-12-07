@@ -597,7 +597,7 @@ mask = selector.get_support(True)
 #Using Scikit-learn's Recursive Feature Elimination 
 training_features = {0}.loc[training_indeces].drop('class', axis=1)
 
-selector = RFE(SVC(), {1}, {2})
+selector = RFE(SVC(kernel='linear'), {1}, {2})
 selector.fit(training_features.values)
 mask = selector.get_support(True)
 {3} = {0}[mask + ['class']]
