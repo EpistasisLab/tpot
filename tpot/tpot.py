@@ -35,6 +35,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.feature_selection import VarianceThreshold
 
 import deap
 from deap import algorithms
@@ -142,6 +143,8 @@ class TPOT(object):
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._subset_df, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
+
 
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
@@ -406,6 +409,7 @@ import pandas as pd
 from sklearn.cross_validation import StratifiedShuffleSplit
 '''
         if '_dt_feature_selection' in operators_used: pipeline_text += 'from itertools import combinations\n'
+        if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold'
         if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
         if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
         if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
@@ -551,6 +555,16 @@ for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:{1}]:
 best_pairs = sorted(list(set(best_pairs)))
 
 {2} = {0}[sorted(list(set(best_pairs + ['class'])))]
+'''.format(operator[2], operator[3], result_name)
+            elif operator_name == '_variance_threshold':
+                operator_text += '''
+#Using Scikit-learn's VarianceThreshold for feature selection
+training_features = {0}.loc[training_indeces].drop('class', axis=1)
+
+selector = VarianceThreshold(threshold={1})
+selector.fit(training_features.values)
+mask = selector.get_support()
+{2} = {0][mask + ['class']]
 '''.format(operator[2], operator[3], result_name)
 
             pipeline_text += operator_text
@@ -855,6 +869,33 @@ best_pairs = sorted(list(set(best_pairs)))
         subset_df1 = input_df[sorted(input_df.columns.values)[start:stop]]
         subset_df2 = input_df[[column for column in ['guess', 'class', 'group'] if column not in subset_df1.columns.values]]
         return subset_df1.join(subset_df2).copy()
+
+    def _variance_threshold(self, input_df, threshold):
+        """Uses Scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the threshold
+        
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to perform feature selection on
+        threshold: float
+            The variance threshold which removes features that fall under the threshold
+
+        Returns
+        -------
+        subsetted_df: pandas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the the num_pairs best feature pairs
+
+        """
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        selector = VarianceThreshold(threshold=threshold)
+        selector.fit(training_features) 
+        mask = selector.get_support(True)
+        mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
+        #return input_df[[mask , 'guess', 'class', 'group']].copy()
+        return input_df[mask_cols].copy()
 
     def _dt_feature_selection(self, input_df, num_pairs):
         """Uses decision trees to discover the best pair(s) of features to keep
