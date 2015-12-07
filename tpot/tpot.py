@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
@@ -140,6 +140,7 @@ class TPOT(object):
         self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._subset_df, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
@@ -154,7 +155,7 @@ class TPOT(object):
         self.pset.addPrimitive(self._div, [int, int], float)
         for val in range(0, 101):
             self.pset.addTerminal(val, int)
-        for val in [0.1, 0.01, 0.001, 0.0001]:
+        for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
             self.pset.addTerminal(val, float)
 
         creator.create('FitnessMax', base.Fitness, weights=(1.0,))
@@ -421,6 +422,7 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
         if 'svc' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
         if 'knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
+        if 'gradient_boosting' in operators_used: pipeline_text += 'from sklearn.ensemble import GradientBoostingClassifier\n'
 
         pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -526,6 +528,29 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
                 if result_name != operator[2]:
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['knnc{1}-classification'] = knnc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+
+            elif operator_name == 'gradient_boosting':
+                learning_rate = float(operator[3])
+                n_estimators = int(operator[4])
+                max_depth = int(operator[5])
+                
+                if learning_rate <= 0.:
+                    learning_rate = 0.0001
+        
+                if n_estimators < 1:
+                    n_estimators = 1
+                elif n_estimators > 500:
+                    n_estimators = 500
+
+                if max_depth < 1:
+                    max_depth = None
+
+                operator_text += '\n# Perform classification with a gradient boosting classifier'
+                operator_text += '\ngbc{} = GradientBoostingClassifier(learning_rate={}, n_estimators={}, max_depth={})\n'.format(operator_num, learning_rate, n_estimators, max_depth)
+                operator_text += '''gbc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
+                if result_name != operator[2]:
+                    operator_text += '{} = {}\n'.format(result_name, operator[2])
+                operator_text += '''{0}['gbc{1}-classification'] = gbc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
 
             elif operator_name == '_combine_dfs':
                 operator_text += '\n# Combine two DataFrames'
@@ -854,6 +879,65 @@ mask = selector.get_support(True)
         # Also store the guesses as a synthetic feature
         sf_hash = '-'.join(sorted(input_df.columns.values))
         sf_hash += 'kNNC-{}'.format(n_neighbors)
+        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
+        input_df.loc[:, sf_identifier] = input_df['guess'].values
+
+        return input_df
+
+    @staticmethod
+    def gradient_boosting(input_df, learning_rate, n_estimators, max_depth):
+        """Fits a gradient boosting classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the k-nearest neighbor classifier
+        learning_rate: float
+            Shrinks the contribution of each tree by learning_rate
+        n_estimators: int
+            The number of boosting stages to perform
+        max_depth: int
+            Maximum depth of the individual estimators; the maximum depth limits the number of nodes in the tree
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        if learning_rate <= 0.:
+            learning_rate = 0.0001
+        
+        if n_estimators < 1:
+            n_estimators = 1
+        elif n_estimators > 500:
+            n_estimators = 500
+
+        if max_depth < 1:
+            max_depth = None
+
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
+        if len(input_df.columns) == 3:
+            return input_df
+        
+        input_df = input_df.copy()
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        gbc = GradientBoostingClassifier(learning_rate=learning_rate,
+                                         n_estimators=n_estimators,
+                                         max_depth=max_depth,
+                                         random_state=42)
+        gbc.fit(training_features, training_classes)
+
+        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
+        input_df.loc[:, 'guess'] = gbc.predict(all_features)
+
+        # Also store the guesses as a synthetic feature
+        sf_hash = '-'.join(sorted(input_df.columns.values))
+        sf_hash += 'GBC-{}-{}-{}'.format(learning_rate, n_estimators, max_depth)
         sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
         input_df.loc[:, sf_identifier] = input_df['guess'].values
 
@@ -1253,7 +1337,7 @@ def main():
             raise argparse.ArgumentTypeError('invalid float value: \'{}\''.format(value))
         return value
 
-    parser.add_argument('-i', action='store', dest='input_file', required=True,
+    parser.add_argument('-i', action='store', dest='input_file', default=None,
                         type=str, help='Data file to optimize the pipeline on. Ensure that the class column is labeled as "class".')
 
     parser.add_argument('-is', action='store', dest='input_separator', default='\t',
@@ -1280,12 +1364,26 @@ def main():
     parser.add_argument('-v', action='store', dest='verbosity', default=1, choices=[0, 1, 2],
                         type=int, help='How much information TPOT communicates while it is running. 0 = none, 1 = minimal, 2 = all')
 
+    parser.add_argument('--version', action='store_true', dest='version', default=False, help='Display the current TPOT version')
+
     args = parser.parse_args()
+    
+    if args.version:
+        from _version import __version__
+        print('TPOT version: {}'.format(__version__))
+        return
+    elif args.input_file is None:
+        parser.print_help()
+        print('\nError: You must specify an input file with -i')
+        return
 
     if args.verbosity >= 2:
         print('\nTPOT settings:')
         for arg in sorted(args.__dict__):
+            if arg == 'version':
+                continue
             print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
+        print('')
 
     input_data = pd.read_csv(args.input_file, sep=args.input_separator)
 
