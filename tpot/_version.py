@@ -17,5 +17,4 @@ You should have received a copy of the GNU General Public License along with
 the Twitter Bot library. If not, see http://www.gnu.org/licenses/.
 '''
 
-from ._version import __version__
-from .tpot import TPOT, main
+__version__ = '0.2.0'

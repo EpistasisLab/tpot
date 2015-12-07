@@ -1065,7 +1065,7 @@ def main():
             raise argparse.ArgumentTypeError('invalid float value: \'{}\''.format(value))
         return value
 
-    parser.add_argument('-i', action='store', dest='input_file', required=True,
+    parser.add_argument('-i', action='store', dest='input_file', default=None,
                         type=str, help='Data file to optimize the pipeline on. Ensure that the class column is labeled as "class".')
 
     parser.add_argument('-is', action='store', dest='input_separator', default='\t',
@@ -1092,7 +1092,18 @@ def main():
     parser.add_argument('-v', action='store', dest='verbosity', default=1, choices=[0, 1, 2],
                         type=int, help='How much information TPOT communicates while it is running. 0 = none, 1 = minimal, 2 = all')
 
+    parser.add_argument('--version', action='store_true', dest='version', default=False, help='Display the current TPOT version')
+
     args = parser.parse_args()
+    
+    if args.version:
+        from _version import __version__
+        print('TPOT version: {}'.format(__version__))
+        return
+    elif args.input_file is None:
+        parser.print_help()
+        print('\nError: You must specify an input file with -i')
+        return
 
     if args.verbosity >= 2:
         print('\nTPOT settings:')
