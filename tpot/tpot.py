@@ -142,7 +142,6 @@ class TPOT(object):
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._subset_df, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
@@ -556,17 +555,6 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
             elif operator_name == '_combine_dfs':
                 operator_text += '\n# Combine two DataFrames'
                 operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
-
-            elif operator_name == '_subset_df':
-                start = int(operator[3])
-                stop = int(operator[4])
-                if stop <= start:
-                    stop = start + 1
-
-                operator_text += '\n# Subset the data columns'
-                operator_text += '\nsubset_df1 = {0}[sorted({0}.columns.values)[{1}:{2}]]\n'.format(operator[2], start, stop)
-                operator_text += '''subset_df2 = {0}[[column for column in ['class'] if column not in subset_df1.columns.values]]\n'''.format(operator[2])
-                operator_text += '{} = subset_df1.join(subset_df2)\n'.format(result_name)
 
             elif operator_name == '_dt_feature_selection':
                 operator_text += '''
@@ -1014,33 +1002,6 @@ else:
 
         """
         return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
-
-    @staticmethod
-    def _subset_df(input_df, start, stop):
-        """Subset the provided DataFrame down to the columns between [start, stop) column indeces.
-        Note that the columns will be sorted alphabetically by name prior to subsetting.
-        
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to subset
-        start: int
-            The index to begin subsetting (inclusive)
-        stop: int
-            The index to stop subsetting (exclusive)
-
-        Returns
-        -------
-        subsetted_df: pandas.DataFrame {n_samples, abs(stop-start)+['guess', 'group', 'class']}
-            Returns a DataFrame containing the columns in [start, stop) indeces
-
-        """
-        if stop <= start:
-            stop = start + 1
-
-        subset_df1 = input_df[sorted(input_df.columns.values)[start:stop]]
-        subset_df2 = input_df[[column for column in ['guess', 'class', 'group'] if column not in subset_df1.columns.values]]
-        return subset_df1.join(subset_df2).copy()
 
     def _rfe(self, input_df, num_features, step):
         """Uses Scikit-learn's Recursive Feature Elimination to learn the subset of features that have the highest weights according to the estimator
