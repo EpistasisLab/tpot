@@ -412,11 +412,11 @@ import pandas as pd
 from sklearn.cross_validation import StratifiedShuffleSplit
 '''
         if '_dt_feature_selection' in operators_used: pipeline_text += 'from itertools import combinations\n'
-        if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold'
-        if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest'
-        if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile'
-        if '_select_percentile' or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import chi2'
-        if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE'
+        if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
+        if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
+        if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
+        if '_select_percentile' or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import chi2\n'
+        if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
         if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
         if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
         if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
@@ -593,39 +593,77 @@ best_pairs = sorted(list(set(best_pairs)))
 training_features = {0}.loc[training_indeces].drop('class', axis=1)
 
 selector = VarianceThreshold(threshold={1})
-selector.fit(training_features.values)
-mask = selector.get_support(True)
-{2} = {0}[mask + ['class']]
+try:
+    selector.fit(training_features.values)
+except ValueError:
+    {2} = {0}[['guess', 'class', 'group']]
+try:
+    mask = selector.get_support(True)
+    mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
+    {2} = {0}[mask_cols]
+except:
+    pass
 '''.format(operator[2], operator[3], result_name)
             elif operator_name == '_select_kbest':
                 operator_text += '''
 #Using Scikit-learn's SelectKBest for feature selection
 training_features = {0}.loc[training_indeces].drop('class', axis=1)
-
-selector = SelectKBest(chi2, k={1})
-selector.fit(training_features.values)
-mask = selector.get_support(True)
-{2} = {0}[mask + ['class']]
+training_class_vals = {0}.loc[training_indeces, 'class'].values
+if {1} <= 0 or {1} >= len(training_features.columns):
+    {1} = 'all'
+if len(training_features.columns) == 0:
+    {2} = {0}.copy()
+else:
+    selector = SelectKBest(chi2, k={1})
+    selector.fit(training_features.values, training_class_vals)
+    mask = selector.get_support(True)
+    mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
+    {2} = {0}[mask_cols]
 '''.format(operator[2], operator[3], result_name)
             elif operator_name == '_select_percentile':
                 operator_text += '''
 #Using Scikit-learn's SelectPercentile for feature selection
 training_features = {0}.loc[training_indeces].drop('class', axis=1)
+training_class_vals = {0}.loc[training_indeces, 'class'].values
 
-selector = SelectPercentile(chi2, k={1})
-selector.fit(training_features.values)
-mask = selector.get_support(True)
-{2} = {0}[mask + ['class']]
+if {1} < 0: 
+    {1} = 0
+if {1} > 100:
+    {1} = 100
+if len(training_features.columns) == 0:
+    {2} = {0}.copy()
+else:
+    selector = SelectPercentile(chi2, percentile={1})
+    selector.fit(training_features.values, training_class_vals)
+    mask = selector.get_support(True)
+    mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
+    {2} = {0}[mask_cols]
 '''.format(operator[2], operator[3], result_name)
             elif operator_name == '_rfe':
                 operator_text += '''
 #Using Scikit-learn's Recursive Feature Elimination 
 training_features = {0}.loc[training_indeces].drop('class', axis=1)
+training_class_vals = {0}.loc[training_indeces, 'class'].values
 
-selector = RFE(SVC(kernel='linear'), {1}, {2})
-selector.fit(training_features.values)
-mask = selector.get_support(True)
-{3} = {0}[mask + ['class']]
+if {2} <= 0.05: 
+    {2} = 0.05
+if {2} > 1:
+    {2} = 1.0
+if {1} < 0:
+    {1} = 1
+if {1} > len(training_features.columns):
+    {1} = len(training_features.columns)
+if len(training_features.columns) == 0:
+    {3} = {0}.copy()
+else:
+    selector = RFE(SVC(kernel='linear'), n_features_to_select={1}, step={2})
+    try:
+        selector.fit(training_features.values, training_class_vals)
+        mask = selector.get_support(True)
+        mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
+        {3} = {0}[mask_cols]
+    except ValueError:
+        {3} = {0}[['guess', 'class', 'group']]
 '''.format(operator[2], operator[3], operator[4], result_name)
             pipeline_text += operator_text
 
@@ -1007,12 +1045,11 @@ mask = selector.get_support(True)
             Returns a DataFrame containing the the num_pairs best feature pairs
 
         """
-        
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
         
-        if step <= 0: 
-            step = 0.1
+        if step <= 0.05: 
+            step = 0.05
         if step > 1:
             step = 1.0
         if num_features < 0:
@@ -1024,11 +1061,13 @@ mask = selector.get_support(True)
 
         estimator = SVC(kernel='linear')
         selector = RFE(estimator, n_features_to_select=num_features, step=step)
-        selector.fit(training_features, training_class_vals)#.reshape((training_class_vals.shape[0], 1)))
-        mask = selector.get_support(True)
-        mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
-        return input_df[mask_cols].copy()
-
+        try:
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+            mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
+            return input_df[mask_cols].copy()
+        except ValueError:
+            return input_df[['guess', 'class', 'group']].copy()
 
     def _select_percentile(self, input_df, percentile):
         """Uses Scikit-learn's SelectPercentile feature selection to learn the subset of features that belong in the highest <percentile> percentile  according to some scoring function
@@ -1046,7 +1085,6 @@ mask = selector.get_support(True)
             Returns a DataFrame containing the the num_pairs best feature pairs
 
         """
-        
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
         
@@ -1058,7 +1096,7 @@ mask = selector.get_support(True)
             return input_df.copy()
 
         selector = SelectPercentile(chi2, percentile=percentile)
-        selector.fit(training_features, training_class_vals)#.reshape((training_class_vals.shape[0], 1)))
+        selector.fit(training_features, training_class_vals)
         mask = selector.get_support(True)
         mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
@@ -1082,7 +1120,6 @@ mask = selector.get_support(True)
             Returns a DataFrame containing the the num_pairs best feature pairs
 
         """
-
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
         
@@ -1092,7 +1129,7 @@ mask = selector.get_support(True)
             return input_df.copy()
 
         selector = SelectKBest(chi2, k=k)
-        selector.fit(training_features, training_class_vals)#.reshape((training_class_vals.shape[0], 1)))
+        selector.fit(training_features, training_class_vals)
         mask = selector.get_support(True)
         mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
@@ -1121,11 +1158,10 @@ mask = selector.get_support(True)
         selector = VarianceThreshold(threshold=threshold)
         try:
             selector.fit(training_features) 
-        except ValueError:
-            return input_df.copy()
+        except ValueError: #when none features are above the variance threshold
+            return input_df[['guess', 'class', 'group']].copy()
         mask = selector.get_support(True)
         mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
-        #return input_df[[mask , 'guess', 'class', 'group']].copy()
         return input_df[mask_cols].copy()
 
     def _dt_feature_selection(self, input_df, num_pairs):
