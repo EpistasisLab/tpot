@@ -213,16 +213,16 @@ class TPOT(object):
             np.random.shuffle(data_columns)
             training_testing_data = training_testing_data[data_columns]
 
-            training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(training_testing_data['class'].values,
+            training_indices, testing_indices = next(iter(StratifiedShuffleSplit(training_testing_data['class'].values,
                                                                                  n_iter=1,
                                                                                  train_size=0.75,
                                                                                  test_size=0.25)))
 
-            training_testing_data.loc[training_indeces, 'group'] = 'training'
-            training_testing_data.loc[testing_indeces, 'group'] = 'testing'
+            training_testing_data.loc[training_indices, 'group'] = 'training'
+            training_testing_data.loc[testing_indices, 'group'] = 'testing'
 
             # Default the basic guess to the most frequent class
-            most_frequent_class = Counter(training_testing_data.loc[training_indeces, 'class'].values).most_common(1)[0][0]
+            most_frequent_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
             training_testing_data.loc[:, 'guess'] = most_frequent_class
 
             self.toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
@@ -427,7 +427,7 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
+training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
 
 '''
         # Replace the function calls with their corresponding Python code
@@ -463,7 +463,7 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
 
                 operator_text += '\n# Perform classification with a decision tree classifier'
                 operator_text += '\ndtc{} = DecisionTreeClassifier(max_features={}, max_depth={})\n'.format(operator_num, max_features, max_depth)
-                operator_text += '''dtc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
+                operator_text += '''dtc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
                 if result_name != operator[2]:
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
@@ -486,7 +486,7 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
 
                 operator_text += '\n# Perform classification with a random forest classifier'
                 operator_text += '\nrfc{} = RandomForestClassifier(n_estimators={}, max_features={})\n'.format(operator_num, num_trees, max_features)
-                operator_text += '''rfc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
+                operator_text += '''rfc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
                 if result_name != operator[2]:
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['rfc{1}-classification'] = rfc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
@@ -498,7 +498,7 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
 
                 operator_text += '\n# Perform classification with a logistic regression classifier'
                 operator_text += '\nlrc{} = LogisticRegression(C={})\n'.format(operator_num, C)
-                operator_text += '''lrc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
+                operator_text += '''lrc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
                 if result_name != operator[2]:
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['lrc{1}-classification'] = lrc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
@@ -510,7 +510,7 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
 
                 operator_text += '\n# Perform classification with a C-support vector classifier'
                 operator_text += '\nsvc{} = SVC(C={})\n'.format(operator_num, C)
-                operator_text += '''svc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
+                operator_text += '''svc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
                 if result_name != operator[2]:
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['svc{1}-classification'] = svc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
@@ -520,11 +520,11 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
                 if n_neighbors < 1:
                     n_neighbors = 1
                 else:
-                    n_neighbors = 'min({}, len(training_indeces))'.format(n_neighbors)
+                    n_neighbors = 'min({}, len(training_indices))'.format(n_neighbors)
 
                 operator_text += '\n# Perform classification with a k-nearest neighbor classifier'
                 operator_text += '\nknnc{} = KNeighborsClassifier(n_neighbors={})\n'.format(operator_num, n_neighbors)
-                operator_text += '''knnc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
+                operator_text += '''knnc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
                 if result_name != operator[2]:
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['knnc{1}-classification'] = knnc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
@@ -547,7 +547,7 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
 
                 operator_text += '\n# Perform classification with a gradient boosting classifier'
                 operator_text += '\ngbc{} = GradientBoostingClassifier(learning_rate={}, n_estimators={}, max_depth={})\n'.format(operator_num, learning_rate, n_estimators, max_depth)
-                operator_text += '''gbc{0}.fit({1}.loc[training_indeces].drop('class', axis=1).values, {1}.loc[training_indeces, 'class'].values)\n'''.format(operator_num, operator[2])
+                operator_text += '''gbc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
                 if result_name != operator[2]:
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['gbc{1}-classification'] = gbc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
@@ -559,8 +559,8 @@ training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['
             elif operator_name == '_dt_feature_selection':
                 operator_text += '''
 # Decision-tree based feature selection
-training_features = {0}.loc[training_indeces].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indeces, 'class'].values
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_class_vals = {0}.loc[training_indices, 'class'].values
 
 pair_scores = dict()
 for features in combinations(training_features.columns.values, 2):
@@ -580,7 +580,7 @@ best_pairs = sorted(list(set(best_pairs)))
             elif operator_name == '_variance_threshold':
                 operator_text += '''
 # Use Scikit-learn's VarianceThreshold for feature selection
-training_features = {0}.loc[training_indeces].drop('class', axis=1)
+training_features = {0}.loc[training_indices].drop('class', axis=1)
 
 selector = VarianceThreshold(threshold={1})
 try:
@@ -590,7 +590,7 @@ except ValueError:
     {2} = {0}[['class']]
 
 mask = selector.get_support(True)
-mask_cols = list(training_features[mask].columns) + ['class']
+mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
 {2} = {0}[mask_cols]
 '''.format(operator[2], operator[3], result_name)
 
@@ -604,8 +604,8 @@ mask_cols = list(training_features[mask].columns) + ['class']
                 
                 operator_text += '''
 # Use Scikit-learn's SelectKBest for feature selection
-training_features = {0}.loc[training_indeces].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indeces, 'class'].values
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_class_vals = {0}.loc[training_indices, 'class'].values
 
 if len(training_features.columns) == 0:
     {2} = {0}.copy()
@@ -613,7 +613,7 @@ else:
     selector = SelectKBest(chi2, k={1})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
-    mask_cols = list(training_features[mask].columns) + ['class']
+    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
     {2} = {0}[mask_cols]
 '''.format(operator[2], k, result_name)
 
@@ -627,8 +627,8 @@ else:
                 
                 operator_text += '''
 # Use Scikit-learn's SelectPercentile for feature selection
-training_features = {0}.loc[training_indeces].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indeces, 'class'].values
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_class_vals = {0}.loc[training_indices, 'class'].values
 
 if len(training_features.columns) == 0:
     {2} = {0}.copy()
@@ -636,7 +636,7 @@ else:
     selector = SelectPercentile(chi2, percentile={1})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
-    mask_cols = list(training_features[mask].columns) + ['class']
+    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
     {2} = {0}[mask_cols]
 '''.format(operator[2], percentile, result_name)
 
@@ -655,8 +655,8 @@ else:
                 
                 operator_text += '''
 # Use Scikit-learn's Recursive Feature Elimination (RFE) for feature selection
-training_features = {0}.loc[training_indeces].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indeces, 'class'].values
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_class_vals = {0}.loc[training_indices, 'class'].values
 
 if len(training_features.columns) == 0:
     {3} = {0}.copy()
@@ -664,7 +664,7 @@ else:
     selector = RFE(SVC(kernel='linear'), n_features_to_select={1}, step={2})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
-    mask_cols = list(training_features[mask].columns) + ['class']
+    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
     {3} = {0}[mask_cols]
 '''.format(operator[2], n_features_to_select, step, result_name)
 
@@ -1041,7 +1041,7 @@ else:
         try:
             selector.fit(training_features, training_class_vals)
             mask = selector.get_support(True)
-            mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
+            mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
             return input_df[mask_cols].copy()
         except ValueError:
             return input_df[['guess', 'class', 'group']].copy()
@@ -1077,7 +1077,7 @@ else:
         selector = SelectPercentile(chi2, percentile=percentile)
         selector.fit(training_features, training_class_vals)
         mask = selector.get_support(True)
-        mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
+        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
 
     def _select_kbest(self, input_df, k):
@@ -1110,7 +1110,7 @@ else:
         selector = SelectKBest(chi2, k=k)
         selector.fit(training_features, training_class_vals)
         mask = selector.get_support(True)
-        mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
+        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
 
     def _variance_threshold(self, input_df, threshold):
@@ -1141,7 +1141,7 @@ else:
             return input_df[['guess', 'class', 'group']].copy()
 
         mask = selector.get_support(True)
-        mask_cols = list(training_features[mask].columns) + ['guess', 'class', 'group']
+        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
 
     def _dt_feature_selection(self, input_df, num_pairs):
@@ -1411,17 +1411,17 @@ def main():
     else:
         random_state = None
 
-    training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(input_data['class'].values,
+    training_indices, testing_indices = next(iter(StratifiedShuffleSplit(input_data['class'].values,
                                                                          n_iter=1,
                                                                          train_size=0.75,
                                                                          test_size=0.25,
                                                                          random_state=random_state)))
 
-    training_features = input_data.loc[training_indeces].drop('class', axis=1).values
-    training_classes = input_data.loc[training_indeces, 'class'].values
+    training_features = input_data.loc[training_indices].drop('class', axis=1).values
+    training_classes = input_data.loc[training_indices, 'class'].values
 
-    testing_features = input_data.loc[testing_indeces].drop('class', axis=1).values
-    testing_classes = input_data.loc[testing_indeces, 'class'].values
+    testing_features = input_data.loc[testing_indices].drop('class', axis=1).values
+    testing_classes = input_data.loc[testing_indices, 'class'].values
 
     tpot = TPOT(generations=args.generations, population_size=args.population_size,
                 mutation_rate=args.mutation_rate, crossover_rate=args.crossover_rate,
