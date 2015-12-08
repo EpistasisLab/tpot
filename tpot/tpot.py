@@ -35,7 +35,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.cross_validation import StratifiedShuffleSplit
-from sklearn.feature_selection import VarianceThreshold, SelectKBest, chi2, SelectPercentile, RFE
+from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE
 
 import deap
 from deap import algorithms
@@ -415,7 +415,7 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
         if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
         if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
-        if '_select_percentile' or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import chi2\n'
+        if '_select_percentile' or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
         if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
         if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
         if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
@@ -610,7 +610,7 @@ training_class_vals = {0}.loc[training_indices, 'class'].values
 if len(training_features.columns) == 0:
     {2} = {0}.copy()
 else:
-    selector = SelectKBest(chi2, k={1})
+    selector = SelectKBest(f_classif, k={1})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
@@ -633,7 +633,7 @@ training_class_vals = {0}.loc[training_indices, 'class'].values
 if len(training_features.columns) == 0:
     {2} = {0}.copy()
 else:
-    selector = SelectPercentile(chi2, percentile={1})
+    selector = SelectPercentile(f_classif, percentile={1})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
@@ -1074,7 +1074,7 @@ else:
         if len(training_features.columns) == 0:
             return input_df.copy()
 
-        selector = SelectPercentile(chi2, percentile=percentile)
+        selector = SelectPercentile(f_classif, percentile=percentile)
         selector.fit(training_features, training_class_vals)
         mask = selector.get_support(True)
         mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
@@ -1107,7 +1107,7 @@ else:
         if len(training_features.columns) == 0:
             return input_df.copy()
 
-        selector = SelectKBest(chi2, k=k)
+        selector = SelectKBest(f_classif, k=k)
         selector.fit(training_features, training_class_vals)
         mask = selector.get_support(True)
         mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
