@@ -216,7 +216,8 @@ class TPOT(object):
 
             training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(training_testing_data['class'].values,
                                                                                  n_iter=1,
-                                                                                 train_size=0.75)))
+                                                                                 train_size=0.75,
+                                                                                 test_size=0.25)))
 
             training_testing_data.loc[training_indeces, 'group'] = 'training'
             training_testing_data.loc[testing_indeces, 'group'] = 'testing'
@@ -427,7 +428,7 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75)))
+training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
 
 '''
         # Replace the function calls with their corresponding Python code
@@ -1452,6 +1453,7 @@ def main():
     training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(input_data['class'].values,
                                                                          n_iter=1,
                                                                          train_size=0.75,
+                                                                         test_size=0.25,
                                                                          random_state=random_state)))
 
     training_features = input_data.loc[training_indeces].drop('class', axis=1).values
