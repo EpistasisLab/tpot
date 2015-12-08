@@ -93,26 +93,6 @@ def test_combine_dfs():
 
     assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
 
-def test_subset_df():
-    tpot_obj = TPOT()
-
-    test_df = pd.DataFrame({'00000': range(10),
-                            '00001': range(10),
-                            '00002': range(10),
-                            '00003': range(10),
-                            '00004': range(10),
-                            '00005': range(10),
-                            '00006': range(10),
-                            '00007': range(10),
-                            '00008': range(10),
-                            '00009': range(10),
-                            'guess': range(10),
-                            'class': range(10),
-                            'group': range(10)})
-
-    assert np.array_equal(tpot_obj._subset_df(test_df, 3, 8).columns.values,
-                          ['00003', '00004', '00005', '00006', '00007', 'guess', 'class', 'group'])
-
 def test_df_feature_selection():
     tpot_obj = TPOT()
 
