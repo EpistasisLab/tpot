@@ -382,8 +382,12 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
         if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
         if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
-        if '_select_percentile' or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
+        if '_select_percentile' in operators_used or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
         if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
+        if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
+        if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
+        if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
+        if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import PCA\n'
         if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
         if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
         if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
@@ -409,7 +413,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
                 operator[2] = 'result{}'.format(operator_num)
                 operator_text += '\n{} = tpot_data.copy()\n'.format(operator[2])
 
-            if operator[3] == 'ARG0':
+            if len(operator) > 3 and operator[3] == 'ARG0':
                 operator[3] = 'result{}'.format(operator_num)
                 operator_text += '\n{} = tpot_data.copy()\n'.format(operator[3])
 
@@ -613,6 +617,77 @@ else:
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
     {3} = {0}[mask_cols]
 '''.format(operator[2], n_features_to_select, step, result_name)
+
+            elif operator_name == '_standard_scaler':
+                operator_text += '''
+# Use Scikit-learn's StandardScaler to scale the features
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+{1} = {0}.copy()
+
+if len(training_features.columns.values) > 0:
+    scaler = StandardScaler()
+    scaler.fit(training_features.values.astype(np.float64))
+    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
+
+    for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
+        {1}.loc[:, column] = scaled_features[:, col_num]
+'''.format(operator[2], result_name)
+
+            elif operator_name == '_robust_scaler':
+                operator_text += '''
+# Use Scikit-learn's RobustScaler to scale the features
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+{1} = {0}.copy()
+
+if len(training_features.columns.values) > 0:
+    scaler = RobustScaler()
+    scaler.fit(training_features.values.astype(np.float64))
+    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
+
+    for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
+        {1}.loc[:, column] = scaled_features[:, col_num]
+'''.format(operator[2], result_name)
+
+            elif operator_name == '_polynomial_features':
+                operator_text += '''
+# Use Scikit-learn's PolynomialFeatures to construct new features from the existing feature set
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0 and len(training_features.columns.values) <= 700:
+    # The feature constructor must be fit on only the training data
+    poly = PolynomialFeatures(degree=2, include_bias=False)
+    poly.fit(training_features.values.astype(np.float64))
+    constructed_features = poly.transform({0}.drop('class', axis=1).values.astype(np.float64))
+
+    {0}_classes = {0}['class'].values
+    {1} = pd.DataFrame(data=constructed_features)
+    {1}['class'] = {0}_classes
+else:
+    {1} = {0}.copy()
+'''.format(operator[2], result_name)
+
+            elif operator_name == '_pca':
+                n_components = int(operator[3])
+                if n_components < 1:
+                    n_components = 1
+                n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
+
+                operator_text += '''
+# Use Scikit-learn's PCA to transform the feature set
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # PCA must be fit on only the training data
+    pca = PCA(n_components={1})
+    pca.fit(training_features.values.astype(np.float64))
+    transformed_features = pca.transform({0}.drop('class', axis=1).values.astype(np.float64))
+
+    {0}_classes = {0}['class'].values
+    {2} = pd.DataFrame(data=transformed_features)
+    {2}['class'] = {0}_classes
+else:
+    {2} = {0}.copy()
+'''.format(operator[2], n_components, result_name)
 
             pipeline_text += operator_text
 
