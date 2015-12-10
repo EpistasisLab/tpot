@@ -1293,7 +1293,7 @@ else:
             return input_df.copy()
 
         # The feature constructor must be fit on only the training data
-        poly = PolynomialFeatures(degree=2)
+        poly = PolynomialFeatures(degree=2, include_bias=False)
         poly.fit(training_features.values.astype(np.float64))
         constructed_features = poly.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
