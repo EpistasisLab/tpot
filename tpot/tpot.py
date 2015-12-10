@@ -34,8 +34,10 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE
+from sklearn.preprocessing import StandardScaler, RobustScaler, PolynomialFeatures
+from sklearn.decomposition import PCA
+from sklearn.cross_validation import StratifiedShuffleSplit
 
 import deap
 from deap import algorithms
@@ -47,48 +49,13 @@ from deap import gp
 class TPOT(object):
     """TPOT automatically creates and optimizes Machine Learning pipelines using genetic programming.
 
-    Parameters
-    ----------
-    population_size: int (default: 100)
-        The number of pipelines in the genetic algorithm population.
-        Must be > 0. The more pipelines in the population,
-        the slower TPOT will run, but it's also more likely to
-        find better pipelines.
-    generations: int (default: 100)
-        The number of generations to run pipeline optimization for. Must be > 0.
-        The more generations you give TPOT to run, the longer it takes,
-        but it's also more likely to find better pipelines.
-    mutation_rate: float (default: 0.9)
-        The mutation rate for the genetic programming algorithm
-        in the range [0.0, 1.0]. This tells the genetic programming algorithm
-        how many pipelines to apply random changes to every generation.
-        We don't recommend that you tweak this parameter unless you
-        know what you're doing.
-    crossover_rate: float (default: 0.05)
-        The crossover rate for the genetic programming algorithm
-        in the range [0.0, 1.0]. This tells the genetic programming
-        algorithm how many pipelines to "breed" every generation.
-        We don't recommend that you tweak this parameter
-        unless you know what you're doing.
-    random_state: int (default: 0)
-        The random number generator seed for TPOT.
-        Use this to make sure that TPOT will give you the same results
-        each time you run it against the same data set with that seed.
-        No random seed if random_state=None.
-    verbosity: int {0, 1, 2} (default: 0)
-        How much information TPOT communicates while
-        it's running. 0 = none, 1 = minimal, 2 = all
-
     Attributes
     ----------
-    best_features_cache_: dict
-        Best features, available after calling `fit`
     optimized_pipeline_: object
         The optimized pipeline, available after calling `fit`
 
     """
     optimized_pipeline_ = None
-    best_features_cache_ = {}
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
@@ -142,11 +109,14 @@ class TPOT(object):
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
         self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
+        self.pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
+        self.pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
+        self.pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
+        self.pset.addPrimitive(self._pca, [pd.DataFrame, int], pd.DataFrame)
 
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
@@ -198,14 +168,14 @@ class TPOT(object):
 
         """
         try:
-            self.best_features_cache_ = {}
-
             training_testing_data = pd.DataFrame(data=features, columns=feature_names)
             training_testing_data['class'] = classes
 
+            new_col_names = {}
             for column in training_testing_data.columns.values:
                 if type(column) != str:
-                    training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
+                    new_col_names[column] = str(column).zfill(10)
+            training_testing_data.rename(columns=new_col_names, inplace=True)
 
             # Randomize the order of the columns so there is no potential bias introduced by the initial order
             # of the columns, e.g., the most predictive features at the beginning or end.
@@ -273,8 +243,6 @@ class TPOT(object):
         if self.optimized_pipeline_ is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        self.best_features_cache_ = {}
-
         training_data = pd.DataFrame(training_features)
         training_data['class'] = training_classes
         training_data['group'] = 'training'
@@ -287,9 +255,11 @@ class TPOT(object):
         most_frequent_class = Counter(training_classes).most_common(1)[0][0]
         training_testing_data.loc[:, 'guess'] = most_frequent_class
 
+        new_col_names = {}
         for column in training_testing_data.columns.values:
             if type(column) != str:
-                training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
+                new_col_names[column] = str(column).zfill(10)
+        training_testing_data.rename(columns=new_col_names, inplace=True)
 
         # Transform the tree expression in a callable function
         func = self.toolbox.compile(expr=self.optimized_pipeline_)
@@ -320,8 +290,6 @@ class TPOT(object):
         if self.optimized_pipeline_ is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        self.best_features_cache_ = {}
-
         training_data = pd.DataFrame(training_features)
         training_data['class'] = training_classes
         training_data['group'] = 'training'
@@ -336,7 +304,7 @@ class TPOT(object):
 
         for column in training_testing_data.columns.values:
             if type(column) != str:
-                training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
+                training_testing_data.rename(columns={column: str(column).zfill(10)}, inplace=True)
 
         return self._evaluate_individual(self.optimized_pipeline_, training_testing_data)[0]
 
@@ -411,12 +379,15 @@ import pandas as pd
 
 from sklearn.cross_validation import StratifiedShuffleSplit
 '''
-        if '_dt_feature_selection' in operators_used: pipeline_text += 'from itertools import combinations\n'
         if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
         if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
         if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
-        if '_select_percentile' or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
+        if '_select_percentile' in operators_used or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
         if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
+        if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
+        if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
+        if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
+        if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import PCA\n'
         if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
         if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
         if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
@@ -442,7 +413,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
                 operator[2] = 'result{}'.format(operator_num)
                 operator_text += '\n{} = tpot_data.copy()\n'.format(operator[2])
 
-            if operator[3] == 'ARG0':
+            if len(operator) > 3 and operator[3] == 'ARG0':
                 operator[3] = 'result{}'.format(operator_num)
                 operator_text += '\n{} = tpot_data.copy()\n'.format(operator[3])
 
@@ -517,8 +488,8 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
             elif operator_name == 'knnc':
                 n_neighbors = int(operator[3])
-                if n_neighbors < 1:
-                    n_neighbors = 1
+                if n_neighbors < 2:
+                    n_neighbors = 2
                 else:
                     n_neighbors = 'min({}, len(training_indices))'.format(n_neighbors)
 
@@ -556,27 +527,6 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
                 operator_text += '\n# Combine two DataFrames'
                 operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
 
-            elif operator_name == '_dt_feature_selection':
-                operator_text += '''
-# Decision-tree based feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
-
-pair_scores = dict()
-for features in combinations(training_features.columns.values, 2):
-    dtc = DecisionTreeClassifier()
-    training_feature_vals = training_features[list(features)].values
-    dtc.fit(training_feature_vals, training_class_vals)
-    pair_scores[features] = (dtc.score(training_feature_vals, training_class_vals), list(features))
-
-best_pairs = []
-for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:{1}]:
-    best_pairs.extend(list(pair))
-best_pairs = sorted(list(set(best_pairs)))
-
-{2} = {0}[sorted(list(set(best_pairs + ['class'])))]
-'''.format(operator[2], operator[3], result_name)
-
             elif operator_name == '_variance_threshold':
                 operator_text += '''
 # Use Scikit-learn's VarianceThreshold for feature selection
@@ -607,7 +557,7 @@ mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
 training_features = {0}.loc[training_indices].drop('class', axis=1)
 training_class_vals = {0}.loc[training_indices, 'class'].values
 
-if len(training_features.columns) == 0:
+if len(training_features.columns.values) == 0:
     {2} = {0}.copy()
 else:
     selector = SelectKBest(f_classif, k={1})
@@ -630,7 +580,7 @@ else:
 training_features = {0}.loc[training_indices].drop('class', axis=1)
 training_class_vals = {0}.loc[training_indices, 'class'].values
 
-if len(training_features.columns) == 0:
+if len(training_features.columns.values) == 0:
     {2} = {0}.copy()
 else:
     selector = SelectPercentile(f_classif, percentile={1})
@@ -648,17 +598,17 @@ else:
                     n_features_to_select = 1
                 n_features_to_select = 'min({}, len(training_features.columns))'.format(n_features_to_select)
                 
-                if step < 0.05:
-                    step = 0.05
-                elif step > 1.:
-                    step = 1.
+                if step < 0.1:
+                    step = 0.1
+                elif step >= 1.:
+                    step = 0.99
                 
                 operator_text += '''
 # Use Scikit-learn's Recursive Feature Elimination (RFE) for feature selection
 training_features = {0}.loc[training_indices].drop('class', axis=1)
 training_class_vals = {0}.loc[training_indices, 'class'].values
 
-if len(training_features.columns) == 0:
+if len(training_features.columns.values) == 0:
     {3} = {0}.copy()
 else:
     selector = RFE(SVC(kernel='linear'), n_features_to_select={1}, step={2})
@@ -667,6 +617,77 @@ else:
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
     {3} = {0}[mask_cols]
 '''.format(operator[2], n_features_to_select, step, result_name)
+
+            elif operator_name == '_standard_scaler':
+                operator_text += '''
+# Use Scikit-learn's StandardScaler to scale the features
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+{1} = {0}.copy()
+
+if len(training_features.columns.values) > 0:
+    scaler = StandardScaler()
+    scaler.fit(training_features.values.astype(np.float64))
+    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
+
+    for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
+        {1}.loc[:, column] = scaled_features[:, col_num]
+'''.format(operator[2], result_name)
+
+            elif operator_name == '_robust_scaler':
+                operator_text += '''
+# Use Scikit-learn's RobustScaler to scale the features
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+{1} = {0}.copy()
+
+if len(training_features.columns.values) > 0:
+    scaler = RobustScaler()
+    scaler.fit(training_features.values.astype(np.float64))
+    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
+
+    for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
+        {1}.loc[:, column] = scaled_features[:, col_num]
+'''.format(operator[2], result_name)
+
+            elif operator_name == '_polynomial_features':
+                operator_text += '''
+# Use Scikit-learn's PolynomialFeatures to construct new features from the existing feature set
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0 and len(training_features.columns.values) <= 700:
+    # The feature constructor must be fit on only the training data
+    poly = PolynomialFeatures(degree=2, include_bias=False)
+    poly.fit(training_features.values.astype(np.float64))
+    constructed_features = poly.transform({0}.drop('class', axis=1).values.astype(np.float64))
+
+    {0}_classes = {0}['class'].values
+    {1} = pd.DataFrame(data=constructed_features)
+    {1}['class'] = {0}_classes
+else:
+    {1} = {0}.copy()
+'''.format(operator[2], result_name)
+
+            elif operator_name == '_pca':
+                n_components = int(operator[3])
+                if n_components < 1:
+                    n_components = 1
+                n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
+
+                operator_text += '''
+# Use Scikit-learn's PCA to transform the feature set
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # PCA must be fit on only the training data
+    pca = PCA(n_components={1})
+    pca.fit(training_features.values.astype(np.float64))
+    transformed_features = pca.transform({0}.drop('class', axis=1).values.astype(np.float64))
+
+    {0}_classes = {0}['class'].values
+    {2} = pd.DataFrame(data=transformed_features)
+    {2}['class'] = {0}_classes
+else:
+    {2} = {0}.copy()
+'''.format(operator[2], n_components, result_name)
 
             pipeline_text += operator_text
 
@@ -897,8 +918,8 @@ else:
         """
         training_set_size = len(input_df.loc[input_df['group'] == 'training'])
         
-        if n_neighbors < 1:
-            n_neighbors = 1
+        if n_neighbors < 2:
+            n_neighbors = 2
         elif n_neighbors >= training_set_size:
             n_neighbors = training_set_size - 1
 
@@ -1024,16 +1045,16 @@ else:
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
         
-        if step < 0.05: 
-            step = 0.05
-        elif step > 1.:
-            step = 1.
+        if step < 0.1: 
+            step = 0.1
+        elif step >= 1.:
+            step = 0.99
         if num_features < 1:
             num_features = 1
         elif num_features > len(training_features.columns):
             num_features = len(training_features.columns)
 
-        if len(training_features.columns) == 0:
+        if len(training_features.columns.values) == 0:
             return input_df.copy()
 
         estimator = SVC(kernel='linear')
@@ -1071,7 +1092,7 @@ else:
         elif percentile > 100:
             percentile = 100
 
-        if len(training_features.columns) == 0:
+        if len(training_features.columns.values) == 0:
             return input_df.copy()
 
         selector = SelectPercentile(f_classif, percentile=percentile)
@@ -1104,7 +1125,7 @@ else:
         elif k >= len(training_features.columns):
             k = 'all'
 
-        if len(training_features.columns) == 0:
+        if len(training_features.columns.values) == 0:
             return input_df.copy()
 
         selector = SelectKBest(f_classif, k=k)
@@ -1144,66 +1165,153 @@ else:
         mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
 
-    def _dt_feature_selection(self, input_df, num_pairs):
-        """Uses decision trees to discover the best pair(s) of features to keep
-        
+    def _standard_scaler(self, input_df):
+        """Uses Scikit-learn's StandardScaler to scale the features by removing their mean and scaling to unit variance
+
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to perform feature selection on
-        num_pairs: int
-            The number of best feature pairs to retain
+            Input DataFrame to scale
 
         Returns
         -------
-        subsetted_df: pandas.DataFrame {n_samples, num_pairs+2+['guess', 'group', 'class']}
-            Returns a DataFrame containing the `num_pairs` best feature pairs
+        scaled_df: pandas.DataFrame {n_samples, n_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the scaled features
 
         """
-        num_pairs = min(max(1, num_pairs), 50)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
-        # If this set of features has already been analyzed, use the cache.
-        # Since the smart subset can be costly, this will save a lot of computation time.
-        input_df_columns_hash = hashlib.sha224('-'.join(sorted(input_df.columns.values)).encode('UTF-8')).hexdigest()
-        if input_df_columns_hash in self.best_features_cache_:
-            best_pairs = []
-            for pair in self.best_features_cache_[input_df_columns_hash][:num_pairs]:
-                best_pairs += list(pair)
-            return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))]
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        # The scaler must be fit on only the training data
+        scaler = StandardScaler()
+        scaler.fit(training_features.values.astype(np.float64))
+        scaled_features = scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+
+        for col_num, column in enumerate(input_df.drop(['class', 'group', 'guess'], axis=1).columns.values):
+            input_df.loc[:, column] = scaled_features[:, col_num]
+
+        return input_df.copy()
+
+    def _robust_scaler(self, input_df):
+        """Uses Scikit-learn's RobustScaler to scale the features using statistics that are robust to outliers
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+
+        Returns
+        -------
+        scaled_df: pandas.DataFrame {n_samples, n_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the scaled features
+
+        """
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        # The scaler must be fit on only the training data
+        scaler = RobustScaler()
+        scaler.fit(training_features.values.astype(np.float64))
+        scaled_features = scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+
+        for col_num, column in enumerate(input_df.drop(['class', 'group', 'guess'], axis=1).columns.values):
+            input_df.loc[:, column] = scaled_features[:, col_num]
+
+        return input_df.copy()
+
+    def _polynomial_features(self, input_df):
+        """Uses Scikit-learn's PolynomialFeatures to construct new degree-2 polynomial features from the existing feature set
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_constructed_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the constructed features
+
+        """
+        
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+        elif len(training_features.columns.values) > 700:
+            # Too many features to produce - skip this operator
+            return input_df.copy()
+
+        # The feature constructor must be fit on only the training data
+        poly = PolynomialFeatures(degree=2, include_bias=False)
+        poly.fit(training_features.values.astype(np.float64))
+        constructed_features = poly.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=constructed_features)
+        modified_df['class'] = input_df['class'].values
+        modified_df['group'] = input_df['group'].values
+        modified_df['guess'] = input_df['guess'].values
+        
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _pca(self, input_df, n_components):
+        """Uses Scikit-learn's PCA to transform the feature set
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+        n_components: int
+            The number of components to keep
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the transformed features
+
+        """
+
+        if n_components < 1:
+            n_components = 1
+        elif n_components >= len(input_df.columns.values) - 3:
+            n_components = None
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
-        pair_scores = {}
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
 
-        for features in combinations(training_features.columns.values, 2):
-            dtc = DecisionTreeClassifier(random_state=42)
-            training_feature_vals = training_features[list(features)].values
-            dtc.fit(training_feature_vals, training_class_vals)
-            pair_scores[features] = (dtc.score(training_feature_vals, training_class_vals), list(features))
+        # PCA must be fit on only the training data
+        pca = PCA(n_components=n_components)
+        pca.fit(training_features.values.astype(np.float64))
+        transformed_features = pca.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
-        # If there are no features (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
-        if len(pair_scores) == 0:
-            return input_df[['guess', 'class', 'group']]
+        modified_df = pd.DataFrame(data=transformed_features)
+        modified_df['class'] = input_df['class'].values
+        modified_df['group'] = input_df['group'].values
+        modified_df['guess'] = input_df['guess'].values
 
-        # Keep the best features cache within a reasonable size
-        if len(self.best_features_cache_) > 1000:
-            del self.best_features_cache_[list(self.best_features_cache_.keys())[0]]
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
 
-        # Keep `num_pairs` best pairs of features
-        best_pairs = []
-        for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:num_pairs]:
-            best_pairs.extend(list(pair))
-        best_pairs = sorted(list(set(best_pairs)))
-
-        # Store the best 50 pairs of features in the cache
-        self.best_features_cache_[input_df_columns_hash] = [list(pair) for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:50]]
-
-        return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
+        return modified_df.copy()
 
     @staticmethod
     def _div(num1, num2):
-        """Divide two numbers
+        """Divides two numbers
         
         Parameters
         ----------
