@@ -92,12 +92,3 @@ def test_combine_dfs():
                                 'c': range(20, 30)})
 
     assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
-
-def test_df_feature_selection():
-    tpot_obj = TPOT()
-
-    top_10_feature_pairs = ['00002', '00013', '00020', '00021', '00026', '00042',
-                            '00043', '00058', '00061', 'class', 'group', 'guess']
-
-    assert np.array_equal(tpot_obj._dt_feature_selection(training_testing_data, 10).columns.values,
-                          top_10_feature_pairs)
