@@ -49,48 +49,13 @@ from deap import gp
 class TPOT(object):
     """TPOT automatically creates and optimizes Machine Learning pipelines using genetic programming.
 
-    Parameters
-    ----------
-    population_size: int (default: 100)
-        The number of pipelines in the genetic algorithm population.
-        Must be > 0. The more pipelines in the population,
-        the slower TPOT will run, but it's also more likely to
-        find better pipelines.
-    generations: int (default: 100)
-        The number of generations to run pipeline optimization for. Must be > 0.
-        The more generations you give TPOT to run, the longer it takes,
-        but it's also more likely to find better pipelines.
-    mutation_rate: float (default: 0.9)
-        The mutation rate for the genetic programming algorithm
-        in the range [0.0, 1.0]. This tells the genetic programming algorithm
-        how many pipelines to apply random changes to every generation.
-        We don't recommend that you tweak this parameter unless you
-        know what you're doing.
-    crossover_rate: float (default: 0.05)
-        The crossover rate for the genetic programming algorithm
-        in the range [0.0, 1.0]. This tells the genetic programming
-        algorithm how many pipelines to "breed" every generation.
-        We don't recommend that you tweak this parameter
-        unless you know what you're doing.
-    random_state: int (default: 0)
-        The random number generator seed for TPOT.
-        Use this to make sure that TPOT will give you the same results
-        each time you run it against the same data set with that seed.
-        No random seed if random_state=None.
-    verbosity: int {0, 1, 2} (default: 0)
-        How much information TPOT communicates while
-        it's running. 0 = none, 1 = minimal, 2 = all
-
     Attributes
     ----------
-    best_features_cache_: dict
-        Best features, available after calling `fit`
     optimized_pipeline_: object
         The optimized pipeline, available after calling `fit`
 
     """
     optimized_pipeline_ = None
-    best_features_cache_ = {}
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
@@ -144,7 +109,6 @@ class TPOT(object):
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._dt_feature_selection, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
         self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
@@ -204,8 +168,6 @@ class TPOT(object):
 
         """
         try:
-            self.best_features_cache_ = {}
-
             training_testing_data = pd.DataFrame(data=features, columns=feature_names)
             training_testing_data['class'] = classes
 
@@ -281,8 +243,6 @@ class TPOT(object):
         if self.optimized_pipeline_ is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        self.best_features_cache_ = {}
-
         training_data = pd.DataFrame(training_features)
         training_data['class'] = training_classes
         training_data['group'] = 'training'
@@ -329,8 +289,6 @@ class TPOT(object):
         """
         if self.optimized_pipeline_ is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
-
-        self.best_features_cache_ = {}
 
         training_data = pd.DataFrame(training_features)
         training_data['class'] = training_classes
@@ -421,7 +379,6 @@ import pandas as pd
 
 from sklearn.cross_validation import StratifiedShuffleSplit
 '''
-        if '_dt_feature_selection' in operators_used: pipeline_text += 'from itertools import combinations\n'
         if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
         if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
         if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
@@ -527,8 +484,8 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
             elif operator_name == 'knnc':
                 n_neighbors = int(operator[3])
-                if n_neighbors < 1:
-                    n_neighbors = 1
+                if n_neighbors < 2:
+                    n_neighbors = 2
                 else:
                     n_neighbors = 'min({}, len(training_indices))'.format(n_neighbors)
 
@@ -565,27 +522,6 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             elif operator_name == '_combine_dfs':
                 operator_text += '\n# Combine two DataFrames'
                 operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
-
-            elif operator_name == '_dt_feature_selection':
-                operator_text += '''
-# Decision-tree based feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
-
-pair_scores = dict()
-for features in combinations(training_features.columns.values, 2):
-    dtc = DecisionTreeClassifier()
-    training_feature_vals = training_features[list(features)].values
-    dtc.fit(training_feature_vals, training_class_vals)
-    pair_scores[features] = (dtc.score(training_feature_vals, training_class_vals), list(features))
-
-best_pairs = []
-for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:{1}]:
-    best_pairs.extend(list(pair))
-best_pairs = sorted(list(set(best_pairs)))
-
-{2} = {0}[sorted(list(set(best_pairs + ['class'])))]
-'''.format(operator[2], operator[3], result_name)
 
             elif operator_name == '_variance_threshold':
                 operator_text += '''
@@ -658,10 +594,10 @@ else:
                     n_features_to_select = 1
                 n_features_to_select = 'min({}, len(training_features.columns))'.format(n_features_to_select)
                 
-                if step < 0.05:
-                    step = 0.05
-                elif step > 1.:
-                    step = 1.
+                if step < 0.1:
+                    step = 0.1
+                elif step >= 1.:
+                    step = 0.99
                 
                 operator_text += '''
 # Use Scikit-learn's Recursive Feature Elimination (RFE) for feature selection
@@ -907,8 +843,8 @@ else:
         """
         training_set_size = len(input_df.loc[input_df['group'] == 'training'])
         
-        if n_neighbors < 1:
-            n_neighbors = 1
+        if n_neighbors < 2:
+            n_neighbors = 2
         elif n_neighbors >= training_set_size:
             n_neighbors = training_set_size - 1
 
@@ -1034,10 +970,10 @@ else:
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
         
-        if step < 0.05: 
-            step = 0.05
-        elif step > 1.:
-            step = 1.
+        if step < 0.1: 
+            step = 0.1
+        elif step >= 1.:
+            step = 0.99
         if num_features < 1:
             num_features = 1
         elif num_features > len(training_features.columns):
@@ -1154,63 +1090,6 @@ else:
         mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
 
-    def _dt_feature_selection(self, input_df, num_pairs):
-        """Uses decision trees to discover the best pair(s) of features to keep
-        
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to perform feature selection on
-        num_pairs: int
-            The number of best feature pairs to retain
-
-        Returns
-        -------
-        subsetted_df: pandas.DataFrame {n_samples, num_pairs+2+['guess', 'group', 'class']}
-            Returns a DataFrame containing the `num_pairs` best feature pairs
-
-        """
-        num_pairs = min(max(1, num_pairs), 50)
-
-        # If this set of features has already been analyzed, use the cache.
-        # Since the smart subset can be costly, this will save a lot of computation time.
-        input_df_columns_hash = hashlib.sha224('-'.join(sorted(input_df.columns.values)).encode('UTF-8')).hexdigest()
-        if input_df_columns_hash in self.best_features_cache_:
-            best_pairs = []
-            for pair in self.best_features_cache_[input_df_columns_hash][:num_pairs]:
-                best_pairs += list(pair)
-            return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))]
-
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
-
-        pair_scores = {}
-
-        for features in combinations(training_features.columns.values, 2):
-            dtc = DecisionTreeClassifier(random_state=42)
-            training_feature_vals = training_features[list(features)].values
-            dtc.fit(training_feature_vals, training_class_vals)
-            pair_scores[features] = (dtc.score(training_feature_vals, training_class_vals), list(features))
-
-        # If there are no features (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
-        if len(pair_scores) == 0:
-            return input_df[['guess', 'class', 'group']]
-
-        # Keep the best features cache within a reasonable size
-        if len(self.best_features_cache_) > 1000:
-            del self.best_features_cache_[list(self.best_features_cache_.keys())[0]]
-
-        # Keep `num_pairs` best pairs of features
-        best_pairs = []
-        for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:num_pairs]:
-            best_pairs.extend(list(pair))
-        best_pairs = sorted(list(set(best_pairs)))
-
-        # Store the best 50 pairs of features in the cache
-        self.best_features_cache_[input_df_columns_hash] = [list(pair) for pair in sorted(pair_scores, key=pair_scores.get, reverse=True)[:50]]
-
-        return input_df[sorted(list(set(best_pairs + ['guess', 'class', 'group'])))].copy()
-
     def _standard_scaler(self, input_df):
         """Uses Scikit-learn's StandardScaler to scale the features by removing their mean and scaling to unit variance
 
@@ -1236,7 +1115,7 @@ else:
         scaled_features = scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
         for col_num, column in enumerate(input_df.drop(['class', 'group', 'guess'], axis=1).columns.values):
-            input_df[column] = scaled_features[:, col_num]
+            input_df.loc[:, column] = scaled_features[:, col_num]
 
         return input_df.copy()
 
@@ -1265,7 +1144,7 @@ else:
         scaled_features = scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
         for col_num, column in enumerate(input_df.drop(['class', 'group', 'guess'], axis=1).columns.values):
-            input_df[column] = scaled_features[:, col_num]
+            input_df.loc[:, column] = scaled_features[:, col_num]
 
         return input_df.copy()
 
