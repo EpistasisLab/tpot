@@ -97,7 +97,7 @@ def test_combine_dfs():
 
     assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
 
-def test_model():
+def test_static_models():
     '''
         Ensure that the TPOT static classifiers outputs the same as the sklearn output
     '''
@@ -106,7 +106,7 @@ def test_model():
     tpot_obj = TPOT()
     models = [(tpot_obj.decision_tree, DecisionTreeClassifier, {'max_features':0, 'max_depth':0}, {'max_features':'auto', 'max_depth':None}),
             (tpot_obj.svc, SVC , {'C':0.0001}, {'C':0.0001}),
-                (tpot_obj.random_forest, RandomForestClassifier,{'max_features':0, 'num_trees':100}, {'n_estimators':100, 'max_features':'auto', 'n_jobs':-1}),
+            (tpot_obj.random_forest, RandomForestClassifier,{'n_estimators':100, 'max_features':0}, {'n_estimators':100, 'max_features':'auto', 'n_jobs':-1}),
                 (tpot_obj.logistic_regression, LogisticRegression, {'C':0.0001}, {'C':0.0001}), 
                 (tpot_obj.knnc, KNeighborsClassifier, {'n_neighbors':100}, {'n_neighbors':100})]
     for model, sklearn_model, model_params, sklearn_params in models:
