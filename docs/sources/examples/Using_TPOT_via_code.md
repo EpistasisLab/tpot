@@ -41,8 +41,9 @@ from tpot import TPOT
 pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 ```
+The `fit()` function takes in a training data set, then further divides it into a training and validation data set (so as to do cross-validation). It then initializes the Genetic Algoritm to find the best pipeline based on the validation set performance evaluated on the basis of a scoring function (generally the classification accuracy, but can be user defined as well like precision/recall/f1, etc).   
 
-then evaluate the final pipeline with the `score()` function:
+You can then proceed to evaluate the final pipeline on the test set with the `score()` function:
 
 ```Python
 from tpot import TPOT
@@ -52,7 +53,7 @@ pipeline_optimizer.fit(training_features, training_classes)
 print(pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes))
 ```
 
-Note that you need to pass the training data to the `score()` function so the pipeline re-trains the scikit-learn models on the training data.
+Note that you need to pass the training data to the `score()` function as well so that TPOT re-trains on the training data using the optimized pipeline (consisting of feature selection operators and scikit-learn algorithms as found by `fit()`). 
 
 Finally, you can tell TPOT to export the optimized pipeline to a text file with the `export()` function:
 
