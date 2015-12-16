@@ -9,7 +9,7 @@ from sklearn.cross_validation import train_test_split
 
 digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
-                                                    train_size=0.75)
+                                                    train_size=0.75, test_size = 0.25)
 
 tpot = TPOT(generations=5)
 tpot.fit(X_train, y_train)
@@ -17,7 +17,11 @@ print(tpot.score(X_train, y_train, X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 ```
 
-Running this code should discover a pipeline that achieves ~97% testing accuracy, and the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file and look similar to the following:
+Running this code should discover a pipeline that achieves ~97% testing accuracy. Please note that sometimes when both train_size and test_size aren't specified in train_test_split() calls, the split doesn't use the entire data set. So we need to specify both.  
+
+For details on how the `fit()`, `score()` and `export()` functions work, please see [here](Using_TPOT_via_code.md)
+
+After running the above code, the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file and look similar to the following:
 
 ```python
 import numpy as np
@@ -32,7 +36,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75)))
+training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size = 0.25)))
 
 
 result1 = tpot_data.copy()
