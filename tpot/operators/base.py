@@ -1,6 +1,6 @@
 class BasicOperator(object):
-    def __init__(self, transform, intypes, outtype, import_code, callable_code):
-        self.transform          = transform
+    def __init__(self, operation_object, intypes, outtype, import_code, callable_code):
+        self.operation_object     = operation_object
         self.intypes       = intypes
         self.outtype       = outtype
         self.import_code   = import_code
@@ -14,7 +14,7 @@ class BasicOperator(object):
 class LearnerOperator(BasicOperator):
     def __init__(self, *args, **kargs):
         super(LearnerOperator, self).__init__(*args, **kargs)
-        self.transform = self._train_model_and_predict(self, input_df, model=self.transform, **kwargs)
+        self.operation_object = self._train_model_and_predict(self, input_df, model=self.operation_object, **kwargs)
     def callable_code(self, operator_num, operator, result_name):
         operator_text = '# Run prediction step with a {} model\n'.format(self.__class__.__name__)
         operator_text += self._callable_code
