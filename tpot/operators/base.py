@@ -1,3 +1,5 @@
+import hashlib
+
 class BasicOperator(object):
     def __init__(self, operation_object, intypes, outtype, import_code, callable_code):
         self.operation_object     = operation_object
@@ -68,7 +70,8 @@ class LearnerOperator(BasicOperator):
         input_df.loc[:, 'guess'] = clf.predict(all_features)
         
         # Also store the guesses as a synthetic feature
-        sf_hash = '-'.join(sorted(input_df.columns.values))
+        #sf_hash = '-'.join(sorted(input_df.columns.values))
+        sf_hash = '-'.join(str(c) for c in sorted(input_df.columns.values)) # not clear to me why this is necessary running operators_test.py
         #Use the classifier object's class name in the synthetic feature
         sf_hash += '{}'.format(clf.__class__)
         sf_hash += '-'.join(kwargs)
