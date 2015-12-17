@@ -46,6 +46,8 @@ from deap import creator
 from deap import tools
 from deap import gp
 
+from operators import operator_registry
+
 class TPOT(object):
     """TPOT automatically creates and optimizes Machine Learning pipelines using genetic programming.
 
@@ -101,6 +103,9 @@ class TPOT(object):
             random.seed(random_state)
             np.random.seed(random_state)
 
+        for k,v in operator_registry:
+            self.pset.addPrimitive(v.run, v.inputtypes, v.outputtype)
+            
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)

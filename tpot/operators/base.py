@@ -10,11 +10,15 @@ class BasicOperator(object):
         operator_text += self._callable_code.format(operator_num, operator)
         operator_text +='\n'
         return operator_text
+    def preprocess_arguments(self, input_df, *args, **kargs):
+        return args, kargs
+    def evaluate_operator(self, input_df, *args, **kargs):  
+        input_df, args, kargs = self.preprocess_arguments(input_df, args, kargs)
+        return self.operation_object(input_df, *args, **kargs)
         
 class LearnerOperator(BasicOperator):
-    def __init__(self, *args, **kargs):
-        super(LearnerOperator, self).__init__(*args, **kargs)
-        self.operation_object = self._train_model_and_predict(self, input_df, model=self.operation_object, **kwargs)
+    def evaluate_operator(self, input_df, *args, **kwargs):
+        return self._train_model_and_predict(input_df, *args, **kwargs)
     def callable_code(self, operator_num, operator, result_name):
         operator_text = '# Run prediction step with a {} model\n'.format(self.__class__.__name__)
         operator_text += self._callable_code
@@ -24,7 +28,7 @@ class LearnerOperator(BasicOperator):
         operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
         return operator_text
     # _train_model_and_predict scavenged en toto from current tpot.TPOT implementation
-    def _train_model_and_predict(self, input_df, model, **kwargs):
+    def _train_model_and_predict(self, input_df, *args, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
         Parameters
         ----------
@@ -40,6 +44,8 @@ class LearnerOperator(BasicOperator):
             Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
         """
+        model = self.operation_object
+        
         #Validate input
         #If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(input_df.columns) == 3:
