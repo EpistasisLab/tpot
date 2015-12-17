@@ -694,8 +694,7 @@ else:
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
 
-    @staticmethod
-    def decision_tree(input_df, max_features, max_depth):
+    def decision_tree(self, input_df, max_features, max_depth):
         """Fits a decision tree classifier
 
         Parameters
@@ -724,41 +723,16 @@ else:
         if max_depth < 1:
             max_depth = None
 
-        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
-        if len(input_df.columns) == 3:
-            return input_df
-        
-        input_df = input_df.copy()
+        return self._train_model_and_predict(input_df, DecisionTreeClassifier, max_features=max_features, max_depth=max_depth, random_state=42)
 
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
-        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-
-        dtc = DecisionTreeClassifier(max_features=max_features,
-                                     max_depth=max_depth,
-                                     random_state=42)
-
-        dtc.fit(training_features, training_classes)
-
-        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df.loc[:, 'guess'] = dtc.predict(all_features)
-
-        # Also store the guesses as a synthetic feature
-        sf_hash = '-'.join(sorted(input_df.columns.values))
-        sf_hash += 'DT-{}-{}'.format(max_features, max_depth)
-        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df.loc[:, sf_identifier] = input_df['guess'].values
-
-        return input_df
-
-    @staticmethod
-    def random_forest(input_df, num_trees, max_features):
+    def random_forest(self, input_df, n_estimators, max_features):
         """Fits a random forest classifier
 
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame for fitting the random forest
-        num_trees: int
+        n_estimators: int
             Number of trees in the random forest; must be a positive value
         max_features: int
             Number of features used to fit the decision tree; must be a positive value
@@ -770,10 +744,10 @@ else:
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if num_trees < 1:
-            num_trees = 1
-        elif num_trees > 500:
-            num_trees = 500
+        if n_estimators < 1:
+            n_estimators = 1
+        elif n_estimators > 500:
+            n_estimators = 500
 
         if max_features < 1:
             max_features = 'auto'
@@ -782,34 +756,9 @@ else:
         elif max_features > len(input_df.columns) - 3:
             max_features = len(input_df.columns) - 3
 
-        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
-        if len(input_df.columns) == 3:
-            return input_df
-        
-        input_df = input_df.copy()
-
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
-        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-
-        rfc = RandomForestClassifier(n_estimators=num_trees,
-                                     max_features=max_features,
-                                     random_state=42,
-                                     n_jobs=-1)
-        rfc.fit(training_features, training_classes)
-
-        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df.loc[:, 'guess'] = rfc.predict(all_features)
-
-        # Also store the guesses as a synthetic feature
-        sf_hash = '-'.join(sorted(input_df.columns.values))
-        sf_hash += 'RF-{}-{}'.format(num_trees, max_features)
-        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df.loc[:, sf_identifier] = input_df['guess'].values
-
-        return input_df
+        return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=n_estimators, max_features=max_features, random_state=42, n_jobs=-1)
     
-    @staticmethod
-    def logistic_regression(input_df, C):
+    def logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier
 
         Parameters
@@ -829,32 +778,9 @@ else:
         if C <= 0.:
             C = 0.0001
 
-        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
-        if len(input_df.columns) == 3:
-            return input_df
-        
-        input_df = input_df.copy()
+        return self._train_model_and_predict(input_df, LogisticRegression, C=C, random_state=42)
 
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
-        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-
-        lrc = LogisticRegression(C=C,
-                                 random_state=42)
-        lrc.fit(training_features, training_classes)
-
-        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df.loc[:, 'guess'] = lrc.predict(all_features)
-
-        # Also store the guesses as a synthetic feature
-        sf_hash = '-'.join(sorted(input_df.columns.values))
-        sf_hash += 'LR-{}'.format(C)
-        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df.loc[:, sf_identifier] = input_df['guess'].values
-
-        return input_df
-
-    @staticmethod
-    def svc(input_df, C):
+    def svc(self, input_df, C):
         """Fits a C-support vector classifier
 
         Parameters
@@ -874,32 +800,10 @@ else:
         if C <= 0.:
             C = 0.0001
 
-        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
-        if len(input_df.columns) == 3:
-            return input_df
-        
-        input_df = input_df.copy()
+        return self._train_model_and_predict(input_df, SVC, C=C, random_state=42)
 
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
-        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
 
-        svc = SVC(C=C,
-                  random_state=42)
-        svc.fit(training_features, training_classes)
-
-        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df.loc[:, 'guess'] = svc.predict(all_features)
-
-        # Also store the guesses as a synthetic feature
-        sf_hash = '-'.join(sorted(input_df.columns.values))
-        sf_hash += 'SVC-{}'.format(C)
-        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df.loc[:, sf_identifier] = input_df['guess'].values
-
-        return input_df
-
-    @staticmethod
-    def knnc(input_df, n_neighbors):
+    def knnc(self, input_df, n_neighbors):
         """Fits a k-nearest neighbor classifier
 
         Parameters
@@ -923,37 +827,15 @@ else:
         elif n_neighbors >= training_set_size:
             n_neighbors = training_set_size - 1
 
-        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
-        if len(input_df.columns) == 3:
-            return input_df
-        
-        input_df = input_df.copy()
+        return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
 
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
-        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-
-        knnc = KNeighborsClassifier(n_neighbors=n_neighbors)
-        knnc.fit(training_features, training_classes)
-
-        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df.loc[:, 'guess'] = knnc.predict(all_features)
-
-        # Also store the guesses as a synthetic feature
-        sf_hash = '-'.join(sorted(input_df.columns.values))
-        sf_hash += 'kNNC-{}'.format(n_neighbors)
-        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df.loc[:, sf_identifier] = input_df['guess'].values
-
-        return input_df
-
-    @staticmethod
-    def gradient_boosting(input_df, learning_rate, n_estimators, max_depth):
+    def gradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
         """Fits a gradient boosting classifier
 
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the k-nearest neighbor classifier
+            Input DataFrame for fitting the gradient boosting classifier
         learning_rate: float
             Shrinks the contribution of each tree by learning_rate
         n_estimators: int
@@ -979,31 +861,60 @@ else:
         if max_depth < 1:
             max_depth = None
 
-        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
+        return self._train_model_and_predict(input_df, GradientBoostingClassifier, learning_rate=learning_rate, n_estimators=n_estimators, max_depth=max_depth, random_state=42)
+    
+   
+    def _train_model_and_predict(self, input_df, model, **kwargs):
+        """Fits an arbitrary sklearn classifier model with a set of keyword parameters
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the k-neares
+        model: sklearn classifier
+            Input model to fit and predict on input_df
+        kwargs: unpacked parameters
+            Input parameters to pass to the model's constructor, does not need to be a dictionary
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        #Validate input
+        #If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(input_df.columns) == 3:
             return input_df
-        
+
         input_df = input_df.copy()
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-
-        gbc = GradientBoostingClassifier(learning_rate=learning_rate,
-                                         n_estimators=n_estimators,
-                                         max_depth=max_depth,
-                                         random_state=42)
-        gbc.fit(training_features, training_classes)
-
+       
+        # Try to seed the random_state parameter if the model accepts it.
+        try:
+            clf = model(random_state=42,**kwargs)
+            clf.fit(training_features, training_classes)
+        except TypeError:
+            clf = model(**kwargs)
+            clf.fit(training_features, training_classes)
+        
         all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df.loc[:, 'guess'] = gbc.predict(all_features)
-
+        input_df.loc[:, 'guess'] = clf.predict(all_features)
+        
         # Also store the guesses as a synthetic feature
         sf_hash = '-'.join(sorted(input_df.columns.values))
-        sf_hash += 'GBC-{}-{}-{}'.format(learning_rate, n_estimators, max_depth)
+        #Use the classifier object's class name in the synthetic feature
+        sf_hash += '{}'.format(clf.__class__)
+        sf_hash += '-'.join(kwargs)
         sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
         input_df.loc[:, sf_identifier] = input_df['guess'].values
 
         return input_df
+
+        
 
     @staticmethod
     def _combine_dfs(input_df1, input_df2):
@@ -1438,6 +1349,7 @@ else:
         else:
             return gp.mutShrink(individual)
 
+
 def main():
     parser = argparse.ArgumentParser(description='A Python tool that'
             ' automatically creates and optimizes Machine Learning pipelines'
@@ -1545,6 +1457,9 @@ def main():
     
     if args.output_file != '':
         tpot.export(args.output_file)
+
+
+
 
 if __name__ == '__main__':
     main()
