@@ -109,7 +109,6 @@ class TPOT(object):
             v = Operator
             self.pset.addPrimitive(v.evaluate_operator, v.intypes, v.outtype, v.__class__.__name__)
             
-        #self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         #self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         #self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -442,7 +441,6 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
         if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
         if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import PCA\n'
-        if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
         if 'svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
         if 'gradient_boosting' in operators_used: pipeline_text += 'from sklearn.ensemble import GradientBoostingClassifier\n'
 
@@ -476,19 +474,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             #~~~~~~~~~~~~
             
             # Replace the TPOT functions with their corresponding Python code
-            if operator_name == 'logistic_regression':
-                C = float(operator[3])
-                if C <= 0.:
-                    C = 0.0001
-
-                operator_text += '\n# Perform classification with a logistic regression classifier'
-                operator_text += '\nlrc{} = LogisticRegression(C={})\n'.format(operator_num, C)
-                operator_text += '''lrc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['lrc{1}-classification'] = lrc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == 'svc':
+            if operator_name == 'svc':
                 C = float(operator[3])
                 if C <= 0.:
                     C = 0.0001
@@ -694,28 +680,6 @@ else:
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
     
-    def logistic_regression(self, input_df, C):
-        """Fits a logistic regression classifier
-
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the logistic regression classifier
-        C: float
-            Inverse of regularization strength; must be a positive value. Like in support vector machines, smaller values specify stronger regularization.
-
-        Returns
-        -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
-
-        """
-        if C <= 0.:
-            C = 0.0001
-
-        return self._train_model_and_predict(input_df, LogisticRegression, C=C, random_state=42)
-
     def svc(self, input_df, C):
         """Fits a C-support vector classifier
 
