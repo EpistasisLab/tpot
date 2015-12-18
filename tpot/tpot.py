@@ -109,7 +109,6 @@ class TPOT(object):
             v = Operator
             self.pset.addPrimitive(v.evaluate_operator, v.intypes, v.outtype, v.__class__.__name__)
             
-        #self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         #self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
@@ -437,11 +436,11 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
         if '_select_percentile' in operators_used or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
         if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
+        if '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
         if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
         if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
         if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
         if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import PCA\n'
-        if 'svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
         if 'gradient_boosting' in operators_used: pipeline_text += 'from sklearn.ensemble import GradientBoostingClassifier\n'
 
         pipeline_text += '''
@@ -474,19 +473,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             #~~~~~~~~~~~~
             
             # Replace the TPOT functions with their corresponding Python code
-            if operator_name == 'svc':
-                C = float(operator[3])
-                if C <= 0.:
-                    C = 0.0001
-
-                operator_text += '\n# Perform classification with a C-support vector classifier'
-                operator_text += '\nsvc{} = SVC(C={})\n'.format(operator_num, C)
-                operator_text += '''svc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['svc{1}-classification'] = svc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == 'gradient_boosting':
+            if operator_name == 'gradient_boosting':
                 learning_rate = float(operator[3])
                 n_estimators = int(operator[4])
                 max_depth = int(operator[5])
@@ -680,29 +667,6 @@ else:
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
     
-    def svc(self, input_df, C):
-        """Fits a C-support vector classifier
-
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the C-support vector classifier
-        C: float
-            Penalty parameter C of the error term; must be a positive value
-
-        Returns
-        -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
-
-        """
-        if C <= 0.:
-            C = 0.0001
-
-        return self._train_model_and_predict(input_df, SVC, C=C, random_state=42)
-
-
     def gradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
         """Fits a gradient boosting classifier
 

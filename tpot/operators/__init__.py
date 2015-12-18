@@ -5,7 +5,7 @@ from .LogisticRegressionGLM import LogisticRegressionGLM
 from .RandomForest import RandomForest
 
 operator_registry = {
-    'C_SVM':C_SVM()
+    'C_SVM':C_SVM(),
     'DecisionTree':DecisionTree(),
     'KNNc':KNNc(),
     'LogisticRegressionGLM':LogisticRegressionGLM(),
