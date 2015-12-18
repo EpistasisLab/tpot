@@ -106,7 +106,8 @@ class TPOT(object):
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
             
         for Operator in operator_registry.values():
-            v = Operator()
+            #v = Operator()
+            v = Operator
             self.pset.addPrimitive(v.evaluate_operator, v.intypes, v.outtype)
             
         #self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
@@ -426,6 +427,16 @@ import pandas as pd
 
 from sklearn.cross_validation import StratifiedShuffleSplit
 '''
+        #imports = ''
+        modeling = ''
+        for op_name, op in operator_registry.iteritems():
+            if op_name in operators_used:
+                #imports += op.import_code + '\n' # Make this change later
+                pipeline_text += op.import_code + '\n'
+                #modeling += op.callable_code + '\n'
+                
+        # pipeline_text = imports + preliminary_code + modeling
+                
         if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
         if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
         if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
@@ -464,6 +475,18 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
                 operator[3] = 'result{}'.format(operator_num)
                 operator_text += '\n{} = tpot_data.copy()\n'.format(operator[3])
 
+            #~~~~~~~~~~~~
+            for op_name, op in operator_registry.iteritems():
+                if operator_name == op_name:
+                    operator_text += op.callable_code(operator_num, operator, result_name)
+                    operator_text += '''dtc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
+                    if result_name != operator[2]:
+                        operator_text += '{} = {}\n'.format(result_name, operator[2])
+                    operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+                    
+                    break                    
+            #~~~~~~~~~~~~
+            
             # Replace the TPOT functions with their corresponding Python code
             if operator_name == 'decision_tree':
                 max_features = int(operator[3])

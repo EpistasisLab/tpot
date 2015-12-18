@@ -1,3 +1,3 @@
 from .RandomForest import RandomForest
 
-operator_registry = {'RandomForest':RandomForest}
+operator_registry = {'RandomForest':RandomForest()}
