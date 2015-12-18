@@ -7,9 +7,18 @@ class BasicOperator(object):
         self.outtype       = outtype
         self.import_code   = import_code
         self._callable_code = callable_code
+    def object_alias(self, operator_num):
+        return self.__class__.__name__.lower() + str(operator_num)
     def callable_code(self, operator_num, operator, result_name):
         operator_text = self.codeblock_comment
-        operator_text += self._callable_code.format(operator_num, operator)
+        operator_text += "{} = ".format(self.object_alias(operator_num))
+        if len(self.intypes) > 1:
+            print len(operator)
+            print operator
+            print operator[3:]
+            operator_text += self._callable_code.format(*operator[3:])
+        else:
+            operator_text += self._callable_code
         operator_text +='\n'
         return operator_text
     def preprocess_arguments(self, input_df, *args, **kargs):
@@ -29,12 +38,11 @@ class LearnerOperator(BasicOperator):
     def codeblock_comment(self):
         return '# Run prediction step with a {} model\n'.format(self.__class__.__name__)
     def callable_code(self, operator_num, operator, result_name):
-        operator_text = self.codeblock_comment
-        operator_text += self._callable_code
-        operator_text += '''dtc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
+        operator_text = super(LearnerOperator, self).callable_code(operator_num, operator, result_name)
+        operator_text += '''{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(self.object_alias(operator_num), operator[2])
         if result_name != operator[2]:
             operator_text += '{} = {}\n'.format(result_name, operator[2])
-        operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+        operator_text += '''{0}['{1}-classification'] = {1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, self.object_alias(operator_num))
         return operator_text
     # _train_model_and_predict scavenged en toto from current tpot.TPOT implementation
     def _train_model_and_predict(self, input_df, *args, **kwargs):
