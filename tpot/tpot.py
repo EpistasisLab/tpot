@@ -103,16 +103,18 @@ class TPOT(object):
             random.seed(random_state)
             np.random.seed(random_state)
 
-        for k,v in operator_registry:
-            self.pset.addPrimitive(v.run, v.inputtypes, v.outputtype)
-            
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
+            
+        for Operator in operator_registry.values():
+            v = Operator()
+            self.pset.addPrimitive(v.evaluate_operator, v.intypes, v.outtype)
+            
+        #self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
+        #self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
+        #self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
+        #self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
+        #self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
+        #self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
