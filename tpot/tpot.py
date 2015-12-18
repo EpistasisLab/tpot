@@ -109,7 +109,6 @@ class TPOT(object):
             v = Operator
             self.pset.addPrimitive(v.evaluate_operator, v.intypes, v.outtype, v.__class__.__name__)
             
-        #self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         #self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         #self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         #self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
@@ -443,7 +442,6 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
         if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
         if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import PCA\n'
-        if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
         if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
         if 'svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
         if 'gradient_boosting' in operators_used: pipeline_text += 'from sklearn.ensemble import GradientBoostingClassifier\n'
@@ -478,28 +476,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             #~~~~~~~~~~~~
             
             # Replace the TPOT functions with their corresponding Python code
-            if operator_name == 'decision_tree':
-                max_features = int(operator[3])
-                max_depth = int(operator[4])
-
-                if max_features < 1:
-                    max_features = '\'auto\''
-                elif max_features == 1:
-                    max_features = None
-                else:
-                    max_features = 'min({}, len({}.columns) - 1)'.format(max_features, operator[2])
-
-                if max_depth < 1:
-                    max_depth = None
-
-                operator_text += '\n# Perform classification with a decision tree classifier'
-                operator_text += '\ndtc{} = DecisionTreeClassifier(max_features={}, max_depth={})\n'.format(operator_num, max_features, max_depth)
-                operator_text += '''dtc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == 'logistic_regression':
+            if operator_name == 'logistic_regression':
                 C = float(operator[3])
                 if C <= 0.:
                     C = 0.0001
@@ -716,70 +693,6 @@ else:
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
-
-    def decision_tree(self, input_df, max_features, max_depth):
-        """Fits a decision tree classifier
-
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the decision tree
-        max_features: int
-            Number of features used to fit the decision tree; must be a positive value
-        max_depth: int
-            Maximum depth of the decision tree; must be a positive value
-
-        Returns
-        -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
-
-        """
-        if max_features < 1:
-            max_features = 'auto'
-        elif max_features == 1:
-            max_features = None
-        elif max_features > len(input_df.columns) - 3:
-            max_features = len(input_df.columns) - 3
-
-        if max_depth < 1:
-            max_depth = None
-
-        return self._train_model_and_predict(input_df, DecisionTreeClassifier, max_features=max_features, max_depth=max_depth, random_state=42)
-
-    def random_forest(self, input_df, n_estimators, max_features):
-        """Fits a random forest classifier
-
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the random forest
-        n_estimators: int
-            Number of trees in the random forest; must be a positive value
-        max_features: int
-            Number of features used to fit the decision tree; must be a positive value
-
-        Returns
-        -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
-
-        """
-        if n_estimators < 1:
-            n_estimators = 1
-        elif n_estimators > 500:
-            n_estimators = 500
-
-        if max_features < 1:
-            max_features = 'auto'
-        elif max_features == 1:
-            max_features = None
-        elif max_features > len(input_df.columns) - 3:
-            max_features = len(input_df.columns) - 3
-
-        return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=n_estimators, max_features=max_features, random_state=42, n_jobs=-1)
     
     def logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier
