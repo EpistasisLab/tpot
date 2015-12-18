@@ -2,9 +2,9 @@ from base import LearnerOperator
 from sklearn.neighbors import KNeighborsClassifier
 import pandas as pd
 
-class KNeighborsClassifier(LearnerOperator):
+class KNNc(LearnerOperator):
     def __init__(self):
-        super(KNeighborsClassifier, self).__init__(
+        super(KNNc, self).__init__(
             operation_object = KNeighborsClassifier, 
             intypes = [pd.DataFrame, int], 
             outtype = pd.DataFrame, 

@@ -1,7 +1,7 @@
 from .RandomForest import RandomForest
-from .KNeighborsClassifier import KNeighborsClassifier
+from .KNNc import KNNc
 
 operator_registry = {
-    #'RandomForest':RandomForest(),
-    'KNeighborsClassifier':KNeighborsClassifier()
+    'RandomForest':RandomForest(),
+    'KNNc':KNNc()
 }
