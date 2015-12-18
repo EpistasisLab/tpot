@@ -50,7 +50,7 @@ def _balanced_accuracy(result):
 for operator_name, Operator in operator_registry.iteritems():
     print operator_name
     operator_obj = Operator()
-    result = operator_obj.evaluate_operator(input_df=training_testing_data, n_estimators=100, max_features='auto')
-    result2 = result[result['group'] == 'testing']
-    result2['class'] = testing_classes
-    print _balanced_accuracy(result2)
+    result = operator_obj.evaluate_operator( \
+        input_df=training_testing_data, n_estimators=100, max_features='auto')
+    result.loc[result['group'] == 'testing','class'] = testing_classes
+    print _balanced_accuracy(result)
