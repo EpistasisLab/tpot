@@ -10,10 +10,6 @@ class BasicOperator(object):
     def object_alias(self, operator_num):
         return self.__class__.__name__.lower() + str(operator_num)
     def callable_code(self, operator_num, operator, result_name):
-        #print len(operator)
-        #print operator
-        #print operator[2:]
-        #print self._callable_code
         operator_text = self.codeblock_comment
         operator_text += "{} = ".format(self.object_alias(operator_num))
         if len(self.intypes) > 1:

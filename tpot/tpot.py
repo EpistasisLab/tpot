@@ -109,7 +109,6 @@ class TPOT(object):
             v = Operator
             self.pset.addPrimitive(v.evaluate_operator, v.intypes, v.outtype, v.__class__.__name__)
             
-        #self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
@@ -441,7 +440,6 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
         if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
         if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import PCA\n'
-        if 'gradient_boosting' in operators_used: pipeline_text += 'from sklearn.ensemble import GradientBoostingClassifier\n'
 
         pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -473,30 +471,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             #~~~~~~~~~~~~
             
             # Replace the TPOT functions with their corresponding Python code
-            if operator_name == 'gradient_boosting':
-                learning_rate = float(operator[3])
-                n_estimators = int(operator[4])
-                max_depth = int(operator[5])
-                
-                if learning_rate <= 0.:
-                    learning_rate = 0.0001
-        
-                if n_estimators < 1:
-                    n_estimators = 1
-                elif n_estimators > 500:
-                    n_estimators = 500
-
-                if max_depth < 1:
-                    max_depth = None
-
-                operator_text += '\n# Perform classification with a gradient boosting classifier'
-                operator_text += '\ngbc{} = GradientBoostingClassifier(learning_rate={}, n_estimators={}, max_depth={})\n'.format(operator_num, learning_rate, n_estimators, max_depth)
-                operator_text += '''gbc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['gbc{1}-classification'] = gbc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == '_combine_dfs':
+            if operator_name == '_combine_dfs':
                 operator_text += '\n# Combine two DataFrames'
                 operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
 
@@ -666,93 +641,6 @@ else:
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
-    
-    def gradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
-        """Fits a gradient boosting classifier
-
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the gradient boosting classifier
-        learning_rate: float
-            Shrinks the contribution of each tree by learning_rate
-        n_estimators: int
-            The number of boosting stages to perform
-        max_depth: int
-            Maximum depth of the individual estimators; the maximum depth limits the number of nodes in the tree
-
-        Returns
-        -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
-
-        """
-        if learning_rate <= 0.:
-            learning_rate = 0.0001
-        
-        if n_estimators < 1:
-            n_estimators = 1
-        elif n_estimators > 500:
-            n_estimators = 500
-
-        if max_depth < 1:
-            max_depth = None
-
-        return self._train_model_and_predict(input_df, GradientBoostingClassifier, learning_rate=learning_rate, n_estimators=n_estimators, max_depth=max_depth, random_state=42)
-    
-   
-    def _train_model_and_predict(self, input_df, model, **kwargs):
-        """Fits an arbitrary sklearn classifier model with a set of keyword parameters
-
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the k-neares
-        model: sklearn classifier
-            Input model to fit and predict on input_df
-        kwargs: unpacked parameters
-            Input parameters to pass to the model's constructor, does not need to be a dictionary
-
-        Returns
-        -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
-
-        """
-        #Validate input
-        #If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
-        if len(input_df.columns) == 3:
-            return input_df
-
-        input_df = input_df.copy()
-
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
-        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-       
-        # Try to seed the random_state parameter if the model accepts it.
-        try:
-            clf = model(random_state=42,**kwargs)
-            clf.fit(training_features, training_classes)
-        except TypeError:
-            clf = model(**kwargs)
-            clf.fit(training_features, training_classes)
-        
-        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
-        input_df.loc[:, 'guess'] = clf.predict(all_features)
-        
-        # Also store the guesses as a synthetic feature
-        sf_hash = '-'.join(sorted(input_df.columns.values))
-        #Use the classifier object's class name in the synthetic feature
-        sf_hash += '{}'.format(clf.__class__)
-        sf_hash += '-'.join(kwargs)
-        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df.loc[:, sf_identifier] = input_df['guess'].values
-
-        return input_df
-
-        
 
     @staticmethod
     def _combine_dfs(input_df1, input_df2):
