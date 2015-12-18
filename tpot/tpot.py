@@ -106,15 +106,12 @@ class TPOT(object):
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
             
         for Operator in operator_registry.values():
-            #v = Operator()
             v = Operator
             self.pset.addPrimitive(v.evaluate_operator, v.intypes, v.outtype, v.__class__.__name__)
             
         #self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
-        #self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
         #self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         #self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
-        #self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         #self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
@@ -447,10 +444,8 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
         if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import PCA\n'
         if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
-        if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
         if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
         if 'svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
-        if 'knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
         if 'gradient_boosting' in operators_used: pipeline_text += 'from sklearn.ensemble import GradientBoostingClassifier\n'
 
         pipeline_text += '''
@@ -504,29 +499,6 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
 
-            elif operator_name == 'random_forest':
-                num_trees = int(operator[3])
-                max_features = int(operator[4])
-
-                if num_trees < 1:
-                    num_trees = 1
-                elif num_trees > 500:
-                    num_trees = 500
-
-                if max_features < 1:
-                    max_features = '\'auto\''
-                elif max_features == 1:
-                    max_features = 'None'
-                else:
-                    max_features = 'min({}, len({}.columns) - 1)'.format(max_features, operator[2])
-
-                operator_text += '\n# Perform classification with a random forest classifier'
-                operator_text += '\nrfc{} = RandomForestClassifier(n_estimators={}, max_features={})\n'.format(operator_num, num_trees, max_features)
-                operator_text += '''rfc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['rfc{1}-classification'] = rfc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
             elif operator_name == 'logistic_regression':
                 C = float(operator[3])
                 if C <= 0.:
@@ -550,20 +522,6 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
                 if result_name != operator[2]:
                     operator_text += '{} = {}\n'.format(result_name, operator[2])
                 operator_text += '''{0}['svc{1}-classification'] = svc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == 'knnc':
-                n_neighbors = int(operator[3])
-                if n_neighbors < 2:
-                    n_neighbors = 2
-                else:
-                    n_neighbors = 'min({}, len(training_indices))'.format(n_neighbors)
-
-                operator_text += '\n# Perform classification with a k-nearest neighbor classifier'
-                operator_text += '\nknnc{} = KNeighborsClassifier(n_neighbors={})\n'.format(operator_num, n_neighbors)
-                operator_text += '''knnc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['knnc{1}-classification'] = knnc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
 
             elif operator_name == 'gradient_boosting':
                 learning_rate = float(operator[3])
@@ -867,32 +825,6 @@ else:
 
         return self._train_model_and_predict(input_df, SVC, C=C, random_state=42)
 
-
-    def knnc(self, input_df, n_neighbors):
-        """Fits a k-nearest neighbor classifier
-
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the k-nearest neighbor classifier
-        n_neighbors: int
-            Number of neighbors to use by default for k_neighbors queries; must be a positive value
-
-        Returns
-        -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
-
-        """
-        training_set_size = len(input_df.loc[input_df['group'] == 'training'])
-        
-        if n_neighbors < 2:
-            n_neighbors = 2
-        elif n_neighbors >= training_set_size:
-            n_neighbors = training_set_size - 1
-
-        return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
 
     def gradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
         """Fits a gradient boosting classifier
