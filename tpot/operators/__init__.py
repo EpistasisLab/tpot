@@ -1,9 +1,11 @@
 from .DecisionTree import DecisionTree
 from .KNNc import KNNc
+from .LogisticRegressionGLM import LogisticRegressionGLM
 from .RandomForest import RandomForest
 
 operator_registry = {
-    'RandomForest':RandomForest(),
+    'DecisionTree':DecisionTree(),
     'KNNc':KNNc(),
-    'DecisionTree':DecisionTree()
+    'LogisticRegressionGLM':LogisticRegressionGLM(),
+    'RandomForest':RandomForest()
 }
