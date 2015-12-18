@@ -10,10 +10,15 @@ class BasicOperator(object):
     def object_alias(self, operator_num):
         return self.__class__.__name__.lower() + str(operator_num)
     def callable_code(self, operator_num, operator, result_name):
+        #print len(operator)
+        #print operator
+        #print operator[2:]
+        #print self._callable_code
         operator_text = self.codeblock_comment
         operator_text += "{} = ".format(self.object_alias(operator_num))
         if len(self.intypes) > 1:
-            operator_text += self._callable_code.format(*operator[3:])
+            # 0th argument will be the input dataframe, all subsequent args are input params
+            operator_text += self._callable_code.format(*operator[2:]) 
         else:
             operator_text += self._callable_code
         operator_text +='\n'
@@ -35,6 +40,13 @@ class LearnerOperator(BasicOperator):
     def codeblock_comment(self):
         return '\n# Run prediction step with a {} model\n'.format(self.__class__.__name__)
     def callable_code(self, operator_num, operator, result_name):
+        """
+        NB: The first line of the output will be the evaluated `callable_code` 
+        string passed in when the class was initialized. The format operation
+        expands the `operator` input from the second argument out, such that
+        if see __init__(callable_code='{0},{1}'), the first line of the output 
+        will be along the lines of 'input_df_name, parameter0'
+        """
         operator_text = super(LearnerOperator, self).callable_code(operator_num, operator, result_name)
         operator_text += '''{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(self.object_alias(operator_num), operator[2])
         if result_name != operator[2]:

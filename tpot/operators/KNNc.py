@@ -9,7 +9,7 @@ class KNNc(LearnerOperator):
             intypes = [pd.DataFrame, int], 
             outtype = pd.DataFrame, 
             import_code   = 'from sklearn.neighbors import KNeighborsClassifier', 
-            callable_code = 'KNeighborsClassifier(n_neighbors={})'
+            callable_code = 'KNeighborsClassifier(n_neighbors=min({1}, len(training_indices))'
             )     
     def preprocess_args(self, input_df, *args, **kargs): 
         n_neighbors = args[0]

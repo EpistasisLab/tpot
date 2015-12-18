@@ -1,7 +1,9 @@
-from .RandomForest import RandomForest
+from .DecisionTree import DecisionTree
 from .KNNc import KNNc
+from .RandomForest import RandomForest
 
 operator_registry = {
     'RandomForest':RandomForest(),
-    'KNNc':KNNc()
+    'KNNc':KNNc(),
+    'DecisionTree':DecisionTree()
 }
