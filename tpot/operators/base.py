@@ -8,7 +8,7 @@ class BasicOperator(object):
         self.import_code   = import_code
         self._callable_code = callable_code
     def callable_code(self, operator_num, operator, result_name):
-        operator_text = '# Run {}\n'.format(self.__class__.__name__)
+        operator_text = self.codeblock_comment
         operator_text += self._callable_code.format(operator_num, operator)
         operator_text +='\n'
         return operator_text
@@ -17,12 +17,19 @@ class BasicOperator(object):
     def evaluate_operator(self, input_df, *args, **kargs):  
         input_df, args, kargs = self.preprocess_arguments(input_df, args, kargs)
         return self.operation_object(input_df, *args, **kargs)
+    @property
+    def codeblock_comment(self):
+        return '# Run {}\n'.format(self.__class__.__name__)
+        
         
 class LearnerOperator(BasicOperator):
     def evaluate_operator(self, input_df, *args, **kwargs):
         return self._train_model_and_predict(input_df, *args, **kwargs)
+    @property
+    def codeblock_comment(self):
+        return '# Run prediction step with a {} model\n'.format(self.__class__.__name__)
     def callable_code(self, operator_num, operator, result_name):
-        operator_text = '# Run prediction step with a {} model\n'.format(self.__class__.__name__)
+        operator_text = self.codeblock_comment
         operator_text += self._callable_code
         operator_text += '''dtc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
         if result_name != operator[2]:
