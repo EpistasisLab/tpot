@@ -9,7 +9,7 @@ class RandomForest(LearnerOperator):
             intypes = [pd.DataFrame, int, int], 
             outtype = pd.DataFrame, 
             import_code = 'from sklearn.ensemble import RandomForestClassifier', 
-            callable_code = 'rfc{} = RandomForestClassifier(n_estimators={}, max_features={})'
+            callable_code = 'RandomForestClassifier(n_estimators={}, max_features={})'
             )     
     def preprocess_args(self, input_df, *args, **kargs): 
         n_estimators, max_features = args

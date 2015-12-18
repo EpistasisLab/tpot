@@ -13,9 +13,6 @@ class BasicOperator(object):
         operator_text = self.codeblock_comment
         operator_text += "{} = ".format(self.object_alias(operator_num))
         if len(self.intypes) > 1:
-            print len(operator)
-            print operator
-            print operator[3:]
             operator_text += self._callable_code.format(*operator[3:])
         else:
             operator_text += self._callable_code
@@ -28,7 +25,7 @@ class BasicOperator(object):
         return self.operation_object(input_df, *args, **kargs)
     @property
     def codeblock_comment(self):
-        return '# Run {}\n'.format(self.__class__.__name__)
+        return '\n\n# Run {}\n'.format(self.__class__.__name__)
         
         
 class LearnerOperator(BasicOperator):
@@ -36,7 +33,7 @@ class LearnerOperator(BasicOperator):
         return self._train_model_and_predict(input_df, *args, **kwargs)
     @property
     def codeblock_comment(self):
-        return '# Run prediction step with a {} model\n'.format(self.__class__.__name__)
+        return '\n# Run prediction step with a {} model\n'.format(self.__class__.__name__)
     def callable_code(self, operator_num, operator, result_name):
         operator_text = super(LearnerOperator, self).callable_code(operator_num, operator, result_name)
         operator_text += '''{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(self.object_alias(operator_num), operator[2])

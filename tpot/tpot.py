@@ -477,15 +477,8 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
             #~~~~~~~~~~~~
             for op_name, op in operator_registry.iteritems():
-                operator_text += '### '+operator_name +' | '+ op_name
                 if operator_name == op_name:
-                    operator_text += "# We know this node!"
                     operator_text += op.callable_code(operator_num, operator, result_name)
-                    operator_text += '''dtc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                    if result_name != operator[2]:
-                        operator_text += '{} = {}\n'.format(result_name, operator[2])
-                    operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-                    
                     break                    
             #~~~~~~~~~~~~
             
