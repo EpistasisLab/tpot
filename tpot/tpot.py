@@ -308,25 +308,22 @@ class TPOT(object):
 
         return self._evaluate_individual(self.optimized_pipeline_, training_testing_data)[0]
 
-    def export(self, output_file_name):
-        """Exports the current optimized pipeline as Python code.
+
+    def _replace_mathematical_operators(self, exported_pipeline):
+        """Replace all of the mathematical operators with their results in export().
 
         Parameters
         ----------
-        output_file_name: string
-            String containing the path and file name of the desired output file
+        exported_pipeline: 
+           The current optimized pipeline
 
         Returns
         -------
-        None
+        exported_pipeline: 
+           The current optimized pipeline after replacing the mathematical operators
 
         """
-        if self.optimized_pipeline_ is None:
-            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
-
-        exported_pipeline = self.optimized_pipeline_
-
-        # Replace all of the mathematical operators with their results
+        
         while True:
             for i in range(len(exported_pipeline) - 1, -1, -1):
                 node = exported_pipeline[i]
@@ -348,7 +345,25 @@ class TPOT(object):
             else:
                 break
 
-        # Unroll the nested function calls into serial code
+        return exported_pipeline
+
+    def _unroll_nested_fuctions_calls(self, exported_pipeline):
+        """Unroll the nested function calls into serial code in export()
+
+        Parameters
+        ----------
+        exported_pipeline: 
+           The current optimized pipeline
+
+        Returns
+        -------
+        exported_pipeline: 
+           The current optimized pipeline after unrolling the nested function calls
+        pipeline_list: 
+           List of operators in the current optimized pipeline
+
+        """
+
         pipeline_list = []
         result_num = 1
         while True:
@@ -369,6 +384,31 @@ class TPOT(object):
                 break
             else:
                 break
+        return exported_pipeline, pipeline_list
+
+    
+    def export(self, output_file_name):
+        """Exports the current optimized pipeline as Python code.
+
+        Parameters
+        ----------
+        output_file_name: string
+            String containing the path and file name of the desired output file
+
+        Returns
+        -------
+        None
+
+        """
+        if self.optimized_pipeline_ is None:
+            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
+
+        exported_pipeline = self.optimized_pipeline_
+
+        exported_pipeline = self._replace_mathematical_operators(exported_pipeline)
+
+        exported_pipeline, pipeline_list = self._unroll_nested_fuctions_calls(exported_pipeline)
+
 
         # Have the code import all of the necessary modules and functions
         # operator[1] is the name of the operator
