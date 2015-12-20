@@ -265,7 +265,7 @@ class TPOT(object):
         func = self.toolbox.compile(expr=self.optimized_pipeline_)
 
         result = func(training_testing_data)
-        return result[result['group'] == 'testing', 'guess'].values
+        return result.loc[result['group'] == 'testing', 'guess'].values
 
     def score(self, training_features, training_classes, testing_features, testing_classes):
         """Estimates the testing accuracy of the optimized pipeline.
