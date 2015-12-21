@@ -23,7 +23,7 @@ operator_registry = {
     'RandomForest':RandomForest(),
     
     ### Misc transformation operators
-    'CombineDFs':CombineDFs() ## Does not work properly. I think it's a problem with preprocess_arguments()
+    #'CombineDFs':CombineDFs() ## Does not work properly. I think it's a problem with preprocess_arguments()
     'PCAoperator':PCAoperator(),
     'PolynomialFeaturesOperator':PolynomialFeaturesOperator(),
     'RobustScalerOperator':RobustScalerOperator(),

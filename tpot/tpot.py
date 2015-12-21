@@ -30,7 +30,6 @@ import numpy as np
 import pandas as pd
 
 from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE
-from sklearn.preprocessing import StandardScaler
 from sklearn.cross_validation import StratifiedShuffleSplit
 
 import deap
@@ -108,7 +107,6 @@ class TPOT(object):
         # self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
         # self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         # self.pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
-        # self.pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
 
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
@@ -427,7 +425,6 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if '_select_percentile' in operators_used or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
         if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
         if '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
-        if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
 
         pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -553,21 +550,6 @@ else:
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
     {3} = {0}[mask_cols]
 '''.format(operator[2], n_features_to_select, step, result_name)
-
-            elif operator_name == '_standard_scaler':
-                operator_text += '''
-# Use Scikit-learn's StandardScaler to scale the features
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-{1} = {0}.copy()
-
-if len(training_features.columns.values) > 0:
-    scaler = StandardScaler()
-    scaler.fit(training_features.values.astype(np.float64))
-    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
-
-    for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
-        {1}.loc[:, column] = scaled_features[:, col_num]
-'''.format(operator[2], result_name)
 
             pipeline_text += operator_text
 
@@ -733,35 +715,6 @@ if len(training_features.columns.values) > 0:
         mask = selector.get_support(True)
         mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
-
-    def _standard_scaler(self, input_df):
-        """Uses Scikit-learn's StandardScaler to scale the features by removing their mean and scaling to unit variance
-
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to scale
-
-        Returns
-        -------
-        scaled_df: pandas.DataFrame {n_samples, n_features + ['guess', 'group', 'class']}
-            Returns a DataFrame containing the scaled features
-
-        """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-
-        if len(training_features.columns.values) == 0:
-            return input_df.copy()
-
-        # The scaler must be fit on only the training data
-        scaler = StandardScaler()
-        scaler.fit(training_features.values.astype(np.float64))
-        scaled_features = scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
-
-        for col_num, column in enumerate(input_df.drop(['class', 'group', 'guess'], axis=1).columns.values):
-            input_df.loc[:, column] = scaled_features[:, col_num]
-
-        return input_df.copy()
 
     @staticmethod
     def _div(num1, num2):
