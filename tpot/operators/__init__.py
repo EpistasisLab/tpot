@@ -7,6 +7,7 @@ from .LogisticRegressionGLM import LogisticRegressionGLM
 from .PCA import PCAoperator
 from .PolynomialFeaturesOperator import PolynomialFeaturesOperator
 from .RandomForest import RandomForest
+from .RobustScalerOperator import RobustScalerOperator
 
 #### Misc transformation operators
 #from .CombineDFs import CombineDFs
@@ -23,5 +24,6 @@ operator_registry = {
     ### Misc transformation operators
     #'CombineDFs':CombineDFs() ## Does not work properly. I think it's a problem with preprocess_arguments()
     'PCAoperator':PCAoperator(),
-    'PolynomialFeaturesOperator':PolynomialFeaturesOperator()
+    'PolynomialFeaturesOperator':PolynomialFeaturesOperator(),
+    'RobustScalerOperator':RobustScalerOperator()
     }
