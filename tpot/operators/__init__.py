@@ -17,19 +17,19 @@ from .StandardScalerOperator import StandardScalerOperator
 
 operator_registry = {
     #### Statistical learning operators
-    #'C_SVM':C_SVM(),
-    #'DecisionTree':DecisionTree(),
-    #'KNNc':KNNc(),
-    #'GradientBoosting':GradientBoosting(),
+    'C_SVM':C_SVM(),
+    'DecisionTree':DecisionTree(),
+    'KNNc':KNNc(),
+    'GradientBoosting':GradientBoosting(),
     'LogisticRegressionGLM':LogisticRegressionGLM(),
-    #'RandomForest':RandomForest(),
+    'RandomForest':RandomForest(),
     
     ### Misc transformation operators
     #'CombineDFs':CombineDFs() ## Does not work properly. I think it's a problem with preprocess_arguments()
-    #'PCAoperator':PCAoperator(),
-    #'PolynomialFeaturesOperator':PolynomialFeaturesOperator(),
-    #'RobustScalerOperator':RobustScalerOperator(),
-    #'StandardScalerOperator':StandardScalerOperator(),
-    #'RecursiveFeatureElim':RecursiveFeatureElim(),
+    'PCAoperator':PCAoperator(),
+    'PolynomialFeaturesOperator':PolynomialFeaturesOperator(),
+    'RobustScalerOperator':RobustScalerOperator(),
+    'StandardScalerOperator':StandardScalerOperator(),
+    'RecursiveFeatureElim':RecursiveFeatureElim(),
     'SelectPercentileOperator':SelectPercentileOperator()
     }
