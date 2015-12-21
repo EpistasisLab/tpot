@@ -1,4 +1,3 @@
-# self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
 from base import BasicOperator
 import numpy as np
 import pandas as pd
