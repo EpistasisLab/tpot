@@ -11,6 +11,7 @@ from .RecursiveFeatureElim import RecursiveFeatureElim
 from .RobustScalerOperator import RobustScalerOperator
 from .SelectPercentileOperator import SelectPercentileOperator
 from .StandardScalerOperator import StandardScalerOperator
+from .SelectKBestOperator import SelectKBestOperator
 
 #### Misc transformation operators
 #from .CombineDFs import CombineDFs
@@ -25,11 +26,12 @@ operator_registry = {
     'RandomForest':RandomForest(),
     
     ### Misc transformation operators
-    #'CombineDFs':CombineDFs() ## Does not work properly. I think it's a problem with preprocess_arguments()
+    ##'CombineDFs':CombineDFs() ## Does not work properly. I think it's a problem with preprocess_arguments()
     'PCAoperator':PCAoperator(),
     'PolynomialFeaturesOperator':PolynomialFeaturesOperator(),
     'RobustScalerOperator':RobustScalerOperator(),
     'StandardScalerOperator':StandardScalerOperator(),
     'RecursiveFeatureElim':RecursiveFeatureElim(),
+    'SelectKBestOperator':SelectKBestOperator(),
     'SelectPercentileOperator':SelectPercentileOperator()
     }

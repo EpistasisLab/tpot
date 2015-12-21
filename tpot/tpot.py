@@ -29,7 +29,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif
+from sklearn.feature_selection import VarianceThreshold
 from sklearn.cross_validation import StratifiedShuffleSplit
 
 import deap
@@ -101,15 +101,17 @@ class TPOT(object):
         for Operator in operator_registry.values():
             v = Operator
             self.pset.addPrimitive(v.evaluate_operator, v.intypes, v.outtype, v.__class__.__name__)
-            
+        
+        ####################################
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         # self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
-        # self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
 
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
         self.pset.addPrimitive(operator.mul, [int, int], int)
         self.pset.addPrimitive(self._div, [int, int], float)
+        ####################################
+        
         for val in range(0, 101):
             self.pset.addTerminal(val, int)
         for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
@@ -418,7 +420,6 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         # pipeline_text = imports + preliminary_code + modeling
                 
         if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
-        if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
 
         pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -471,29 +472,6 @@ mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
 {2} = {0}[mask_cols]
 '''.format(operator[2], operator[3], result_name)
 
-            elif operator_name == '_select_kbest':
-                k = int(operator[3])
-                
-                if k < 1:
-                    k = 1
-                
-                k = 'min({}, len(training_features.columns))'.format(k)
-                
-                operator_text += '''
-# Use Scikit-learn's SelectKBest for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
-
-if len(training_features.columns.values) == 0:
-    {2} = {0}.copy()
-else:
-    selector = SelectKBest(f_classif, k={1})
-    selector.fit(training_features.values, training_class_vals)
-    mask = selector.get_support(True)
-    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
-'''.format(operator[2], k, result_name)
-
             pipeline_text += operator_text
 
         with open(output_file_name, 'w') as output_file:
@@ -517,39 +495,6 @@ else:
 
         """
         return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
-
-    def _select_kbest(self, input_df, k):
-        """Uses Scikit-learn's SelectKBest feature selection to learn the subset of features that have the highest score according to some scoring function
-        
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to perform feature selection on
-        k: int
-            The top k features to keep from the original set of features in the training data
-
-        Returns
-        -------
-        subsetted_df: pandas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
-            Returns a DataFrame containing the `k` best features
-
-        """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
-        
-        if k < 1:
-            k = 1
-        elif k >= len(training_features.columns):
-            k = 'all'
-
-        if len(training_features.columns.values) == 0:
-            return input_df.copy()
-
-        selector = SelectKBest(f_classif, k=k)
-        selector.fit(training_features, training_class_vals)
-        mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
-        return input_df[mask_cols].copy()
 
     def _variance_threshold(self, input_df, threshold):
         """Uses Scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the threshold
