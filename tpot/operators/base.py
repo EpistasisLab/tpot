@@ -9,9 +9,12 @@ class BasicOperator(object):
         self._callable_code = callable_code
     def object_alias(self, operator_num):
         return self.__class__.__name__.lower() + str(operator_num)
+    def callable_lhs(self, operator_num, operator, result_name):
+        """Generates the left hand side of the 'callable_code' chunk"""
+        return self.object_alias(operator_num)
     def callable_code(self, operator_num, operator, result_name):
         operator_text = self.codeblock_comment
-        operator_text += "{} = ".format(self.object_alias(operator_num))
+        operator_text += "{} = ".format(self.callable_lhs(operator_num, operator, result_name))
         if len(self.intypes) > 1:
             # 0th argument will be the input dataframe, all subsequent args are input params
             operator_text += self._callable_code.format(*operator[2:]) 
@@ -20,7 +23,7 @@ class BasicOperator(object):
         operator_text +='\n'
         return operator_text
     def preprocess_arguments(self, input_df, *args, **kargs):
-        return args, kargs
+        return input_df, args, kargs
     def evaluate_operator(self, input_df, *args, **kargs):  
         input_df, args, kargs = self.preprocess_arguments(input_df, args, kargs)
         return self.operation_object(input_df, *args, **kargs)
