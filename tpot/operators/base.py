@@ -49,7 +49,7 @@ class LearnerOperator(BasicOperator):
         operator_text = super(LearnerOperator, self).callable_code(operator_num, operator, result_name)
         operator_text += '''{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(self.object_alias(operator_num), operator[2])
         if result_name != operator[2]:
-            operator_text += '{} = {}\n'.format(result_name, operator[2])
+            operator_text += '{} = {}\n'.format(result_name, operator[2]) # Should this be '{} = {}.copy()\n' ?
         operator_text += '''{0}['{1}-classification'] = {1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, self.object_alias(operator_num))
         return operator_text
     # _train_model_and_predict scavenged en toto from current tpot.TPOT implementation
