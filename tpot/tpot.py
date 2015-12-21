@@ -29,11 +29,6 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE
 from sklearn.preprocessing import StandardScaler, RobustScaler, PolynomialFeatures
 from sklearn.cross_validation import StratifiedShuffleSplit
