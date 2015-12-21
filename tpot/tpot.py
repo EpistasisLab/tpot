@@ -29,7 +29,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE
+from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile
 from sklearn.cross_validation import StratifiedShuffleSplit
 
 import deap
@@ -106,7 +106,6 @@ class TPOT(object):
         # self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         # self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
         # self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
-        # self.pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
 
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
@@ -423,8 +422,6 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
         if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
         if '_select_percentile' in operators_used or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
-        if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
-        if '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
 
         pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -523,34 +520,6 @@ else:
     {2} = {0}[mask_cols]
 '''.format(operator[2], percentile, result_name)
 
-            elif operator_name == '_rfe':
-                n_features_to_select = int(operator[3])
-                step = float(operator[4])
-                
-                if n_features_to_select < 1:
-                    n_features_to_select = 1
-                n_features_to_select = 'min({}, len(training_features.columns))'.format(n_features_to_select)
-                
-                if step < 0.1:
-                    step = 0.1
-                elif step >= 1.:
-                    step = 0.99
-                
-                operator_text += '''
-# Use Scikit-learn's Recursive Feature Elimination (RFE) for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
-
-if len(training_features.columns.values) == 0:
-    {3} = {0}.copy()
-else:
-    selector = RFE(SVC(kernel='linear'), n_features_to_select={1}, step={2})
-    selector.fit(training_features.values, training_class_vals)
-    mask = selector.get_support(True)
-    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {3} = {0}[mask_cols]
-'''.format(operator[2], n_features_to_select, step, result_name)
-
             pipeline_text += operator_text
 
         with open(output_file_name, 'w') as output_file:
@@ -574,49 +543,6 @@ else:
 
         """
         return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
-
-    def _rfe(self, input_df, num_features, step):
-        """Uses Scikit-learn's Recursive Feature Elimination to learn the subset of features that have the highest weights according to the estimator
-        
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to perform feature selection on
-        num_features: int
-            The number of features to select
-        step: float
-            The percentage of features to drop each iteration
-
-        Returns
-        -------
-        subsetted_df: pandas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
-            Returns a DataFrame containing the `num_features` best features
-
-        """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
-        
-        if step < 0.1: 
-            step = 0.1
-        elif step >= 1.:
-            step = 0.99
-        if num_features < 1:
-            num_features = 1
-        elif num_features > len(training_features.columns):
-            num_features = len(training_features.columns)
-
-        if len(training_features.columns.values) == 0:
-            return input_df.copy()
-
-        estimator = SVC(kernel='linear')
-        selector = RFE(estimator, n_features_to_select=num_features, step=step)
-        try:
-            selector.fit(training_features, training_class_vals)
-            mask = selector.get_support(True)
-            mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
-            return input_df[mask_cols].copy()
-        except ValueError:
-            return input_df[['guess', 'class', 'group']].copy()
 
     def _select_percentile(self, input_df, percentile):
         """Uses Scikit-learn's SelectPercentile feature selection to learn the subset of features that belong in the highest `percentile`
