@@ -8,6 +8,7 @@ from .PCA import PCAoperator
 from .PolynomialFeaturesOperator import PolynomialFeaturesOperator
 from .RandomForest import RandomForest
 from .RobustScalerOperator import RobustScalerOperator
+from .StandardScalerOperator import StandardScalerOperator
 
 #### Misc transformation operators
 #from .CombineDFs import CombineDFs
@@ -25,5 +26,6 @@ operator_registry = {
     'CombineDFs':CombineDFs() ## Does not work properly. I think it's a problem with preprocess_arguments()
     'PCAoperator':PCAoperator(),
     'PolynomialFeaturesOperator':PolynomialFeaturesOperator(),
-    'RobustScalerOperator':RobustScalerOperator()
+    'RobustScalerOperator':RobustScalerOperator(),
+    'StandardScalerOperator':StandardScalerOperator()
     }
