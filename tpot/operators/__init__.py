@@ -5,6 +5,7 @@ from .KNNc import KNNc
 from .GradientBoosting import GradientBoosting
 from .LogisticRegressionGLM import LogisticRegressionGLM
 from .PCA import PCAoperator
+from .PolynomialFeaturesOperator import PolynomialFeaturesOperator
 from .RandomForest import RandomForest
 
 #### Misc transformation operators
@@ -21,5 +22,6 @@ operator_registry = {
     
     ### Misc transformation operators
     #'CombineDFs':CombineDFs() ## Does not work properly. I think it's a problem with preprocess_arguments()
-    'PCAoperator':PCAoperator()
+    'PCAoperator':PCAoperator(),
+    'PolynomialFeaturesOperator':PolynomialFeaturesOperator()
     }
