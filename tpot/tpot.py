@@ -38,6 +38,7 @@ from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif,
 from sklearn.preprocessing import StandardScaler, RobustScaler, PolynomialFeatures
 from sklearn.decomposition import PCA
 from sklearn.cross_validation import StratifiedShuffleSplit
+import warnings
 
 import deap
 from deap import algorithms
@@ -1045,10 +1046,15 @@ else:
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
+        
+        with warnings.catch_warnings():
+            # Ignore warnings about constant features
+            warnings.simplefilter('ignore', category=UserWarning)
 
-        selector = SelectPercentile(f_classif, percentile=percentile)
-        selector.fit(training_features, training_class_vals)
-        mask = selector.get_support(True)
+            selector = SelectPercentile(f_classif, percentile=percentile)
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+
         mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
 
@@ -1079,9 +1085,14 @@ else:
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
-        selector = SelectKBest(f_classif, k=k)
-        selector.fit(training_features, training_class_vals)
-        mask = selector.get_support(True)
+        with warnings.catch_warnings():
+            # Ignore warnings about constant features
+            warnings.simplefilter('ignore', category=UserWarning)
+
+            selector = SelectKBest(f_classif, k=k)
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+
         mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
 
