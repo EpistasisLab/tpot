@@ -405,15 +405,10 @@ import pandas as pd
 
 from sklearn.cross_validation import StratifiedShuffleSplit
 '''
-        #imports = ''
         modeling = ''
         for op_name, op in operator_registry.iteritems():
             if op_name in operators_used:
-                #imports += op.import_code + '\n' # Make this change later
                 pipeline_text += op.import_code + '\n'
-                #modeling += op.callable_code + '\n'
-                
-        # pipeline_text = imports + preliminary_code + modeling
 
         pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
