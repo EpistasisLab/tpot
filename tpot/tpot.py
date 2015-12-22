@@ -102,8 +102,6 @@ class TPOT(object):
             self.pset.addPrimitive(v.evaluate_operator, v.intypes, v.outtype, v.__class__.__name__)
         
         ####################################
-        self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
-
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
         self.pset.addPrimitive(operator.mul, [int, int], int)
@@ -439,41 +437,16 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
                 operator[3] = 'result{}'.format(operator_num)
                 operator_text += '\n{} = tpot_data.copy()\n'.format(operator[3])
 
-            #~~~~~~~~~~~~
+             # Replace the TPOT functions with their corresponding Python code
             for op_name, op in operator_registry.iteritems():
                 if operator_name == op_name:
                     operator_text += op.callable_code(operator_num, operator, result_name)
                     break                    
-            #~~~~~~~~~~~~
-            
-            # Replace the TPOT functions with their corresponding Python code
-            if operator_name == '_combine_dfs':
-                operator_text += '\n# Combine two DataFrames'
-                operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
 
             pipeline_text += operator_text
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
-
-    @staticmethod
-    def _combine_dfs(input_df1, input_df2):
-        """Function to combine two DataFrames
-        
-        Parameters
-        ----------
-        input_df1: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to combine
-        input_df2: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to combine
-
-        Returns
-        -------
-        combined_df: pandas.DataFrame {n_samples, n_both_features+['guess', 'group', 'class']}
-            Returns a DataFrame containing the features of both input_df1 and input_df2
-
-        """
-        return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
 
     @staticmethod
     def _div(num1, num2):

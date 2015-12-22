@@ -1,5 +1,6 @@
 #### Statistical learning operators
 from .C_SVM import C_SVM
+from .CombineDFs import CombineDFs
 from .DecisionTree import DecisionTree
 from .KNNc import KNNc
 from .GradientBoosting import GradientBoosting
@@ -27,7 +28,7 @@ operator_registry = {
     'RandomForest':RandomForest(),
     
     ### Misc transformation operators
-    ##'CombineDFs':CombineDFs() ## Does not work properly. I think it's a problem with preprocess_arguments()
+    'CombineDFs':CombineDFs(),
     'PCAoperator':PCAoperator(),
     'PolynomialFeaturesOperator':PolynomialFeaturesOperator(),
     'RobustScalerOperator':RobustScalerOperator(),
