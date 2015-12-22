@@ -101,12 +101,10 @@ class TPOT(object):
             v = Operator
             self.pset.addPrimitive(v.evaluate_operator, v.intypes, v.outtype, v.__class__.__name__)
         
-        ####################################
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
         self.pset.addPrimitive(operator.mul, [int, int], int)
         self.pset.addPrimitive(self._div, [int, int], float)
-        ####################################
         
         for val in range(0, 101):
             self.pset.addTerminal(val, int)
@@ -405,7 +403,7 @@ import pandas as pd
 
 from sklearn.cross_validation import StratifiedShuffleSplit
 '''
-        modeling = ''
+
         for op_name, op in operator_registry.iteritems():
             if op_name in operators_used:
                 pipeline_text += op.import_code + '\n'
