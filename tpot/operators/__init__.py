@@ -12,6 +12,7 @@ from .RobustScalerOperator import RobustScalerOperator
 from .SelectPercentileOperator import SelectPercentileOperator
 from .StandardScalerOperator import StandardScalerOperator
 from .SelectKBestOperator import SelectKBestOperator
+from .VarianceThresholdOperator import VarianceThresholdOperator
 
 #### Misc transformation operators
 #from .CombineDFs import CombineDFs
@@ -33,5 +34,6 @@ operator_registry = {
     'StandardScalerOperator':StandardScalerOperator(),
     'RecursiveFeatureElim':RecursiveFeatureElim(),
     'SelectKBestOperator':SelectKBestOperator(),
-    'SelectPercentileOperator':SelectPercentileOperator()
+    'SelectPercentileOperator':SelectPercentileOperator(),
+    'VarianceThresholdOperator':VarianceThresholdOperator()
     }

@@ -29,7 +29,6 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from sklearn.feature_selection import VarianceThreshold
 from sklearn.cross_validation import StratifiedShuffleSplit
 
 import deap
@@ -104,7 +103,6 @@ class TPOT(object):
         
         ####################################
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        # self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
 
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
@@ -418,8 +416,6 @@ from sklearn.cross_validation import StratifiedShuffleSplit
                 #modeling += op.callable_code + '\n'
                 
         # pipeline_text = imports + preliminary_code + modeling
-                
-        if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
 
         pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -455,23 +451,6 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
                 operator_text += '\n# Combine two DataFrames'
                 operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
 
-            elif operator_name == '_variance_threshold':
-                operator_text += '''
-# Use Scikit-learn's VarianceThreshold for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-
-selector = VarianceThreshold(threshold={1})
-try:
-    selector.fit(training_features.values)
-except ValueError:
-    # None of the features meet the variance threshold
-    {2} = {0}[['class']]
-
-mask = selector.get_support(True)
-mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-{2} = {0}[mask_cols]
-'''.format(operator[2], operator[3], result_name)
-
             pipeline_text += operator_text
 
         with open(output_file_name, 'w') as output_file:
@@ -495,37 +474,6 @@ mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
 
         """
         return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
-
-    def _variance_threshold(self, input_df, threshold):
-        """Uses Scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the threshold
-        
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to perform feature selection on
-        threshold: float
-            The variance threshold that removes features that fall under the threshold
-
-        Returns
-        -------
-        subsetted_df: pandas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
-            Returns a DataFrame containing the features that are above the variance threshold
-
-        """
-
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
-
-        selector = VarianceThreshold(threshold=threshold)
-        try:
-            selector.fit(training_features) 
-        except ValueError:
-            # None features are above the variance threshold
-            return input_df[['guess', 'class', 'group']].copy()
-
-        mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
-        return input_df[mask_cols].copy()
 
     @staticmethod
     def _div(num1, num2):
