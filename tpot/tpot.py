@@ -40,7 +40,7 @@ from sklearn.decomposition import PCA
 from sklearn.cross_validation import StratifiedShuffleSplit
 import warnings
 
-from tpot_export import _replace_function_calls
+from export_utils import *
 
 import deap
 from deap import algorithms
@@ -330,11 +330,11 @@ class TPOT(object):
 
         exported_pipeline = self.optimized_pipeline_
 
-        # Replace all of the mathematical operators with their results.
-        exported_pipeline = self._replace_mathematical_operators(exported_pipeline)
+        # Replace all of the mathematical operators with their results. Check export_utils.py for details.
+        exported_pipeline = replace_mathematical_operators(exported_pipeline)
 
-        # Unroll the nested function calls into serial code
-        exported_pipeline, pipeline_list = self._unroll_nested_fuctions_calls(exported_pipeline)
+        # Unroll the nested function calls into serial code. Check export_utils.py for details.
+        exported_pipeline, pipeline_list = unroll_nested_fuctions_calls(exported_pipeline)
 
 
         # Have the code import all of the necessary modules and functions
@@ -369,90 +369,12 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
 '''
 
-        # Replace the function calls with their corresponding Python code
-        # Check tpot_export.py for details
-        pipeline_text += _replace_function_calls(pipeline_list)
+        # Replace the function calls with their corresponding Python code. Check export_utils.py for details
+        pipeline_text += replace_function_calls(pipeline_list)
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
 
-
-    def _replace_mathematical_operators(self, exported_pipeline):
-        """Replace all of the mathematical operators with their results for use in export(self, output_file_name)
-
-        Parameters
-        ----------
-        exported_pipeline:
-           The current optimized pipeline
-
-        Returns
-        -------
-        exported_pipeline:
-           The current optimized pipeline after replacing the mathematical operators
-
-        """
-
-        while True:
-            for i in range(len(exported_pipeline) - 1, -1, -1):
-                node = exported_pipeline[i]
-                if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div']:
-                    val1 = int(exported_pipeline[i + 1].name)
-                    val2 = int(exported_pipeline[i + 2].name)
-                    if node.name == 'add':
-                        new_val = val1 + val2
-                    elif node.name == 'sub':
-                        new_val = val1 - val2
-                    elif node.name == 'mul':
-                        new_val = val1 * val2
-                    else:
-                        new_val = self._div(val1, val2)
-
-                    new_val = deap.gp.Terminal(symbolic=new_val, terminal=new_val, ret=new_val)
-                    exported_pipeline = exported_pipeline[:i] + [new_val] + exported_pipeline[i + 3:]
-                    break
-            else:
-                break
-
-        return exported_pipeline
-
-    def _unroll_nested_fuctions_calls(self, exported_pipeline):
-        """Unroll the nested function calls into serial code for use in export(self, output_file_name)
-
-        Parameters
-        ----------
-        exported_pipeline:
-           The current optimized pipeline
-
-        Returns
-        -------
-        exported_pipeline:
-           The current optimized pipeline after unrolling the nested function calls
-        pipeline_list:
-           List of operators in the current optimized pipeline
-
-        """
-
-        pipeline_list = []
-        result_num = 1
-        while True:
-            for node_index in range(len(exported_pipeline) - 1, -1, -1):
-                node = exported_pipeline[node_index]
-                if type(node) is not deap.gp.Primitive:
-                    continue
-
-                node_params = exported_pipeline[node_index + 1:node_index + node.arity + 1]
-
-                new_val = 'result{}'.format(result_num)
-                operator_list = [new_val, node.name]
-                operator_list.extend([x.name for x in node_params])
-                pipeline_list.append(operator_list)
-                result_num += 1
-                new_val = deap.gp.Terminal(symbolic=new_val, terminal=new_val, ret=new_val)
-                exported_pipeline = exported_pipeline[:node_index] + [new_val] + exported_pipeline[node_index + node.arity + 1:]
-                break
-            else:
-                break
-        return exported_pipeline, pipeline_list
 
 
     def decision_tree(self, input_df, max_features, max_depth):
