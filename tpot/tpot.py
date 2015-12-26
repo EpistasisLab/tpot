@@ -40,7 +40,7 @@ from sklearn.decomposition import PCA
 from sklearn.cross_validation import StratifiedShuffleSplit
 import warnings
 
-from export_utils import *
+from .export_utils import *
 
 import deap
 from deap import algorithms
