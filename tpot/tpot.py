@@ -114,7 +114,7 @@ class TPOT(object):
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self._select_fwe, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
         self.pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
