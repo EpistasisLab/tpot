@@ -53,9 +53,9 @@ pipeline_optimizer.fit(training_features, training_classes)
 print(pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes))
 ```
 
-Note that you need to pass the training data to the `score()` function as well so that TPOT re-trains on the training data using the optimized pipeline (consisting of feature selection operators and scikit-learn algorithms as found by `fit()`). 
+Note that you need to pass the training data to the `score()` function as well so that TPOT re-trains on the training data using the optimized pipeline (consisting of feature selection operators and scikit-learn algorithms as found by `fit()`). There is also the option of passing a user defined scoring function to score() for custom evaluation. For more on this click [here](Custom_Scoring_Functions.md). 
 
-Finally, you can tell TPOT to export the optimized pipeline to a text file with the `export()` function:
+Finally, you can tell TPOT to export the python code corresponding to the optimized pipeline, to a text file with the `export()` function:
 
 ```Python
 from tpot import TPOT
