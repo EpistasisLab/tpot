@@ -117,12 +117,12 @@ def replace_function_calls(pipeline_list):
        The python code corresponding to the function calls in the current optimized pipeline
 
     """
-
+    operator_text = ''
     for operator in pipeline_list:
         operator_num = int(operator[0].strip('result'))
         result_name = operator[0]
         operator_name = operator[1]
-        operator_text = ''
+        
 
         # Make copies of the data set for each reference to ARG0
         if operator[2] == 'ARG0':
@@ -282,6 +282,28 @@ mask = selector.get_support(True)
 mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
 {2} = {0}[mask_cols]
 '''.format(operator[2], k, result_name)
+
+        # SelectFwe based on the SelectKBest code
+        elif operator_name == '_select_fwe':
+            alpha = float(operator[3])
+            if alpha > 0.05:
+                alpha = 0.05
+            elif alpha <= 0.001:
+                alpha = 0.001
+            operator_text += '''
+training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
+if len(training_features.columns.values) == 0:
+{2} = {0}.copy()
+else:
+selector = SelectFwe(f_classif, alpha={1})
+selector.fit(training_features.values, training_class_vals)
+mask = selector.get_support(True)
+mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
+{2} = {0}[mask_cols]
+'''.format(operator[2], alpha, result_name)
+
+
 
         elif operator_name == '_select_percentile':
             percentile = int(operator[3])

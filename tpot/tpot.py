@@ -34,7 +34,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE
+from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE, SelectFwe
 from sklearn.preprocessing import StandardScaler, RobustScaler, PolynomialFeatures
 from sklearn.decomposition import PCA
 from sklearn.cross_validation import StratifiedShuffleSplit
@@ -113,7 +113,8 @@ class TPOT(object):
         self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
+        self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
         self.pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
@@ -348,8 +349,9 @@ from sklearn.cross_validation import StratifiedShuffleSplit
 '''
         if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
         if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
+        if '_select_fwe' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectFwe\n'
         if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
-        if '_select_percentile' in operators_used or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
+        if '_select_percentile' in operators_used or '_select_kbest' in operators_used or '_select_fwe' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
         if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
         if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
         if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
@@ -732,6 +734,47 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             warnings.simplefilter('ignore', category=UserWarning)
 
             selector = SelectKBest(f_classif, k=k)
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+
+        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
+        return input_df[mask_cols].copy()
+
+
+    def _select_fwe(self, input_df, alpha):
+        """ Uses Scikit-learn's SelectFwe feature selection to filter the subset of features
+           according to p-values corresponding to Family-wise error rate
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to perform feature selection on
+        alpha: float in the range [0.001, 0.05]
+            The highest uncorrected p-value for features to keep
+
+        Returns
+        -------
+        subsetted_df: pandas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the 'best' features
+
+        """
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        # forcing  0.001 <= alpha <= 0.05
+        if alpha > 0.05:
+            alpha = 0.05
+        elif alpha <= 0.001:
+            alpha = 0.001
+
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        with warnings.catch_warnings():
+            # Ignore warnings about constant features
+            warnings.simplefilter('ignore', category=UserWarning)
+
+            selector = SelectFwe(f_classif, alpha=alpha)
             selector.fit(training_features, training_class_vals)
             mask = selector.get_support(True)
 
