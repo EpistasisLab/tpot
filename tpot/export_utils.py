@@ -117,12 +117,12 @@ def replace_function_calls(pipeline_list):
        The python code corresponding to the function calls in the current optimized pipeline
 
     """
-
+    operator_text = ''
     for operator in pipeline_list:
         operator_num = int(operator[0].strip('result'))
         result_name = operator[0]
         operator_name = operator[1]
-        operator_text = ''
+        
 
         # Make copies of the data set for each reference to ARG0
         if operator[2] == 'ARG0':
