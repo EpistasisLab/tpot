@@ -406,25 +406,34 @@ else:
 
         elif operator_name == '_pca':
             n_components = int(operator[3])
+            iterated_power = int(operator[4])
             if n_components < 1:
                 n_components = 1
             n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
 
+            if iterated_power < 1:
+                iterated_power = 1
+            elif iterated_power > 10:
+                iterated_power = 10
+
+
+
+
             operator_text += '''
-# Use Scikit-learn's PCA to transform the feature set
+# Use Scikit-learn's RandomizedPCA to transform the feature set
 training_features = {0}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
-# PCA must be fit on only the training data
-pca = PCA(n_components={1})
-pca.fit(training_features.values.astype(np.float64))
-transformed_features = pca.transform({0}.drop('class', axis=1).values.astype(np.float64))
+\t # PCA must be fit on only the training data
+\t pca = RandomizedPCA(n_components={1}, iterated_power={2})
+\t pca.fit(training_features.values.astype(np.float64))
+\t transformed_features = pca.transform({0}.drop('class', axis=1).values.astype(np.float64))
 
-{0}_classes = {0}['class'].values
-{2} = pd.DataFrame(data=transformed_features)
-{2}['class'] = {0}_classes
+\t {0}_classes = {0}['class'].values
+\t {3} = pd.DataFrame(data=transformed_features)
+\t {3}['class'] = {0}_classes
 else:
-{2} = {0}.copy()
-'''.format(operator[2], n_components, result_name)
+\t {3} = {0}.copy()
+'''.format(operator[2], n_components, iterated_power, result_name)
 
     return operator_text

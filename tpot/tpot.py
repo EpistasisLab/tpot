@@ -36,7 +36,7 @@ from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE, SelectFwe
 from sklearn.preprocessing import StandardScaler, RobustScaler, PolynomialFeatures
-from sklearn.decomposition import PCA
+from sklearn.decomposition import RandomizedPCA
 from sklearn.cross_validation import StratifiedShuffleSplit
 import warnings
 
@@ -120,7 +120,7 @@ class TPOT(object):
         self.pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._pca, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
 
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
@@ -356,7 +356,7 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
         if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
         if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
-        if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import PCA\n'
+        if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import RandomizedPCA\n'
         if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
         if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
         if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
@@ -911,8 +911,8 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
         return modified_df.copy()
 
-    def _pca(self, input_df, n_components):
-        """Uses Scikit-learn's PCA to transform the feature set
+    def _pca(self, input_df, n_components, iterated_power):
+        """Uses Scikit-learn's RandomizedPCA to transform the feature set
 
         Parameters
         ----------
@@ -920,6 +920,9 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             Input DataFrame to scale
         n_components: int
             The number of components to keep
+        iterated_power: int
+            Number of iterations for the power method. [1, 10]
+
 
         Returns
         -------
@@ -933,13 +936,20 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         elif n_components >= len(input_df.columns.values) - 3:
             n_components = None
 
+        #Thresholding iterated_power [1,10]
+        if iterated_power < 1:
+            iterated_power = 1
+        elif iterated_power > 10:
+            iterated_power = 10
+
+
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
         # PCA must be fit on only the training data
-        pca = PCA(n_components=n_components)
+        pca = RandomizedPCA(n_components=n_components, iterated_power=iterated_power)
         pca.fit(training_features.values.astype(np.float64))
         transformed_features = pca.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
