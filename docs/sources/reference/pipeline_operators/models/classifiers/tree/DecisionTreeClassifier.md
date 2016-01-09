@@ -30,11 +30,11 @@ tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
 
 # Perform classification with a decision tree classifier
+result1 = tpot_data.copy()
 
 dtc1 = DecisionTreeClassifier(max_features='auto', max_depth=None)
-dtc1.fit(df.loc[training_indices].drop('class', axis=1).values, df.loc[training_indices, 'class'].values)
+dtc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 
-res = df
-res['dtc1-classification'] = dtc1.predict(res.drop('class', axis=1).values)
+result1['dtc1-classification'] = dtc1.predict(result1.drop('class', axis=1).values)
 
 ```

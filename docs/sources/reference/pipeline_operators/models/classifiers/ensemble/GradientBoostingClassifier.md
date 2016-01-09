@@ -33,11 +33,12 @@ import pandas as pd
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
 
+result1 = tpot_data.copy()
+
 # Perform classification with a gradient boosting classifier
 gbc1 = GradientBoostingClassifier(learning_rate=0.0001, n_estimators=1, max_depth=None)
-gbc1.fit(df.loc[training_indices].drop('class', axis=1).values, df.loc[training_indices, 'class'].values)
-res = df
-res['gbc1-classification'] = gbc1.predict(res.drop('class', axis=1).values)
+gbc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 
+result1['gbc1-classification'] = gbc1.predict(result1.drop('class', axis=1).values)
 
 ```
