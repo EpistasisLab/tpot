@@ -23,4 +23,7 @@ pages:
   - examples/Custom_Scoring_Functions.md
 - Changelog: changelog.md
 - Installation: installing.md
+- Reference:
+  - reference/pipeline_operators/models/classifiers/tree/DecisionTreeClassifier.md
+  - reference/pipeline_operators/models/classifiers/ensemble/RandomForestClassifier.md 
 - Contributing: contributing.md
