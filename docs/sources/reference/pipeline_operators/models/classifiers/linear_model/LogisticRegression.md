@@ -29,11 +29,6 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
 result1 = tpot_data.copy()
 
-# Perform classification with a k-nearest neighbor classifier
-knnc1 = KNeighborsClassifier(n_neighbors=2)
-knnc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
-result1['knnc1-classification'] = knnc1.predict(result1.drop('class', axis=1).values)
-
 # Perform classification with a logistic regression classifier
 lrc1 = LogisticRegression(C=0.0001)
 lrc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
