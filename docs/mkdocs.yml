@@ -36,4 +36,11 @@ pages:
       - StandardScaler: reference/pipeline_operators/preprocessing/scaling/StandardScaler.md
       - RobustScaler: reference/pipeline_operators/preprocessing/scaling/RobustScaler.md
       - PolynomialFeatures: reference/pipeline_operators/preprocessing/PolynomialFeatures.md
+    - Feature Selection:
+      - VarianceThreshold: reference/pipeline_operators/feature_selection/VarianceThreshold.md
+      - SelectKBest: reference/pipeline_operators/feature_selection/SelectKBest.md
+      - SelectPercentile: reference/pipeline_operators/feature_selection/SelectPercentile.md
+      - RFE: reference/pipeline_operators/feature_selection/RFE.md
+    - Decomposition:
+      - PCA: reference/pipeline_operators/decomposition/PCA.md
 - Contributing: contributing.md
