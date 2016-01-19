@@ -11,8 +11,6 @@ theme: readthedocs
 markdown_extensions:
   - tables
   - fenced_code
-  - toc:
-      permalink: []
 
 copyright: Copyright &copy; 2015 <a href="http://randalolson.com">Randal Olson</a>
 
