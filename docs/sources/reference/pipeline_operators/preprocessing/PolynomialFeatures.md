@@ -1,7 +1,10 @@
 # Polynomial Features
+<<<<<<< HEAD
 * * *
 
 Uses Scikit-learn's PolynomialFeatures to construct new degree-2 polynomial features from the existing feature set.
+=======
+>>>>>>> 349383d0e1000a92218470a6a3a62e13704d8431
 
 ## Dependencies 
     sklearn.preprocessing.PolynomialFeatures

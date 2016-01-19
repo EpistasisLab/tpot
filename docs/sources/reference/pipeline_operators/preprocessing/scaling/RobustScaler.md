@@ -1,7 +1,10 @@
 # Robust Feature Scaler
+<<<<<<< HEAD
 * * *
 
 Uses Scikit-learn's RobustScaler to scale the features using statistics that are robust to outliers.
+=======
+>>>>>>> 349383d0e1000a92218470a6a3a62e13704d8431
 
 ## Dependencies 
     sklearn.preprocessing.RobustScaler

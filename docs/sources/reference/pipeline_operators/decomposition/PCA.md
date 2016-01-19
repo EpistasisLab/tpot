@@ -1,7 +1,10 @@
 # Principal Component Analysis
+<<<<<<< HEAD
 * * *
 
 Uses Scikit-learn's PCA to transform the feature set.
+=======
+>>>>>>> 349383d0e1000a92218470a6a3a62e13704d8431
 
 ## Dependencies 
     sklearn.decomposition.PCA
