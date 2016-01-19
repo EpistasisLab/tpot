@@ -1,10 +1,7 @@
 # C-Support Vector Classifier
-<<<<<<< HEAD
 * * * 
 
 Fits a C-Support Vector classifier.
-=======
->>>>>>> 349383d0e1000a92218470a6a3a62e13704d8431
 
 ## Dependencies
     sklearn.svm.SVC
