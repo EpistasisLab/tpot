@@ -1,6 +1,8 @@
 # k-Nearest Neighbors Classifier
 * * * 
 
+Fits a k-Nearest Neighbors classifier.
+
 ## Dependencies
     sklearn.neighbors.KNeighborsClassifier
 

@@ -1,23 +1,27 @@
 # Decision Tree Classifier
 * * * 
 
+Fits a Decision Tree classifier
+
+
 ## Dependencies 
     sklearn.tree.DecisionTreeClassifier
 
+ 
 Parameters
 ----------
-        input_df: pandas.DataFrame {n_samples, n_features+[\'class\', \'group\', \'guess\']}
-            Input DataFrame for fitting the decision tree
-        max_features: int
-            Number of features used to fit the decision tree; must be a positive value
-        max_depth: int
-            Maximum depth of the decision tree; must be a positive value
+    input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+        Input DataFrame for fitting the decision tree
+    max_features: int
+        Number of features used to fit the decision tree; must be a positive value
+    max_depth: int
+        Maximum depth of the decision tree; must be a positive value
 
 Returns
 -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+    input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+        Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+        Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
 Example Exported Code
 ---------------------

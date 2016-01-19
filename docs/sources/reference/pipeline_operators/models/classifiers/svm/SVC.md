@@ -1,6 +1,8 @@
 # C-Support Vector Classifier
 * * * 
 
+Fits a C-Support Vector classifier.
+
 ## Dependencies
     sklearn.svm.SVC
 

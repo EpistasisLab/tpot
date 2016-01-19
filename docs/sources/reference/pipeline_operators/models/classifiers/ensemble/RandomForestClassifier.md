@@ -1,6 +1,8 @@
 # Random Forest Classifier
 * * * 
 
+Fits a Random Forest classifier.
+
 ## Dependencies 
      sklearn.ensemble.RandomForestClassifier
 

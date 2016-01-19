@@ -1,6 +1,8 @@
 # Logistic Regression
 * * * 
 
+Fits a Logistic Regression classifier
+
 ## Dependencies
     sklearn.linear_model.LogisticRegression
 

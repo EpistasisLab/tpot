@@ -1,16 +1,16 @@
-# TPOT
-
+## TPOT
 * * *
-## Fit
+__tpot.fit(self,features, classes, feature_names=None)__
 
-###Description
-   Uses genetic programming to optimize a Machine Learning pipeline that
+
+Uses genetic programming to optimize a Machine Learning pipeline that
    maximizes classification accuracy on the provided `features` and `classes`.
    Optionally, name the features in the data frame according to `feature_names`.
    Performs a stratified training/testing cross-validaton split to avoid
    overfitting on the provided data.
 
-###Parameters
+_Parameters_
+
     features: array-like {n_samples, n_features}
         Feature matrix
     classes: array-like {n_samples}
@@ -18,17 +18,18 @@
     feature_names: array-like {n_features} (default: None)
         List of feature names as strings
 
-###Returns
+_Returns_
+
     None
 
 * * *
+__tpot.predict(self, training_features, training_classes, testing_features)__
 
-## Predict
 
-###Description
-    Uses the optimized pipeline to predict the classes for a feature set.
+Uses the optimized pipeline to predict the classes for a feature set.
 
-###Parameters
+_Parameters_
+
     training_features: array-like {n_samples, n_features}
         Feature matrix of the training set
     training_classes: array-like {n_samples}
@@ -36,19 +37,19 @@
     testing_features: array-like {n_samples, n_features}
         Feature matrix of the testing set
 
-###Returns
+_Returns_
+
     array-like: {n_samples}
         Predicted classes for the testing set
 
 * * *
-## Score
 
+__tpot.score(self, training_features, training_classes, testing_features, testing_classes)__
 
-
-###Description
     Estimates the testing accuracy of the optimized pipeline.
 
-###Parameters
+_Parameters_
+
     training_features: array-like {n_samples, n_features}
         Feature matrix of the training set
     training_classes: array-like {n_samples}
@@ -58,21 +59,23 @@
     testing_classes: array-like {n_samples}
         List of class labels for prediction in the testing set
 
-###Returns
+_Returns_
+
     accuracy_score: float
         The estimated test set accuracy
 
 
 * * *
-## Export
+__tpot.export(self, output_file_name)__ 
 
-###Description
     Exports the current optimized pipeline as Python code.
 
-###Parameters
+_Parameters_
+
     output_file_name: string
         String containing the path and file name of the desired output file
 
-###Returns
+_Returns_
+
     None
 

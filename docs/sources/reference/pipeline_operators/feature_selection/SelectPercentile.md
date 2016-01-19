@@ -1,6 +1,8 @@
 # Select Percentile
 * * * 
 
+Uses Scikit-learn's SelectPercentile feature selection to learn the subset of features that belong in the highest `percentile` according to a given scoring function..
+
 ## Dependencies 
     sklearn.feature_selection.SelectPercentile
     sklearn.feature_selection.f_classif

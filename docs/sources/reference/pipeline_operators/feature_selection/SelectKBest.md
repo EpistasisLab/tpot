@@ -1,6 +1,8 @@
 # Select K-Best
 * * * 
 
+Uses Scikit-learn's SelectKBest feature selection to learn the subset of features that have the highest score according to some scoring function.
+
 ## Dependencies 
     sklearn.feature_selection.SelectKBest
     sklearn.feature_selection.f_classif

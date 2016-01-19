@@ -6,11 +6,13 @@ site_description: TPOT is a Python tool that automatically creates and optimizes
 repo_url: https://github.com/rhiever/tpot
 
 docs_dir: sources
-theme: mkdocs
+theme: readthedocs
 
 markdown_extensions:
   - tables
   - fenced_code
+  - toc:
+      permalink: []
 
 copyright: Copyright &copy; 2015 <a href="http://randalolson.com">Randal Olson</a>
 
@@ -23,7 +25,7 @@ pages:
   - Custom Scoring Functions: examples/Custom_Scoring_Functions.md
 - Changelog: changelog.md
 - Installation: installing.md
-- Reference:
+- Reference: 
   - Index: ref_index.md
   - TPOT Object: reference/TPOT.md
   - Pipeline Operators:
@@ -38,7 +40,7 @@ pages:
       - StandardScaler: reference/pipeline_operators/preprocessing/scaling/StandardScaler.md
       - RobustScaler: reference/pipeline_operators/preprocessing/scaling/RobustScaler.md
       - PolynomialFeatures: reference/pipeline_operators/preprocessing/PolynomialFeatures.md
-    - Feature Selection:
+    - Feature Selection: 
       - VarianceThreshold: reference/pipeline_operators/feature_selection/VarianceThreshold.md
       - SelectKBest: reference/pipeline_operators/feature_selection/SelectKBest.md
       - SelectPercentile: reference/pipeline_operators/feature_selection/SelectPercentile.md

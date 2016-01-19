@@ -1,6 +1,8 @@
 # Gradient Boosting Classifier
 * * * 
 
+Fits a Gradient Boosting classifier.
+
 ## Dependencies
     sklearn.ensemble.GradientBoostingClassifier
 

@@ -1,4 +1,7 @@
 # Standard Feature Scaler
+* * *
+
+Uses Scikit-learn's StandardScaler to scale the features by removing their mean and scaling to unit variance.
 
 ## Dependencies 
     sklearn.preprocessing.StandardScaler

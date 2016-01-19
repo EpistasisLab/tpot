@@ -1,6 +1,8 @@
 # Recursive Feature Elimination
 * * * 
 
+Uses Scikit-learn's Recursive Feature Elimintation to learn the subset of features that have the highest weights according to the estimator.
+
 ## Dependencies 
     sklearn.feature_selection.RFE
     sklearn.svm.SVC

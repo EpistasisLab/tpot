@@ -1,6 +1,8 @@
 # Variance Threshold
 * * * 
 
+Uses Scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the variance threshold. 
+
 ## Dependencies 
     sklearn.feature_selection.VarianceThreshold
 
