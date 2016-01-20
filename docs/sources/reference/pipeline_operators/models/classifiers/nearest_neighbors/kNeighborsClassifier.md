@@ -25,6 +25,8 @@ Example Exported Code
 ```Python
 import numpy as np
 import pandas as pd
+from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.neighbors import KNeighborsClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')

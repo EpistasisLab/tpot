@@ -28,6 +28,10 @@ Example Exported Code
 ```Python
 import numpy as np
 import pandas as pd
+from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.feature_selection import RFE
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
