@@ -17,10 +17,10 @@ copyright: Copyright &copy; 2015 <a href="http://randalolson.com">Randal Olson</
 pages:
 - Home: index.md
 - Examples:
-  - Using TPOT via the command line: examples/Using_TPOT_via_the_command_line.md
-  - Using TPOT via code: examples/Using_TPOT_via_code.md
-  - MNIST Example: examples/MNIST_Example.md
-  - Custom Scoring Functions: examples/Custom_Scoring_Functions.md
+  - examples/Using_TPOT_via_the_command_line.md
+  - examples/Using_TPOT_via_code.md
+  - examples/MNIST_Example.md
+  - examples/Custom_Scoring_Functions.md
 - Changelog: changelog.md
 - Installation: installing.md
 - Reference: 
