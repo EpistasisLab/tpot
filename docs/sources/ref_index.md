@@ -27,6 +27,6 @@
 
 
 ## Decomposition
-*  [pipeline_operators.decomposition.PCA](reference/pipeline_operators/decomposition/PCA.md)
+*  [pipeline_operators.decomposition.RandomizedPCA](reference/pipeline_operators/decomposition/RandomizedPCA.md)
 
 

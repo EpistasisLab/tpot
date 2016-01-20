@@ -44,5 +44,5 @@ pages:
       - SelectPercentile: reference/pipeline_operators/feature_selection/SelectPercentile.md
       - RFE: reference/pipeline_operators/feature_selection/RFE.md
     - Decomposition:
-      - PCA: reference/pipeline_operators/decomposition/PCA.md
+      - RandomizedPCA: reference/pipeline_operators/decomposition/RandomizedPCA.md
 - Contributing: contributing.md
