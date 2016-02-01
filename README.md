@@ -211,6 +211,29 @@ We welcome you to [check the existing issues](https://github.com/rhiever/tpot/is
 
 Please [check the existing open and closed issues](https://github.com/rhiever/tpot/issues?utf8=%E2%9C%93&q=is%3Aissue) to see if your issue has already been attended to. If it hasn't, please [file a new issue](https://github.com/rhiever/tpot/issues/new) on this repository so we can review your issue.
 
+## Citing TPOT
+
+If you use TPOT in a scientific publication, please consider citing at least one of the following papers:
+
+R. S. Olson et al. [Automating biomedical data science through tree-based pipeline optimization](http://arxiv.org/abs/1601.07925). In G. Squillero and P. Burelli, editors, *Proceedings of the 18th European Conference on the Applications of Evolutionary and Bio-inspired Computation*, Lecture Notes in Computer Science, Berlin, Germany, 2016. Springer-Verlag.
+
+BibTeX entry:
+
+```bibtex
+@inproceedings{Olson2016EvoBIO,
+author = {Olson, Randal S. and Urbanowicz, Ryan J. and Andrews, Peter C. and Lavender, Nicole A. and Kidd, La Creis and Moore, Jason H.},
+title = {Automating biomedical data science through tree-based pipeline optimization},
+booktitle = {Proceedings of the 18th European Conference on the Applications of Evolutionary and Bio-inspired Computation},
+series = {Lecture Notes in Computer Science},
+year = {2016},
+location = {Porto, Portugal},
+numpages = {16},
+editor = {Squillero, G and Burelli, P},
+publisher = {Springer-Verlag},
+address = {Berlin, Germany}
+}
+```
+
 ## Support for TPOT
 
 TPOT was developed in the [Computational Genetics Lab](http://epistasis.org) with funding from the [NIH](http://www.nih.gov). We're incredibly grateful for their support during the development of this project!
