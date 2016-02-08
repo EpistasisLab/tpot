@@ -23,7 +23,6 @@ import argparse
 import operator
 import random
 import hashlib
-from itertools import combinations
 from collections import Counter
 
 import numpy as np
@@ -42,7 +41,6 @@ import warnings
 
 from .export_utils import *
 
-import deap
 from deap import algorithms
 from deap import base
 from deap import creator
@@ -799,7 +797,6 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         """
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         selector = VarianceThreshold(threshold=threshold)
         try:
