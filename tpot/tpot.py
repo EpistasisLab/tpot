@@ -39,7 +39,7 @@ from sklearn.decomposition import RandomizedPCA
 from sklearn.cross_validation import StratifiedShuffleSplit
 import warnings
 
-import tpot.export_utils as export_utils
+import .export_utils as export_utils
 
 import deap
 from deap import algorithms
