@@ -41,6 +41,7 @@ import warnings
 
 from .export_utils import *
 
+import deap
 from deap import algorithms
 from deap import base
 from deap import creator
@@ -129,8 +130,8 @@ class TPOT(object):
         for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
             self.pset.addTerminal(val, float)
 
-        creator.create('FitnessMax', base.Fitness, weights=(1.0,))
-        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMax)
+        creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
+        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
         self.toolbox = base.Toolbox()
         self.toolbox.register('expr', gp.genHalfAndHalf, pset=self.pset, min_=1, max_=3)
@@ -141,12 +142,11 @@ class TPOT(object):
         self.toolbox.register('mate', gp.cxOnePoint)
         self.toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
         self.toolbox.register('mutate', self._random_mutation_operator)
-	
+
         if not scoring_function:
             self.scoring_function=self._balanced_accuracy
         else:
             self.scoring_function=scoring_function
-
 
     def fit(self, features, classes, feature_names=None):
         """Uses genetic programming to optimize a Machine Learning pipeline that
@@ -200,29 +200,45 @@ class TPOT(object):
             self.toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
             pop = self.toolbox.population(n=self.population_size)
-            self.hof = tools.HallOfFame(maxsize=1)
-            stats = tools.Statistics(lambda ind: ind.fitness.values)
+
+            def pareto_eq(ind1, ind2):
+                return np.all(ind1.fitness.values == ind2.fitness.values)
+            
+            self.hof = tools.ParetoFront(similar=pareto_eq)
+            
+            stats = tools.Statistics(lambda ind: ind.fitness.values[1])
             stats.register('Minimum score', np.min)
             stats.register('Average score', np.mean)
             stats.register('Maximum score', np.max)
 
             verbose = (self.verbosity == 2)
 
-            pop, log = algorithms.eaSimple(population=pop, toolbox=self.toolbox, cxpb=self.crossover_rate,
-                                           mutpb=self.mutation_rate, ngen=self.generations,
-                                           stats=stats, halloffame=self.hof, verbose=verbose)
-
-            self.optimized_pipeline_ = self.hof[0]
+            pop, _ = algorithms.eaSimple(population=pop, toolbox=self.toolbox, cxpb=self.crossover_rate,
+                                         mutpb=self.mutation_rate, ngen=self.generations,
+                                         stats=stats, halloffame=self.hof, verbose=verbose)
+            
+            # Store the pipeline with the highest internal testing accuracy
+            top_score = 0.
+            for pipeline in self.hof:
+                pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
+                if pipeline_score > top_score:
+                    top_score = pipeline_score
+                    self.optimized_pipeline_ = pipeline
 
             if self.verbosity == 2:
                 print('')
 
             if self.verbosity >= 1:
-                print('Best pipeline:', self.hof[0])
+                print('Best pipeline: {}'.format(self.optimized_pipeline_))
 
         # Store the best pipeline if the optimization process is ended prematurely
         except KeyboardInterrupt:
-            self.optimized_pipeline_ = self.hof[0]
+            top_score = 0.
+            for pipeline in self.hof:
+                pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
+                if pipeline_score > top_score:
+                    top_score = pipeline_score
+                    self.optimized_pipeline_ = pipeline
 
     def predict(self, training_features, training_classes, testing_features):
         """Uses the optimized pipeline to predict the classes for a feature set.
@@ -308,7 +324,7 @@ class TPOT(object):
             if type(column) != str:
                 training_testing_data.rename(columns={column: str(column).zfill(10)}, inplace=True)
 
-        return self._evaluate_individual(self.optimized_pipeline_, training_testing_data)[0]
+        return self._evaluate_individual(self.optimized_pipeline_, training_testing_data)[1]
 
 
     def export(self, output_file_name):
@@ -597,8 +613,6 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
         return input_df
 
-        
-
     @staticmethod
     def _combine_dfs(input_df1, input_df2):
         """Function to combine two DataFrames
@@ -737,7 +751,6 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
         mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
-
 
     def _select_fwe(self, input_df, alpha):
         """ Uses Scikit-learn's SelectFwe feature selection to filter the subset of features
@@ -1006,17 +1019,27 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             func = self.toolbox.compile(expr=individual)
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
-            return 0.,
+            return 5000., 0.
+
+        # Count the number of pipeline operators as a measure of pipeline complexity
+        operator_count = 0
+        for i in range(len(individual)):
+            node = individual[i]
+            if type(node) is deap.gp.Terminal:
+                continue
+            if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div', '_combine_dfs']:
+                continue
+            
+            operator_count += 1
 
         result = func(training_testing_data)
         result = result[result['group'] == 'testing']
         res = self.scoring_function(result)
         
         if isinstance(res, float) or isinstance(res, np.float64) or isinstance(res, np.float32):
-            return res,
+            return max(1, operator_count), res
         else:
             raise ValueError('Scoring function does not return a float')
-            
 
     def _balanced_accuracy(self, result):
         """Default scoring function: balanced class accuracy
