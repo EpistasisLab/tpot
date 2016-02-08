@@ -39,7 +39,7 @@ from sklearn.decomposition import RandomizedPCA
 from sklearn.cross_validation import StratifiedShuffleSplit
 import warnings
 
-import .export_utils as export_utils
+from .export_utils import *
 
 import deap
 from deap import algorithms
@@ -346,10 +346,10 @@ class TPOT(object):
         exported_pipeline = self.optimized_pipeline_
 
         # Replace all of the mathematical operators with their results. Check export_utils.py for details.
-        exported_pipeline = export_utils.replace_mathematical_operators(exported_pipeline)
+        exported_pipeline = replace_mathematical_operators(exported_pipeline)
 
         # Unroll the nested function calls into serial code. Check export_utils.py for details.
-        exported_pipeline, pipeline_list = export_utils.unroll_nested_fuctions_calls(exported_pipeline)
+        exported_pipeline, pipeline_list = unroll_nested_fuctions_calls(exported_pipeline)
 
 
         # Have the code import all of the necessary modules and functions
@@ -386,7 +386,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 '''
 
         # Replace the function calls with their corresponding Python code. Check export_utils.py for details
-        pipeline_text += export_utils.replace_function_calls(pipeline_list)
+        pipeline_text += replace_function_calls(pipeline_list)
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
