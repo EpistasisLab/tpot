@@ -9,9 +9,9 @@
 
 ![TPOT Demo](https://github.com/rhiever/tpot/blob/master/images/tpot-demo.gif "TPOT Demo")
 
-Consider TPOT your **Data Science Assistant**. TPOT is a Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.
+Consider TPOT your **Data Science Assistant**. TPOT is a Python tool that automatically creates and optimizes machine learning pipelines for using genetic programming.
 
-TPOT will automate the most tedious part of Machine Learning by intelligently exploring thousands of possible pipelines to find the best one for your data.
+TPOT will automate the most tedious part of machine learning by intelligently exploring thousands of possible pipelines to find the best one for your data.
 
 ![An example Machine Learning pipeline](https://github.com/rhiever/tpot/blob/master/images/tpot-ml-pipeline.png "An example Machine Learning pipeline")
 
@@ -57,7 +57,7 @@ DEAP can be installed with `pip` via the command:
 pip install deap
 ```
 
-Finally to install TPOT, run the following command:
+Finally to install TPOT itself, run the following command:
 
 ```Shell
 pip install tpot
