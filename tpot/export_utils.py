@@ -250,14 +250,13 @@ training_features = {0}.loc[training_indices].drop('class', axis=1)
 
 selector = VarianceThreshold(threshold={1})
 try:
-selector.fit(training_features.values)
+    selector.fit(training_features.values)
+    mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
+    {2} = {0}[mask_cols]
 except ValueError:
-# None of the features meet the variance threshold
-{2} = {0}[['class']]
-
-mask = selector.get_support(True)
-mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-{2} = {0}[mask_cols]
+    # None of the features meet the variance threshold
+    {2} = {0}[['class']]
 '''.format(operator[2], operator[3], result_name)
 
         elif operator_name == '_select_kbest':
@@ -274,13 +273,13 @@ training_features = {0}.loc[training_indices].drop('class', axis=1)
 training_class_vals = {0}.loc[training_indices, 'class'].values
 
 if len(training_features.columns.values) == 0:
-{2} = {0}.copy()
+    {2} = {0}.copy()
 else:
-selector = SelectKBest(f_classif, k={1})
-selector.fit(training_features.values, training_class_vals)
-mask = selector.get_support(True)
-mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-{2} = {0}[mask_cols]
+    selector = SelectKBest(f_classif, k={1})
+    selector.fit(training_features.values, training_class_vals)
+    mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
+    {2} = {0}[mask_cols]
 '''.format(operator[2], k, result_name)
 
         # SelectFwe based on the SelectKBest code
@@ -294,16 +293,14 @@ mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
 training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 if len(training_features.columns.values) == 0:
-{2} = {0}.copy()
+    {2} = {0}.copy()
 else:
-selector = SelectFwe(f_classif, alpha={1})
-selector.fit(training_features.values, training_class_vals)
-mask = selector.get_support(True)
-mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-{2} = {0}[mask_cols]
+    selector = SelectFwe(f_classif, alpha={1})
+    selector.fit(training_features.values, training_class_vals)
+    mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
+    {2} = {0}[mask_cols]
 '''.format(operator[2], alpha, result_name)
-
-
 
         elif operator_name == '_select_percentile':
             percentile = int(operator[3])
@@ -319,13 +316,13 @@ training_features = {0}.loc[training_indices].drop('class', axis=1)
 training_class_vals = {0}.loc[training_indices, 'class'].values
 
 if len(training_features.columns.values) == 0:
-{2} = {0}.copy()
+    {2} = {0}.copy()
 else:
-selector = SelectPercentile(f_classif, percentile={1})
-selector.fit(training_features.values, training_class_vals)
-mask = selector.get_support(True)
-mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-{2} = {0}[mask_cols]
+    selector = SelectPercentile(f_classif, percentile={1})
+    selector.fit(training_features.values, training_class_vals)
+    mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
+    {2} = {0}[mask_cols]
 '''.format(operator[2], percentile, result_name)
 
         elif operator_name == '_rfe':
@@ -347,13 +344,13 @@ training_features = {0}.loc[training_indices].drop('class', axis=1)
 training_class_vals = {0}.loc[training_indices, 'class'].values
 
 if len(training_features.columns.values) == 0:
-{3} = {0}.copy()
+    {3} = {0}.copy()
 else:
-selector = RFE(SVC(kernel='linear'), n_features_to_select={1}, step={2})
-selector.fit(training_features.values, training_class_vals)
-mask = selector.get_support(True)
-mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-{3} = {0}[mask_cols]
+    selector = RFE(SVC(kernel='linear'), n_features_to_select={1}, step={2})
+    selector.fit(training_features.values, training_class_vals)
+    mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
+    {3} = {0}[mask_cols]
 '''.format(operator[2], n_features_to_select, step, result_name)
 
         elif operator_name == '_standard_scaler':
@@ -363,9 +360,9 @@ training_features = {0}.loc[training_indices].drop('class', axis=1)
 {1} = {0}.copy()
 
 if len(training_features.columns.values) > 0:
-scaler = StandardScaler()
-scaler.fit(training_features.values.astype(np.float64))
-scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
+    scaler = StandardScaler()
+    scaler.fit(training_features.values.astype(np.float64))
+    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
 
 for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
     {1}.loc[:, column] = scaled_features[:, col_num]
@@ -378,9 +375,9 @@ training_features = {0}.loc[training_indices].drop('class', axis=1)
 {1} = {0}.copy()
 
 if len(training_features.columns.values) > 0:
-scaler = RobustScaler()
-scaler.fit(training_features.values.astype(np.float64))
-scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
+    scaler = RobustScaler()
+    scaler.fit(training_features.values.astype(np.float64))
+    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
 
 for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
     {1}.loc[:, column] = scaled_features[:, col_num]
@@ -392,16 +389,16 @@ for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
 training_features = {0}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0 and len(training_features.columns.values) <= 700:
-# The feature constructor must be fit on only the training data
-poly = PolynomialFeatures(degree=2, include_bias=False)
-poly.fit(training_features.values.astype(np.float64))
-constructed_features = poly.transform({0}.drop('class', axis=1).values.astype(np.float64))
+    # The feature constructor must be fit on only the training data
+    poly = PolynomialFeatures(degree=2, include_bias=False)
+    poly.fit(training_features.values.astype(np.float64))
+    constructed_features = poly.transform({0}.drop('class', axis=1).values.astype(np.float64))
 
-{0}_classes = {0}['class'].values
-{1} = pd.DataFrame(data=constructed_features)
-{1}['class'] = {0}_classes
+    {0}_classes = {0}['class'].values
+    {1} = pd.DataFrame(data=constructed_features)
+    {1}['class'] = {0}_classes
 else:
-{1} = {0}.copy()
+    {1} = {0}.copy()
 '''.format(operator[2], result_name)
 
         elif operator_name == '_pca':
@@ -416,24 +413,21 @@ else:
             elif iterated_power > 10:
                 iterated_power = 10
 
-
-
-
             operator_text += '''
 # Use Scikit-learn's RandomizedPCA to transform the feature set
 training_features = {0}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
-\t # PCA must be fit on only the training data
-\t pca = RandomizedPCA(n_components={1}, iterated_power={2})
-\t pca.fit(training_features.values.astype(np.float64))
-\t transformed_features = pca.transform({0}.drop('class', axis=1).values.astype(np.float64))
+    # PCA must be fit on only the training data
+    pca = RandomizedPCA(n_components={1}, iterated_power={2})
+    pca.fit(training_features.values.astype(np.float64))
+    transformed_features = pca.transform({0}.drop('class', axis=1).values.astype(np.float64))
 
-\t {0}_classes = {0}['class'].values
-\t {3} = pd.DataFrame(data=transformed_features)
-\t {3}['class'] = {0}_classes
+    {0}_classes = {0}['class'].values
+    {3} = pd.DataFrame(data=transformed_features)
+    {3}['class'] = {0}_classes
 else:
-\t {3} = {0}.copy()
+    {3} = {0}.copy()
 '''.format(operator[2], n_components, iterated_power, result_name)
 
     return operator_text
