@@ -107,7 +107,8 @@ class TPOT(object):
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
+        # Temporarily remove SVC -- badly overfits on multiclass data sets
+        #self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -239,6 +240,12 @@ class TPOT(object):
                 if pipeline_score > top_score:
                     top_score = pipeline_score
                     self.optimized_pipeline_ = pipeline
+                    
+            if self.verbosity == 2:
+                print('')
+
+            if self.verbosity >= 1:
+                print('Best pipeline: {}'.format(self.optimized_pipeline_))
 
     def predict(self, training_features, training_classes, testing_features):
         """Uses the optimized pipeline to predict the classes for a feature set.
@@ -1066,7 +1073,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         return balanced_accuracy
 
     def _combined_selection_operator(self, individuals, k):
-        """Perform selection on the population according to their fitness
+        """Perform NSGA2 selection on the population according to their Pareto fitness
 
         Parameters
         ----------
@@ -1081,15 +1088,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             Returns a list of individuals that were selected
 
         """
-        
-        # 10% of the new population are copies of the current best-performing pipeline (i.e., elitism)
-        best_inds = int(0.1 * k)
-        
-        # The remaining 90% of the new population are selected by tournament selection
-        rest_inds = k - best_inds
-        return (tools.selBest(individuals, 1) * best_inds +
-                tools.selDoubleTournament(individuals, k=rest_inds, fitness_size=3,
-                                          parsimony_size=2, fitness_first=True))
+        return tools.selNSGA2(individuals, int(k / 5.)) * 5
 
     def _random_mutation_operator(self, individual):
         """Perform a replacement, insert, or shrink mutation on an individual
