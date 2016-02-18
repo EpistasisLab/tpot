@@ -15,10 +15,11 @@ python -c "import scipy; print('scipy %s' % scipy.__version__)"
 python -c "import sklearn; print('sklearn %s' % sklearn.__version__)"
 python -c "import pandas; print('pandas %s' % pandas.__version__)"
 python -c "import deap; print('deap %s' % deap.__version__)"
+python -c "import xgboost; print('xgboost %s ' % xgboost.__version__)"
 
 if [[ "$COVERAGE" == "true" ]]; then
-    nosetests -s -v --with-coverage 
+    nosetests -s -v --with-coverage
 else
-    nosetests -s -v 
+    nosetests -s -v
 fi
 #make test-doc test-sphinxext

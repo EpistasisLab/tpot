@@ -17,6 +17,7 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 
+from xgboost import XGBClassifier
 
 # Set up the iris data set for testing
 mnist_data = load_digits()
@@ -88,10 +89,10 @@ def test_xgboost():
     '''
 
     tpot_obj = TPOT()
-    result = tpot_obj.xgboost(training_testing_data, 100, 0)
+    result = tpot_obj.xgradient_boosting(training_testing_data, n_estimators=100, learning_rate=0, max_depth=3)
     result = result[result['group'] == 'testing']
 
-    xgb = XGBClassifier(n_estimators=100, max_depth=None, seed=42)
+    xgb = XGBClassifier(n_estimators=100, learning_rate=0.0001, max_depth=3, seed=42)
     xgb.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
