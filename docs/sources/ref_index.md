@@ -9,7 +9,7 @@
 ## Models
 * [pipeline_operators.models.tree.DecisionTreeClassifier](reference/pipeline_operators/models/classifiers/tree/DecisionTreeClassifier.md)
 * [pipeline_operators.models.ensemble.RandomForestClassifier](reference/pipeline_operators/models/classifiers/ensemble/RandomForestClassifier.md)
-* [pipeline_operators.models.ensemble.GradientBoostingClassifier](reference/pipeline_operators/models/classifiers/ensemble/GradientBoostingClassifier)
+* [pipeline_operators.models.ensemble.XGBClassifier](reference/pipeline_operators/models/classifiers/ensemble/XGBClassifier)
 * [pipeline_operators.models.svm.SVC](reference/pipeline_operators/models/classifiers/svm/SVC.md)
 * [pipeline_operators.models.nearest_neighbors.kNeighborsClassifier](reference/pipeline_operators/models/classifiers/nearest_neighbors/kNeighborsClassifier.md)
 * [pipeline_operators.models.linear_model.LogisticRegression](reference/pipeline_operators/models/classifiers/linear_model/LogisticRegression.md)
@@ -28,5 +28,3 @@
 
 ## Decomposition
 *  [pipeline_operators.decomposition.RandomizedPCA](reference/pipeline_operators/decomposition/RandomizedPCA.md)
-
-
