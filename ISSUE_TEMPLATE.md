@@ -4,13 +4,15 @@
 
 [provide more detailed introduction to the issue itself and why it is relevant]
 
+[the remaining entries are only necessary if you are reporting a bug]
+
 ## Process to reproduce the issue
 
 [ordered list the process to finding and recreating the issue, example below]
 
 1. User creates TPOT instance
 2. User calls TPOT `fit()` function with training data
-3. TPOT crashes with a KeyError after 5 generations
+3. TPOT crashes with a `KeyError` after 5 generations
 
 ## Expected result
 
@@ -18,11 +20,11 @@
 
 ## Current result
 
-[describe what you you currently experience from this process, and thereby explain the bug]
+[describe what you currently experience from this process, and thereby explain the bug]
 
 ## Possible fix
 
-[not obligatory, but suggest fixes or reasons for the bug]
+[not necessary, but suggest fixes or reasons for the bug]
 
 ## `name of issue` screenshot
 
