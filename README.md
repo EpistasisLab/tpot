@@ -81,9 +81,11 @@ lrc1.fit(result1.loc[training_indeces].drop('class', axis=1).values, result1.loc
 result1['lrc1-classification'] = lrc1.predict(result1.drop('class', axis=1).values)
 ```
 
-## Want to get involved with TPOT?
+## Contributing to TPOT
 
 We welcome you to [check the existing issues](https://github.com/rhiever/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/rhiever/tpot/issues/new) so we can discuss it.
+
+Before submitting any contributions, please review our [contribution guidelines](http://rhiever.github.io/tpot/contributing/).
 
 ## Having problems or have questions about TPOT?
 

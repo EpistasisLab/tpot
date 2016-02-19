@@ -1,7 +1,7 @@
 site_name: TPOT
-site_url: http://rasbt.github.io/tpot
-site_author: Sebastian Raschka
-site_description: TPOT is a Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.
+site_url: http://rhiever.github.io/tpot
+site_author: Randal S. Olson
+site_description: TPOT is a Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.
 
 repo_url: https://github.com/rhiever/tpot
 
@@ -12,10 +12,12 @@ markdown_extensions:
   - tables
   - fenced_code
 
-copyright: Copyright &copy; 2015 <a href="http://randalolson.com">Randal Olson</a>
+copyright: Copyright &copy; 2016 <a href="http://www.randalolson.com">Randal Olson</a>
 
 pages:
 - Home: index.md
+- Installation: installing.md
+- Contributing: contributing.md
 - Examples:
   - examples/Using_TPOT_via_the_command_line.md
   - examples/Using_TPOT_via_code.md
@@ -23,8 +25,6 @@ pages:
   - examples/IRIS_Example.md
   - examples/Titanic_Kaggle_Example.md
   - examples/Custom_Scoring_Functions.md
-- Changelog: changelog.md
-- Installation: installing.md
 - Reference: 
   - Index: ref_index.md
   - TPOT Object: reference/TPOT.md
@@ -47,4 +47,4 @@ pages:
       - RFE: reference/pipeline_operators/feature_selection/RFE.md
     - Decomposition:
       - RandomizedPCA: reference/pipeline_operators/decomposition/RandomizedPCA.md
-- Contributing: contributing.md
+- Changelog: changelog.md
