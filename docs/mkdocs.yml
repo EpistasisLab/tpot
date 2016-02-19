@@ -21,6 +21,7 @@ pages:
   - examples/Using_TPOT_via_code.md
   - examples/MNIST_Example.md
   - examples/IRIS_Example.md
+  - examples/Titanic_Kaggle_Example.md
   - examples/Custom_Scoring_Functions.md
 - Changelog: changelog.md
 - Installation: installing.md
