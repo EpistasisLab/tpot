@@ -1,10 +1,10 @@
-[provide general introduction to the issue logging and why it is relevant to this repository]
+[provide general introduction to the issue and why it is relevant to this repository]
 
-## Context of the bug
+## Context of the issue
 
 [provide more detailed introduction to the issue itself and why it is relevant]
 
-## Process to reproduce the bug
+## Process to reproduce the issue
 
 [ordered list the process to finding and recreating the issue, example below]
 
