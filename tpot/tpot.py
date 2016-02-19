@@ -541,7 +541,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the gradient boosting classifier
+            Input DataFrame for fitting the XGBoost classifier
         learning_rate: float
             Shrinks the contribution of each tree by learning_rate
         n_estimators: int
