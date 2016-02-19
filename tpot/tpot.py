@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
@@ -47,6 +47,8 @@ from deap import base
 from deap import creator
 from deap import tools
 from deap import gp
+
+from xgboost import XGBClassifier
 
 class TPOT(object):
     """TPOT automatically creates and optimizes Machine Learning pipelines using genetic programming.
@@ -110,7 +112,7 @@ class TPOT(object):
         # Temporarily remove SVC -- badly overfits on multiclass data sets
         #self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
+        self.pset.addPrimitive(self.xgradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
@@ -204,9 +206,9 @@ class TPOT(object):
 
             def pareto_eq(ind1, ind2):
                 return np.all(ind1.fitness.values == ind2.fitness.values)
-            
+
             self.hof = tools.ParetoFront(similar=pareto_eq)
-            
+
             stats = tools.Statistics(lambda ind: ind.fitness.values[1])
             stats.register('Minimum score', np.min)
             stats.register('Average score', np.mean)
@@ -217,7 +219,7 @@ class TPOT(object):
             pop, _ = algorithms.eaSimple(population=pop, toolbox=self.toolbox, cxpb=self.crossover_rate,
                                          mutpb=self.mutation_rate, ngen=self.generations,
                                          stats=stats, halloffame=self.hof, verbose=verbose)
-            
+
             # Store the pipeline with the highest internal testing accuracy
             top_score = 0.
             for pipeline in self.hof:
@@ -240,7 +242,7 @@ class TPOT(object):
                 if pipeline_score > top_score:
                     top_score = pipeline_score
                     self.optimized_pipeline_ = pipeline
-                    
+
             if self.verbosity == 2:
                 print('')
 
@@ -383,7 +385,7 @@ from sklearn.cross_validation import StratifiedShuffleSplit
         if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
         if 'svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
         if 'knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
-        if 'gradient_boosting' in operators_used: pipeline_text += 'from sklearn.ensemble import GradientBoostingClassifier\n'
+        if 'xgradient_boosting' in operators_used: pipeline_text += 'from xgboost import XGBClassifier\n'
 
         pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -461,7 +463,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             max_features = len(input_df.columns) - 3
 
         return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=n_estimators, max_features=max_features, random_state=42, n_jobs=-1)
-    
+
     def logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier
 
@@ -525,7 +527,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
         """
         training_set_size = len(input_df.loc[input_df['group'] == 'training'])
-        
+
         if n_neighbors < 2:
             n_neighbors = 2
         elif n_neighbors >= training_set_size:
@@ -533,8 +535,8 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
         return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
 
-    def gradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
-        """Fits a gradient boosting classifier
+    def xgradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
+        """Fits the dmlc eXtreme gradient boosting classifier
 
         Parameters
         ----------
@@ -556,7 +558,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         """
         if learning_rate <= 0.:
             learning_rate = 0.0001
-        
+
         if n_estimators < 1:
             n_estimators = 1
         elif n_estimators > 500:
@@ -565,9 +567,8 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         if max_depth < 1:
             max_depth = None
 
-        return self._train_model_and_predict(input_df, GradientBoostingClassifier, learning_rate=learning_rate, n_estimators=n_estimators, max_depth=max_depth, random_state=42)
-    
-   
+        return self._train_model_and_predict(input_df, XGBClassifier, learning_rate=learning_rate, n_estimators=n_estimators, max_depth=max_depth, seed=42)
+
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
 
@@ -596,7 +597,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-       
+
         # Try to seed the random_state parameter if the model accepts it.
         try:
             clf = model(random_state=42,**kwargs)
@@ -604,10 +605,10 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         except TypeError:
             clf = model(**kwargs)
             clf.fit(training_features, training_classes)
-        
+
         all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
         input_df.loc[:, 'guess'] = clf.predict(all_features)
-        
+
         # Also store the guesses as a synthetic feature
         sf_hash = '-'.join(sorted(input_df.columns.values))
         #Use the classifier object's class name in the synthetic feature
@@ -621,7 +622,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
     @staticmethod
     def _combine_dfs(input_df1, input_df2):
         """Function to combine two DataFrames
-        
+
         Parameters
         ----------
         input_df1: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -639,7 +640,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
     def _rfe(self, input_df, num_features, step):
         """Uses Scikit-learn's Recursive Feature Elimination to learn the subset of features that have the highest weights according to the estimator
-        
+
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -657,8 +658,8 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         """
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
-        
-        if step < 0.1: 
+
+        if step < 0.1:
             step = 0.1
         elif step >= 1.:
             step = 0.99
@@ -683,7 +684,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
     def _select_percentile(self, input_df, percentile):
         """Uses Scikit-learn's SelectPercentile feature selection to learn the subset of features that belong in the highest `percentile`
         according to a given scoring function
-        
+
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -699,15 +700,15 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         """
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
-        
-        if percentile < 0: 
+
+        if percentile < 0:
             percentile = 0
         elif percentile > 100:
             percentile = 100
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
-        
+
         with warnings.catch_warnings():
             # Ignore warnings about constant features
             warnings.simplefilter('ignore', category=UserWarning)
@@ -721,7 +722,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
     def _select_kbest(self, input_df, k):
         """Uses Scikit-learn's SelectKBest feature selection to learn the subset of features that have the highest score according to some scoring function
-        
+
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -737,7 +738,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         """
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
-        
+
         if k < 1:
             k = 1
         elif k >= len(training_features.columns):
@@ -799,7 +800,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
     def _variance_threshold(self, input_df, threshold):
         """Uses Scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the threshold
-        
+
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -818,7 +819,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 
         selector = VarianceThreshold(threshold=threshold)
         try:
-            selector.fit(training_features) 
+            selector.fit(training_features)
         except ValueError:
             # None features are above the variance threshold
             return input_df[['guess', 'class', 'group']].copy()
@@ -899,7 +900,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
             Returns a DataFrame containing the constructed features
 
         """
-        
+
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
         if len(training_features.columns.values) == 0:
@@ -917,7 +918,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         modified_df['class'] = input_df['class'].values
         modified_df['group'] = input_df['group'].values
         modified_df['guess'] = input_df['guess'].values
-        
+
         new_col_names = {}
         for column in modified_df.columns.values:
             if type(column) != str:
@@ -984,7 +985,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
     @staticmethod
     def _div(num1, num2):
         """Divides two numbers
-        
+
         Parameters
         ----------
         num1: int
@@ -996,11 +997,11 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
         -------
         result: float
             Returns num1 / num2, or 0 if num2 == 0
-        
+
         """
         if num2 == 0:
             return 0.
-        
+
         return float(num1) / float(num2)
 
     def _evaluate_individual(self, individual, training_testing_data):
@@ -1034,13 +1035,13 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
                 continue
             if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div', '_combine_dfs']:
                 continue
-            
+
             operator_count += 1
 
         result = func(training_testing_data)
         result = result[result['group'] == 'testing']
         res = self.scoring_function(result)
-        
+
         if isinstance(res, float) or isinstance(res, np.float64) or isinstance(res, np.float32):
             return max(1, operator_count), res
         else:
@@ -1166,7 +1167,7 @@ def main():
     parser.add_argument('--version', action='store_true', dest='version', default=False, help='Display the current TPOT version')
 
     args = parser.parse_args()
-    
+
     if args.version:
         from _version import __version__
         print('TPOT version: {}'.format(__version__))
@@ -1217,7 +1218,7 @@ def main():
                                              training_features, training_classes)))
         print('Testing accuracy: {}'.format(tpot.score(training_features, training_classes,
                                             testing_features, testing_classes)))
-    
+
     if args.output_file != '':
         tpot.export(args.output_file)
 

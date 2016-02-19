@@ -122,7 +122,7 @@ def replace_function_calls(pipeline_list):
         operator_num = int(operator[0].strip('result'))
         result_name = operator[0]
         operator_name = operator[1]
-        
+
 
         # Make copies of the data set for each reference to ARG0
         if operator[2] == 'ARG0':
@@ -216,7 +216,7 @@ def replace_function_calls(pipeline_list):
                 operator_text += '{} = {}\n'.format(result_name, operator[2])
             operator_text += '''{0}['knnc{1}-classification'] = knnc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
 
-        elif operator_name == 'gradient_boosting':
+        elif operator_name == 'xgradient_boosting':
             learning_rate = float(operator[3])
             n_estimators = int(operator[4])
             max_depth = int(operator[5])
@@ -232,12 +232,12 @@ def replace_function_calls(pipeline_list):
             if max_depth < 1:
                 max_depth = None
 
-            operator_text += '\n# Perform classification with a gradient boosting classifier'
-            operator_text += '\ngbc{} = GradientBoostingClassifier(learning_rate={}, n_estimators={}, max_depth={})\n'.format(operator_num, learning_rate, n_estimators, max_depth)
-            operator_text += '''gbc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
+            operator_text += '\n# Perform classification with an eXtreme gradient boosting classifier'
+            operator_text += '\nxgbc{} = XGBClassifier(learning_rate={}, n_estimators={}, max_depth={})\n'.format(operator_num, learning_rate, n_estimators, max_depth)
+            operator_text += '''xgbc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
             if result_name != operator[2]:
                 operator_text += '{} = {}\n'.format(result_name, operator[2])
-            operator_text += '''{0}['gbc{1}-classification'] = gbc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+            operator_text += '''{0}['xgbc{1}-classification'] = xgbc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
 
         elif operator_name == '_combine_dfs':
             operator_text += '\n# Combine two DataFrames'

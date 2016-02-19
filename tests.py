@@ -17,6 +17,7 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 
+from xgboost import XGBClassifier
 
 # Set up the iris data set for testing
 mnist_data = load_digits()
@@ -82,6 +83,20 @@ def test_random_forest():
 
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
 
+def test_xgboost():
+    '''
+        Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method.
+    '''
+
+    tpot_obj = TPOT()
+    result = tpot_obj.xgradient_boosting(training_testing_data, n_estimators=100, learning_rate=0, max_depth=3)
+    result = result[result['group'] == 'testing']
+
+    xgb = XGBClassifier(n_estimators=100, learning_rate=0.0001, max_depth=3, seed=42)
+    xgb.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
+
 def test_combine_dfs():
     tpot_obj = TPOT()
 
@@ -107,10 +122,10 @@ def test_static_models():
     models = [(tpot_obj.decision_tree, DecisionTreeClassifier, {'max_features':0, 'max_depth':0}, {'max_features':'auto', 'max_depth':None}),
             (tpot_obj.svc, SVC , {'C':0.0001}, {'C':0.0001}),
             (tpot_obj.random_forest, RandomForestClassifier,{'n_estimators':100, 'max_features':0}, {'n_estimators':100, 'max_features':'auto', 'n_jobs':-1}),
-                (tpot_obj.logistic_regression, LogisticRegression, {'C':0.0001}, {'C':0.0001}), 
+                (tpot_obj.logistic_regression, LogisticRegression, {'C':0.0001}, {'C':0.0001}),
                 (tpot_obj.knnc, KNeighborsClassifier, {'n_neighbors':100}, {'n_neighbors':100})]
     for model, sklearn_model, model_params, sklearn_params in models:
-        
+
         result = model(training_testing_data, **model_params)
         try:
             sklearn_model_obj = sklearn_model(random_state=42, **sklearn_params)
@@ -122,5 +137,3 @@ def test_static_models():
         result = result[result['group'] == 'testing']
 
         assert np.array_equal(result['guess'].values, sklearn_model_obj.predict(testing_features)), "Model {} failed".format(str(model))
-
-
