@@ -1,4 +1,4 @@
-site_name: TPOT
+site_name: Tree-based Pipeline Optimization Tool
 site_url: http://rhiever.github.io/tpot
 site_author: Randal S. Olson
 site_description: TPOT is a Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.
