@@ -16,6 +16,7 @@ copyright: Copyright &copy; 2016 <a href="http://www.randalolson.com">Randal Ols
 
 pages:
 - Home: index.md
+- License: license.md
 - Installation: installing.md
 - Contributing: contributing.md
 - Examples:

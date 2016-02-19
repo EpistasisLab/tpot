@@ -25,7 +25,3 @@ Once TPOT is finished searching (or you get tired of waiting), it provides you w
 TPOT is built on top of scikit-learn, so all of the code it generates should look familiar... if you're familiar with scikit-learn, anyway.
 
 **TPOT is still under active development** and we encourage you to check back on this repository regularly for updates.
-
-## License
-
-Please see the [repository license](https://github.com/rhiever/tpot/blob/master/LICENSE) for the licensing and usage information for TPOT.
