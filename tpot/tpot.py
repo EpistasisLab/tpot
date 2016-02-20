@@ -337,7 +337,7 @@ class TPOT(object):
 
 
     def export(self, output_file_name):
-        """Exports the current optimized pipeline as Python code.
+        """Exports the current optimized pipeline as Python code
 
         Parameters
         ----------
@@ -358,43 +358,12 @@ class TPOT(object):
         exported_pipeline = replace_mathematical_operators(exported_pipeline)
 
         # Unroll the nested function calls into serial code. Check export_utils.py for details.
-        exported_pipeline, pipeline_list = unroll_nested_fuctions_calls(exported_pipeline)
+        exported_pipeline, pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
 
+        # Have the exported code import all of the necessary modules and functions
+        pipeline_text = generate_import_code(pipeline_list)
 
-        # Have the code import all of the necessary modules and functions
-        # operator[1] is the name of the operator
-        operators_used = set([operator[1] for operator in pipeline_list])
-
-        pipeline_text = '''import numpy as np
-import pandas as pd
-
-from sklearn.cross_validation import StratifiedShuffleSplit
-'''
-        if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
-        if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
-        if '_select_fwe' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectFwe\n'
-        if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
-        if '_select_percentile' in operators_used or '_select_kbest' in operators_used or '_select_fwe' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
-        if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
-        if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
-        if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
-        if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
-        if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import RandomizedPCA\n'
-        if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
-        if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
-        if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
-        if 'svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
-        if 'knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
-        if 'xgradient_boosting' in operators_used: pipeline_text += 'from xgboost import XGBClassifier\n'
-
-        pipeline_text += '''
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
-
-'''
-
-        # Replace the function calls with their corresponding Python code. Check export_utils.py for details
+        # Replace the function calls with their corresponding Python code. Check export_utils.py for details.
         pipeline_text += replace_function_calls(pipeline_list)
 
         with open(output_file_name, 'w') as output_file:
