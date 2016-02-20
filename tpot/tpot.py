@@ -992,27 +992,32 @@ class TPOT(object):
         try:
             # Transform the tree expression in a callable function
             func = self.toolbox.compile(expr=individual)
+
+            # Count the number of pipeline operators as a measure of pipeline complexity
+            operator_count = 0
+            for i in range(len(individual)):
+                node = individual[i]
+                if type(node) is deap.gp.Terminal:
+                    continue
+                if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div', '_combine_dfs']:
+                    continue
+
+                operator_count += 1
+
+            result = func(training_testing_data)
+            result = result[result['group'] == 'testing']
+            resulting_score = self.scoring_function(result)
+
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
             return 5000., 0.
+        except:
+            # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
+            # Instead, assign the crashing pipeline a poor fitness
+            return 5000., 0.
 
-        # Count the number of pipeline operators as a measure of pipeline complexity
-        operator_count = 0
-        for i in range(len(individual)):
-            node = individual[i]
-            if type(node) is deap.gp.Terminal:
-                continue
-            if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div', '_combine_dfs']:
-                continue
-
-            operator_count += 1
-
-        result = func(training_testing_data)
-        result = result[result['group'] == 'testing']
-        res = self.scoring_function(result)
-
-        if isinstance(res, float) or isinstance(res, np.float64) or isinstance(res, np.float32):
-            return max(1, operator_count), res
+        if isinstance(resulting_score, float) or isinstance(resulting_score, np.float64) or isinstance(resulting_score, np.float32):
+            return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
 
