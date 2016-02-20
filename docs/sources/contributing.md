@@ -56,6 +56,8 @@ If your contribution involves any code changes:
 
 * Make sure that your code is properly commented with [docstrings](https://www.python.org/dev/peps/pep-0257/) and comments explaining your rationale behind non-obvious coding practices.
 
+* If your code affected any of the pipeline operators, make sure that the corresponding [export functionality](https://github.com/rhiever/tpot/blob/master/tpot/export_utils.py) reflects those changes.
+
 If your contribution requires a new library dependency outside of DEAP and scikit-learn:
 
 * Double-check that the new dependency is easy to install via `pip` or Anaconda and supports both Python 2 and 3. If the dependency requires a complicated installation, then we most likely won't merge your changes because we want to keep TPOT easy to install.
