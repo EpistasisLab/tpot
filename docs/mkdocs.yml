@@ -6,7 +6,7 @@ site_description: TPOT is a Python tool that automatically creates and optimizes
 repo_url: https://github.com/rhiever/tpot
 
 docs_dir: sources
-theme: flatly
+theme: readthedocs
 
 markdown_extensions:
   - tables
@@ -17,12 +17,32 @@ copyright: Copyright &copy; 2016 <a href="http://www.randalolson.com">Randal Ols
 pages:
 - Home: index.md
 - Installation: installing.md
-- Using TPOT: Using_TPOT.md
+- Using TPOT: using.md
 - Examples:
   - examples/MNIST_Example.md
   - examples/IRIS_Example.md
   - examples/Titanic_Kaggle_Example.md
   - examples/Custom_Scoring_Functions.md
 - Reference:
-  - Documentation: documentation.md
+  - Index: documentation.md
+  - TPOT Object: documentation/TPOT.md
+  - Pipeline Operators:
+    - Models:
+      - DecisionTreeClassifier: documentation/pipeline_operators/models/classifiers/tree/DecisionTreeClassifier.md
+      - RandomForestClassifier: documentation/pipeline_operators/models/classifiers/ensemble/RandomForestClassifier.md
+      - XGBClassifier: documentation/pipeline_operators/models/classifiers/ensemble/XGBClassifier.md
+      - SVC: documentation/pipeline_operators/models/classifiers/svm/SVC.md
+      - kNeighborsClassifier: documentation/pipeline_operators/models/classifiers/nearest_neighbors/kNeighborsClassifier.md
+      - LogisticRegression: documentation/pipeline_operators/models/classifiers/linear_model/LogisticRegression.md
+    - Pre-Processing:
+      - StandardScaler: documentation/pipeline_operators/preprocessing/scaling/StandardScaler.md
+      - RobustScaler: documentation/pipeline_operators/preprocessing/scaling/RobustScaler.md
+      - PolynomialFeatures: documentation/pipeline_operators/preprocessing/PolynomialFeatures.md
+    - Feature Selection:
+      - VarianceThreshold: documentation/pipeline_operators/feature_selection/VarianceThreshold.md
+      - SelectKBest: documentation/pipeline_operators/feature_selection/SelectKBest.md
+      - SelectPercentile: documentation/pipeline_operators/feature_selection/SelectPercentile.md
+      - RFE: documentation/pipeline_operators/feature_selection/RFE.md
+    - Decomposition:
+      - RandomizedPCA: documentation/pipeline_operators/decomposition/RandomizedPCA.md
   - Contributing: contributing.md
