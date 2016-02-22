@@ -123,8 +123,8 @@ class TPOT(object):
         self.pset.addPrimitive(operator.mul, [int, int], int)
         self.pset.addPrimitive(self._div, [int, int], float)
         self.pset.addPrimitive(self._consensus_two, [int, int, pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        #self.pset.addPrimitive(self._consensus_three, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        #self.pset.addPrimitive(self._consensus_four, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self.pset.addPrimitive(self._consensus_three, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self.pset.addPrimitive(self._consensus_four, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
         #self.pset.addPrimitive(self._ident, [str], str)
 
         for val in range(0, 101):
@@ -986,21 +986,11 @@ else:
 
         merged_guesses = pd.DataFrame(data=input_df1[['guess']], columns=['guess_1'])
         merged_guesses.loc[:, 'guess_2'] = input_df2['guess']
-        # for each sample, get the appropriate combined value
-        #merged_guesses = pd.merge(df1_guesses, df2_guesses, suffixes=['_1', '_2']).copy()
-        #print('merged_guesses columsn {}'.format(merged_guesses.columns.values))
-        #print('types!!!!!! {} {}'.format(type(df1_guesses), type(df2_guesses)))
-        #merged_guesses = pd.DataFrame()
-        #merged_guesses.loc[:, 'guess_1'] = df1_guesses.copy()
-        #merged_guesses.loc[:, 'guess_2'] = df2_guesses.copy()
         merged_guesses.loc[:, 'guess'] = None
         for row_ix in merged_guesses.index:
             merged_guesses['guess'].loc[row_ix] = method_f(merged_guesses[['guess_1', 'guess_2']].iloc[row_ix], weights)
         combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]])
         if 'guess' in combined_df.columns.values:
-            #print('cols: combined_df then merged_guesses')
-            #print(combined_df.columns.values)
-            #print(merged_guesses.columns.values)
             return combined_df.drop('guess', 1).join(merged_guesses['guess']).copy()
         else:
             return combined_df.join(merged_guesses['guess'])
@@ -1048,8 +1038,6 @@ else:
         method = options[method % 7]
         #Establish the weights for each dataframe/classifier
         #guesses_gt = [df[['guess','class']] for df in dfs]
-        combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]])
-        combined_df = combined_df.join(input_df3[[column for column in input_df3.columns.values if column not in combined_df.columns.values]])
         weights = []
         #for tup in guesses_gt:
         for df in dfs:
@@ -1057,9 +1045,9 @@ else:
             num_correct = len(np.where(tup['guess'] == tup['class']))
             total_vals = len(tup['guess'].index)
             if weighting == 'accuracy':
-                weights.append((float(num_correct) / float(total_vals)))
+                weights.append(float(num_correct) / float(total_vals))
             elif weighting == 'uniform':
-                weights.append((1.0))
+                weights.append(1.0)
             elif weighting == 'adaboost':
                 weights.append(self._adaboost(tup['guess'], tup['class']))
         method_f = None
@@ -1072,16 +1060,20 @@ else:
         elif method == 'min':
             method_f = self._min_class
 
-        df1_guesses = input_df1[['guess']]
-        df2_guesses = input_df2[['guess']]
-        df3_guesses = input_df3[['guess']]
-        # for each sample, get the appropriate combined value
-        merged_guesses = pd.merge(input_df1[['guess']], pd.merge(input_df2[['guess']], input_df3[['guess']], suffixes=['_2', '_3']),  suffixes=['_1', '_2'])
-        merged_guesses['res'] = None
+        merged_guesses = pd.DataFrame(data=input_df1[['guess']], columns=['guess_1'])
+        merged_guesses.loc[:, 'guess_2'] = input_df2['guess']
+        merged_guesses.loc[:, 'guess_3'] = input_df3['guess']
+        merged_guesses.loc[:, 'guess'] = None
         for row_ix in merged_guesses.index:
-            merged_guesses['res'].iloc[row_ix] = method_f(merged_guesses.iloc[row_ix], weights)
+            merged_guesses['guess'].loc[row_ix] = method_f(merged_guesses[['guess_1', 'guess_2', 'guess_3']].iloc[row_ix], weights)
+        combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]])
+        combined_df = combined_df.join(input_df3[[column for column in input_df3.columns.values if column not in combined_df.columns.values]])
+        if 'guess' in combined_df.columns.values:
+            return combined_df.drop('guess', 1).join(merged_guesses['guess']).copy()
+        else:
+            return combined_df.join(merged_guesses['guess'])
 
-        return pd.join(combined_df, merged_guesses['res'].copy())
+
 
     def _consensus_four(self, weighting, method, input_df1, input_df2, input_df3, input_df4):
         """Takes the classifications of different models and combines them in a meaningful manner.
@@ -1115,7 +1107,7 @@ else:
             for df in dfs:
                 if len(df.columns) > 3:
                     return df
-            return dfs[0] 
+            return dfs[0].copy() 
 
         #if weighting not in ['accuracy', 'uniform', 'adaboost']:
         if weighting % 7 > 2:
@@ -1127,10 +1119,6 @@ else:
         options = ['accuracy', 'uniform', 'adaboost', 'max', 'mean', 'median', 'min']
         weighting = options[weighting % 7]
         method = options[method % 7]
-        combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
-        combined_df = combined_df.join(input_df3[[columns for column in input_df3.columns.values if column not in combined_df.columns.values]]).copy()
-        combined_df = combined_df.join(input_df4[[columns for column in input_df4.columns.values if column not in combined_df.columns.values]]).copy()
-
         #Establish the weights for each dataframe/classifier
         #guesses_gt = [df[['guess','class']] for df in dfs]
         weights = []
@@ -1155,17 +1143,21 @@ else:
         elif method == 'min':
             method_f = self._min_class
 
-        df1_guesses = input_df1[['guess']]
-        df2_guesses = input_df2[['guess']]
-        df3_guesses = input_df3[['guess']]
-        df4_guesses = input_df4[['guess']]
-        # for each sample, get the appropriate combined value
-        merged_guesses = pd.merge(df1_guesses, pd.merge(df2_guesses, pd.merge(df3_guesses, df4_guesses, suffixes=['_3', '_4']), suffixes=['_2', '_3']), suffixes=['_1', '_2'])
-        merged_guesses['res'] = None
+        merged_guesses = pd.DataFrame(data=input_df1[['guess']], columns=['guess_1'])
+        merged_guesses.loc[:, 'guess_2'] = input_df2['guess']
+        merged_guesses.loc[:, 'guess_3'] = input_df3['guess']
+        merged_guesses.loc[:, 'guess_4'] = input_df3['guess']
+        merged_guesses.loc[:, 'guess'] = None
         for row_ix in merged_guesses.index:
-            merged_guesses['res'].iloc[row_ix] = method_f(merged_guesses.iloc[row_ix], weights)
+            merged_guesses['guess'].loc[row_ix] = method_f(merged_guesses[['guess_1', 'guess_2', 'guess_3', 'guess_4']].iloc[row_ix], weights)
+        combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]])
+        combined_df = combined_df.join(input_df3[[column for column in input_df3.columns.values if column not in combined_df.columns.values]])
+        combined_df = combined_df.join(input_df4[[column for column in input_df4.columns.values if column not in combined_df.columns.values]])
+        if 'guess' in combined_df.columns.values:
+            return combined_df.drop('guess', 1).join(merged_guesses['guess']).copy()
+        else:
+            return combined_df.join(merged_guesses['guess'])
 
-        return pd.join(combined_df, merged_guesses['res'].copy())
 
 
     def _train_model_and_predict(self, input_df, model, **kwargs):
