@@ -20,7 +20,7 @@ setup(
     entry_points={'console_scripts': ['tpot=tpot:main', ]},
     description=('Tree-based Pipeline Optimization Tool'),
     long_description='''
-A Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.
+A Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.
 
 Contact
 =============
