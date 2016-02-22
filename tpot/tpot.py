@@ -205,6 +205,21 @@ class TPOT(object):
             pop = self.toolbox.population(n=self.population_size)
 
             def pareto_eq(ind1, ind2):
+                """Function used to determine whether two individuals are equal on the Pareto front
+                
+                Parameters
+                ----------
+                ind1: DEAP individual from the GP population
+                    First individual to compare
+                ind2: DEAP individual from the GP population
+                    Second individual to compare
+
+                Returns
+                ----------
+                individuals_equal: bool
+                    Boolean indicating whether the two individuals are equal on the Pareto front
+
+                """
                 return np.all(ind1.fitness.values == ind2.fitness.values)
 
             self.hof = tools.ParetoFront(similar=pareto_eq)
@@ -1011,7 +1026,7 @@ class TPOT(object):
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
             return 5000., 0.
-        except:
+        except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
             return 5000., 0.
@@ -1089,20 +1104,45 @@ class TPOT(object):
 
 
 def main():
+    """Main function that is called when TPOT is run on the command line"""
     parser = argparse.ArgumentParser(description='A Python tool that'
             ' automatically creates and optimizes Machine Learning pipelines'
             ' using genetic programming.')
 
     def positive_integer(value):
+        """Ensures that the provided value is a positive integer; throws an exception otherwise
+
+        Parameters
+        ----------
+        value: int
+            The number to evaluate
+
+        Returns
+        -------
+        value: int
+            Returns a positive integer
+        """
         try:
             value = int(value)
-        except:
+        except Exception:
             raise argparse.ArgumentTypeError('invalid int value: \'{}\''.format(value))
         if value < 0:
             raise argparse.ArgumentTypeError('invalid positive int value: \'{}\''.format(value))
         return value
 
     def float_range(value):
+        """Ensures that the provided value is a float integer in the range (0., 1.); throws an exception otherwise
+
+        Parameters
+        ----------
+        value: float
+            The number to evaluate
+
+        Returns
+        -------
+        value: float
+            Returns a float in the range (0., 1.)
+        """
         try:
             value = float(value)
         except:
