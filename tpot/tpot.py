@@ -108,7 +108,7 @@ class TPOT(object):
         self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        #self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
         self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
@@ -122,17 +122,17 @@ class TPOT(object):
         self.pset.addPrimitive(operator.sub, [int, int], int)
         self.pset.addPrimitive(operator.mul, [int, int], int)
         self.pset.addPrimitive(self._div, [int, int], float)
-        self.pset.addPrimitive(self._consensus_two, [str, str, pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._consensus_three, [str, str, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._consensus_four, [str, str, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._ident, [str], str)
+        self.pset.addPrimitive(self._consensus_two, [int, int, pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        #self.pset.addPrimitive(self._consensus_three, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        #self.pset.addPrimitive(self._consensus_four, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        #self.pset.addPrimitive(self._ident, [str], str)
 
         for val in range(0, 101):
             self.pset.addTerminal(val, int)
         for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
             self.pset.addTerminal(val, float)
-        for val in ['max', 'mean', 'median', 'min', 'accuracy', 'uniform', 'adaboost']:
-            self.pset.addTerminal(val, str)
+        #for val in ['max', 'mean', 'median', 'min', 'accuracy', 'uniform', 'adaboost']:
+        #    self.pset.addTerminal(val, str)
 
         creator.create('FitnessMax', base.Fitness, weights=(1.0,))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMax)
@@ -873,13 +873,14 @@ else:
   
     def _get_ht_dict(self, classes, weights):
         ret = {}
+        #instead of weights of class needs to be weights of classifier
+        ctr = 0
         for cls in classes:
             try:
-                ret[cls] += weights[cls]
+                ret[cls] += weights[ctr]
             except:
-                print(cls)
-                print(weights)
-                ret[cls] = weights[cls]
+                ret[cls] = weights[ctr]
+            ctr += 1
         return ret
 
     #max freq class
@@ -890,17 +891,17 @@ else:
     def _mean_class(self, classes, weights):
         ht = self._get_ht_dict(classes, weights)
         mean_val = np.mean(ht.values())
-        return sorted(((x, abs(y - mean_val)) for (x,y) in ht.items()), key=operator.itemgetter(1))[0]
+        return sorted(((x, abs(y - mean_val)) for (x,y) in ht.items()), key=operator.itemgetter(1))[0][0]
 
     def _median_class(self, classes, weights):
         ht = self._get_ht_dict(classes, weights)
         median_val = np.median(ht.values())
-        return sorted(((x, abs(y - median_val)) for (x,y) in ht.items()), key=operator.itemgetter(1))[0]
+        return sorted(((x, abs(y - median_val)) for (x,y) in ht.items()), key=operator.itemgetter(1))[0][0]
 
     #minimum frequency class
     def _min_class(self, classes, weights):
         ht = self._get_ht_dict(classes, weights)
-        return sorted(ht.items(), key=operator.itemgetter(1))[0]
+        return sorted(ht.items(), key=operator.itemgetter(1))[0][0]
 
     def _adaboost(self, classes, gt):
         # weigh the incorrect classes higher than the correct classes
@@ -911,7 +912,7 @@ else:
 
         # e ^ - y_i * alpha_m * k_m (x_i)
         #init_weights = np.sum(np.exp(-1 * gt * 1 * classes), axis=0)        
-        return 1.0
+        return (1.0)
    
     def _ident(*args):
         return args
@@ -946,15 +947,20 @@ else:
                     return df
             return dfs[0].copy() 
 
-        if weighting not in ['accuracy', 'uniform', 'adaboost']:
+        #if weighting not in ['accuracy', 'uniform', 'adaboost']:
+        if weighting % 7 > 2:
             return dfs[0].copy()
-        if method not in ['max', 'mean', 'median', 'min']:
+        #if method not in ['max', 'mean', 'median', 'min']:
+        if method % 7 <= 2:
             return dfs[0].copy()
+
+        options = ['accuracy', 'uniform', 'adaboost', 'max', 'mean', 'median', 'min']
+        weighting = options[weighting % 7]
+        method = options[method % 7]
         #Establish the weights for each dataframe/classifier
         #guesses_gt = [df[['guess','class']] for df in dfs]
-        guesses
         
-        input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
+
         weights = []
 
         #for tup in guesses_gt:
@@ -978,14 +984,26 @@ else:
         elif method == 'min':
             method_f = self._min_class
 
+        merged_guesses = pd.DataFrame(data=input_df1[['guess']], columns=['guess_1'])
+        merged_guesses.loc[:, 'guess_2'] = input_df2['guess']
         # for each sample, get the appropriate combined value
-        merged_guesses = pd.merge(input_df1[['guess']], input_df2[['guess']], suffixes=['_1', '_2'])
-        merged_guesses['res'] = None
+        #merged_guesses = pd.merge(df1_guesses, df2_guesses, suffixes=['_1', '_2']).copy()
+        #print('merged_guesses columsn {}'.format(merged_guesses.columns.values))
+        #print('types!!!!!! {} {}'.format(type(df1_guesses), type(df2_guesses)))
+        #merged_guesses = pd.DataFrame()
+        #merged_guesses.loc[:, 'guess_1'] = df1_guesses.copy()
+        #merged_guesses.loc[:, 'guess_2'] = df2_guesses.copy()
+        merged_guesses.loc[:, 'guess'] = None
         for row_ix in merged_guesses.index:
-            merged_guesses['res'].iloc[row_ix] = method_f(merged_guesses.iloc[row_ix], weights)
-
-        return pd.join(combined_df, merged_guesses['res'].copy())
-
+            merged_guesses['guess'].loc[row_ix] = method_f(merged_guesses[['guess_1', 'guess_2']].iloc[row_ix], weights)
+        combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]])
+        if 'guess' in combined_df.columns.values:
+            #print('cols: combined_df then merged_guesses')
+            #print(combined_df.columns.values)
+            #print(merged_guesses.columns.values)
+            return combined_df.drop('guess', 1).join(merged_guesses['guess']).copy()
+        else:
+            return combined_df.join(merged_guesses['guess'])
     def _consensus_three(self, weighting, method, input_df1, input_df2, input_df3):
         """Takes the classifications of different models and combines them in a meaningful manner.
         
@@ -1016,14 +1034,22 @@ else:
             for df in dfs:
                 if len(df.columns) > 3:
                     return df
-            return dfs[0] 
+            return dfs[0].copy() 
 
-        if weighting not in ['accuracy', 'uniform', 'adaboost']:
-            return dfs[0]
-        if method not in ['max', 'mean', 'median', 'min']:
-            return dfs[0]
+        #if weighting not in ['accuracy', 'uniform', 'adaboost']:
+        if weighting % 7 > 2:
+            return dfs[0].copy()
+        #if method not in ['max', 'mean', 'median', 'min']:
+        if method % 7 <= 2:
+            return dfs[0].copy()
+
+        options = ['accuracy', 'uniform', 'adaboost', 'max', 'mean', 'median', 'min']
+        weighting = options[weighting % 7]
+        method = options[method % 7]
         #Establish the weights for each dataframe/classifier
         #guesses_gt = [df[['guess','class']] for df in dfs]
+        combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]])
+        combined_df = combined_df.join(input_df3[[column for column in input_df3.columns.values if column not in combined_df.columns.values]])
         weights = []
         #for tup in guesses_gt:
         for df in dfs:
@@ -1031,9 +1057,9 @@ else:
             num_correct = len(np.where(tup['guess'] == tup['class']))
             total_vals = len(tup['guess'].index)
             if weighting == 'accuracy':
-                weights.append(float(num_correct) / float(total_vals))
+                weights.append((float(num_correct) / float(total_vals)))
             elif weighting == 'uniform':
-                weights.append(1.0)
+                weights.append((1.0))
             elif weighting == 'adaboost':
                 weights.append(self._adaboost(tup['guess'], tup['class']))
         method_f = None
@@ -1046,6 +1072,9 @@ else:
         elif method == 'min':
             method_f = self._min_class
 
+        df1_guesses = input_df1[['guess']]
+        df2_guesses = input_df2[['guess']]
+        df3_guesses = input_df3[['guess']]
         # for each sample, get the appropriate combined value
         merged_guesses = pd.merge(input_df1[['guess']], pd.merge(input_df2[['guess']], input_df3[['guess']], suffixes=['_2', '_3']),  suffixes=['_1', '_2'])
         merged_guesses['res'] = None
@@ -1088,16 +1117,26 @@ else:
                     return df
             return dfs[0] 
 
-        if weighting not in ['accuracy', 'uniform', 'adaboost']:
-            return dfs[0]
-        if method not in ['max', 'mean', 'median', 'min']:
-            return dfs[0]
+        #if weighting not in ['accuracy', 'uniform', 'adaboost']:
+        if weighting % 7 > 2:
+            return dfs[0].copy()
+        #if method not in ['max', 'mean', 'median', 'min']:
+        if method % 7 <= 2:
+            return dfs[0].copy()
+
+        options = ['accuracy', 'uniform', 'adaboost', 'max', 'mean', 'median', 'min']
+        weighting = options[weighting % 7]
+        method = options[method % 7]
+        combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
+        combined_df = combined_df.join(input_df3[[columns for column in input_df3.columns.values if column not in combined_df.columns.values]]).copy()
+        combined_df = combined_df.join(input_df4[[columns for column in input_df4.columns.values if column not in combined_df.columns.values]]).copy()
+
         #Establish the weights for each dataframe/classifier
         #guesses_gt = [df[['guess','class']] for df in dfs]
         weights = []
         #for tup in guesses_gt:
         for df in dfs:
-            tup = df[['guess', 'total']]
+            tup = df[['guess', 'class']]
             num_correct = len(np.where(tup['guess'] == tup['class']))
             total_vals = len(tup['guess'].index)
             if weighting == 'accuracy':
@@ -1116,8 +1155,12 @@ else:
         elif method == 'min':
             method_f = self._min_class
 
+        df1_guesses = input_df1[['guess']]
+        df2_guesses = input_df2[['guess']]
+        df3_guesses = input_df3[['guess']]
+        df4_guesses = input_df4[['guess']]
         # for each sample, get the appropriate combined value
-        merged_guesses = pd.merge(input_df1[['guess']], pd.merge(input_df2[['guess']], pd.merge(input_df3[['guess']], input_df4[['guess']], suffixes=['_3', '_4']), suffixes=['_2', '_3']), suffixes=['_1', '_2'])
+        merged_guesses = pd.merge(df1_guesses, pd.merge(df2_guesses, pd.merge(df3_guesses, df4_guesses, suffixes=['_3', '_4']), suffixes=['_2', '_3']), suffixes=['_1', '_2'])
         merged_guesses['res'] = None
         for row_ix in merged_guesses.index:
             merged_guesses['res'].iloc[row_ix] = method_f(merged_guesses.iloc[row_ix], weights)
@@ -1526,6 +1569,7 @@ else:
             # Throw out GP expressions that are too large to be compiled in Python
             return 0.,
 
+        print(individual)
         result = func(training_testing_data)
         result = result[result['group'] == 'testing']
         res = self.scoring_function(result)
@@ -1553,6 +1597,8 @@ else:
         all_classes = list(set(result['class'].values))
         all_class_accuracies = []
         for this_class in all_classes:
+            #print("this class {}".format(this_class))
+            #print("result['guess'] {}".format(result['guess']))
             this_class_accuracy = len(result[(result['guess'] == this_class) \
                 & (result['class'] == this_class)])\
                 / float(len(result[result['class'] == this_class]))
