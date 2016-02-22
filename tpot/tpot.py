@@ -37,6 +37,7 @@ from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif,
 from sklearn.preprocessing import StandardScaler, RobustScaler, PolynomialFeatures
 from sklearn.decomposition import RandomizedPCA
 from sklearn.cross_validation import StratifiedShuffleSplit
+from xgboost import XGBClassifier
 import warnings
 
 from .export_utils import *
@@ -48,10 +49,8 @@ from deap import creator
 from deap import tools
 from deap import gp
 
-from xgboost import XGBClassifier
-
 class TPOT(object):
-    """TPOT automatically creates and optimizes Machine Learning pipelines using genetic programming.
+    """TPOT automatically creates and optimizes machine learning pipelines using genetic programming.
 
     Attributes
     ----------
@@ -59,6 +58,7 @@ class TPOT(object):
         The optimized pipeline, available after calling `fit`
 
     """
+
     optimized_pipeline_ = None
 
     def __init__(self, population_size=100, generations=100,
@@ -152,11 +152,13 @@ class TPOT(object):
             self.scoring_function=scoring_function
 
     def fit(self, features, classes, feature_names=None):
-        """Uses genetic programming to optimize a Machine Learning pipeline that
-           maximizes classification accuracy on the provided `features` and `classes`.
-           Optionally, name the features in the data frame according to `feature_names`.
-           Performs a stratified training/testing cross-validaton split to avoid
-           overfitting on the provided data.
+        """Fits a machine learning pipeline that maximizes classification accuracy on the provided data
+        
+        Uses genetic programming to optimize a machine learning pipeline that
+        maximizes classification accuracy on the provided `features` and `classes`.
+        Optionally, name the features in the data frame according to `feature_names`.
+        Performs a stratified training/testing cross-validaton split to avoid
+        overfitting on the provided data.
 
         Parameters
         ----------
@@ -623,7 +625,7 @@ class TPOT(object):
         return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
 
     def _rfe(self, input_df, num_features, step):
-        """Uses Scikit-learn's Recursive Feature Elimination to learn the subset of features that have the highest weights according to the estimator
+        """Uses scikit-learn's Recursive Feature Elimination to learn the subset of features that have the highest weights according to the estimator
 
         Parameters
         ----------
@@ -666,8 +668,7 @@ class TPOT(object):
             return input_df[['guess', 'class', 'group']].copy()
 
     def _select_percentile(self, input_df, percentile):
-        """Uses Scikit-learn's SelectPercentile feature selection to learn the subset of features that belong in the highest `percentile`
-        according to a given scoring function
+        """Uses scikit-learn's SelectPercentile feature selection to learn the subset of features that belong in the highest `percentile`
 
         Parameters
         ----------
@@ -705,7 +706,7 @@ class TPOT(object):
         return input_df[mask_cols].copy()
 
     def _select_kbest(self, input_df, k):
-        """Uses Scikit-learn's SelectKBest feature selection to learn the subset of features that have the highest score according to some scoring function
+        """Uses scikit-learn's SelectKBest feature selection to learn the subset of features that have the highest score according to some scoring function
 
         Parameters
         ----------
@@ -743,8 +744,8 @@ class TPOT(object):
         return input_df[mask_cols].copy()
 
     def _select_fwe(self, input_df, alpha):
-        """ Uses Scikit-learn's SelectFwe feature selection to filter the subset of features
-           according to p-values corresponding to Family-wise error rate
+        """Uses scikit-learn's SelectFwe feature selection to subset the features according to p-values corresponding to family-wise error rate
+
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -783,7 +784,7 @@ class TPOT(object):
         return input_df[mask_cols].copy()
 
     def _variance_threshold(self, input_df, threshold):
-        """Uses Scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the threshold
+        """Uses scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the threshold
 
         Parameters
         ----------
@@ -813,7 +814,7 @@ class TPOT(object):
         return input_df[mask_cols].copy()
 
     def _standard_scaler(self, input_df):
-        """Uses Scikit-learn's StandardScaler to scale the features by removing their mean and scaling to unit variance
+        """Uses scikit-learn's StandardScaler to scale the features by removing their mean and scaling to unit variance
 
         Parameters
         ----------
@@ -842,7 +843,7 @@ class TPOT(object):
         return input_df.copy()
 
     def _robust_scaler(self, input_df):
-        """Uses Scikit-learn's RobustScaler to scale the features using statistics that are robust to outliers
+        """Uses scikit-learn's RobustScaler to scale the features using statistics that are robust to outliers
 
         Parameters
         ----------
@@ -871,7 +872,7 @@ class TPOT(object):
         return input_df.copy()
 
     def _polynomial_features(self, input_df):
-        """Uses Scikit-learn's PolynomialFeatures to construct new degree-2 polynomial features from the existing feature set
+        """Uses scikit-learn's PolynomialFeatures to construct new degree-2 polynomial features from the existing feature set
 
         Parameters
         ----------
@@ -912,7 +913,7 @@ class TPOT(object):
         return modified_df.copy()
 
     def _pca(self, input_df, n_components, iterated_power):
-        """Uses Scikit-learn's RandomizedPCA to transform the feature set
+        """Uses scikit-learn's RandomizedPCA to transform the feature set
 
         Parameters
         ----------
@@ -1106,7 +1107,7 @@ class TPOT(object):
 def main():
     """Main function that is called when TPOT is run on the command line"""
     parser = argparse.ArgumentParser(description='A Python tool that'
-            ' automatically creates and optimizes Machine Learning pipelines'
+            ' automatically creates and optimizes machine learning pipelines'
             ' using genetic programming.')
 
     def positive_integer(value):

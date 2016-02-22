@@ -22,7 +22,6 @@ the Twitter Bot library. If not, see http://www.gnu.org/licenses/.
 
 import deap
 
-
 def replace_mathematical_operators(exported_pipeline):
     """Replace all of the mathematical operators with their results for use in export(self, output_file_name)
 
@@ -37,7 +36,6 @@ def replace_mathematical_operators(exported_pipeline):
        The current optimized pipeline after replacing the mathematical operators
 
     """
-
     while True:
         for i in range(len(exported_pipeline) - 1, -1, -1):
             node = exported_pipeline[i]
@@ -80,7 +78,6 @@ def unroll_nested_fuction_calls(exported_pipeline):
        List of operators in the current optimized pipeline
 
     """
-
     pipeline_list = []
     result_num = 1
     while True:
