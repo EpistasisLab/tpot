@@ -102,13 +102,13 @@ class TPOT(object):
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
 
         # Machine learning model operators
-        self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
+        self.pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
+        self.pset.addPrimitive(self._random_forest, [pd.DataFrame, int, int], pd.DataFrame)
+        self.pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         # Temporarily remove SVC -- badly overfits on multiclass data sets
-        #self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self.xgradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
+        #self.pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
+        self.pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
 
         # Feature preprocessing operators
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -388,7 +388,7 @@ class TPOT(object):
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
 
-    def decision_tree(self, input_df, max_features, max_depth):
+    def _decision_tree(self, input_df, max_features, max_depth):
         """Fits a decision tree classifier
 
         Parameters
@@ -419,7 +419,7 @@ class TPOT(object):
 
         return self._train_model_and_predict(input_df, DecisionTreeClassifier, max_features=max_features, max_depth=max_depth, random_state=42)
 
-    def random_forest(self, input_df, n_estimators, max_features):
+    def _random_forest(self, input_df, n_estimators, max_features):
         """Fits a random forest classifier
 
         Parameters
@@ -452,7 +452,7 @@ class TPOT(object):
 
         return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=n_estimators, max_features=max_features, random_state=42, n_jobs=-1)
 
-    def logistic_regression(self, input_df, C):
+    def _logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier
 
         Parameters
@@ -474,7 +474,7 @@ class TPOT(object):
 
         return self._train_model_and_predict(input_df, LogisticRegression, C=C, random_state=42)
 
-    def svc(self, input_df, C):
+    def _svc(self, input_df, C):
         """Fits a C-support vector classifier
 
         Parameters
@@ -497,7 +497,7 @@ class TPOT(object):
         return self._train_model_and_predict(input_df, SVC, C=C, random_state=42)
 
 
-    def knnc(self, input_df, n_neighbors):
+    def _knnc(self, input_df, n_neighbors):
         """Fits a k-nearest neighbor classifier
 
         Parameters
@@ -523,7 +523,7 @@ class TPOT(object):
 
         return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
 
-    def xgradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
+    def _xgradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
         """Fits the dmlc eXtreme gradient boosting classifier
 
         Parameters

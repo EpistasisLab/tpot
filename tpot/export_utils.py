@@ -135,12 +135,12 @@ from sklearn.cross_validation import StratifiedShuffleSplit
     if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
     if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
     if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import RandomizedPCA\n'
-    if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
-    if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
-    if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
-    if 'svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
-    if 'knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
-    if 'xgradient_boosting' in operators_used: pipeline_text += 'from xgboost import XGBClassifier\n'
+    if '_decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
+    if '_random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
+    if '_logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
+    if '_svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
+    if '_knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
+    if '_xgradient_boosting' in operators_used: pipeline_text += 'from xgboost import XGBClassifier\n'
 
     pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -182,7 +182,7 @@ def replace_function_calls(pipeline_list):
             operator_text += '\n{} = tpot_data.copy()\n'.format(operator[3])
 
         # Replace the TPOT functions with their corresponding Python code
-        if operator_name == 'decision_tree':
+        if operator_name == '_decision_tree':
             max_features = int(operator[3])
             max_depth = int(operator[4])
 
@@ -203,7 +203,7 @@ def replace_function_calls(pipeline_list):
                 operator_text += '{} = {}\n'.format(result_name, operator[2])
             operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
 
-        elif operator_name == 'random_forest':
+        elif operator_name == '_random_forest':
             num_trees = int(operator[3])
             max_features = int(operator[4])
 
@@ -226,7 +226,7 @@ def replace_function_calls(pipeline_list):
                 operator_text += '{} = {}\n'.format(result_name, operator[2])
             operator_text += '''{0}['rfc{1}-classification'] = rfc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
 
-        elif operator_name == 'logistic_regression':
+        elif operator_name == '_logistic_regression':
             C = float(operator[3])
             if C <= 0.:
                 C = 0.0001
@@ -238,7 +238,7 @@ def replace_function_calls(pipeline_list):
                 operator_text += '{} = {}\n'.format(result_name, operator[2])
             operator_text += '''{0}['lrc{1}-classification'] = lrc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
 
-        elif operator_name == 'svc':
+        elif operator_name == '_svc':
             C = float(operator[3])
             if C <= 0.:
                 C = 0.0001
@@ -250,7 +250,7 @@ def replace_function_calls(pipeline_list):
                 operator_text += '{} = {}\n'.format(result_name, operator[2])
             operator_text += '''{0}['svc{1}-classification'] = svc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
 
-        elif operator_name == 'knnc':
+        elif operator_name == '_knnc':
             n_neighbors = int(operator[3])
             if n_neighbors < 2:
                 n_neighbors = 2
@@ -264,7 +264,7 @@ def replace_function_calls(pipeline_list):
                 operator_text += '{} = {}\n'.format(result_name, operator[2])
             operator_text += '''{0}['knnc{1}-classification'] = knnc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
 
-        elif operator_name == 'xgradient_boosting':
+        elif operator_name == '_xgradient_boosting':
             learning_rate = float(operator[3])
             n_estimators = int(operator[4])
             max_depth = int(operator[5])
