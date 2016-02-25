@@ -87,7 +87,7 @@ class TPOT(object):
             you run it against the same data set with that seed.
         verbosity: int (default: 0)
             How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all
-        scoring_function: function (default: None)
+        scoring_function: function (default: balanced accuracy)
             Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used.
 
         Returns
@@ -106,6 +106,8 @@ class TPOT(object):
             np.random.seed(random_state)
 
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
+        
+        # Machine learning model operators
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
@@ -113,17 +115,22 @@ class TPOT(object):
         #self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self.xgradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
+        
+        # Feature preprocessing operators
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
         self.pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
+        
+        # Feature selection operators
+        self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
+        self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
+        self.pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
 
+        # Mathematical operators
         self.pset.addPrimitive(operator.add, [int, int], int)
         self.pset.addPrimitive(operator.sub, [int, int], int)
         self.pset.addPrimitive(operator.mul, [int, int], int)
