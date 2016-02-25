@@ -50,16 +50,7 @@ from deap import tools
 from deap import gp
 
 class TPOT(object):
-    """TPOT automatically creates and optimizes machine learning pipelines using genetic programming.
-
-    Attributes
-    ----------
-    optimized_pipeline_: object
-        The optimized pipeline, available after calling `fit`
-
-    """
-
-    optimized_pipeline_ = None
+    """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
@@ -95,6 +86,9 @@ class TPOT(object):
         None
 
         """
+        self.optimized_pipeline = None
+        self.training_features = None
+        self.training_classes = None
         self.population_size = population_size
         self.generations = generations
         self.mutation_rate = mutation_rate
@@ -106,7 +100,7 @@ class TPOT(object):
             np.random.seed(random_state)
 
         self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
-        
+
         # Machine learning model operators
         self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
@@ -115,7 +109,7 @@ class TPOT(object):
         #self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self.xgradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
-        
+
         # Feature preprocessing operators
         self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
@@ -123,7 +117,7 @@ class TPOT(object):
         self.pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
-        
+
         # Feature selection operators
         self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
@@ -154,9 +148,9 @@ class TPOT(object):
         self.toolbox.register('mutate', self._random_mutation_operator)
 
         if not scoring_function:
-            self.scoring_function=self._balanced_accuracy
+            self.scoring_function = self._balanced_accuracy
         else:
-            self.scoring_function=scoring_function
+            self.scoring_function = scoring_function
 
     def fit(self, features, classes, feature_names=None):
         """Fits a machine learning pipeline that maximizes classification accuracy on the provided data
@@ -182,6 +176,10 @@ class TPOT(object):
 
         """
         try:
+            # Store the training features and classes for later use
+            self.training_features = features
+            self.training_classes = classes
+
             training_testing_data = pd.DataFrame(data=features, columns=feature_names)
             training_testing_data['class'] = classes
 
@@ -205,7 +203,7 @@ class TPOT(object):
             training_testing_data.loc[training_indices, 'group'] = 'training'
             training_testing_data.loc[testing_indices, 'group'] = 'testing'
 
-            # Default the basic guess to the most frequent class
+            # Default guess: the most frequent class in the training data
             most_frequent_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
             training_testing_data.loc[:, 'guess'] = most_frequent_class
 
@@ -250,13 +248,13 @@ class TPOT(object):
                 pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
                 if pipeline_score > top_score:
                     top_score = pipeline_score
-                    self.optimized_pipeline_ = pipeline
+                    self.optimized_pipeline = pipeline
 
             if self.verbosity == 2:
                 print('')
 
             if self.verbosity >= 1:
-                print('Best pipeline: {}'.format(self.optimized_pipeline_))
+                print('Best pipeline: {}'.format(self.optimized_pipeline))
 
         # Store the best pipeline if the optimization process is ended prematurely
         except KeyboardInterrupt:
@@ -265,23 +263,19 @@ class TPOT(object):
                 pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
                 if pipeline_score > top_score:
                     top_score = pipeline_score
-                    self.optimized_pipeline_ = pipeline
+                    self.optimized_pipeline = pipeline
 
             if self.verbosity == 2:
                 print('')
 
             if self.verbosity >= 1:
-                print('Best pipeline: {}'.format(self.optimized_pipeline_))
+                print('Best pipeline: {}'.format(self.optimized_pipeline))
 
-    def predict(self, training_features, training_classes, testing_features):
+    def predict(self, testing_features):
         """Uses the optimized pipeline to predict the classes for a feature set.
 
         Parameters
         ----------
-        training_features: array-like {n_samples, n_features}
-            Feature matrix of the training set
-        training_classes: array-like {n_samples}
-            List of class labels for prediction in the training set
         testing_features: array-like {n_samples, n_features}
             Feature matrix of the testing set
 
@@ -291,11 +285,11 @@ class TPOT(object):
             Predicted classes for the testing set
 
         """
-        if self.optimized_pipeline_ is None:
+        if self.optimized_pipeline is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        training_data = pd.DataFrame(training_features)
-        training_data['class'] = training_classes
+        training_data = pd.DataFrame(self.training_features)
+        training_data['class'] = self.training_classes
         training_data['group'] = 'training'
 
         testing_data = pd.DataFrame(testing_features)
@@ -303,7 +297,9 @@ class TPOT(object):
         testing_data['group'] = 'testing'
 
         training_testing_data = pd.concat([training_data, testing_data])
-        most_frequent_class = Counter(training_classes).most_common(1)[0][0]
+
+        # Default guess: the most frequent class in the training data
+        most_frequent_class = Counter(self.training_classes).most_common(1)[0][0]
         training_testing_data.loc[:, 'guess'] = most_frequent_class
 
         new_col_names = {}
@@ -313,20 +309,17 @@ class TPOT(object):
         training_testing_data.rename(columns=new_col_names, inplace=True)
 
         # Transform the tree expression in a callable function
-        func = self.toolbox.compile(expr=self.optimized_pipeline_)
+        func = self.toolbox.compile(expr=self.optimized_pipeline)
 
         result = func(training_testing_data)
+        
         return result.loc[result['group'] == 'testing', 'guess'].values
 
-    def score(self, training_features, training_classes, testing_features, testing_classes):
+    def score(self, testing_features, testing_classes):
         """Estimates the testing accuracy of the optimized pipeline.
 
         Parameters
         ----------
-        training_features: array-like {n_samples, n_features}
-            Feature matrix of the training set
-        training_classes: array-like {n_samples}
-            List of class labels for prediction in the training set
         testing_features: array-like {n_samples, n_features}
             Feature matrix of the testing set
         testing_classes: array-like {n_samples}
@@ -338,11 +331,11 @@ class TPOT(object):
             The estimated test set accuracy
 
         """
-        if self.optimized_pipeline_ is None:
+        if self.optimized_pipeline is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        training_data = pd.DataFrame(training_features)
-        training_data['class'] = training_classes
+        training_data = pd.DataFrame(self.training_features)
+        training_data['class'] = self.training_classes
         training_data['group'] = 'training'
 
         testing_data = pd.DataFrame(testing_features)
@@ -350,14 +343,16 @@ class TPOT(object):
         testing_data['group'] = 'testing'
 
         training_testing_data = pd.concat([training_data, testing_data])
-        most_frequent_class = Counter(training_classes).most_common(1)[0][0]
+
+        # Default guess: the most frequent class in the training data
+        most_frequent_class = Counter(self.training_classes).most_common(1)[0][0]
         training_testing_data.loc[:, 'guess'] = most_frequent_class
 
         for column in training_testing_data.columns.values:
             if type(column) != str:
                 training_testing_data.rename(columns={column: str(column).zfill(10)}, inplace=True)
 
-        return self._evaluate_individual(self.optimized_pipeline_, training_testing_data)[1]
+        return self._evaluate_individual(self.optimized_pipeline, training_testing_data)[1]
 
 
     def export(self, output_file_name):
@@ -373,10 +368,10 @@ class TPOT(object):
         None
 
         """
-        if self.optimized_pipeline_ is None:
+        if self.optimized_pipeline is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        exported_pipeline = self.optimized_pipeline_
+        exported_pipeline = self.optimized_pipeline
 
         # Replace all of the mathematical operators with their results. Check export_utils.py for details.
         exported_pipeline = replace_mathematical_operators(exported_pipeline)
@@ -1236,10 +1231,8 @@ def main():
     tpot.fit(training_features, training_classes)
 
     if args.verbosity >= 1:
-        print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes,
-                                             training_features, training_classes)))
-        print('Testing accuracy: {}'.format(tpot.score(training_features, training_classes,
-                                            testing_features, testing_classes)))
+        print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes)))
+        print('Testing accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
 
     if args.output_file != '':
         tpot.export(args.output_file)
