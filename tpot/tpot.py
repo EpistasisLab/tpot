@@ -99,53 +99,53 @@ class TPOT(object):
             random.seed(random_state)
             np.random.seed(random_state)
 
-        self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
+        self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
 
         # Machine learning model operators
-        self.pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self._random_forest, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         # Temporarily remove SVC -- badly overfits on multiclass data sets
-        #self.pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
+        #self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
 
         # Feature preprocessing operators
-        self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
 
         # Feature selection operators
-        self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
+        self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
 
         # Mathematical operators
-        self.pset.addPrimitive(operator.add, [int, int], int)
-        self.pset.addPrimitive(operator.sub, [int, int], int)
-        self.pset.addPrimitive(operator.mul, [int, int], int)
-        self.pset.addPrimitive(self._div, [int, int], float)
+        self._pset.addPrimitive(operator.add, [int, int], int)
+        self._pset.addPrimitive(operator.sub, [int, int], int)
+        self._pset.addPrimitive(operator.mul, [int, int], int)
+        self._pset.addPrimitive(self._div, [int, int], float)
         for val in range(0, 101):
-            self.pset.addTerminal(val, int)
+            self._pset.addTerminal(val, int)
         for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
-            self.pset.addTerminal(val, float)
+            self._pset.addTerminal(val, float)
 
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
-        self.toolbox = base.Toolbox()
-        self.toolbox.register('expr', gp.genHalfAndHalf, pset=self.pset, min_=1, max_=3)
-        self.toolbox.register('individual', tools.initIterate, creator.Individual, self.toolbox.expr)
-        self.toolbox.register('population', tools.initRepeat, list, self.toolbox.individual)
-        self.toolbox.register('compile', gp.compile, pset=self.pset)
-        self.toolbox.register('select', self._combined_selection_operator)
-        self.toolbox.register('mate', gp.cxOnePoint)
-        self.toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
-        self.toolbox.register('mutate', self._random_mutation_operator)
+        self._toolbox = base.Toolbox()
+        self._toolbox.register('expr', gp.genHalfAndHalf, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
+        self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
+        self._toolbox.register('compile', gp.compile, pset=self._pset)
+        self._toolbox.register('select', self._combined_selection_operator)
+        self._toolbox.register('mate', gp.cxOnePoint)
+        self._toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
+        self._toolbox.register('mutate', self._random_mutation_operator)
 
         if not scoring_function:
             self.scoring_function = self._balanced_accuracy
@@ -207,9 +207,9 @@ class TPOT(object):
             most_frequent_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
             training_testing_data.loc[:, 'guess'] = most_frequent_class
 
-            self.toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
+            self._toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
-            pop = self.toolbox.population(n=self.population_size)
+            pop = self._toolbox.population(n=self.population_size)
 
             def pareto_eq(ind1, ind2):
                 """Function used to determine whether two individuals are equal on the Pareto front
@@ -238,7 +238,7 @@ class TPOT(object):
 
             verbose = (self.verbosity == 2)
 
-            pop, _ = algorithms.eaSimple(population=pop, toolbox=self.toolbox, cxpb=self.crossover_rate,
+            pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                                          mutpb=self.mutation_rate, ngen=self.generations,
                                          stats=stats, halloffame=self.hof, verbose=verbose)
 
@@ -309,7 +309,7 @@ class TPOT(object):
         training_testing_data.rename(columns=new_col_names, inplace=True)
 
         # Transform the tree expression in a callable function
-        func = self.toolbox.compile(expr=self._optimized_pipeline)
+        func = self._toolbox.compile(expr=self._optimized_pipeline)
 
         result = func(training_testing_data)
         
@@ -1009,7 +1009,7 @@ class TPOT(object):
         """
         try:
             # Transform the tree expression in a callable function
-            func = self.toolbox.compile(expr=individual)
+            func = self._toolbox.compile(expr=individual)
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
@@ -1099,12 +1099,11 @@ class TPOT(object):
         """
         roll = random.random()
         if roll <= 0.333333:
-            return gp.mutUniform(individual, expr=self.toolbox.expr_mut, pset=self.pset)
+            return gp.mutUniform(individual, expr=self._toolbox.expr_mut, pset=self._pset)
         elif roll <= 0.666666:
-            return gp.mutInsert(individual, pset=self.pset)
+            return gp.mutInsert(individual, pset=self._pset)
         else:
             return gp.mutShrink(individual)
-
 
 def main():
     """Main function that is called when TPOT is run on the command line"""
@@ -1236,8 +1235,6 @@ def main():
 
     if args.output_file != '':
         tpot.export(args.output_file)
-
-
 
 
 if __name__ == '__main__':
