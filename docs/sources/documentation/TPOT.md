@@ -1,6 +1,6 @@
 ## TPOT
 * * *
-__tpot.fit(self,features, classes, feature_names=None)__
+__tpot.fit(self, features, classes, feature_names=None)__
 
 
 Uses genetic programming to optimize a Machine Learning pipeline that
@@ -23,17 +23,13 @@ _Returns_
     None
 
 * * *
-__tpot.predict(self, training_features, training_classes, testing_features)__
+__tpot.predict(self, testing_features)__
 
 
 Uses the optimized pipeline to predict the classes for a feature set.
 
 _Parameters_
 
-    training_features: array-like {n_samples, n_features}
-        Feature matrix of the training set
-    training_classes: array-like {n_samples}
-        List of class labels for prediction in the training set
     testing_features: array-like {n_samples, n_features}
         Feature matrix of the testing set
 
@@ -44,16 +40,12 @@ _Returns_
 
 * * *
 
-__tpot.score(self, training_features, training_classes, testing_features, testing_classes)__
+__tpot.score(self, testing_features, testing_classes)__
 
     Estimates the testing accuracy of the optimized pipeline.
 
 _Parameters_
 
-    training_features: array-like {n_samples, n_features}
-        Feature matrix of the training set
-    training_classes: array-like {n_samples}
-        List of class labels for prediction in the training set
     testing_features: array-like {n_samples, n_features}
         Feature matrix of the testing set
     testing_classes: array-like {n_samples}
@@ -66,7 +58,7 @@ _Returns_
 
 
 * * *
-__tpot.export(self, output_file_name)__ 
+__tpot.export(self, output_file_name)__
 
     Exports the current optimized pipeline as Python code.
 
