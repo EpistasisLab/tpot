@@ -1,6 +1,6 @@
 ## TPOT
 * * *
-__tpot.fit(self,features, classes, feature_names=None)__
+__tpot.fit(self, features, classes, feature_names=None)__
 
 
 Uses genetic programming to optimize a Machine Learning pipeline that
