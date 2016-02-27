@@ -108,7 +108,7 @@ class TPOT(object):
         self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
         self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
-        #self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
         self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
@@ -125,7 +125,6 @@ class TPOT(object):
         self.pset.addPrimitive(self._consensus_two, [int, int, pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._consensus_three, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._consensus_four, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        #self.pset.addPrimitive(self._ident, [str], str)
 
         for val in range(0, 101):
             self.pset.addTerminal(val, int)
@@ -875,7 +874,6 @@ else:
   
     def _get_ht_dict(self, classes, weights):
         ret = {}
-        #instead of weights of class needs to be weights of classifier
         ctr = 0
         for cls in classes:
             try:
@@ -894,7 +892,6 @@ else:
             if class_ in values:
                 return class_
 
-    #max freq class
     def _max_class(self, classes, weights):
         """Return the class with the highest weight, or the class that appears first with that weight (e.g., input_df1)
         """
@@ -915,7 +912,6 @@ else:
         median_val = np.median(ht.values())
         return self._get_top(classes, sorted(((x, abs(y - median_val)) for (x,y) in ht.items()), key=operator.itemgetter(1)))
 
-    #minimum frequency class
     def _min_class(self, classes, weights):
         """Return the class with the minimal weight, or the class that appears first with that weight (e.g., input_df1)
         """
@@ -1600,8 +1596,6 @@ else:
         all_classes = list(set(result['class'].values))
         all_class_accuracies = []
         for this_class in all_classes:
-            #print("this class {}".format(this_class))
-            #print("result['guess'] {}".format(result['guess']))
             this_class_accuracy = len(result[(result['guess'] == this_class) \
                 & (result['class'] == this_class)])\
                 / float(len(result[result['class'] == this_class]))
