@@ -163,21 +163,21 @@ def test_consensus():
     res_four_ada_max = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
                                      'guess': [1,0,0,0,1,1,1,0,1,1]})
     
-    tests = [(tpot_obj._consensus_two, 0, 3, df1, df2), #accuracy, max
-             (tpot_obj._consensus_two, 0, 4, df1, df2), #accuracy mean
-             (tpot_obj._consensus_two, 0, 5, df1, df2), # accuracy median
-             (tpot_obj._consensus_two, 0, 6, df1, df2), # accuracy min
-             (tpot_obj._consensus_two, 1, 3, df1, df2), # uniform max
-             (tpot_obj._consensus_two, 2, 3, df1, df2), # adaboost max
-             (tpot_obj._consensus_three, 2, 3, df1, df3, df4), # adaboost max
-             (tpot_obj._consensus_four, 2, 3, df1, df2, df3, df4) #adaboost max
+    tests = [(tpot_obj._consensus_two, 0, 2, df1, df2), #accuracy, max
+             (tpot_obj._consensus_two, 0, 3, df1, df2), #accuracy mean
+             (tpot_obj._consensus_two, 0, 4, df1, df2), # accuracy median
+             (tpot_obj._consensus_two, 0, 5, df1, df2), # accuracy min
+             (tpot_obj._consensus_two, 1, 2, df1, df2), # uniform max
+             #(tpot_obj._consensus_two, 2, 3, df1, df2), # adaboost max
+             (tpot_obj._consensus_three, 1, 2, df1, df3, df4), # uni max
+             (tpot_obj._consensus_four, 1, 2, df1, df2, df3, df4) #uni  max
              ]
     results = [res_two_acc_max,
            res_two_acc_mean,
            res_two_acc_med,
            res_two_acc_min,
            res_two_uni_max,
-           res_two_ada_max,
+           #res_two_ada_max,
            res_three_ada_max,
            res_four_ada_max
            ]

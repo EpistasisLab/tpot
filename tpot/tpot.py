@@ -149,6 +149,10 @@ class TPOT(object):
             self.scoring_function=self._balanced_accuracy
         else:
             self.scoring_function=scoring_function
+        
+        self._consensus_options = ['accuracy', 'uniform', 'max', 'mean', 'median', 'min']
+        self._num_consensus_options = len(self._consensus_options)
+        self._consensus_opt_split_ix = 1
 
 
     def fit(self, features, classes, feature_names=None):
@@ -918,20 +922,6 @@ else:
         ht = self._get_ht_dict(classes, weights)
         return self._get_top(classes, sorted(ht.items(), key=operator.itemgetter(1)))
 
-    def _adaboost(self, classes, gt):
-        """Weigh each of a DataFrame's guesses according to an adaboost-like scheme.
-        """
-        # weigh the incorrect classes higher than the correct classes
-        #num_correct = len(np.where(classes == gt))
-        #total = classes.size
-        # this is not quite right, the weight here is for the classifier as a whole, not the weifghted error of a single mistake
-        #weights = pd.Series(data=np.array(0.5 * np.log((1- error)/(error)))
-
-        # e ^ - y_i * alpha_m * k_m (x_i)
-        #init_weights = np.sum(np.exp(-1 * gt * 1 * classes), axis=0)        
-        return (1.0)
-   
-
     def _consensus_two(self, weighting, method, input_df1, input_df2):
         """Takes the classifications of different models and combines them in a meaningful manner.
         
@@ -962,16 +952,19 @@ else:
                     return df
             return dfs[0].copy() 
 
-        #if weighting not in ['accuracy', 'uniform', 'adaboost']:
-        if weighting % 7 > 2:
+        options = self._consensus_options
+        num_options = self._num_consensus_options
+        opt_split_ix = self._consensus_opt_split_ix
+
+        #if weighting not in ['accuracy', 'uniform']:
+        if weighting % num_options > (opt_split_ix):
             return dfs[0].copy()
         #if method not in ['max', 'mean', 'median', 'min']:
-        if method % 7 <= 2:
+        if method % num_options <= (opt_split_ix):
             return dfs[0].copy()
 
-        options = ['accuracy', 'uniform', 'adaboost', 'max', 'mean', 'median', 'min']
-        weighting = options[weighting % 7]
-        method = options[method % 7]
+        weighting = options[weighting % num_options]
+        method = options[method % num_options]
         #Establish the weights for each dataframe/classifier
         weights = []
         for df in dfs:
@@ -982,8 +975,6 @@ else:
                 weights.append(float(num_correct) / float(total_vals))
             elif weighting == 'uniform':
                 weights.append(1.0)
-            elif weighting == 'adaboost':
-                weights.append(self._adaboost(tup['guess'], tup['class']))
         #Set the method function for evaluating each DataFrame
         method_f = None
         if method == 'max':
@@ -1040,16 +1031,19 @@ else:
                     return df
             return dfs[0].copy() 
 
-        #if weighting not in ['accuracy', 'uniform', 'adaboost']:
-        if weighting % 7 > 2:
+        options = self._consensus_options
+        num_options = self._num_consensus_options
+        opt_split_ix = self._consensus_opt_split_ix
+        
+        #if weighting not in ['accuracy', 'uniform']:
+        if weighting % num_options > opt_split_ix:
             return dfs[0].copy()
         #if method not in ['max', 'mean', 'median', 'min']:
-        if method % 7 <= 2:
+        if method % num_options <= opt_split_ix:
             return dfs[0].copy()
 
-        options = ['accuracy', 'uniform', 'adaboost', 'max', 'mean', 'median', 'min']
-        weighting = options[weighting % 7]
-        method = options[method % 7]
+        weighting = options[weighting % num_options]
+        method = options[method % num_options]
         #Establish the weights for each dataframe/classifier
         weights = []
         for df in dfs:
@@ -1060,8 +1054,6 @@ else:
                 weights.append(float(num_correct) / float(total_vals))
             elif weighting == 'uniform':
                 weights.append(1.0)
-            elif weighting == 'adaboost':
-                weights.append(self._adaboost(tup['guess'], tup['class']))
         
         #Set the method function for evaluating each DataFrame
         method_f = None
@@ -1125,16 +1117,19 @@ else:
                     return df
             return dfs[0].copy() 
 
-        #if weighting not in ['accuracy', 'uniform', 'adaboost']:
-        if weighting % 7 > 2:
+        options = self._consensus_options
+        num_options = self._num_consensus_options
+        opt_split_ix = self._consensus_opt_split_ix
+        
+        #if weighting not in ['accuracy', 'uniform']:
+        if weighting % num_options > opt_split_ix:
             return dfs[0].copy()
         #if method not in ['max', 'mean', 'median', 'min']:
-        if method % 7 <= 2:
+        if method % num_options <= opt_split_ix:
             return dfs[0].copy()
 
-        options = ['accuracy', 'uniform', 'adaboost', 'max', 'mean', 'median', 'min']
-        weighting = options[weighting % 7]
-        method = options[method % 7]
+        weighting = options[weighting % num_options]
+        method = options[method % num_options]
         #Establish the weights for each dataframe/classifier
         weights = []
         for df in dfs:
@@ -1145,8 +1140,6 @@ else:
                 weights.append(float(num_correct) / float(total_vals))
             elif weighting == 'uniform':
                 weights.append(1.0)
-            elif weighting == 'adaboost':
-                weights.append(self._adaboost(tup['guess'], tup['class']))
         
         #Set the method function for evaluating each DataFrame
         method_f = None
