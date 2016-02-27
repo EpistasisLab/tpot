@@ -1410,6 +1410,8 @@ class TPOT(object):
 
 def main():
     """Main function that is called when TPOT is run on the command line"""
+    from _version import __version__
+
     parser = argparse.ArgumentParser(description='A Python tool that'
             ' automatically creates and optimizes machine learning pipelines'
             ' using genetic programming.')
@@ -1456,69 +1458,57 @@ def main():
             raise argparse.ArgumentTypeError('invalid float value: \'{}\''.format(value))
         return value
 
-    parser.add_argument('-i', action='store', dest='input_file', default=None,
-                        type=str, help='Data file to optimize the pipeline on. Ensure that the class column is labeled as "class".')
+    parser.add_argument('INPUT_FILE', type=str, help='Data file to optimize the pipeline on; ensure that the class column is labeled as "class"')
 
-    parser.add_argument('-is', action='store', dest='input_separator', default='\t',
-                        type=str, help='Character used to separate columns in the input file.')
+    parser.add_argument('-is', action='store', dest='INPUT_SEPARATOR', default='\t',
+                        type=str, help='Character used to separate columns in the input file')
 
-    parser.add_argument('-o', action='store', dest='output_file', default='',
-                        type=str, help='File to export the final optimized pipeline.')
+    parser.add_argument('-o', action='store', dest='OUTPUT_FILE', default='',
+                        type=str, help='File to export the final optimized pipeline')
 
-    parser.add_argument('-g', action='store', dest='generations', default=100,
-                        type=positive_integer, help='Number of generations to run pipeline optimization for.')
+    parser.add_argument('-g', action='store', dest='GENERATIONS', default=100,
+                        type=positive_integer, help='Number of generations to run pipeline optimization')
 
-    parser.add_argument('-mr', action='store', dest='mutation_rate', default=0.9,
-                        type=float_range, help='Mutation rate in the range [0.0, 1.0]')
+    parser.add_argument('-p', action='store', dest='POPULATION_SIZE', default=100,
+                        type=positive_integer, help='Number of individuals in the GP population')
 
-    parser.add_argument('-xr', action='store', dest='crossover_rate', default=0.05,
-                        type=float_range, help='Crossover rate in the range [0.0, 1.0]')
+    parser.add_argument('-mr', action='store', dest='MUTATION_RATE', default=0.9,
+                        type=float_range, help='GP mutation rate in the range [0.0, 1.0]')
 
-    parser.add_argument('-p', action='store', dest='population_size', default=100,
-                        type=positive_integer, help='Number of individuals in the GP population.')
+    parser.add_argument('-xr', action='store', dest='CROSSOVER_RATE', default=0.05,
+                        type=float_range, help='GP crossover rate in the range [0.0, 1.0]')
 
-    parser.add_argument('-s', action='store', dest='random_state', default=0,
-                        type=int, help='Random number generator seed for reproducibility.')
+    parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=0,
+                        type=int, help='Random number generator seed for reproducibility')
 
-    parser.add_argument('-v', action='store', dest='verbosity', default=1, choices=[0, 1, 2],
-                        type=int, help='How much information TPOT communicates while it is running. 0 = none, 1 = minimal, 2 = all')
+    parser.add_argument('-v', action='store', dest='VERBOSITY', default=1, choices=[0, 1, 2],
+                        type=int, help='How much information TPOT communicates while it is running; 0 = none, 1 = minimal, 2 = all')
 
-    parser.add_argument('--version', action='store_true', dest='version', default=False, help='Display the current TPOT version')
+    parser.add_argument('--version', action='version', version='TPOT v{version}'.format(version=__version__))
 
     args = parser.parse_args()
 
-    if args.version:
-        from ._version import __version__
-        print('TPOT version: {}'.format(__version__))
-        return
-    elif args.input_file is None:
-        parser.print_help()
-        print('\nError: You must specify an input file with -i')
-        return
-
-    if args.verbosity >= 2:
+    if args.VERBOSITY >= 2:
         print('\nTPOT settings:')
         for arg in sorted(args.__dict__):
-            if arg == 'version':
-                continue
             print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
         print('')
 
-    input_data = pd.read_csv(args.input_file, sep=args.input_separator)
+    input_data = pd.read_csv(args.INPUT_FILE, sep=args.INPUT_SEPARATOR)
 
     if 'Class' in input_data.columns.values:
         input_data.rename(columns={'Class': 'class'}, inplace=True)
 
-    if args.random_state > 0:
-        random_state = args.random_state
+    if args.RANDOM_STATE > 0:
+        RANDOM_STATE = args.RANDOM_STATE
     else:
-        random_state = None
+        RANDOM_STATE = None
 
     training_indices, testing_indices = next(iter(StratifiedShuffleSplit(input_data['class'].values,
                                                                          n_iter=1,
                                                                          train_size=0.75,
                                                                          test_size=0.25,
-                                                                         random_state=random_state)))
+                                                                         random_state=RANDOM_STATE)))
 
     training_features = input_data.loc[training_indices].drop('class', axis=1).values
     training_classes = input_data.loc[training_indices, 'class'].values
@@ -1526,18 +1516,18 @@ def main():
     testing_features = input_data.loc[testing_indices].drop('class', axis=1).values
     testing_classes = input_data.loc[testing_indices, 'class'].values
 
-    tpot = TPOT(generations=args.generations, population_size=args.population_size,
-                mutation_rate=args.mutation_rate, crossover_rate=args.crossover_rate,
-                random_state=args.random_state, verbosity=args.verbosity)
+    tpot = TPOT(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
+                mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
+                random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY)
 
     tpot.fit(training_features, training_classes)
 
-    if args.verbosity >= 1:
+    if args.VERBOSITY >= 1:
         print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes)))
         print('Testing accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
 
-    if args.output_file != '':
-        tpot.export(args.output_file)
+    if args.OUTPUT_FILE != '':
+        tpot.export(args.OUTPUT_FILE)
 
 
 if __name__ == '__main__':
