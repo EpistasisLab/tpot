@@ -22,6 +22,91 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 import deap
 
+consensus_options = ['accuracy', 'uniform', 'max', 'mean', 'median', 'min']
+num_consensus_options = 6
+consensus_opt_split_ix = 1
+
+def consensus_operator_prefix(weight_scheme, method, operator_text):
+    """Utility function for generating the first part of the consensus operator text
+    
+    Parameters
+    ----------
+    weight_scheme: integer 
+        The corrected-for weight_scheme index in consensus_options 
+    method: integer
+        The corrected-for method index in consensus_options
+    operator_text: String
+        The current operator export string (to be appended onto)
+
+    Returns
+    -------
+    operator_text: String
+        The updated operator export string
+    """
+
+    operator_text +='''\n
+def _get_ht_dict(classes, weights):
+    """Return a dictionary where the keys are the unique class values present in this row of guesses, and the weights are the weights assigned to each guess.
+    """
+    ret = {}
+    ctr = 0
+    for cls in classes:
+        try:
+            ret[cls] += weights[ctr]
+        except:
+            ret[cls] = weights[ctr]
+        ctr += 1
+    return ret
+
+def _get_top( classes, tups):
+    """Return the class from the row in the first DataFrame passed to the function (e.g., input_df1)
+    """
+    values = [tup[0] for tup in tups if tup[1] == tups[0][1]]
+    for class_ in classes:
+        if class_ in values:
+            return class_
+    '''
+    if consensus_options[method % num_consensus_options] == 'max':
+        operator_text += '''\n
+def _max_class(classes, weights):
+    """Return the class with the highest weight, or the class that appears first with that weight (e.g., input_df1)
+    """
+    ht = _get_ht_dict(classes, weights)
+    return _get_top(classes, sorted(ht.items(), key=operator.itemgetter(1), reverse=True))
+method = _max_class
+        '''
+    elif consensus_options[method % num_consensus_options] == 'mean':
+        operator_text += '''\n
+def _mean_class( classes, weights):
+    """Return the class closest to the mean weight, or the class that appears first with that weight (e.g., input_df1)
+    """
+    ht = _get_ht_dict(classes, weights)
+    mean_val = np.mean(ht.values())
+    return _get_top(classes, sorted(((x, abs(y - mean_val)) for (x,y) in ht.items()), key=operator.itemgetter(1)))
+method = _mean_class
+        '''
+    elif consensus_options[method % num_consensus_options] == 'median':
+        operator_text += '''\n
+def _median_class(classes, weights):
+    """Return the class closest to the median weight, or the class that appears first with that weight (e.g., input_df1)
+    """
+    ht = _get_ht_dict(classes, weights)
+    median_val = np.median(ht.values())
+    return _get_top(classes, sorted(((x, abs(y - median_val)) for (x,y) in ht.items()), key=operator.itemgetter(1)))
+method = _median_class
+        '''
+    elif consensus_options[method % num_consensus_options] == 'min':
+        operator_text += '''\n
+def _min_class(classes, weights):
+    """Return the class with the minimal weight, or the class that appears first with that weight (e.g., input_df1)
+    """
+    ht = _get_ht_dict(classes, weights)
+    return _get_top(classes, sorted(ht.items(), key=operator.itemgetter(1)))
+method = _min_class
+        '''
+    return operator_text
+
+
 def replace_mathematical_operators(exported_pipeline):
     """Replace all of the mathematical operators with their results for use in export(self, output_file_name)
 
@@ -290,6 +375,177 @@ def replace_function_calls(pipeline_list):
         elif operator_name == '_combine_dfs':
             operator_text += '\n# Combine two DataFrames'
             operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
+
+        elif operator_name == '_consensus_two':
+            weight_scheme = int(operator[2])
+            method = int(operator[3])
+            if weight_scheme % num_consensus_options > consensus_opt_split_ix:
+                weight_scheme = consensus_opt_split_ix
+            if method % num_consensus_options <= consensus_opt_split_ix:
+                method = consensus_opt_split_ix + 1
+            
+            operator_text += consensus_operator_prefix(weight_scheme, method, operator_text)
+
+            operator_text += '\n# Combine two DataFrames'
+            operator_text += '\ndfs = [{0}, {1}]'.format(operator[4], operator[5])
+            operator_text += '''
+ignore_consensus = False
+if any(len(df.columns) == 3 for df in dfs):
+    found = False
+
+    for df in dfs:
+        if len(df.columns) > 3:
+            {0} = df.copy()
+            found = True
+            break
+    if not found:
+        ignore_consensus = True
+        {0} = df.copy()
+
+if not ignore_consensus:
+    weights = []
+    for df in dfs:
+        tup = df[['guess', 'class']]
+        num_correct = len(np.where(tup['guess'] == tup['class'])[0])
+        total_vals = len(tup['guess'].index)'''.format(result_name)
+            if consensus_options[weight_scheme % num_consensus_options] == 'accuracy':
+                operator_text +='''
+        weights.append(float(num_correct) / float(total_vals))
+        '''
+            elif consensus_options[weight_scheme % num_consensus_options] == 'uniform':
+                operator_text +='''
+        weights.append(1.0)
+        '''
+            operator_text += '''
+    # Initialize the dataFrame containing just the guesses, and to hold the results
+    merged_guesses = pd.DataFrame(data={0}[['guess']].values, columns=['guess_1'])
+    merged_guesses.loc[:, 'guess_2'] = {1}['guess']
+    merged_guesses.loc[:, 'guess'] = None
+
+    for row_ix in merged_guesses.index:
+        merged_guesses['guess'].loc[row_ix] = method(merged_guesses[['guess_1', 'guess_2']].iloc[row_ix], weights)
+    {2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])
+    if 'guess' in {2}.columns.values:
+        {2} = {2}.drop('guess', 1).join(merged_guesses['guess']).copy()
+    else:
+        {2} = {2}.join(merged_guesses['guess'])
+        '''.format(operator[4], operator[5], result_name)
+
+        elif operator_name == '_consensus_three':
+            weight_scheme = int(operator[2])
+            method = int(operator[3])
+            if weight_scheme % num_consensus_options > consensus_opt_split_ix:
+                weight_scheme = consensus_opt_split_ix
+            if method % num_consensus_options <= consensus_opt_split_ix:
+                method = consensus_opt_split_ix + 1
+
+            operator_text += consensus_operator_prefix(weight_scheme, method, operator_text)
+            
+            operator_text += '\n# Combine three DataFrames'
+            operator_text += '\ndfs = [{0}, {1}, {2}]'.format(operator[4], operator[5], operator[6])
+            operator_text += '''
+ignore_consensus = False
+if any(len(df.columns) == 3 for df in dfs):
+    found = False
+
+    for df in dfs:
+        if len(df.columns) > 3:
+            {0} = df.copy()
+            found = True
+            break
+    if not found:
+        ignore_consensus = True
+        {0} = df.copy()
+
+if not ignore_consensus:
+    weights = []
+    for df in dfs:
+        tup = df[['guess', 'class']]
+        num_correct = len(np.where(tup['guess'] == tup['class'])[0])
+        total_vals = len(tup['guess'].index)'''.format(result_name)
+            if consensus_options[weight_scheme % num_consensus_options] == 'accuracy':
+                operator_text +='''
+        weights.append(float(num_correct) / float(total_vals))
+        '''
+            elif consensus_options[weight_scheme % num_consensus_options] == 'uniform':
+                operator_text +='''
+        weights.append(1.0)
+        '''
+            operator_text += '''
+    # Initialize the dataFrame containing just the guesses, and to hold the results
+    merged_guesses = pd.DataFrame(data={0}[['guess']].values, columns=['guess_1'])
+    merged_guesses.loc[:, 'guess_2'] = {1}['guess']
+    merged_guesses.loc[:, 'guess_3'] = {2}['guess']
+    merged_guesses.loc[:, 'guess'] = None
+
+    for row_ix in merged_guesses.index:
+        merged_guesses['guess'].loc[row_ix] = method(merged_guesses[['guess_1', 'guess_2', 'guess_3']].iloc[row_ix], weights)
+    {3} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])
+    {3} = {3}.join({2}[[column for column in {2}.columns.values if column not in {3}.columns.values]])
+    if 'guess' in {3}.columns.values:
+        {3} = {3}.drop('guess', 1).join(merged_guesses['guess']).copy()
+    else:
+        {3} = {3}.join(merged_guesses['guess'])
+        '''.format(operator[4], operator[5], operator[6], result_name)
+
+        elif operator_name == '_consensus_four':
+            weight_scheme = int(operator[2])
+            method = int(operator[3])
+            if weight_scheme % num_consensus_options > consensus_opt_split_ix:
+                weight_scheme = consensus_opt_split_ix
+            if method % num_consensus_options <= consensus_opt_split_ix:
+                method = consensus_opt_split_ix + 1
+
+            operator_text += consensus_operator_prefix(weight_scheme, method, operator_text)
+            
+            operator_text += '\n# Combine four DataFrames'
+            operator_text += '\ndfs = [{0}, {1}, {2}, {3}]'.format(operator[4], operator[5], operator[6], operator[7])
+            operator_text += '''
+ignore_consensus = False
+if any(len(df.columns) == 3 for df in dfs):
+    found = False
+
+    for df in dfs:
+        if len(df.columns) > 3:
+            {0} = df.copy()
+            found = True
+            break
+    if not found:
+        ignore_consensus = True
+        {0} = df.copy()
+
+if not ignore_consensus:
+    weights = []
+    for df in dfs:
+        tup = df[['guess', 'class']]
+        num_correct = len(np.where(tup['guess'] == tup['class'])[0])
+        total_vals = len(tup['guess'].index)'''.format(result_name)
+            if consensus_options[weight_scheme % num_consensus_options] == 'accuracy':
+                operator_text +='''
+        weights.append(float(num_correct) / float(total_vals))
+        '''
+            elif consensus_options[weight_scheme % num_consensus_options] == 'uniform':
+                operator_text +='''
+        weights.append(1.0)
+        '''
+            operator_text += '''
+    # Initialize the dataFrame containing just the guesses, and to hold the results
+    merged_guesses = pd.DataFrame(data={0}[['guess']].values, columns=['guess_1'])
+    merged_guesses.loc[:, 'guess_2'] = {1}['guess']
+    merged_guesses.loc[:, 'guess_3'] = {2}['guess']
+    merged_guesses.loc[:, 'guess_4'] = {3}['guess']
+    merged_guesses.loc[:, 'guess'] = None
+
+    for row_ix in merged_guesses.index:
+        merged_guesses['guess'].loc[row_ix] = method(merged_guesses[['guess_1', 'guess_2', 'guess_3', 'guess_4']].iloc[row_ix], weights)
+    {4} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])
+    {4} = {4}.join({2}[[column for column in {2}.columns.values if column not in {4}.columns.values]])
+    {4} = {4}.join({3}[[column for column in {3}.columns.values if column not in {4}.columns.values]])
+    if 'guess' in {4}.columns.values:
+        {4} = {4}.drop('guess', 1).join(merged_guesses['guess']).copy()
+    else:
+        {4} = {4}.join(merged_guesses['guess'])
+        '''.format(operator[4], operator[5], operator[6], result_name)
 
         elif operator_name == '_variance_threshold':
             operator_text += '''

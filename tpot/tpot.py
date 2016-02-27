@@ -131,9 +131,9 @@ class TPOT(object):
         self._pset.addPrimitive(self._div, [int, int], float)
         
         # Other operators
-        self.pset.addPrimitive(self._consensus_two, [int, int, pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._consensus_three, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._consensus_four, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._consensus_two, [int, int, pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._consensus_three, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._consensus_four, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
         for val in range(0, 101):
             self._pset.addTerminal(val, int)
         for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
@@ -844,7 +844,6 @@ class TPOT(object):
             method_f = self._min_class
 
         # Initialize the dataFrame containing just the guesses, and to hold the results
-        merged_guesses = pd.DataFrame(data=input_df1[['guess']].values, columns=['guess_1'])
         merged_guesses = pd.DataFrame(data=input_df1[['guess']].values, columns=['guess_1'])
         merged_guesses.loc[:, 'guess_2'] = input_df2['guess']
         merged_guesses.loc[:, 'guess_3'] = input_df3['guess']
