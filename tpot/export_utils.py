@@ -400,7 +400,7 @@ if any(len(df.columns) == 3 for df in dfs):
             break
     if not found:
         ignore_consensus = True
-        {0} = df.copy()
+        {0} = dfs[0].copy()
 
 if not ignore_consensus:
     weights = []
@@ -455,7 +455,7 @@ if any(len(df.columns) == 3 for df in dfs):
             break
     if not found:
         ignore_consensus = True
-        {0} = df.copy()
+        {0} = dfs[0].copy()
 
 if not ignore_consensus:
     weights = []
@@ -512,7 +512,7 @@ if any(len(df.columns) == 3 for df in dfs):
             break
     if not found:
         ignore_consensus = True
-        {0} = df.copy()
+        {0} = dfs[0].copy()
 
 if not ignore_consensus:
     weights = []
