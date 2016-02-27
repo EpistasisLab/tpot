@@ -873,6 +873,8 @@ else:
     
   
     def _get_ht_dict(self, classes, weights):
+        """Return a dictionary where the keys are the unique class values present in this row of guesses, and the weights are the weights assigned to each guess.
+        """
         ret = {}
         ctr = 0
         for cls in classes:
