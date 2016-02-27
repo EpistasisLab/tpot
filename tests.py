@@ -92,15 +92,15 @@ def test_xgboost():
 def test_combine_dfs():
     tpot_obj = TPOT()
 
-    df1 = pd.DataFrame({'a': range(10),
-                        'b': range(10, 20)})
+    df1 = pd.DataFrame({'a': list(range(10)),
+                        'b': list(range(10, 20))})
 
-    df2 = pd.DataFrame({'b': range(10, 20),
-                        'c': range(20, 30)})
+    df2 = pd.DataFrame({'b': list(range(10, 20)),
+                        'c': list(range(20, 30))})
 
-    combined_df = pd.DataFrame({'a': range(10),
-                                'b': range(10, 20),
-                                'c': range(20, 30)})
+    combined_df = pd.DataFrame({'a': list(range(10)),
+                                'b': list(range(10, 20)),
+                                'c': list(range(20, 30))})
 
     assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
 
@@ -130,16 +130,24 @@ def test_static_models():
 def test_consensus():
     tpot_obj = TPOT()
 
-    df1 = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+    df1 = pd.DataFrame({'00001': [2,2,2,2,2,2,2,2,2,2],
+                        '00002': [3,3,3,3,3,3,3,3,3,3],
+                        'class': [1,1,1,1,1,0,0,0,0,0],
                         'guess': [1,0,1,0,1,0,1,0,1,0]})
 
-    df2 = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+    df2 = pd.DataFrame({'00001': [2,2,2,2,2,2,2,2,2,2],
+                        '00002': [3,3,3,3,3,3,3,3,3,3],
+                        'class': [1,1,1,1,1,0,0,0,0,0],
                         'guess': [0,0,0,0,0,1,1,1,1,1]})
 
-    df3 = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+    df3 = pd.DataFrame({'00001': [2,2,2,2,2,2,2,2,2,2],
+                        '00002': [3,3,3,3,3,3,3,3,3,3],
+                        'class': [1,1,1,1,1,0,0,0,0,0],
                         'guess': [0,1,0,1,0,1,0,1,0,1]})
 
-    df4 = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+    df4 = pd.DataFrame({'00001': [2,2,2,2,2,2,2,2,2,2],
+                        '00002': [3,3,3,3,3,3,3,3,3,3],
+                        'class': [1,1,1,1,1,0,0,0,0,0],
                         'guess': [1,1,0,0,1,1,0,0,1,1]})
 
     uniform = [1.0] * 10
@@ -186,7 +194,7 @@ def test_consensus():
            ]
 
     for test, res in zip(tests, results):
-        print(test[1:3])
-        print(test[0](*test[1:])['guess'].values)
+        #print(test[1:3])
+        #print(test[0](*test[1:])['guess'].values)
         assert np.array_equal(test[0](*test[1:])['guess'].values, res['guess'].values)
 

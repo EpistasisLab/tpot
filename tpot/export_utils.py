@@ -72,7 +72,7 @@ def _max_class(classes, weights):
     """Return the class with the highest weight, or the class that appears first with that weight (e.g., input_df1)
     """
     ht = _get_ht_dict(classes, weights)
-    return _get_top(classes, sorted(ht.items(), key=operator.itemgetter(1), reverse=True))
+    return _get_top(classes, sorted(list(ht.items()), key=operator.itemgetter(1), reverse=True))
 method = _max_class
         '''
     elif consensus_options[method % num_consensus_options] == 'mean':
@@ -81,8 +81,8 @@ def _mean_class( classes, weights):
     """Return the class closest to the mean weight, or the class that appears first with that weight (e.g., input_df1)
     """
     ht = _get_ht_dict(classes, weights)
-    mean_val = np.mean(ht.values())
-    return _get_top(classes, sorted(((x, abs(y - mean_val)) for (x,y) in ht.items()), key=operator.itemgetter(1)))
+    mean_val = np.mean(list(ht.values()))
+    return _get_top(classes, sorted(((x, abs(y - mean_val)) for (x,y) in list(ht.items())), key=operator.itemgetter(1)))
 method = _mean_class
         '''
     elif consensus_options[method % num_consensus_options] == 'median':
@@ -91,8 +91,8 @@ def _median_class(classes, weights):
     """Return the class closest to the median weight, or the class that appears first with that weight (e.g., input_df1)
     """
     ht = _get_ht_dict(classes, weights)
-    median_val = np.median(ht.values())
-    return _get_top(classes, sorted(((x, abs(y - median_val)) for (x,y) in ht.items()), key=operator.itemgetter(1)))
+    median_val = np.median(list(ht.values()))
+    return _get_top(classes, sorted(((x, abs(y - median_val)) for (x,y) in list(ht.items())), key=operator.itemgetter(1)))
 method = _median_class
         '''
     elif consensus_options[method % num_consensus_options] == 'min':
@@ -101,7 +101,7 @@ def _min_class(classes, weights):
     """Return the class with the minimal weight, or the class that appears first with that weight (e.g., input_df1)
     """
     ht = _get_ht_dict(classes, weights)
-    return _get_top(classes, sorted(ht.items(), key=operator.itemgetter(1)))
+    return _get_top(classes, sorted(list(ht.items()), key=operator.itemgetter(1)))
 method = _min_class
         '''
     return operator_text

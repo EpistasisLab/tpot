@@ -18,7 +18,7 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from __future__ import print_function
+
 import argparse
 import operator
 import random
@@ -593,27 +593,27 @@ class TPOT(object):
         """Return the class with the highest weight, or the class that appears first with that weight (e.g., input_df1)
         """
         ht = self._get_ht_dict(classes, weights)
-        return self._get_top(classes, sorted(ht.items(), key=operator.itemgetter(1), reverse=True))
+        return self._get_top(classes, sorted(list(ht.items()), key=operator.itemgetter(1), reverse=True))
     
     def _mean_class(self, classes, weights):
         """Return the class closest to the mean weight, or the class that appears first with that weight (e.g., input_df1)
         """
         ht = self._get_ht_dict(classes, weights)
-        mean_val = np.mean(ht.values())
-        return self._get_top(classes, sorted(((x, abs(y - mean_val)) for (x,y) in ht.items()), key=operator.itemgetter(1)))
+        mean_val = np.mean(list(ht.values()))
+        return self._get_top(classes, sorted(((x, abs(y - mean_val)) for (x,y) in list(ht.items())), key=operator.itemgetter(1)))
 
     def _median_class(self, classes, weights):
         """Return the class closest to the median weight, or the class that appears first with that weight (e.g., input_df1)
         """
         ht = self._get_ht_dict(classes, weights)
-        median_val = np.median(ht.values())
-        return self._get_top(classes, sorted(((x, abs(y - median_val)) for (x,y) in ht.items()), key=operator.itemgetter(1)))
+        median_val = np.median(list(ht.values()))
+        return self._get_top(classes, sorted(((x, abs(y - median_val)) for (x,y) in list(ht.items())), key=operator.itemgetter(1)))
 
     def _min_class(self, classes, weights):
         """Return the class with the minimal weight, or the class that appears first with that weight (e.g., input_df1)
         """
         ht = self._get_ht_dict(classes, weights)
-        return self._get_top(classes, sorted(ht.items(), key=operator.itemgetter(1)))
+        return self._get_top(classes, sorted(list(ht.items()), key=operator.itemgetter(1)))
 
     def _consensus_two(self, weighting, method, input_df1, input_df2):
         """Takes the classifications of different models and combines them in a meaningful manner.
@@ -1488,7 +1488,7 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        from _version import __version__
+        from ._version import __version__
         print('TPOT version: {}'.format(__version__))
         return
     elif args.input_file is None:
