@@ -64,4 +64,8 @@ docs/_build/
 target/
 
 # IPython Notebooks
+.ipynb_checkpoints
 .ipynb_checkpoints/*
+
+docs/sources/examples/.Rhistory
+

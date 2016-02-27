@@ -20,7 +20,7 @@ setup(
     entry_points={'console_scripts': ['tpot=tpot:main', ]},
     description=('Tree-based Pipeline Optimization Tool'),
     long_description='''
-A Python tool that automatically creates and optimizes Machine Learning pipelines using genetic programming.
+A Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.
 
 Contact
 =============
@@ -33,7 +33,7 @@ or Twitter: https://twitter.com/randal_olson
 This project is hosted at https://github.com/rhiever/tpot
 ''',
     zip_safe=True,
-    install_requires=['numpy', 'scipy', 'pandas', 'scikit-learn', 'deap'],
+    install_requires=['numpy', 'scipy', 'pandas', 'scikit-learn', 'deap', 'xgboost'],
     classifiers=[
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',

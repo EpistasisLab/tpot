@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright 2015 Randal S. Olson
+Copyright 2016 Randal S. Olson
 
 This file is part of the TPOT library.
 
@@ -23,21 +23,24 @@ import argparse
 import operator
 import random
 import hashlib
-from itertools import combinations
 from collections import Counter
 
 import numpy as np
 import pandas as pd
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE
+from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE, SelectFwe
 from sklearn.preprocessing import StandardScaler, RobustScaler, PolynomialFeatures
-from sklearn.decomposition import PCA
+from sklearn.decomposition import RandomizedPCA
 from sklearn.cross_validation import StratifiedShuffleSplit
+from xgboost import XGBClassifier
+import warnings
+
+from .export_utils import *
 
 import deap
 from deap import algorithms
@@ -47,15 +50,7 @@ from deap import tools
 from deap import gp
 
 class TPOT(object):
-    """TPOT automatically creates and optimizes Machine Learning pipelines using genetic programming.
-
-    Attributes
-    ----------
-    optimized_pipeline_: object
-        The optimized pipeline, available after calling `fit`
-
-    """
-    optimized_pipeline_ = None
+    """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
@@ -83,7 +78,7 @@ class TPOT(object):
             you run it against the same data set with that seed.
         verbosity: int (default: 0)
             How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all
-        scoring_function: function (default: None)
+        scoring_function: function (default: balanced accuracy)
             Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used.
 
         Returns
@@ -91,6 +86,9 @@ class TPOT(object):
         None
 
         """
+        self._optimized_pipeline = None
+        self._training_features = None
+        self._training_classes = None
         self.population_size = population_size
         self.generations = generations
         self.mutation_rate = mutation_rate
@@ -101,51 +99,61 @@ class TPOT(object):
             random.seed(random_state)
             np.random.seed(random_state)
 
-        self.pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self.decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.random_forest, [pd.DataFrame, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self.logistic_regression, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self.svc, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self.knnc, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self.gradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
-        self.pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
-        self.pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame) 
-        self.pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
-        self.pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
-        self.pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
-        self.pset.addPrimitive(self._pca, [pd.DataFrame, int], pd.DataFrame)
+        self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
 
-        self.pset.addPrimitive(operator.add, [int, int], int)
-        self.pset.addPrimitive(operator.sub, [int, int], int)
-        self.pset.addPrimitive(operator.mul, [int, int], int)
-        self.pset.addPrimitive(self._div, [int, int], float)
+        # Machine learning model operators
+        self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
+        # Temporarily remove SVC -- badly overfits on multiclass data sets
+        #self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
+
+        # Feature preprocessing operators
+        self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
+
+        # Feature selection operators
+        self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
+
+        # Mathematical operators
+        self._pset.addPrimitive(operator.add, [int, int], int)
+        self._pset.addPrimitive(operator.sub, [int, int], int)
+        self._pset.addPrimitive(operator.mul, [int, int], int)
+        self._pset.addPrimitive(self._div, [int, int], float)
+        
+        # Other operators
         self.pset.addPrimitive(self._consensus_two, [int, int, pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._consensus_three, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self.pset.addPrimitive(self._consensus_four, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
-
         for val in range(0, 101):
-            self.pset.addTerminal(val, int)
+            self._pset.addTerminal(val, int)
         for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
-            self.pset.addTerminal(val, float)
+            self._pset.addTerminal(val, float)
 
-        creator.create('FitnessMax', base.Fitness, weights=(1.0,))
-        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMax)
+        creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
+        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
-        self.toolbox = base.Toolbox()
-        self.toolbox.register('expr', gp.genHalfAndHalf, pset=self.pset, min_=1, max_=3)
-        self.toolbox.register('individual', tools.initIterate, creator.Individual, self.toolbox.expr)
-        self.toolbox.register('population', tools.initRepeat, list, self.toolbox.individual)
-        self.toolbox.register('compile', gp.compile, pset=self.pset)
-        self.toolbox.register('select', self._combined_selection_operator)
-        self.toolbox.register('mate', gp.cxOnePoint)
-        self.toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
-        self.toolbox.register('mutate', self._random_mutation_operator)
-	
+        self._toolbox = base.Toolbox()
+        self._toolbox.register('expr', gp.genHalfAndHalf, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
+        self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
+        self._toolbox.register('compile', gp.compile, pset=self._pset)
+        self._toolbox.register('select', self._combined_selection_operator)
+        self._toolbox.register('mate', gp.cxOnePoint)
+        self._toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
+        self._toolbox.register('mutate', self._random_mutation_operator)
+
         if not scoring_function:
-            self.scoring_function=self._balanced_accuracy
+            self.scoring_function = self._balanced_accuracy
         else:
             self.scoring_function=scoring_function
         
@@ -153,13 +161,14 @@ class TPOT(object):
         self._num_consensus_options = len(self._consensus_options)
         self._consensus_opt_split_ix = 1
 
-
     def fit(self, features, classes, feature_names=None):
-        """Uses genetic programming to optimize a Machine Learning pipeline that
-           maximizes classification accuracy on the provided `features` and `classes`.
-           Optionally, name the features in the data frame according to `feature_names`.
-           Performs a stratified training/testing cross-validaton split to avoid
-           overfitting on the provided data.
+        """Fits a machine learning pipeline that maximizes classification accuracy on the provided data
+        
+        Uses genetic programming to optimize a machine learning pipeline that
+        maximizes classification accuracy on the provided `features` and `classes`.
+        Optionally, name the features in the data frame according to `feature_names`.
+        Performs a stratified training/testing cross-validaton split to avoid
+        overfitting on the provided data.
 
         Parameters
         ----------
@@ -176,6 +185,10 @@ class TPOT(object):
 
         """
         try:
+            # Store the training features and classes for later use
+            self._training_features = features
+            self._training_classes = classes
+
             training_testing_data = pd.DataFrame(data=features, columns=feature_names)
             training_testing_data['class'] = classes
 
@@ -199,46 +212,79 @@ class TPOT(object):
             training_testing_data.loc[training_indices, 'group'] = 'training'
             training_testing_data.loc[testing_indices, 'group'] = 'testing'
 
-            # Default the basic guess to the most frequent class
+            # Default guess: the most frequent class in the training data
             most_frequent_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
             training_testing_data.loc[:, 'guess'] = most_frequent_class
 
-            self.toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
+            self._toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
-            pop = self.toolbox.population(n=self.population_size)
-            self.hof = tools.HallOfFame(maxsize=1)
-            stats = tools.Statistics(lambda ind: ind.fitness.values)
+            pop = self._toolbox.population(n=self.population_size)
+
+            def pareto_eq(ind1, ind2):
+                """Function used to determine whether two individuals are equal on the Pareto front
+                
+                Parameters
+                ----------
+                ind1: DEAP individual from the GP population
+                    First individual to compare
+                ind2: DEAP individual from the GP population
+                    Second individual to compare
+
+                Returns
+                ----------
+                individuals_equal: bool
+                    Boolean indicating whether the two individuals are equal on the Pareto front
+
+                """
+                return np.all(ind1.fitness.values == ind2.fitness.values)
+
+            self.hof = tools.ParetoFront(similar=pareto_eq)
+
+            stats = tools.Statistics(lambda ind: ind.fitness.values[1])
             stats.register('Minimum score', np.min)
             stats.register('Average score', np.mean)
             stats.register('Maximum score', np.max)
 
             verbose = (self.verbosity == 2)
 
-            pop, log = algorithms.eaSimple(population=pop, toolbox=self.toolbox, cxpb=self.crossover_rate,
-                                           mutpb=self.mutation_rate, ngen=self.generations,
-                                           stats=stats, halloffame=self.hof, verbose=verbose)
+            pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
+                                         mutpb=self.mutation_rate, ngen=self.generations,
+                                         stats=stats, halloffame=self.hof, verbose=verbose)
 
-            self.optimized_pipeline_ = self.hof[0]
+            # Store the pipeline with the highest internal testing accuracy
+            top_score = 0.
+            for pipeline in self.hof:
+                pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
+                if pipeline_score > top_score:
+                    top_score = pipeline_score
+                    self._optimized_pipeline = pipeline
 
             if self.verbosity == 2:
                 print('')
 
             if self.verbosity >= 1:
-                print('Best pipeline:', self.hof[0])
+                print('Best pipeline: {}'.format(self._optimized_pipeline))
 
         # Store the best pipeline if the optimization process is ended prematurely
         except KeyboardInterrupt:
-            self.optimized_pipeline_ = self.hof[0]
+            top_score = 0.
+            for pipeline in self.hof:
+                pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
+                if pipeline_score > top_score:
+                    top_score = pipeline_score
+                    self._optimized_pipeline = pipeline
 
-    def predict(self, training_features, training_classes, testing_features):
+            if self.verbosity == 2:
+                print('')
+
+            if self.verbosity >= 1:
+                print('Best pipeline: {}'.format(self._optimized_pipeline))
+
+    def predict(self, testing_features):
         """Uses the optimized pipeline to predict the classes for a feature set.
 
         Parameters
         ----------
-        training_features: array-like {n_samples, n_features}
-            Feature matrix of the training set
-        training_classes: array-like {n_samples}
-            List of class labels for prediction in the training set
         testing_features: array-like {n_samples, n_features}
             Feature matrix of the testing set
 
@@ -248,11 +294,11 @@ class TPOT(object):
             Predicted classes for the testing set
 
         """
-        if self.optimized_pipeline_ is None:
+        if self._optimized_pipeline is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        training_data = pd.DataFrame(training_features)
-        training_data['class'] = training_classes
+        training_data = pd.DataFrame(self._training_features)
+        training_data['class'] = self._training_classes
         training_data['group'] = 'training'
 
         testing_data = pd.DataFrame(testing_features)
@@ -260,7 +306,9 @@ class TPOT(object):
         testing_data['group'] = 'testing'
 
         training_testing_data = pd.concat([training_data, testing_data])
-        most_frequent_class = Counter(training_classes).most_common(1)[0][0]
+
+        # Default guess: the most frequent class in the training data
+        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
         training_testing_data.loc[:, 'guess'] = most_frequent_class
 
         new_col_names = {}
@@ -270,20 +318,17 @@ class TPOT(object):
         training_testing_data.rename(columns=new_col_names, inplace=True)
 
         # Transform the tree expression in a callable function
-        func = self.toolbox.compile(expr=self.optimized_pipeline_)
+        func = self._toolbox.compile(expr=self._optimized_pipeline)
 
         result = func(training_testing_data)
-        return result[result['group'] == 'testing', 'guess'].values
+        
+        return result.loc[result['group'] == 'testing', 'guess'].values
 
-    def score(self, training_features, training_classes, testing_features, testing_classes):
+    def score(self, testing_features, testing_classes):
         """Estimates the testing accuracy of the optimized pipeline.
 
         Parameters
         ----------
-        training_features: array-like {n_samples, n_features}
-            Feature matrix of the training set
-        training_classes: array-like {n_samples}
-            List of class labels for prediction in the training set
         testing_features: array-like {n_samples, n_features}
             Feature matrix of the testing set
         testing_classes: array-like {n_samples}
@@ -295,11 +340,11 @@ class TPOT(object):
             The estimated test set accuracy
 
         """
-        if self.optimized_pipeline_ is None:
+        if self._optimized_pipeline is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        training_data = pd.DataFrame(training_features)
-        training_data['class'] = training_classes
+        training_data = pd.DataFrame(self._training_features)
+        training_data['class'] = self._training_classes
         training_data['group'] = 'training'
 
         testing_data = pd.DataFrame(testing_features)
@@ -307,17 +352,20 @@ class TPOT(object):
         testing_data['group'] = 'testing'
 
         training_testing_data = pd.concat([training_data, testing_data])
-        most_frequent_class = Counter(training_classes).most_common(1)[0][0]
+
+        # Default guess: the most frequent class in the training data
+        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
         training_testing_data.loc[:, 'guess'] = most_frequent_class
 
         for column in training_testing_data.columns.values:
             if type(column) != str:
                 training_testing_data.rename(columns={column: str(column).zfill(10)}, inplace=True)
 
-        return self._evaluate_individual(self.optimized_pipeline_, training_testing_data)[0]
+        return self._evaluate_individual(self._optimized_pipeline, training_testing_data)[1]
+
 
     def export(self, output_file_name):
-        """Exports the current optimized pipeline as Python code.
+        """Exports the current optimized pipeline as Python code
 
         Parameters
         ----------
@@ -329,380 +377,27 @@ class TPOT(object):
         None
 
         """
-        if self.optimized_pipeline_ is None:
+        if self._optimized_pipeline is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        exported_pipeline = self.optimized_pipeline_
+        exported_pipeline = self._optimized_pipeline
 
-        # Replace all of the mathematical operators with their results
-        while True:
-            for i in range(len(exported_pipeline) - 1, -1, -1):
-                node = exported_pipeline[i]
-                if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div']:
-                    val1 = int(exported_pipeline[i + 1].name)
-                    val2 = int(exported_pipeline[i + 2].name)
-                    if node.name == 'add':
-                        new_val = val1 + val2
-                    elif node.name == 'sub':
-                        new_val = val1 - val2
-                    elif node.name == 'mul':
-                        new_val = val1 * val2
-                    else:
-                        new_val = self._div(val1, val2)
+        # Replace all of the mathematical operators with their results. Check export_utils.py for details.
+        exported_pipeline = replace_mathematical_operators(exported_pipeline)
 
-                    new_val = deap.gp.Terminal(symbolic=new_val, terminal=new_val, ret=new_val)
-                    exported_pipeline = exported_pipeline[:i] + [new_val] + exported_pipeline[i + 3:]
-                    break
-            else:
-                break
+        # Unroll the nested function calls into serial code. Check export_utils.py for details.
+        exported_pipeline, pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
 
-        # Unroll the nested function calls into serial code
-        pipeline_list = []
-        result_num = 1
-        while True:
-            for node_index in range(len(exported_pipeline) - 1, -1, -1):
-                node = exported_pipeline[node_index]
-                if type(node) is not deap.gp.Primitive:
-                    continue
+        # Have the exported code import all of the necessary modules and functions
+        pipeline_text = generate_import_code(pipeline_list)
 
-                node_params = exported_pipeline[node_index + 1:node_index + node.arity + 1]
-
-                new_val = 'result{}'.format(result_num)
-                operator_list = [new_val, node.name]
-                operator_list.extend([x.name for x in node_params])
-                pipeline_list.append(operator_list)
-                result_num += 1
-                new_val = deap.gp.Terminal(symbolic=new_val, terminal=new_val, ret=new_val)
-                exported_pipeline = exported_pipeline[:node_index] + [new_val] + exported_pipeline[node_index + node.arity + 1:]
-                break
-            else:
-                break
-
-        # Have the code import all of the necessary modules and functions
-        # operator[1] is the name of the operator
-        operators_used = set([operator[1] for operator in pipeline_list])
-        
-        pipeline_text = '''import numpy as np
-import pandas as pd
-
-from sklearn.cross_validation import StratifiedShuffleSplit
-'''
-        if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
-        if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
-        if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
-        if '_select_percentile' in operators_used or '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import f_classif\n'
-        if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
-        if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
-        if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
-        if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
-        if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import PCA\n'
-        if 'decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
-        if 'random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
-        if 'logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
-        if 'svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
-        if 'knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
-        if 'gradient_boosting' in operators_used: pipeline_text += 'from sklearn.ensemble import GradientBoostingClassifier\n'
-
-        pipeline_text += '''
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
-
-'''
-        # Replace the function calls with their corresponding Python code
-        for operator in pipeline_list:
-            operator_num = int(operator[0].strip('result'))
-            result_name = operator[0]
-            operator_name = operator[1]
-            operator_text = ''
-
-            # Make copies of the data set for each reference to ARG0
-            if operator[2] == 'ARG0':
-                operator[2] = 'result{}'.format(operator_num)
-                operator_text += '\n{} = tpot_data.copy()\n'.format(operator[2])
-
-            if len(operator) > 3 and operator[3] == 'ARG0':
-                operator[3] = 'result{}'.format(operator_num)
-                operator_text += '\n{} = tpot_data.copy()\n'.format(operator[3])
-
-            # Replace the TPOT functions with their corresponding Python code
-            if operator_name == 'decision_tree':
-                max_features = int(operator[3])
-                max_depth = int(operator[4])
-
-                if max_features < 1:
-                    max_features = '\'auto\''
-                elif max_features == 1:
-                    max_features = None
-                else:
-                    max_features = 'min({}, len({}.columns) - 1)'.format(max_features, operator[2])
-
-                if max_depth < 1:
-                    max_depth = None
-
-                operator_text += '\n# Perform classification with a decision tree classifier'
-                operator_text += '\ndtc{} = DecisionTreeClassifier(max_features={}, max_depth={})\n'.format(operator_num, max_features, max_depth)
-                operator_text += '''dtc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == 'random_forest':
-                num_trees = int(operator[3])
-                max_features = int(operator[4])
-
-                if num_trees < 1:
-                    num_trees = 1
-                elif num_trees > 500:
-                    num_trees = 500
-
-                if max_features < 1:
-                    max_features = '\'auto\''
-                elif max_features == 1:
-                    max_features = 'None'
-                else:
-                    max_features = 'min({}, len({}.columns) - 1)'.format(max_features, operator[2])
-
-                operator_text += '\n# Perform classification with a random forest classifier'
-                operator_text += '\nrfc{} = RandomForestClassifier(n_estimators={}, max_features={})\n'.format(operator_num, num_trees, max_features)
-                operator_text += '''rfc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['rfc{1}-classification'] = rfc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == 'logistic_regression':
-                C = float(operator[3])
-                if C <= 0.:
-                    C = 0.0001
-
-                operator_text += '\n# Perform classification with a logistic regression classifier'
-                operator_text += '\nlrc{} = LogisticRegression(C={})\n'.format(operator_num, C)
-                operator_text += '''lrc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['lrc{1}-classification'] = lrc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == 'svc':
-                C = float(operator[3])
-                if C <= 0.:
-                    C = 0.0001
-
-                operator_text += '\n# Perform classification with a C-support vector classifier'
-                operator_text += '\nsvc{} = SVC(C={})\n'.format(operator_num, C)
-                operator_text += '''svc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['svc{1}-classification'] = svc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == 'knnc':
-                n_neighbors = int(operator[3])
-                if n_neighbors < 2:
-                    n_neighbors = 2
-                else:
-                    n_neighbors = 'min({}, len(training_indices))'.format(n_neighbors)
-
-                operator_text += '\n# Perform classification with a k-nearest neighbor classifier'
-                operator_text += '\nknnc{} = KNeighborsClassifier(n_neighbors={})\n'.format(operator_num, n_neighbors)
-                operator_text += '''knnc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['knnc{1}-classification'] = knnc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == 'gradient_boosting':
-                learning_rate = float(operator[3])
-                n_estimators = int(operator[4])
-                max_depth = int(operator[5])
-                
-                if learning_rate <= 0.:
-                    learning_rate = 0.0001
-        
-                if n_estimators < 1:
-                    n_estimators = 1
-                elif n_estimators > 500:
-                    n_estimators = 500
-
-                if max_depth < 1:
-                    max_depth = None
-
-                operator_text += '\n# Perform classification with a gradient boosting classifier'
-                operator_text += '\ngbc{} = GradientBoostingClassifier(learning_rate={}, n_estimators={}, max_depth={})\n'.format(operator_num, learning_rate, n_estimators, max_depth)
-                operator_text += '''gbc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
-                if result_name != operator[2]:
-                    operator_text += '{} = {}\n'.format(result_name, operator[2])
-                operator_text += '''{0}['gbc{1}-classification'] = gbc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
-
-            elif operator_name == '_combine_dfs':
-                operator_text += '\n# Combine two DataFrames'
-                operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
-
-            elif operator_name == '_variance_threshold':
-                operator_text += '''
-# Use Scikit-learn's VarianceThreshold for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-
-selector = VarianceThreshold(threshold={1})
-try:
-    selector.fit(training_features.values)
-except ValueError:
-    # None of the features meet the variance threshold
-    {2} = {0}[['class']]
-
-mask = selector.get_support(True)
-mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-{2} = {0}[mask_cols]
-'''.format(operator[2], operator[3], result_name)
-
-            elif operator_name == '_select_kbest':
-                k = int(operator[3])
-                
-                if k < 1:
-                    k = 1
-                
-                k = 'min({}, len(training_features.columns))'.format(k)
-                
-                operator_text += '''
-# Use Scikit-learn's SelectKBest for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
-
-if len(training_features.columns.values) == 0:
-    {2} = {0}.copy()
-else:
-    selector = SelectKBest(f_classif, k={1})
-    selector.fit(training_features.values, training_class_vals)
-    mask = selector.get_support(True)
-    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
-'''.format(operator[2], k, result_name)
-
-            elif operator_name == '_select_percentile':
-                percentile = int(operator[3])
-                
-                if percentile < 0:
-                    percentile = 0
-                elif percentile > 100:
-                    percentile = 100
-                
-                operator_text += '''
-# Use Scikit-learn's SelectPercentile for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
-
-if len(training_features.columns.values) == 0:
-    {2} = {0}.copy()
-else:
-    selector = SelectPercentile(f_classif, percentile={1})
-    selector.fit(training_features.values, training_class_vals)
-    mask = selector.get_support(True)
-    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
-'''.format(operator[2], percentile, result_name)
-
-            elif operator_name == '_rfe':
-                n_features_to_select = int(operator[3])
-                step = float(operator[4])
-                
-                if n_features_to_select < 1:
-                    n_features_to_select = 1
-                n_features_to_select = 'min({}, len(training_features.columns))'.format(n_features_to_select)
-                
-                if step < 0.1:
-                    step = 0.1
-                elif step >= 1.:
-                    step = 0.99
-                
-                operator_text += '''
-# Use Scikit-learn's Recursive Feature Elimination (RFE) for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
-
-if len(training_features.columns.values) == 0:
-    {3} = {0}.copy()
-else:
-    selector = RFE(SVC(kernel='linear'), n_features_to_select={1}, step={2})
-    selector.fit(training_features.values, training_class_vals)
-    mask = selector.get_support(True)
-    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {3} = {0}[mask_cols]
-'''.format(operator[2], n_features_to_select, step, result_name)
-
-            elif operator_name == '_standard_scaler':
-                operator_text += '''
-# Use Scikit-learn's StandardScaler to scale the features
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-{1} = {0}.copy()
-
-if len(training_features.columns.values) > 0:
-    scaler = StandardScaler()
-    scaler.fit(training_features.values.astype(np.float64))
-    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
-
-    for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
-        {1}.loc[:, column] = scaled_features[:, col_num]
-'''.format(operator[2], result_name)
-
-            elif operator_name == '_robust_scaler':
-                operator_text += '''
-# Use Scikit-learn's RobustScaler to scale the features
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-{1} = {0}.copy()
-
-if len(training_features.columns.values) > 0:
-    scaler = RobustScaler()
-    scaler.fit(training_features.values.astype(np.float64))
-    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
-
-    for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
-        {1}.loc[:, column] = scaled_features[:, col_num]
-'''.format(operator[2], result_name)
-
-            elif operator_name == '_polynomial_features':
-                operator_text += '''
-# Use Scikit-learn's PolynomialFeatures to construct new features from the existing feature set
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-
-if len(training_features.columns.values) > 0 and len(training_features.columns.values) <= 700:
-    # The feature constructor must be fit on only the training data
-    poly = PolynomialFeatures(degree=2, include_bias=False)
-    poly.fit(training_features.values.astype(np.float64))
-    constructed_features = poly.transform({0}.drop('class', axis=1).values.astype(np.float64))
-
-    {0}_classes = {0}['class'].values
-    {1} = pd.DataFrame(data=constructed_features)
-    {1}['class'] = {0}_classes
-else:
-    {1} = {0}.copy()
-'''.format(operator[2], result_name)
-
-            elif operator_name == '_pca':
-                n_components = int(operator[3])
-                if n_components < 1:
-                    n_components = 1
-                n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
-
-                operator_text += '''
-# Use Scikit-learn's PCA to transform the feature set
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-
-if len(training_features.columns.values) > 0:
-    # PCA must be fit on only the training data
-    pca = PCA(n_components={1})
-    pca.fit(training_features.values.astype(np.float64))
-    transformed_features = pca.transform({0}.drop('class', axis=1).values.astype(np.float64))
-
-    {0}_classes = {0}['class'].values
-    {2} = pd.DataFrame(data=transformed_features)
-    {2}['class'] = {0}_classes
-else:
-    {2} = {0}.copy()
-'''.format(operator[2], n_components, result_name)
-
-            pipeline_text += operator_text
+        # Replace the function calls with their corresponding Python code. Check export_utils.py for details.
+        pipeline_text += replace_function_calls(pipeline_list)
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
 
-    def decision_tree(self, input_df, max_features, max_depth):
+    def _decision_tree(self, input_df, max_features, max_depth):
         """Fits a decision tree classifier
 
         Parameters
@@ -733,7 +428,7 @@ else:
 
         return self._train_model_and_predict(input_df, DecisionTreeClassifier, max_features=max_features, max_depth=max_depth, random_state=42)
 
-    def random_forest(self, input_df, n_estimators, max_features):
+    def _random_forest(self, input_df, n_estimators, max_features):
         """Fits a random forest classifier
 
         Parameters
@@ -765,8 +460,8 @@ else:
             max_features = len(input_df.columns) - 3
 
         return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=n_estimators, max_features=max_features, random_state=42, n_jobs=-1)
-    
-    def logistic_regression(self, input_df, C):
+
+    def _logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier
 
         Parameters
@@ -788,7 +483,7 @@ else:
 
         return self._train_model_and_predict(input_df, LogisticRegression, C=C, random_state=42)
 
-    def svc(self, input_df, C):
+    def _svc(self, input_df, C):
         """Fits a C-support vector classifier
 
         Parameters
@@ -811,7 +506,7 @@ else:
         return self._train_model_and_predict(input_df, SVC, C=C, random_state=42)
 
 
-    def knnc(self, input_df, n_neighbors):
+    def _knnc(self, input_df, n_neighbors):
         """Fits a k-nearest neighbor classifier
 
         Parameters
@@ -829,7 +524,7 @@ else:
 
         """
         training_set_size = len(input_df.loc[input_df['group'] == 'training'])
-        
+
         if n_neighbors < 2:
             n_neighbors = 2
         elif n_neighbors >= training_set_size:
@@ -837,13 +532,13 @@ else:
 
         return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
 
-    def gradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
-        """Fits a gradient boosting classifier
+    def _xgradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
+        """Fits the dmlc eXtreme gradient boosting classifier
 
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the gradient boosting classifier
+            Input DataFrame for fitting the XGBoost classifier
         learning_rate: float
             Shrinks the contribution of each tree by learning_rate
         n_estimators: int
@@ -860,7 +555,7 @@ else:
         """
         if learning_rate <= 0.:
             learning_rate = 0.0001
-        
+
         if n_estimators < 1:
             n_estimators = 1
         elif n_estimators > 500:
@@ -869,7 +564,7 @@ else:
         if max_depth < 1:
             max_depth = None
 
-        return self._train_model_and_predict(input_df, GradientBoostingClassifier, learning_rate=learning_rate, n_estimators=n_estimators, max_depth=max_depth, random_state=42)
+        return self._train_model_and_predict(input_df, XGBClassifier, learning_rate=learning_rate, n_estimators=n_estimators, max_depth=max_depth, seed=42)
     
   
     def _get_ht_dict(self, classes, weights):
@@ -1079,8 +774,6 @@ else:
         else:
             return combined_df.join(merged_guesses['guess'])
 
-
-
     def _consensus_four(self, weighting, method, input_df1, input_df2, input_df3, input_df4):
         """Takes the classifications of different models and combines them in a meaningful manner.
         
@@ -1168,8 +861,6 @@ else:
         else:
             return combined_df.join(merged_guesses['guess'])
 
-
-
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
 
@@ -1198,7 +889,7 @@ else:
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-       
+
         # Try to seed the random_state parameter if the model accepts it.
         try:
             clf = model(random_state=42,**kwargs)
@@ -1206,10 +897,10 @@ else:
         except TypeError:
             clf = model(**kwargs)
             clf.fit(training_features, training_classes)
-        
+
         all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
         input_df.loc[:, 'guess'] = clf.predict(all_features)
-        
+
         # Also store the guesses as a synthetic feature
         sf_hash = '-'.join(sorted(input_df.columns.values))
         #Use the classifier object's class name in the synthetic feature
@@ -1220,12 +911,10 @@ else:
 
         return input_df
 
-        
-
     @staticmethod
     def _combine_dfs(input_df1, input_df2):
         """Function to combine two DataFrames
-        
+
         Parameters
         ----------
         input_df1: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -1242,8 +931,8 @@ else:
         return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
 
     def _rfe(self, input_df, num_features, step):
-        """Uses Scikit-learn's Recursive Feature Elimination to learn the subset of features that have the highest weights according to the estimator
-        
+        """Uses scikit-learn's Recursive Feature Elimination to learn the subset of features that have the highest weights according to the estimator
+
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -1261,8 +950,8 @@ else:
         """
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
-        
-        if step < 0.1: 
+
+        if step < 0.1:
             step = 0.1
         elif step >= 1.:
             step = 0.99
@@ -1285,9 +974,8 @@ else:
             return input_df[['guess', 'class', 'group']].copy()
 
     def _select_percentile(self, input_df, percentile):
-        """Uses Scikit-learn's SelectPercentile feature selection to learn the subset of features that belong in the highest `percentile`
-        according to a given scoring function
-        
+        """Uses scikit-learn's SelectPercentile feature selection to learn the subset of features that belong in the highest `percentile`
+
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -1303,8 +991,8 @@ else:
         """
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
-        
-        if percentile < 0: 
+
+        if percentile < 0:
             percentile = 0
         elif percentile > 100:
             percentile = 100
@@ -1312,15 +1000,20 @@ else:
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
-        selector = SelectPercentile(f_classif, percentile=percentile)
-        selector.fit(training_features, training_class_vals)
-        mask = selector.get_support(True)
+        with warnings.catch_warnings():
+            # Ignore warnings about constant features
+            warnings.simplefilter('ignore', category=UserWarning)
+
+            selector = SelectPercentile(f_classif, percentile=percentile)
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+
         mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
 
     def _select_kbest(self, input_df, k):
-        """Uses Scikit-learn's SelectKBest feature selection to learn the subset of features that have the highest score according to some scoring function
-        
+        """Uses scikit-learn's SelectKBest feature selection to learn the subset of features that have the highest score according to some scoring function
+
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -1336,7 +1029,7 @@ else:
         """
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
-        
+
         if k < 1:
             k = 1
         elif k >= len(training_features.columns):
@@ -1345,15 +1038,60 @@ else:
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
-        selector = SelectKBest(f_classif, k=k)
-        selector.fit(training_features, training_class_vals)
-        mask = selector.get_support(True)
+        with warnings.catch_warnings():
+            # Ignore warnings about constant features
+            warnings.simplefilter('ignore', category=UserWarning)
+
+            selector = SelectKBest(f_classif, k=k)
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+
+        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
+        return input_df[mask_cols].copy()
+
+    def _select_fwe(self, input_df, alpha):
+        """Uses scikit-learn's SelectFwe feature selection to subset the features according to p-values corresponding to family-wise error rate
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to perform feature selection on
+        alpha: float in the range [0.001, 0.05]
+            The highest uncorrected p-value for features to keep
+
+        Returns
+        -------
+        subsetted_df: pandas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the 'best' features
+
+        """
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        # forcing  0.001 <= alpha <= 0.05
+        if alpha > 0.05:
+            alpha = 0.05
+        elif alpha <= 0.001:
+            alpha = 0.001
+
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        with warnings.catch_warnings():
+            # Ignore warnings about constant features
+            warnings.simplefilter('ignore', category=UserWarning)
+
+            selector = SelectFwe(f_classif, alpha=alpha)
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+
         mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
         return input_df[mask_cols].copy()
 
     def _variance_threshold(self, input_df, threshold):
-        """Uses Scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the threshold
-        
+        """Uses scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the threshold
+
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
@@ -1369,11 +1107,10 @@ else:
         """
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         selector = VarianceThreshold(threshold=threshold)
         try:
-            selector.fit(training_features) 
+            selector.fit(training_features)
         except ValueError:
             # None features are above the variance threshold
             return input_df[['guess', 'class', 'group']].copy()
@@ -1383,7 +1120,7 @@ else:
         return input_df[mask_cols].copy()
 
     def _standard_scaler(self, input_df):
-        """Uses Scikit-learn's StandardScaler to scale the features by removing their mean and scaling to unit variance
+        """Uses scikit-learn's StandardScaler to scale the features by removing their mean and scaling to unit variance
 
         Parameters
         ----------
@@ -1412,7 +1149,7 @@ else:
         return input_df.copy()
 
     def _robust_scaler(self, input_df):
-        """Uses Scikit-learn's RobustScaler to scale the features using statistics that are robust to outliers
+        """Uses scikit-learn's RobustScaler to scale the features using statistics that are robust to outliers
 
         Parameters
         ----------
@@ -1441,7 +1178,7 @@ else:
         return input_df.copy()
 
     def _polynomial_features(self, input_df):
-        """Uses Scikit-learn's PolynomialFeatures to construct new degree-2 polynomial features from the existing feature set
+        """Uses scikit-learn's PolynomialFeatures to construct new degree-2 polynomial features from the existing feature set
 
         Parameters
         ----------
@@ -1454,7 +1191,7 @@ else:
             Returns a DataFrame containing the constructed features
 
         """
-        
+
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
         if len(training_features.columns.values) == 0:
@@ -1472,7 +1209,7 @@ else:
         modified_df['class'] = input_df['class'].values
         modified_df['group'] = input_df['group'].values
         modified_df['guess'] = input_df['guess'].values
-        
+
         new_col_names = {}
         for column in modified_df.columns.values:
             if type(column) != str:
@@ -1481,8 +1218,8 @@ else:
 
         return modified_df.copy()
 
-    def _pca(self, input_df, n_components):
-        """Uses Scikit-learn's PCA to transform the feature set
+    def _pca(self, input_df, n_components, iterated_power):
+        """Uses scikit-learn's RandomizedPCA to transform the feature set
 
         Parameters
         ----------
@@ -1490,6 +1227,9 @@ else:
             Input DataFrame to scale
         n_components: int
             The number of components to keep
+        iterated_power: int
+            Number of iterations for the power method. [1, 10]
+
 
         Returns
         -------
@@ -1503,13 +1243,20 @@ else:
         elif n_components >= len(input_df.columns.values) - 3:
             n_components = None
 
+        #Thresholding iterated_power [1,10]
+        if iterated_power < 1:
+            iterated_power = 1
+        elif iterated_power > 10:
+            iterated_power = 10
+
+
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
         # PCA must be fit on only the training data
-        pca = PCA(n_components=n_components)
+        pca = RandomizedPCA(n_components=n_components, iterated_power=iterated_power)
         pca.fit(training_features.values.astype(np.float64))
         transformed_features = pca.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
@@ -1529,7 +1276,7 @@ else:
     @staticmethod
     def _div(num1, num2):
         """Divides two numbers
-        
+
         Parameters
         ----------
         num1: int
@@ -1541,11 +1288,11 @@ else:
         -------
         result: float
             Returns num1 / num2, or 0 if num2 == 0
-        
+
         """
         if num2 == 0:
             return 0.
-        
+
         return float(num1) / float(num2)
 
     def _evaluate_individual(self, individual, training_testing_data):
@@ -1566,20 +1313,35 @@ else:
         """
         try:
             # Transform the tree expression in a callable function
-            func = self.toolbox.compile(expr=individual)
+            func = self._toolbox.compile(expr=individual)
+
+            # Count the number of pipeline operators as a measure of pipeline complexity
+            operator_count = 0
+            for i in range(len(individual)):
+                node = individual[i]
+                if type(node) is deap.gp.Terminal:
+                    continue
+                if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div', '_combine_dfs']:
+                    continue
+
+                operator_count += 1
+
+            result = func(training_testing_data)
+            result = result[result['group'] == 'testing']
+            resulting_score = self.scoring_function(result)
+
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
-            return 0.,
+            return 5000., 0.
+        except Exception:
+            # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
+            # Instead, assign the crashing pipeline a poor fitness
+            return 5000., 0.
 
-        result = func(training_testing_data)
-        result = result[result['group'] == 'testing']
-        res = self.scoring_function(result)
-        
-        if isinstance(res, float) or isinstance(res, np.float64) or isinstance(res, np.float32):
-            return res,
+        if isinstance(resulting_score, float) or isinstance(resulting_score, np.float64) or isinstance(resulting_score, np.float32):
+            return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
-            
 
     def _balanced_accuracy(self, result):
         """Default scoring function: balanced class accuracy
@@ -1608,7 +1370,7 @@ else:
         return balanced_accuracy
 
     def _combined_selection_operator(self, individuals, k):
-        """Perform selection on the population according to their fitness
+        """Perform NSGA2 selection on the population according to their Pareto fitness
 
         Parameters
         ----------
@@ -1623,15 +1385,7 @@ else:
             Returns a list of individuals that were selected
 
         """
-        
-        # 10% of the new population are copies of the current best-performing pipeline (i.e., elitism)
-        best_inds = int(0.1 * k)
-        
-        # The remaining 90% of the new population are selected by tournament selection
-        rest_inds = k - best_inds
-        return (tools.selBest(individuals, 1) * best_inds +
-                tools.selDoubleTournament(individuals, k=rest_inds, fitness_size=3,
-                                          parsimony_size=2, fitness_first=True))
+        return tools.selNSGA2(individuals, int(k / 5.)) * 5
 
     def _random_mutation_operator(self, individual):
         """Perform a replacement, insert, or shrink mutation on an individual
@@ -1649,28 +1403,52 @@ else:
         """
         roll = random.random()
         if roll <= 0.333333:
-            return gp.mutUniform(individual, expr=self.toolbox.expr_mut, pset=self.pset)
+            return gp.mutUniform(individual, expr=self._toolbox.expr_mut, pset=self._pset)
         elif roll <= 0.666666:
-            return gp.mutInsert(individual, pset=self.pset)
+            return gp.mutInsert(individual, pset=self._pset)
         else:
             return gp.mutShrink(individual)
 
-
 def main():
+    """Main function that is called when TPOT is run on the command line"""
     parser = argparse.ArgumentParser(description='A Python tool that'
-            ' automatically creates and optimizes Machine Learning pipelines'
+            ' automatically creates and optimizes machine learning pipelines'
             ' using genetic programming.')
 
     def positive_integer(value):
+        """Ensures that the provided value is a positive integer; throws an exception otherwise
+
+        Parameters
+        ----------
+        value: int
+            The number to evaluate
+
+        Returns
+        -------
+        value: int
+            Returns a positive integer
+        """
         try:
             value = int(value)
-        except:
+        except Exception:
             raise argparse.ArgumentTypeError('invalid int value: \'{}\''.format(value))
         if value < 0:
             raise argparse.ArgumentTypeError('invalid positive int value: \'{}\''.format(value))
         return value
 
     def float_range(value):
+        """Ensures that the provided value is a float integer in the range (0., 1.); throws an exception otherwise
+
+        Parameters
+        ----------
+        value: float
+            The number to evaluate
+
+        Returns
+        -------
+        value: float
+            Returns a float in the range (0., 1.)
+        """
         try:
             value = float(value)
         except:
@@ -1709,7 +1487,7 @@ def main():
     parser.add_argument('--version', action='store_true', dest='version', default=False, help='Display the current TPOT version')
 
     args = parser.parse_args()
-    
+
     if args.version:
         from _version import __version__
         print('TPOT version: {}'.format(__version__))
@@ -1756,15 +1534,11 @@ def main():
     tpot.fit(training_features, training_classes)
 
     if args.verbosity >= 1:
-        print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes,
-                                             training_features, training_classes)))
-        print('Testing accuracy: {}'.format(tpot.score(training_features, training_classes,
-                                            testing_features, testing_classes)))
-    
+        print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes)))
+        print('Testing accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
+
     if args.output_file != '':
         tpot.export(args.output_file)
-
-
 
 
 if __name__ == '__main__':
