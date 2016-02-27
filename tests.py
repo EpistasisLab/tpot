@@ -186,7 +186,7 @@ def test_consensus():
            ]
 
     for test, res in zip(tests, results):
-        print test[1:3]
-        print test[0](*test[1:])['guess'].values
+        print(test[1:3])
+        print(test[0](*test[1:])['guess'].values)
         assert np.array_equal(test[0](*test[1:])['guess'].values, res['guess'].values)
 
