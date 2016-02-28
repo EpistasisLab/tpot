@@ -953,7 +953,7 @@ class TPOT(object):
             Returns num1 / num2, or 0 if num2 == 0
 
         """
-        return float(num1) / float(num2) if num2 else 0
+        return float(num1) / float(num2) if num2 else 0.
 
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data
