@@ -43,8 +43,15 @@ else
 fi
 
 source activate testenv
-pip install deap==$DEAP_VERSION
-pip install xgboost==$XGBOOST_VERSION
+
+if [[ "$LATEST" == "true" ]]; then
+    pip install deap
+    pip install xgboost
+else
+    pip install deap==$DEAP_VERSION
+    pip install xgboost==$XGBOOST_VERSION
+fi
+
 pip install update_checker
 
 if [[ "$COVERAGE" == "true" ]]; then
