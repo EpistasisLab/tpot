@@ -54,6 +54,7 @@ from deap import gp
 
 class TPOT(object):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
+
     update_checked = False
 
     def __init__(self, population_size=100, generations=100,
