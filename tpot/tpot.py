@@ -38,8 +38,11 @@ from sklearn.preprocessing import StandardScaler, RobustScaler, PolynomialFeatur
 from sklearn.decomposition import RandomizedPCA
 from sklearn.cross_validation import StratifiedShuffleSplit
 from xgboost import XGBClassifier
-import warnings
 
+import warnings
+from update_checker import update_check
+
+from ._version import __version__
 from .export_utils import *
 
 import deap
@@ -51,10 +54,12 @@ from deap import gp
 
 class TPOT(object):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
+    update_checked = False
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 random_state=0, verbosity=0, scoring_function=None):
+                 random_state=0, verbosity=0, scoring_function=None,
+                 disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -80,12 +85,23 @@ class TPOT(object):
             How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all
         scoring_function: function (default: balanced accuracy)
             Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used.
+        disable_update_check: bool (default: False)
+            Flag indicating whether the TPOT version checker should be disabled.
 
         Returns
         -------
         None
 
         """
+        # Do not prompt the user to update during this session if they ever disabled the update check
+        if disable_update_check:
+            TPOT.update_checked = True
+
+        # Prompt the user if their version is out of date
+        if not disable_update_check and not TPOT.update_checked:
+            update_check('tpot', __version__)
+            TPOT.update_checked = True
+
         self._optimized_pipeline = None
         self._training_features = None
         self._training_classes = None
@@ -1107,8 +1123,6 @@ class TPOT(object):
 
 def main():
     """Main function that is called when TPOT is run on the command line"""
-    from _version import __version__
-
     parser = argparse.ArgumentParser(description='A Python tool that'
             ' automatically creates and optimizes machine learning pipelines'
             ' using genetic programming.')
@@ -1181,6 +1195,9 @@ def main():
     parser.add_argument('-v', action='store', dest='VERBOSITY', default=1, choices=[0, 1, 2],
                         type=int, help='How much information TPOT communicates while it is running; 0 = none, 1 = minimal, 2 = all')
 
+    parser.add_argument('--disable-update-check', action='store_true', dest='DISABLE_UPDATE_CHECK', default=False,
+                        help='Flag indicating whether the TPOT version checker should be disabled')
+
     parser.add_argument('--version', action='version', version='TPOT v{version}'.format(version=__version__))
 
     args = parser.parse_args()
@@ -1188,6 +1205,8 @@ def main():
     if args.VERBOSITY >= 2:
         print('\nTPOT settings:')
         for arg in sorted(args.__dict__):
+            if arg == 'DISABLE_UPDATE_CHECK':
+                continue
             print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
         print('')
 
@@ -1215,7 +1234,8 @@ def main():
 
     tpot = TPOT(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY)
+                random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
+                disable_update_check=args.DISABLE_UPDATE_CHECK)
 
     tpot.fit(training_features, training_classes)
 

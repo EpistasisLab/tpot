@@ -19,7 +19,3 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 from ._version import __version__
 from .tpot import TPOT, main
-from update_checker import update_check
-
-# Prompt the user if their version is out of date
-update_check('tpot', __version__)
