@@ -154,7 +154,9 @@ class TPOT(object):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
-        self._toolbox = base.Toolbox()
+        from .paralleltoolbox import ParallelToolbox
+
+        self._toolbox = ParallelToolbox()
         self._toolbox.register('expr', gp.genHalfAndHalf, pset=self._pset, min_=1, max_=3)
         self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
@@ -164,10 +166,32 @@ class TPOT(object):
         self._toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
+        import multiprocessing as mp
+        p = mp.Pool()
+        self._toolbox.register('map', p.map)
+
         if not scoring_function:
             self.scoring_function = self._balanced_accuracy
         else:
             self.scoring_function = scoring_function
+
+    def pareto_eq(self, ind1, ind2):
+        """Function used to determine whether two individuals are equal on the Pareto front
+        
+        Parameters
+        ----------
+        ind1: DEAP individual from the GP population
+            First individual to compare
+        ind2: DEAP individual from the GP population
+            Second individual to compare
+
+        Returns
+        ----------
+        individuals_equal: bool
+            Boolean indicating whether the two individuals are equal on the Pareto front
+
+        """
+        return np.all(ind1.fitness.values == ind2.fitness.values)
 
     def fit(self, features, classes, feature_names=None):
         """Fits a machine learning pipeline that maximizes classification accuracy on the provided data
@@ -228,25 +252,7 @@ class TPOT(object):
 
             pop = self._toolbox.population(n=self.population_size)
 
-            def pareto_eq(ind1, ind2):
-                """Function used to determine whether two individuals are equal on the Pareto front
-                
-                Parameters
-                ----------
-                ind1: DEAP individual from the GP population
-                    First individual to compare
-                ind2: DEAP individual from the GP population
-                    Second individual to compare
-
-                Returns
-                ----------
-                individuals_equal: bool
-                    Boolean indicating whether the two individuals are equal on the Pareto front
-
-                """
-                return np.all(ind1.fitness.values == ind2.fitness.values)
-
-            self.hof = tools.ParetoFront(similar=pareto_eq)
+            self.hof = tools.ParetoFront(similar=self.pareto_eq)
 
             stats = tools.Statistics(lambda ind: ind.fitness.values[1])
             stats.register('Minimum score', np.min)
