@@ -1,6 +1,6 @@
-'''
+"""
     Unit tests for TPOT.
-'''
+"""
 
 from tpot import TPOT
 
@@ -17,6 +17,7 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 
+from xgboost import XGBClassifier
 
 # Set up the iris data set for testing
 mnist_data = load_digits()
@@ -41,9 +42,7 @@ for column in training_testing_data.columns.values:
 
 
 def test_init():
-    '''
-        Ensure that the TPOT instantiator stores the TPOT variables properly.
-    '''
+    """Ensure that the TPOT instantiator stores the TPOT variables properly"""
 
     tpot_obj = TPOT(population_size=500, generations=1000,
                     mutation_rate=0.05, crossover_rate=0.9, verbosity=1)
@@ -55,12 +54,10 @@ def test_init():
     assert tpot_obj.verbosity == 1
 
 def test_decision_tree():
-    '''
-        Ensure that the TPOT decision tree method outputs the same as the sklearn decision tree.
-    '''
+    """Ensure that the TPOT decision tree method outputs the same as the sklearn decision tree"""
 
     tpot_obj = TPOT()
-    result = tpot_obj.decision_tree(training_testing_data, 0, 0)
+    result = tpot_obj._decision_tree(training_testing_data, 0, 0)
     result = result[result['group'] == 'testing']
 
     dtc = DecisionTreeClassifier(max_features='auto', max_depth=None, random_state=42)
@@ -69,18 +66,28 @@ def test_decision_tree():
     assert np.array_equal(result['guess'].values, dtc.predict(testing_features))
 
 def test_random_forest():
-    '''
-        Ensure that the TPOT random forest method outputs the same as the sklearn random forest.
-    '''
+    """Ensure that the TPOT random forest method outputs the same as the sklearn random forest"""
 
     tpot_obj = TPOT()
-    result = tpot_obj.random_forest(training_testing_data, 100, 0)
+    result = tpot_obj._random_forest(training_testing_data, 100, 0)
     result = result[result['group'] == 'testing']
 
     rfc = RandomForestClassifier(n_estimators=100, max_features='auto', random_state=42, n_jobs=-1)
     rfc.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
+
+def test_xgboost():
+    """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._xgradient_boosting(training_testing_data, n_estimators=100, learning_rate=0, max_depth=3)
+    result = result[result['group'] == 'testing']
+
+    xgb = XGBClassifier(n_estimators=100, learning_rate=0.0001, max_depth=3, seed=42)
+    xgb.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
 
 def test_combine_dfs():
     tpot_obj = TPOT()
@@ -98,19 +105,16 @@ def test_combine_dfs():
     assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
 
 def test_static_models():
-    '''
-        Ensure that the TPOT static classifiers outputs the same as the sklearn output
-    '''
-
-
+    """Ensure that the TPOT classifiers output the same predictions as the sklearn output"""
     tpot_obj = TPOT()
-    models = [(tpot_obj.decision_tree, DecisionTreeClassifier, {'max_features':0, 'max_depth':0}, {'max_features':'auto', 'max_depth':None}),
-            (tpot_obj.svc, SVC , {'C':0.0001}, {'C':0.0001}),
-            (tpot_obj.random_forest, RandomForestClassifier,{'n_estimators':100, 'max_features':0}, {'n_estimators':100, 'max_features':'auto', 'n_jobs':-1}),
-                (tpot_obj.logistic_regression, LogisticRegression, {'C':0.0001}, {'C':0.0001}), 
-                (tpot_obj.knnc, KNeighborsClassifier, {'n_neighbors':100}, {'n_neighbors':100})]
+    models = [(tpot_obj._decision_tree, DecisionTreeClassifier, {'max_features':0, 'max_depth':0}, {'max_features':'auto', 'max_depth':None}),
+              (tpot_obj._svc, SVC , {'C':0.0001}, {'C':0.0001}),
+              (tpot_obj._random_forest, RandomForestClassifier,{'n_estimators':100, 'max_features':0}, {'n_estimators':100, 'max_features':'auto', 'n_jobs':-1}),
+              (tpot_obj._logistic_regression, LogisticRegression, {'C':0.0001}, {'C':0.0001}),
+              (tpot_obj._knnc, KNeighborsClassifier, {'n_neighbors':100}, {'n_neighbors':100})]
+
     for model, sklearn_model, model_params, sklearn_params in models:
-        
+
         result = model(training_testing_data, **model_params)
         try:
             sklearn_model_obj = sklearn_model(random_state=42, **sklearn_params)
@@ -122,5 +126,3 @@ def test_static_models():
         result = result[result['group'] == 'testing']
 
         assert np.array_equal(result['guess'].values, sklearn_model_obj.predict(testing_features)), "Model {} failed".format(str(model))
-
-

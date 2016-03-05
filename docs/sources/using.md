@@ -1,4 +1,47 @@
-# Using TPOT via code
+# TPOT on the command line
+
+To use TPOT via the command line, enter the following command to see the parameters that TPOT can receive:
+
+```Shell
+tpot --help
+
+usage: tpot [-h] [-is INPUT_SEPARATOR] [-o OUTPUT_FILE] [-g GENERATIONS]
+            [-p POPULATION_SIZE] [-mr MUTATION_RATE] [-xr CROSSOVER_RATE]
+            [-s RANDOM_STATE] [-v {0,1,2}] [--disable-update-check]
+            [--version]
+            INPUT_FILE
+
+A Python tool that automatically creates and optimizes machine learning
+pipelines using genetic programming.
+
+positional arguments:
+  INPUT_FILE            Data file to optimize the pipeline on; ensure that the
+                        class column is labeled as "class"
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -is INPUT_SEPARATOR   Character used to separate columns in the input file
+  -o OUTPUT_FILE        File to export the final optimized pipeline
+  -g GENERATIONS        Number of generations to run pipeline optimization
+  -p POPULATION_SIZE    Number of individuals in the GP population
+  -mr MUTATION_RATE     GP mutation rate in the range [0.0, 1.0]
+  -xr CROSSOVER_RATE    GP crossover rate in the range [0.0, 1.0]
+  -s RANDOM_STATE       Random number generator seed for reproducibility
+  -v {0,1,2}            How much information TPOT communicates while it is
+                        running; 0 = none, 1 = minimal, 2 = all
+  --disable-update-check
+                        Flag indicating whether the TPOT version checker
+                        should be disabled
+  --version             show program's version number and exit
+```
+
+An example command-line call to TPOT may look like:
+
+```Shell
+tpot data/mnist.csv -is , -o tpot_exported_pipeline.py -g 100 -s 42 -v 2
+```
+
+# TPOT with code
 
 We've taken care to design the TPOT interface to be as similar as possible to scikit-learn.
 
@@ -24,6 +67,8 @@ Note that you can pass several parameters to the TPOT instantiation call:
 * `crossover_rate`: The crossover rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to "breed" every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
 * `random_state`: The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
 * `verbosity`: How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all
+* `scoring_function`: Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. See [here](examples/Custom_Scoring_Functions.md) for more information on custom scoring functions.
+* `disable_update_check`: Flag indicating whether the TPOT version checker should be disabled.
 
 Some example code with custom TPOT parameters might look like:
 
@@ -50,20 +95,20 @@ from tpot import TPOT
 
 pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
-print(pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes))
+print(pipeline_optimizer.score(testing_features, testing_classes))
 ```
 
-Note that you need to pass the training data to the `score()` function as well so that TPOT re-trains on the training data using the optimized pipeline (consisting of feature selection operators and scikit-learn algorithms as found by `fit()`). There is also the option of passing a user defined scoring function to score() for custom evaluation. For more on this click [here](Custom_Scoring_Functions.md). 
-
-Finally, you can tell TPOT to export the python code corresponding to the optimized pipeline, to a text file with the `export()` function:
+Finally, you can tell TPOT to export the corresponding Python code for the optimized pipeline to a text file with the `export()` function:
 
 ```Python
 from tpot import TPOT
 
 pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
-print(pipeline_optimizer.score(training_features, training_classes, testing_features, testing_classes))
+print(pipeline_optimizer.score(testing_features, testing_classes))
 pipeline_optimizer.export('tpot_exported_pipeline.py')
 ```
 
 Once this code finishes running, `tpot_exported_pipeline.py` will contain the Python code for the optimized pipeline.
+
+Check our [examples](examples/MNIST_Example/) to see TPOT applied to some specific data sets.

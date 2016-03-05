@@ -10,7 +10,7 @@ from sklearn.cross_validation import train_test_split
 
 digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
-                                                    train_size=0.75)
+                                                    train_size=0.75, test_size=0.25)
 
 def precision(result):
     all_class_tps = []
@@ -64,19 +64,19 @@ def f1(result):
 
 tpot = TPOT(generations=5)
 tpot.fit(X_train, y_train)
-print 'acc: ', tpot.score(X_train, y_train, X_test, y_test)
+print 'acc: ', tpot.score(X_test, y_test)
 
 tpot = TPOT(generations=5, scoring_function=precision)
 tpot.fit(X_train, y_train)
-print 'precision: ', tpot.score(X_train, y_train, X_test, y_test)
+print 'precision: ', tpot.score(X_test, y_test)
 
 tpot = TPOT(generations=5, scoring_function=recall)
 tpot.fit(X_train, y_train)
-print 'recall: ', tpot.score(X_train, y_train, X_test, y_test)
+print 'recall: ', tpot.score(X_test, y_test)
 
 tpot = TPOT(generations=5, scoring_function=f1)
 tpot.fit(X_train, y_train)
-print 'f1: ', tpot.score(X_train, y_train, X_test, y_test)
+print 'f1: ', tpot.score(X_test, y_test)
 
 ```
 
