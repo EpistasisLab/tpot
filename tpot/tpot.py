@@ -33,7 +33,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.feature_selection import VarianceThreshold, SelectKBest, SelectPercentile, RFE, SelectFwe, , f_classif
+from sklearn.feature_selection import VarianceThreshold, SelectKBest, SelectPercentile, RFE, SelectFwe, f_classif
 from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler, MinMaxScaler
 from sklearn.preprocessing import PolynomialFeatures, Binarizer, OneHotEncoder
 from sklearn.decomposition import RandomizedPCA
@@ -920,6 +920,44 @@ class TPOT(object):
         constructed_features = poly.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=constructed_features)
+        modified_df['class'] = input_df['class'].values
+        modified_df['group'] = input_df['group'].values
+        modified_df['guess'] = input_df['guess'].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _min_max_scaler(self, input_df):
+        """Uses scikit-learn's MinMaxScaler to transform all of the features by scaling them to the range [0, 1]
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the scaled features
+
+        """
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        # The feature constructor must be fit on only the training data
+        mm_scaler = MinMaxScaler(copy=False)
+        mm_scaler.fit(training_features.values.astype(np.float64))
+        scaled_features = mm_scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=scaled_features)
         modified_df['class'] = input_df['class'].values
         modified_df['group'] = input_df['group'].values
         modified_df['guess'] = input_df['guess'].values
