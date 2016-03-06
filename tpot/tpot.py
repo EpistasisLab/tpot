@@ -952,10 +952,48 @@ class TPOT(object):
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
-        # The feature constructor must be fit on only the training data
+        # The feature scaler must be fit on only the training data
         mm_scaler = MinMaxScaler(copy=False)
         mm_scaler.fit(training_features.values.astype(np.float64))
         scaled_features = mm_scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=scaled_features)
+        modified_df['class'] = input_df['class'].values
+        modified_df['group'] = input_df['group'].values
+        modified_df['guess'] = input_df['guess'].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _max_abs_scaler(self, input_df):
+        """Uses scikit-learn's MaxAbsScaler to transform all of the features by scaling them to [0, 1] relative to the feature's maximum value
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the scaled features
+
+        """
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        # The feature scaler must be fit on only the training data
+        ma_scaler = MaxAbsScaler(copy=False)
+        ma_scaler.fit(training_features.values.astype(np.float64))
+        scaled_features = ma_scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=scaled_features)
         modified_df['class'] = input_df['class'].values
