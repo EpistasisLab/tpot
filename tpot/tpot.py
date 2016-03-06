@@ -133,6 +133,9 @@ class TPOT(object):
         self._pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._min_max_scaler, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._max_abs_scaler, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._binarizer, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
 
