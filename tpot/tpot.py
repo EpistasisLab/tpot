@@ -1008,6 +1008,46 @@ class TPOT(object):
 
         return modified_df.copy()
 
+    def _binarizer(self, input_df, threshold):
+        """Uses scikit-learn's Binarizer to binarize all of the features, setting any feature >`threshold` to 1 and all others to 0
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+        threshold: float
+            Feature values below or equal to this value are replaced by 0, above it by 1
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the binarized features
+
+        """
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        # The binarizer must be fit on only the training data
+        binarizer = Binarizer(copy=False)
+        binarizer.fit(training_features.values.astype(np.float64))
+        binarized_features = binarizer.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=binarized_features)
+        modified_df['class'] = input_df['class'].values
+        modified_df['group'] = input_df['group'].values
+        modified_df['guess'] = input_df['guess'].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
     def _pca(self, input_df, n_components, iterated_power):
         """Uses scikit-learn's RandomizedPCA to transform the feature set
 
@@ -1027,18 +1067,16 @@ class TPOT(object):
             Returns a DataFrame containing the transformed features
 
         """
-
         if n_components < 1:
             n_components = 1
         elif n_components >= len(input_df.columns.values) - 3:
             n_components = None
 
-        #Thresholding iterated_power [1,10]
+        # Thresholding iterated_power [1, 10]
         if iterated_power < 1:
             iterated_power = 1
         elif iterated_power > 10:
             iterated_power = 10
-
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
