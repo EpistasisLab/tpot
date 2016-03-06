@@ -8,7 +8,6 @@
 [![DOI](https://zenodo.org/badge/20747/rhiever/tpot.svg)](https://zenodo.org/badge/latestdoi/20747/rhiever/tpot)
 
 [![PyPI version](https://badge.fury.io/py/tpot.svg)](https://badge.fury.io/py/tpot)
-[![Gratipay](https://img.shields.io/gratipay/team/randal_olson.svg)](https://www.gratipay.com/randal_olson/)
 
 # Tree-based Pipeline Optimization Tool (TPOT)
 
