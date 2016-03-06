@@ -372,7 +372,6 @@ class TPOT(object):
 
         return self._evaluate_individual(self._optimized_pipeline, training_testing_data)[1]
 
-
     def export(self, output_file_name):
         """Exports the current optimized pipeline as Python code
 
@@ -514,7 +513,6 @@ class TPOT(object):
 
         return self._train_model_and_predict(input_df, SVC, C=C, random_state=42)
 
-
     def _knnc(self, input_df, n_neighbors):
         """Fits a k-nearest neighbor classifier
 
@@ -594,8 +592,7 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        #Validate input
-        #If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
+        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
         if len(input_df.columns) == 3:
             return input_df
 
@@ -606,7 +603,7 @@ class TPOT(object):
 
         # Try to seed the random_state parameter if the model accepts it.
         try:
-            clf = model(random_state=42,**kwargs)
+            clf = model(random_state=42, **kwargs)
             clf.fit(training_features, training_classes)
         except TypeError:
             clf = model(**kwargs)
@@ -617,7 +614,7 @@ class TPOT(object):
 
         # Also store the guesses as a synthetic feature
         sf_hash = '-'.join(sorted(input_df.columns.values))
-        #Use the classifier object's class name in the synthetic feature
+        # Use the classifier object's class name in the synthetic feature
         sf_hash += '{}'.format(clf.__class__)
         sf_hash += '-'.join(kwargs)
         sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
@@ -788,7 +785,6 @@ class TPOT(object):
         elif alpha <= 0.001:
             alpha = 0.001
 
-
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
@@ -819,7 +815,6 @@ class TPOT(object):
             Returns a DataFrame containing the features that are above the variance threshold
 
         """
-
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
         selector = VarianceThreshold(threshold=threshold)
@@ -905,7 +900,6 @@ class TPOT(object):
             Returns a DataFrame containing the constructed features
 
         """
-
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
         if len(training_features.columns.values) == 0:
@@ -946,7 +940,6 @@ class TPOT(object):
             Returns a DataFrame containing the scaled features
 
         """
-
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
         if len(training_features.columns.values) == 0:
@@ -984,7 +977,6 @@ class TPOT(object):
             Returns a DataFrame containing the scaled features
 
         """
-
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
         if len(training_features.columns.values) == 0:
@@ -1024,7 +1016,6 @@ class TPOT(object):
             Returns a DataFrame containing the binarized features
 
         """
-
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
         if len(training_features.columns.values) == 0:
@@ -1059,7 +1050,6 @@ class TPOT(object):
             The number of components to keep
         iterated_power: int
             Number of iterations for the power method. [1, 10]
-
 
         Returns
         -------
