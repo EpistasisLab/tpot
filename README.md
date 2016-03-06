@@ -1,12 +1,9 @@
 [![Build Status](https://travis-ci.org/rhiever/tpot.svg?branch=master)](https://travis-ci.org/rhiever/tpot)
 [![Code Health](https://landscape.io/github/rhiever/tpot/master/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/master)
 [![Coverage Status](https://coveralls.io/repos/rhiever/tpot/badge.svg?branch=master&service=github)](https://coveralls.io/github/rhiever/tpot?branch=master)
-
 ![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)
 ![Python 3.5](https://img.shields.io/badge/python-3.5-blue.svg)
 ![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
-[![DOI](https://zenodo.org/badge/20747/rhiever/tpot.svg)](https://zenodo.org/badge/latestdoi/20747/rhiever/tpot)
-
 [![PyPI version](https://badge.fury.io/py/tpot.svg)](https://badge.fury.io/py/tpot)
 
 # Tree-based Pipeline Optimization Tool (TPOT)
@@ -119,6 +116,10 @@ publisher = {Springer-Verlag},
 address = {Berlin, Germany}
 }
 ```
+
+Alternatively, you can cite the repository directly with the following DOI:
+
+[![DOI](https://zenodo.org/badge/20747/rhiever/tpot.svg)](https://zenodo.org/badge/latestdoi/20747/rhiever/tpot)
 
 ## Support for TPOT
 
