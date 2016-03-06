@@ -853,7 +853,7 @@ class TPOT(object):
             return input_df.copy()
 
         # The scaler must be fit on only the training data
-        scaler = StandardScaler()
+        scaler = StandardScaler(copy=False)
         scaler.fit(training_features.values.astype(np.float64))
         scaled_features = scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
@@ -882,7 +882,7 @@ class TPOT(object):
             return input_df.copy()
 
         # The scaler must be fit on only the training data
-        scaler = RobustScaler()
+        scaler = RobustScaler(copy=False)
         scaler.fit(training_features.values.astype(np.float64))
         scaled_features = scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
@@ -915,7 +915,7 @@ class TPOT(object):
             return input_df.copy()
 
         # The feature constructor must be fit on only the training data
-        poly = PolynomialFeatures(degree=2, include_bias=False)
+        poly = PolynomialFeatures(degree=2, include_bias=False, interaction_only=False)
         poly.fit(training_features.values.astype(np.float64))
         constructed_features = poly.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
@@ -1084,7 +1084,7 @@ class TPOT(object):
             return input_df.copy()
 
         # PCA must be fit on only the training data
-        pca = RandomizedPCA(n_components=n_components, iterated_power=iterated_power)
+        pca = RandomizedPCA(n_components=n_components, iterated_power=iterated_power, copy=False)
         pca.fit(training_features.values.astype(np.float64))
         transformed_features = pca.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
