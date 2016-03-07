@@ -464,6 +464,22 @@ else:
     {1} = {0}.copy()
 '''.format(operator[2], result_name)
 
+        elif operator_name == '_binarizer':
+            threshold = float(operator[3])
+            operator_text += '''
+# Use Scikit-learn's Binarizer to scale the features
+training_features = {0}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    scaler = Binarizer(threshold={1})
+    scaler.fit(training_features.values.astype(np.float64))
+    scaled_features = scaler.transform({0}.drop('class', axis=1).values.astype(np.float64))
+    {2} = pd.DataFrame(data=scaled_features)
+    {2}['class'] = {0}['class'].values
+else:
+    {2} = {0}.copy()
+'''.format(operator[2], threshold, result_name)
+
         elif operator_name == '_polynomial_features':
             operator_text += '''
 # Use Scikit-learn's PolynomialFeatures to construct new features from the existing feature set
