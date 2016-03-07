@@ -292,46 +292,46 @@ def replace_function_calls(pipeline_list):
 
         elif operator_name == '_combine_dfs':
             operator_text += '\n# Combine two DataFrames'
-            operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
+            operator_text += '\n{OUTPUT_DF} = {INPUT_DF1}.join({INPUT_DF2}[[column for column in {INPUT_DF2}.columns.values if column not in {INPUT_DF1}.columns.values]])\n'.format(INPUT_DF1=operator[2], INPUT_DF2=operator[3], OUTPUT_DF=result_name)
 
         elif operator_name == '_variance_threshold':
+            threshold = float(operator[3])
+
             operator_text += '''
 # Use Scikit-learn's VarianceThreshold for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
-selector = VarianceThreshold(threshold={1})
+selector = VarianceThreshold(threshold={THRESHOLD})
 try:
     selector.fit(training_features.values)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
+    {OUTPUT_DF} = {INPUT_DF}[mask_cols]
 except ValueError:
     # None of the features meet the variance threshold
-    {2} = {0}[['class']]
-'''.format(operator[2], operator[3], result_name)
+    {OUTPUT_DF} = {INPUT_DF}[['class']]
+'''.format(INPUT_DF=operator[2], THRESHOLD=threshold, OUTPUT_DF=result_name)
 
         elif operator_name == '_select_kbest':
             k = int(operator[3])
-
             if k < 1:
                 k = 1
-
             k = 'min({}, len(training_features.columns))'.format(k)
 
             operator_text += '''
 # Use Scikit-learn's SelectKBest for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 
 if len(training_features.columns.values) == 0:
-    {2} = {0}.copy()
+    {OUTPUT_DF} = {INPUT_DF}.copy()
 else:
-    selector = SelectKBest(f_classif, k={1})
+    selector = SelectKBest(f_classif, k={K})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
-'''.format(operator[2], k, result_name)
+    {OUTPUT_DF} = {INPUT_DF}[mask_cols]
+'''.format(INPUT_DF=operator[2], K=k, OUTPUT_DF=result_name)
 
         # SelectFwe based on the SelectKBest code
         elif operator_name == '_select_fwe':
@@ -341,17 +341,17 @@ else:
             elif alpha <= 0.001:
                 alpha = 0.001
             operator_text += '''
-training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
+training_features = {INPUT_DF}.loc[training_indices].drop(['class', 'group', 'guess'], axis=1)
+training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 if len(training_features.columns.values) == 0:
-    {2} = {0}.copy()
+    {OUTPUT_DF} = {INPUT_DF}.copy()
 else:
-    selector = SelectFwe(f_classif, alpha={1})
+    selector = SelectFwe(f_classif, alpha={ALPHA})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
-'''.format(operator[2], alpha, result_name)
+    {OUTPUT_DF} = {INPUT_DF}[mask_cols]
+'''.format(INPUT_DF=operator[2], ALPHA=alpha, OUTPUT_DF=result_name)
 
         elif operator_name == '_select_percentile':
             percentile = int(operator[3])
@@ -363,18 +363,18 @@ else:
 
             operator_text += '''
 # Use Scikit-learn's SelectPercentile for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 
 if len(training_features.columns.values) == 0:
-    {2} = {0}.copy()
+    {OUTPUT_DF} = {INPUT_DF}.copy()
 else:
-    selector = SelectPercentile(f_classif, percentile={1})
+    selector = SelectPercentile(f_classif, percentile={PERCENTILE})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
-'''.format(operator[2], percentile, result_name)
+    {OUTPUT_DF} = {INPUT_DF}[mask_cols]
+'''.format(INPUT_DF=operator[2], PERCENTILE=percentile, OUTPUT_DF=result_name)
 
         elif operator_name == '_rfe':
             n_features_to_select = int(operator[3])
@@ -391,110 +391,110 @@ else:
 
             operator_text += '''
 # Use Scikit-learn's Recursive Feature Elimination (RFE) for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 
 if len(training_features.columns.values) == 0:
-    {3} = {0}.copy()
+    {OUTPUT_DF} = {INPUT_DF}.copy()
 else:
-    selector = RFE(SVC(kernel='linear'), n_features_to_select={1}, step={2})
+    selector = RFE(SVC(kernel='linear'), n_features_to_select={N_FEATURES_TO_SELECT}, step={STEP})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {3} = {0}[mask_cols]
-'''.format(operator[2], n_features_to_select, step, result_name)
+    {OUTPUT_DF} = {INPUT_DF}[mask_cols]
+'''.format(INPUT_DF=operator[2], N_FEATURES_TO_SELECT=n_features_to_select, STEP=step, OUTPUT_DF=result_name)
 
         elif operator_name == '_standard_scaler':
             operator_text += '''
 # Use Scikit-learn's StandardScaler to scale the features
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     scaler = StandardScaler()
     scaler.fit(training_features.values.astype(np.float64))
-    scaled_features = scaler.transform({0}.drop('class', axis=1).values.astype(np.float64))
-    {1} = pd.DataFrame(data=scaled_features)
-    {1}['class'] = {0}['class'].values
+    scaled_features = scaler.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=scaled_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
-    {1} = {0}.copy()
-'''.format(operator[2], result_name)
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
         elif operator_name == '_robust_scaler':
             operator_text += '''
 # Use Scikit-learn's RobustScaler to scale the features
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     scaler = RobustScaler()
     scaler.fit(training_features.values.astype(np.float64))
-    scaled_features = scaler.transform({0}.drop('class', axis=1).values.astype(np.float64))
-    {1} = pd.DataFrame(data=scaled_features)
-    {1}['class'] = {0}['class'].values
+    scaled_features = scaler.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=scaled_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
-    {1} = {0}.copy()
-'''.format(operator[2], result_name)
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
         elif operator_name == '_min_max_scaler':
             operator_text += '''
 # Use Scikit-learn's MinMaxScaler to scale the features
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     scaler = MinMaxScaler()
     scaler.fit(training_features.values.astype(np.float64))
-    scaled_features = scaler.transform({0}.drop('class', axis=1).values.astype(np.float64))
-    {1} = pd.DataFrame(data=scaled_features)
-    {1}['class'] = {0}['class'].values
+    scaled_features = scaler.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=scaled_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
-    {1} = {0}.copy()
-'''.format(operator[2], result_name)
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
         elif operator_name == '_max_abs_scaler':
             operator_text += '''
 # Use Scikit-learn's MaxAbsScaler to scale the features
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     scaler = MaxAbsScaler()
     scaler.fit(training_features.values.astype(np.float64))
-    scaled_features = scaler.transform({0}.drop('class', axis=1).values.astype(np.float64))
-    {1} = pd.DataFrame(data=scaled_features)
-    {1}['class'] = {0}['class'].values
+    scaled_features = scaler.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=scaled_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
-    {1} = {0}.copy()
-'''.format(operator[2], result_name)
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
         elif operator_name == '_binarizer':
             threshold = float(operator[3])
             operator_text += '''
 # Use Scikit-learn's Binarizer to scale the features
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
-    scaler = Binarizer(threshold={1})
+    scaler = Binarizer(threshold={THRESHOLD})
     scaler.fit(training_features.values.astype(np.float64))
-    scaled_features = scaler.transform({0}.drop('class', axis=1).values.astype(np.float64))
-    {2} = pd.DataFrame(data=scaled_features)
-    {2}['class'] = {0}['class'].values
+    scaled_features = scaler.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=scaled_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
-    {2} = {0}.copy()
-'''.format(operator[2], threshold, result_name)
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], THRESHOLD=threshold, OUTPUT_DF=result_name)
 
         elif operator_name == '_polynomial_features':
             operator_text += '''
 # Use Scikit-learn's PolynomialFeatures to construct new features from the existing feature set
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0 and len(training_features.columns.values) <= 700:
     # The feature constructor must be fit on only the training data
     poly = PolynomialFeatures(degree=2, include_bias=False)
     poly.fit(training_features.values.astype(np.float64))
-    constructed_features = poly.transform({0}.drop('class', axis=1).values.astype(np.float64))
-    {1} = pd.DataFrame(data=constructed_features)
-    {1}['class'] = {0}['class'].values
+    constructed_features = poly.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=constructed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
-    {1} = {0}.copy()
-'''.format(operator[2], result_name)
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
         elif operator_name == '_pca':
             n_components = int(operator[3])
@@ -510,17 +510,17 @@ else:
 
             operator_text += '''
 # Use Scikit-learn's RandomizedPCA to transform the feature set
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # PCA must be fit on only the training data
-    pca = RandomizedPCA(n_components={1}, iterated_power={2})
+    pca = RandomizedPCA(n_components={N_COMPONENTS}, iterated_power={ITERATED_POWER})
     pca.fit(training_features.values.astype(np.float64))
-    transformed_features = pca.transform({0}.drop('class', axis=1).values.astype(np.float64))
-    {3} = pd.DataFrame(data=transformed_features)
-    {3}['class'] = {0}['class'].values
+    transformed_features = pca.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
-    {3} = {0}.copy()
-'''.format(operator[2], n_components, iterated_power, result_name)
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], N_COMPONENTS=n_components, ITERATED_POWER=iterated_power, OUTPUT_DF=result_name)
 
     return operator_text
