@@ -37,6 +37,9 @@ pages:
     - Pre-Processing:
       - StandardScaler: documentation/pipeline_operators/preprocessing/scaling/StandardScaler.md
       - RobustScaler: documentation/pipeline_operators/preprocessing/scaling/RobustScaler.md
+      - MinMaxScaler: documentation/pipeline_operators/preprocessing/scaling/MinMaxScaler.md
+      - MaxAbsScaler: documentation/pipeline_operators/preprocessing/scaling/MaxAbsScaler.md
+      - Binarizer: documentation/pipeline_operators/preprocessing/scaling/Binarizer.md
       - PolynomialFeatures: documentation/pipeline_operators/preprocessing/PolynomialFeatures.md
     - Feature Selection:
       - VarianceThreshold: documentation/pipeline_operators/feature_selection/VarianceThreshold.md

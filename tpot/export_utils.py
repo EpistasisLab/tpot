@@ -133,6 +133,9 @@ from sklearn.cross_validation import StratifiedShuffleSplit
     if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
     if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
     if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
+    if '_min_max_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import MinMaxScaler\n'
+    if '_max_abs_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import MaxAbsScaler\n'
+    if '_binarizer' in operators_used: pipeline_text += 'from sklearn.preprocessing import Binarizer\n'
     if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
     if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import RandomizedPCA\n'
     if '_decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
@@ -171,7 +174,6 @@ def replace_function_calls(pipeline_list):
         result_name = operator[0]
         operator_name = operator[1]
 
-
         # Make copies of the data set for each reference to ARG0
         if operator[2] == 'ARG0':
             operator[2] = 'result{}'.format(operator_num)
@@ -191,40 +193,40 @@ def replace_function_calls(pipeline_list):
             elif max_features == 1:
                 max_features = None
             else:
-                max_features = 'min({}, len({}.columns) - 1)'.format(max_features, operator[2])
+                max_features = 'min({MAX_FEATURES}, len({INPUT_DF}.columns) - 1)'.format(MAX_FEATURES=max_features, INPUT_DF=operator[2])
 
             if max_depth < 1:
                 max_depth = None
 
             operator_text += '\n# Perform classification with a decision tree classifier'
-            operator_text += '\ndtc{} = DecisionTreeClassifier(max_features={}, max_depth={})\n'.format(operator_num, max_features, max_depth)
-            operator_text += '''dtc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
+            operator_text += '\ndtc{OPERATOR_NUM} = DecisionTreeClassifier(max_features={MAX_FEATURES}, max_depth={MAX_DEPTH})\n'.format(OPERATOR_NUM=operator_num, MAX_FEATURES=max_features, MAX_DEPTH=max_depth)
+            operator_text += '''dtc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n'''.format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
             if result_name != operator[2]:
-                operator_text += '{} = {}\n'.format(result_name, operator[2])
-            operator_text += '''{0}['dtc{1}-classification'] = dtc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+                operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
+            operator_text += '''{OUTPUT_DF}['dtc{OPERATOR_NUM}-classification'] = dtc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)\n'''.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
 
         elif operator_name == '_random_forest':
-            num_trees = int(operator[3])
+            n_estimators = int(operator[3])
             max_features = int(operator[4])
 
-            if num_trees < 1:
-                num_trees = 1
-            elif num_trees > 500:
-                num_trees = 500
+            if n_estimators < 1:
+                n_estimators = 1
+            elif n_estimators > 500:
+                n_estimators = 500
 
             if max_features < 1:
                 max_features = '\'auto\''
             elif max_features == 1:
                 max_features = 'None'
             else:
-                max_features = 'min({}, len({}.columns) - 1)'.format(max_features, operator[2])
+                max_features = 'min({MAX_FEATURES}, len({INPUT_DF}.columns) - 1)'.format(MAX_FEATURES=max_features, INPUT_DF=operator[2])
 
             operator_text += '\n# Perform classification with a random forest classifier'
-            operator_text += '\nrfc{} = RandomForestClassifier(n_estimators={}, max_features={})\n'.format(operator_num, num_trees, max_features)
-            operator_text += '''rfc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
+            operator_text += '\nrfc{OPERATOR_NUM} = RandomForestClassifier(n_estimators={N_ESTIMATORS}, max_features={MAX_FEATURES})\n'.format(OPERATOR_NUM=operator_num, N_ESTIMATORS=n_estimators, MAX_FEATURES=max_features)
+            operator_text += '''rfc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n'''.format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
             if result_name != operator[2]:
-                operator_text += '{} = {}\n'.format(result_name, operator[2])
-            operator_text += '''{0}['rfc{1}-classification'] = rfc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+                operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
+            operator_text += '''{OUTPUT_DF}['rfc{OPERATOR_NUM}-classification'] = rfc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)\n'''.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
 
         elif operator_name == '_logistic_regression':
             C = float(operator[3])
@@ -232,11 +234,11 @@ def replace_function_calls(pipeline_list):
                 C = 0.0001
 
             operator_text += '\n# Perform classification with a logistic regression classifier'
-            operator_text += '\nlrc{} = LogisticRegression(C={})\n'.format(operator_num, C)
-            operator_text += '''lrc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
+            operator_text += '\nlrc{OPERATOR_NUM} = LogisticRegression(C={C})\n'.format(OPERATOR_NUM=operator_num, C=C)
+            operator_text += '''lrc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n'''.format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
             if result_name != operator[2]:
-                operator_text += '{} = {}\n'.format(result_name, operator[2])
-            operator_text += '''{0}['lrc{1}-classification'] = lrc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+                operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
+            operator_text += '''{OUTPUT_DF}['lrc{OPERATOR_NUM}-classification'] = lrc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)\n'''.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
 
         elif operator_name == '_svc':
             C = float(operator[3])
@@ -244,25 +246,25 @@ def replace_function_calls(pipeline_list):
                 C = 0.0001
 
             operator_text += '\n# Perform classification with a C-support vector classifier'
-            operator_text += '\nsvc{} = SVC(C={})\n'.format(operator_num, C)
-            operator_text += '''svc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
+            operator_text += '\nsvc{OPERATOR_NUM} = SVC(C={C})\n'.format(OPERATOR_NUM=operator_num, C=C)
+            operator_text += '''svc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n'''.format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
             if result_name != operator[2]:
-                operator_text += '{} = {}\n'.format(result_name, operator[2])
-            operator_text += '''{0}['svc{1}-classification'] = svc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+                operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
+            operator_text += '''{OUTPUT_DF}['svc{1}-classification'] = svc{1}.predict({OUTPUT_DF}.drop('class', axis=1).values)\n'''.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
 
         elif operator_name == '_knnc':
             n_neighbors = int(operator[3])
             if n_neighbors < 2:
                 n_neighbors = 2
             else:
-                n_neighbors = 'min({}, len(training_indices))'.format(n_neighbors)
+                n_neighbors = 'min({N_NEIGHBORS}, len(training_indices))'.format(N_NEIGHBORS=n_neighbors)
 
             operator_text += '\n# Perform classification with a k-nearest neighbor classifier'
-            operator_text += '\nknnc{} = KNeighborsClassifier(n_neighbors={})\n'.format(operator_num, n_neighbors)
-            operator_text += '''knnc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
+            operator_text += '\nknnc{OPERATOR_NUM} = KNeighborsClassifier(n_neighbors={N_NEIGHBORS})\n'.format(OPERATOR_NUM=operator_num, N_NEIGHBORS=n_neighbors)
+            operator_text += '''knnc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n'''.format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
             if result_name != operator[2]:
-                operator_text += '{} = {}\n'.format(result_name, operator[2])
-            operator_text += '''{0}['knnc{1}-classification'] = knnc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+                operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
+            operator_text += '''{OUTPUT_DF}['knnc{OPERATOR_NUM}-classification'] = knnc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)\n'''.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
 
         elif operator_name == '_xgradient_boosting':
             learning_rate = float(operator[3])
@@ -281,54 +283,54 @@ def replace_function_calls(pipeline_list):
                 max_depth = None
 
             operator_text += '\n# Perform classification with an eXtreme gradient boosting classifier'
-            operator_text += '\nxgbc{} = XGBClassifier(learning_rate={}, n_estimators={}, max_depth={})\n'.format(operator_num, learning_rate, n_estimators, max_depth)
-            operator_text += '''xgbc{0}.fit({1}.loc[training_indices].drop('class', axis=1).values, {1}.loc[training_indices, 'class'].values)\n'''.format(operator_num, operator[2])
+            operator_text += '\nxgbc{OPERATOR_NUM} = XGBClassifier(learning_rate={LEARNING_RATE}, n_estimators={N_ESTIMATORS}, max_depth={MAX_DEPTH})\n'.format(OPERATOR_NUM=operator_num, LEARNING_RATE=learning_rate, N_ESTIMATORS=n_estimators, MAX_DEPTH=max_depth)
+            operator_text += '''xgbc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n'''.format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
             if result_name != operator[2]:
-                operator_text += '{} = {}\n'.format(result_name, operator[2])
-            operator_text += '''{0}['xgbc{1}-classification'] = xgbc{1}.predict({0}.drop('class', axis=1).values)\n'''.format(result_name, operator_num)
+                operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
+            operator_text += '''{OUTPUT_DF}['xgbc{1}-classification'] = xgbc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)\n'''.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
 
         elif operator_name == '_combine_dfs':
             operator_text += '\n# Combine two DataFrames'
-            operator_text += '\n{2} = {0}.join({1}[[column for column in {1}.columns.values if column not in {0}.columns.values]])\n'.format(operator[2], operator[3], result_name)
+            operator_text += '\n{OUTPUT_DF} = {INPUT_DF1}.join({INPUT_DF2}[[column for column in {INPUT_DF2}.columns.values if column not in {INPUT_DF1}.columns.values]])\n'.format(INPUT_DF1=operator[2], INPUT_DF2=operator[3], OUTPUT_DF=result_name)
 
         elif operator_name == '_variance_threshold':
+            threshold = float(operator[3])
+
             operator_text += '''
 # Use Scikit-learn's VarianceThreshold for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
-selector = VarianceThreshold(threshold={1})
+selector = VarianceThreshold(threshold={THRESHOLD})
 try:
     selector.fit(training_features.values)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
+    {OUTPUT_DF} = {INPUT_DF}[mask_cols]
 except ValueError:
     # None of the features meet the variance threshold
-    {2} = {0}[['class']]
-'''.format(operator[2], operator[3], result_name)
+    {OUTPUT_DF} = {INPUT_DF}[['class']]
+'''.format(INPUT_DF=operator[2], THRESHOLD=threshold, OUTPUT_DF=result_name)
 
         elif operator_name == '_select_kbest':
             k = int(operator[3])
-
             if k < 1:
                 k = 1
-
-            k = 'min({}, len(training_features.columns))'.format(k)
+            k = 'min({K}, len(training_features.columns))'.format(K=k)
 
             operator_text += '''
 # Use Scikit-learn's SelectKBest for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 
 if len(training_features.columns.values) == 0:
-    {2} = {0}.copy()
+    {OUTPUT_DF} = {INPUT_DF}.copy()
 else:
-    selector = SelectKBest(f_classif, k={1})
+    selector = SelectKBest(f_classif, k={K})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
-'''.format(operator[2], k, result_name)
+    {OUTPUT_DF} = {INPUT_DF}[mask_cols]
+'''.format(INPUT_DF=operator[2], K=k, OUTPUT_DF=result_name)
 
         # SelectFwe based on the SelectKBest code
         elif operator_name == '_select_fwe':
@@ -338,17 +340,17 @@ else:
             elif alpha <= 0.001:
                 alpha = 0.001
             operator_text += '''
-training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
+training_features = {INPUT_DF}.loc[training_indices].drop(['class', 'group', 'guess'], axis=1)
+training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 if len(training_features.columns.values) == 0:
-    {2} = {0}.copy()
+    {OUTPUT_DF} = {INPUT_DF}.copy()
 else:
-    selector = SelectFwe(f_classif, alpha={1})
+    selector = SelectFwe(f_classif, alpha={ALPHA})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
-'''.format(operator[2], alpha, result_name)
+    {OUTPUT_DF} = {INPUT_DF}[mask_cols]
+'''.format(INPUT_DF=operator[2], ALPHA=alpha, OUTPUT_DF=result_name)
 
         elif operator_name == '_select_percentile':
             percentile = int(operator[3])
@@ -360,18 +362,18 @@ else:
 
             operator_text += '''
 # Use Scikit-learn's SelectPercentile for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 
 if len(training_features.columns.values) == 0:
-    {2} = {0}.copy()
+    {OUTPUT_DF} = {INPUT_DF}.copy()
 else:
-    selector = SelectPercentile(f_classif, percentile={1})
+    selector = SelectPercentile(f_classif, percentile={PERCENTILE})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {2} = {0}[mask_cols]
-'''.format(operator[2], percentile, result_name)
+    {OUTPUT_DF} = {INPUT_DF}[mask_cols]
+'''.format(INPUT_DF=operator[2], PERCENTILE=percentile, OUTPUT_DF=result_name)
 
         elif operator_name == '_rfe':
             n_features_to_select = int(operator[3])
@@ -379,7 +381,7 @@ else:
 
             if n_features_to_select < 1:
                 n_features_to_select = 1
-            n_features_to_select = 'min({}, len(training_features.columns))'.format(n_features_to_select)
+            n_features_to_select = 'min({N_FEATURES_TO_SELECT}, len(training_features.columns))'.format(N_FEATURES_TO_SELECT=n_features_to_select)
 
             if step < 0.1:
                 step = 0.1
@@ -388,66 +390,110 @@ else:
 
             operator_text += '''
 # Use Scikit-learn's Recursive Feature Elimination (RFE) for feature selection
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-training_class_vals = {0}.loc[training_indices, 'class'].values
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 
 if len(training_features.columns.values) == 0:
-    {3} = {0}.copy()
+    {OUTPUT_DF} = {INPUT_DF}.copy()
 else:
-    selector = RFE(SVC(kernel='linear'), n_features_to_select={1}, step={2})
+    selector = RFE(SVC(kernel='linear'), n_features_to_select={N_FEATURES_TO_SELECT}, step={STEP})
     selector.fit(training_features.values, training_class_vals)
     mask = selector.get_support(True)
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
-    {3} = {0}[mask_cols]
-'''.format(operator[2], n_features_to_select, step, result_name)
+    {OUTPUT_DF} = {INPUT_DF}[mask_cols]
+'''.format(INPUT_DF=operator[2], N_FEATURES_TO_SELECT=n_features_to_select, STEP=step, OUTPUT_DF=result_name)
 
         elif operator_name == '_standard_scaler':
             operator_text += '''
 # Use Scikit-learn's StandardScaler to scale the features
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-{1} = {0}.copy()
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     scaler = StandardScaler()
     scaler.fit(training_features.values.astype(np.float64))
-    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
-
-for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
-    {1}.loc[:, column] = scaled_features[:, col_num]
-'''.format(operator[2], result_name)
+    scaled_features = scaler.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=scaled_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
         elif operator_name == '_robust_scaler':
             operator_text += '''
 # Use Scikit-learn's RobustScaler to scale the features
-training_features = {0}.loc[training_indices].drop('class', axis=1)
-{1} = {0}.copy()
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     scaler = RobustScaler()
     scaler.fit(training_features.values.astype(np.float64))
-    scaled_features = scaler.transform({1}.drop('class', axis=1).values.astype(np.float64))
+    scaled_features = scaler.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=scaled_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
-for col_num, column in enumerate({1}.drop('class', axis=1).columns.values):
-    {1}.loc[:, column] = scaled_features[:, col_num]
-'''.format(operator[2], result_name)
+        elif operator_name == '_min_max_scaler':
+            operator_text += '''
+# Use Scikit-learn's MinMaxScaler to scale the features
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    scaler = MinMaxScaler()
+    scaler.fit(training_features.values.astype(np.float64))
+    scaled_features = scaler.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=scaled_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
+
+        elif operator_name == '_max_abs_scaler':
+            operator_text += '''
+# Use Scikit-learn's MaxAbsScaler to scale the features
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    scaler = MaxAbsScaler()
+    scaler.fit(training_features.values.astype(np.float64))
+    scaled_features = scaler.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=scaled_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
+
+        elif operator_name == '_binarizer':
+            threshold = float(operator[3])
+            operator_text += '''
+# Use Scikit-learn's Binarizer to scale the features
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    scaler = Binarizer(threshold={THRESHOLD})
+    scaler.fit(training_features.values.astype(np.float64))
+    scaled_features = scaler.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=scaled_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], THRESHOLD=threshold, OUTPUT_DF=result_name)
 
         elif operator_name == '_polynomial_features':
             operator_text += '''
 # Use Scikit-learn's PolynomialFeatures to construct new features from the existing feature set
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0 and len(training_features.columns.values) <= 700:
     # The feature constructor must be fit on only the training data
     poly = PolynomialFeatures(degree=2, include_bias=False)
     poly.fit(training_features.values.astype(np.float64))
-    constructed_features = poly.transform({0}.drop('class', axis=1).values.astype(np.float64))
-
-    {0}_classes = {0}['class'].values
-    {1} = pd.DataFrame(data=constructed_features)
-    {1}['class'] = {0}_classes
+    constructed_features = poly.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=constructed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
-    {1} = {0}.copy()
-'''.format(operator[2], result_name)
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
         elif operator_name == '_pca':
             n_components = int(operator[3])
@@ -463,19 +509,17 @@ else:
 
             operator_text += '''
 # Use Scikit-learn's RandomizedPCA to transform the feature set
-training_features = {0}.loc[training_indices].drop('class', axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # PCA must be fit on only the training data
-    pca = RandomizedPCA(n_components={1}, iterated_power={2})
+    pca = RandomizedPCA(n_components={N_COMPONENTS}, iterated_power={ITERATED_POWER})
     pca.fit(training_features.values.astype(np.float64))
-    transformed_features = pca.transform({0}.drop('class', axis=1).values.astype(np.float64))
-
-    {0}_classes = {0}['class'].values
-    {3} = pd.DataFrame(data=transformed_features)
-    {3}['class'] = {0}_classes
+    transformed_features = pca.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
-    {3} = {0}.copy()
-'''.format(operator[2], n_components, iterated_power, result_name)
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], N_COMPONENTS=n_components, ITERATED_POWER=iterated_power, OUTPUT_DF=result_name)
 
     return operator_text
