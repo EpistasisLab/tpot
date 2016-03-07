@@ -1025,7 +1025,7 @@ class TPOT(object):
             return input_df.copy()
 
         # The binarizer must be fit on only the training data
-        binarizer = Binarizer(copy=False)
+        binarizer = Binarizer(copy=False, threshold=threshold)
         binarizer.fit(training_features.values.astype(np.float64))
         binarized_features = binarizer.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
 
