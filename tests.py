@@ -90,6 +90,7 @@ def test_xgboost():
     assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
 
 def test_combine_dfs():
+    """Check combine_dfs operator"""
     tpot_obj = TPOT()
 
     df1 = pd.DataFrame({'a': list(range(10)),
