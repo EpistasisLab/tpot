@@ -169,6 +169,8 @@ def test_consensus():
                                     'guess': [1,0,1,0,1,0,1,0,1,0]})
     res_two_ada_max = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
                                     'guess': [1,0,1,0,1,0,1,0,1,0]})
+    res_three_uni_thresh = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+                                         'guess': [0,0,0,0,0,1,1,1,1,1]})
     res_three_ada_max = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
                                       'guess': [1,1,0,0,1,1,0,0,1,1]})
     res_four_ada_max = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
@@ -180,6 +182,7 @@ def test_consensus():
              (tpot_obj._consensus_two, 0, 5, df1, df2), # accuracy min
              (tpot_obj._consensus_two, 1, 2, df1, df2), # uniform max
              #(tpot_obj._consensus_two, 2, 3, df1, df2), # adaboost max
+             (tpot_obj._consensus_three, 1, 6, df1, df2, df3), #uni threshold
              (tpot_obj._consensus_three, 1, 2, df1, df3, df4), # uni max
              (tpot_obj._consensus_four, 1, 2, df1, df2, df3, df4) #uni  max
              ]
@@ -189,6 +192,7 @@ def test_consensus():
            res_two_acc_min,
            res_two_uni_max,
            #res_two_ada_max,
+           res_three_uni_thresh,
            res_three_ada_max,
            res_four_ada_max
            ]

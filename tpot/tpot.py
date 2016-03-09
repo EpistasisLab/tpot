@@ -157,7 +157,7 @@ class TPOT(object):
         else:
             self.scoring_function=scoring_function
         
-        self._consensus_options = ['accuracy', 'uniform', 'max', 'mean', 'median', 'min']
+        self._consensus_options = ['accuracy', 'uniform', 'max', 'mean', 'median', 'min', 'threshold']
         self._num_consensus_options = len(self._consensus_options)
         self._consensus_opt_split_ix = 1
 
@@ -615,6 +615,19 @@ class TPOT(object):
         ht = self._get_ht_dict(classes, weights)
         return self._get_top(classes, sorted(list(ht.items()), key=operator.itemgetter(1)))
 
+    def _threshold_class(self, classes, weights):
+        """Return the class with that contains a certain percentage of the weight 
+        """
+        ht = self._get_ht_dict(classes, weights)
+        total_weight = sum(list(ht.values()))
+        threshold = 0.75
+        sorted_classes = sorted(((x, float(y) / total_weight) for (x,y) in list(ht.items()) if (float(y) / total_weight) > threshold), key=operator.itemgetter(1), reverse=True)
+        while len(sorted_classes) == 0:
+            threshold = threshold - 0.05
+            sorted_classes = sorted(((x, float(y) / total_weight) for (x,y) in list(ht.items()) if (float(y) / total_weight) > threshold), key=operator.itemgetter(1), reverse=True)
+        
+        return self._get_top(classes, sorted_classes) 
+
     def _consensus_two(self, weighting, method, input_df1, input_df2):
         """Takes the classifications of different models and combines them in a meaningful manner.
         
@@ -678,6 +691,8 @@ class TPOT(object):
             method_f = self._median_class
         elif method == 'min':
             method_f = self._min_class
+        elif method =='threshold':
+            method_f = self._threshold_class
 
         # Initialize the dataFrame containing just the guesses, and to hold the results
         merged_guesses = pd.DataFrame(data=input_df1[['guess']].values, columns=['guess_1'])
@@ -758,6 +773,8 @@ class TPOT(object):
             method_f = self._median_class
         elif method == 'min':
             method_f = self._min_class
+        elif method =='threshold':
+            method_f = self._threshold_class
 
         # Initialize the dataFrame containing just the guesses, and to hold the results
         merged_guesses = pd.DataFrame(data=input_df1[['guess']].values, columns=['guess_1'])
@@ -842,6 +859,8 @@ class TPOT(object):
             method_f = self._median_class
         elif method == 'min':
             method_f = self._min_class
+        elif method =='threshold':
+            method_f = self._threshold_class
 
         # Initialize the dataFrame containing just the guesses, and to hold the results
         merged_guesses = pd.DataFrame(data=input_df1[['guess']].values, columns=['guess_1'])

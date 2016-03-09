@@ -22,8 +22,8 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 import deap
 
-consensus_options = ['accuracy', 'uniform', 'max', 'mean', 'median', 'min']
-num_consensus_options = 6
+consensus_options = ['accuracy', 'uniform', 'max', 'mean', 'median', 'min', 'threshold']
+num_consensus_options = 7
 consensus_opt_split_ix = 1
 
 def consensus_operator_prefix(weight_scheme, method, operator_text):
@@ -103,6 +103,21 @@ def _min_class(classes, weights):
     ht = _get_ht_dict(classes, weights)
     return _get_top(classes, sorted(list(ht.items()), key=operator.itemgetter(1)))
 method = _min_class
+        '''
+    elif consensus_options[method % num_consensus_options] == 'threshold':
+        operator_text += '''\n
+def _threshold_class(self, classes, weights):
+    """Return the class with that contains a certain percentage of the weight 
+    """
+    ht = _get_ht_dict(classes, weights)
+    total_weight = sum(list(ht.values()))
+    threshold = 0.75
+    sorted_classes = sorted(((x, float(y) / total_weight) for (x,y) in list(ht.items()) if (float(y) / total_weight) > threshold), key=operator.itemgetter(1), reverse=True)
+    while len(sorted_classes) == 0:
+        threshold = threshold - 0.05
+        sorted_classes = sorted(((x, float(y) / total_weight) for (x,y) in list(ht.items()) if (float(y) / total_weight) > threshold), key=operator.itemgetter(1), reverse=True)
+    
+    return _get_top(classes, sorted_classes)
         '''
     return operator_text
 
