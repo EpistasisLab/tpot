@@ -93,15 +93,15 @@ def test_combine_dfs():
     """Check combine_dfs operator"""
     tpot_obj = TPOT()
 
-    df1 = pd.DataFrame({'a': range(10),
-                        'b': range(10, 20)})
+    df1 = pd.DataFrame({'a': list(range(10)),
+                        'b': list(range(10, 20))})
 
-    df2 = pd.DataFrame({'b': range(10, 20),
-                        'c': range(20, 30)})
+    df2 = pd.DataFrame({'b': list(range(10, 20)),
+                        'c': list(range(20, 30))})
 
-    combined_df = pd.DataFrame({'a': range(10),
-                                'b': range(10, 20),
-                                'c': range(20, 30)})
+    combined_df = pd.DataFrame({'a': list(range(10)),
+                                'b': list(range(10, 20)),
+                                'c': list(range(20, 30))})
 
     assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
 
@@ -127,3 +127,79 @@ def test_static_models():
         result = result[result['group'] == 'testing']
 
         assert np.array_equal(result['guess'].values, sklearn_model_obj.predict(testing_features)), "Model {} failed".format(str(model))
+
+def test_consensus():
+    tpot_obj = TPOT()
+
+    df1 = pd.DataFrame({'00001': [2,2,2,2,2,2,2,2,2,2],
+                        '00002': [3,3,3,3,3,3,3,3,3,3],
+                        'class': [1,1,1,1,1,0,0,0,0,0],
+                        'guess': [1,0,1,0,1,0,1,0,1,0]})
+
+    df2 = pd.DataFrame({'00001': [2,2,2,2,2,2,2,2,2,2],
+                        '00002': [3,3,3,3,3,3,3,3,3,3],
+                        'class': [1,1,1,1,1,0,0,0,0,0],
+                        'guess': [0,0,0,0,0,1,1,1,1,1]})
+
+    df3 = pd.DataFrame({'00001': [2,2,2,2,2,2,2,2,2,2],
+                        '00002': [3,3,3,3,3,3,3,3,3,3],
+                        'class': [1,1,1,1,1,0,0,0,0,0],
+                        'guess': [0,1,0,1,0,1,0,1,0,1]})
+
+    df4 = pd.DataFrame({'00001': [2,2,2,2,2,2,2,2,2,2],
+                        '00002': [3,3,3,3,3,3,3,3,3,3],
+                        'class': [1,1,1,1,1,0,0,0,0,0],
+                        'guess': [1,1,0,0,1,1,0,0,1,1]})
+
+    uniform = [1.0] * 10
+    adaboost = [1.0] * 10
+
+    accuracy1 = 0.60
+    accuracy2 = 0.0
+    accuracy3 = 0.40
+    accuracy4 = 0.50
+    res_two_acc_max = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+                                    'guess': [1,0,1,0,1,0,1,0,1,0]})
+    res_two_acc_mean = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+                                     'guess': [1,0,1,0,1,0,1,0,1,0]})
+    res_two_acc_med = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+                                    'guess': [1,0,1,0,1,0,1,0,1,0]})
+    res_two_acc_min = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+                                    'guess': [0,0,0,0,0,1,1,1,1,1]})
+    res_two_uni_max = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+                                    'guess': [1,0,1,0,1,0,1,0,1,0]})
+    res_two_ada_max = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+                                    'guess': [1,0,1,0,1,0,1,0,1,0]})
+    res_three_uni_thresh = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+                                         'guess': [0,0,0,0,0,1,1,1,1,1]})
+    res_three_ada_max = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+                                      'guess': [1,1,0,0,1,1,0,0,1,1]})
+    res_four_ada_max = pd.DataFrame({'class': [1,1,1,1,1,0,0,0,0,0],
+                                     'guess': [1,0,0,0,1,1,1,0,1,1]})
+    
+    tests = [(tpot_obj._consensus_two, 0, 2, df1, df2), #accuracy, max
+             (tpot_obj._consensus_two, 0, 3, df1, df2), #accuracy mean
+             (tpot_obj._consensus_two, 0, 4, df1, df2), # accuracy median
+             (tpot_obj._consensus_two, 0, 5, df1, df2), # accuracy min
+             (tpot_obj._consensus_two, 1, 2, df1, df2), # uniform max
+             #(tpot_obj._consensus_two, 2, 3, df1, df2), # adaboost max
+             (tpot_obj._consensus_three, 1, 6, df1, df2, df3), #uni threshold
+             (tpot_obj._consensus_three, 1, 2, df1, df3, df4), # uni max
+             (tpot_obj._consensus_four, 1, 2, df1, df2, df3, df4) #uni  max
+             ]
+    results = [res_two_acc_max,
+           res_two_acc_mean,
+           res_two_acc_med,
+           res_two_acc_min,
+           res_two_uni_max,
+           #res_two_ada_max,
+           res_three_uni_thresh,
+           res_three_ada_max,
+           res_four_ada_max
+           ]
+
+    for test, res in zip(tests, results):
+        #print(test[1:3])
+        #print(test[0](*test[1:])['guess'].values)
+        assert np.array_equal(test[0](*test[1:])['guess'].values, res['guess'].values)
+

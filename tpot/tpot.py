@@ -18,7 +18,7 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from __future__ import print_function
+
 import argparse
 import operator
 import random
@@ -150,6 +150,11 @@ class TPOT(object):
         self._pset.addPrimitive(operator.sub, [int, int], int)
         self._pset.addPrimitive(operator.mul, [int, int], int)
         self._pset.addPrimitive(self._div, [int, int], float)
+        
+        # Other operators
+        self._pset.addPrimitive(self._consensus_two, [int, int, pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._consensus_three, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._consensus_four, [int, int, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame], pd.DataFrame)
         for val in range(0, 101):
             self._pset.addTerminal(val, int)
         for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
@@ -171,7 +176,11 @@ class TPOT(object):
         if not scoring_function:
             self.scoring_function = self._balanced_accuracy
         else:
-            self.scoring_function = scoring_function
+            self.scoring_function=scoring_function
+        
+        self._consensus_options = ['accuracy', 'uniform', 'max', 'mean', 'median', 'min', 'threshold']
+        self._num_consensus_options = len(self._consensus_options)
+        self._consensus_opt_split_ix = 1
 
     def fit(self, features, classes, feature_names=None):
         """Fits a machine learning pipeline that maximizes classification accuracy on the provided data
@@ -575,6 +584,319 @@ class TPOT(object):
             max_depth = None
 
         return self._train_model_and_predict(input_df, XGBClassifier, learning_rate=learning_rate, n_estimators=n_estimators, max_depth=max_depth, seed=42)
+    
+  
+    def _get_ht_dict(self, classes, weights):
+        """Return a dictionary where the keys are the unique class values present in this row of guesses, and the weights are the weights assigned to each guess.
+        """
+        ret = {}
+        ctr = 0
+        for cls in classes:
+            try:
+                ret[cls] += weights[ctr]
+            except:
+                ret[cls] = weights[ctr]
+            ctr += 1
+        return ret
+
+    
+    def _get_top(self, classes, tups):
+        """Return the class from the row in the first DataFrame passed to the function (e.g., input_df1)
+        """
+        values = [tup[0] for tup in tups if tup[1] == tups[0][1]]
+        for class_ in classes:
+            if class_ in values:
+                return class_
+
+    def _max_class(self, classes, weights):
+        """Return the class with the highest weight, or the class that appears first with that weight (e.g., input_df1)
+        """
+        ht = self._get_ht_dict(classes, weights)
+        return self._get_top(classes, sorted(list(ht.items()), key=operator.itemgetter(1), reverse=True))
+    
+    def _mean_class(self, classes, weights):
+        """Return the class closest to the mean weight, or the class that appears first with that weight (e.g., input_df1)
+        """
+        ht = self._get_ht_dict(classes, weights)
+        mean_val = np.mean(list(ht.values()))
+        return self._get_top(classes, sorted(((x, abs(y - mean_val)) for (x,y) in list(ht.items())), key=operator.itemgetter(1)))
+
+    def _median_class(self, classes, weights):
+        """Return the class closest to the median weight, or the class that appears first with that weight (e.g., input_df1)
+        """
+        ht = self._get_ht_dict(classes, weights)
+        median_val = np.median(list(ht.values()))
+        return self._get_top(classes, sorted(((x, abs(y - median_val)) for (x,y) in list(ht.items())), key=operator.itemgetter(1)))
+
+    def _min_class(self, classes, weights):
+        """Return the class with the minimal weight, or the class that appears first with that weight (e.g., input_df1)
+        """
+        ht = self._get_ht_dict(classes, weights)
+        return self._get_top(classes, sorted(list(ht.items()), key=operator.itemgetter(1)))
+
+    def _threshold_class(self, classes, weights):
+        """Return the class with that contains a certain percentage of the weight 
+        """
+        ht = self._get_ht_dict(classes, weights)
+        total_weight = sum(list(ht.values()))
+        threshold = 0.75
+        sorted_classes = sorted(((x, float(y) / total_weight) for (x,y) in list(ht.items()) if (float(y) / total_weight) > threshold), key=operator.itemgetter(1), reverse=True)
+        while len(sorted_classes) == 0:
+            threshold = threshold - 0.05
+            sorted_classes = sorted(((x, float(y) / total_weight) for (x,y) in list(ht.items()) if (float(y) / total_weight) > threshold), key=operator.itemgetter(1), reverse=True)
+        
+        return self._get_top(classes, sorted_classes) 
+
+    def _consensus_two(self, weighting, method, input_df1, input_df2):
+        """Takes the classifications of different models and combines them in a meaningful manner.
+        
+        Parameters
+        ----------
+        weighting: {'accuracy', 'uniform', 'adaboost'}
+            Method of weighting the classifications from the different DataFrames
+        method: {'max', 'mean', 'median', 'min'}
+            Method of combining the classifications from the different DataFrames
+        input_df1: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            First input DataFrame to combine guesses
+        input_df2: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Second input DataFrame to combine guesses
+
+        Returns
+        -------
+        combined_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Combined DataFrames 
+            
+        """
+        #Validate input
+        #If either DF is empty and the other isn't, return a non-empty DF as it probably has reasonable guesses
+        #Otherwise if both are lacking, return the first one
+        dfs = [input_df1, input_df2]
+        if any(len(df.columns) == 3 for df in dfs):
+            for df in dfs:
+                if len(df.columns) > 3:
+                    return df
+            return dfs[0].copy() 
+
+        options = self._consensus_options
+        num_options = self._num_consensus_options
+        opt_split_ix = self._consensus_opt_split_ix
+
+        #if weighting not in ['accuracy', 'uniform']:
+        if weighting % num_options > (opt_split_ix):
+            return dfs[0].copy()
+        #if method not in ['max', 'mean', 'median', 'min']:
+        if method % num_options <= (opt_split_ix):
+            return dfs[0].copy()
+
+        weighting = options[weighting % num_options]
+        method = options[method % num_options]
+        #Establish the weights for each dataframe/classifier
+        weights = []
+        for df in dfs:
+            tup = df[['guess', 'class']]
+            num_correct = len(np.where(tup['guess'] == tup['class'])[0])
+            total_vals = len(tup['guess'].index)
+            if weighting == 'accuracy':
+                weights.append(float(num_correct) / float(total_vals))
+            elif weighting == 'uniform':
+                weights.append(1.0)
+        #Set the method function for evaluating each DataFrame
+        method_f = None
+        if method == 'max':
+            method_f = self._max_class
+        elif method == 'mean':
+            method_f = self._mean_class
+        elif method == 'median':
+            method_f = self._median_class
+        elif method == 'min':
+            method_f = self._min_class
+        elif method =='threshold':
+            method_f = self._threshold_class
+
+        # Initialize the dataFrame containing just the guesses, and to hold the results
+        merged_guesses = pd.DataFrame(data=input_df1[['guess']].values, columns=['guess_1'])
+        merged_guesses.loc[:, 'guess_2'] = input_df2['guess']
+        merged_guesses.loc[:, 'guess'] = None
+        
+        for row_ix in merged_guesses.index:
+            merged_guesses['guess'].loc[row_ix] = method_f(merged_guesses[['guess_1', 'guess_2']].iloc[row_ix], weights)
+        combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]])
+        if 'guess' in combined_df.columns.values:
+            return combined_df.drop('guess', 1).join(merged_guesses['guess']).copy()
+        else:
+            return combined_df.join(merged_guesses['guess'])
+    
+    def _consensus_three(self, weighting, method, input_df1, input_df2, input_df3):
+        """Takes the classifications of different models and combines them in a meaningful manner.
+        
+        Parameters
+        ----------
+        weighting: {'accuracy', 'uniform', 'adaboost'}
+            Method of weighting the classifications from the different DataFrames
+        method: {'max', 'mean', 'median', 'min'}
+            Method of combining the classifications from the different DataFrames
+        input_df1: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            First input DataFrame to combine guesses
+        input_df2: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Second input DataFrame to combine guesses
+        input_df3: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Third input DataFrame to combine guesses
+
+        Returns
+        -------
+        combined_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Combined DataFrames 
+            
+        """
+        #Validate input
+        #If either DF is empty and the other isn't, return a non-empty DF as it probably has reasonable guesses
+        #Otherwise if both are lacking, return the first one
+        dfs = [input_df1, input_df2, input_df3]
+        if any(len(df.columns) == 3 for df in dfs):
+            for df in dfs:
+                if len(df.columns) > 3:
+                    return df
+            return dfs[0].copy() 
+
+        options = self._consensus_options
+        num_options = self._num_consensus_options
+        opt_split_ix = self._consensus_opt_split_ix
+        
+        #if weighting not in ['accuracy', 'uniform']:
+        if weighting % num_options > opt_split_ix:
+            return dfs[0].copy()
+        #if method not in ['max', 'mean', 'median', 'min']:
+        if method % num_options <= opt_split_ix:
+            return dfs[0].copy()
+
+        weighting = options[weighting % num_options]
+        method = options[method % num_options]
+        #Establish the weights for each dataframe/classifier
+        weights = []
+        for df in dfs:
+            tup = df[['guess', 'class']]
+            num_correct = len(np.where(tup['guess'] == tup['class']))
+            total_vals = len(tup['guess'].index)
+            if weighting == 'accuracy':
+                weights.append(float(num_correct) / float(total_vals))
+            elif weighting == 'uniform':
+                weights.append(1.0)
+        
+        #Set the method function for evaluating each DataFrame
+        method_f = None
+        if method == 'max':
+            method_f = self._max_class
+        elif method == 'mean':
+            method_f = self._mean_class
+        elif method == 'median':
+            method_f = self._median_class
+        elif method == 'min':
+            method_f = self._min_class
+        elif method =='threshold':
+            method_f = self._threshold_class
+
+        # Initialize the dataFrame containing just the guesses, and to hold the results
+        merged_guesses = pd.DataFrame(data=input_df1[['guess']].values, columns=['guess_1'])
+        merged_guesses.loc[:, 'guess_2'] = input_df2['guess']
+        merged_guesses.loc[:, 'guess_3'] = input_df3['guess']
+        merged_guesses.loc[:, 'guess'] = None
+        
+        for row_ix in merged_guesses.index:
+            merged_guesses['guess'].loc[row_ix] = method_f(merged_guesses[['guess_1', 'guess_2', 'guess_3']].iloc[row_ix], weights)
+        combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]])
+        combined_df = combined_df.join(input_df3[[column for column in input_df3.columns.values if column not in combined_df.columns.values]])
+        if 'guess' in combined_df.columns.values:
+            return combined_df.drop('guess', 1).join(merged_guesses['guess']).copy()
+        else:
+            return combined_df.join(merged_guesses['guess'])
+
+    def _consensus_four(self, weighting, method, input_df1, input_df2, input_df3, input_df4):
+        """Takes the classifications of different models and combines them in a meaningful manner.
+        
+        Parameters
+        ----------
+        weighting: {'accuracy', 'uniform', 'adaboost'}
+            Method of weighting the classifications from the different DataFrames
+        method: {'max', 'mean', 'median', 'min'}
+            Method of combining the classifications from the different DataFrames
+        input_df1: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            First input DataFrame to combine guesses
+        input_df2: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Second input DataFrame to combine guesses
+        input_df3: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Third input DataFrame to combine guesses
+        input_df4: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Fourth input DataFrame to combine guesses
+
+        Returns
+        -------
+        combined_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Combined DataFrames 
+            
+        """
+        #Validate input
+        #If either DF is empty and the other isn't, return a non-empty DF as it probably has reasonable guesses
+        #Otherwise if both are lacking, return the first one
+        dfs = [input_df1, input_df2, input_df3, input_df4]
+        if any(len(df.columns) == 3 for df in dfs):
+            for df in dfs:
+                if len(df.columns) > 3:
+                    return df
+            return dfs[0].copy() 
+
+        options = self._consensus_options
+        num_options = self._num_consensus_options
+        opt_split_ix = self._consensus_opt_split_ix
+        
+        #if weighting not in ['accuracy', 'uniform']:
+        if weighting % num_options > opt_split_ix:
+            return dfs[0].copy()
+        #if method not in ['max', 'mean', 'median', 'min']:
+        if method % num_options <= opt_split_ix:
+            return dfs[0].copy()
+
+        weighting = options[weighting % num_options]
+        method = options[method % num_options]
+        #Establish the weights for each dataframe/classifier
+        weights = []
+        for df in dfs:
+            tup = df[['guess', 'class']]
+            num_correct = len(np.where(tup['guess'] == tup['class']))
+            total_vals = len(tup['guess'].index)
+            if weighting == 'accuracy':
+                weights.append(float(num_correct) / float(total_vals))
+            elif weighting == 'uniform':
+                weights.append(1.0)
+        
+        #Set the method function for evaluating each DataFrame
+        method_f = None
+        if method == 'max':
+            method_f = self._max_class
+        elif method == 'mean':
+            method_f = self._mean_class
+        elif method == 'median':
+            method_f = self._median_class
+        elif method == 'min':
+            method_f = self._min_class
+        elif method =='threshold':
+            method_f = self._threshold_class
+
+        # Initialize the dataFrame containing just the guesses, and to hold the results
+        merged_guesses = pd.DataFrame(data=input_df1[['guess']].values, columns=['guess_1'])
+        merged_guesses.loc[:, 'guess_2'] = input_df2['guess']
+        merged_guesses.loc[:, 'guess_3'] = input_df3['guess']
+        merged_guesses.loc[:, 'guess_4'] = input_df4['guess']
+        merged_guesses.loc[:, 'guess'] = None
+        
+        for row_ix in merged_guesses.index:
+            merged_guesses['guess'].loc[row_ix] = method_f(merged_guesses[['guess_1', 'guess_2', 'guess_3', 'guess_4']].iloc[row_ix], weights)
+        combined_df = input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]])
+        combined_df = combined_df.join(input_df3[[column for column in input_df3.columns.values if column not in combined_df.columns.values]])
+        combined_df = combined_df.join(input_df4[[column for column in input_df4.columns.values if column not in combined_df.columns.values]])
+        if 'guess' in combined_df.columns.values:
+            return combined_df.drop('guess', 1).join(merged_guesses['guess']).copy()
+        else:
+            return combined_df.join(merged_guesses['guess'])
 
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
@@ -582,7 +904,7 @@ class TPOT(object):
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the k-neares
+            Input DataFrame for fitting the model
         model: sklearn classifier
             Input model to fit and predict on input_df
         kwargs: unpacked parameters
