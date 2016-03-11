@@ -175,7 +175,7 @@ class TPOT(object):
 
     def fit(self, features, classes, feature_names=None):
         """Fits a machine learning pipeline that maximizes classification accuracy on the provided data
-        
+
         Uses genetic programming to optimize a machine learning pipeline that
         maximizes classification accuracy on the provided `features` and `classes`.
         Optionally, name the features in the data frame according to `feature_names`.
@@ -234,7 +234,7 @@ class TPOT(object):
 
             def pareto_eq(ind1, ind2):
                 """Function used to determine whether two individuals are equal on the Pareto front
-                
+
                 Parameters
                 ----------
                 ind1: DEAP individual from the GP population
@@ -333,7 +333,7 @@ class TPOT(object):
         func = self._toolbox.compile(expr=self._optimized_pipeline)
 
         result = func(training_testing_data)
-        
+
         return result.loc[result['group'] == 'testing', 'guess'].values
 
     def score(self, testing_features, testing_classes):
@@ -431,8 +431,8 @@ class TPOT(object):
             max_features = 'auto'
         elif max_features == 1:
             max_features = None
-        elif max_features > len(input_df.columns) - 3:
-            max_features = len(input_df.columns) - 3
+        else:
+            max_features = min(max_features, len(input_df.columns) - 3)
 
         if max_depth < 1:
             max_depth = None
@@ -1111,10 +1111,7 @@ class TPOT(object):
             Returns num1 / num2, or 0 if num2 == 0
 
         """
-        if num2 == 0:
-            return 0.
-
-        return float(num1) / float(num2)
+        return float(num1) / float(num2) if num2 !=0 else 0
 
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data
@@ -1184,11 +1181,11 @@ class TPOT(object):
             this_class_sensitivity = len(result[(result['guess'] == this_class) &\
                                                 (result['class'] == this_class)])\
             / float(len(result[result['class'] == this_class]))
-        
+
             this_class_specificity = len(result[(result['guess'] != this_class) &\
                                                 (result['class'] != this_class)])\
             / float(len(result[result['class'] != this_class]))
-        
+
             this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)
 
@@ -1330,10 +1327,7 @@ def main():
     if 'Class' in input_data.columns.values:
         input_data.rename(columns={'Class': 'class'}, inplace=True)
 
-    if args.RANDOM_STATE > 0:
-        RANDOM_STATE = args.RANDOM_STATE
-    else:
-        RANDOM_STATE = None
+    RANDOM_STATE = args.RANDOM_STATE if args.RANDOM_STATE > 0 else None
 
     training_indices, testing_indices = next(iter(StratifiedShuffleSplit(input_data['class'].values,
                                                                          n_iter=1,
