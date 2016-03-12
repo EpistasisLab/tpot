@@ -369,9 +369,11 @@ class TPOT(object):
         most_frequent_training_class = Counter(self._training_classes).most_common(1)[0][0]
         training_testing_data.loc[:, 'guess'] = most_frequent_training_class
 
+        new_col_names = {}
         for column in training_testing_data.columns.values:
             if type(column) != str:
-                training_testing_data.rename(columns={column: str(column).zfill(10)}, inplace=True)
+                new_col_names[column] = str(column).zfill(10)
+        training_testing_data.rename(columns=new_col_names, inplace=True)
 
         return self._evaluate_individual(self._optimized_pipeline, training_testing_data)[1]
 
