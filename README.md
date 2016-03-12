@@ -4,8 +4,11 @@
 ![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)
 ![Python 3.5](https://img.shields.io/badge/python-3.5-blue.svg)
 ![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
+[![PyPI version](https://badge.fury.io/py/tpot.svg)](https://badge.fury.io/py/tpot)
 
 # Tree-based Pipeline Optimization Tool (TPOT)
+
+[![Join the chat at https://gitter.im/rhiever/tpot](https://badges.gitter.im/rhiever/tpot.svg)](https://gitter.im/rhiever/tpot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Consider TPOT your **Data Science Assistant**. TPOT is a Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.
 
@@ -113,6 +116,10 @@ publisher = {Springer-Verlag},
 address = {Berlin, Germany}
 }
 ```
+
+Alternatively, you can cite the repository directly with the following DOI:
+
+[![DOI](https://zenodo.org/badge/20747/rhiever/tpot.svg)](https://zenodo.org/badge/latestdoi/20747/rhiever/tpot)
 
 ## Support for TPOT
 

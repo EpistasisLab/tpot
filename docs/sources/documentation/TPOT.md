@@ -1,12 +1,11 @@
 ## TPOT
 * * *
-__tpot.fit(self, features, classes, feature_names=None)__
+__tpot.fit(self, features, classes)__
 
 
 Uses genetic programming to optimize a Machine Learning pipeline that
    maximizes classification accuracy on the provided `features` and `classes`.
-   Optionally, name the features in the data frame according to `feature_names`.
-   Performs a stratified training/testing cross-validaton split to avoid
+   Performs an internal stratified training/testing cross-validaton split to avoid
    overfitting on the provided data.
 
 _Parameters_
@@ -15,8 +14,6 @@ _Parameters_
         Feature matrix
     classes: array-like {n_samples}
         List of class labels for prediction
-    feature_names: array-like {n_features} (default: None)
-        List of feature names as strings
 
 _Returns_
 
