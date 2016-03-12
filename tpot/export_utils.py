@@ -203,7 +203,7 @@ def replace_function_calls(pipeline_list):
                               'max_features={MAX_FEATURES}, max_depth={MAX_DEPTH})\n').format(OPERATOR_NUM=operator_num,
                                                                                               MAX_FEATURES=max_features,
                                                                                               MAX_DEPTH=max_depth)
-            operator_text += ('''dtc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class','''
+            operator_text += ('''dtc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', '''
                               '''axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
                                                                                                                 INPUT_DF=operator[2])
             if result_name != operator[2]:
@@ -233,7 +233,7 @@ def replace_function_calls(pipeline_list):
                               'n_estimators={N_ESTIMATORS}, max_features={MAX_FEATURES})\n').format(OPERATOR_NUM=operator_num,
                                                                                                     N_ESTIMATORS=n_estimators,
                                                                                                     MAX_FEATURES=max_features)
-            operator_text += ('''rfc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values,'''
+            operator_text += ('''rfc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
                               '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
                                                                                                 INPUT_DF=operator[2])
             if result_name != operator[2]:
@@ -249,10 +249,13 @@ def replace_function_calls(pipeline_list):
 
             operator_text += '\n# Perform classification with a logistic regression classifier'
             operator_text += '\nlrc{OPERATOR_NUM} = LogisticRegression(C={C})\n'.format(OPERATOR_NUM=operator_num, C=C)
-            operator_text += '''lrc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n'''.format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
+            operator_text += ('''lrc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
+                              '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
             if result_name != operator[2]:
                 operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
-            operator_text += '''{OUTPUT_DF}['lrc{OPERATOR_NUM}-classification'] = lrc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)\n'''.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
+            operator_text += ('''{OUTPUT_DF}['lrc{OPERATOR_NUM}-classification'] = lrc{OPERATOR_NUM}.predict('''
+                              '''{OUTPUT_DF}.drop('class', axis=1).values)\n''').format(OUTPUT_DF=result_name,
+                                                                                        OPERATOR_NUM=operator_num)
 
         elif operator_name == '_svc':
             C = float(operator[3])
@@ -261,10 +264,14 @@ def replace_function_calls(pipeline_list):
 
             operator_text += '\n# Perform classification with a C-support vector classifier'
             operator_text += '\nsvc{OPERATOR_NUM} = SVC(C={C})\n'.format(OPERATOR_NUM=operator_num, C=C)
-            operator_text += '''svc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n'''.format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
+            operator_text += ('''svc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
+                              '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
+                                                                                                INPUT_DF=operator[2])
             if result_name != operator[2]:
                 operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
-            operator_text += '''{OUTPUT_DF}['svc{OPERATOR_NUM}-classification'] = svc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)\n'''.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
+            operator_text += ('''{OUTPUT_DF}['svc{OPERATOR_NUM}-classification'] = svc{OPERATOR_NUM}.predict('''
+                              '''{OUTPUT_DF}.drop('class', axis=1).values)\n''').format(OUTPUT_DF=result_name,
+                                                                                        OPERATOR_NUM=operator_num)
 
         elif operator_name == '_knnc':
             n_neighbors = int(operator[3])
@@ -275,10 +282,14 @@ def replace_function_calls(pipeline_list):
 
             operator_text += '\n# Perform classification with a k-nearest neighbor classifier'
             operator_text += '\nknnc{OPERATOR_NUM} = KNeighborsClassifier(n_neighbors={N_NEIGHBORS})\n'.format(OPERATOR_NUM=operator_num, N_NEIGHBORS=n_neighbors)
-            operator_text += '''knnc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n'''.format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
+            operator_text += ('''knnc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
+                              '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
+                                                                                                INPUT_DF=operator[2])
             if result_name != operator[2]:
                 operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
-            operator_text += '''{OUTPUT_DF}['knnc{OPERATOR_NUM}-classification'] = knnc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)\n'''.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
+            operator_text += ('''{OUTPUT_DF}['knnc{OPERATOR_NUM}-classification'] = knnc{OPERATOR_NUM}.predict('''
+                              '''{OUTPUT_DF}.drop('class', axis=1).values)\n''').format(OUTPUT_DF=result_name,
+                                                                                        OPERATOR_NUM=operator_num)
 
         elif operator_name == '_xgradient_boosting':
             learning_rate = float(operator[3])
@@ -297,15 +308,26 @@ def replace_function_calls(pipeline_list):
                 max_depth = None
 
             operator_text += '\n# Perform classification with an eXtreme gradient boosting classifier'
-            operator_text += '\nxgbc{OPERATOR_NUM} = XGBClassifier(learning_rate={LEARNING_RATE}, n_estimators={N_ESTIMATORS}, max_depth={MAX_DEPTH})\n'.format(OPERATOR_NUM=operator_num, LEARNING_RATE=learning_rate, N_ESTIMATORS=n_estimators, MAX_DEPTH=max_depth)
-            operator_text += '''xgbc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n'''.format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
+            operator_text += ('\nxgbc{OPERATOR_NUM} = XGBClassifier(learning_rate={LEARNING_RATE}, 
+                              'n_estimators={N_ESTIMATORS}, max_depth={MAX_DEPTH})\n').format(OPERATOR_NUM=operator_num,
+                                                                                              LEARNING_RATE=learning_rate,
+                                                                                              N_ESTIMATORS=n_estimators,
+                                                                                              MAX_DEPTH=max_depth)
+            operator_text += ('''xgbc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
+                              '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
+                                                                                                INPUT_DF=operator[2])
             if result_name != operator[2]:
                 operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
-            operator_text += '''{OUTPUT_DF}['xgbc{OPERATOR_NUM}-classification'] = xgbc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)\n'''.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
+            operator_text += ('''{OUTPUT_DF}['xgbc{OPERATOR_NUM}-classification'] = xgbc{OPERATOR_NUM}.predict('''
+                              '''{OUTPUT_DF}.drop('class', axis=1).values)\n''').format(OUTPUT_DF=result_name,
+                                                                                        OPERATOR_NUM=operator_num)
 
         elif operator_name == '_combine_dfs':
             operator_text += '\n# Combine two DataFrames'
-            operator_text += '\n{OUTPUT_DF} = {INPUT_DF1}.join({INPUT_DF2}[[column for column in {INPUT_DF2}.columns.values if column not in {INPUT_DF1}.columns.values]])\n'.format(INPUT_DF1=operator[2], INPUT_DF2=operator[3], OUTPUT_DF=result_name)
+            operator_text += ('\n{OUTPUT_DF} = {INPUT_DF1}.join({INPUT_DF2}[[column for column in {INPUT_DF2}.columns.values '
+                              'if column not in {INPUT_DF1}.columns.values]])\n').format(INPUT_DF1=operator[2],
+                                                                                         INPUT_DF2=operator[3],
+                                                                                         OUTPUT_DF=result_name)
 
         elif operator_name == '_variance_threshold':
             threshold = float(operator[3])
