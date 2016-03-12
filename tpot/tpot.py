@@ -54,6 +54,7 @@ from deap import tools
 from deap import gp
 
 class TPOT(object):
+
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
 
     update_checked = False
@@ -466,7 +467,8 @@ class TPOT(object):
         elif max_features > len(input_df.columns) - 3:
             max_features = len(input_df.columns) - 3
 
-        return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=n_estimators, max_features=max_features, random_state=42, n_jobs=-1)
+        return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=n_estimators,
+                                             max_features=max_features, random_state=42, n_jobs=-1)
 
     def _logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier
