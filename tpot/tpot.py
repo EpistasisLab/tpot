@@ -225,8 +225,8 @@ class TPOT(object):
             training_testing_data.loc[testing_indices, 'group'] = 'testing'
 
             # Default guess: the most frequent class in the training data
-            most_frequent_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
-            training_testing_data.loc[:, 'guess'] = most_frequent_class
+            most_frequent_training_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
+            training_testing_data.loc[:, 'guess'] = most_frequent_training_class
 
             self._toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
@@ -320,8 +320,8 @@ class TPOT(object):
         training_testing_data = pd.concat([training_data, testing_data])
 
         # Default guess: the most frequent class in the training data
-        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
-        training_testing_data.loc[:, 'guess'] = most_frequent_class
+        most_frequent_training_class = Counter(self._training_classes).most_common(1)[0][0]
+        training_testing_data.loc[:, 'guess'] = most_frequent_training_class
 
         new_col_names = {}
         for column in training_testing_data.columns.values:
@@ -366,8 +366,8 @@ class TPOT(object):
         training_testing_data = pd.concat([training_data, testing_data])
 
         # Default guess: the most frequent class in the training data
-        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
-        training_testing_data.loc[:, 'guess'] = most_frequent_class
+        most_frequent_training_class = Counter(self._training_classes).most_common(1)[0][0]
+        training_testing_data.loc[:, 'guess'] = most_frequent_training_class
 
         for column in training_testing_data.columns.values:
             if type(column) != str:
@@ -458,10 +458,7 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if n_estimators < 1:
-            n_estimators = 1
-        elif n_estimators > 500:
-            n_estimators = 500
+        n_estimators = max(min(500, n_estimators), 2)
 
         if max_features < 1:
             max_features = 'auto'
@@ -489,8 +486,7 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if C <= 0.:
-            C = 0.0001
+        C = max(0.0001, C)
 
         return self._train_model_and_predict(input_df, LogisticRegression, C=C, random_state=42)
 
