@@ -173,13 +173,12 @@ class TPOT(object):
         else:
             self.scoring_function = scoring_function
 
-    def fit(self, features, classes, feature_names=None):
+    def fit(self, features, classes):
         """Fits a machine learning pipeline that maximizes classification accuracy on the provided data
 
         Uses genetic programming to optimize a machine learning pipeline that
         maximizes classification accuracy on the provided `features` and `classes`.
-        Optionally, name the features in the data frame according to `feature_names`.
-        Performs a stratified training/testing cross-validaton split to avoid
+        Performs an internal stratified training/testing cross-validaton split to avoid
         overfitting on the provided data.
 
         Parameters
@@ -188,8 +187,6 @@ class TPOT(object):
             Feature matrix
         classes: array-like {n_samples}
             List of class labels for prediction
-        feature_names: array-like {n_features} (default: None)
-            List of feature names as strings
 
         Returns
         -------
@@ -201,7 +198,7 @@ class TPOT(object):
             self._training_features = features
             self._training_classes = classes
 
-            training_testing_data = pd.DataFrame(data=features, columns=feature_names)
+            training_testing_data = pd.DataFrame(data=features)
             training_testing_data['class'] = classes
 
             new_col_names = {}
