@@ -511,8 +511,7 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if C <= 0.:
-            C = 0.0001
+        C = max(0.0001, C)
 
         return self._train_model_and_predict(input_df, SVC, C=C, random_state=42)
 
@@ -534,11 +533,7 @@ class TPOT(object):
 
         """
         training_set_size = len(input_df.loc[input_df['group'] == 'training'])
-
-        if n_neighbors < 2:
-            n_neighbors = 2
-        elif n_neighbors >= training_set_size:
-            n_neighbors = training_set_size - 1
+        n_neighbors = max(min(training_set_size - 1, n_neighbors), 2)
 
         return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
 
@@ -563,13 +558,8 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if learning_rate <= 0.:
-            learning_rate = 0.0001
-
-        if n_estimators < 1:
-            n_estimators = 1
-        elif n_estimators > 500:
-            n_estimators = 500
+        learning_rate = max(learning_rate, 0.0001)
+        n_estimators = max(min(500, n_estimators), 2)
 
         if max_depth < 1:
             max_depth = None
@@ -665,10 +655,8 @@ class TPOT(object):
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
-        if step < 0.1:
-            step = 0.1
-        elif step >= 1.:
-            step = 0.99
+        step = max(min(0.99, step), 0.1)
+
         if num_features < 1:
             num_features = 1
         elif num_features > len(training_features.columns):
@@ -706,10 +694,7 @@ class TPOT(object):
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
-        if percentile < 0:
-            percentile = 0
-        elif percentile > 100:
-            percentile = 100
+        percentile = max(min(100, percentile), 0)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -782,11 +767,8 @@ class TPOT(object):
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
-        # forcing  0.001 <= alpha <= 0.05
-        if alpha > 0.05:
-            alpha = 0.05
-        elif alpha <= 0.001:
-            alpha = 0.001
+        # Clamp alpha in the range [0.001, 0.05]
+        alpha = max(min(0.05, alpha), 0.001)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -1066,10 +1048,7 @@ class TPOT(object):
             n_components = None
 
         # Thresholding iterated_power [1, 10]
-        if iterated_power < 1:
-            iterated_power = 1
-        elif iterated_power > 10:
-            iterated_power = 10
+        iterated_power = min(10, max(1, iterated_power))
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
 
@@ -1108,10 +1087,10 @@ class TPOT(object):
         Returns
         -------
         result: float
-            Returns num1 / num2, or 0 if num2 == 0
+            Returns num1 / num2, or 0. if num2 == 0.
 
         """
-        return float(num1) / float(num2) if num2 !=0 else 0
+        return float(num1) / float(num2) if num2 != 0. else 0.
 
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data

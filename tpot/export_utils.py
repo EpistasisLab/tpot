@@ -308,7 +308,7 @@ def replace_function_calls(pipeline_list):
                 max_depth = None
 
             operator_text += '\n# Perform classification with an eXtreme gradient boosting classifier'
-            operator_text += ('\nxgbc{OPERATOR_NUM} = XGBClassifier(learning_rate={LEARNING_RATE}, 
+            operator_text += ('\nxgbc{OPERATOR_NUM} = XGBClassifier(learning_rate={LEARNING_RATE}, '
                               'n_estimators={N_ESTIMATORS}, max_depth={MAX_DEPTH})\n').format(OPERATOR_NUM=operator_num,
                                                                                               LEARNING_RATE=learning_rate,
                                                                                               N_ESTIMATORS=n_estimators,
