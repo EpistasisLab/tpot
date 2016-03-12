@@ -120,7 +120,7 @@ def generate_import_code(pipeline_list):
     pipeline_text = '''import numpy as np
 import pandas as pd
 
-from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.cross_validation import train_test_split
 '''
 
     if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
@@ -148,7 +148,7 @@ from sklearn.cross_validation import StratifiedShuffleSplit
     pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
+training_indices, testing_indices = train_test_split(tpot_data.index, train_size=0.75, test_size=0.25)
 
 '''
 

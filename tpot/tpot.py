@@ -37,7 +37,7 @@ from sklearn.feature_selection import VarianceThreshold, SelectKBest, SelectPerc
 from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler, MinMaxScaler
 from sklearn.preprocessing import PolynomialFeatures, Binarizer
 from sklearn.decomposition import RandomizedPCA
-from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.cross_validation import train_test_split
 from xgboost import XGBClassifier
 
 import warnings
@@ -214,10 +214,9 @@ class TPOT(object):
             np.random.shuffle(data_columns)
             training_testing_data = training_testing_data[data_columns]
 
-            training_indices, testing_indices = next(iter(StratifiedShuffleSplit(training_testing_data['class'].values,
-                                                                                 n_iter=1,
+            training_indices, testing_indices = train_test_split(training_testing_data.index,
                                                                                  train_size=0.75,
-                                                                                 test_size=0.25)))
+                                                                                 test_size=0.25)
 
             training_testing_data.loc[training_indices, 'group'] = 'training'
             training_testing_data.loc[testing_indices, 'group'] = 'testing'
@@ -1319,11 +1318,10 @@ def main():
 
     RANDOM_STATE = args.RANDOM_STATE if args.RANDOM_STATE > 0 else None
 
-    training_indices, testing_indices = next(iter(StratifiedShuffleSplit(input_data['class'].values,
-                                                                         n_iter=1,
+    training_indices, testing_indices = train_test_split(input_data.index,
                                                                          train_size=0.75,
                                                                          test_size=0.25,
-                                                                         random_state=RANDOM_STATE)))
+                                                                         random_state=RANDOM_STATE)
 
     training_features = input_data.loc[training_indices].drop('class', axis=1).values
     training_classes = input_data.loc[training_indices, 'class'].values
