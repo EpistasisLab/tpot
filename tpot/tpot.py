@@ -215,6 +215,7 @@ class TPOT(object):
             training_testing_data = training_testing_data[data_columns]
 
             training_indices, testing_indices = train_test_split(training_testing_data.index,
+                                                                 stratify = training_testing_data['class'].values,
                                                                                  train_size=0.75,
                                                                                  test_size=0.25)
 
@@ -1319,6 +1320,7 @@ def main():
     RANDOM_STATE = args.RANDOM_STATE if args.RANDOM_STATE > 0 else None
 
     training_indices, testing_indices = train_test_split(input_data.index,
+                                                         stratify = input_data['class'].values,
                                                                          train_size=0.75,
                                                                          test_size=0.25,
                                                                          random_state=RANDOM_STATE)
