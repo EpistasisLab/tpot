@@ -163,27 +163,64 @@ class TPOT(object):
         self._num_consensus_options = len(self._consensus_options)
         self._consensus_opt_split_ix = 1
    
+    def _get_pop_scores(self, guesses, methods, classes, num_classes):
+        pop_scores = {}
+        for method_f in methods:
+            merged_guesses = pd.DataFrame(data=guesses[0][['guess', 'class']].copy().values, columns=['guess_1', 'class'])
+            ix=2
+            for guess_set in guesses[1:]:
+                merged_guesses.loc[:, 'guess_' + str(ix)] = guess_set['guess'].copy()
+                ix += 1
+            merged_guesses.loc[:, 'guess'] = None
 
+            weights = [1.0 for x in xrange(ix)]
+            for row_ix in merged_guesses.index:
+                merged_guesses['guess'].loc[row_ix] = method_f(merged_guesses[['guess_' + str(x) for x in range(1,ix)]].iloc[row_ix], weights)
+            
+            #pop_scores[str(method_f)] = float(len(np.where(merged_guesses['guess'].values == classes)[0])) / num_classes
+            pop_scores[str(method_f)] = self.scoring_function(merged_guesses[['guess', 'class']])
+            
+        return pop_scores
 
-    def _eaSimpleTest(self, population, toolbox, cxpb, mutpb, ngen, stats=None,
+    def _eaSimpleTest(self, classes,  population, toolbox, cxpb, mutpb, ngen, stats=None,
                          halloffame=None, verbose=__debug__):
         logbook = tools.Logbook()   
         logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 
+        scores = []
+        guesses = []
+        num_classes = len(classes.index)
+
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in population if not ind.fitness.valid]
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+        print(fitnesses[0])
         for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
+            ind.fitness.values = fit[:2]
+            if len(fit[2].index):
+                #score = float(len(np.where(fit[2]['guess'] == classes)[0])) / num_classes
+                score = self.scoring_function(fit[2])
+                scores.append(score)
+                guesses.append(fit[2])
 
         if halloffame is not None:
             halloffame.update(population)
 
+        methods = [self._max_class, self._median_class, self._mean_class, self._min_class]
+        pop_scores = self._get_pop_scores(guesses, methods, classes, num_classes)
+
+
         record = stats.compile(population) if stats else {}
         logbook.record(gen=0, nevals=len(invalid_ind), **record)
         if verbose:
-            print logbook.stream
+            print(logbook.stream)
 
+        print("Max individual score: {}".format(max(scores)))
+        for score_method in pop_scores:
+            print("Pop score {}: {}".format(score_method, pop_scores[score_method]))
+        """Use the various consensus operations on the guesses list and calculate the score for each operation
+        """
+        
         # Begin the generational process
         for gen in range(1, ngen + 1):
             # Select the next generation individuals
@@ -196,11 +233,21 @@ class TPOT(object):
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
             fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
             for ind, fit in zip(invalid_ind, fitnesses):
-                ind.fitness.values = fit
+                ind.fitness.values = fit[:2]
+                if len(fit[2].index):
+                    score = self.scoring_function(fit[2])
+                    #score = float(len(np.where(fit[2]['guess'] == classes)[0])) / num_classes
+                    scores.append(score)
+                    guesses.append(fit[2])
 
-             # Update the hall of fame with the generated individuals
-             if halloffame is not None:
+            
+            # Update the hall of fame with the generated individuals
+            if halloffame is not None:
                  halloffame.update(offspring)
+            pop_scores = self._get_pop_scores(guesses, methods, classes, num_classes)
+            print("Max individual score: {}".format(max(scores)))
+            for score_method in pop_scores:
+                print("Pop score {}: {}".format(score_method, pop_scores[score_method]))
 
             # Replace the current population by the offspring
             population[:] = offspring
@@ -213,7 +260,7 @@ class TPOT(object):
 
         return population, logbook
 
-    def _pareto_eq(ind1, ind2):
+    def _pareto_eq(self, ind1, ind2):
         """Function used to determine whether two individuals are equal on the Pareto front
         
         Parameters
@@ -309,7 +356,7 @@ class TPOT(object):
             #                             mutpb=self.mutation_rate, ngen=self.generations,
             #                             stats=stats, halloffame=self.hof, verbose=verbose)
 
-            pop, _ = self._eaSimpleTest(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
+            pop, _ = self._eaSimpleTest(training_testing_data.loc[testing_indices, 'class'], population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                                          mutpb=self.mutation_rate, ngen=self.generations,
                                          stats=stats, halloffame=self.hof, verbose=verbose)
 
@@ -1393,14 +1440,14 @@ class TPOT(object):
 
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
-            return 5000., 0., None
+            return 5000., 0., pd.Series(data=[])
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
-            return 5000., 0., None
+            return 5000., 0., pd.Series(data=[])
 
         if isinstance(resulting_score, float) or isinstance(resulting_score, np.float64) or isinstance(resulting_score, np.float32):
-            return max(1, operator_count), resulting_score, result[result['group'] == 'testing']['guess']
+            return max(1, operator_count), resulting_score, result[result['group'] == 'testing'][['guess', 'class']].copy()
         else:
             raise ValueError('Scoring function does not return a float')
 
