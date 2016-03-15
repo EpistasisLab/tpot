@@ -404,7 +404,7 @@ class TPOT(object):
             stats.register('Minimum score', np.min)
             stats.register('Average score', np.mean)
             stats.register('Maximum score', np.max)
-            stats.register('Population', lambda x: self._get_pop_scores_stats(copy.deepcopy(pop), training_testing_data=training_testing_data))
+            stats.register('Population', lambda x: self._get_pop_scores_stats(copy.deepcopy(self.hof), training_testing_data=training_testing_data))
 
             verbose = (self.verbosity == 2)
 
