@@ -39,6 +39,7 @@ from sklearn.decomposition import RandomizedPCA
 from sklearn.cross_validation import StratifiedShuffleSplit
 from xgboost import XGBClassifier
 import warnings
+import copy
 
 from .export_utils import *
 
@@ -179,9 +180,63 @@ class TPOT(object):
             
             #pop_scores[str(method_f)] = float(len(np.where(merged_guesses['guess'].values == classes)[0])) / num_classes
             pop_scores[str(method_f)] = self.scoring_function(merged_guesses[['guess', 'class']])
-            
+
         return pop_scores
 
+    def _get_pop_scores_stats(self, population, training_testing_data):
+        pop_scores = {}
+        methods = [self._max_class, self._median_class, self._mean_class, self._min_class, self._threshold_class]
+        #toolbox.map(toolbox.evaluate, invalid_ind)
+
+        for weight_scheme in ['acc', 'uni']: 
+            guesses = []
+            weights = []
+            for individual in population:
+                try:
+                    func = self._toolbox.compile(expr=individual)
+
+                    # Count the number of pipeline operators as a measure of pipeline complexity
+                    operator_count = 0
+                    for i in range(len(individual)):
+                        node = individual[i]
+                        if type(node) is deap.gp.Terminal:
+                            continue
+                        if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div', '_combine_dfs']:
+                            continue
+
+                        operator_count += 1
+
+                    result = func(training_testing_data)
+                    result = result[result['group'] == 'testing']
+                    if weight_scheme == 'acc':
+                        weights.append(self.scoring_function(result))
+                    else:
+                        weights.append(1.0)
+                    guesses.append(result)
+                except MemoryError:
+                    # Throw out GP expressions that are too large to be compiled in Python
+                    continue
+                except Exception:
+                    # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
+                    # Instead, assign the crashing pipeline a poor fitness
+                    continue
+            
+            for method_f in methods:
+                merged_guesses = pd.DataFrame(data=guesses[0][['guess', 'class']].copy().values, columns=['guess_1', 'class'])
+                ix=2
+                for guess_set in guesses[1:]:
+                    merged_guesses.loc[:, 'guess_' + str(ix)] = guess_set['guess'].copy()
+                    ix += 1
+                merged_guesses.loc[:, 'guess'] = None
+
+                for row_ix in merged_guesses.index:
+                    merged_guesses['guess'].loc[row_ix] = method_f(merged_guesses[['guess_' + str(x) for x in range(1,ix)]].iloc[row_ix], weights)
+                
+                #pop_scores[str(method_f)] = float(len(np.where(merged_guesses['guess'].values == classes)[0])) / num_classes
+                pop_scores[weight_scheme + str(method_f.__name__)] = self.scoring_function(merged_guesses[['guess', 'class']])
+             
+        return pop_scores
+    
     def _eaSimpleTest(self, classes,  population, toolbox, cxpb, mutpb, ngen, stats=None,
                          halloffame=None, verbose=__debug__):
         logbook = tools.Logbook()   
@@ -349,16 +404,17 @@ class TPOT(object):
             stats.register('Minimum score', np.min)
             stats.register('Average score', np.mean)
             stats.register('Maximum score', np.max)
+            stats.register('Population', lambda x: self._get_pop_scores_stats(copy.deepcopy(pop), training_testing_data=training_testing_data))
 
             verbose = (self.verbosity == 2)
 
-            #pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
-            #                             mutpb=self.mutation_rate, ngen=self.generations,
-            #                             stats=stats, halloffame=self.hof, verbose=verbose)
-
-            pop, _ = self._eaSimpleTest(training_testing_data.loc[testing_indices, 'class'], population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
+            pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                                          mutpb=self.mutation_rate, ngen=self.generations,
                                          stats=stats, halloffame=self.hof, verbose=verbose)
+
+            #pop, _ = self._eaSimpleTest(training_testing_data.loc[testing_indices, 'class'], population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
+            #                             mutpb=self.mutation_rate, ngen=self.generations,
+            #                             stats=stats, halloffame=self.hof, verbose=verbose)
 
             # Store the pipeline with the highest internal testing accuracy
             top_score = 0.
@@ -723,6 +779,20 @@ class TPOT(object):
         """
         ht = self._get_ht_dict(classes, weights)
         return self._get_top(classes, sorted(list(ht.items()), key=operator.itemgetter(1)))
+
+    def _threshold_class(self, classes, weights):
+        """Return the class with that contains a certain percentage of the weight 
+        """
+        ht = self._get_ht_dict(classes, weights)
+        total_weight = sum(list(ht.values()))
+        threshold = 0.75
+        sorted_classes = sorted(((x, float(y) / total_weight) for (x,y) in list(ht.items()) if (float(y) / total_weight) > threshold), key=operator.itemgetter(1), reverse=True)
+        while len(sorted_classes) == 0:
+            threshold = threshold - 0.05
+            sorted_classes = sorted(((x, float(y) / total_weight) for (x,y) in list(ht.items()) if (float(y) / total_weight) > threshold), key=operator.itemgetter(1), reverse=True)
+                                                            
+        return self._get_top(classes, sorted_classes) 
+
 
     def _consensus_two(self, weighting, method, input_df1, input_df2):
         """Takes the classifications of different models and combines them in a meaningful manner.
@@ -1440,14 +1510,14 @@ class TPOT(object):
 
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
-            return 5000., 0., pd.Series(data=[])
+            return 5000., 0.
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
-            return 5000., 0., pd.Series(data=[])
+            return 5000., 0.
 
         if isinstance(resulting_score, float) or isinstance(resulting_score, np.float64) or isinstance(resulting_score, np.float32):
-            return max(1, operator_count), resulting_score, result[result['group'] == 'testing'][['guess', 'class']].copy()
+            return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
 
