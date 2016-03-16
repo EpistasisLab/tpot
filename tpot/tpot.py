@@ -276,7 +276,7 @@ class TPOT(object):
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
         # Store the best pipeline if the optimization process is ended prematurely
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, SystemExit):
             top_score = 0.
             for pipeline in self.hof:
                 pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
@@ -1141,6 +1141,8 @@ class TPOT(object):
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
             return 5000., 0.
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
