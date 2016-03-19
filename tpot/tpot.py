@@ -215,9 +215,9 @@ class TPOT(object):
             training_testing_data = training_testing_data[data_columns]
 
             training_indices, testing_indices = train_test_split(training_testing_data.index,
-                                                                 stratify = training_testing_data['class'].values,
-                                                                                 train_size=0.75,
-                                                                                 test_size=0.25)
+                                                                 stratify=training_testing_data['class'].values,
+                                                                 train_size=0.75,
+                                                                 test_size=0.25)
 
             training_testing_data.loc[training_indices, 'group'] = 'training'
             training_testing_data.loc[testing_indices, 'group'] = 'testing'
@@ -276,7 +276,7 @@ class TPOT(object):
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
         # Store the best pipeline if the optimization process is ended prematurely
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, SystemExit):
             top_score = 0.
             for pipeline in self.hof:
                 pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
@@ -1141,6 +1141,8 @@ class TPOT(object):
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
             return 5000., 0.
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
@@ -1320,10 +1322,10 @@ def main():
     RANDOM_STATE = args.RANDOM_STATE if args.RANDOM_STATE > 0 else None
 
     training_indices, testing_indices = train_test_split(input_data.index,
-                                                         stratify = input_data['class'].values,
-                                                                         train_size=0.75,
-                                                                         test_size=0.25,
-                                                                         random_state=RANDOM_STATE)
+                                                         stratify=input_data['class'].values,
+                                                         train_size=0.75,
+                                                         test_size=0.25,
+                                                         random_state=RANDOM_STATE)
 
     training_features = input_data.loc[training_indices].drop('class', axis=1).values
     training_classes = input_data.loc[training_indices, 'class'].values
