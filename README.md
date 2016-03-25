@@ -44,7 +44,9 @@ We maintain the [TPOT installation instructions](http://rhiever.github.io/tpot/i
 
 ## Usage
 
-TPOT can be used [on the command line](http://rhiever.github.io/tpot/using/#tpot-on-the-command-line) or [with Python code](http://rhiever.github.io/tpot/using/#tpot-with-code). Click on the corresponding links to find more information on TPOT usage in the documentation.
+TPOT can be used [on the command line](http://rhiever.github.io/tpot/using/#tpot-on-the-command-line) or [with Python code](http://rhiever.github.io/tpot/using/#tpot-with-code).
+
+Click on the corresponding links to find more information on TPOT usage in the documentation.
 
 ## Example
 
