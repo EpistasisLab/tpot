@@ -13,7 +13,7 @@ X_train, X_test, y_train, y_test = train_test_split(digits[data_cols].values, di
                                                             train_size=0.80)
 
 for x in list(range(10)):
-    tpot = TPOT(generations=5, verbosity=2, population_size=100)
+    tpot = TPOT(generations=5, verbosity=2, population_size=100, test_hof=True)
     tpot.fit(X_train, y_train)
     print(tpot.score(X_test, y_test))
 

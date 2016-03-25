@@ -56,7 +56,7 @@ class TPOT(object):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 random_state=0, verbosity=0, scoring_function=None):
+                 random_state=0, verbosity=0, scoring_function=None, test_hof=True):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -96,6 +96,7 @@ class TPOT(object):
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
+        self.test_hof = test_hof
 
         if random_state > 0:
             random.seed(random_state)
@@ -404,7 +405,10 @@ class TPOT(object):
             stats.register('Minimum score', np.min)
             stats.register('Average score', np.mean)
             stats.register('Maximum score', np.max)
-            stats.register('Population', lambda x: self._get_pop_scores_stats(copy.deepcopy(self.hof), training_testing_data=training_testing_data))
+            if self.test_hof:
+                stats.register('Population', lambda x: self._get_pop_scores_stats(copy.deepcopy(self.hof), training_testing_data=training_testing_data))
+            else:
+                stats.register('Population', lambda x: self._get_pop_scores_stats(copy.deepcopy(pop)))
 
             verbose = (self.verbosity == 2)
 
