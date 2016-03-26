@@ -1599,7 +1599,7 @@ def main():
                         type=str, help='Character used to separate columns in the input file')
 
     parser.add_argument('-o', action='store', dest='OUTPUT_FILE', default='',
-                        type=str, help='File to export the final optimized pipeline')
+                        type=str, help='File to print the logbook stats to')
 
     parser.add_argument('-g', action='store', dest='GENERATIONS', default=100,
                         type=positive_integer, help='Number of generations to run pipeline optimization')
