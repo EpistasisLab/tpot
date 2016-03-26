@@ -56,7 +56,7 @@ class TPOT(object):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 random_state=0, verbosity=0, scoring_function=None, test_hof=True):
+                 random_state=0, verbosity=0, scoring_function=None, test_hof=True, output_file=None):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -97,6 +97,7 @@ class TPOT(object):
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
         self.test_hof = test_hof
+        self.output_file = output_file
 
         if random_state > 0:
             random.seed(random_state)
@@ -256,9 +257,9 @@ class TPOT(object):
 
         record = stats.compile(population) if stats else {}
         logbook.record(gen=0, nevals=len(invalid_ind), **record)
-        output_file = open('logbook_output.out', 'a')
+        output_fp = open(self.output_file, 'a')
         if verbose:
-            print(logbook.stream, file=output_file)
+            print(logbook.stream, file=output_fp)
 
         # Begin the generational process
         for gen in range(1, ngen + 1):
@@ -286,8 +287,8 @@ class TPOT(object):
             logbook.record(gen=gen, nevals=len(invalid_ind), **record)
             
             if verbose:
-                print(logbook.stream, file=output_file)
-        output_file.close()
+                print(logbook.stream, file=output_fp)
+        output_fp.close()
         return population, logbook
 
     def fit(self, features, classes, feature_names=None):
@@ -1662,7 +1663,7 @@ def main():
 
     tpot = TPOT(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY, test_hof=args.HOF)
+                random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY, test_hof=args.HOF, output_file=args.OUTPUT_FILE)
     for iter in list(range(args.ITERATIONS)):
         tpot.fit(training_features, training_classes)
 
@@ -1670,8 +1671,6 @@ def main():
             print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes)))
             print('Testing accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
 
-        if args.OUTPUT_FILE != '':
-            tpot.export(args.OUTPUT_FILE)
 
 
 if __name__ == '__main__':
