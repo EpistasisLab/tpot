@@ -36,12 +36,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, SelectPercentile, RFE, SelectFwe
 from sklearn.preprocessing import StandardScaler, RobustScaler, PolynomialFeatures
 from sklearn.decomposition import RandomizedPCA
-from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.cross_validation import StratifiedShuffleSplit, train_test_split
 from xgboost import XGBClassifier
 import warnings
 import copy
 
-from .export_utils import *
+from export_utils import *
 
 import deap
 from deap import algorithms
@@ -165,24 +165,6 @@ class TPOT(object):
         self._num_consensus_options = len(self._consensus_options)
         self._consensus_opt_split_ix = 1
    
-    def _get_pop_scores(self, guesses, methods, classes, num_classes):
-        pop_scores = {}
-        for method_f in methods:
-            merged_guesses = pd.DataFrame(data=guesses[0][['guess', 'class']].copy().values, columns=['guess_1', 'class'])
-            ix=2
-            for guess_set in guesses[1:]:
-                merged_guesses.loc[:, 'guess_' + str(ix)] = guess_set['guess'].copy()
-                ix += 1
-            merged_guesses.loc[:, 'guess'] = None
-
-            weights = [1.0 for x in xrange(ix)]
-            for row_ix in merged_guesses.index:
-                merged_guesses['guess'].loc[row_ix] = method_f(merged_guesses[['guess_' + str(x) for x in range(1,ix)]].iloc[row_ix], weights)
-            
-            #pop_scores[str(method_f)] = float(len(np.where(merged_guesses['guess'].values == classes)[0])) / num_classes
-            pop_scores[str(method_f)] = self.scoring_function(merged_guesses[['guess', 'class']])
-
-        return pop_scores
 
     def _get_pop_scores_stats(self, population, training_testing_data):
         pop_scores = {}
@@ -238,83 +220,6 @@ class TPOT(object):
              
         return pop_scores
     
-    def _eaSimpleTest(self, classes,  population, toolbox, cxpb, mutpb, ngen, stats=None,
-                         halloffame=None, verbose=__debug__):
-        logbook = tools.Logbook()   
-        logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
-
-        scores = []
-        guesses = []
-        num_classes = len(classes.index)
-
-        # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in population if not ind.fitness.valid]
-        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-        print(fitnesses[0])
-        for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit[:2]
-            if len(fit[2].index):
-                #score = float(len(np.where(fit[2]['guess'] == classes)[0])) / num_classes
-                score = self.scoring_function(fit[2])
-                scores.append(score)
-                guesses.append(fit[2])
-
-        if halloffame is not None:
-            halloffame.update(population)
-
-        methods = [self._max_class, self._median_class, self._mean_class, self._min_class]
-        pop_scores = self._get_pop_scores(guesses, methods, classes, num_classes)
-
-
-        record = stats.compile(population) if stats else {}
-        logbook.record(gen=0, nevals=len(invalid_ind), **record)
-        if verbose:
-            print(logbook.stream)
-
-        print("Max individual score: {}".format(max(scores)))
-        for score_method in pop_scores:
-            print("Pop score {}: {}".format(score_method, pop_scores[score_method]))
-        """Use the various consensus operations on the guesses list and calculate the score for each operation
-        """
-        
-        # Begin the generational process
-        for gen in range(1, ngen + 1):
-            # Select the next generation individuals
-            offspring = toolbox.select(population, len(population))
-
-            # Vary the pool of individuals
-            offspring = algorithms.varAnd(offspring, toolbox, cxpb, mutpb)
-
-            # Evaluate the individuals with an invalid fitness
-            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-            fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-            for ind, fit in zip(invalid_ind, fitnesses):
-                ind.fitness.values = fit[:2]
-                if len(fit[2].index):
-                    score = self.scoring_function(fit[2])
-                    #score = float(len(np.where(fit[2]['guess'] == classes)[0])) / num_classes
-                    scores.append(score)
-                    guesses.append(fit[2])
-
-            
-            # Update the hall of fame with the generated individuals
-            if halloffame is not None:
-                 halloffame.update(offspring)
-            pop_scores = self._get_pop_scores(guesses, methods, classes, num_classes)
-            print("Max individual score: {}".format(max(scores)))
-            for score_method in pop_scores:
-                print("Pop score {}: {}".format(score_method, pop_scores[score_method]))
-
-            # Replace the current population by the offspring
-            population[:] = offspring
-
-            # Append the current generation statistics to the logbook
-            record = stats.compile(population) if stats else {}
-            logbook.record(gen=gen, nevals=len(invalid_ind), **record)
-            if verbose:
-                print(logbook.stream)
-
-        return population, logbook
 
     def _pareto_eq(self, ind1, ind2):
         """Function used to determine whether two individuals are equal on the Pareto front
@@ -380,10 +285,10 @@ class TPOT(object):
             np.random.shuffle(data_columns)
             training_testing_data = training_testing_data[data_columns]
 
-            training_indices, testing_indices = next(iter(StratifiedShuffleSplit(training_testing_data['class'].values,
-                                                                                 n_iter=1,
-                                                                                 train_size=0.75,
-                                                                                 test_size=0.25)))
+            training_indices, testing_indices = train_test_split(training_testing_data.index,
+                                                                    stratify=training_testing_data['class'].values,
+                                                                    train_size=0.75,
+                                                                    test_size=0.25)
 
             training_testing_data.loc[training_indices, 'group'] = 'training'
             training_testing_data.loc[testing_indices, 'group'] = 'testing'
@@ -408,7 +313,7 @@ class TPOT(object):
             if self.test_hof:
                 stats.register('Population', lambda x: self._get_pop_scores_stats(copy.deepcopy(self.hof), training_testing_data=training_testing_data))
             else:
-                stats.register('Population', lambda x: self._get_pop_scores_stats(copy.deepcopy(pop)))
+                stats.register('Population', lambda x: self._get_pop_scores_stats(copy.deepcopy(pop), training_testing_data=training_testing_data))
 
             verbose = (self.verbosity == 2)
 
@@ -416,9 +321,6 @@ class TPOT(object):
                                          mutpb=self.mutation_rate, ngen=self.generations,
                                          stats=stats, halloffame=self.hof, verbose=verbose)
 
-            #pop, _ = self._eaSimpleTest(training_testing_data.loc[testing_indices, 'class'], population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
-            #                             mutpb=self.mutation_rate, ngen=self.generations,
-            #                             stats=stats, halloffame=self.hof, verbose=verbose)
 
             # Store the pipeline with the highest internal testing accuracy
             top_score = 0.
@@ -1668,6 +1570,13 @@ def main():
                         type=int, help='How much information TPOT communicates while it is running; 0 = none, 1 = minimal, 2 = all')
 
     parser.add_argument('--version', action='version', version='TPOT v{version}'.format(version=__version__))
+    
+    parser.add_argument('-n', action='store', dest='SAMPLE_SIZE', default=5000, type=int, help='Initial sample size to take from data')
+    
+    parser.add_argument('--iters', action='store', dest='ITERATIONS', default=1, type=int, help='Number of iterations to test')
+
+    parser.add_argument('--hof', action='store_true', dest='HOF', help='Whether to construct ensembles from the hall of fame or general population of individuals')
+    parser.set_defaults(HOF=False)
 
     args = parser.parse_args()
 
@@ -1677,8 +1586,8 @@ def main():
             print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
         print('')
 
-    input_data = pd.read_csv(args.INPUT_FILE, sep=args.INPUT_SEPARATOR)
-
+    input_data = pd.read_csv(args.INPUT_FILE, sep=args.INPUT_SEPARATOR, header=0)
+    
     if 'Class' in input_data.columns.values:
         input_data.rename(columns={'Class': 'class'}, inplace=True)
 
@@ -1687,11 +1596,14 @@ def main():
     else:
         RANDOM_STATE = None
 
-    training_indices, testing_indices = next(iter(StratifiedShuffleSplit(input_data['class'].values,
-                                                                         n_iter=1,
-                                                                         train_size=0.75,
-                                                                         test_size=0.25,
-                                                                         random_state=RANDOM_STATE)))
+    if args.SAMPLE_SIZE < len(input_data.index):
+        input_data = input_data.sample(n=args.SAMPLE_SIZE, random_state=RANDOM_STATE)
+    
+    training_indices, testing_indices = train_test_split(input_data.index,
+                                                         stratify=input_data['class'].values,
+                                                         train_size=0.75,
+                                                         test_size=0.25,
+                                                         random_state=RANDOM_STATE)
 
     training_features = input_data.loc[training_indices].drop('class', axis=1).values
     training_classes = input_data.loc[training_indices, 'class'].values
@@ -1701,16 +1613,16 @@ def main():
 
     tpot = TPOT(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY)
+                random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY, test_hof=args.HOF)
+    for iter in list(range(args.ITERATIONS)):
+        tpot.fit(training_features, training_classes)
 
-    tpot.fit(training_features, training_classes)
+        if args.VERBOSITY >= 1:
+            print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes)))
+            print('Testing accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
 
-    if args.VERBOSITY >= 1:
-        print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes)))
-        print('Testing accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
-
-    if args.OUTPUT_FILE != '':
-        tpot.export(args.OUTPUT_FILE)
+        if args.OUTPUT_FILE != '':
+            tpot.export(args.OUTPUT_FILE)
 
 
 if __name__ == '__main__':
