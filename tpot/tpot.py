@@ -122,7 +122,7 @@ class TPOT(object):
 
         # Machine learning model operators
         self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         # Temporarily remove SVC -- badly overfits on multiclass data sets
         #self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
@@ -458,15 +458,13 @@ class TPOT(object):
 
         return self._train_model_and_predict(input_df, DecisionTreeClassifier, max_features=max_features, max_depth=max_depth, random_state=42)
 
-    def _random_forest(self, input_df, n_estimators, max_features):
+    def _random_forest(self, input_df, max_features):
         """Fits a random forest classifier
 
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame for fitting the random forest
-        n_estimators: int
-            Number of trees in the random forest; must be a positive value
         max_features: int
             Number of features used to fit the decision tree; must be a positive value
 
@@ -477,8 +475,6 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        n_estimators = max(min(500, n_estimators), 2)
-
         if max_features < 1:
             max_features = 'auto'
         elif max_features == 1:
@@ -486,7 +482,7 @@ class TPOT(object):
         elif max_features > len(input_df.columns) - 3:
             max_features = len(input_df.columns) - 3
 
-        return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=n_estimators,
+        return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=500,
                                              max_features=max_features, random_state=42, n_jobs=-1)
 
     def _logistic_regression(self, input_df, C):
