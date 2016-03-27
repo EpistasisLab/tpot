@@ -213,13 +213,7 @@ def replace_function_calls(pipeline_list):
                                                                                         OPERATOR_NUM=operator_num)
 
         elif operator_name == '_random_forest':
-            n_estimators = int(operator[3])
-            max_features = int(operator[4])
-
-            if n_estimators < 1:
-                n_estimators = 1
-            elif n_estimators > 500:
-                n_estimators = 500
+            max_features = int(operator[3])
 
             if max_features < 1:
                 max_features = '\'auto\''
@@ -231,7 +225,7 @@ def replace_function_calls(pipeline_list):
             operator_text += '\n# Perform classification with a random forest classifier'
             operator_text += ('\nrfc{OPERATOR_NUM} = RandomForestClassifier('
                               'n_estimators={N_ESTIMATORS}, max_features={MAX_FEATURES})\n').format(OPERATOR_NUM=operator_num,
-                                                                                                    N_ESTIMATORS=n_estimators,
+                                                                                                    N_ESTIMATORS=500,
                                                                                                     MAX_FEATURES=max_features)
             operator_text += ('''rfc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
                               '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
