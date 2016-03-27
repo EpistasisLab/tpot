@@ -334,6 +334,25 @@ class TPOT(object):
 
         return result.loc[result['group'] == 'testing', 'guess'].values
 
+    def fit_predict(self, features, classes):
+        """Convenience function that fits a pipeline then predicts on the provided features
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix
+        classes: array-like {n_samples}
+            List of class labels for prediction
+
+        Returns
+        ----------
+        array-like: {n_samples}
+            Predicted classes for the provided features
+
+        """
+        self.fit(features, classes)
+        return self.predict(features)
+
     def score(self, testing_features, testing_classes):
         """Estimates the testing accuracy of the optimized pipeline.
 
