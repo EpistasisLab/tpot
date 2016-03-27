@@ -1197,14 +1197,21 @@ class TPOT(object):
         all_classes = list(set(result['class'].values))
         all_class_accuracies = []
         for this_class in all_classes:
-            this_class_accuracy = len(result[(result['guess'] == this_class) \
-                & (result['class'] == this_class)])\
-                / float(len(result[result['class'] == this_class]))
+            this_class_sensitivity = len(result[(result['guess'] == this_class) &\
+                                                (result['class'] == this_class)])\
+                                                / float(len(result[result['class'] == this_class]))
+
+            this_class_specificity = len(result[(result['guess'] != this_class) &\
+                                                (result['class'] != this_class)])\
+                                                / float(len(result[result['class'] != this_class]))
+
+            this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)
 
         balanced_accuracy = np.mean(all_class_accuracies)
 
         return balanced_accuracy
+        
 
     def _combined_selection_operator(self, individuals, k):
         """Perform NSGA2 selection on the population according to their Pareto fitness
