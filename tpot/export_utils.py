@@ -288,16 +288,10 @@ def replace_function_calls(pipeline_list):
 
         elif operator_name == '_xgradient_boosting':
             learning_rate = float(operator[3])
-            n_estimators = int(operator[4])
-            max_depth = int(operator[5])
+            max_depth = int(operator[4])
 
             if learning_rate <= 0.:
                 learning_rate = 0.0001
-
-            if n_estimators < 1:
-                n_estimators = 1
-            elif n_estimators > 500:
-                n_estimators = 500
 
             if max_depth < 1:
                 max_depth = None
@@ -306,7 +300,7 @@ def replace_function_calls(pipeline_list):
             operator_text += ('\nxgbc{OPERATOR_NUM} = XGBClassifier(learning_rate={LEARNING_RATE}, '
                               'n_estimators={N_ESTIMATORS}, max_depth={MAX_DEPTH})\n').format(OPERATOR_NUM=operator_num,
                                                                                               LEARNING_RATE=learning_rate,
-                                                                                              N_ESTIMATORS=n_estimators,
+                                                                                              N_ESTIMATORS=500,
                                                                                               MAX_DEPTH=max_depth)
             operator_text += ('''xgbc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
                               '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,

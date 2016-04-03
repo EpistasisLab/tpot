@@ -81,10 +81,10 @@ def test_xgboost():
     """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._xgradient_boosting(training_testing_data, n_estimators=100, learning_rate=0, max_depth=3)
+    result = tpot_obj._xgradient_boosting(training_testing_data, learning_rate=0, max_depth=3)
     result = result[result['group'] == 'testing']
 
-    xgb = XGBClassifier(n_estimators=100, learning_rate=0.0001, max_depth=3, seed=42)
+    xgb = XGBClassifier(n_estimators=500, learning_rate=0.0001, max_depth=3, seed=42)
     xgb.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
