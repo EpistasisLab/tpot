@@ -127,7 +127,7 @@ class TPOT(object):
         # Temporarily remove SVC -- badly overfits on multiclass data sets
         #self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
-        self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -549,7 +549,7 @@ class TPOT(object):
 
         return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
 
-    def _xgradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
+    def _xgradient_boosting(self, input_df, learning_rate, max_depth):
         """Fits the dmlc eXtreme gradient boosting classifier
 
         Parameters
@@ -558,8 +558,6 @@ class TPOT(object):
             Input DataFrame for fitting the XGBoost classifier
         learning_rate: float
             Shrinks the contribution of each tree by learning_rate
-        n_estimators: int
-            The number of boosting stages to perform
         max_depth: int
             Maximum depth of the individual estimators; the maximum depth limits the number of nodes in the tree
 
@@ -571,13 +569,12 @@ class TPOT(object):
 
         """
         learning_rate = max(learning_rate, 0.0001)
-        n_estimators = max(min(500, n_estimators), 2)
 
         if max_depth < 1:
             max_depth = None
 
         return self._train_model_and_predict(input_df, XGBClassifier, learning_rate=learning_rate,
-                                             n_estimators=n_estimators, max_depth=max_depth, seed=42)
+                                             n_estimators=500, max_depth=max_depth, seed=42)
 
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters

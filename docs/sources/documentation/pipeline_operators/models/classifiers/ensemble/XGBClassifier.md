@@ -13,8 +13,6 @@ Parameters
         Input DataFrame for fitting the XGBoost classifier
     learning_rate: float
         Shrinks the contribution of each tree by learning_rate
-    n_estimators: int
-        The number of boosting stages to perform
     max_depth: int
         Maximum depth of the individual estimators; the maximum depth limits the number of nodes in the tree
 
@@ -41,7 +39,7 @@ training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['
 result1 = tpot_data.copy()
 
 # Perform classification with a gradient boosting classifier
-xgbc1 = XGBClassifier(learning_rate=0.0001, n_estimators=1, max_depth=None)
+xgbc1 = XGBClassifier(learning_rate=0.0001, n_estimators=500, max_depth=None)
 xgbc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 
 result1['xgbc1-classification'] = xgbc1.predict(result1.drop('class', axis=1).values)
