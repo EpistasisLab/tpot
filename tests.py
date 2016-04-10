@@ -78,6 +78,18 @@ def test_random_forest():
 
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
 
+def test_svc():
+    """Ensure that the TPOT random forest method outputs the same as the sklearn random forest"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._svc(training_testing_data, 1.0)
+    result = result[result['group'] == 'testing']
+
+    svc = SVC(C=1.0, random_state=42)
+    svc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, svc.predict(testing_features))
+
 def test_xgboost():
     """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method"""
 
