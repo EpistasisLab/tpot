@@ -102,8 +102,6 @@ def test_svc_2():
 
     assert np.array_equal(result['guess'].values, svc.predict(testing_features))
 
-
-
 def test_xgboost():
     """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method"""
 
@@ -129,6 +127,21 @@ def test_combine_dfs():
     combined_df = pd.DataFrame({'a': range(10),
                                 'b': range(10, 20),
                                 'c': range(20, 30)})
+
+    assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
+
+def test_combine_dfs_2():
+    """Check combine_dfs operator"""
+    tpot_obj = TPOT()
+
+    df1 = pd.DataFrame({'a': range(10),
+                        'b': range(10, 20)})
+
+    df2 = pd.DataFrame({'a': range(10),
+                        'b': range(10, 20)})
+
+    combined_df = pd.DataFrame({'a': range(10),
+                                'b': range(10, 20)})
 
     assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
 
