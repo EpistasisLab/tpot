@@ -167,3 +167,9 @@ def test_static_models():
         result = result[result['group'] == 'testing']
 
         assert np.array_equal(result['guess'].values, sklearn_model_obj.predict(testing_features)), "Model {} failed".format(str(model))
+
+def test_div(num1=5, num2=0):
+
+        tpot_obj = TPOT()
+        result = tpot_obj._div(num1,num2)
+        assert result==0
