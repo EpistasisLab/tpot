@@ -70,10 +70,10 @@ def test_random_forest():
     """Ensure that the TPOT random forest method outputs the same as the sklearn random forest"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._random_forest(training_testing_data, 100, 0)
+    result = tpot_obj._random_forest(training_testing_data, 0)
     result = result[result['group'] == 'testing']
 
-    rfc = RandomForestClassifier(n_estimators=100, max_features='auto', random_state=42, n_jobs=-1)
+    rfc = RandomForestClassifier(n_estimators=500, max_features='auto', random_state=42, n_jobs=-1)
     rfc.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
@@ -82,10 +82,10 @@ def test_xgboost():
     """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._xgradient_boosting(training_testing_data, n_estimators=100, learning_rate=0, max_depth=3)
+    result = tpot_obj._xgradient_boosting(training_testing_data, learning_rate=0, max_depth=3)
     result = result[result['group'] == 'testing']
 
-    xgb = XGBClassifier(n_estimators=100, learning_rate=0.0001, max_depth=3, seed=42)
+    xgb = XGBClassifier(n_estimators=500, learning_rate=0.0001, max_depth=3, seed=42)
     xgb.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
@@ -111,7 +111,7 @@ def test_static_models():
     tpot_obj = TPOT()
     models = [(tpot_obj._decision_tree, DecisionTreeClassifier, {'max_features':0, 'max_depth':0}, {'max_features':'auto', 'max_depth':None}),
               (tpot_obj._svc, SVC , {'C':0.0001}, {'C':0.0001}),
-              (tpot_obj._random_forest, RandomForestClassifier,{'n_estimators':100, 'max_features':0}, {'n_estimators':100, 'max_features':'auto', 'n_jobs':-1}),
+              (tpot_obj._random_forest, RandomForestClassifier,{'max_features':0}, {'n_estimators':500, 'max_features':'auto', 'n_jobs':-1}),
               (tpot_obj._logistic_regression, LogisticRegression, {'C':0.0001}, {'C':0.0001}),
               (tpot_obj._knnc, KNeighborsClassifier, {'n_neighbors':100}, {'n_neighbors':100})]
 

@@ -35,9 +35,9 @@ from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import VarianceThreshold, SelectKBest, SelectPercentile, RFE, SelectFwe, f_classif
 from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler, MinMaxScaler
-from sklearn.preprocessing import PolynomialFeatures, Binarizer, OneHotEncoder
+from sklearn.preprocessing import PolynomialFeatures, Binarizer
 from sklearn.decomposition import RandomizedPCA
-from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.cross_validation import train_test_split
 from xgboost import XGBClassifier
 
 import warnings
@@ -54,6 +54,7 @@ from deap import tools
 from deap import gp
 
 class TPOT(object):
+
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
 
     update_checked = False
@@ -121,12 +122,12 @@ class TPOT(object):
 
         # Machine learning model operators
         self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         # Temporarily remove SVC -- badly overfits on multiclass data sets
         #self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
-        self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -173,13 +174,12 @@ class TPOT(object):
         else:
             self.scoring_function = scoring_function
 
-    def fit(self, features, classes, feature_names=None):
+    def fit(self, features, classes):
         """Fits a machine learning pipeline that maximizes classification accuracy on the provided data
-        
+
         Uses genetic programming to optimize a machine learning pipeline that
         maximizes classification accuracy on the provided `features` and `classes`.
-        Optionally, name the features in the data frame according to `feature_names`.
-        Performs a stratified training/testing cross-validaton split to avoid
+        Performs an internal stratified training/testing cross-validaton split to avoid
         overfitting on the provided data.
 
         Parameters
@@ -188,8 +188,6 @@ class TPOT(object):
             Feature matrix
         classes: array-like {n_samples}
             List of class labels for prediction
-        feature_names: array-like {n_features} (default: None)
-            List of feature names as strings
 
         Returns
         -------
@@ -201,7 +199,7 @@ class TPOT(object):
             self._training_features = features
             self._training_classes = classes
 
-            training_testing_data = pd.DataFrame(data=features, columns=feature_names)
+            training_testing_data = pd.DataFrame(data=features)
             training_testing_data['class'] = classes
 
             new_col_names = {}
@@ -216,17 +214,17 @@ class TPOT(object):
             np.random.shuffle(data_columns)
             training_testing_data = training_testing_data[data_columns]
 
-            training_indices, testing_indices = next(iter(StratifiedShuffleSplit(training_testing_data['class'].values,
-                                                                                 n_iter=1,
-                                                                                 train_size=0.75,
-                                                                                 test_size=0.25)))
+            training_indices, testing_indices = train_test_split(training_testing_data.index,
+                                                                 stratify=training_testing_data['class'].values,
+                                                                 train_size=0.75,
+                                                                 test_size=0.25)
 
             training_testing_data.loc[training_indices, 'group'] = 'training'
             training_testing_data.loc[testing_indices, 'group'] = 'testing'
 
             # Default guess: the most frequent class in the training data
-            most_frequent_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
-            training_testing_data.loc[:, 'guess'] = most_frequent_class
+            most_frequent_training_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
+            training_testing_data.loc[:, 'guess'] = most_frequent_training_class
 
             self._toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
@@ -234,7 +232,7 @@ class TPOT(object):
 
             def pareto_eq(ind1, ind2):
                 """Function used to determine whether two individuals are equal on the Pareto front
-                
+
                 Parameters
                 ----------
                 ind1: DEAP individual from the GP population
@@ -278,7 +276,7 @@ class TPOT(object):
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
         # Store the best pipeline if the optimization process is ended prematurely
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, SystemExit):
             top_score = 0.
             for pipeline in self.hof:
                 pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
@@ -320,8 +318,8 @@ class TPOT(object):
         training_testing_data = pd.concat([training_data, testing_data])
 
         # Default guess: the most frequent class in the training data
-        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
-        training_testing_data.loc[:, 'guess'] = most_frequent_class
+        most_frequent_training_class = Counter(self._training_classes).most_common(1)[0][0]
+        training_testing_data.loc[:, 'guess'] = most_frequent_training_class
 
         new_col_names = {}
         for column in training_testing_data.columns.values:
@@ -333,8 +331,27 @@ class TPOT(object):
         func = self._toolbox.compile(expr=self._optimized_pipeline)
 
         result = func(training_testing_data)
-        
+
         return result.loc[result['group'] == 'testing', 'guess'].values
+
+    def fit_predict(self, features, classes):
+        """Convenience function that fits a pipeline then predicts on the provided features
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix
+        classes: array-like {n_samples}
+            List of class labels for prediction
+
+        Returns
+        ----------
+        array-like: {n_samples}
+            Predicted classes for the provided features
+
+        """
+        self.fit(features, classes)
+        return self.predict(features)
 
     def score(self, testing_features, testing_classes):
         """Estimates the testing accuracy of the optimized pipeline.
@@ -366,12 +383,14 @@ class TPOT(object):
         training_testing_data = pd.concat([training_data, testing_data])
 
         # Default guess: the most frequent class in the training data
-        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
-        training_testing_data.loc[:, 'guess'] = most_frequent_class
+        most_frequent_training_class = Counter(self._training_classes).most_common(1)[0][0]
+        training_testing_data.loc[:, 'guess'] = most_frequent_training_class
 
+        new_col_names = {}
         for column in training_testing_data.columns.values:
             if type(column) != str:
-                training_testing_data.rename(columns={column: str(column).zfill(10)}, inplace=True)
+                new_col_names[column] = str(column).zfill(10)
+        training_testing_data.rename(columns=new_col_names, inplace=True)
 
         return self._evaluate_individual(self._optimized_pipeline, training_testing_data)[1]
 
@@ -431,23 +450,21 @@ class TPOT(object):
             max_features = 'auto'
         elif max_features == 1:
             max_features = None
-        elif max_features > len(input_df.columns) - 3:
-            max_features = len(input_df.columns) - 3
+        else:
+            max_features = min(max_features, len(input_df.columns) - 3)
 
         if max_depth < 1:
             max_depth = None
 
         return self._train_model_and_predict(input_df, DecisionTreeClassifier, max_features=max_features, max_depth=max_depth, random_state=42)
 
-    def _random_forest(self, input_df, n_estimators, max_features):
+    def _random_forest(self, input_df, max_features):
         """Fits a random forest classifier
 
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame for fitting the random forest
-        n_estimators: int
-            Number of trees in the random forest; must be a positive value
         max_features: int
             Number of features used to fit the decision tree; must be a positive value
 
@@ -458,11 +475,6 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if n_estimators < 1:
-            n_estimators = 1
-        elif n_estimators > 500:
-            n_estimators = 500
-
         if max_features < 1:
             max_features = 'auto'
         elif max_features == 1:
@@ -470,7 +482,8 @@ class TPOT(object):
         elif max_features > len(input_df.columns) - 3:
             max_features = len(input_df.columns) - 3
 
-        return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=n_estimators, max_features=max_features, random_state=42, n_jobs=-1)
+        return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=500,
+                                             max_features=max_features, random_state=42, n_jobs=-1)
 
     def _logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier
@@ -489,8 +502,7 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if C <= 0.:
-            C = 0.0001
+        C = max(0.0001, C)
 
         return self._train_model_and_predict(input_df, LogisticRegression, C=C, random_state=42)
 
@@ -511,8 +523,7 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if C <= 0.:
-            C = 0.0001
+        C = max(0.0001, C)
 
         return self._train_model_and_predict(input_df, SVC, C=C, random_state=42)
 
@@ -534,15 +545,11 @@ class TPOT(object):
 
         """
         training_set_size = len(input_df.loc[input_df['group'] == 'training'])
-
-        if n_neighbors < 2:
-            n_neighbors = 2
-        elif n_neighbors >= training_set_size:
-            n_neighbors = training_set_size - 1
+        n_neighbors = max(min(training_set_size - 1, n_neighbors), 2)
 
         return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
 
-    def _xgradient_boosting(self, input_df, learning_rate, n_estimators, max_depth):
+    def _xgradient_boosting(self, input_df, learning_rate, max_depth):
         """Fits the dmlc eXtreme gradient boosting classifier
 
         Parameters
@@ -551,8 +558,6 @@ class TPOT(object):
             Input DataFrame for fitting the XGBoost classifier
         learning_rate: float
             Shrinks the contribution of each tree by learning_rate
-        n_estimators: int
-            The number of boosting stages to perform
         max_depth: int
             Maximum depth of the individual estimators; the maximum depth limits the number of nodes in the tree
 
@@ -563,18 +568,13 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if learning_rate <= 0.:
-            learning_rate = 0.0001
-
-        if n_estimators < 1:
-            n_estimators = 1
-        elif n_estimators > 500:
-            n_estimators = 500
+        learning_rate = max(learning_rate, 0.0001)
 
         if max_depth < 1:
             max_depth = None
 
-        return self._train_model_and_predict(input_df, XGBClassifier, learning_rate=learning_rate, n_estimators=n_estimators, max_depth=max_depth, seed=42)
+        return self._train_model_and_predict(input_df, XGBClassifier, learning_rate=learning_rate,
+                                             n_estimators=500, max_depth=max_depth, seed=42)
 
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
@@ -601,7 +601,8 @@ class TPOT(object):
 
         input_df = input_df.copy()
 
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1).values
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1).values
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         # Try to seed the random_state parameter if the model accepts it.
@@ -612,7 +613,7 @@ class TPOT(object):
             clf = model(**kwargs)
             clf.fit(training_features, training_classes)
 
-        all_features = input_df.drop(['class', 'group', 'guess'], axis=1).values
+        all_features = input_df.drop(non_feature_columns, axis=1).values
         input_df.loc[:, 'guess'] = clf.predict(all_features)
 
         # Also store the guesses as a synthetic feature
@@ -662,13 +663,12 @@ class TPOT(object):
             Returns a DataFrame containing the `num_features` best features
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
-        if step < 0.1:
-            step = 0.1
-        elif step >= 1.:
-            step = 0.99
+        step = max(min(0.99, step), 0.1)
+
         if num_features < 1:
             num_features = 1
         elif num_features > len(training_features.columns):
@@ -682,10 +682,10 @@ class TPOT(object):
         try:
             selector.fit(training_features, training_class_vals)
             mask = selector.get_support(True)
-            mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
+            mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
             return input_df[mask_cols].copy()
         except ValueError:
-            return input_df[['guess', 'class', 'group']].copy()
+            return input_df[non_feature_columns].copy()
 
     def _select_percentile(self, input_df, percentile):
         """Uses scikit-learn's SelectPercentile feature selection to learn the subset of features that belong in the highest `percentile`
@@ -703,13 +703,11 @@ class TPOT(object):
             Returns a DataFrame containing the best features in the given `percentile`
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
-        if percentile < 0:
-            percentile = 0
-        elif percentile > 100:
-            percentile = 100
+        percentile = max(min(100, percentile), 0)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -722,7 +720,7 @@ class TPOT(object):
             selector.fit(training_features, training_class_vals)
             mask = selector.get_support(True)
 
-        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
+        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
         return input_df[mask_cols].copy()
 
     def _select_kbest(self, input_df, k):
@@ -741,7 +739,8 @@ class TPOT(object):
             Returns a DataFrame containing the `k` best features
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         if k < 1:
@@ -760,7 +759,7 @@ class TPOT(object):
             selector.fit(training_features, training_class_vals)
             mask = selector.get_support(True)
 
-        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
+        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
         return input_df[mask_cols].copy()
 
     def _select_fwe(self, input_df, alpha):
@@ -779,14 +778,12 @@ class TPOT(object):
             Returns a DataFrame containing the 'best' features
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
-        # forcing  0.001 <= alpha <= 0.05
-        if alpha > 0.05:
-            alpha = 0.05
-        elif alpha <= 0.001:
-            alpha = 0.001
+        # Clamp alpha in the range [0.001, 0.05]
+        alpha = max(min(0.05, alpha), 0.001)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -799,7 +796,7 @@ class TPOT(object):
             selector.fit(training_features, training_class_vals)
             mask = selector.get_support(True)
 
-        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
+        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
         return input_df[mask_cols].copy()
 
     def _variance_threshold(self, input_df, threshold):
@@ -818,7 +815,8 @@ class TPOT(object):
             Returns a DataFrame containing the features that are above the variance threshold
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
 
         selector = VarianceThreshold(threshold=threshold)
         try:
@@ -828,7 +826,7 @@ class TPOT(object):
             return input_df[['guess', 'class', 'group']].copy()
 
         mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + ['guess', 'class', 'group']
+        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
         return input_df[mask_cols].copy()
 
     def _standard_scaler(self, input_df):
@@ -845,7 +843,8 @@ class TPOT(object):
             Returns a DataFrame containing the scaled features
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -853,9 +852,9 @@ class TPOT(object):
         # The scaler must be fit on only the training data
         scaler = StandardScaler(copy=False)
         scaler.fit(training_features.values.astype(np.float64))
-        scaled_features = scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+        scaled_features = scaler.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
 
-        for col_num, column in enumerate(input_df.drop(['class', 'group', 'guess'], axis=1).columns.values):
+        for col_num, column in enumerate(input_df.drop(non_feature_columns, axis=1).columns.values):
             input_df.loc[:, column] = scaled_features[:, col_num]
 
         return input_df.copy()
@@ -874,7 +873,8 @@ class TPOT(object):
             Returns a DataFrame containing the scaled features
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -882,9 +882,9 @@ class TPOT(object):
         # The scaler must be fit on only the training data
         scaler = RobustScaler(copy=False)
         scaler.fit(training_features.values.astype(np.float64))
-        scaled_features = scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+        scaled_features = scaler.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
 
-        for col_num, column in enumerate(input_df.drop(['class', 'group', 'guess'], axis=1).columns.values):
+        for col_num, column in enumerate(input_df.drop(non_feature_columns, axis=1).columns.values):
             input_df.loc[:, column] = scaled_features[:, col_num]
 
         return input_df.copy()
@@ -903,7 +903,8 @@ class TPOT(object):
             Returns a DataFrame containing the constructed features
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -914,7 +915,7 @@ class TPOT(object):
         # The feature constructor must be fit on only the training data
         poly = PolynomialFeatures(degree=2, include_bias=False, interaction_only=False)
         poly.fit(training_features.values.astype(np.float64))
-        constructed_features = poly.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+        constructed_features = poly.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=constructed_features)
         modified_df['class'] = input_df['class'].values
@@ -943,7 +944,8 @@ class TPOT(object):
             Returns a DataFrame containing the scaled features
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -951,7 +953,7 @@ class TPOT(object):
         # The feature scaler must be fit on only the training data
         mm_scaler = MinMaxScaler(copy=False)
         mm_scaler.fit(training_features.values.astype(np.float64))
-        scaled_features = mm_scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+        scaled_features = mm_scaler.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=scaled_features)
         modified_df['class'] = input_df['class'].values
@@ -980,7 +982,8 @@ class TPOT(object):
             Returns a DataFrame containing the scaled features
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -988,7 +991,7 @@ class TPOT(object):
         # The feature scaler must be fit on only the training data
         ma_scaler = MaxAbsScaler(copy=False)
         ma_scaler.fit(training_features.values.astype(np.float64))
-        scaled_features = ma_scaler.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+        scaled_features = ma_scaler.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=scaled_features)
         modified_df['class'] = input_df['class'].values
@@ -1019,7 +1022,8 @@ class TPOT(object):
             Returns a DataFrame containing the binarized features
 
         """
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -1027,7 +1031,7 @@ class TPOT(object):
         # The binarizer must be fit on only the training data
         binarizer = Binarizer(copy=False, threshold=threshold)
         binarizer.fit(training_features.values.astype(np.float64))
-        binarized_features = binarizer.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+        binarized_features = binarizer.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=binarized_features)
         modified_df['class'] = input_df['class'].values
@@ -1060,26 +1064,24 @@ class TPOT(object):
             Returns a DataFrame containing the transformed features
 
         """
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
         if n_components < 1:
             n_components = 1
         elif n_components >= len(input_df.columns.values) - 3:
             n_components = None
 
         # Thresholding iterated_power [1, 10]
-        if iterated_power < 1:
-            iterated_power = 1
-        elif iterated_power > 10:
-            iterated_power = 10
-
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(['class', 'group', 'guess'], axis=1)
-
-        if len(training_features.columns.values) == 0:
-            return input_df.copy()
+        iterated_power = min(10, max(1, iterated_power))
 
         # PCA must be fit on only the training data
         pca = RandomizedPCA(n_components=n_components, iterated_power=iterated_power, copy=False)
         pca.fit(training_features.values.astype(np.float64))
-        transformed_features = pca.transform(input_df.drop(['class', 'group', 'guess'], axis=1).values.astype(np.float64))
+        transformed_features = pca.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=transformed_features)
         modified_df['class'] = input_df['class'].values
@@ -1108,13 +1110,10 @@ class TPOT(object):
         Returns
         -------
         result: float
-            Returns num1 / num2, or 0 if num2 == 0
+            Returns num1 / num2, or 0. if num2 == 0.
 
         """
-        if num2 == 0:
-            return 0.
-
-        return float(num1) / float(num2)
+        return float(num1) / float(num2) if num2 != 0. else 0.
 
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data
@@ -1154,6 +1153,8 @@ class TPOT(object):
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
             return 5000., 0.
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
@@ -1184,11 +1185,11 @@ class TPOT(object):
             this_class_sensitivity = len(result[(result['guess'] == this_class) &\
                                                 (result['class'] == this_class)])\
             / float(len(result[result['class'] == this_class]))
-        
+
             this_class_specificity = len(result[(result['guess'] != this_class) &\
                                                 (result['class'] != this_class)])\
             / float(len(result[result['class'] != this_class]))
-        
+
             this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)
 
@@ -1258,9 +1259,9 @@ def main():
         try:
             value = int(value)
         except Exception:
-            raise argparse.ArgumentTypeError('invalid int value: \'{}\''.format(value))
+            raise argparse.ArgumentTypeError('Invalid int value: \'{}\''.format(value))
         if value < 0:
-            raise argparse.ArgumentTypeError('invalid positive int value: \'{}\''.format(value))
+            raise argparse.ArgumentTypeError('Invalid positive int value: \'{}\''.format(value))
         return value
 
     def float_range(value):
@@ -1279,9 +1280,9 @@ def main():
         try:
             value = float(value)
         except:
-            raise argparse.ArgumentTypeError('invalid float value: \'{}\''.format(value))
+            raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
         if value < 0.0 or value > 1.0:
-            raise argparse.ArgumentTypeError('invalid float value: \'{}\''.format(value))
+            raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
         return value
 
     parser.add_argument('INPUT_FILE', type=str, help='Data file to optimize the pipeline on; ensure that the class column is labeled as "class"')
@@ -1330,16 +1331,13 @@ def main():
     if 'Class' in input_data.columns.values:
         input_data.rename(columns={'Class': 'class'}, inplace=True)
 
-    if args.RANDOM_STATE > 0:
-        RANDOM_STATE = args.RANDOM_STATE
-    else:
-        RANDOM_STATE = None
+    RANDOM_STATE = args.RANDOM_STATE if args.RANDOM_STATE > 0 else None
 
-    training_indices, testing_indices = next(iter(StratifiedShuffleSplit(input_data['class'].values,
-                                                                         n_iter=1,
-                                                                         train_size=0.75,
-                                                                         test_size=0.25,
-                                                                         random_state=RANDOM_STATE)))
+    training_indices, testing_indices = train_test_split(input_data.index,
+                                                         stratify=input_data['class'].values,
+                                                         train_size=0.75,
+                                                         test_size=0.25,
+                                                         random_state=RANDOM_STATE)
 
     training_features = input_data.loc[training_indices].drop('class', axis=1).values
     training_classes = input_data.loc[training_indices, 'class'].values

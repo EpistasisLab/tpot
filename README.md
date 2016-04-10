@@ -6,9 +6,11 @@
 ![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
 [![PyPI version](https://badge.fury.io/py/tpot.svg)](https://badge.fury.io/py/tpot)
 
-# Tree-based Pipeline Optimization Tool (TPOT)
-
 [![Join the chat at https://gitter.im/rhiever/tpot](https://badges.gitter.im/rhiever/tpot.svg)](https://gitter.im/rhiever/tpot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/rhiever/tpot/master/images/tpot-logo.jpg" width=300 />
+</p>
 
 Consider TPOT your **Data Science Assistant**. TPOT is a Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.
 
@@ -42,7 +44,9 @@ We maintain the [TPOT installation instructions](http://rhiever.github.io/tpot/i
 
 ## Usage
 
-TPOT can be used [on the command line](http://rhiever.github.io/tpot/using/#tpot-on-the-command-line) or [with Python code](http://rhiever.github.io/tpot/using/#tpot-with-code). Click on the corresponding links to find more information on TPOT usage in the documentation.
+TPOT can be used [on the command line](http://rhiever.github.io/tpot/using/#tpot-on-the-command-line) or [with Python code](http://rhiever.github.io/tpot/using/#tpot-with-code).
+
+Click on the corresponding links to find more information on TPOT usage in the documentation.
 
 ## Example
 
@@ -66,22 +70,21 @@ tpot.export('tpot_mnist_pipeline.py')
 Running this code should discover a pipeline that achieves ~98% testing accuracy, and the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file and look similar to the following:
 
 ```python
-import numpy as np
 import pandas as pd
 
-from sklearn.cross_validation import StratifiedShuffleSplit
-from sklearn.linear_model import LogisticRegression
+from sklearn.cross_validation import train_test_split
+from sklearn.ensemble import RandomForestClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indeces, testing_indeces = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
 
 result1 = tpot_data.copy()
 
-# Perform classification with a logistic regression classifier
-lrc1 = LogisticRegression(C=2.8214285714285716)
-lrc1.fit(result1.loc[training_indeces].drop('class', axis=1).values, result1.loc[training_indeces, 'class'].values)
-result1['lrc1-classification'] = lrc1.predict(result1.drop('class', axis=1).values)
+# Perform classification with a random forest classifier
+rfc1 = RandomForestClassifier(n_estimators=200, max_features=min(64, len(result1.columns) - 1))
+rfc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
+result1['rfc1-classification'] = rfc1.predict(result1.drop('class', axis=1).values)
 ```
 
 ## Contributing to TPOT
@@ -124,3 +127,5 @@ Alternatively, you can cite the repository directly with the following DOI:
 ## Support for TPOT
 
 TPOT was developed in the [Computational Genetics Lab](http://epistasis.org) with funding from the [NIH](http://www.nih.gov). We're incredibly grateful for their support during the development of this project.
+
+The TPOT logo was designed by Todd Newmuis, who generously donated his time to the project.
