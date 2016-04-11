@@ -16,6 +16,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.feature_selection import RFE
 
 from xgboost import XGBClassifier
 
@@ -79,7 +80,7 @@ def test_random_forest():
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
 
 def test_svc():
-    """Ensure that the TPOT random forest method outputs the same as the sklearn random forest"""
+    """Ensure that the TPOT random forest method outputs the same as the sklearn svc"""
 
     tpot_obj = TPOT()
     result = tpot_obj._svc(training_testing_data, 1.0)
@@ -91,7 +92,7 @@ def test_svc():
     assert np.array_equal(result['guess'].values, svc.predict(testing_features))
 
 def test_svc_2():
-    """Ensure that the TPOT random forest method outputs the same as the sklearn random forest"""
+    """Ensure that the TPOT random forest method outputs the same as the sklearn svc"""
 
     tpot_obj = TPOT()
     result = tpot_obj._svc(training_testing_data, 0.00001)
@@ -101,6 +102,8 @@ def test_svc_2():
     svc.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, svc.predict(testing_features))
+
+
 
 def test_xgboost():
     """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method"""
@@ -169,6 +172,7 @@ def test_static_models():
         assert np.array_equal(result['guess'].values, sklearn_model_obj.predict(testing_features)), "Model {} failed".format(str(model))
 
 def test_div(num1=5, num2=0):
+        """Ensure that the TPOT division function operates correctly"""
 
         tpot_obj = TPOT()
         result = tpot_obj._div(num1,num2)
