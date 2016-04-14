@@ -134,7 +134,7 @@ def test_combine_dfs():
     assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
 
 def test_combine_dfs_2():
-    """Check combine_dfs operator"""
+    """Check combine_dfs operator when the dataframes are equal"""
     tpot_obj = TPOT()
 
     df1 = pd.DataFrame({'a': range(10),
@@ -171,9 +171,8 @@ def test_static_models():
 
         assert np.array_equal(result['guess'].values, sklearn_model_obj.predict(testing_features)), "Model {} failed".format(str(model))
 
-def test_div(num1=5, num2=0):
-        """Ensure that the TPOT division function operates correctly"""
+def test_div():
+        """Ensure that the TPOT protected division function outputs 0 when the divisor is 0"""
 
         tpot_obj = TPOT()
-        result = tpot_obj._div(num1,num2)
-        assert result==0
+        assert tpot_obj._div(5,0)==0
