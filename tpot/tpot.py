@@ -37,6 +37,7 @@ from sklearn.feature_selection import VarianceThreshold, SelectKBest, SelectPerc
 from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler, MinMaxScaler
 from sklearn.preprocessing import PolynomialFeatures, Binarizer
 from sklearn.decomposition import RandomizedPCA
+from sklearn.kernel_approximation import RBFSampler
 from sklearn.cross_validation import train_test_split
 from xgboost import XGBClassifier
 
@@ -114,6 +115,9 @@ class TPOT(object):
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
 
+        # Columns to always ignore when in an operator
+        self.non_feature_columns = ['class', 'group', 'guess']
+
         if random_state > 0:
             random.seed(random_state)
             np.random.seed(random_state)
@@ -125,7 +129,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         # Temporarily remove SVC -- badly overfits on multiclass data sets
-        #self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
+        # self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
 
@@ -139,6 +143,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._binarizer, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._rbf, [pd.DataFrame, float, int], pd.DataFrame)
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
@@ -601,8 +606,7 @@ class TPOT(object):
 
         input_df = input_df.copy()
 
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1).values
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).values
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         # Try to seed the random_state parameter if the model accepts it.
@@ -613,7 +617,7 @@ class TPOT(object):
             clf = model(**kwargs)
             clf.fit(training_features, training_classes)
 
-        all_features = input_df.drop(non_feature_columns, axis=1).values
+        all_features = input_df.drop(self.non_feature_columns, axis=1).values
         input_df.loc[:, 'guess'] = clf.predict(all_features)
 
         # Also store the guesses as a synthetic feature
@@ -663,8 +667,7 @@ class TPOT(object):
             Returns a DataFrame containing the `num_features` best features
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         step = max(min(0.99, step), 0.1)
@@ -682,10 +685,10 @@ class TPOT(object):
         try:
             selector.fit(training_features, training_class_vals)
             mask = selector.get_support(True)
-            mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+            mask_cols = list(training_features.iloc[:, mask].columns) + self.non_feature_columns
             return input_df[mask_cols].copy()
         except ValueError:
-            return input_df[non_feature_columns].copy()
+            return input_df[self.non_feature_columns].copy()
 
     def _select_percentile(self, input_df, percentile):
         """Uses scikit-learn's SelectPercentile feature selection to learn the subset of features that belong in the highest `percentile`
@@ -703,8 +706,7 @@ class TPOT(object):
             Returns a DataFrame containing the best features in the given `percentile`
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         percentile = max(min(100, percentile), 0)
@@ -720,7 +722,7 @@ class TPOT(object):
             selector.fit(training_features, training_class_vals)
             mask = selector.get_support(True)
 
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+        mask_cols = list(training_features.iloc[:, mask].columns) + self.non_feature_columns
         return input_df[mask_cols].copy()
 
     def _select_kbest(self, input_df, k):
@@ -739,8 +741,7 @@ class TPOT(object):
             Returns a DataFrame containing the `k` best features
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         if k < 1:
@@ -759,7 +760,7 @@ class TPOT(object):
             selector.fit(training_features, training_class_vals)
             mask = selector.get_support(True)
 
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+        mask_cols = list(training_features.iloc[:, mask].columns) + self.non_feature_columns
         return input_df[mask_cols].copy()
 
     def _select_fwe(self, input_df, alpha):
@@ -778,8 +779,7 @@ class TPOT(object):
             Returns a DataFrame containing the 'best' features
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
         training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         # Clamp alpha in the range [0.001, 0.05]
@@ -796,7 +796,7 @@ class TPOT(object):
             selector.fit(training_features, training_class_vals)
             mask = selector.get_support(True)
 
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+        mask_cols = list(training_features.iloc[:, mask].columns) + self.non_feature_columns
         return input_df[mask_cols].copy()
 
     def _variance_threshold(self, input_df, threshold):
@@ -815,8 +815,7 @@ class TPOT(object):
             Returns a DataFrame containing the features that are above the variance threshold
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
 
         selector = VarianceThreshold(threshold=threshold)
         try:
@@ -826,7 +825,7 @@ class TPOT(object):
             return input_df[['guess', 'class', 'group']].copy()
 
         mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+        mask_cols = list(training_features.iloc[:, mask].columns) + self.non_feature_columns
         return input_df[mask_cols].copy()
 
     def _standard_scaler(self, input_df):
@@ -843,8 +842,7 @@ class TPOT(object):
             Returns a DataFrame containing the scaled features
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -852,9 +850,9 @@ class TPOT(object):
         # The scaler must be fit on only the training data
         scaler = StandardScaler(copy=False)
         scaler.fit(training_features.values.astype(np.float64))
-        scaled_features = scaler.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
+        scaled_features = scaler.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
-        for col_num, column in enumerate(input_df.drop(non_feature_columns, axis=1).columns.values):
+        for col_num, column in enumerate(input_df.drop(self.non_feature_columns, axis=1).columns.values):
             input_df.loc[:, column] = scaled_features[:, col_num]
 
         return input_df.copy()
@@ -873,8 +871,7 @@ class TPOT(object):
             Returns a DataFrame containing the scaled features
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -882,9 +879,9 @@ class TPOT(object):
         # The scaler must be fit on only the training data
         scaler = RobustScaler(copy=False)
         scaler.fit(training_features.values.astype(np.float64))
-        scaled_features = scaler.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
+        scaled_features = scaler.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
-        for col_num, column in enumerate(input_df.drop(non_feature_columns, axis=1).columns.values):
+        for col_num, column in enumerate(input_df.drop(self.non_feature_columns, axis=1).columns.values):
             input_df.loc[:, column] = scaled_features[:, col_num]
 
         return input_df.copy()
@@ -903,8 +900,7 @@ class TPOT(object):
             Returns a DataFrame containing the constructed features
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -915,7 +911,7 @@ class TPOT(object):
         # The feature constructor must be fit on only the training data
         poly = PolynomialFeatures(degree=2, include_bias=False, interaction_only=False)
         poly.fit(training_features.values.astype(np.float64))
-        constructed_features = poly.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
+        constructed_features = poly.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=constructed_features)
         modified_df['class'] = input_df['class'].values
@@ -944,8 +940,7 @@ class TPOT(object):
             Returns a DataFrame containing the scaled features
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -953,7 +948,7 @@ class TPOT(object):
         # The feature scaler must be fit on only the training data
         mm_scaler = MinMaxScaler(copy=False)
         mm_scaler.fit(training_features.values.astype(np.float64))
-        scaled_features = mm_scaler.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
+        scaled_features = mm_scaler.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=scaled_features)
         modified_df['class'] = input_df['class'].values
@@ -982,8 +977,7 @@ class TPOT(object):
             Returns a DataFrame containing the scaled features
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -991,7 +985,7 @@ class TPOT(object):
         # The feature scaler must be fit on only the training data
         ma_scaler = MaxAbsScaler(copy=False)
         ma_scaler.fit(training_features.values.astype(np.float64))
-        scaled_features = ma_scaler.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
+        scaled_features = ma_scaler.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=scaled_features)
         modified_df['class'] = input_df['class'].values
@@ -1022,8 +1016,7 @@ class TPOT(object):
             Returns a DataFrame containing the binarized features
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
@@ -1031,7 +1024,7 @@ class TPOT(object):
         # The binarizer must be fit on only the training data
         binarizer = Binarizer(copy=False, threshold=threshold)
         binarizer.fit(training_features.values.astype(np.float64))
-        binarized_features = binarizer.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
+        binarized_features = binarizer.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=binarized_features)
         modified_df['class'] = input_df['class'].values
@@ -1064,16 +1057,15 @@ class TPOT(object):
             Returns a DataFrame containing the transformed features
 
         """
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
         if n_components < 1:
             n_components = 1
-        elif n_components >= len(input_df.columns.values) - 3:
-            n_components = None
+        else:
+            n_components = min(n_components, len(training_features.columns.values))
 
         # Thresholding iterated_power [1, 10]
         iterated_power = min(10, max(1, iterated_power))
@@ -1081,7 +1073,53 @@ class TPOT(object):
         # PCA must be fit on only the training data
         pca = RandomizedPCA(n_components=n_components, iterated_power=iterated_power, copy=False)
         pca.fit(training_features.values.astype(np.float64))
-        transformed_features = pca.transform(input_df.drop(non_feature_columns, axis=1).values.astype(np.float64))
+        transformed_features = pca.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=transformed_features)
+        modified_df['class'] = input_df['class'].values
+        modified_df['group'] = input_df['group'].values
+        modified_df['guess'] = input_df['guess'].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _rbf(self, input_df, gamma, n_components):
+        """Uses scikit-learn's RBFSampler to transform the feature set
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+        gamma: float
+            Parameter of RBF kernel: exp(-gamma * x^2)
+        n_components: int
+            The number of components to keep
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the transformed features
+
+        """
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        if n_components < 1:
+            n_components = 1
+        else:
+            n_components = min(n_components, len(training_features.columns.values))
+
+        # RBF must be fit on only the training data
+        rbf = RBFSampler(gamma=gamma, n_components=n_components)
+        rbf.fit(training_features.values.astype(np.float64))
+        transformed_features = rbf.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=transformed_features)
         modified_df['class'] = input_df['class'].values
