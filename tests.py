@@ -256,6 +256,12 @@ def test_polynomial_features():
 
         assert np.array_equal(tpot_obj._polynomial_features(training_testing_data.ix[:,-3:]),training_testing_data.ix[:,-3:])
 
+def test_min_max_scaler():
+        """Ensure that the TPOT min max scaler outputs the input dataframe when no. of training features is 0"""
+        tpot_obj = TPOT()
+
+        assert np.array_equal(tpot_obj._min_max_scaler(training_testing_data.ix[:,-3:]),training_testing_data.ix[:,-3:])
+
 def test_static_models():
     """Ensure that the TPOT classifiers output the same predictions as the sklearn output"""
     tpot_obj = TPOT()
