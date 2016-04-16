@@ -67,6 +67,18 @@ def test_decision_tree():
 
     assert np.array_equal(result['guess'].values, dtc.predict(testing_features))
 
+def test_decision_tree_2():
+    """Ensure that the TPOT decision tree method outputs the same as the sklearn decision tree when max_features=1"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._decision_tree(training_testing_data, 1, 0)
+    result = result[result['group'] == 'testing']
+
+    dtc = DecisionTreeClassifier(max_features=None, max_depth=None, random_state=42)
+    dtc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, dtc.predict(testing_features))
+
 def test_random_forest():
     """Ensure that the TPOT random forest method outputs the same as the sklearn random forest"""
 
@@ -80,7 +92,7 @@ def test_random_forest():
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
 
 def test_svc():
-    """Ensure that the TPOT random forest method outputs the same as the sklearn svc"""
+    """Ensure that the TPOT random forest method outputs the same as the sklearn svc when C>0.0001"""
 
     tpot_obj = TPOT()
     result = tpot_obj._svc(training_testing_data, 1.0)
@@ -92,7 +104,7 @@ def test_svc():
     assert np.array_equal(result['guess'].values, svc.predict(testing_features))
 
 def test_svc_2():
-    """Ensure that the TPOT random forest method outputs the same as the sklearn svc"""
+    """Ensure that the TPOT random forest method outputs the same as the sklearn svc when C<0.0001"""
 
     tpot_obj = TPOT()
     result = tpot_obj._svc(training_testing_data, 0.00001)
