@@ -214,6 +214,12 @@ def test_combine_dfs_2():
 
     assert tpot_obj._combine_dfs(df1, df2).equals(combined_df)
 
+def test_rfe():
+        """Ensure that the TPOT RFE outputs the input dataframe when no. of training features is 0"""
+        tpot_obj = TPOT()
+
+        assert np.array_equal(tpot_obj._rfe(training_testing_data.ix[:,-3:], 0, 0.1),training_testing_data.ix[:,-3:])
+
 def test_static_models():
     """Ensure that the TPOT classifiers output the same predictions as the sklearn output"""
     tpot_obj = TPOT()
@@ -244,6 +250,7 @@ def test_div():
         assert tpot_obj._div(5,0)==0
 
 def test_binarizer():
+        """Ensure that the TPOT binarizer outputs the input dataframe when no. of training features is 0"""
         tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._binarizer(training_testing_data.ix[:,-3:],0),training_testing_data.ix[:,-3:])
+        assert np.array_equal(tpot_obj._binarizer(training_testing_data.ix[:,-3:], 0),training_testing_data.ix[:,-3:])
