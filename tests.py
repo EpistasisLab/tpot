@@ -244,6 +244,12 @@ def test_standard_scaler():
 
         assert np.array_equal(tpot_obj._standard_scaler(training_testing_data.ix[:,-3:]),training_testing_data.ix[:,-3:])
 
+def test_robust_scaler():
+        """Ensure that the TPOT select fwe outputs the input dataframe when no. of training features is 0"""
+        tpot_obj = TPOT()
+
+        assert np.array_equal(tpot_obj._robust_scaler(training_testing_data.ix[:,-3:]),training_testing_data.ix[:,-3:])
+
 def test_static_models():
     """Ensure that the TPOT classifiers output the same predictions as the sklearn output"""
     tpot_obj = TPOT()
