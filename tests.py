@@ -220,6 +220,12 @@ def test_rfe():
 
         assert np.array_equal(tpot_obj._rfe(training_testing_data.ix[:,-3:], 0, 0.1),training_testing_data.ix[:,-3:])
 
+def test_select_percentile():
+        """Ensure that the TPOT select percentile outputs the input dataframe when no. of training features is 0"""
+        tpot_obj = TPOT()
+
+        assert np.array_equal(tpot_obj._select_percentile(training_testing_data.ix[:,-3:], 0),training_testing_data.ix[:,-3:])
+
 def test_static_models():
     """Ensure that the TPOT classifiers output the same predictions as the sklearn output"""
     tpot_obj = TPOT()
