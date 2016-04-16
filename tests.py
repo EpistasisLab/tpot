@@ -262,6 +262,12 @@ def test_min_max_scaler():
 
         assert np.array_equal(tpot_obj._min_max_scaler(training_testing_data.ix[:,-3:]),training_testing_data.ix[:,-3:])
 
+def test_max_abs_scaler():
+        """Ensure that the TPOT max abs scaler outputs the input dataframe when no. of training features is 0"""
+        tpot_obj = TPOT()
+
+        assert np.array_equal(tpot_obj._max_abs_scaler(training_testing_data.ix[:,-3:]),training_testing_data.ix[:,-3:])
+
 def test_static_models():
     """Ensure that the TPOT classifiers output the same predictions as the sklearn output"""
     tpot_obj = TPOT()
@@ -296,3 +302,4 @@ def test_binarizer():
         tpot_obj = TPOT()
 
         assert np.array_equal(tpot_obj._binarizer(training_testing_data.ix[:,-3:], 0),training_testing_data.ix[:,-3:])
+
