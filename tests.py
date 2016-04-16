@@ -176,6 +176,13 @@ def test_xgboost_2():
 
     assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
 
+def test_train_model_and_predict():
+    """Ensure that the TPOT train_model_and_predict returns the input dataframe when it has only 3 columns i.e. class, group, guess"""
+
+    tpot_obj = TPOT()
+
+    assert np.array_equal(training_testing_data.ix[:,-3:],tpot_obj._train_model_and_predict(training_testing_data.ix[:,-3:], SVC))
+
 def test_combine_dfs():
     """Check combine_dfs operator"""
     tpot_obj = TPOT()
@@ -235,3 +242,4 @@ def test_div():
 
         tpot_obj = TPOT()
         assert tpot_obj._div(5,0)==0
+
