@@ -104,6 +104,18 @@ def test_random_forest_2():
 
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
 
+def test_random_forest_3():
+    """Ensure that the TPOT random forest method outputs the same as the sklearn random forest when max_features>no. of features"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._random_forest(training_testing_data, 100)
+    result = result[result['group'] == 'testing']
+
+    rfc = RandomForestClassifier(n_estimators=500, max_features=64, random_state=42, n_jobs=-1)
+    rfc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
+
 def test_svc():
     """Ensure that the TPOT random forest method outputs the same as the sklearn svc when C>0.0001"""
 
