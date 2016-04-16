@@ -81,13 +81,25 @@ def test_decision_tree_2():
     assert np.array_equal(result['guess'].values, dtc.predict(testing_features))
 
 def test_random_forest():
-    """Ensure that the TPOT random forest method outputs the same as the sklearn random forest"""
+    """Ensure that the TPOT random forest method outputs the same as the sklearn random forest when max_features<1"""
 
     tpot_obj = TPOT()
     result = tpot_obj._random_forest(training_testing_data, 0)
     result = result[result['group'] == 'testing']
 
     rfc = RandomForestClassifier(n_estimators=500, max_features='auto', random_state=42, n_jobs=-1)
+    rfc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
+
+def test_random_forest_2():
+    """Ensure that the TPOT random forest method outputs the same as the sklearn random forest when max_features=1"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._random_forest(training_testing_data, 1)
+    result = result[result['group'] == 'testing']
+
+    rfc = RandomForestClassifier(n_estimators=500, max_features=None, random_state=42, n_jobs=-1)
     rfc.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
