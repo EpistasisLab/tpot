@@ -77,20 +77,6 @@ def test_decision_tree_2():
 
     dtc = DecisionTreeClassifier(max_features=None, max_depth=None, random_state=42)
     dtc.fit(training_features, training_classes)
-    print len(training_testing_data.columns)
-
-    assert np.array_equal(result['guess'].values, dtc.predict(testing_features))
-
-def test_decision_tree_3():
-    """Ensure that the TPOT decision tree method outputs the same as the sklearn decision tree when max_features>no. of features"""
-
-    tpot_obj = TPOT()
-    result = tpot_obj._decision_tree(training_testing_data, 100, 0)
-    result = result[result['group'] == 'testing']
-
-    dtc = DecisionTreeClassifier(max_features=64, max_depth=None, random_state=42)
-    dtc.fit(training_features, training_classes)
-    print len(training_testing_data.columns)
 
     assert np.array_equal(result['guess'].values, dtc.predict(testing_features))
 
