@@ -220,6 +220,21 @@ def test_rfe():
 
         assert np.array_equal(tpot_obj._rfe(training_testing_data.ix[:,-3:], 0, 0.1),training_testing_data.ix[:,-3:])
 
+def test_rfe_2():
+    """Ensure that the TPOT RFE outputs the same result as the sklearn rfe when num_features>no. of features in the dataframe """
+    tpot_obj = TPOT()
+
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    estimator = SVC(kernel='linear')
+    rfe = RFE(estimator, 100, step=0.1)
+    rfe.fit(training_features, training_classes)
+    mask = rfe.get_support(True)
+    mask_cols = list(training_features.iloc[:,mask].columns) + non_feature_columns
+
+    assert np.array_equal(training_testing_data[mask_cols],tpot_obj._rfe(training_testing_data, 64, 0.1))
+
+
 def test_select_percentile():
         """Ensure that the TPOT select percentile outputs the input dataframe when no. of training features is 0"""
         tpot_obj = TPOT()
