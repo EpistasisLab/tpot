@@ -243,3 +243,7 @@ def test_div():
         tpot_obj = TPOT()
         assert tpot_obj._div(5,0)==0
 
+def test_binarizer():
+        tpot_obj = TPOT()
+
+        assert np.array_equal(tpot_obj._binarizer(training_testing_data.ix[:,-3:],0),training_testing_data.ix[:,-3:])
