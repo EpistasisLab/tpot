@@ -226,6 +226,12 @@ def test_select_percentile():
 
         assert np.array_equal(tpot_obj._select_percentile(training_testing_data.ix[:,-3:], 0),training_testing_data.ix[:,-3:])
 
+def test_select_kbest():
+        """Ensure that the TPOT select kbest outputs the input dataframe when no. of training features is 0"""
+        tpot_obj = TPOT()
+
+        assert np.array_equal(tpot_obj._select_kbest(training_testing_data.ix[:,-3:], 1),training_testing_data.ix[:,-3:])
+
 def test_static_models():
     """Ensure that the TPOT classifiers output the same predictions as the sklearn output"""
     tpot_obj = TPOT()
