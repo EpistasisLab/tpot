@@ -46,7 +46,7 @@ def test_init():
     """Ensure that the TPOT instantiator stores the TPOT variables properly"""
 
     tpot_obj = TPOT(population_size=500, generations=1000,
-                    mutation_rate=0.05, crossover_rate=0.9, verbosity=1, disable_update_check=True)
+                    mutation_rate=0.05, crossover_rate=0.9, verbosity=1, disable_update_check=True, scoring_function="_balanced_accuracy")
 
     assert tpot_obj.population_size == 500
     assert tpot_obj.generations == 1000
@@ -54,6 +54,7 @@ def test_init():
     assert tpot_obj.crossover_rate == 0.9
     assert tpot_obj.verbosity == 1
     assert tpot_obj.update_checked == True
+    assert tpot_obj.scoring_function == "_balanced_accuracy"
 
 def test_decision_tree():
     """Ensure that the TPOT decision tree method outputs the same as the sklearn decision tree"""
