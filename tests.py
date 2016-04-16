@@ -303,3 +303,8 @@ def test_binarizer():
 
         assert np.array_equal(tpot_obj._binarizer(training_testing_data.ix[:,-3:], 0),training_testing_data.ix[:,-3:])
 
+def test_pca():
+        """Ensure that the TPOT PCA outputs the input dataframe when no. of training features is 0"""
+        tpot_obj = TPOT()
+
+        assert np.array_equal(tpot_obj._pca(training_testing_data.ix[:,-3:], 1, 1),training_testing_data.ix[:,-3:])
