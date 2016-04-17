@@ -48,4 +48,6 @@ pages:
       - RFE: documentation/pipeline_operators/feature_selection/RFE.md
     - Decomposition:
       - RandomizedPCA: documentation/pipeline_operators/decomposition/RandomizedPCA.md
+    - Kernel Approximation:
+      - RBFSampler: documentation/pipeline_operators/kernel_approximation/RBFSampler.md
   - Contributing: contributing.md

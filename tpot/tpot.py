@@ -156,6 +156,7 @@ class TPOT(object):
         self._pset.addPrimitive(operator.sub, [int, int], int)
         self._pset.addPrimitive(operator.mul, [int, int], int)
         self._pset.addPrimitive(self._div, [int, int], float)
+
         for val in range(0, 101):
             self._pset.addTerminal(val, int)
         for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
