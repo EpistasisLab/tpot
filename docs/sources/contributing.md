@@ -70,6 +70,16 @@ If your contribution requires a new library dependency outside of DEAP and sciki
 
 * Similarly add a line to print the version of the library to [.travis_test.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_test.sh#L17)
 
+## Updating the documentation
+
+We use [mkdocs](http://www.mkdocs.org/) to manage our [documentation](http://rhiever.github.io/tpot/). This allows us to write the docs in Markdown and compile them to HTML as needed. Below are a few useful commands to know when updating the documentation. Make sure that you are running them in the base documentation directory, `docs`.
+
+* `mkdocs serve`: Hosts of a local version of the documentation that you can access at the provided URL. The local version will update automatically as you save changes to the documentation.
+
+* `mkdocs build --clean`: Creates a fresh build of the documentation in HTML. Always run this before deploying the documentation to GitHub.
+
+* `mkdocs gh-deploy`: Deploys the documentation to GitHub. If you're deploying on your fork of TPOT, the online documentation should be accessible at `http://<YOUR GITHUB USERNAME>.github.io/tpot/`. Generally, you shouldn't need to run this command because you can view your changes with `mkdocs serve`.
+
 ## After submitting your pull request
 
 After submitting your pull request, [Travis-CI](https://travis-ci.com/) will automatically run unit tests on your changes and make sure that your updated code builds and runs on Python 2 and 3. We also use services that automatically check code quality and test coverage.
