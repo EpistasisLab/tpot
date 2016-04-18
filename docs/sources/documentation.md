@@ -27,3 +27,6 @@
 
 ## Decomposition
 *  [pipeline_operators.decomposition.RandomizedPCA](documentation/pipeline_operators/decomposition/RandomizedPCA.md)
+
+## Kernel Approximation
+* [pipeline_operators.kernel_approximation.RBFSampler](documentation/pipeline_operators/kernel_approximation/RBFSampler.md)

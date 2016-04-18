@@ -138,6 +138,7 @@ from sklearn.cross_validation import train_test_split
     if '_binarizer' in operators_used: pipeline_text += 'from sklearn.preprocessing import Binarizer\n'
     if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
     if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import RandomizedPCA\n'
+    if '_rbf' in operators_used: pipeline_text += 'from sklearn.kernel_approximation import RBFSampler\n'
     if '_decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
     if '_random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
     if '_logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
@@ -546,5 +547,27 @@ if len(training_features.columns.values) > 0:
 else:
     {OUTPUT_DF} = {INPUT_DF}.copy()
 '''.format(INPUT_DF=operator[2], N_COMPONENTS=n_components, ITERATED_POWER=iterated_power, OUTPUT_DF=result_name)
+
+        elif operator_name == '_rbf':
+            gamma = float(operator[3])
+            n_components = int(operator[4])
+            if n_components < 1:
+                n_components = 1
+            n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
+
+            operator_text += '''
+# Use Scikit-learn's RBFSampler to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # RBF must be fit on only the training data
+    rbf = RBFSampler(n_components={N_COMPONENTS}, gamma={GAMMA})
+    rbf.fit(training_features.values.astype(np.float64))
+    transformed_features = rbf.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], GAMMA=gamma, N_COMPONENTS=n_components, OUTPUT_DF=result_name)
 
     return operator_text
