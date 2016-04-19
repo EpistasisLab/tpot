@@ -145,6 +145,8 @@ from sklearn.cross_validation import train_test_split
     if '_svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
     if '_knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
     if '_xgradient_boosting' in operators_used: pipeline_text += 'from xgboost import XGBClassifier\n'
+    if '_rtrees_embedding' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomTreesEmbedding'
+    if '_fast_ica' in operators_used: pipeline_text += 'from sklearn.decomposition import FastICA'
 
     pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -569,5 +571,43 @@ if len(training_features.columns.values) > 0:
 else:
     {OUTPUT_DF} = {INPUT_DF}.copy()
 '''.format(INPUT_DF=operator[2], GAMMA=gamma, N_COMPONENTS=n_components, OUTPUT_DF=result_name)
+
+        elif operator_name == '_rtrees_embedding':
+            operator_text += '''
+# Use scikit-learn's Random Trees Embedding to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # Must be fit on only the training data
+    rte = RandomTreesEmbedding(n_estimators=500, random_state=42, n_jobs=-1)
+    rte.fit(training_features.values.astype(np.float64))
+    transformed_features = rte.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
+
+        elif operator_name == '_fast_ica':
+            n_components = int(operator[3])
+            tol = float(operator[2])
+            if n_components < 1:
+                n_components = 1
+            n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
+
+            operator_text += '''
+# Use Scikit-learn's FastICA to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # FastICA must be fit on only the training data
+    ica = FastICA(n_components={N_COMPONENTS}, tol={TOL}, random_state=42)
+    ica.fit(training_features.values.astype(np.float64))
+    transformed_features = ica.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], N_COMPONENTS=n_components, TOL=tol, OUTPUT_DF=result_name)
 
     return operator_text

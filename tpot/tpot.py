@@ -29,14 +29,14 @@ import numpy as np
 import pandas as pd
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomTreesEmbedding
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import VarianceThreshold, SelectKBest, SelectPercentile, RFE, SelectFwe, f_classif
 from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler, MinMaxScaler
 from sklearn.preprocessing import PolynomialFeatures, Binarizer
-from sklearn.decomposition import RandomizedPCA
+from sklearn.decomposition import RandomizedPCA, FastICA
 from sklearn.kernel_approximation import RBFSampler
 from sklearn.cross_validation import train_test_split
 from xgboost import XGBClassifier
@@ -144,6 +144,8 @@ class TPOT(object):
         self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._rbf, [pd.DataFrame, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._rtrees_embedding, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, int, float], pd.DataFrame)
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
@@ -1121,6 +1123,87 @@ class TPOT(object):
         rbf = RBFSampler(gamma=gamma, n_components=n_components)
         rbf.fit(training_features.values.astype(np.float64))
         transformed_features = rbf.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=transformed_features)
+        modified_df['class'] = input_df['class'].values
+        modified_df['group'] = input_df['group'].values
+        modified_df['guess'] = input_df['guess'].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _rtrees_embedding(self, input_df):
+        """Uses scikit-learn's Random Trees Embedding to transform the feature set
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the transformed features
+
+        """
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        rte = RandomTreesEmbedding(n_estimators=500, random_state=42, n_jobs=-1)
+        rte.fit(training_features.values.astype(np.float64))
+        transformed_features = rte.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=transformed_features)
+        modified_df['class'] = input_df['class'].values
+        modified_df['group'] = input_df['group'].values
+        modified_df['guess'] = input_df['guess'].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _fast_ica(self, input_df, n_components, tol):
+        """Uses scikit-learn's FastICA to transform the feature set
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+        n_components: int
+            The number of components to keep
+        tol: float
+            Tolerance on update at each iteration.
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the transformed features
+
+        """
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        if n_components < 1:
+            n_components = 1
+        else:
+            n_components = min(n_components, len(training_features.columns.values))
+
+        ica = FastICA(n_components=n_components, tol=tol, random_state=42)
+        ica.fit(training_features.values.astype(np.float64))
+        transformed_features = ica.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=transformed_features)
         modified_df['class'] = input_df['class'].values
