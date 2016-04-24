@@ -1,10 +1,10 @@
-# Randomized Principal Component Analysis
+# Fast algorithm for Independent Component Analysis
 * * *
 
-Uses Scikit-learn's RandomizedPCA to transform the feature set.
+Uses Scikit-learn's FastICA to transform the feature set.
 
 ## Dependencies
-    sklearn.decomposition.RandomizedPCA
+    sklearn.decomposition.FastICA
 
 
 Parameters
@@ -12,9 +12,9 @@ Parameters
     input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame to scale
     n_components: int
-        The number of components to keep
-    iterated_power: int
-        Number of iterations for the power method. [1, 10]
+            The number of components to keep
+    tol: float
+        Tolerance on update at each iteration.
 
 Returns
 -------
@@ -30,24 +30,22 @@ import numpy as np
 import pandas as pd
 from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.decomposition import RandomizedPCA
+from sklearn.decomposition import FastICA
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
 
-# Use Scikit-learn's RandomizedPCA to transform the feature set
-training_features = tpot_data.loc[training_indices].drop('class', axis=1)
+# Use Scikit-learn's FastICA to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
-    # RandomizedPCA must be fit on only the training data
-    pca = RandomizedPCA(n_components=1, iterated_power=10)
-    pca.fit(training_features.values.astype(np.float64))
-    transformed_features = pca.transform(tpot_data.drop('class', axis=1).values.astype(np.float64))
-
-    tpot_data_classes = tpot_data['class'].values
+    # FastICA must be fit on only the training data
+    ica = FastICA(n_components=2, tol=0.1, random_state=42)
+    ica.fit(training_features.values.astype(np.float64))
+    transformed_features = ica.transform(tpot_data.drop('class', axis=1).values.astype(np.float64))
     result1 = pd.DataFrame(data=transformed_features)
-    result1['class'] = tpot_data_classes
+    result1['class'] = tpot_data['class'].values
 else:
     result1 = tpot_data.copy()
 

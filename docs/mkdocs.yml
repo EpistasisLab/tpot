@@ -48,6 +48,9 @@ pages:
       - RFE: documentation/pipeline_operators/feature_selection/RFE.md
     - Decomposition:
       - RandomizedPCA: documentation/pipeline_operators/decomposition/RandomizedPCA.md
+      - FastICA: documentation/pipeline_operators/decomposition/FastICA.md
     - Kernel Approximation:
       - RBFSampler: documentation/pipeline_operators/kernel_approximation/RBFSampler.md
+    - Cluster:
+      - FeatureAgglomeration: documentation/pipeline_operators/cluster/FeatureAgglomeration.md
   - Contributing: contributing.md
