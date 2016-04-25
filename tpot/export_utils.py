@@ -21,6 +21,7 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 # For usage, see export() function in tpot.py
 
 import deap
+from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS
 
 def replace_mathematical_operators(exported_pipeline):
     """Replace all of the mathematical operators with their results for use in export(self, output_file_name)
@@ -147,6 +148,7 @@ from sklearn.cross_validation import train_test_split
     if '_xgradient_boosting' in operators_used: pipeline_text += 'from xgboost import XGBClassifier\n'
     if '_fast_ica' in operators_used: pipeline_text += 'from sklearn.decomposition import FastICA\n'
     if '_feat_agg' in operators_used: pipeline_text += 'from sklearn.cluster import FeatureAgglomeration\n'
+    if '_nystroem' in operators_used: pipeline_text += 'from sklearn.kernel_approximation import Nystroem\n'
 
     pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -618,7 +620,7 @@ training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # FeatureAgglomeration must be fit on only the training data
-    fa = FeatureAgglomeration(n_clusters={N_CLUSTERS}, affinity={AFFINITY}, linkage={LINKAGE})
+    fa = FeatureAgglomeration(n_clusters={N_CLUSTERS}, affinity='{AFFINITY}', linkage='{LINKAGE}')
     fa.fit(training_features.values.astype(np.float64))
     transformed_features = fa.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
     {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
@@ -626,5 +628,35 @@ if len(training_features.columns.values) > 0:
 else:
     {OUTPUT_DF} = {INPUT_DF}.copy()
 '''.format(INPUT_DF=operator[2], N_CLUSTERS=n_clusters, AFFINITY=affinity_name, LINKAGE=linkage_name, OUTPUT_DF=result_name)
+
+        elif operator_name == '_nystroem':
+            kernel = int(operator[3])
+            gamma = float(operator[4])
+            n_components = int(operator[5])
+            coef = float(operator[6])
+
+            # Kernel functions from sklearn.metrics.pairwise
+            kernel_types = list(PAIRWISE_KERNEL_FUNCTIONS.keys())
+            kernel_name = kernel_types[kernel % len(kernel_types)]
+
+            if n_components < 1:
+                n_components = 1
+            else:
+                n_components = min(n_components, len(training_features.columns.values))
+
+            operator_text += '''
+# Use Scikit-learn's Nystroem to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # FeatureAgglomeration must be fit on only the training data
+    nys = Nystroem(kernel='{KERNEL}', gamma={GAMMA}, n_components={N_COMPONENTS}, coef0={COEF})
+    nys.fit(training_features.values.astype(np.float64))
+    transformed_features = nys.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], KERNEL=kernel_name, GAMMA=gamma, N_COMPONENTS=n_components, COEF=coef, OUTPUT_DF=result_name)
 
     return operator_text

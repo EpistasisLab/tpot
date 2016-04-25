@@ -38,7 +38,8 @@ from sklearn.feature_selection import VarianceThreshold, SelectKBest, SelectPerc
 from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler, MinMaxScaler
 from sklearn.preprocessing import PolynomialFeatures, Binarizer
 from sklearn.decomposition import RandomizedPCA, FastICA
-from sklearn.kernel_approximation import RBFSampler
+from sklearn.kernel_approximation import RBFSampler, Nystroem
+from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS
 from sklearn.cross_validation import train_test_split
 from xgboost import XGBClassifier
 
@@ -147,6 +148,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._rbf, [pd.DataFrame, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, int, float], pd.DataFrame)
         self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int, float], pd.DataFrame)
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
@@ -1229,6 +1231,61 @@ class TPOT(object):
         clustered_features = fa.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=clustered_features)
+        modified_df['class'] = input_df['class'].values
+        modified_df['group'] = input_df['group'].values
+        modified_df['guess'] = input_df['guess'].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _nystroem(self, input_df, kernel, gamma, n_components, coef):
+        """
+        Uses scikit-learn's Nystroem to approximate a kernel map using a subset
+        of the training data. Constructs an approximate feature map for an
+        arbitrary kernel using a subset of the data as basis.
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+        kernel: int
+            index of kernel type to use
+        gamma: float
+            Gamma parameter for the kernels.
+        n_components: int
+            The number of components to keep
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the transformed features
+
+        """
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        if n_components < 1:
+            n_components = 1
+        else:
+            n_components = min(n_components, len(training_features.columns.values))
+
+        kernel_types = list(PAIRWISE_KERNEL_FUNCTIONS.keys())
+
+        kernel_name = kernel_types[kernel % len(kernel_types)]
+
+        nys = Nystroem(kernel=kernel_name, gamma=gamma, n_components=n_components, coef0=coef)
+        nys.fit(training_features.values.astype(np.float64))
+        transformed_features = nys.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=transformed_features)
         modified_df['class'] = input_df['class'].values
         modified_df['group'] = input_df['group'].values
         modified_df['guess'] = input_df['guess'].values

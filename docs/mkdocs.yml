@@ -51,6 +51,7 @@ pages:
       - FastICA: documentation/pipeline_operators/decomposition/FastICA.md
     - Kernel Approximation:
       - RBFSampler: documentation/pipeline_operators/kernel_approximation/RBFSampler.md
+      - Nystroem: documentation/pipeline_operators/kernel_approximation/Nystroem.md
     - Cluster:
       - FeatureAgglomeration: documentation/pipeline_operators/cluster/FeatureAgglomeration.md
   - Contributing: contributing.md
