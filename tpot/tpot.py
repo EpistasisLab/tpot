@@ -148,7 +148,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._rbf, [pd.DataFrame, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, int, float], pd.DataFrame)
         self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int, float], pd.DataFrame)
+        self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
@@ -1243,7 +1243,7 @@ class TPOT(object):
 
         return modified_df.copy()
 
-    def _nystroem(self, input_df, kernel, gamma, n_components, coef):
+    def _nystroem(self, input_df, kernel, gamma, n_components):
         """
         Uses scikit-learn's Nystroem to approximate a kernel map using a subset
         of the training data. Constructs an approximate feature map for an
@@ -1281,7 +1281,7 @@ class TPOT(object):
 
         kernel_name = kernel_types[kernel % len(kernel_types)]
 
-        nys = Nystroem(kernel=kernel_name, gamma=gamma, n_components=n_components, coef0=coef)
+        nys = Nystroem(kernel=kernel_name, gamma=gamma, n_components=n_components)
         nys.fit(training_features.values.astype(np.float64))
         transformed_features = nys.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 

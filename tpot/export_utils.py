@@ -633,7 +633,6 @@ else:
             kernel = int(operator[3])
             gamma = float(operator[4])
             n_components = int(operator[5])
-            coef = float(operator[6])
 
             # Kernel functions from sklearn.metrics.pairwise
             kernel_types = list(PAIRWISE_KERNEL_FUNCTIONS.keys())
@@ -650,13 +649,13 @@ training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # FeatureAgglomeration must be fit on only the training data
-    nys = Nystroem(kernel='{KERNEL}', gamma={GAMMA}, n_components={N_COMPONENTS}, coef0={COEF})
+    nys = Nystroem(kernel='{KERNEL}', gamma={GAMMA}, n_components={N_COMPONENTS})
     nys.fit(training_features.values.astype(np.float64))
     transformed_features = nys.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
     {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
     {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
     {OUTPUT_DF} = {INPUT_DF}.copy()
-'''.format(INPUT_DF=operator[2], KERNEL=kernel_name, GAMMA=gamma, N_COMPONENTS=n_components, COEF=coef, OUTPUT_DF=result_name)
+'''.format(INPUT_DF=operator[2], KERNEL=kernel_name, GAMMA=gamma, N_COMPONENTS=n_components, OUTPUT_DF=result_name)
 
     return operator_text

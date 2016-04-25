@@ -44,7 +44,7 @@ training_features = result1.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # FeatureAgglomeration must be fit on only the training data
-    nys = Nystroem(kernel='rbf', gamma=1.0, n_components=47, coef0=-0.243)
+    nys = Nystroem(kernel='rbf', gamma=1.0, n_components=47)
     nys.fit(training_features.values.astype(np.float64))
     transformed_features = nys.transform(result1.drop('class', axis=1).values.astype(np.float64))
     result2 = pd.DataFrame(data=transformed_features)
