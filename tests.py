@@ -17,7 +17,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe
+from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
 
 
 from xgboost import XGBClassifier
@@ -399,6 +399,18 @@ def test_select_fwe_4():
         mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
         assert np.array_equal(tpot_obj._select_fwe(training_testing_data, 0.042), training_testing_data[mask_cols])
+
+def test_variance_threshold():
+        tpot_obj = TPOT()
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+        selector = VarianceThreshold(threshold=0)
+        selector.fit(training_features)
+        mask = selector.get_support(True)
+        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+
+        assert np.array_equal(tpot_obj._variance_threshold(training_testing_data, 0), training_testing_data[mask_cols])
+
 
 def test_standard_scaler():
         """Ensure that the TPOT standard scaler outputs the input dataframe when no. of training features is 0"""
