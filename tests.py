@@ -315,6 +315,22 @@ def test_select_kbest_2():
 
         assert np.array_equal(tpot_obj._select_kbest(training_testing_data, -1), training_testing_data[mask_cols])
 
+def test_select_kbest_3():
+        """Ensure that the TPOT select kbest outputs the same result as sklearn select kbest when k>features"""
+        tpot_obj = TPOT()
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=UserWarning)
+            selector = SelectKBest(f_classif, k=64)
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+
+        assert np.array_equal(tpot_obj._select_kbest(training_testing_data, 100), training_testing_data[mask_cols])
+
 def test_select_fwe():
         """Ensure that the TPOT select fwe outputs the input dataframe when no. of training features is 0"""
         tpot_obj = TPOT()
