@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from collections import Counter
 import random
+import warnings
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
@@ -16,7 +17,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.feature_selection import RFE
+from sklearn.feature_selection import RFE, SelectPercentile, f_classif
+
 
 from xgboost import XGBClassifier
 
@@ -234,12 +236,28 @@ def test_rfe_2():
 
     assert np.array_equal(training_testing_data[mask_cols],tpot_obj._rfe(training_testing_data, 64, 0.1))
 
-
 def test_select_percentile():
         """Ensure that the TPOT select percentile outputs the input dataframe when no. of training features is 0"""
         tpot_obj = TPOT()
 
         assert np.array_equal(tpot_obj._select_percentile(training_testing_data.ix[:,-3:], 0),training_testing_data.ix[:,-3:])
+
+def test_select_percentile_2():
+        """Ensure that the TPOT select percentile outputs the same result as sklearn"""
+        tpot_obj = TPOT()
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+        #percentile = max(min(100, percentile), 0)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=UserWarning)
+            selector = SelectPercentile(f_classif, percentile=0)
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+
+        assert np.array_equal(tpot_obj._select_percentile(training_testing_data, 0), training_testing_data[mask_cols])
 
 def test_select_kbest():
         """Ensure that the TPOT select kbest outputs the input dataframe when no. of training features is 0"""
