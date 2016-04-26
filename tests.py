@@ -243,7 +243,7 @@ def test_select_percentile():
         assert np.array_equal(tpot_obj._select_percentile(training_testing_data.ix[:,-3:], 0),training_testing_data.ix[:,-3:])
 
 def test_select_percentile_2():
-        """Ensure that the TPOT select percentile outputs the same result as sklearn Select Percentile when percentile is 0"""
+        """Ensure that the TPOT select percentile outputs the same result as sklearn Select Percentile when percentile< 0"""
         tpot_obj = TPOT()
         non_feature_columns = ['class', 'group', 'guess']
         training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
@@ -257,9 +257,10 @@ def test_select_percentile_2():
             mask = selector.get_support(True)
         mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._select_percentile(training_testing_data, 0), training_testing_data[mask_cols])
+        assert np.array_equal(tpot_obj._select_percentile(training_testing_data, -1), training_testing_data[mask_cols])
 
 def test_select_percentile_3():
+        """Ensure that the TPOT select percentile outputs the same result as sklearn select percentile when percentile>100"""
         tpot_obj = TPOT()
         non_feature_columns = ['class', 'group', 'guess']
         training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
