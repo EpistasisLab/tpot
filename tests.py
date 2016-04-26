@@ -243,7 +243,7 @@ def test_select_percentile():
         assert np.array_equal(tpot_obj._select_percentile(training_testing_data.ix[:,-3:], 0),training_testing_data.ix[:,-3:])
 
 def test_select_percentile_2():
-        """Ensure that the TPOT select percentile outputs the same result as sklearn"""
+        """Ensure that the TPOT select percentile outputs the same result as sklearn Select Percentile when percentile is 0"""
         tpot_obj = TPOT()
         non_feature_columns = ['class', 'group', 'guess']
         training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
@@ -258,6 +258,22 @@ def test_select_percentile_2():
         mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
         assert np.array_equal(tpot_obj._select_percentile(training_testing_data, 0), training_testing_data[mask_cols])
+
+def test_select_percentile_3():
+        tpot_obj = TPOT()
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+        #percentile = max(min(100, percentile), 0)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=UserWarning)
+            selector = SelectPercentile(f_classif, percentile=100)
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+
+        assert np.array_equal(tpot_obj._select_percentile(training_testing_data, 120), training_testing_data[mask_cols])
 
 def test_select_kbest():
         """Ensure that the TPOT select kbest outputs the input dataframe when no. of training features is 0"""
