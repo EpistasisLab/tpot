@@ -384,6 +384,21 @@ def test_select_fwe_3():
 
         assert np.array_equal(tpot_obj._select_fwe(training_testing_data, 0.0001), training_testing_data[mask_cols])
 
+def test_select_fwe_4():
+        """Ensure that the TPOT select fwe outputs the same result as sklearn fwe when 0.001 < alpha < 0.05"""
+        tpot_obj = TPOT()
+        non_feature_columns = ['class', 'group', 'guess']
+        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=UserWarning)
+            selector = SelectFwe(f_classif, alpha=0.042)
+            selector.fit(training_features, training_class_vals)
+            mask = selector.get_support(True)
+        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+
+        assert np.array_equal(tpot_obj._select_fwe(training_testing_data, 0.042), training_testing_data[mask_cols])
 
 def test_standard_scaler():
         """Ensure that the TPOT standard scaler outputs the input dataframe when no. of training features is 0"""
