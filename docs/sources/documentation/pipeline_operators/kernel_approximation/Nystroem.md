@@ -6,13 +6,15 @@ Uses Scikit-learn's Nystroem to transform the feature set.
 ## Dependencies
     sklearn.kernel_approximation.Nystroem
 
-
 Parameters
 ----------
     input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame to scale
     kernel: int
-        index of kernel type to use
+        Kernel type is selected from scikit-learn's provided types:
+            'sigmoid', 'polynomial', 'additive_chi2', 'poly', 'laplacian', 'cosine', 'linear', 'rbf', 'chi2'
+
+        Input integer is used to select one of the above strings.
     gamma: float
         Gamma parameter for the kernels.
     n_components: int
@@ -20,8 +22,8 @@ Parameters
 
 Returns
 -------
-    modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
-        Returns a DataFrame containing the transformed features
+modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+    Returns a DataFrame containing the transformed features
 
 Example Exported Code
 ---------------------

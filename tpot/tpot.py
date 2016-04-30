@@ -1186,7 +1186,7 @@ class TPOT(object):
         return modified_df.copy()
 
     def _feat_agg(self, input_df, n_clusters, affinity, linkage):
-        """Uses scikit-learn's FastICA to transform the feature set
+        """Uses scikit-learn's FeatureAgglomeration to transform the feature set
 
         Parameters
         ----------
@@ -1198,9 +1198,11 @@ class TPOT(object):
             Metric used to compute the linkage. Can be "euclidean", "l1", "l2",
             "manhattan", "cosine", or "precomputed". If linkage is "ward", only
             "euclidean" is accepted.
+            Input integer is used to select one of the above strings.
         linkage: int
             Can be one of the following values:
-            ["ward", "complete", "average"]
+                "ward", "complete", "average"
+            Input integer is used to select one of the above strings.
 
         Returns
         -------
@@ -1254,7 +1256,10 @@ class TPOT(object):
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame to scale
         kernel: int
-            index of kernel type to use
+            Kernel type is selected from scikit-learn's provided types:
+                'sigmoid', 'polynomial', 'additive_chi2', 'poly', 'laplacian', 'cosine', 'linear', 'rbf', 'chi2'
+
+            Input integer is used to select one of the above strings.
         gamma: float
             Gamma parameter for the kernels.
         n_components: int

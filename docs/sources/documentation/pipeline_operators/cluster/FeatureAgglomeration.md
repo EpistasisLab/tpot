@@ -17,9 +17,11 @@ Parameters
         Metric used to compute the linkage. Can be "euclidean", "l1", "l2",
         "manhattan", "cosine", or "precomputed". If linkage is "ward", only
         "euclidean" is accepted.
+        Input integer is used to select one of the above strings.
     linkage: int
         Can be one of the following values:
-        ["ward", "complete", "average"]
+            "ward", "complete", "average"
+        Input integer is used to select one of the above strings.
 
 Returns
 -------
