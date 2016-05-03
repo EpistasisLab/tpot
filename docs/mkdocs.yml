@@ -41,6 +41,7 @@ pages:
       - MaxAbsScaler: documentation/pipeline_operators/preprocessing/scaling/MaxAbsScaler.md
       - Binarizer: documentation/pipeline_operators/preprocessing/scaling/Binarizer.md
       - PolynomialFeatures: documentation/pipeline_operators/preprocessing/PolynomialFeatures.md
+      - ZeroCount: documentation/pipeline_operators/preprocessing/ZeroCount.md
     - Feature Selection:
       - VarianceThreshold: documentation/pipeline_operators/feature_selection/VarianceThreshold.md
       - SelectKBest: documentation/pipeline_operators/feature_selection/SelectKBest.md
