@@ -658,4 +658,21 @@ else:
     {OUTPUT_DF} = {INPUT_DF}.copy()
 '''.format(INPUT_DF=operator[2], KERNEL=kernel_name, GAMMA=gamma, N_COMPONENTS=n_components, OUTPUT_DF=result_name)
 
+        elif operator_name == '_zero_count':
+            operator_text += '''
+# Add virtual features for number of zeros and non-zeros per row
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    non_zero_col = np.array([np.count_nonzero(row) for i, row in {INPUT_DF}.iterrows()]).astype(np.float64)
+    zero_col     = np.array([(num_features - x) for x in non_zero_col]).astype(np.float64)
+
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+    {OUTPUT_DF}['non_zero'] = pd.Series(non_zero_col, index=modified_df.index)
+    {OUTPUT_DF}['zero_col'] = pd.Series(zero_col, index=modified_df.index)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
+
     return operator_text

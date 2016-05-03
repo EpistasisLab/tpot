@@ -587,3 +587,24 @@ def test_pca():
     tpot_obj = TPOT()
 
     assert np.array_equal(tpot_obj._pca(training_testing_data.ix[:,-3:], 1, 1),training_testing_data.ix[:,-3:])
+
+def test_zero_count():
+    """Ensure that the TPOT _zero_count preprocessor outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
+
+    assert np.array_equal(tpot_obj._zero_count(training_testing_data.ix[:,-3:]),training_testing_data.ix[:,-3:])
+
+def test_zero_count_2():
+    """Assert that the Zero Count preprocessor adds two columns to the dataframe"""
+    tpot_obj = TPOT()
+
+    input_df = training_testing_data
+    output_df = tpot_obj._zero_count(input_df)
+
+    assert type(input_df) == type(output_df)
+
+    (in_rows, in_cols) = input_df.shape
+    (out_rows, out_cols) = output_df.shape
+
+    assert in_rows == out_rows
+    assert in_cols == (out_cols - 2)

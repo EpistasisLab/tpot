@@ -149,6 +149,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, int, float], pd.DataFrame)
         self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._zero_count, [pd.DataFrame], pd.DataFrame)
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
@@ -1271,7 +1272,6 @@ class TPOT(object):
             Returns a DataFrame containing the transformed features
 
         """
-
         training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
 
         if len(training_features.columns.values) == 0:
@@ -1291,6 +1291,54 @@ class TPOT(object):
         transformed_features = nys.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=transformed_features)
+        modified_df['class'] = input_df['class'].values
+        modified_df['group'] = input_df['group'].values
+        modified_df['guess'] = input_df['guess'].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _zero_count(self, input_df):
+        """
+        Adds virtual features for the number of zeros per row, and number of
+        non-zeros per row. Performs no action if it already exists further down
+        the tree pipeline.
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Returns a DataFrame containing the new virtual features
+
+        """
+        feature_cols_only = input_df.drop(self.non_feature_columns, axis=1)
+
+        num_features = len(feature_cols_only.columns.values)
+
+        if num_features == 0:
+            return input_df.copy()
+        elif 'non_zero' in feature_cols_only.columns._data.tolist() or\
+             'zero_col' in feature_cols_only.columns._data.tolist():
+            # Do no perform pre-processor if it has already been performed earlier
+            # in the pipeline
+            return input_df.copy()
+
+        non_zero_col = np.array([np.count_nonzero(row) for i, row in feature_cols_only.iterrows()]).astype(np.float64)
+        zero_col     = np.array([(num_features - x) for x in non_zero_col]).astype(np.float64)
+
+        modified_df = feature_cols_only.copy()
+        modified_df['non_zero'] = pd.Series(non_zero_col, index=modified_df.index)
+        modified_df['zero_col'] = pd.Series(zero_col, index=modified_df.index)
+
         modified_df['class'] = input_df['class'].values
         modified_df['group'] = input_df['group'].values
         modified_df['guess'] = input_df['guess'].values
