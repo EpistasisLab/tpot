@@ -1306,8 +1306,7 @@ class TPOT(object):
     def _zero_count(self, input_df):
         """
         Adds virtual features for the number of zeros per row, and number of
-        non-zeros per row. Performs no action if it already exists further down
-        the tree pipeline.
+        non-zeros per row.
 
         Parameters
         ----------
@@ -1325,11 +1324,6 @@ class TPOT(object):
         num_features = len(feature_cols_only.columns.values)
 
         if num_features == 0:
-            return input_df.copy()
-        elif 'non_zero' in feature_cols_only.columns._data.tolist() or\
-             'zero_col' in feature_cols_only.columns._data.tolist():
-            # Do no perform pre-processor if it has already been performed earlier
-            # in the pipeline
             return input_df.copy()
 
         non_zero_col = np.array([np.count_nonzero(row) for i, row in feature_cols_only.iterrows()]).astype(np.float64)
