@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
@@ -38,6 +38,7 @@ from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler, Mi
 from sklearn.preprocessing import PolynomialFeatures, Binarizer
 from sklearn.decomposition import RandomizedPCA
 from sklearn.kernel_approximation import RBFSampler
+from sklearn.naive_bayes import BernoulliNB
 from sklearn.cross_validation import train_test_split
 from xgboost import XGBClassifier
 
@@ -48,11 +49,7 @@ from ._version import __version__
 from .export_utils import *
 
 import deap
-from deap import algorithms
-from deap import base
-from deap import creator
-from deap import tools
-from deap import gp
+from deap import algorithms, base, creator, tools, gp
 
 class TPOT(object):
 
@@ -127,11 +124,13 @@ class TPOT(object):
         # Machine learning model operators
         self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._ada_boost, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         # Temporarily remove SVC -- badly overfits on multiclass data sets
         # self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, int], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -490,6 +489,54 @@ class TPOT(object):
 
         return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=500,
                                              max_features=max_features, random_state=42, n_jobs=-1)
+
+    def _ada_boost(self, input_df, learning_rate):
+        """Fits an AdaBoost classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the random forest
+        learning_rate: float
+            Learning rate shrinks the contribution of each classifier by learning_rate.
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        return self._train_model_and_predict(input_df, AdaBoostClassifier,
+            learning_rate=learning_rate, n_estimators=500, random_state=42)
+
+    def _bernoulli_nb(self, input_df, alpha, binarize, fit_prior):
+        """Fits a Bernoulli Naive Bayes classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the random forest
+        alpha: float
+            Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
+        binarize: float
+            Threshold for binarizing (mapping to booleans) of sample features.
+        fit_prior: int
+            Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
+            Reduced to a boolean with modulus.
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+
+        fit_bool = (fit_prior % 2) == 0
+
+        return self._train_model_and_predict(input_df, BernoulliNB, alpha=alpha,
+            binarize=binarize, fit_prior=fit_bool)
 
     def _logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier
