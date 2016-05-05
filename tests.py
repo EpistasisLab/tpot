@@ -12,11 +12,12 @@ import warnings
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
+from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
 
 
@@ -482,3 +483,87 @@ def test_pca():
         tpot_obj = TPOT()
 
         assert np.array_equal(tpot_obj._pca(training_testing_data.ix[:,-3:], 1, 1),training_testing_data.ix[:,-3:])
+
+def test_ada_boost():
+    """Ensure that the TPOT AdaBoostClassifier outputs the same as the sklearn AdaBoostClassifier"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._ada_boost(training_testing_data, 1.0)
+    result = result[result['group'] == 'testing']
+
+    adaboost = AdaBoostClassifier(n_estimators=500, random_state=42, learning_rate=1.0)
+    adaboost.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, adaboost.predict(testing_features))
+
+def test_bernoulli_nb():
+    """Ensure that the TPOT BernoulliNB outputs the same as the sklearn BernoulliNB"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._bernoulli_nb(training_testing_data, 1.0, 0.0, 0)
+    result = result[result['group'] == 'testing']
+
+    bnb = BernoulliNB(alpha=1.0, binarize=0.0, fit_prior=True)
+    bnb.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, bnb.predict(testing_features))
+
+def test_extra_trees():
+    """Ensure that the TPOT ExtraTreesClassifier outputs the same as the sklearn ExtraTreesClassifier"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._extra_trees(training_testing_data, 0, 1)
+    result = result[result['group'] == 'testing']
+
+    etc = ExtraTreesClassifier(n_estimators=500, random_state=42, max_features=1, criterion='gini')
+    etc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, etc.predict(testing_features))
+
+def test_gaussian_nb():
+    """Ensure that the TPOT GaussianNB outputs the same as the sklearn GaussianNB"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._gaussian_nb(training_testing_data)
+    result = result[result['group'] == 'testing']
+
+    gnb = GaussianNB()
+    gnb.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, gnb.predict(testing_features))
+
+def test_multinomial_nb():
+    """Ensure that the TPOT MultinomialNB outputs the same as the sklearn MultinomialNB"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._multinomial_nb(training_testing_data, 1.0, 0)
+    result = result[result['group'] == 'testing']
+
+    mnb = MultinomialNB(alpha=1.0, fit_prior=True)
+    mnb.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, mnb.predict(testing_features))
+
+def test_linear_svc():
+    """Ensure that the TPOT LinearSVC outputs the same as the sklearn LinearSVC"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._linear_svc(training_testing_data, 1.0, 0, 0)
+    result = result[result['group'] == 'testing']
+
+    lsvc = LinearSVC(C=1.0, loss='hinge', fit_intercept=True, random_state=42)
+    lsvc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, lsvc.predict(testing_features))
+
+def test_p_aggr():
+    """Ensure that the TPOT PassiveAggressiveClassifier outputs the same as the sklearn PassiveAggressiveClassifier"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._p_aggr(training_testing_data, 1.0, 0, 0)
+    result = result[result['group'] == 'testing']
+
+    pagg = PassiveAggressiveClassifier(C=1.0, loss='hinge', fit_intercept=True, random_state=42)
+    pagg.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, pagg.predict(testing_features))
