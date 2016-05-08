@@ -118,37 +118,62 @@ def generate_import_code(pipeline_list):
     # operator[1] is the name of the operator
     operators_used = set([operator[1] for operator in pipeline_list])
 
-    pipeline_text = '''import numpy as np
-import pandas as pd
+    pipeline_text = 'import numpy as np\n'
+    pipeline_text += 'import pandas as pd\n\n'
 
-from sklearn.cross_validation import train_test_split
-'''
+    pipeline_imports = {'sklearn.cross_validation': ['train_test_split']}
 
-    if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
-    if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
-    if '_select_fwe' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectFwe\n'
-    if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
-    if ('_select_percentile' in operators_used or
-        '_select_kbest' in operators_used or
-        '_select_fwe' in operators_used): pipeline_text += 'from sklearn.feature_selection import f_classif\n'
-    if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
-    if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
-    if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
-    if '_min_max_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import MinMaxScaler\n'
-    if '_max_abs_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import MaxAbsScaler\n'
-    if '_binarizer' in operators_used: pipeline_text += 'from sklearn.preprocessing import Binarizer\n'
-    if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
-    if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import RandomizedPCA\n'
-    if '_rbf' in operators_used: pipeline_text += 'from sklearn.kernel_approximation import RBFSampler\n'
-    if '_decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
-    if '_random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
-    if '_logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
-    if '_svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
-    if '_knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
-    if '_xgradient_boosting' in operators_used: pipeline_text += 'from xgboost import XGBClassifier\n'
-    if '_fast_ica' in operators_used: pipeline_text += 'from sklearn.decomposition import FastICA\n'
-    if '_feat_agg' in operators_used: pipeline_text += 'from sklearn.cluster import FeatureAgglomeration\n'
-    if '_nystroem' in operators_used: pipeline_text += 'from sklearn.kernel_approximation import Nystroem\n'
+    # Operator names and imports required.
+    # Dict structure:
+    # {
+    #   'operator_function':    {'module.to.import.from': ['ClassWithinModuleToImport']}
+    # }
+    import_relations = {
+        '_variance_threshold':  {'sklearn.feature_selection': ['VarianceThreshold']},
+        '_select_kbest':        {'sklearn.feature_selection': ['SelectKBest', 'f_classif']},
+        '_select_fwe':          {'sklearn.feature_selection': ['SelectFwe', 'f_classif']},
+        '_select_percentile':   {'sklearn.feature_selection': ['SelectPercentile', 'f_classif']},
+        '_rfe':                 {'sklearn.feature_selection': ['RFE'], 'sklearn.svm': ['SVC']},
+        '_standard_scaler':     {'sklearn.preprocessing': ['StandardScaler']},
+        '_robust_scaler':       {'sklearn.preprocessing': ['RobustScaler']},
+        '_min_max_scaler':      {'sklearn.preprocessing': ['MinMaxScaler']},
+        '_max_abs_scaler':      {'sklearn.preprocessing': ['MaxAbsScaler']},
+        '_binarizer':           {'sklearn.preprocessing': ['Binarizer']},
+        '_polynomial_features': {'sklearn.preprocessing': ['PolynomialFeatures']},
+        '_pca':                 {'sklearn.decomposition': ['RandomizedPCA']},
+        '_rbf':                 {'sklearn.kernel_approximation': ['RBFSampler']},
+        '_decision_tree':       {'sklearn.tree': ['DecisionTreeClassifier']},
+        '_random_forest':       {'sklearn.ensemble': ['RandomForestClassifier']},
+        '_logistic_regression': {'sklearn.linear_model': ['LogisticRegression']},
+        '_svc':                 {'sklearn.svm': ['SVC']},
+        '_knnc':                {'sklearn.neighbors': ['KNeighborsClassifier']},
+        '_xgradient_boosting':  {'xgboost': ['XGBClassifier']},
+        '_fast_ica':            {'sklearn.decomposition': ['FastICA']},
+        '_feat_agg':            {'sklearn.cluster': ['FeatureAgglomeration']},
+        '_nystroem':            {'sklearn.kernel_approximation': ['Nystroem']}
+    }
+
+    # Build import dict from operators used
+    for op in operators_used:
+        def merge_imports(old_dict, new_dict):
+            # Key is a module name
+            for key in new_dict.keys():
+                if key in old_dict.keys():
+                    # Append imports from the same module
+                    old_dict[key] = set(list(old_dict[key]) + list(new_dict[key]))
+                else:
+                    old_dict[key] = new_dict[key]
+
+        try:
+            operator_import = import_relations[op]
+            merge_imports(pipeline_imports, operator_import)
+        except KeyError:
+            raise RuntimeError('{} operator in pipeline not detailed in export utils'.format(op))
+
+    # Build import string
+    for key in pipeline_imports.keys():
+        module_list = ', '.join(pipeline_imports[key])
+        pipeline_text += 'from {} import {}\n'.format(key, module_list)
 
     pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -370,7 +395,7 @@ else:
             elif alpha <= 0.001:
                 alpha = 0.001
             operator_text += '''
-training_features = {INPUT_DF}.loc[training_indices].drop(['class', 'group', 'guess'], axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop(['class'], axis=1)
 training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 if len(training_features.columns.values) == 0:
     {OUTPUT_DF} = {INPUT_DF}.copy()
