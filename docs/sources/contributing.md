@@ -21,10 +21,23 @@ GitHub:
 
           $ git checkout -b my-contribution
 
-   and start making changes. Never work in the ``master`` branch!
+4. Make sure your local environment is setup correctly for development. Installation instructions are almost identical to [the user instructions](installing.md) except that TPOT should *not* be installed. If you have TPOT installed on your computer then make sure you are using a virtual environment (as detailed in the instructions) that does not have TPOT installed. Furthermore, you should make sure you have installed the `nose` package into your development environment so that you can test changes locally.
 
-4. Work on this copy on your computer using Git to do the version
-   control. When you're done editing, do:
+          $ conda install nose
+
+5. Start making changes on your newly created branch, remembering to never work on the ``master`` branch! Work on this copy on your computer using Git to do the version control.
+
+6. Once some changes are saved locally, you can use your tweaked version of TPOT by navigating to the project's base directory and running TPOT directly from the command line:
+
+          $ python -m tpot.tpot
+
+    or by running script that imports and uses the TPOT module with code similar to `from tpot import TPOT`
+
+7. To check your changes haven't broken any existing tests and to check new tests you've added pass run the following (note, you must have the `nose` package installed within your dev environment for this to work):
+
+          $ nosetests -s -v
+
+8. When you're done editing and local testing, do:
 
           $ git add modified_files
           $ git commit
@@ -33,9 +46,7 @@ GitHub:
 
           $ git push -u origin my-contribution
 
-Finally, go to the web page of your fork of the TPOT repo,
-and click 'Pull Request' (PR) to send your changes to the maintainers for
-review. This will send an email to the maintainers.
+Finally, go to the web page of your fork of the TPOT repo, and click 'Pull Request' (PR) to send your changes to the maintainers for review. This will start the CI server to check all the project's unit tests run and send an email to the maintainers.
 
 (If any of the above seems like magic to you, then look up the 
 [Git documentation](http://git-scm.com/documentation) on the web.)
