@@ -921,9 +921,9 @@ class TPOT(object):
         constructed_features = poly.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=constructed_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -958,9 +958,9 @@ class TPOT(object):
         scaled_features = mm_scaler.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=scaled_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -995,9 +995,9 @@ class TPOT(object):
         scaled_features = ma_scaler.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=scaled_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -1034,9 +1034,9 @@ class TPOT(object):
         binarized_features = binarizer.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=binarized_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -1083,9 +1083,9 @@ class TPOT(object):
         transformed_features = pca.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=transformed_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -1129,9 +1129,9 @@ class TPOT(object):
         transformed_features = rbf.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=transformed_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -1174,9 +1174,9 @@ class TPOT(object):
         transformed_features = ica.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=transformed_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -1234,9 +1234,9 @@ class TPOT(object):
         clustered_features = fa.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=clustered_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -1291,9 +1291,9 @@ class TPOT(object):
         transformed_features = nys.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=transformed_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -1333,9 +1333,8 @@ class TPOT(object):
         modified_df['non_zero'] = pd.Series(non_zero_col, index=modified_df.index)
         modified_df['zero_col'] = pd.Series(zero_col, index=modified_df.index)
 
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:

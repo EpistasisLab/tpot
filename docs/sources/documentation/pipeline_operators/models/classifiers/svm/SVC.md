@@ -30,7 +30,8 @@ from sklearn.svm import SVC
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+    modified_df[non_feature_column] = input_df[non_feature_column].values
 
 result1 = tpot_data.copy()
 
