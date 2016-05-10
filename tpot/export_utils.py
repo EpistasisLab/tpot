@@ -168,7 +168,7 @@ def generate_import_code(pipeline_list):
             operator_import = import_relations[op]
             merge_imports(pipeline_imports, operator_import)
         except KeyError:
-            raise RuntimeError('{} operator in pipeline not detailed in export utils'.format(op))
+            pass # Operator does not require imports
 
     # Build import string
     for key in pipeline_imports.keys():
