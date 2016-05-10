@@ -1320,27 +1320,14 @@ class TPOT(object):
 
         """
         feature_cols_only = input_df.drop(self.non_feature_columns, axis=1)
-
         num_features = len(feature_cols_only.columns.values)
 
         if num_features == 0:
             return input_df.copy()
 
-        non_zero_col = np.array([np.count_nonzero(row) for i, row in feature_cols_only.iterrows()]).astype(np.float64)
-        zero_col     = np.array([(num_features - x) for x in non_zero_col]).astype(np.float64)
-
-        modified_df = feature_cols_only.copy()
-        modified_df['non_zero'] = pd.Series(non_zero_col, index=modified_df.index)
-        modified_df['zero_col'] = pd.Series(zero_col, index=modified_df.index)
-
-        for non_feature_column in self.non_feature_columns:
-            modified_df[non_feature_column] = input_df[non_feature_column].values
-
-        new_col_names = {}
-        for column in modified_df.columns.values:
-            if type(column) != str:
-                new_col_names[column] = str(column).zfill(10)
-        modified_df.rename(columns=new_col_names, inplace=True)
+        modified_df = input_df.copy()
+        modified_df['non_zero'] = feature_cols_only.apply(lambda row: np.count_nonzero(row), axis=1).astype(np.float64)
+        modified_df['zero_col'] = feature_cols_only.apply(lambda row: (num_features - np.count_nonzero(row)), axis=1).astype(np.float64)
 
         return modified_df.copy()
 
