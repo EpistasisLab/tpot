@@ -1463,10 +1463,7 @@ class TPOT(object):
         """
         @wraps(func)
         def wrapped_func(self, *args, **kwargs):
-            """Increment gp_generation and bump pipeline count by increments of
-            self.population_size if GP used cached pipelines (cached pipelines wouldn't
-            execute _evaluate_individual and increment the progressbar).
-            """
+            """Increment gp_generation and bump pipeline count if necessary"""
             self.gp_generation = self.gp_generation + 1
 
             if not self.pbar.disable:

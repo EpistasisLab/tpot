@@ -19,8 +19,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
 
-
 from xgboost import XGBClassifier
+
+from tqdm import tqdm
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -608,3 +609,20 @@ def test_zero_count_2():
 
     assert in_rows == out_rows
     assert in_cols == (out_cols - 2)
+
+def test_gp_new_generation():
+    """Assert that the gp_generation count gets incremented when _gp_new_generation is called"""
+    tpot_obj = TPOT()
+    tpot_obj.pbar = tqdm(total=1, disable=True)
+
+    assert(tpot_obj.gp_generation == 0)
+
+    # Since _gp_new_generation is a decorator, and we dont want to run a full
+    # fit(), decorate a dummy function and then call the dummy function.
+    @TPOT._gp_new_generation
+    def dummy_function(self, foo):
+        pass
+
+    dummy_function(tpot_obj, None)
+
+    assert(tpot_obj.gp_generation == 1)
