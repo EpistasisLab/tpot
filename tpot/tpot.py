@@ -32,12 +32,13 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from sklearn.cluster import FeatureAgglomeration
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import VarianceThreshold, SelectKBest, SelectPercentile, RFE, SelectFwe, f_classif
 from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler, MinMaxScaler
 from sklearn.preprocessing import PolynomialFeatures, Binarizer
-from sklearn.decomposition import RandomizedPCA
-from sklearn.kernel_approximation import RBFSampler
+from sklearn.decomposition import RandomizedPCA, FastICA
+from sklearn.kernel_approximation import RBFSampler, Nystroem
 from sklearn.cross_validation import train_test_split
 from xgboost import XGBClassifier
 
@@ -144,6 +145,10 @@ class TPOT(object):
         self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._rbf, [pd.DataFrame, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, int, float], pd.DataFrame)
+        self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._zero_count, [pd.DataFrame], pd.DataFrame)
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
@@ -915,9 +920,9 @@ class TPOT(object):
         constructed_features = poly.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=constructed_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -952,9 +957,9 @@ class TPOT(object):
         scaled_features = mm_scaler.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=scaled_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -989,9 +994,9 @@ class TPOT(object):
         scaled_features = ma_scaler.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=scaled_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -1028,9 +1033,9 @@ class TPOT(object):
         binarized_features = binarizer.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=binarized_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -1077,9 +1082,9 @@ class TPOT(object):
         transformed_features = pca.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=transformed_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
@@ -1123,15 +1128,203 @@ class TPOT(object):
         transformed_features = rbf.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
         modified_df = pd.DataFrame(data=transformed_features)
-        modified_df['class'] = input_df['class'].values
-        modified_df['group'] = input_df['group'].values
-        modified_df['guess'] = input_df['guess'].values
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
 
         new_col_names = {}
         for column in modified_df.columns.values:
             if type(column) != str:
                 new_col_names[column] = str(column).zfill(10)
         modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _fast_ica(self, input_df, n_components, tol):
+        """Uses scikit-learn's FastICA to transform the feature set
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+        n_components: int
+            The number of components to keep
+        tol: float
+            Tolerance on update at each iteration.
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the transformed features
+
+        """
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        if n_components < 1:
+            n_components = 1
+        else:
+            n_components = min(n_components, len(training_features.columns.values))
+
+        ica = FastICA(n_components=n_components, tol=tol, random_state=42)
+        ica.fit(training_features.values.astype(np.float64))
+        transformed_features = ica.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=transformed_features)
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _feat_agg(self, input_df, n_clusters, affinity, linkage):
+        """Uses scikit-learn's FeatureAgglomeration to transform the feature set
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+        n_clusters: int
+            The number of clusters to find.
+        affinity: int
+            Metric used to compute the linkage. Can be "euclidean", "l1", "l2",
+            "manhattan", "cosine", or "precomputed". If linkage is "ward", only
+            "euclidean" is accepted.
+            Input integer is used to select one of the above strings.
+        linkage: int
+            Can be one of the following values:
+                "ward", "complete", "average"
+            Input integer is used to select one of the above strings.
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the transformed features
+        """
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        if n_clusters < 1:
+            n_clusters = 1
+
+        affinity_types = ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed']
+        linkage_types = ['ward', 'complete', 'average']
+
+        linkage_name = linkage_types[linkage % len(linkage_types)]
+
+        if linkage_name == 'ward':
+            affinity_name = 'euclidean'
+        else:
+            affinity_name = affinity_types[affinity % len(affinity_types)]
+
+        fa = FeatureAgglomeration(n_clusters=n_clusters, affinity=affinity_name, linkage=linkage_name)
+        fa.fit(training_features.values.astype(np.float64))
+
+        clustered_features = fa.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=clustered_features)
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _nystroem(self, input_df, kernel, gamma, n_components):
+        """
+        Uses scikit-learn's Nystroem to approximate a kernel map using a subset
+        of the training data. Constructs an approximate feature map for an
+        arbitrary kernel using a subset of the data as basis.
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+        kernel: int
+            Kernel type is selected from scikit-learn's provided types:
+                'sigmoid', 'polynomial', 'additive_chi2', 'poly', 'laplacian', 'cosine', 'linear', 'rbf', 'chi2'
+
+            Input integer is used to select one of the above strings.
+        gamma: float
+            Gamma parameter for the kernels.
+        n_components: int
+            The number of components to keep
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the transformed features
+
+        """
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        if n_components < 1:
+            n_components = 1
+        else:
+            n_components = min(n_components, len(training_features.columns.values))
+
+        # Pulled from sklearn.metrics.pairwise.PAIRWISE_KERNEL_FUNCTIONS
+        kernel_types = ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']
+        kernel_name = kernel_types[kernel % len(kernel_types)]
+
+        nys = Nystroem(kernel=kernel_name, gamma=gamma, n_components=n_components)
+        nys.fit(training_features.values.astype(np.float64))
+        transformed_features = nys.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
+
+        modified_df = pd.DataFrame(data=transformed_features)
+
+        for non_feature_column in self.non_feature_columns:
+            modified_df[non_feature_column] = input_df[non_feature_column].values
+
+        new_col_names = {}
+        for column in modified_df.columns.values:
+            if type(column) != str:
+                new_col_names[column] = str(column).zfill(10)
+        modified_df.rename(columns=new_col_names, inplace=True)
+
+        return modified_df.copy()
+
+    def _zero_count(self, input_df):
+        """Adds virtual features for the number of zeros per row, and number of non-zeros per row.
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to scale
+
+        Returns
+        -------
+        modified_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Returns a DataFrame containing the new virtual features
+
+        """
+        feature_cols_only = input_df.drop(self.non_feature_columns, axis=1)
+        num_features = len(feature_cols_only.columns.values)
+
+        if num_features == 0:
+            return input_df.copy()
+
+        modified_df = input_df.copy()
+        modified_df['non_zero'] = feature_cols_only.apply(lambda row: np.count_nonzero(row), axis=1).astype(np.float64)
+        modified_df['zero_col'] = feature_cols_only.apply(lambda row: (num_features - np.count_nonzero(row)), axis=1).astype(np.float64)
 
         return modified_df.copy()
 

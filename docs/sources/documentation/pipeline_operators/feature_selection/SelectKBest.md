@@ -1,9 +1,9 @@
 # Select K-Best
-* * * 
+* * *
 
 Uses Scikit-learn's SelectKBest feature selection to learn the subset of features that have the highest score according to some scoring function.
 
-## Dependencies 
+## Dependencies
     sklearn.feature_selection.SelectKBest
     sklearn.feature_selection.f_classif
 
@@ -26,14 +26,14 @@ Example Exported Code
 ```Python
 import numpy as np
 import pandas as pd
-from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.cross_validation import train_test_split
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import f_classif
 from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
 
 # Use Scikit-learn's SelectKBest for feature selection
 training_features = tpot_data.loc[training_indices].drop('class', axis=1)
