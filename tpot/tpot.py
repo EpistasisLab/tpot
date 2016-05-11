@@ -39,7 +39,6 @@ from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler, Mi
 from sklearn.preprocessing import PolynomialFeatures, Binarizer
 from sklearn.decomposition import RandomizedPCA, FastICA
 from sklearn.kernel_approximation import RBFSampler, Nystroem
-from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS
 from sklearn.cross_validation import train_test_split
 from xgboost import XGBClassifier
 
@@ -1282,8 +1281,8 @@ class TPOT(object):
         else:
             n_components = min(n_components, len(training_features.columns.values))
 
-        kernel_types = list(PAIRWISE_KERNEL_FUNCTIONS.keys())
-
+        # Pulled from sklearn.metrics.pairwise.PAIRWISE_KERNEL_FUNCTIONS
+        kernel_types = ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']
         kernel_name = kernel_types[kernel % len(kernel_types)]
 
         nys = Nystroem(kernel=kernel_name, gamma=gamma, n_components=n_components)
@@ -1304,9 +1303,7 @@ class TPOT(object):
         return modified_df.copy()
 
     def _zero_count(self, input_df):
-        """
-        Adds virtual features for the number of zeros per row, and number of
-        non-zeros per row.
+        """Adds virtual features for the number of zeros per row, and number of non-zeros per row.
 
         Parameters
         ----------

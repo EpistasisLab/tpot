@@ -21,7 +21,6 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 # For usage, see export() function in tpot.py
 
 import deap
-from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS
 
 def replace_mathematical_operators(exported_pipeline):
     """Replace all of the mathematical operators with their results for use in export(self, output_file_name)
@@ -660,13 +659,13 @@ else:
             n_components = int(operator[5])
 
             # Kernel functions from sklearn.metrics.pairwise
-            kernel_types = list(PAIRWISE_KERNEL_FUNCTIONS.keys())
+            kernel_types = ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']
             kernel_name = kernel_types[kernel % len(kernel_types)]
 
             if n_components < 1:
                 n_components = 1
             else:
-                n_components = min(n_components, len(training_features.columns.values))
+                n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
 
             operator_text += '''
 # Use Scikit-learn's Nystroem to transform the feature set
