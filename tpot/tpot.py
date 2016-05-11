@@ -24,6 +24,7 @@ import operator
 import random
 import hashlib
 from collections import Counter
+from functools import wraps
 
 import numpy as np
 import pandas as pd
@@ -53,6 +54,8 @@ from deap import base
 from deap import creator
 from deap import tools
 from deap import gp
+
+from tqdm import tqdm
 
 class TPOT(object):
 
@@ -114,6 +117,9 @@ class TPOT(object):
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
+
+        self.pbar = None
+        self.gp_generation = 0
 
         # Columns to always ignore when in an operator
         self.non_feature_columns = ['class', 'group', 'guess']
@@ -263,9 +269,18 @@ class TPOT(object):
 
             verbose = (self.verbosity == 2)
 
+            # Start the progress bar
+            num_pipelines = self.population_size * (self.generations + 1)
+            self.pbar = tqdm(total=num_pipelines, unit='pipeline',
+                             disable=(not verbose), desc='GP Progress')
+
             pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                                          mutpb=self.mutation_rate, ngen=self.generations,
                                          stats=stats, halloffame=self.hof, verbose=verbose)
+
+            # Close the progress bar
+            self.pbar.close()
+            self.gp_generation = 0
 
             # Store the pipeline with the highest internal testing accuracy
             top_score = 0.
@@ -1198,6 +1213,9 @@ class TPOT(object):
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
             return 5000., 0.
+        finally:
+            if not self.pbar.disable:
+                self.pbar.update(1) # One more pipeline evaluated
 
         if isinstance(resulting_score, float) or isinstance(resulting_score, np.float64) or isinstance(resulting_score, np.float32):
             return max(1, operator_count), resulting_score
@@ -1236,6 +1254,40 @@ class TPOT(object):
 
         return balanced_accuracy
 
+    def _gp_new_generation(func):
+        """Decorator that wraps functions that indicate the beginning of a new GP
+        generation.
+
+        Parameters
+        ----------
+        func: function
+            The function being decorated
+
+        Returns
+        -------
+        wrapped_func: function
+            A wrapper function around the func parameter
+        """
+        @wraps(func)
+        def wrapped_func(self, *args, **kwargs):
+            """Increment gp_generation and bump pipeline count by increments of
+            self.population_size if GP used cached pipelines (cached pipelines wouldn't
+            execute _evaluate_individual and increment the progressbar).
+            """
+            self.gp_generation = self.gp_generation + 1
+
+            if not self.pbar.disable:
+                # self.pbar.write('Started generation #{}'.format(self.gp_generation))
+
+                if self.pbar.n < self.gp_generation * self.population_size:
+                    missing_pipelines = (self.gp_generation * self.population_size) - self.pbar.n
+                    self.pbar.update(missing_pipelines)
+
+            return func(self, *args, **kwargs)
+
+        return wrapped_func
+
+    @_gp_new_generation
     def _combined_selection_operator(self, individuals, k):
         """Perform NSGA2 selection on the population according to their Pareto fitness
 
