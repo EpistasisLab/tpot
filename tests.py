@@ -22,7 +22,7 @@ from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKB
 
 from xgboost import XGBClassifier
 
-# Set up the iris data set for testing
+# Set up the MNIST data set for testing
 mnist_data = load_digits()
 training_features, testing_features, training_classes, testing_classes =\
         train_test_split(mnist_data.data, mnist_data.target, random_state=42)
@@ -465,20 +465,146 @@ def test_static_models():
 
         assert np.array_equal(result['guess'].values, sklearn_model_obj.predict(testing_features)), "Model {} failed".format(str(model))
 
-def test_div():
-        """Ensure that the TPOT protected division function outputs 0 when the divisor is 0"""
+def test_rbf():
+    """Assert that the TPOT RBFSampler outputs the input dataframe when # of
+    training features is 0"""
+    tpot_obj = TPOT()
 
-        tpot_obj = TPOT()
-        assert tpot_obj._div(5,0)==0
+    assert np.array_equal(tpot_obj._pca(training_testing_data.ix[:,-3:], 0.1, 3),
+                          training_testing_data.ix[:,-3:])
+
+def test_rbf_2():
+    """Assert that RBF returns an object of the same type as the input dataframe
+
+    Also assert that the number of rows is identical between the input dataframe
+    and output dataframe.
+    """
+    tpot_obj = TPOT()
+
+    input_df = training_testing_data
+    output_df = tpot_obj._rbf(input_df, 0.1, 3)
+
+    assert type(input_df) == type(output_df)
+
+    (in_rows, in_cols) = input_df.shape
+    (out_rows, out_cols) = output_df.shape
+
+    assert in_rows == out_rows
+
+def test_fast_ica():
+    """Assert that the TPOT FastICA preprocessor outputs the input dataframe
+    when the number of training features is 0"""
+    tpot_obj = TPOT()
+
+    assert np.array_equal(tpot_obj._fast_ica(training_testing_data.ix[:,-3:], 1, 1.0),
+                          training_testing_data.ix[:,-3:])
+
+def test_fast_ica_2():
+    """Assert that FastICA returns the same object type as the input object type.
+
+    Also assert that the number of rows is identical between the input dataframe
+    and output dataframe.
+    """
+    tpot_obj = TPOT()
+
+    input_df = training_testing_data
+    output_df = tpot_obj._fast_ica(input_df, 1, 1.0)
+
+    assert type(input_df) == type(output_df)
+
+    (in_rows, in_cols) = input_df.shape
+    (out_rows, out_cols) = output_df.shape
+
+    assert in_rows == out_rows
+
+
+def test_feat_agg():
+    """Assert that the TPOT FeatureAgglomeration preprocessor outputs the input dataframe
+    when the number of training features is 0"""
+    tpot_obj = TPOT()
+
+    assert np.array_equal(tpot_obj._feat_agg(training_testing_data.ix[:,-3:], 5, 1, 1),
+                          training_testing_data.ix[:,-3:])
+
+def test_feat_agg_2():
+    """Assert that FeatureAgglomeration returns the same object type as the input object type.
+
+    Also assert that the number of rows is identical between the input dataframe
+    and output dataframe.
+    """
+    tpot_obj = TPOT()
+
+    input_df = training_testing_data
+    output_df = tpot_obj._feat_agg(input_df, 5, 1, 1)
+
+    assert type(input_df) == type(output_df)
+
+    (in_rows, in_cols) = input_df.shape
+    (out_rows, out_cols) = output_df.shape
+
+    assert in_rows == out_rows
+
+def test_nystroem():
+    """Assert that the TPOT Nystroem preprocessor outputs the input dataframe
+    when the number of training features is 0"""
+    tpot_obj = TPOT()
+
+    assert np.array_equal(tpot_obj._nystroem(training_testing_data.ix[:,-3:], 1, 0.1, 1),
+                          training_testing_data.ix[:,-3:])
+
+def test_nystroem_2():
+    """Assert that Nystroem returns the same object type as the input object type.
+
+    Also assert that the number of rows is identical between the input dataframe
+    and output dataframe.
+    """
+    tpot_obj = TPOT()
+
+    input_df = training_testing_data
+    output_df = tpot_obj._nystroem(input_df, 1, 0.1, 1)
+
+    assert type(input_df) == type(output_df)
+
+    (in_rows, in_cols) = input_df.shape
+    (out_rows, out_cols) = output_df.shape
+
+    assert in_rows == out_rows
+
+def test_div():
+    """Ensure that the TPOT protected division function outputs 0 when the divisor is 0"""
+
+    tpot_obj = TPOT()
+    assert tpot_obj._div(5, 0) == 0
 
 def test_binarizer():
-        """Ensure that the TPOT binarizer outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
+    """Ensure that the TPOT binarizer outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._binarizer(training_testing_data.ix[:,-3:], 0),training_testing_data.ix[:,-3:])
+    assert np.array_equal(tpot_obj._binarizer(training_testing_data.ix[:,-3:], 0),training_testing_data.ix[:,-3:])
 
 def test_pca():
-        """Ensure that the TPOT PCA outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
+    """Ensure that the TPOT PCA outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._pca(training_testing_data.ix[:,-3:], 1, 1),training_testing_data.ix[:,-3:])
+    assert np.array_equal(tpot_obj._pca(training_testing_data.ix[:,-3:], 1, 1),training_testing_data.ix[:,-3:])
+
+def test_zero_count():
+    """Ensure that the TPOT _zero_count preprocessor outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
+
+    assert np.array_equal(tpot_obj._zero_count(training_testing_data.ix[:,-3:]),training_testing_data.ix[:,-3:])
+
+def test_zero_count_2():
+    """Assert that the Zero Count preprocessor adds two columns to the dataframe"""
+    tpot_obj = TPOT()
+
+    input_df = training_testing_data
+    output_df = tpot_obj._zero_count(input_df)
+
+    assert type(input_df) == type(output_df)
+
+    (in_rows, in_cols) = input_df.shape
+    (out_rows, out_cols) = output_df.shape
+
+    assert in_rows == out_rows
+    assert in_cols == (out_cols - 2)

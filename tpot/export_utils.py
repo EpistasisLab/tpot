@@ -118,12 +118,15 @@ def generate_import_code(pipeline_list):
     operators_used = set([operator[1] for operator in pipeline_list])
 
     pipeline_text = 'import numpy as np\n'
-    pipeline_text += 'import pandas as pd\n'
+    pipeline_text += 'import pandas as pd\n\n'
 
     pipeline_imports = {'sklearn.cross_validation': ['train_test_split']}
 
-    # Dict of operator names and imports required. Imports are shown in the form
-    # of a dict in the format of: from {key} import {values}
+    # Operator names and imports required.
+    # Dict structure:
+    # {
+    #   'operator_function':    {'module.to.import.from': ['ClassWithinModuleToImport']}
+    # }
     import_relations = {
         '_variance_threshold':  {'sklearn.feature_selection': ['VarianceThreshold']},
         '_select_kbest':        {'sklearn.feature_selection': ['SelectKBest', 'f_classif']},
@@ -143,7 +146,10 @@ def generate_import_code(pipeline_list):
         '_logistic_regression': {'sklearn.linear_model': ['LogisticRegression']},
         '_svc':                 {'sklearn.svm': ['SVC']},
         '_knnc':                {'sklearn.neighbors': ['KNeighborsClassifier']},
-        '_xgradient_boosting':  {'xgboost': ['XGBClassifier']}
+        '_xgradient_boosting':  {'xgboost': ['XGBClassifier']},
+        '_fast_ica':            {'sklearn.decomposition': ['FastICA']},
+        '_feat_agg':            {'sklearn.cluster': ['FeatureAgglomeration']},
+        '_nystroem':            {'sklearn.kernel_approximation': ['Nystroem']}
     }
 
     # Build import dict from operators used
@@ -388,7 +394,7 @@ else:
             elif alpha <= 0.001:
                 alpha = 0.001
             operator_text += '''
-training_features = {INPUT_DF}.loc[training_indices].drop(['class', 'group', 'guess'], axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop(['class'], axis=1)
 training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 if len(training_features.columns.values) == 0:
     {OUTPUT_DF} = {INPUT_DF}.copy()
@@ -591,5 +597,107 @@ if len(training_features.columns.values) > 0:
 else:
     {OUTPUT_DF} = {INPUT_DF}.copy()
 '''.format(INPUT_DF=operator[2], GAMMA=gamma, N_COMPONENTS=n_components, OUTPUT_DF=result_name)
+
+        elif operator_name == '_fast_ica':
+            n_components = int(operator[3])
+            tol = float(operator[4])
+            if n_components < 1:
+                n_components = 1
+            n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
+
+            operator_text += '''
+# Use Scikit-learn's FastICA to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # FastICA must be fit on only the training data
+    ica = FastICA(n_components={N_COMPONENTS}, tol={TOL}, random_state=42)
+    ica.fit(training_features.values.astype(np.float64))
+    transformed_features = ica.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], N_COMPONENTS=n_components, TOL=tol, OUTPUT_DF=result_name)
+
+        elif operator_name == '_feat_agg':
+            n_clusters = int(operator[3])
+            affinity = int(operator[4])
+            linkage = int(operator[5])
+
+            if n_clusters < 1:
+                n_clusters = 1
+
+            affinity_types = ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed']
+            linkage_types = ['ward', 'complete', 'average']
+
+            linkage_name = linkage_types[linkage % len(linkage_types)]
+
+            if linkage_name == 'ward':
+                affinity_name = 'euclidean'
+            else:
+                affinity_name = affinity_types[affinity % len(affinity_types)]
+
+            operator_text += '''
+# Use Scikit-learn's FeatureAgglomeration to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # FeatureAgglomeration must be fit on only the training data
+    fa = FeatureAgglomeration(n_clusters={N_CLUSTERS}, affinity='{AFFINITY}', linkage='{LINKAGE}')
+    fa.fit(training_features.values.astype(np.float64))
+    transformed_features = fa.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], N_CLUSTERS=n_clusters, AFFINITY=affinity_name, LINKAGE=linkage_name, OUTPUT_DF=result_name)
+
+        elif operator_name == '_nystroem':
+            kernel = int(operator[3])
+            gamma = float(operator[4])
+            n_components = int(operator[5])
+
+            # Kernel functions from sklearn.metrics.pairwise
+            kernel_types = ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']
+            kernel_name = kernel_types[kernel % len(kernel_types)]
+
+            if n_components < 1:
+                n_components = 1
+            else:
+                n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
+
+            operator_text += '''
+# Use Scikit-learn's Nystroem to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # FeatureAgglomeration must be fit on only the training data
+    nys = Nystroem(kernel='{KERNEL}', gamma={GAMMA}, n_components={N_COMPONENTS})
+    nys.fit(training_features.values.astype(np.float64))
+    transformed_features = nys.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], KERNEL=kernel_name, GAMMA=gamma, N_COMPONENTS=n_components, OUTPUT_DF=result_name)
+
+        elif operator_name == '_zero_count':
+            print('_zero_count used in export!')
+            operator_text += '''
+# Add virtual features for number of zeros and non-zeros per row
+feature_cols_only = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(feature_cols_only.columns.values) > 0:
+    non_zero_col = np.array([np.count_nonzero(row) for i, row in {INPUT_DF}.iterrows()]).astype(np.float64)
+    zero_col     = np.array([(len(feature_cols_only.columns.values) - x) for x in non_zero_col]).astype(np.float64)
+
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+    {OUTPUT_DF}['non_zero'] = pd.Series(non_zero_col, index={OUTPUT_DF}.index)
+    {OUTPUT_DF}['zero_col'] = pd.Series(zero_col, index={OUTPUT_DF}.index)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
     return operator_text
