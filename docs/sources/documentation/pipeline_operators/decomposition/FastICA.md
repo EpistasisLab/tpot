@@ -28,7 +28,7 @@ Example Exported Code
 ```Python
 import numpy as np
 import pandas as pd
-from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.cross_validation import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.decomposition import FastICA
 
