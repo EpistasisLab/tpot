@@ -13,6 +13,7 @@ X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
                                                     train_size=0.75, test_size=0.25)
 
 def precision(result):
+    all_classes = list(set(result['class'].values))
     all_class_tps = []
     all_class_tps_fps = []
     for this_class in all_classes:
@@ -30,6 +31,7 @@ def precision(result):
     return micro_avg_precision
     
 def recall(result):
+    all_classes = list(set(result['class'].values))
     all_class_tps = []
     all_class_tps_fns = []
     for this_class in all_classes:
@@ -44,6 +46,7 @@ def recall(result):
     return micro_avg_recall
 
 def f1(result):
+    all_classes = list(set(result['class'].values))
     all_class_tps = []
     all_class_tps_fps = []
     all_class_tps_fns = []
