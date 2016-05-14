@@ -22,13 +22,14 @@ Example Exported Code
 ```Python
 import numpy as np
 import pandas as pd
-from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.cross_validation import train_test_split
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = next(iter(StratifiedShuffleSplit(tpot_data['class'].values, n_iter=1, train_size=0.75, test_size=0.25)))
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+
 
 # Use Scikit-learn's MaxAbsScaler to scale the features
 training_features = tpot_data.loc[training_indices].drop('class', axis=1)

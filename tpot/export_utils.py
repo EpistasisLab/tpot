@@ -117,34 +117,62 @@ def generate_import_code(pipeline_list):
     # operator[1] is the name of the operator
     operators_used = set([operator[1] for operator in pipeline_list])
 
-    pipeline_text = '''import numpy as np
-import pandas as pd
+    pipeline_text = 'import numpy as np\n'
+    pipeline_text += 'import pandas as pd\n\n'
 
-from sklearn.cross_validation import train_test_split
-'''
+    pipeline_imports = {'sklearn.cross_validation': ['train_test_split']}
 
-    if '_variance_threshold' in operators_used: pipeline_text += 'from sklearn.feature_selection import VarianceThreshold\n'
-    if '_select_kbest' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectKBest\n'
-    if '_select_fwe' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectFwe\n'
-    if '_select_percentile' in operators_used: pipeline_text += 'from sklearn.feature_selection import SelectPercentile\n'
-    if ('_select_percentile' in operators_used or
-        '_select_kbest' in operators_used or
-        '_select_fwe' in operators_used): pipeline_text += 'from sklearn.feature_selection import f_classif\n'
-    if '_rfe' in operators_used: pipeline_text += 'from sklearn.feature_selection import RFE\n'
-    if '_standard_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import StandardScaler\n'
-    if '_robust_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import RobustScaler\n'
-    if '_min_max_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import MinMaxScaler\n'
-    if '_max_abs_scaler' in operators_used: pipeline_text += 'from sklearn.preprocessing import MaxAbsScaler\n'
-    if '_binarizer' in operators_used: pipeline_text += 'from sklearn.preprocessing import Binarizer\n'
-    if '_polynomial_features' in operators_used: pipeline_text += 'from sklearn.preprocessing import PolynomialFeatures\n'
-    if '_pca' in operators_used: pipeline_text += 'from sklearn.decomposition import RandomizedPCA\n'
-    if '_rbf' in operators_used: pipeline_text += 'from sklearn.kernel_approximation import RBFSampler\n'
-    if '_decision_tree' in operators_used: pipeline_text += 'from sklearn.tree import DecisionTreeClassifier\n'
-    if '_random_forest' in operators_used: pipeline_text += 'from sklearn.ensemble import RandomForestClassifier\n'
-    if '_logistic_regression' in operators_used: pipeline_text += 'from sklearn.linear_model import LogisticRegression\n'
-    if '_svc' in operators_used or '_rfe' in operators_used: pipeline_text += 'from sklearn.svm import SVC\n'
-    if '_knnc' in operators_used: pipeline_text += 'from sklearn.neighbors import KNeighborsClassifier\n'
-    if '_xgradient_boosting' in operators_used: pipeline_text += 'from xgboost import XGBClassifier\n'
+    # Operator names and imports required.
+    # Dict structure:
+    # {
+    #   'operator_function':    {'module.to.import.from': ['ClassWithinModuleToImport']}
+    # }
+    import_relations = {
+        '_variance_threshold':  {'sklearn.feature_selection': ['VarianceThreshold']},
+        '_select_kbest':        {'sklearn.feature_selection': ['SelectKBest', 'f_classif']},
+        '_select_fwe':          {'sklearn.feature_selection': ['SelectFwe', 'f_classif']},
+        '_select_percentile':   {'sklearn.feature_selection': ['SelectPercentile', 'f_classif']},
+        '_rfe':                 {'sklearn.feature_selection': ['RFE'], 'sklearn.svm': ['SVC']},
+        '_standard_scaler':     {'sklearn.preprocessing': ['StandardScaler']},
+        '_robust_scaler':       {'sklearn.preprocessing': ['RobustScaler']},
+        '_min_max_scaler':      {'sklearn.preprocessing': ['MinMaxScaler']},
+        '_max_abs_scaler':      {'sklearn.preprocessing': ['MaxAbsScaler']},
+        '_binarizer':           {'sklearn.preprocessing': ['Binarizer']},
+        '_polynomial_features': {'sklearn.preprocessing': ['PolynomialFeatures']},
+        '_pca':                 {'sklearn.decomposition': ['RandomizedPCA']},
+        '_rbf':                 {'sklearn.kernel_approximation': ['RBFSampler']},
+        '_decision_tree':       {'sklearn.tree': ['DecisionTreeClassifier']},
+        '_random_forest':       {'sklearn.ensemble': ['RandomForestClassifier']},
+        '_logistic_regression': {'sklearn.linear_model': ['LogisticRegression']},
+        '_svc':                 {'sklearn.svm': ['SVC']},
+        '_knnc':                {'sklearn.neighbors': ['KNeighborsClassifier']},
+        '_xgradient_boosting':  {'xgboost': ['XGBClassifier']},
+        '_fast_ica':            {'sklearn.decomposition': ['FastICA']},
+        '_feat_agg':            {'sklearn.cluster': ['FeatureAgglomeration']},
+        '_nystroem':            {'sklearn.kernel_approximation': ['Nystroem']}
+    }
+
+    # Build import dict from operators used
+    for op in operators_used:
+        def merge_imports(old_dict, new_dict):
+            # Key is a module name
+            for key in new_dict.keys():
+                if key in old_dict.keys():
+                    # Append imports from the same module
+                    old_dict[key] = set(list(old_dict[key]) + list(new_dict[key]))
+                else:
+                    old_dict[key] = new_dict[key]
+
+        try:
+            operator_import = import_relations[op]
+            merge_imports(pipeline_imports, operator_import)
+        except KeyError:
+            pass # Operator does not require imports
+
+    # Build import string
+    for key in pipeline_imports.keys():
+        module_list = ', '.join(pipeline_imports[key])
+        pipeline_text += 'from {} import {}\n'.format(key, module_list)
 
     pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -366,7 +394,7 @@ else:
             elif alpha <= 0.001:
                 alpha = 0.001
             operator_text += '''
-training_features = {INPUT_DF}.loc[training_indices].drop(['class', 'group', 'guess'], axis=1)
+training_features = {INPUT_DF}.loc[training_indices].drop(['class'], axis=1)
 training_class_vals = {INPUT_DF}.loc[training_indices, 'class'].values
 if len(training_features.columns.values) == 0:
     {OUTPUT_DF} = {INPUT_DF}.copy()
@@ -569,5 +597,107 @@ if len(training_features.columns.values) > 0:
 else:
     {OUTPUT_DF} = {INPUT_DF}.copy()
 '''.format(INPUT_DF=operator[2], GAMMA=gamma, N_COMPONENTS=n_components, OUTPUT_DF=result_name)
+
+        elif operator_name == '_fast_ica':
+            n_components = int(operator[3])
+            tol = float(operator[4])
+            if n_components < 1:
+                n_components = 1
+            n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
+
+            operator_text += '''
+# Use Scikit-learn's FastICA to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # FastICA must be fit on only the training data
+    ica = FastICA(n_components={N_COMPONENTS}, tol={TOL}, random_state=42)
+    ica.fit(training_features.values.astype(np.float64))
+    transformed_features = ica.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], N_COMPONENTS=n_components, TOL=tol, OUTPUT_DF=result_name)
+
+        elif operator_name == '_feat_agg':
+            n_clusters = int(operator[3])
+            affinity = int(operator[4])
+            linkage = int(operator[5])
+
+            if n_clusters < 1:
+                n_clusters = 1
+
+            affinity_types = ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed']
+            linkage_types = ['ward', 'complete', 'average']
+
+            linkage_name = linkage_types[linkage % len(linkage_types)]
+
+            if linkage_name == 'ward':
+                affinity_name = 'euclidean'
+            else:
+                affinity_name = affinity_types[affinity % len(affinity_types)]
+
+            operator_text += '''
+# Use Scikit-learn's FeatureAgglomeration to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # FeatureAgglomeration must be fit on only the training data
+    fa = FeatureAgglomeration(n_clusters={N_CLUSTERS}, affinity='{AFFINITY}', linkage='{LINKAGE}')
+    fa.fit(training_features.values.astype(np.float64))
+    transformed_features = fa.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], N_CLUSTERS=n_clusters, AFFINITY=affinity_name, LINKAGE=linkage_name, OUTPUT_DF=result_name)
+
+        elif operator_name == '_nystroem':
+            kernel = int(operator[3])
+            gamma = float(operator[4])
+            n_components = int(operator[5])
+
+            # Kernel functions from sklearn.metrics.pairwise
+            kernel_types = ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']
+            kernel_name = kernel_types[kernel % len(kernel_types)]
+
+            if n_components < 1:
+                n_components = 1
+            else:
+                n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
+
+            operator_text += '''
+# Use Scikit-learn's Nystroem to transform the feature set
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(training_features.columns.values) > 0:
+    # FeatureAgglomeration must be fit on only the training data
+    nys = Nystroem(kernel='{KERNEL}', gamma={GAMMA}, n_components={N_COMPONENTS})
+    nys.fit(training_features.values.astype(np.float64))
+    transformed_features = nys.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
+    {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], KERNEL=kernel_name, GAMMA=gamma, N_COMPONENTS=n_components, OUTPUT_DF=result_name)
+
+        elif operator_name == '_zero_count':
+            print('_zero_count used in export!')
+            operator_text += '''
+# Add virtual features for number of zeros and non-zeros per row
+feature_cols_only = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
+if len(feature_cols_only.columns.values) > 0:
+    non_zero_col = np.array([np.count_nonzero(row) for i, row in {INPUT_DF}.iterrows()]).astype(np.float64)
+    zero_col     = np.array([(len(feature_cols_only.columns.values) - x) for x in non_zero_col]).astype(np.float64)
+
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+    {OUTPUT_DF}['non_zero'] = pd.Series(non_zero_col, index={OUTPUT_DF}.index)
+    {OUTPUT_DF}['zero_col'] = pd.Series(zero_col, index={OUTPUT_DF}.index)
+    {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
+else:
+    {OUTPUT_DF} = {INPUT_DF}.copy()
+'''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
     return operator_text

@@ -41,6 +41,7 @@ pages:
       - MaxAbsScaler: documentation/pipeline_operators/preprocessing/scaling/MaxAbsScaler.md
       - Binarizer: documentation/pipeline_operators/preprocessing/scaling/Binarizer.md
       - PolynomialFeatures: documentation/pipeline_operators/preprocessing/PolynomialFeatures.md
+      - ZeroCount: documentation/pipeline_operators/preprocessing/ZeroCount.md
     - Feature Selection:
       - VarianceThreshold: documentation/pipeline_operators/feature_selection/VarianceThreshold.md
       - SelectKBest: documentation/pipeline_operators/feature_selection/SelectKBest.md
@@ -48,6 +49,10 @@ pages:
       - RFE: documentation/pipeline_operators/feature_selection/RFE.md
     - Decomposition:
       - RandomizedPCA: documentation/pipeline_operators/decomposition/RandomizedPCA.md
+      - FastICA: documentation/pipeline_operators/decomposition/FastICA.md
     - Kernel Approximation:
       - RBFSampler: documentation/pipeline_operators/kernel_approximation/RBFSampler.md
+      - Nystroem: documentation/pipeline_operators/kernel_approximation/Nystroem.md
+    - Cluster:
+      - FeatureAgglomeration: documentation/pipeline_operators/cluster/FeatureAgglomeration.md
   - Contributing: contributing.md
