@@ -24,4 +24,4 @@ if [[ "$COVERAGE" == "true" ]]; then
 else
     nosetests -s -v
 fi
-#make test-doc test-sphinxext
+# make test-doc test-sphinxext

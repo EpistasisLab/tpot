@@ -24,7 +24,6 @@ import operator
 import random
 import hashlib
 from collections import Counter
-from functools import wraps
 
 import numpy as np
 import pandas as pd
@@ -48,6 +47,7 @@ from update_checker import update_check
 
 from ._version import __version__
 from .export_utils import *
+from .decorators import _gp_new_generation
 
 import deap
 from deap import algorithms
@@ -267,21 +267,25 @@ class TPOT(object):
 
             self.hof = tools.ParetoFront(similar=pareto_eq)
 
-            stats = tools.Statistics(lambda ind: ind.fitness.values[1])
-            stats.register('Minimum score', np.min)
-            stats.register('Average score', np.mean)
-            stats.register('Maximum score', np.max)
+            # stats = tools.Statistics(lambda ind: ind.fitness.values[1])
+            # stats.register('Minimum score', np.min)
+            # stats.register('Average score', np.mean)
+            # stats.register('Maximum score', np.max)
 
             verbose = (self.verbosity == 2)
 
             # Start the progress bar
-            num_pipelines = self.population_size * (self.generations + 1)
-            self.pbar = tqdm(total=num_pipelines, unit='pipeline',
+            num_evaluations = self.population_size * (self.generations + 1)
+            self.pbar = tqdm(total=num_evaluations, unit='pipeline',
                              disable=(not verbose), desc='GP Progress')
 
-            pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
+            with warnings.catch_warnings():
+                # Ignore warnings
+                warnings.simplefilter('ignore', category=UserWarning)
+
+                pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                                          mutpb=self.mutation_rate, ngen=self.generations,
-                                         stats=stats, halloffame=self.hof, verbose=verbose)
+                                         halloffame=self.hof, verbose=False)
 
             # Close the progress bar
             self.pbar.close()
@@ -1446,36 +1450,6 @@ class TPOT(object):
         balanced_accuracy = np.mean(all_class_accuracies)
 
         return balanced_accuracy
-
-    def _gp_new_generation(func):
-        """Decorator that wraps functions that indicate the beginning of a new GP
-        generation.
-
-        Parameters
-        ----------
-        func: function
-            The function being decorated
-
-        Returns
-        -------
-        wrapped_func: function
-            A wrapper function around the func parameter
-        """
-        @wraps(func)
-        def wrapped_func(self, *args, **kwargs):
-            """Increment gp_generation and bump pipeline count if necessary"""
-            self.gp_generation = self.gp_generation + 1
-
-            if not self.pbar.disable:
-                # self.pbar.write('Started generation #{}'.format(self.gp_generation))
-
-                if self.pbar.n < self.gp_generation * self.population_size:
-                    missing_pipelines = (self.gp_generation * self.population_size) - self.pbar.n
-                    self.pbar.update(missing_pipelines)
-
-            return func(self, *args, **kwargs)
-
-        return wrapped_func
 
     @_gp_new_generation
     def _combined_selection_operator(self, individuals, k):

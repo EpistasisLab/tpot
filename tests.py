@@ -3,6 +3,7 @@
 """
 
 from tpot import TPOT
+from tpot.decorators import _gp_new_generation
 
 import pandas as pd
 import numpy as np
@@ -618,8 +619,9 @@ def test_gp_new_generation():
     assert(tpot_obj.gp_generation == 0)
 
     # Since _gp_new_generation is a decorator, and we dont want to run a full
-    # fit(), decorate a dummy function and then call the dummy function.
-    @TPOT._gp_new_generation
+    # fit(), decorate a dummy function and then call the dummy function as if it's
+    # a TPOT instance function
+    @_gp_new_generation
     def dummy_function(self, foo):
         pass
 
