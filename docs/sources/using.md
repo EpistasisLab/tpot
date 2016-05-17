@@ -7,32 +7,44 @@ tpot --help
 
 usage: tpot [-h] [-is INPUT_SEPARATOR] [-o OUTPUT_FILE] [-g GENERATIONS]
             [-p POPULATION_SIZE] [-mr MUTATION_RATE] [-xr CROSSOVER_RATE]
-            [-s RANDOM_STATE] [-v {0,1,2}] [--disable-update-check]
-            [--version]
+            [-s RANDOM_STATE] [-v {0,1,2}] [--no-update-check] [--version]
             INPUT_FILE
 
 A Python tool that automatically creates and optimizes machine learning
 pipelines using genetic programming.
 
 positional arguments:
-  INPUT_FILE            Data file to optimize the pipeline on; ensure that the
-                        class column is labeled as "class"
+  INPUT_FILE           Data file to optimize the pipeline on; ensure that the
+                       class label column is labeled as "class".
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -is INPUT_SEPARATOR   Character used to separate columns in the input file
-  -o OUTPUT_FILE        File to export the final optimized pipeline
-  -g GENERATIONS        Number of generations to run pipeline optimization
-  -p POPULATION_SIZE    Number of individuals in the GP population
-  -mr MUTATION_RATE     GP mutation rate in the range [0.0, 1.0]
-  -xr CROSSOVER_RATE    GP crossover rate in the range [0.0, 1.0]
-  -s RANDOM_STATE       Random number generator seed for reproducibility
-  -v {0,1,2}            How much information TPOT communicates while it is
-                        running; 0 = none, 1 = minimal, 2 = all
-  --disable-update-check
-                        Flag indicating whether the TPOT version checker
-                        should be disabled
-  --version             show program's version number and exit
+  -h, --help           Show this help message and exit.
+  -is INPUT_SEPARATOR  Character used to separate columns in the input file.
+  -o OUTPUT_FILE       File to export the final optimized pipeline.
+  -g GENERATIONS       Number of generations to run pipeline optimization
+                       over. Generally, TPOT will work better when you give it
+                       more generations (and therefore time) to optimize over.
+                       TPOT will evaluate GENERATIONS x POPULATION_SIZE number
+                       of pipelines in total.
+  -p POPULATION_SIZE   Number of individuals in the GP population. Generally,
+                       TPOT will work better when you give it more individuals
+                       (and therefore time) to optimize over. TPOT will
+                       evaluate GENERATIONS x POPULATION_SIZE number of
+                       pipelines in total.
+  -mr MUTATION_RATE    GP mutation rate in the range [0.0, 1.0]. We recommend
+                       using the default parameter unless you understand how
+                       the mutation rate affects GP algorithms.
+  -xr CROSSOVER_RATE   GP crossover rate in the range [0.0, 1.0]. We recommend
+                       using the default parameter unless you understand how
+                       the crossover rate affects GP algorithms.
+  -s RANDOM_STATE      Random number generator seed for reproducibility. Set
+                       this seed if you want your TPOT run to be reproducible
+                       with the same seed and data set in the future.
+  -v {0,1,2}           How much information TPOT communicates while it is
+                       running: 0 = none, 1 = minimal, 2 = all.
+  --no-update-check    Flag indicating whether the TPOT version checker should
+                       be disabled.
+  --version            Show TPOT's version number and exit.
 ```
 
 An example command-line call to TPOT may look like:
@@ -61,12 +73,12 @@ pipeline_optimizer = TPOT()
 
 Note that you can pass several parameters to the TPOT instantiation call:
 
-* `generations`: The number of generations to run pipeline optimization for. Must be > 0. The more generations you give TPOT to run, the longer it takes, but it's also more likely to find better pipelines.
-* `population_size`: The number of pipelines in the genetic algorithm population. Must be > 0. The more pipelines in the population, the slower TPOT will run, but it's also more likely to find better pipelines.
+* `generations`: The number of generations to run pipeline optimization over. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize over. TPOT will evaluate `generations` x `population_size` number of pipelines in total.
+* `population_size`: The number of individuals in the GP population. Generally, TPOT will work better when you give it more individuals (and therefore time) to optimize over. TPOT will evaluate `generations` x `population_size` number of pipelines in total.
 * `mutation_rate`: The mutation rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to apply random changes to every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
 * `crossover_rate`: The crossover rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to "breed" every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
 * `random_state`: The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
-* `verbosity`: How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all
+* `verbosity`: How much information TPOT communicates while it's running: 0 = none, 1 = minimal, 2 = all.
 * `scoring_function`: Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. See [here](examples/Custom_Scoring_Functions.md) for more information on custom scoring functions.
 * `disable_update_check`: Flag indicating whether the TPOT version checker should be disabled.
 
