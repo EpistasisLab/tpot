@@ -36,7 +36,6 @@ def _gp_new_generation(func):
     @wraps(func)
     def wrapped_func(self, *args, **kwargs):
         """Increment gp_generation and bump pipeline count if necessary"""
-
         ret = func(self, *args, **kwargs)
         self.gp_generation = self.gp_generation + 1
 

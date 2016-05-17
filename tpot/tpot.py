@@ -267,11 +267,6 @@ class TPOT(object):
 
             self.hof = tools.ParetoFront(similar=pareto_eq)
 
-            # stats = tools.Statistics(lambda ind: ind.fitness.values[1])
-            # stats.register('Minimum score', np.min)
-            # stats.register('Average score', np.mean)
-            # stats.register('Maximum score', np.max)
-
             verbose = (self.verbosity == 2)
 
             # Start the progress bar
@@ -279,18 +274,14 @@ class TPOT(object):
             self.pbar = tqdm(total=num_evaluations, unit='pipeline',
                              disable=(not verbose), desc='GP Progress')
 
-            with warnings.catch_warnings():
-                # Ignore warnings
-                warnings.simplefilter('ignore', category=UserWarning)
+            pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
+                                     mutpb=self.mutation_rate, ngen=self.generations,
+                                     halloffame=self.hof, verbose=False)
 
-                pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
-                                         mutpb=self.mutation_rate, ngen=self.generations,
-                                         halloffame=self.hof, verbose=False)
-
-            # Close the progress bar
-            self.pbar.close()
-            self.gp_generation = 0
-
+        # Allow for certain exceptions to signal a premature fit() cancellation
+        except (KeyboardInterrupt, SystemExit):
+            pass
+        finally:
             # Store the pipeline with the highest internal testing accuracy
             top_score = 0.
             for pipeline in self.hof:
@@ -299,26 +290,14 @@ class TPOT(object):
                     top_score = pipeline_score
                     self._optimized_pipeline = pipeline
 
-            if self.verbosity == 2:
-                print('')
-
             if self.verbosity >= 1:
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
-        # Store the best pipeline if the optimization process is ended prematurely
-        except (KeyboardInterrupt, SystemExit):
-            top_score = 0.
-            for pipeline in self.hof:
-                pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
-                if pipeline_score > top_score:
-                    top_score = pipeline_score
-                    self._optimized_pipeline = pipeline
+            # Close the progress bar
+            self.pbar.close()
 
-            if self.verbosity == 2:
-                print('')
-
-            if self.verbosity >= 1:
-                print('Best pipeline: {}'.format(self._optimized_pipeline))
+            # Reset gp_generation counter to restore initial state
+            self.gp_generation = 0
 
     def predict(self, testing_features):
         """Uses the optimized pipeline to predict the classes for a feature set.
