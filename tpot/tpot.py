@@ -1166,10 +1166,18 @@ class TPOT(object):
         else:
             n_components = min(n_components, len(training_features.columns.values))
 
-        ica = FastICA(n_components=n_components, tol=tol, random_state=42)
-        ica.fit(training_features.values.astype(np.float64))
-        transformed_features = ica.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
+        # Ensure that tol does not get to be too small
+        tol = max(tol, 0.0001)
 
+        ica = FastICA(n_components=n_components, tol=tol, random_state=42)
+
+        # Ignore convergence warnings during GP
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=UserWarning)
+
+            ica.fit(training_features.values.astype(np.float64))
+
+        transformed_features = ica.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
         modified_df = pd.DataFrame(data=transformed_features)
 
         for non_feature_column in self.non_feature_columns:
@@ -1473,9 +1481,9 @@ class TPOT(object):
 
 def main():
     """Main function that is called when TPOT is run on the command line"""
-    parser = argparse.ArgumentParser(description='A Python tool that'
-            ' automatically creates and optimizes machine learning pipelines'
-            ' using genetic programming.')
+    parser = argparse.ArgumentParser(description='A Python tool that automatically creates and '
+                                                 'optimizes machine learning pipelines using genetic programming.',
+                                     add_help=False)
 
     def positive_integer(value):
         """Ensures that the provided value is a positive integer; throws an exception otherwise
@@ -1519,36 +1527,46 @@ def main():
             raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
         return value
 
-    parser.add_argument('INPUT_FILE', type=str, help='Data file to optimize the pipeline on; ensure that the class column is labeled as "class"')
+    parser.add_argument('INPUT_FILE', type=str, help='Data file to optimize the pipeline on; ensure that the class label column is labeled as "class".')
+
+    parser.add_argument('-h', '--help', action='help', help='Show this help message and exit.')
 
     parser.add_argument('-is', action='store', dest='INPUT_SEPARATOR', default='\t',
-                        type=str, help='Character used to separate columns in the input file')
+                        type=str, help='Character used to separate columns in the input file.')
 
     parser.add_argument('-o', action='store', dest='OUTPUT_FILE', default='',
-                        type=str, help='File to export the final optimized pipeline')
+                        type=str, help='File to export the final optimized pipeline.')
 
     parser.add_argument('-g', action='store', dest='GENERATIONS', default=100,
-                        type=positive_integer, help='Number of generations to run pipeline optimization')
+                        type=positive_integer, help='Number of generations to run pipeline optimization over.\nGenerally, TPOT will work better when '
+                                                    'you give it more generations (and therefore time) to optimize over. TPOT will evaluate '
+                                                    'GENERATIONS x POPULATION_SIZE number of pipelines in total.')
 
     parser.add_argument('-p', action='store', dest='POPULATION_SIZE', default=100,
-                        type=positive_integer, help='Number of individuals in the GP population')
+                        type=positive_integer, help='Number of individuals in the GP population.\nGenerally, TPOT will work better when you give it '
+                                                    ' more individuals (and therefore time) to optimize over. TPOT will evaluate '
+                                                    'GENERATIONS x POPULATION_SIZE number of pipelines in total.')
 
     parser.add_argument('-mr', action='store', dest='MUTATION_RATE', default=0.9,
-                        type=float_range, help='GP mutation rate in the range [0.0, 1.0]')
+                        type=float_range, help='GP mutation rate in the range [0.0, 1.0]. We recommend using the default parameter unless you '
+                                               'understand how the mutation rate affects GP algorithms.')
 
     parser.add_argument('-xr', action='store', dest='CROSSOVER_RATE', default=0.05,
-                        type=float_range, help='GP crossover rate in the range [0.0, 1.0]')
+                        type=float_range, help='GP crossover rate in the range [0.0, 1.0]. We recommend using the default parameter unless you '
+                                               'understand how the crossover rate affects GP algorithms.')
 
     parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=0,
-                        type=int, help='Random number generator seed for reproducibility')
+                        type=int, help='Random number generator seed for reproducibility. Set this seed if you want your TPOT run to be reproducible '
+                                       'with the same seed and data set in the future.')
 
     parser.add_argument('-v', action='store', dest='VERBOSITY', default=1, choices=[0, 1, 2],
-                        type=int, help='How much information TPOT communicates while it is running; 0 = none, 1 = minimal, 2 = all')
+                        type=int, help='How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = all.')
 
-    parser.add_argument('--disable-update-check', action='store_true', dest='DISABLE_UPDATE_CHECK', default=False,
-                        help='Flag indicating whether the TPOT version checker should be disabled')
+    parser.add_argument('--no-update-check', action='store_true', dest='DISABLE_UPDATE_CHECK', default=False,
+                        help='Flag indicating whether the TPOT version checker should be disabled.')
 
-    parser.add_argument('--version', action='version', version='TPOT v{version}'.format(version=__version__))
+    parser.add_argument('--version', action='version', version='TPOT {version}'.format(version=__version__),
+                        help='Show TPOT\'s version number and exit.')
 
     args = parser.parse_args()
 
