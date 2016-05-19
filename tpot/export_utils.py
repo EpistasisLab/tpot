@@ -328,11 +328,11 @@ def replace_function_calls(pipeline_list):
             operator_text += """
 {OUTPUT_DF} = {INPUT_DF}.copy()
 
-adab{OPERATOR_NUM} = AdaBoostClassifier(learning_rate={LEARNING_RATE}, n_estimators=500, random_state=42)
+adab{OPERATOR_NUM} = AdaBoostClassifier(learning_rate={LEARNING_RATE}, n_estimators={N_ESTIMATORS}, random_state=42)
 adab{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['adab{OPERATOR_NUM}-classification'] = adab{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], LEARNING_RATE=learning_rate)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], N_ESTIMATORS=n_estimators, LEARNING_RATE=learning_rate)
 
         elif operator_name == '_bernoulli_nb':
             alpha = float(operator[3])
@@ -346,7 +346,7 @@ bnb{OPERATOR_NUM} = BernoulliNB(alpha={ALPHA}, binarize={BINARIZE}, fit_prior={F
 bnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['bnb{OPERATOR_NUM}-classification'] = bnb{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], ALPHA=alpha, BINARIZE=binarize, FIT_PRIOR=fit_bool)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], ALPHA=alpha, BINARIZE=binarize, FIT_PRIOR=fit_prior)
 
         elif operator_name == '_extra_trees':
             criterion = int(operator[3])
@@ -376,7 +376,7 @@ gnb{OPERATOR_NUM} = GaussianNB()
 gnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['gnb{OPERATOR_NUM}-classification'] = gnb{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
 
         elif operator_name == '_multinomial_nb':
             alpha = float(operator[3])
@@ -390,7 +390,7 @@ mnb{OPERATOR_NUM} = MultinomialNB(alpha={ALPHA}, fit_prior={FIT_PRIOR})
 mnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['mnb{OPERATOR_NUM}-classification'] = mnb{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], ALPHA=alpha, FIT_PRIOR=fit_prior)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, ALPHA=alpha, FIT_PRIOR=fit_prior)
 
         elif operator_name == '_linear_svc':
             C = max(0.0001, float(operator[3]))
@@ -410,7 +410,7 @@ lsvc{OPERATOR_NUM} = LinearSVC(C={C}, loss="{LOSS}", fit_intercept={FIT_INTERCEP
 lsvc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['lsvc{OPERATOR_NUM}-classification'] = lsvc{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], C=C, FIT_INTERCEPT=fit_bool, LOSS=loss_selection)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_bool, LOSS=loss_selection)
 
         elif operator_name == '_passive_aggressive':
             C = max(0.0001, float(operator[3]))
@@ -430,7 +430,7 @@ pagr{OPERATOR_NUM} = PassiveAggressiveClassifier(C={C}, loss="{LOSS}", fit_inter
 pagr{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['pagr{OPERATOR_NUM}-classification'] = pagr{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], C=C, FIT_INTERCEPT=fit_bool, LOSS=loss_selection)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_bool, LOSS=loss_selection)
 
         elif operator_name == '_xgradient_boosting':
             learning_rate = float(operator[3])
