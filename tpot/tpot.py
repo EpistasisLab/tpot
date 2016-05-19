@@ -123,36 +123,36 @@ class TPOT(object):
         self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
 
         # Machine learning model operators
-        self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int], pd.DataFrame)
-        self._pset.addPrimitive(self._ada_boost, [pd.DataFrame, float], pd.DataFrame)
-        self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
+        # self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
+        # self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int], pd.DataFrame)
+        # self._pset.addPrimitive(self._ada_boost, [pd.DataFrame, float, int], pd.DataFrame)
+        # self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         # Temporarily remove SVC -- badly overfits on multiclass data sets
         # self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
-        self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
-        self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
+        # self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
+        # self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._p_aggr, [pd.DataFrame, float, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int, int], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._min_max_scaler, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._max_abs_scaler, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._binarizer, [pd.DataFrame, float], pd.DataFrame)
-        self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._rbf, [pd.DataFrame, float, int], pd.DataFrame)
-        self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, int, float], pd.DataFrame)
-        self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
-        self._pset.addPrimitive(self._zero_count, [pd.DataFrame], pd.DataFrame)
+        # self._pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
+        # self._pset.addPrimitive(self._min_max_scaler, [pd.DataFrame], pd.DataFrame)
+        # self._pset.addPrimitive(self._max_abs_scaler, [pd.DataFrame], pd.DataFrame)
+        # self._pset.addPrimitive(self._binarizer, [pd.DataFrame, float], pd.DataFrame)
+        # self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
+        # self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
+        # self._pset.addPrimitive(self._rbf, [pd.DataFrame, float, int], pd.DataFrame)
+        # self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, int, float], pd.DataFrame)
+        # self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
+        # self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
+        # self._pset.addPrimitive(self._zero_count, [pd.DataFrame], pd.DataFrame)
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
@@ -500,7 +500,7 @@ class TPOT(object):
         return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=500,
                                              max_features=max_features, random_state=42, n_jobs=-1)
 
-    def _ada_boost(self, input_df, learning_rate):
+    def _ada_boost(self, input_df, learning_rate, n_estimators):
         """Fits an AdaBoost classifier
 
         Parameters
@@ -517,8 +517,11 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
+        learning_rate = max(0.0001, learning_rate)
+        n_estimators = min(500, n_estimators)
+
         return self._train_model_and_predict(input_df, AdaBoostClassifier,
-            learning_rate=learning_rate, n_estimators=500, random_state=42)
+            learning_rate=learning_rate, n_estimators=n_estimators, random_state=42)
 
     def _bernoulli_nb(self, input_df, alpha, binarize, fit_prior):
         """Fits a Bernoulli Naive Bayes classifier
@@ -570,6 +573,13 @@ class TPOT(object):
         # Select criterion string from list of valid parameters
         criterion_values = ['gini', 'entropy']
         criterion_selection = criterion_values[criterion % len(criterion_values)]
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+
+        if max_features < 1:
+            max_features = 1
+        elif max_features > len(training_features.columns):
+            max_features = len(training_features.columns)
 
         return self._train_model_and_predict(input_df, ExtraTreesClassifier,
             criterion=criterion_selection, max_features=max_features,
@@ -643,10 +653,12 @@ class TPOT(object):
         loss_values = ['hinge', 'squared_hinge']
         loss_selection = loss_values[loss % len(loss_values)]
 
+        C = max(0.0001, C)
+
         return self._train_model_and_predict(input_df, LinearSVC, C=C,
             loss=loss_selection, fit_intercept=fit_bool, random_state=42)
 
-    def _p_aggr(self, input_df, C, loss, fit_intercept):
+    def _passive_aggressive(self, input_df, C, loss, fit_intercept):
         """Fits a Linear Support Vector Classifier
 
         Parameters
@@ -671,6 +683,8 @@ class TPOT(object):
 
         loss_values = ['hinge', 'squared_hinge']
         loss_selection = loss_values[loss % len(loss_values)]
+
+        C = max(0.0001, C)
 
         return self._train_model_and_predict(input_df, PassiveAggressiveClassifier,
             C=C, loss=loss_selection, fit_intercept=fit_bool, random_state=42)

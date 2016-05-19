@@ -148,7 +148,7 @@ def generate_import_code(pipeline_list):
         '_ada_boost':           {'sklearn.ensemble': ['AdaBoostClassifier']},
         '_extra_trees':         {'sklearn.ensemble': ['ExtraTreesClassifier']},
         '_logistic_regression': {'sklearn.linear_model': ['LogisticRegression']},
-        '_p_aggr':              {'sklearn.linear_model': ['PassiveAggressiveClassifier']},
+        '_passive_aggressive':  {'sklearn.linear_model': ['PassiveAggressiveClassifier']},
         '_svc':                 {'sklearn.svm': ['SVC']},
         '_linear_svc':          {'sklearn.svm': ['LinearSVC']},
         '_knnc':                {'sklearn.neighbors': ['KNeighborsClassifier']},
@@ -322,7 +322,8 @@ def replace_function_calls(pipeline_list):
                                                                                         OPERATOR_NUM=operator_num)
 
         elif operator_name == '_ada_boost':
-            learning_rate = float(operator[3])
+            learning_rate = max(0.0001, float(operator[3]))
+            n_estimators = min(500, int(operator[4]))
 
             operator_text += """
 {OUTPUT_DF} = {INPUT_DF}.copy()
@@ -349,7 +350,7 @@ bnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
 
         elif operator_name == '_extra_trees':
             criterion = int(operator[3])
-            max_features = int(operator[4])
+            max_features = 'min({MAX_FEATURES}, len(training_features.columns))'.format(MAX_FEATURES=int(operator[4]))
 
             criterion_values = ['gini', 'entropy']
             criterion_selection = criterion_values[criterion % len(criterion_values)]
@@ -358,6 +359,8 @@ bnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
             operator_text += """
+training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
+
 etc{OPERATOR_NUM} = ExtraTreesClassifier(criterion="{CRITERION}", max_features={MAX_FEATURES}, n_estimators=500, random_state=42)
 etc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
@@ -390,7 +393,7 @@ mnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], ALPHA=alpha, FIT_PRIOR=fit_prior)
 
         elif operator_name == '_linear_svc':
-            C = float(operator[3])
+            C = max(0.0001, float(operator[3]))
             loss = int(operator[4])
             fit_intercept = int(operator[5])
 
@@ -409,8 +412,8 @@ lsvc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).v
 {OUTPUT_DF}['lsvc{OPERATOR_NUM}-classification'] = lsvc{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], C=C, FIT_INTERCEPT=fit_bool, LOSS=loss_selection)
 
-        elif operator_name == '_p_aggr':
-            C = float(operator[3])
+        elif operator_name == '_passive_aggressive':
+            C = max(0.0001, float(operator[3]))
             loss = int(operator[4])
             fit_intercept = int(operator[5])
 

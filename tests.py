@@ -614,10 +614,34 @@ def test_ada_boost():
     """Ensure that the TPOT AdaBoostClassifier outputs the same as the sklearn AdaBoostClassifier"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._ada_boost(training_testing_data, 1.0)
+    result = tpot_obj._ada_boost(training_testing_data, 1.0, 100)
+    result = result[result['group'] == 'testing']
+
+    adaboost = AdaBoostClassifier(n_estimators=100, random_state=42, learning_rate=1.0)
+    adaboost.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, adaboost.predict(testing_features))
+
+def test_ada_boost_2():
+    """Ensure that the TPOT AdaBoostClassifier outputs the same as the sklearn classifer when n_estimators > 500"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._ada_boost(training_testing_data, 1.0, 600)
     result = result[result['group'] == 'testing']
 
     adaboost = AdaBoostClassifier(n_estimators=500, random_state=42, learning_rate=1.0)
+    adaboost.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, adaboost.predict(testing_features))
+
+def test_ada_boost_3():
+    """Ensure that the TPOT AdaBoostClassifier outputs the same as the sklearn classifer when learning_rate == 0.0"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._ada_boost(training_testing_data, 0.0, 100)
+    result = result[result['group'] == 'testing']
+
+    adaboost = AdaBoostClassifier(n_estimators=100, random_state=42, learning_rate=0.0001)
     adaboost.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, adaboost.predict(testing_features))
@@ -642,6 +666,33 @@ def test_extra_trees():
     result = result[result['group'] == 'testing']
 
     etc = ExtraTreesClassifier(n_estimators=500, random_state=42, max_features=1, criterion='gini')
+    etc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, etc.predict(testing_features))
+
+def test_extra_trees_2():
+    """Ensure that the TPOT ExtraTreesClassifier outputs the same as the sklearn version when max_features < 1"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._extra_trees(training_testing_data, 0, 0)
+    result = result[result['group'] == 'testing']
+
+    etc = ExtraTreesClassifier(n_estimators=500, random_state=42, max_features=1, criterion='gini')
+    etc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, etc.predict(testing_features))
+
+def test_extra_trees_3():
+    """Ensure that the TPOT ExtraTreesClassifier outputs the same as the sklearn version when max_features > the number of features"""
+    tpot_obj = TPOT()
+
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(tpot_obj.non_feature_columns, axis=1)
+    num_features = len(training_features.columns)
+
+    result = tpot_obj._extra_trees(training_testing_data, 0, num_features + 1)
+    result = result[result['group'] == 'testing']
+
+    etc = ExtraTreesClassifier(n_estimators=500, random_state=42, max_features=num_features, criterion='gini')
     etc.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, etc.predict(testing_features))
@@ -682,14 +733,39 @@ def test_linear_svc():
 
     assert np.array_equal(result['guess'].values, lsvc.predict(testing_features))
 
-def test_p_aggr():
+def test_linear_svc_2():
+    """Ensure that the TPOT LinearSVC outputs the same as the sklearn LinearSVC when C == 0.0"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._linear_svc(training_testing_data, 0.0, 0, 0)
+    result = result[result['group'] == 'testing']
+
+    lsvc = LinearSVC(C=0.0001, loss='hinge', fit_intercept=True, random_state=42)
+    lsvc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, lsvc.predict(testing_features))
+
+def test_passive_aggressive():
     """Ensure that the TPOT PassiveAggressiveClassifier outputs the same as the sklearn PassiveAggressiveClassifier"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._p_aggr(training_testing_data, 1.0, 0, 0)
+    result = tpot_obj._passive_aggressive(training_testing_data, 1.0, 0, 0)
     result = result[result['group'] == 'testing']
 
     pagg = PassiveAggressiveClassifier(C=1.0, loss='hinge', fit_intercept=True, random_state=42)
+    pagg.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, pagg.predict(testing_features))
+
+
+def test_passive_aggressive_2():
+    """Ensure that the TPOT PassiveAggressiveClassifier outputs the same as the sklearn classifier when C == 0.0"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._passive_aggressive(training_testing_data, 0.0, 0, 0)
+    result = result[result['group'] == 'testing']
+
+    pagg = PassiveAggressiveClassifier(C=0.0001, loss='hinge', fit_intercept=True, random_state=42)
     pagg.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, pagg.predict(testing_features))
