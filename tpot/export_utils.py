@@ -714,7 +714,8 @@ else:
 
         elif operator_name == '_fast_ica':
             n_components = int(operator[3])
-            tol = float(operator[4])
+            tol = max(float(operator[4]), 0.0001) # Ensure tol is not too small
+
             if n_components < 1:
                 n_components = 1
             n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
