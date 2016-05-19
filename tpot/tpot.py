@@ -1168,10 +1168,18 @@ class TPOT(object):
         else:
             n_components = min(n_components, len(training_features.columns.values))
 
-        ica = FastICA(n_components=n_components, tol=tol, random_state=42)
-        ica.fit(training_features.values.astype(np.float64))
-        transformed_features = ica.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
+        # Ensure that tol does not get to be too small
+        tol = max(tol, 0.0001)
 
+        ica = FastICA(n_components=n_components, tol=tol, random_state=42)
+
+        # Ignore convergence warnings during GP
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=UserWarning)
+
+            ica.fit(training_features.values.astype(np.float64))
+
+        transformed_features = ica.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
         modified_df = pd.DataFrame(data=transformed_features)
 
         for non_feature_column in self.non_feature_columns:

@@ -517,7 +517,6 @@ def test_fast_ica_2():
 
     assert in_rows == out_rows
 
-
 def test_feat_agg():
     """Assert that the TPOT FeatureAgglomeration preprocessor outputs the input dataframe
     when the number of training features is 0"""
