@@ -40,8 +40,6 @@ def _gp_new_generation(func):
         self.gp_generation = self.gp_generation + 1
 
         if not self.pbar.disable:
-            self.pbar.write('Finished generation #{}'.format(self.gp_generation))
-
             if self.pbar.n < self.gp_generation * self.population_size:
                 missing_pipelines = (self.gp_generation * self.population_size) - self.pbar.n
                 self.pbar.update(missing_pipelines)

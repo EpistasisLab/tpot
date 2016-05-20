@@ -271,7 +271,7 @@ class TPOT(object):
 
             # Start the progress bar
             num_evaluations = self.population_size * (self.generations + 1)
-            self.pbar = tqdm(total=num_evaluations, unit='pipeline',
+            self.pbar = tqdm(total=num_evaluations, unit='pipeline', leave=False,
                              disable=(not verbose), desc='GP Progress')
 
             pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
@@ -282,6 +282,12 @@ class TPOT(object):
         except (KeyboardInterrupt, SystemExit):
             pass
         finally:
+            # Close the progress bar
+            self.pbar.close()
+
+            # Reset gp_generation counter to restore initial state
+            self.gp_generation = 0
+
             # Store the pipeline with the highest internal testing accuracy
             top_score = 0.
             for pipeline in self.hof:
@@ -292,12 +298,6 @@ class TPOT(object):
 
             if self.verbosity >= 1:
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
-
-            # Close the progress bar
-            self.pbar.close()
-
-            # Reset gp_generation counter to restore initial state
-            self.gp_generation = 0
 
     def predict(self, testing_features):
         """Uses the optimized pipeline to predict the classes for a feature set.
