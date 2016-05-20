@@ -3,6 +3,7 @@
 """
 
 from tpot import TPOT
+from tpot.export_utils import *
 
 import pandas as pd
 import numpy as np
@@ -18,7 +19,6 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
-
 
 from xgboost import XGBClassifier
 
@@ -57,6 +57,66 @@ def test_init():
     assert tpot_obj.verbosity == 1
     assert tpot_obj.update_checked == True
     assert tpot_obj.scoring_function == "_balanced_accuracy"
+
+def test_generate_import_code():
+    """Ensure export utils' generate_import_code outputs as expected"""
+
+    reference_code = """\
+import numpy as np
+import pandas as pd
+
+from sklearn.cross_validation import train_test_split
+from sklearn.decomposition import RandomizedPCA
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.linear_model import LogisticRegression
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
+
+"""
+
+    pipeline = [['result1', '_variance_threshold', 'ARG0', '100.0'],
+                ['result2', '_pca', 'ARG0', '66', '34'],
+                ['result3', '_combine_dfs', 'result2', 'result1'],
+                ['result4', '_logistic_regression', 'result3', '0.12030075187969924']]
+
+    import_code = generate_import_code(pipeline)
+
+    assert reference_code == import_code
+
+def test_replace_function_calls():
+    """Ensure export utils' replace_mathematical_operators outputs as expected"""
+
+    reference_code = """
+result1 = tpot_data.copy()
+
+# Use Scikit-learn's SelectKBest for feature selection
+training_features = result1.loc[training_indices].drop('class', axis=1)
+training_class_vals = result1.loc[training_indices, 'class'].values
+
+if len(training_features.columns.values) == 0:
+    result1 = result1.copy()
+else:
+    selector = SelectKBest(f_classif, k=min(26, len(training_features.columns)))
+    selector.fit(training_features.values, training_class_vals)
+    mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
+    result1 = result1[mask_cols]
+
+# Perform classification with an eXtreme gradient boosting classifier
+xgbc2 = XGBClassifier(learning_rate=0.01, n_estimators=500, max_depth=81)
+xgbc2.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
+result2 = result1.copy()
+result2['xgbc2-classification'] = xgbc2.predict(result2.drop('class', axis=1).values)
+"""
+
+    pipeline = [['result1', '_select_kbest', 'ARG0', '26'],
+                ['result2', '_xgradient_boosting', 'result1', '0.01', '81']]
+
+    exported_code = replace_function_calls(pipeline)
+
+    assert reference_code == exported_code
 
 def test_decision_tree():
     """Ensure that the TPOT decision tree method outputs the same as the sklearn decision tree"""

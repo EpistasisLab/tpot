@@ -27,12 +27,12 @@ def replace_mathematical_operators(exported_pipeline):
 
     Parameters
     ----------
-    exported_pipeline:
+    exported_pipeline: deap.creator.Individual
        The current optimized pipeline
 
     Returns
     -------
-    exported_pipeline:
+    exported_pipeline: deap.creator.Individual
        The current optimized pipeline after replacing the mathematical operators
 
     """
@@ -67,14 +67,14 @@ def unroll_nested_fuction_calls(exported_pipeline):
 
     Parameters
     ----------
-    exported_pipeline:
+    exported_pipeline: deap.creator.Individual
        The current optimized pipeline
 
     Returns
     -------
-    exported_pipeline:
+    exported_pipeline: deap.creator.Individual
        The current optimized pipeline after unrolling the nested function calls
-    pipeline_list:
+    pipeline_list: List
        List of operators in the current optimized pipeline
 
     """
@@ -105,12 +105,12 @@ def generate_import_code(pipeline_list):
 
     Parameters
     ----------
-    pipeline_list:
+    pipeline_list: List
        List of operators in the current optimized pipeline
 
     Returns
     -------
-    pipeline_text:
+    pipeline_text: String
        The Python code that imports all required library used in the current optimized pipeline
 
     """
@@ -170,7 +170,7 @@ def generate_import_code(pipeline_list):
             pass # Operator does not require imports
 
     # Build import string
-    for key in pipeline_imports.keys():
+    for key in sorted(pipeline_imports.keys()):
         module_list = ', '.join(pipeline_imports[key])
         pipeline_text += 'from {} import {}\n'.format(key, module_list)
 
@@ -197,6 +197,8 @@ def replace_function_calls(pipeline_list):
        The Python code corresponding to the function calls in the current optimized pipeline
 
     """
+    print(pipeline_list)
+
     operator_text = ''
     for operator in pipeline_list:
         operator_num = int(operator[0].strip('result'))
