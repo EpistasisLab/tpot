@@ -40,6 +40,14 @@ def _gp_new_generation(func):
         self.gp_generation = self.gp_generation + 1
 
         if not self.pbar.disable:
+            high_score = max([self.hof.keys[x].wvalues[1] for x in range(len(self.hof.keys))])
+
+            self.pbar.write('Generation {} - Current best score: {:0.5f}'.\
+                format(self.gp_generation, high_score))
+
+            # Sometimes the actual evaluated pipeline count does not match the
+            # supposed count because DEAP can cache pipelines. Here any missed
+            # evaluations are added back to the progress bar.
             if self.pbar.n < self.gp_generation * self.population_size:
                 missing_pipelines = (self.gp_generation * self.population_size) - self.pbar.n
                 self.pbar.update(missing_pipelines)
