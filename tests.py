@@ -12,16 +12,13 @@ import warnings
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier, GradientBoostingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
-
-
-from xgboost import XGBClassifier
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -154,30 +151,6 @@ def test_svc_2():
     svc.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, svc.predict(testing_features))
-
-def test_xgboost():
-    """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method"""
-
-    tpot_obj = TPOT()
-    result = tpot_obj._xgradient_boosting(training_testing_data, learning_rate=0, max_depth=3)
-    result = result[result['group'] == 'testing']
-
-    xgb = XGBClassifier(n_estimators=500, learning_rate=0.0001, max_depth=3, seed=42)
-    xgb.fit(training_features, training_classes)
-
-    assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
-
-def test_xgboost_2():
-    """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method when max_depth<1"""
-
-    tpot_obj = TPOT()
-    result = tpot_obj._xgradient_boosting(training_testing_data, learning_rate=0, max_depth=0)
-    result = result[result['group'] == 'testing']
-
-    xgb = XGBClassifier(n_estimators=500, learning_rate=0.0001, max_depth=None, seed=42)
-    xgb.fit(training_features, training_classes)
-
-    assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
 
 def test_train_model_and_predict():
     """Ensure that the TPOT train_model_and_predict returns the input dataframe when it has only 3 columns i.e. class, group, guess"""
@@ -769,3 +742,27 @@ def test_passive_aggressive_2():
     pagg.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, pagg.predict(testing_features))
+
+def test_gradient_boosting():
+    """Ensure that the TPOT GradientBoostingClassifier outputs the same as the sklearn classifier"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._gradient_boosting(training_testing_data, 1.0, 5)
+    result = result[result['group'] == 'testing']
+
+    gbc = GradientBoostingClassifier(learning_rate=1.0, max_depth=5, n_estimators=500, random_state=42)
+    gbc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, gbc.predict(testing_features))
+
+def test_gradient_boosting_2():
+    """Ensure that the TPOT GradientBoostingClassifier outputs the same as the sklearn classifier when max_depth < 3"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._gradient_boosting(training_testing_data, 1.0, 2)
+    result = result[result['group'] == 'testing']
+
+    gbc = GradientBoostingClassifier(learning_rate=1.0, max_depth=3, n_estimators=500, random_state=42)
+    gbc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, gbc.predict(testing_features))

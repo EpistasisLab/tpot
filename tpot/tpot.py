@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.cluster import FeatureAgglomeration
@@ -41,7 +41,6 @@ from sklearn.decomposition import RandomizedPCA, FastICA
 from sklearn.kernel_approximation import RBFSampler, Nystroem
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.cross_validation import train_test_split
-from xgboost import XGBClassifier
 
 import warnings
 from update_checker import update_check
@@ -123,14 +122,14 @@ class TPOT(object):
         self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
 
         # Machine learning model operators
-        # self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
-        # self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int], pd.DataFrame)
-        # self._pset.addPrimitive(self._ada_boost, [pd.DataFrame, float, int], pd.DataFrame)
-        # self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._ada_boost, [pd.DataFrame, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         # Temporarily remove SVC -- badly overfits on multiclass data sets
         # self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
-        # self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
-        # self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._gradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
@@ -142,17 +141,17 @@ class TPOT(object):
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
-        # self._pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
-        # self._pset.addPrimitive(self._min_max_scaler, [pd.DataFrame], pd.DataFrame)
-        # self._pset.addPrimitive(self._max_abs_scaler, [pd.DataFrame], pd.DataFrame)
-        # self._pset.addPrimitive(self._binarizer, [pd.DataFrame, float], pd.DataFrame)
-        # self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
-        # self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
-        # self._pset.addPrimitive(self._rbf, [pd.DataFrame, float, int], pd.DataFrame)
-        # self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, int, float], pd.DataFrame)
-        # self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
-        # self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
-        # self._pset.addPrimitive(self._zero_count, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._min_max_scaler, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._max_abs_scaler, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._binarizer, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._rbf, [pd.DataFrame, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, int, float], pd.DataFrame)
+        self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._zero_count, [pd.DataFrame], pd.DataFrame)
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
@@ -753,8 +752,8 @@ class TPOT(object):
 
         return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
 
-    def _xgradient_boosting(self, input_df, learning_rate, max_depth):
-        """Fits the dmlc eXtreme gradient boosting classifier
+    def _gradient_boosting(self, input_df, learning_rate, max_depth):
+        """Fits the sklearn GradientBoostingClassifier classifier
 
         Parameters
         ----------
@@ -774,11 +773,11 @@ class TPOT(object):
         """
         learning_rate = max(learning_rate, 0.0001)
 
-        if max_depth < 1:
-            max_depth = None
+        # 3 is sklearn's default value for max_depth
+        max_depth = max(max_depth, 3)
 
-        return self._train_model_and_predict(input_df, XGBClassifier, learning_rate=learning_rate,
-                                             n_estimators=500, max_depth=max_depth, seed=42)
+        return self._train_model_and_predict(input_df, GradientBoostingClassifier, learning_rate=learning_rate,
+                                             n_estimators=500, max_depth=max_depth, random_state=42)
 
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters

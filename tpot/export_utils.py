@@ -120,6 +120,7 @@ def generate_import_code(pipeline_list):
     pipeline_text = 'import numpy as np\n'
     pipeline_text += 'import pandas as pd\n\n'
 
+    # Always start with train_test_split as an import requirement
     pipeline_imports = {'sklearn.cross_validation': ['train_test_split']}
 
     # Operator names and imports required.
@@ -147,6 +148,7 @@ def generate_import_code(pipeline_list):
         '_random_forest':       {'sklearn.ensemble': ['RandomForestClassifier']},
         '_ada_boost':           {'sklearn.ensemble': ['AdaBoostClassifier']},
         '_extra_trees':         {'sklearn.ensemble': ['ExtraTreesClassifier']},
+        '_gradient_boosting':   {'sklearn.ensemble': ['GradientBoostingClassifier']},
         '_logistic_regression': {'sklearn.linear_model': ['LogisticRegression']},
         '_passive_aggressive':  {'sklearn.linear_model': ['PassiveAggressiveClassifier']},
         '_svc':                 {'sklearn.svm': ['SVC']},
@@ -155,8 +157,7 @@ def generate_import_code(pipeline_list):
         '_feat_agg':            {'sklearn.cluster': ['FeatureAgglomeration']},
         '_gaussian_nb':         {'sklearn.naive_bayes': ['GaussianNB']},
         '_multinomial_nb':      {'sklearn.naive_bayes': ['MultinomialNB']},
-        '_bernoulli_nb':        {'sklearn.naive_bayes': ['BernoulliNB']},
-        '_xgradient_boosting':  {'xgboost': ['XGBClassifier']}
+        '_bernoulli_nb':        {'sklearn.naive_bayes': ['BernoulliNB']}
     }
 
     # Build import dict from operators used
@@ -325,13 +326,15 @@ def replace_function_calls(pipeline_list):
             learning_rate = max(0.0001, float(operator[3]))
             n_estimators = min(500, int(operator[4]))
 
-            operator_text += """
-{OUTPUT_DF} = {INPUT_DF}.copy()
+            if result_name != operator[2]:
+                operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
+            operator_text += """
+# Perform classification with an Ada Boost classifier
 adab{OPERATOR_NUM} = AdaBoostClassifier(learning_rate={LEARNING_RATE}, n_estimators={N_ESTIMATORS}, random_state=42)
 adab{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
-{OUTPUT_DF}['adab{OPERATOR_NUM}-classification'] = adab{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
+{OUTPUT_DF}['adab{OPERATOR_NUM}-classification'] = adab{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], N_ESTIMATORS=n_estimators, LEARNING_RATE=learning_rate)
 
         elif operator_name == '_bernoulli_nb':
@@ -339,13 +342,15 @@ adab{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).v
             binarize = float(operator[4])
             fit_prior = (int(operator[5])) % 2 == 0
 
-            operator_text += """
-{OUTPUT_DF} = {INPUT_DF}.copy()
+            if result_name != operator[2]:
+                operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
+            operator_text += """
+# Perform classification with a BernoulliNB classifier
 bnb{OPERATOR_NUM} = BernoulliNB(alpha={ALPHA}, binarize={BINARIZE}, fit_prior={FIT_PRIOR})
 bnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
-{OUTPUT_DF}['bnb{OPERATOR_NUM}-classification'] = bnb{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
+{OUTPUT_DF}['bnb{OPERATOR_NUM}-classification'] = bnb{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], ALPHA=alpha, BINARIZE=binarize, FIT_PRIOR=fit_prior)
 
         elif operator_name == '_extra_trees':
@@ -361,10 +366,11 @@ bnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
             operator_text += """
 training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
+# Perform classification with an extra trees classifier
 etc{OPERATOR_NUM} = ExtraTreesClassifier(criterion="{CRITERION}", max_features={MAX_FEATURES}, n_estimators=500, random_state=42)
 etc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
-{OUTPUT_DF}['etc{OPERATOR_NUM}-classification'] = etc{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
+{OUTPUT_DF}['etc{OPERATOR_NUM}-classification'] = etc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], CRITERION=criterion_selection, MAX_FEATURES=max_features)
 
         elif operator_name == '_gaussian_nb':
@@ -372,10 +378,11 @@ etc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
             operator_text += """
+# Perform classification with a gaussian naive bayes classifier
 gnb{OPERATOR_NUM} = GaussianNB()
 gnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
-{OUTPUT_DF}['gnb{OPERATOR_NUM}-classification'] = gnb{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
+{OUTPUT_DF}['gnb{OPERATOR_NUM}-classification'] = gnb{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num)
 
         elif operator_name == '_multinomial_nb':
@@ -386,10 +393,11 @@ gnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
             operator_text += """
+# Performan classification with a multinomial naive bayes classifier
 mnb{OPERATOR_NUM} = MultinomialNB(alpha={ALPHA}, fit_prior={FIT_PRIOR})
 mnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
-{OUTPUT_DF}['mnb{OPERATOR_NUM}-classification'] = mnb{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
+{OUTPUT_DF}['mnb{OPERATOR_NUM}-classification'] = mnb{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, ALPHA=alpha, FIT_PRIOR=fit_prior)
 
         elif operator_name == '_linear_svc':
@@ -406,10 +414,11 @@ mnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
             operator_text += """
+# Perform classification with a LinearSVC classifier
 lsvc{OPERATOR_NUM} = LinearSVC(C={C}, loss="{LOSS}", fit_intercept={FIT_INTERCEPT}, random_state=42)
 lsvc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
-{OUTPUT_DF}['lsvc{OPERATOR_NUM}-classification'] = lsvc{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
+{OUTPUT_DF}['lsvc{OPERATOR_NUM}-classification'] = lsvc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_bool, LOSS=loss_selection)
 
         elif operator_name == '_passive_aggressive':
@@ -426,36 +435,27 @@ lsvc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).v
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
             operator_text += """
+# Perform classification with a passive aggressive classifier
 pagr{OPERATOR_NUM} = PassiveAggressiveClassifier(C={C}, loss="{LOSS}", fit_intercept={FIT_INTERCEPT}, random_state=42)
 pagr{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
-{OUTPUT_DF}['pagr{OPERATOR_NUM}-classification'] = pagr{OPERATOR_NUM}.predict(result1.drop('class', axis=1).values)
+{OUTPUT_DF}['pagr{OPERATOR_NUM}-classification'] = pagr{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_bool, LOSS=loss_selection)
 
-        elif operator_name == '_xgradient_boosting':
-            learning_rate = float(operator[3])
-            max_depth = int(operator[4])
+        elif operator_name == '_gradient_boosting':
+            learning_rate = max(learning_rate, 0.0001)
+            max_depth = max(max_depth, 3)
 
-            if learning_rate <= 0.:
-                learning_rate = 0.0001
-
-            if max_depth < 1:
-                max_depth = None
-
-            operator_text += '\n# Perform classification with an eXtreme gradient boosting classifier'
-            operator_text += ('\nxgbc{OPERATOR_NUM} = XGBClassifier(learning_rate={LEARNING_RATE}, '
-                              'n_estimators={N_ESTIMATORS}, max_depth={MAX_DEPTH})\n').format(OPERATOR_NUM=operator_num,
-                                                                                              LEARNING_RATE=learning_rate,
-                                                                                              N_ESTIMATORS=500,
-                                                                                              MAX_DEPTH=max_depth)
-            operator_text += ('''xgbc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
-                              '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
-                                                                                                INPUT_DF=operator[2])
             if result_name != operator[2]:
-                operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
-            operator_text += ('''{OUTPUT_DF}['xgbc{OPERATOR_NUM}-classification'] = xgbc{OPERATOR_NUM}.predict('''
-                              '''{OUTPUT_DF}.drop('class', axis=1).values)\n''').format(OUTPUT_DF=result_name,
-                                                                                        OPERATOR_NUM=operator_num)
+                operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
+
+            operator_text += """
+# Perform classification with a gradient boosting classifier
+gbc{OPERATOR_NUM} = GradientBoostingClassifier(learning_rate={LEARNING_RATE}, max_depth={MAX_DEPTH}, n_estimators=500, random_state=42)
+gbc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
+
+{OUTPUT_DF}['gbc{OPERATOR_NUM}-classification'] = gbc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, LEARNING_RATE=learning_rate, MAX_DEPTH=max_depth)
 
         elif operator_name == '_combine_dfs':
             operator_text += '\n# Combine two DataFrames'
