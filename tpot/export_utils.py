@@ -335,7 +335,7 @@ adab{OPERATOR_NUM} = AdaBoostClassifier(learning_rate={LEARNING_RATE}, n_estimat
 adab{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['adab{OPERATOR_NUM}-classification'] = adab{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], N_ESTIMATORS=n_estimators, LEARNING_RATE=learning_rate)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, N_ESTIMATORS=n_estimators, LEARNING_RATE=learning_rate)
 
         elif operator_name == '_bernoulli_nb':
             alpha = float(operator[3])
@@ -351,7 +351,7 @@ bnb{OPERATOR_NUM} = BernoulliNB(alpha={ALPHA}, binarize={BINARIZE}, fit_prior={F
 bnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['bnb{OPERATOR_NUM}-classification'] = bnb{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], ALPHA=alpha, BINARIZE=binarize, FIT_PRIOR=fit_prior)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, ALPHA=alpha, BINARIZE=binarize, FIT_PRIOR=fit_prior)
 
         elif operator_name == '_extra_trees':
             criterion = int(operator[3])
