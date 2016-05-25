@@ -30,10 +30,17 @@ pages:
     - Models:
       - DecisionTreeClassifier: documentation/pipeline_operators/models/classifiers/tree/DecisionTreeClassifier.md
       - RandomForestClassifier: documentation/pipeline_operators/models/classifiers/ensemble/RandomForestClassifier.md
-      - XGBClassifier: documentation/pipeline_operators/models/classifiers/ensemble/XGBClassifier.md
       - SVC: documentation/pipeline_operators/models/classifiers/svm/SVC.md
       - kNeighborsClassifier: documentation/pipeline_operators/models/classifiers/nearest_neighbors/kNeighborsClassifier.md
       - LogisticRegression: documentation/pipeline_operators/models/classifiers/linear_model/LogisticRegression.md
+      - AdaBoost: documentation/pipeline_operators/models/classifiers/ensemble/AdaBoost.md
+      - ExtraTrees: documentation/pipeline_operators/models/classifiers/ensemble/ExtraTrees.md
+      - PassiveAggressive: documentation/pipeline_operators/models/classifiers/linear_model/PassiveAggressive.md
+      - BernoulliNB: documentation/pipeline_operators/models/classifiers/naive_bayes/BernoulliNB.md
+      - GaussianNB: documentation/pipeline_operators/models/classifiers/naive_bayes/GaussianNB.md
+      - MultinomialNB: documentation/pipeline_operators/models/classifiers/naive_bayes/MultinomialNB.md
+      - LinearSVC: documentation/pipeline_operators/models/classifiers/svm/LinearSVC.md
+      - GradientBoostingClassifier: documentation/pipeline_operators/models/classifiers/ensemble/GradientBoostingClassifier.md
     - Pre-Processing:
       - StandardScaler: documentation/pipeline_operators/preprocessing/scaling/StandardScaler.md
       - RobustScaler: documentation/pipeline_operators/preprocessing/scaling/RobustScaler.md
