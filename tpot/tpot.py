@@ -772,9 +772,7 @@ class TPOT(object):
 
         """
         learning_rate = max(learning_rate, 0.0001)
-
-        # 3 is sklearn's default value for max_depth
-        max_depth = max(max_depth, 3)
+        max_depth = max(max_depth, 1)
 
         return self._train_model_and_predict(input_df, GradientBoostingClassifier, learning_rate=learning_rate,
                                              n_estimators=500, max_depth=max_depth, random_state=42)
