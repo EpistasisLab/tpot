@@ -756,13 +756,13 @@ def test_gradient_boosting():
     assert np.array_equal(result['guess'].values, gbc.predict(testing_features))
 
 def test_gradient_boosting_2():
-    """Ensure that the TPOT GradientBoostingClassifier outputs the same as the sklearn classifier when max_depth < 3"""
+    """Ensure that the TPOT GradientBoostingClassifier outputs the same as the sklearn classifier when max_depth < 1"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._gradient_boosting(training_testing_data, 1.0, 2)
+    result = tpot_obj._gradient_boosting(training_testing_data, 1.0, 0)
     result = result[result['group'] == 'testing']
 
-    gbc = GradientBoostingClassifier(learning_rate=1.0, max_depth=3, n_estimators=500, random_state=42)
+    gbc = GradientBoostingClassifier(learning_rate=1.0, max_depth=1, n_estimators=500, random_state=42)
     gbc.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, gbc.predict(testing_features))
