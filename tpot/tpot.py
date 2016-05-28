@@ -300,6 +300,9 @@ class TPOT(object):
                     self._optimized_pipeline = pipeline
 
             if self.verbosity >= 1:
+                if verbose: # Add an extra line of spacing if the progress bar was used
+                    print()
+
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
     def predict(self, testing_features):
