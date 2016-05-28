@@ -1356,7 +1356,14 @@ class TPOT(object):
         if n_components < 1:
             n_components = 1
         else:
-            n_components = min(n_components, len(training_features.columns.values))
+            n_components = len(training_features.columns.values)
+
+            # Temporarily copied logic from sklearn's FastICA code to prevent
+            # erronious debugging print statment from occuring
+            n, p = training_features.shape
+
+            if (n_components > min(n, p)):
+                    n_components = min(n, p)
 
         # Ensure that tol does not get to be too small
         tol = max(tol, 0.0001)
