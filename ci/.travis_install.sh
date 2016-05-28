@@ -46,10 +46,8 @@ source activate testenv
 
 if [[ "$LATEST" == "true" ]]; then
     pip install deap
-    pip install xgboost
 else
     pip install deap==$DEAP_VERSION
-    pip install xgboost==$XGBOOST_VERSION
 fi
 
 pip install update_checker
@@ -66,7 +64,6 @@ python -c "import scipy; print('scipy %s' % scipy.__version__)"
 python -c "import sklearn; print('sklearn %s' % sklearn.__version__)"
 python -c "import pandas; print('pandas %s' % pandas.__version__)"
 python -c "import deap; print('deap %s' % deap.__version__)"
-python -c "import xgboost; print('xgboost %s' % xgboost.__version__)"
 python -c "import update_checker; print('update_checker %s' % update_checker.__version__)"
 python -c "import tqdm; print('tqdm %s' % tqdm.__version__)"
 python setup.py build_ext --inplace

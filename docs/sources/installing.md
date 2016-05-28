@@ -12,8 +12,6 @@ TPOT is built on top of several existing Python libraries, including:
 
 * DEAP
 
-* XGBoost
-
 Except for DEAP, all of the necessary Python packages can be installed via the [Anaconda Python distribution](https://www.continuum.io/downloads), which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.
 
 NumPy, SciPy, pandas, and scikit-learn can be installed in Anaconda via the command:
@@ -22,11 +20,11 @@ NumPy, SciPy, pandas, and scikit-learn can be installed in Anaconda via the comm
 conda install numpy scipy pandas scikit-learn
 ```
 
-DEAP, XGBoost, and TQDM (used for verbose TPOT runs) can be installed with `pip`
+DEAP, and TQDM (used for verbose TPOT runs) can be installed with `pip`
 via the command:
 
 ```Shell
-pip install deap xgboost tqdm
+pip install deap tqdm
 ```
 
 Optional: For OS X users who want to use OpenMP-enabled compilers to install XGBoost, gcc-5.x.x can be installed with Homebrew: `brew install gcc --without-multilib`.
