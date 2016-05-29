@@ -47,8 +47,11 @@ for column in training_testing_data.columns.values:
 def test_init():
     """Ensure that the TPOT instantiator stores the TPOT variables properly"""
 
-    tpot_obj = TPOT(population_size=500, generations=1000,
-                    mutation_rate=0.05, crossover_rate=0.9, verbosity=1, disable_update_check=True, scoring_function="_balanced_accuracy")
+    def dummy_scoring_func(foo, bar):
+        return
+
+    tpot_obj = TPOT(population_size=500, generations=1000, scoring_function=dummy_scoring_func,
+                    mutation_rate=0.05, crossover_rate=0.9, verbosity=1, disable_update_check=True)
 
     assert tpot_obj.population_size == 500
     assert tpot_obj.generations == 1000
@@ -56,7 +59,12 @@ def test_init():
     assert tpot_obj.crossover_rate == 0.9
     assert tpot_obj.verbosity == 1
     assert tpot_obj.update_checked == True
-    assert tpot_obj.scoring_function == "_balanced_accuracy"
+    assert tpot_obj._optimized_pipeline == None
+    assert tpot_obj._training_classes == None
+    assert tpot_obj._training_features == None
+    assert tpot_obj.scoring_function == dummy_scoring_func
+    assert tpot_obj._pset
+    assert tpot_obj.non_feature_columns
 
 def test_generate_import_code():
     """Ensure export utils' generate_import_code outputs as expected"""
@@ -244,6 +252,42 @@ def test_train_model_and_predict():
     tpot_obj = TPOT()
 
     assert np.array_equal(training_testing_data.ix[:,-3:],tpot_obj._train_model_and_predict(training_testing_data.ix[:,-3:], SVC))
+
+# def test_train_model_and_predict_2():
+#     """Ensure that the TPOT train_model_and_predict outputs the same as sklearn"""
+#
+#     tpot_obj = TPOT()
+#
+#     # Run TPOT prediction function on model
+#     result = tpot_obj._train_model_and_predict(training_testing_data, DecisionTreeClassifier, max_features=3)
+#
+#     # Manually call fit and predict on the classifier
+#     dtc = DecisionTreeClassifier(max_features=2, random_state=42)
+#     dtc.fit(training_features, training_classes)
+#
+#     all_features = training_testing_data.drop(tpot_obj.non_feature_columns, axis=1).values
+#
+#     # Compare TPOT guess with sklearn guess
+#     assert np.array_equal(result['guess'].values, dtc.predict(all_features))
+
+def test_score():
+    """Ensure that the TPOT score function outputs a known score for a fixed pipeline"""
+
+    tpot_obj = TPOT(random_state=234, generations=0, population_size=1)
+    input_df = training_testing_data.copy()
+    known_score = 0.974575577836
+
+    # Generate pipeline with known score
+    tpot_obj.fit(training_features, training_classes)
+
+    # Get score from TPOT
+    score = tpot_obj.score(testing_features, testing_classes)
+
+    # http://stackoverflow.com/questions/5595425/
+    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+        return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+    assert isclose(known_score, score)
 
 def test_combine_dfs():
     """Check combine_dfs operator"""
@@ -634,6 +678,13 @@ def test_div():
 
     tpot_obj = TPOT()
     assert tpot_obj._div(5, 0) == 0
+
+def test_div_2():
+    """Ensure that the TPOT protected division function outputs 0.5 when numerator is 1 and denominator is 2"""
+
+    tpot_obj = TPOT()
+
+    assert tpot_obj._div(1, 2) == 0.5
 
 def test_binarizer():
     """Ensure that the TPOT binarizer outputs the input dataframe when no. of training features is 0"""
