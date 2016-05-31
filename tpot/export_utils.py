@@ -204,7 +204,6 @@ def replace_function_calls(pipeline_list):
        The Python code corresponding to the function calls in the current optimized pipeline
 
     """
-    print(pipeline_list)
 
     operator_text = ''
     for operator in pipeline_list:

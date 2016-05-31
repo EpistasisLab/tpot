@@ -21,6 +21,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
 
+from deap import gp, creator
+
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
 training_features, testing_features, training_classes, testing_classes =\
@@ -92,7 +94,7 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify =
     assert reference_code == import_code
 
 def test_replace_function_calls():
-    """Ensure export utils' replace_mathematical_operators outputs as expected"""
+    """Ensure export utils' replace_function_calls outputs as expected"""
 
     reference_code = """
 result1 = tpot_data.copy()
@@ -247,12 +249,14 @@ def test_train_model_and_predict():
 def test_score():
     """Ensure that the TPOT score function outputs a known score for a fixed pipeline"""
 
-    tpot_obj = TPOT(random_state=234, generations=0, population_size=1)
-    input_df = training_testing_data.copy()
-    known_score = 0.974513633284
+    tpot_obj = TPOT()
+    tpot_obj._training_classes = training_classes
+    tpot_obj._training_features = training_features
+    known_score = 0.981922663339
 
-    # Generate pipeline with known score
-    tpot_obj.fit(training_features, training_classes)
+    # Reify pipeline with known score
+    tpot_obj._optimized_pipeline = creator.Individual.\
+        from_string('_logistic_regression(ARG0, 1.0)', tpot_obj._pset)
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
@@ -262,6 +266,30 @@ def test_score():
         return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
     assert isclose(known_score, score)
+
+def test_predict():
+    """Ensure that the TPOT predict function raises a ValueError when no optimized pipeline exists"""
+
+    tpot_obj = TPOT()
+
+    try:
+        tpot_obj.predict(testing_features)
+        assert False # Should be unreachable
+    except ValueError:
+        pass
+
+def test_predict_2():
+    """Ensure that the TPOT predict function returns a DataFrame of shape (num_testing_rows,)"""
+
+    tpot_obj = TPOT()
+    tpot_obj._training_classes = training_classes
+    tpot_obj._training_features = training_features
+    tpot_obj._optimized_pipeline = creator.Individual.\
+        from_string('_logistic_regression(ARG0, 1.0)', tpot_obj._pset)
+
+    result = tpot_obj.predict(testing_features)
+
+    assert result.shape == (testing_features.shape[0],)
 
 def test_combine_dfs():
     """Check combine_dfs operator"""
