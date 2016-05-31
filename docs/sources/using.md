@@ -78,7 +78,7 @@ Note that you can pass several parameters to the TPOT instantiation call:
 * `mutation_rate`: The mutation rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to apply random changes to every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
 * `crossover_rate`: The crossover rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to "breed" every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
 * `random_state`: The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
-* `verbosity`: How much information TPOT communicates while it's running: 0 = none, 1 = minimal, 2 = all.
+* `verbosity`: How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all. A setting of 2 will add a progress bar to calls to fit()
 * `scoring_function`: Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. See [here](examples/Custom_Scoring_Functions.md) for more information on custom scoring functions.
 * `disable_update_check`: Flag indicating whether the TPOT version checker should be disabled.
 

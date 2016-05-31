@@ -47,9 +47,12 @@ from update_checker import update_check
 
 from ._version import __version__
 from .export_utils import *
+from .decorators import _gp_new_generation
 
 import deap
 from deap import algorithms, base, creator, tools, gp
+
+from tqdm import tqdm
 
 class TPOT(object):
 
@@ -111,6 +114,9 @@ class TPOT(object):
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
+
+        self.pbar = None
+        self.gp_generation = 0
 
         # Columns to always ignore when in an operator
         self.non_feature_columns = ['class', 'group', 'guess']
@@ -264,16 +270,26 @@ class TPOT(object):
 
             self.hof = tools.ParetoFront(similar=pareto_eq)
 
-            stats = tools.Statistics(lambda ind: ind.fitness.values[1])
-            stats.register('Minimum score', np.min)
-            stats.register('Average score', np.mean)
-            stats.register('Maximum score', np.max)
-
             verbose = (self.verbosity == 2)
 
+            # Start the progress bar
+            num_evaluations = self.population_size * (self.generations + 1)
+            self.pbar = tqdm(total=num_evaluations, unit='pipeline', leave=False,
+                             disable=(not verbose), desc='GP Progress')
+
             pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
-                                         mutpb=self.mutation_rate, ngen=self.generations,
-                                         stats=stats, halloffame=self.hof, verbose=verbose)
+                                     mutpb=self.mutation_rate, ngen=self.generations,
+                                     halloffame=self.hof, verbose=False)
+
+        # Allow for certain exceptions to signal a premature fit() cancellation
+        except (KeyboardInterrupt, SystemExit):
+            pass
+        finally:
+            # Close the progress bar
+            self.pbar.close()
+
+            # Reset gp_generation counter to restore initial state
+            self.gp_generation = 0
 
             # Store the pipeline with the highest internal testing accuracy
             top_score = 0.
@@ -283,25 +299,10 @@ class TPOT(object):
                     top_score = pipeline_score
                     self._optimized_pipeline = pipeline
 
-            if self.verbosity == 2:
-                print('')
-
             if self.verbosity >= 1:
-                print('Best pipeline: {}'.format(self._optimized_pipeline))
+                if verbose: # Add an extra line of spacing if the progress bar was used
+                    print()
 
-        # Store the best pipeline if the optimization process is ended prematurely
-        except (KeyboardInterrupt, SystemExit):
-            top_score = 0.
-            for pipeline in self.hof:
-                pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
-                if pipeline_score > top_score:
-                    top_score = pipeline_score
-                    self._optimized_pipeline = pipeline
-
-            if self.verbosity == 2:
-                print('')
-
-            if self.verbosity >= 1:
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
     def predict(self, testing_features):
@@ -1356,7 +1357,14 @@ class TPOT(object):
         if n_components < 1:
             n_components = 1
         else:
-            n_components = min(n_components, len(training_features.columns.values))
+            n_components = len(training_features.columns.values)
+
+            # Temporarily copied logic from sklearn's FastICA code to prevent
+            # erronious debugging print statment from occuring
+            n, p = training_features.shape
+
+            if (n_components > min(n, p)):
+                    n_components = min(n, p)
 
         # Ensure that tol does not get to be too small
         tol = max(tol, 0.0001)
@@ -1589,6 +1597,9 @@ class TPOT(object):
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
             return 5000., 0.
+        finally:
+            if not self.pbar.disable:
+                self.pbar.update(1) # One more pipeline evaluated
 
         if isinstance(resulting_score, float) or isinstance(resulting_score, np.float64) or isinstance(resulting_score, np.float32):
             return max(1, operator_count), resulting_score
@@ -1627,6 +1638,7 @@ class TPOT(object):
 
         return balanced_accuracy
 
+    @_gp_new_generation
     def _combined_selection_operator(self, individuals, k):
         """Perform NSGA2 selection on the population according to their Pareto fitness
 

@@ -4,6 +4,7 @@
 
 from tpot import TPOT
 from tpot.export_utils import *
+from tpot.decorators import _gp_new_generation
 
 import pandas as pd
 import numpy as np
@@ -22,6 +23,7 @@ from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
 
 from deap import gp, creator
+from tqdm import tqdm
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
