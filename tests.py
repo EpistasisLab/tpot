@@ -80,7 +80,6 @@ from sklearn.linear_model import LogisticRegression
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
-
 """
 
     pipeline = [['result1', '_variance_threshold', 'ARG0', '100.0'],
@@ -111,15 +110,15 @@ else:
     mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
     result1 = result1[mask_cols]
 
-# Perform classification with an eXtreme gradient boosting classifier
-xgbc2 = XGBClassifier(learning_rate=0.01, n_estimators=500, max_depth=81)
-xgbc2.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
+# Perform classification with a decision tree classifier
+dtc2 = DecisionTreeClassifier(max_features=min(3, len(result1.columns) - 1), max_depth=81)
+dtc2.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 result2 = result1.copy()
-result2['xgbc2-classification'] = xgbc2.predict(result2.drop('class', axis=1).values)
+result2['dtc2-classification'] = dtc2.predict(result2.drop('class', axis=1).values)
 """
 
     pipeline = [['result1', '_select_kbest', 'ARG0', '26'],
-                ['result2', '_xgradient_boosting', 'result1', '0.01', '81']]
+                ['result2', '_decision_tree', 'result1', '3', '81']]
 
     exported_code = replace_function_calls(pipeline)
 
@@ -250,7 +249,7 @@ def test_score():
 
     tpot_obj = TPOT(random_state=234, generations=0, population_size=1)
     input_df = training_testing_data.copy()
-    known_score = 0.974575577836
+    known_score = 0.974513633284
 
     # Generate pipeline with known score
     tpot_obj.fit(training_features, training_classes)
