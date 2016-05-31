@@ -29,9 +29,9 @@ import numpy as np
 import pandas as pd
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
+from sklearn.svm import SVC, LinearSVC
 from sklearn.cluster import FeatureAgglomeration
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import VarianceThreshold, SelectKBest, SelectPercentile, RFE, SelectFwe, f_classif
@@ -39,8 +39,8 @@ from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler, Mi
 from sklearn.preprocessing import PolynomialFeatures, Binarizer
 from sklearn.decomposition import RandomizedPCA, FastICA
 from sklearn.kernel_approximation import RBFSampler, Nystroem
+from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.cross_validation import train_test_split
-from xgboost import XGBClassifier
 
 import warnings
 from update_checker import update_check
@@ -49,11 +49,7 @@ from ._version import __version__
 from .export_utils import *
 
 import deap
-from deap import algorithms
-from deap import base
-from deap import creator
-from deap import tools
-from deap import gp
+from deap import algorithms, base, creator, tools, gp
 
 class TPOT(object):
 
@@ -128,11 +124,18 @@ class TPOT(object):
         # Machine learning model operators
         self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._ada_boost, [pd.DataFrame, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
         # Temporarily remove SVC -- badly overfits on multiclass data sets
         # self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
-        self._pset.addPrimitive(self._xgradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._gradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int, int], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -496,6 +499,195 @@ class TPOT(object):
         return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=500,
                                              max_features=max_features, random_state=42, n_jobs=-1)
 
+    def _ada_boost(self, input_df, learning_rate, n_estimators):
+        """Fits an AdaBoost classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the classifier
+        learning_rate: float
+            Learning rate shrinks the contribution of each classifier by learning_rate.
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        learning_rate = max(0.0001, learning_rate)
+        n_estimators = min(500, n_estimators)
+
+        return self._train_model_and_predict(input_df, AdaBoostClassifier,
+            learning_rate=learning_rate, n_estimators=n_estimators, random_state=42)
+
+    def _bernoulli_nb(self, input_df, alpha, binarize, fit_prior):
+        """Fits a Bernoulli Naive Bayes classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the classifier
+        alpha: float
+            Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
+        binarize: float
+            Threshold for binarizing (mapping to booleans) of sample features.
+        fit_prior: int
+            Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
+            Reduced to a boolean with modulus.
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        fit_bool = (fit_prior % 2) == 0
+
+        return self._train_model_and_predict(input_df, BernoulliNB, alpha=alpha,
+            binarize=binarize, fit_prior=fit_bool)
+
+    def _extra_trees(self, input_df, criterion, max_features):
+        """Fits an Extra Trees Classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the classifier
+        criterion: int
+            Integer that is used to select from the list of valid criteria,
+            either 'gini', or 'entropy'
+        max_features: int
+            The number of features to consider when looking for the best split
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        # Select criterion string from list of valid parameters
+        criterion_values = ['gini', 'entropy']
+        criterion_selection = criterion_values[criterion % len(criterion_values)]
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+
+        if max_features < 1:
+            max_features = 1
+        elif max_features > len(training_features.columns):
+            max_features = len(training_features.columns)
+
+        return self._train_model_and_predict(input_df, ExtraTreesClassifier,
+            criterion=criterion_selection, max_features=max_features,
+            n_estimators=500, random_state=42)
+
+    def _gaussian_nb(self, input_df):
+        """Fits a Gaussian Naive Bayes Classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the classifier
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        return self._train_model_and_predict(input_df, GaussianNB)
+
+    def _multinomial_nb(self, input_df, alpha, fit_prior):
+        """Fits a Naive Bayes classifier for multinomial models
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the classifier
+        alpha: float
+            Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
+        fit_prior: int
+            Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
+            Reduced to a boolean with modulus.
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        fit_bool = (fit_prior % 2) == 0
+
+        return self._train_model_and_predict(input_df, MultinomialNB, alpha=alpha,
+            fit_prior=fit_bool)
+
+    def _linear_svc(self, input_df, C, loss, fit_intercept):
+        """Fits a Linear Support Vector Classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the classifier
+        C: float
+            Penalty parameter C of the error term.
+        loss: int
+            Integer used to determine the loss function (either 'hinge' or 'squared_hinge')
+        fit_intercept : int
+            Whether to calculate the intercept for this model (even for True, odd for False)
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        fit_bool = (fit_intercept % 2) == 0
+
+        loss_values = ['hinge', 'squared_hinge']
+        loss_selection = loss_values[loss % len(loss_values)]
+
+        C = max(0.0001, C)
+
+        return self._train_model_and_predict(input_df, LinearSVC, C=C,
+            loss=loss_selection, fit_intercept=fit_bool, random_state=42)
+
+    def _passive_aggressive(self, input_df, C, loss, fit_intercept):
+        """Fits a Linear Support Vector Classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the classifier
+        C: float
+            Penalty parameter C of the error term.
+        loss: int
+            Integer used to determine the loss function (either 'hinge' or 'squared_hinge')
+        fit_intercept : int
+            Whether to calculate the intercept for this model (even for True, odd for False)
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        fit_bool = (fit_intercept % 2) == 0
+
+        loss_values = ['hinge', 'squared_hinge']
+        loss_selection = loss_values[loss % len(loss_values)]
+
+        C = max(0.0001, C)
+
+        return self._train_model_and_predict(input_df, PassiveAggressiveClassifier,
+            C=C, loss=loss_selection, fit_intercept=fit_bool, random_state=42)
+
     def _logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier
 
@@ -560,8 +752,8 @@ class TPOT(object):
 
         return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
 
-    def _xgradient_boosting(self, input_df, learning_rate, max_depth):
-        """Fits the dmlc eXtreme gradient boosting classifier
+    def _gradient_boosting(self, input_df, learning_rate, max_depth):
+        """Fits the sklearn GradientBoostingClassifier classifier
 
         Parameters
         ----------
@@ -580,12 +772,10 @@ class TPOT(object):
 
         """
         learning_rate = max(learning_rate, 0.0001)
+        max_depth = max(max_depth, 1)
 
-        if max_depth < 1:
-            max_depth = None
-
-        return self._train_model_and_predict(input_df, XGBClassifier, learning_rate=learning_rate,
-                                             n_estimators=500, max_depth=max_depth, seed=42)
+        return self._train_model_and_predict(input_df, GradientBoostingClassifier, learning_rate=learning_rate,
+                                             n_estimators=500, max_depth=max_depth, random_state=42)
 
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
