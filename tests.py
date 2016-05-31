@@ -550,29 +550,6 @@ def test_max_abs_scaler():
 
         assert np.array_equal(tpot_obj._max_abs_scaler(training_testing_data.ix[:,-3:]),training_testing_data.ix[:,-3:])
 
-def test_static_models():
-    """Ensure that the TPOT classifiers output the same predictions as the sklearn output"""
-    tpot_obj = TPOT()
-    models = [(tpot_obj._decision_tree, DecisionTreeClassifier, {'max_features':0, 'max_depth':0}, {'max_features':'auto', 'max_depth':None}),
-              (tpot_obj._svc, SVC , {'C':0.0001}, {'C':0.0001}),
-              (tpot_obj._random_forest, RandomForestClassifier,{'max_features':0}, {'n_estimators':500, 'max_features':'auto', 'n_jobs':-1}),
-              (tpot_obj._logistic_regression, LogisticRegression, {'C':0.0001}, {'C':0.0001}),
-              (tpot_obj._knnc, KNeighborsClassifier, {'n_neighbors':100}, {'n_neighbors':100})]
-
-    for model, sklearn_model, model_params, sklearn_params in models:
-
-        result = model(training_testing_data, **model_params)
-        try:
-            sklearn_model_obj = sklearn_model(random_state=42, **sklearn_params)
-            sklearn_model_obj.fit(training_features, training_classes)
-        except TypeError:
-            sklearn_model_obj = sklearn_model(**sklearn_params)
-            sklearn_model_obj.fit(training_features, training_classes)
-
-        result = result[result['group'] == 'testing']
-
-        assert np.array_equal(result['guess'].values, sklearn_model_obj.predict(testing_features)), "Model {} failed".format(str(model))
-
 def test_rbf():
     """Assert that the TPOT RBFSampler outputs the input dataframe when # of
     training features is 0"""
