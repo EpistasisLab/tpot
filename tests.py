@@ -254,6 +254,7 @@ def test_score():
     tpot_obj = TPOT()
     tpot_obj._training_classes = training_classes
     tpot_obj._training_features = training_features
+    tpot_obj.pbar = tqdm(total=1, disable=True)
     known_score = 0.981922663339
 
     # Reify pipeline with known score
@@ -884,3 +885,20 @@ def test_gradient_boosting_2():
     gbc.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, gbc.predict(testing_features))
+
+def test_gp_new_generation():
+    """Assert that the gp_generation count gets incremented when _gp_new_generation is called"""
+    tpot_obj = TPOT()
+    tpot_obj.pbar = tqdm(total=1, disable=True)
+
+    assert(tpot_obj.gp_generation == 0)
+
+    # Since _gp_new_generation is a decorator, and we dont want to run a full
+    # fit(), decorate a dummy function and then call the dummy function.
+    @_gp_new_generation
+    def dummy_function(self, foo):
+        pass
+
+    dummy_function(tpot_obj, None)
+
+    assert(tpot_obj.gp_generation == 1)
