@@ -431,7 +431,7 @@ class TPOT(object):
         exported_pipeline = replace_mathematical_operators(exported_pipeline)
 
         # Unroll the nested function calls into serial code. Check export_utils.py for details.
-        exported_pipeline, pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
+        pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
 
         # Have the exported code import all of the necessary modules and functions
         pipeline_text = generate_import_code(pipeline_list)

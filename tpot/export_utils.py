@@ -50,7 +50,7 @@ def replace_mathematical_operators(exported_pipeline):
                     new_val = val1 * val2
                 else:
                     if val2 == 0:
-                        new_val = 0
+                        new_val = 0.
                     else:
                         new_val = float(val1) / float(val2)
 
@@ -98,7 +98,7 @@ def unroll_nested_fuction_calls(exported_pipeline):
             break
         else:
             break
-    return exported_pipeline, pipeline_list
+    return pipeline_list
 
 def generate_import_code(pipeline_list):
     """Generate all library import calls for use in TPOT.export()

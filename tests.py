@@ -54,7 +54,8 @@ def test_init():
         return
 
     tpot_obj = TPOT(population_size=500, generations=1000, scoring_function=dummy_scoring_func,
-                    mutation_rate=0.05, crossover_rate=0.9, verbosity=1, disable_update_check=True)
+                    mutation_rate=0.05, crossover_rate=0.9, verbosity=1, random_state=42,
+                    disable_update_check=True)
 
     assert tpot_obj.population_size == 500
     assert tpot_obj.generations == 1000
@@ -68,6 +69,40 @@ def test_init():
     assert tpot_obj.scoring_function == dummy_scoring_func
     assert tpot_obj._pset
     assert tpot_obj.non_feature_columns
+
+def test_replace_mathematical_operators():
+    """Ensure export utils' replace_mathematical_operators outputs as expected"""
+
+    tpot_obj = TPOT()
+
+    pipeline = creator.Individual.\
+        from_string('_logistic_regression(ARG0, _div(add(1, sub(3, 1)), mul(1, 3)))', tpot_obj._pset)
+
+    assert '_logistic_regression(ARG0, 1.0)' == str(creator.Individual(replace_mathematical_operators(pipeline)))
+
+def test_replace_mathematical_operators_2():
+    """Ensure export utils' replace_mathematical_operators outputs as expected when dividing by 0"""
+
+    tpot_obj = TPOT()
+
+    pipeline = creator.Individual.\
+        from_string('_logistic_regression(ARG0, _div(3, 0))', tpot_obj._pset)
+
+    assert '_logistic_regression(ARG0, 0.0)' == str(creator.Individual(replace_mathematical_operators(pipeline)))
+
+def test_unroll_nested():
+    """Ensure that export utils' unroll_nested_fuction_calls outputs pipeline_list as expected"""
+
+    tpot_obj = TPOT()
+
+    expected_list = [['result1', '_logistic_regression', 'ARG0', '1.0']]
+
+    pipeline = creator.Individual.\
+        from_string('_logistic_regression(ARG0, 1.0)', tpot_obj._pset)
+
+    pipeline_list = unroll_nested_fuction_calls(pipeline)
+
+    assert expected_list == pipeline_list
 
 def test_generate_import_code():
     """Ensure export utils' generate_import_code outputs as expected"""
@@ -249,6 +284,17 @@ def test_train_model_and_predict():
 #     assert np.array_equal(result['guess'].values, dtc.predict(all_features))
 
 def test_score():
+    """Ensure that the TPOT score function raises a ValueError when no optimized pipeline exists"""
+
+    tpot_obj = TPOT()
+
+    try:
+        tpot_obj.score(testing_features, testing_classes)
+        assert False # Should be unreachable
+    except ValueError:
+        pass
+
+def test_score_2():
     """Ensure that the TPOT score function outputs a known score for a fixed pipeline"""
 
     tpot_obj = TPOT()
@@ -293,6 +339,17 @@ def test_predict_2():
     result = tpot_obj.predict(testing_features)
 
     assert result.shape == (testing_features.shape[0],)
+
+def test_export():
+    """Ensure that the TPOT export function raises a ValueError when no optimized pipeline exists"""
+
+    tpot_obj = TPOT()
+
+    try:
+        tpot_obj.export('will_not_output')
+        assert False # Should be unreachable
+    except ValueError:
+        pass
 
 def test_combine_dfs():
     """Check combine_dfs operator"""
