@@ -1671,7 +1671,7 @@ class TPOT(object):
             Returns the individual with one of the mutations applied to it
 
         """
-        roll = random.random()
+        roll = np.random.random()
         if roll <= 0.333333:
             return gp.mutUniform(individual, expr=self._toolbox.expr_mut, pset=self._pset)
         elif roll <= 0.666666:
