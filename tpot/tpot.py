@@ -1657,16 +1657,13 @@ class TPOT(object):
         """
         return tools.selNSGA2(individuals, int(k / 5.)) * 5
 
-    def _random_mutation_operator(self, individual, mutation_type=None):
+    def _random_mutation_operator(self, individual):
         """Perform a replacement, insert, or shrink mutation on an individual
 
         Parameters
         ----------
         individual: DEAP individual
             A list of pipeline operators and model parameters that can be compiled by DEAP into a callable function
-        mutation_type: int
-            Used during testing.
-            Specifies whether to use mutUniform (0), mutInsert (1), or mutShrink (2)
 
         Returns
         -------
@@ -1674,12 +1671,15 @@ class TPOT(object):
             Returns the individual with one of the mutations applied to it
 
         """
-        roll = random.random()
-        if mutation_type == 0 or (roll <= 1/3 and not mutation_type):
+        roll = np.random.random()
+        if roll <= 1/3:
+            print('1')
             return gp.mutUniform(individual, expr=self._toolbox.expr_mut, pset=self._pset)
-        elif mutation_type == 1 or (roll <= 2/3 and not mutation_type):
+        elif roll <= 2/3:
+            print('2')
             return gp.mutInsert(individual, pset=self._pset)
         else:
+            print('3')
             return gp.mutShrink(individual)
 
 def main():

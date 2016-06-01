@@ -1011,15 +1011,15 @@ def test_gp_new_generation():
 
 def test_random_mutation_operator():
     """Assert that the TPOT random_mutation_operator behaves as expected when mutUniform technique is specified"""
-    tpot_obj = TPOT(random_state=42)
+    tpot_obj = TPOT(random_state=34)
     individual = creator.Individual.\
         from_string('_logistic_regression(ARG0, _div(2, 1))', tpot_obj._pset)
 
     # Mutate individual and re-cast as an Individual object
-    mut_individual = tpot_obj._random_mutation_operator(individual, mutation_type=0)
+    mut_individual = tpot_obj._random_mutation_operator(individual)
     mut_individual = creator.Individual(mut_individual[0])
 
-    assert '_extra_trees(_extra_trees(ARG0, 94, 13), mul(94, 69), add(75, 54))' == str(mut_individual)
+    assert '_logistic_regression(ARG0, _div(2, mul(add(29, 3), sub(46, 8))))' == str(mut_individual)
 
 def test_random_mutation_operator_2():
     """Assert that the TPOT random_mutation_operator behaves as expected when mutInsert technique is specified"""
@@ -1028,19 +1028,19 @@ def test_random_mutation_operator_2():
         from_string('_logistic_regression(ARG0, _div(2, 1))', tpot_obj._pset)
 
     # Mutate individual and re-cast as an Individual object
-    mut_individual = tpot_obj._random_mutation_operator(individual, mutation_type=1)
+    mut_individual = tpot_obj._random_mutation_operator(individual)
     mut_individual = creator.Individual(mut_individual[0])
 
-    assert '_feat_agg(_logistic_regression(ARG0, _div(2, 1)), 31, 28, 17)' == str(mut_individual)
+    assert '_decision_tree(_logistic_regression(ARG0, _div(2, 1)), 31, 28)' == str(mut_individual)
 
 def test_random_mutation_operator_3():
     """Assert that the TPOT random_mutation_operator behaves as expected when mutShrink technique is specified"""
-    tpot_obj = TPOT(random_state=42)
+    tpot_obj = TPOT(random_state=56)
     individual = creator.Individual.\
         from_string('_logistic_regression(ARG0, _div(2, 1))', tpot_obj._pset)
 
     # Mutate individual and re-cast as an Individual object
-    mut_individual = tpot_obj._random_mutation_operator(individual, mutation_type=2)
+    mut_individual = tpot_obj._random_mutation_operator(individual)
     mut_individual = creator.Individual(mut_individual[0])
 
     assert '_logistic_regression(ARG0, _div(2, 1))' == str(mut_individual)
