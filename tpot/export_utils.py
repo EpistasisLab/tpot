@@ -48,7 +48,7 @@ def replace_mathematical_operators(exported_pipeline):
                     new_val = val1 - val2
                 elif node.name == 'mul':
                     new_val = val1 * val2
-                else:
+                elif node.name == '_div':
                     if val2 == 0:
                         new_val = 0.
                     else:
@@ -179,7 +179,7 @@ def generate_import_code(pipeline_list):
 
     # Build import string
     for key in sorted(pipeline_imports.keys()):
-        module_list = ', '.join(pipeline_imports[key])
+        module_list = ', '.join(sorted(pipeline_imports[key]))
         pipeline_text += 'from {} import {}\n'.format(key, module_list)
 
     pipeline_text += '''

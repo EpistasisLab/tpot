@@ -130,6 +130,31 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify =
 
     assert reference_code == import_code
 
+def test_generate_import_code_2():
+    """Ensure export utils' generate_import_code outputs as expected when using multiple classes from the same module"""
+
+    reference_code = """\
+import numpy as np
+import pandas as pd
+
+from sklearn.cross_validation import train_test_split
+from sklearn.decomposition import FastICA, RandomizedPCA
+from sklearn.linear_model import LogisticRegression
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
+"""
+
+    pipeline = [['result1', '_fast_ica', 'ARG0', '5', '0.1'],
+                ['result2', '_pca', 'ARG0', '66', '34'],
+                ['result3', '_combine_dfs', 'result2', 'result1'],
+                ['result4', '_logistic_regression', 'result3', '0.12030075187969924']]
+
+    import_code = generate_import_code(pipeline)
+
+    assert reference_code == import_code
+
 def test_replace_function_calls():
     """Ensure export utils' replace_function_calls outputs as expected"""
 
@@ -235,6 +260,30 @@ def test_random_forest_3():
 
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
 
+def test_knnc():
+    """Ensure that the TPOT k-nearest neighbor classifier outputs the same as the sklearn classifier"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._knnc(training_testing_data, 100)
+    result = result[result['group'] == 'testing']
+
+    knnc = KNeighborsClassifier(n_neighbors=100)
+    knnc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, knnc.predict(testing_features))
+
+def test_knnc_2():
+    """Ensure that the TPOT k-nearest neighbor classifier outputs the same as the sklearn classifier when n_neighbor=0"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._knnc(training_testing_data, 0)
+    result = result[result['group'] == 'testing']
+
+    knnc = KNeighborsClassifier(n_neighbors=2)
+    knnc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, knnc.predict(testing_features))
+
 def test_svc():
     """Ensure that the TPOT random forest method outputs the same as the sklearn svc when C>0.0001"""
 
@@ -301,7 +350,7 @@ def test_score_2():
     tpot_obj._training_classes = training_classes
     tpot_obj._training_features = training_features
     tpot_obj.pbar = tqdm(total=1, disable=True)
-    known_score = 0.981922663339
+    known_score = 0.981922663339 # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
@@ -959,3 +1008,39 @@ def test_gp_new_generation():
     dummy_function(tpot_obj, None)
 
     assert(tpot_obj.gp_generation == 1)
+
+def test_random_mutation_operator():
+    """Assert that the TPOT random_mutation_operator behaves as expected when mutUniform technique is specified"""
+    tpot_obj = TPOT(random_state=42)
+    individual = creator.Individual.\
+        from_string('_logistic_regression(ARG0, _div(2, 1))', tpot_obj._pset)
+
+    # Mutate individual and re-cast as an Individual object
+    mut_individual = tpot_obj._random_mutation_operator(individual, mutation_type=0)
+    mut_individual = creator.Individual(mut_individual[0])
+
+    assert '_extra_trees(_extra_trees(ARG0, 94, 13), mul(94, 69), add(75, 54))' == str(mut_individual)
+
+def test_random_mutation_operator_2():
+    """Assert that the TPOT random_mutation_operator behaves as expected when mutInsert technique is specified"""
+    tpot_obj = TPOT(random_state=42)
+    individual = creator.Individual.\
+        from_string('_logistic_regression(ARG0, _div(2, 1))', tpot_obj._pset)
+
+    # Mutate individual and re-cast as an Individual object
+    mut_individual = tpot_obj._random_mutation_operator(individual, mutation_type=1)
+    mut_individual = creator.Individual(mut_individual[0])
+
+    assert '_feat_agg(_logistic_regression(ARG0, _div(2, 1)), 31, 28, 17)' == str(mut_individual)
+
+def test_random_mutation_operator_3():
+    """Assert that the TPOT random_mutation_operator behaves as expected when mutShrink technique is specified"""
+    tpot_obj = TPOT(random_state=42)
+    individual = creator.Individual.\
+        from_string('_logistic_regression(ARG0, _div(2, 1))', tpot_obj._pset)
+
+    # Mutate individual and re-cast as an Individual object
+    mut_individual = tpot_obj._random_mutation_operator(individual, mutation_type=2)
+    mut_individual = creator.Individual(mut_individual[0])
+
+    assert '_logistic_regression(ARG0, _div(2, 1))' == str(mut_individual)
