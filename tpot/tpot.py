@@ -1,3 +1,19 @@
+from .models.base import (
+    PipelineEstimator,
+)
+from .models.decomposition import (
+    fast_ica,
+)
+from .models.ensemble import (
+    random_forest,
+    ada_boost,
+)
+
+from .primitives import (
+    get_fitness_attr,
+    _div, _combined_selection_operator, _combine_dfs, _zero_count,
+)
+
 from pandas import np
 from sklearn.cross_validation import (
     train_test_split,
@@ -20,63 +36,24 @@ from deap import (
     base,
     creator,
 )
-from models.base import (
-    PipelineEstimator,
-)
-from models.decomposition import (
-    fast_ica,
-)
-from models.ensemble import (
-    random_forest,
-    ada_boost,
-)
 from toolz import (
-    compose,
     partial,
-    second,
 )
 
 import operator
+
+
+# Similarity function for the Pareto Front Hall of Frame
+def pareto_eq(a, b):
+    return np.all(get_fitness_attr(a) == get_fitness_attr(b))
 
 
 class DeapSetup(object):
     base_models = [
         random_forest, ada_boost, fast_ica,
     ]
-
-    @staticmethod
-    def get_fitness_attr(x): return x.fitness.values[1]
-
-    @staticmethod
-    def _div(num1, num2):
-        return float(num1) / float(num2) if num2 != 0. else 0.
-
-    @staticmethod
-    def _combined_selection_operator(self, individuals, k):
-        return tools.selNSGA2(individuals, int(k / 5.)) * 5
-
-    @staticmethod
-    def _combine_dfs(input_df1, input_df2):
-        for column in input_df2.columns:
-            input_df1[column] = input_df2[column]
-        return input_df1
-
-    @staticmethod
-    def _zero_count(input_df):
-        modified_df = input_df.copy()
-        modified_df['non_zero'] = modified_df.apply(
-            np.count_nonzero, axis=1
-        ).astype(np.float64)
-        modified_df['zero_col'] = len(modified_df)-modified_df['non_zero']
-        return modified_df.copy()
-
     # This can be changed for numpy arrays later
     input_types = [DataFrame]
-
-    # Similarity function for the Pareto Front Hall of Frame
-    @staticmethod
-    def pareto_eq(a, b):
-        return np.all(get_fitness_attr(a) == get_fitness_attr(b))
 
     pset = gp.PrimitiveSetTyped('MAIN', [DataFrame], DataFrame)
     pset.addPrimitive(operator.add, [int, int], int)
@@ -109,10 +86,10 @@ class DeapSetup(object):
     stats.register('Maximum score', np.max)
 
     pset.addPrimitive(
-        _combine_dfs, [DataFrame, DataFrame], DataFrame
+        _combine_dfs, [DataFrame, DataFrame], DataFrame, name='_combine_dfs'
     )
-    pset.addPrimitive(_zero_count, [DataFrame], DataFrame)
-    pset.addPrimitive(_div, [int, int], float)
+    pset.addPrimitive(_zero_count, [DataFrame], DataFrame, name='_zero_count')
+    pset.addPrimitive(_div, [int, int], float, name='_div')
 
     toolbox.register('select', _combined_selection_operator)
 
@@ -123,12 +100,6 @@ class DeapSetup(object):
         stats=stats,
         halloffame=halloffame,
     )
-
-    def __init__(self, data_source, class_column='class',
-                 mutation_rate=0.9, crossover_rate=0.05,
-                 random_state=0, verbose=2):
-
-        self.data_source = prepare_dataframe(data_source)
 
     def _random_mutation_operator(self, individual):
         roll = random()
@@ -165,12 +136,12 @@ def prepare_dataframe(data_source, class_column='species'):
 def get_fitness_attr(x): return x.fitness.values[1]
 
 
-class teapot(ClassifierMixin, BaseEstimator, DeapSetup):
+class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
     def __init__(
         self, models=[], population=10, generations=10,
         mutation_rate=0.9, crossover_rate=0.05, random_state=0,
     ):
-        self.models = self.models
+        self.models = models
         self.population = population
         self.generations = generations
         self.mutation_rate = mutation_rate
@@ -180,20 +151,24 @@ class teapot(ClassifierMixin, BaseEstimator, DeapSetup):
         self.toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, X):
-        for model in [self.base_models, self.models]:
-            self.pset.addPrimitive(
-                model.evaluate,
-                [*self.input_types, *model.trait_types()],
-                model.output_type,
-                name=model.__name__,
-            )
+        for model in [*self.base_models, *self.models]:
+            if model.__name__ not in self.pset.mapping:
+                self.pset.addPrimitive(
+                    model.fit_predict,
+                    [*self.input_types, *model.trait_types()],
+                    model.output_type,
+                    name=model.__name__,
+                )
 
         self.data_source = prepare_dataframe(X)
 
         pop = self.toolbox.population(
             n=self.population
         )
-        self.toolbox.register('evaluate', self.evaluate)
+        self.toolbox.register(
+            'evaluate', self.evaluate,
+            data_source=self.data_source
+        )
 
         pop = self._model(
             population=pop,
@@ -203,22 +178,29 @@ class teapot(ClassifierMixin, BaseEstimator, DeapSetup):
         )
 
         top_score = 0.0
-        scoring = compose(second, self.evaluate)
         for pipeline in self.halloffame:
-            pipeline_score = scoring(pipeline)
+            pipeline_score = PipelineEstimator(
+                self.toolbox.compile(expr=pipeline)
+            ).score(self.data_source.ix[False])
             if pipeline_score > top_score:
                 top_score = pipeline_score
                 self._optimized_pipeline = pipeline
-                self._best_model = self.toolbox.compile(
-                    self._optimized_pipeline
-                )
 
-    def evaluate(self, individual, *args):
+    def predict(self, X):
+        return self.toolbox.compile(
+            self._optimized_pipeline
+        )(X)
+
+    def evaluate(self, individual, data_source):
+
         try:
-            model = PipelineEstimator.compose(
-                self.toolbox.compile(expr=individual), *args
+            # print(individual)
+            model = PipelineEstimator(
+                self.toolbox.compile(expr=individual)
             )
-            score = model.score(self.data_source.ix[False])
+            # inherited from ClassifierMixin
+            score = model.score(data_source.ix[False])
+
         except MemoryError:
             # Throw out GP expressions that are too large to be
             # compiled in Python

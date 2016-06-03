@@ -8,27 +8,20 @@ from sklearn.base import (
     BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin,
 )
 from toolz import (
-    partial, pipe, identity, flip, curry
+    partial, pipe, identity,
 )
 
 
 class PipelineEstimator(ClassifierMixin, BaseEstimator):
-    @classmethod
-    def compose(cls, model, *args):
-        model = flip(curry(model))
-        for arg in args:
-            model = model(arg)
-        return cls(model)
-
     def __init__(self, model=identity):
         self.model_ = model
 
     def predict(self, X):
-        return self.model_(X)
+        return self.model_(X).values
 
     def score(self, X):
         return super().score(
-            X.values, X.index
+            X, X.index.values
         )
 
 
@@ -38,41 +31,44 @@ class EvaluateEstimator(HasTraits):
     @classmethod
     def trait_types(cls):
         instance = cls()
-        params = instance.get_params()
+        params = instance.model._get_param_names()
+        traits = instance.trait_names()
         return [
-            type(params[key]) for key in instance.trait_names()
+            type(getattr(instance, key)) for key in params if key in traits
         ]
 
-    @classmethod
-    def evaluate(cls, X, *args):
-        instance = cls()
-        traits = instance.trait_names()
+    def _args_to_kwargs(self, X, *args):
+        traits = self.trait_names()
         kwargs = {
             k: args[i] for i, k in pipe(traits, enumerate)
         }
         for trait in traits:
-            func = instance.trait_metadata(trait, 'apply')
+            func = self.trait_metadata(trait, 'apply')
             if func:
-                if instance.trait_metadata(trait, 'df'):
+                if self.trait_metadata(trait, 'df'):
                     func = partial(func, X)
             else:
                 func = identity
             kwargs[trait] = func(kwargs[trait])
-        model = instance.model(**kwargs)
-        model.fit(X.ix[True].values, X.ix[True].index.values)
-        return instance.predict(cls, model, X)
+        return kwargs
 
-    def predict(self, cls, instance, X):
-        if issubclass(cls.model, (RegressorMixin, ClassifierMixin,)):
+    @classmethod
+    def fit_predict(cls, X, *args):
+        self = cls()
+        model = self.model(
+            **self._args_to_kwargs(X, *args)
+        )
+        model.fit(X.ix[True].values, X.ix[True].index.values)
+        if issubclass(model.__class__, (RegressorMixin, ClassifierMixin,)):
             return DataFrame(
-                    instance.predict(
+                    model.predict(
                         X.values,
                     ), columns=['guess'],
                     index=X.index,
                 )
-        elif issubclass(cls.model, TransformerMixin):
+        elif issubclass(model.__class__, TransformerMixin):
             return DataFrame(
-                instance.transform(
-                    X.values, X.index.get_level_values(1)
+                model.transform(
+                    X.values, X.index.get_level_values(-1)
                 ), index=X.index
             )

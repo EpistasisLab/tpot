@@ -18,4 +18,4 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 '''
 
 from ._version import __version__
-from .tpot import TPOT, main
+from .tpot import TPOT, prepare_dataframe
