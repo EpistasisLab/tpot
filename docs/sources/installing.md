@@ -20,10 +20,11 @@ NumPy, SciPy, pandas, and scikit-learn can be installed in Anaconda via the comm
 conda install numpy scipy pandas scikit-learn
 ```
 
-DEAP can be installed with `pip` via the command:
+DEAP, and TQDM (used for verbose TPOT runs) can be installed with `pip`
+via the command:
 
 ```Shell
-pip install deap
+pip install deap tqdm
 ```
 
 Optional: For OS X users who want to use OpenMP-enabled compilers to install XGBoost, gcc-5.x.x can be installed with Homebrew: `brew install gcc --without-multilib`.

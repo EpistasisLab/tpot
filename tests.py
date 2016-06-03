@@ -3,12 +3,14 @@
 """
 
 from tpot import TPOT
+from tpot.decorators import _gp_new_generation
 
 import pandas as pd
 import numpy as np
 from collections import Counter
 import random
 import warnings
+import inspect
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
@@ -19,6 +21,8 @@ from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
+
+from tqdm import tqdm
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -55,6 +59,23 @@ def test_init():
     assert tpot_obj.verbosity == 1
     assert tpot_obj.update_checked == True
     assert tpot_obj.scoring_function == "_balanced_accuracy"
+
+def test_get_params():
+    """Ensure that get_params returns the exact dictionary of parameters used by TPOT"""
+    kwargs = {
+        'population_size': 500,
+        'generations': 1000,
+        'verbosity': 1
+    }
+
+    tpot_obj = TPOT(**kwargs)
+
+    # Get default parameters of TPOT and merge with our specified parameters
+    initializer = inspect.getargspec(TPOT.__init__)
+    default_kwargs = dict(zip(initializer.args[1:], initializer.defaults))
+    default_kwargs.update(kwargs)
+
+    assert tpot_obj.get_params() == default_kwargs
 
 def test_decision_tree():
     """Ensure that the TPOT decision tree method outputs the same as the sklearn decision tree"""

@@ -16,10 +16,11 @@ python -c "import sklearn; print('sklearn %s' % sklearn.__version__)"
 python -c "import pandas; print('pandas %s' % pandas.__version__)"
 python -c "import deap; print('deap %s' % deap.__version__)"
 python -c "import update_checker; print('update_checker %s ' % update_checker.__version__)"
+python -c "import tqdm; print('tqdm %s' % tqdm.__version__)"
 
 if [[ "$COVERAGE" == "true" ]]; then
     nosetests -s -v --with-coverage
 else
     nosetests -s -v
 fi
-#make test-doc test-sphinxext
+# make test-doc test-sphinxext
