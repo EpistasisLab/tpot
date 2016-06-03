@@ -1433,7 +1433,7 @@ class TPOT(object):
 
         Returns
         -------
-        modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+        modified_df: pandas.DataFrame {n_samples, n_clusters + ['guess', 'group', 'class']}
             Returns a DataFrame containing the transformed features
         """
         training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
