@@ -42,6 +42,15 @@ from .models.linear_model import (
 from .models.neighbors import (
     knnc,
 )
+from .models.preprocessing import (
+    binarizer,
+    max_abs_scaler,
+    min_max_scaler,
+    polynomial_features,
+    robust_scaler,
+    standard_scaler,
+
+)
 from .models.svm import (
     # svc,
     linear_svc,
@@ -103,9 +112,11 @@ class DeapSetup(object):
         decision_tree,
         linear_svc,
         #svc,
-        feat_agg,
+        feat_agg,
         knnc,
         variance_threshold, select_kbest, select_percentile, rfe,
+        standard_scaler, binarizer, max_abs_scaler, min_max_scaler,
+            polynomial_features, robust_scaler,
     ]
     # This can be changed for numpy arrays later
     input_types = [DataFrame]
