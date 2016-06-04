@@ -1,17 +1,61 @@
+# -*- coding: utf-8 -*-
+
+"""
+Copyright 2016 Randal S. Olson
+This file is part of the TPOT library.
+The TPOT library is free software: you can redistribute it and/or
+modify it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+The TPOT library is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with
+the TPOT library. If not, see http://www.gnu.org/licenses/.
+"""
+
 from .models.base import (
     PipelineEstimator,
+)
+from .models.cluster import (
+    feat_agg,
 )
 from .models.decomposition import (
     fast_ica,
 )
 from .models.ensemble import (
-    random_forest,
     ada_boost,
+    extra_trees,
+    gradient_boost,
+    random_forest,
+)
+from .models.feature_selection import (
+    rfe,
+    select_kbest,
+    select_percentile,
+    variance_threshold,
+)
+from .models.linear_model import (
+    logistic_regression,
+    passive_aggressive,
+)
+from .models.neighbors import (
+    knnc,
+)
+from .models.svm import (
+    # svc,
+    linear_svc,
+)
+from .models.tree import (
+    decision_tree,
 )
 
 from .primitives import (
     get_fitness_attr,
-    _div, _combined_selection_operator, _combine_dfs, _zero_count,
+    _div,
+    _combined_selection_operator,
+    _combine_dfs,
+    _zero_count,
 )
 
 from pandas import np
@@ -42,15 +86,26 @@ from toolz import (
 
 import operator
 
+default_class_column = 'species'
 
-# Similarity function for the Pareto Front Hall of Frame
+
 def pareto_eq(a, b):
+    """Similarity function for the hall fof famne
+    """
     return np.all(get_fitness_attr(a) == get_fitness_attr(b))
 
 
 class DeapSetup(object):
     base_models = [
-        random_forest, ada_boost, fast_ica,
+        fast_ica,
+        ada_boost, extra_trees, gradient_boost, random_forest,
+        logistic_regression, passive_aggressive,
+        decision_tree,
+        linear_svc,
+        #svc,
+        feat_agg,
+        knnc,
+        variance_threshold, select_kbest, select_percentile, rfe,
     ]
     # This can be changed for numpy arrays later
     input_types = [DataFrame]
@@ -59,6 +114,11 @@ class DeapSetup(object):
     pset.addPrimitive(operator.add, [int, int], int)
     pset.addPrimitive(operator.sub, [int, int], int)
     pset.addPrimitive(operator.mul, [int, int], int)
+    pset.addPrimitive(
+        _combine_dfs, [DataFrame, DataFrame], DataFrame, name='_combine_dfs'
+    )
+    pset.addPrimitive(_zero_count, [DataFrame], DataFrame, name='_zero_count')
+    pset.addPrimitive(_div, [int, int], float, name='_div')
 
     for val in range(0, 101):
         pset.addTerminal(val, int)
@@ -85,12 +145,6 @@ class DeapSetup(object):
     stats.register('Average score', np.mean)
     stats.register('Maximum score', np.max)
 
-    pset.addPrimitive(
-        _combine_dfs, [DataFrame, DataFrame], DataFrame, name='_combine_dfs'
-    )
-    pset.addPrimitive(_zero_count, [DataFrame], DataFrame, name='_zero_count')
-    pset.addPrimitive(_div, [int, int], float, name='_div')
-
     toolbox.register('select', _combined_selection_operator)
 
     halloffame = tools.ParetoFront(similar=pareto_eq)
@@ -99,6 +153,7 @@ class DeapSetup(object):
         toolbox=toolbox,
         stats=stats,
         halloffame=halloffame,
+        verbose=True,
     )
 
     def _random_mutation_operator(self, individual):
@@ -113,7 +168,7 @@ class DeapSetup(object):
             return gp.mutShrink(individual)
 
 
-def prepare_dataframe(data_source, class_column='species'):
+def prepare_dataframe(data_source, class_column=default_class_column):
     data_source = DataFrame(data_source)
     cats = data_source[class_column].unique().tolist()
     data_source[class_column] = data_source[class_column].apply(cats.index)
@@ -136,10 +191,13 @@ def prepare_dataframe(data_source, class_column='species'):
 def get_fitness_attr(x): return x.fitness.values[1]
 
 
+from ipywidgets import HTML
 class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
+    viewer = HTML()
     def __init__(
         self, models=[], population=10, generations=10,
         mutation_rate=0.9, crossover_rate=0.05, random_state=0,
+        class_column=default_class_column,
     ):
         self.models = models
         self.population = population
@@ -147,10 +205,12 @@ class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.random_state = random_state
+        self.class_column = class_column
 
         self.toolbox.register('mutate', self._random_mutation_operator)
 
-    def fit(self, X):
+    def fit(self, X, **kwargs):
+        self.set_params(**kwargs)
         for model in [*self.base_models, *self.models]:
             if model.__name__ not in self.pset.mapping:
                 self.pset.addPrimitive(
@@ -160,7 +220,7 @@ class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
                     name=model.__name__,
                 )
 
-        self.data_source = prepare_dataframe(X)
+        self.data_source = prepare_dataframe(X, self.class_column)
 
         pop = self.toolbox.population(
             n=self.population
@@ -192,15 +252,21 @@ class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
         )(X)
 
     def evaluate(self, individual, data_source):
+        self.viewer.value = """<pre><code>{}</code></pre>""".format(
+            individual.__str__(),
+        )
+        model = PipelineEstimator(
+            self.toolbox.compile(expr=individual)
+        )
+        # inherited from ClassifierMixin
+        score = 1.
 
         try:
             # print(individual)
-            model = PipelineEstimator(
-                self.toolbox.compile(expr=individual)
-            )
-            # inherited from ClassifierMixin
-            score = model.score(data_source.ix[False])
-
+            if hasattr(model, 'score'):
+                score = model.score(
+                    data_source,
+                )
         except MemoryError:
             # Throw out GP expressions that are too large to be
             # compiled in Python

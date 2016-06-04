@@ -2,7 +2,7 @@ from deap import (
     tools
 )
 from pandas import (
-    np,
+    np, concat
 )
 
 
@@ -20,13 +20,16 @@ def _combined_selection_operator(individuals, k):
 
 
 def _combine_dfs(input_df1, input_df2):
-    return input_df1.join(input_df2)
+    if input_df1.equals(input_df2):
+        return input_df1
+    return concat([input_df1.rename(columns={
+        k: '_'+k for k in input_df1.columns
+    }), input_df2], axis=1)
 
 
-def _zero_count(input_df):
-    modified_df = input_df.copy()
-    modified_df['non_zero'] = modified_df.apply(
+def _zero_count(df):
+    df['non_zero'] = df.apply(
         np.count_nonzero, axis=1
     ).astype(np.float64)
-    modified_df['zero_col'] = len(modified_df)-modified_df['non_zero']
-    return modified_df.copy()
+    df['zero_col'] = len(df)-df['non_zero']
+    return df
