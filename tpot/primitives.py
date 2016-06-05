@@ -22,10 +22,11 @@ def _combined_selection_operator(individuals, k):
 def _combine_dfs(input_df1, input_df2):
     if input_df1.equals(input_df2):
         return input_df1
-    return concat([input_df1.rename(columns={
-        k: '_'+k for k in input_df1.columns
-    }), input_df2], axis=1)
-
+    return concat(
+            [input_df1, input_df2], axis=1
+        ).set_index(
+            input_df1.index
+        )
 
 def _zero_count(df):
     df['non_zero'] = df.apply(
