@@ -70,7 +70,7 @@ class EvaluateEstimator(HasTraits):
     @classmethod
     def output_type(cls):
         if issubclass(cls.model, (
-            ClassifierMixin,
+            RegressorMixin, ClassifierMixin,
         )):
             return Series
         return DataFrame

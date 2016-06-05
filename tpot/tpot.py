@@ -92,6 +92,7 @@ from deap import (
 from toolz import (
     partial,
     pipe,
+    identity
 )
 
 import operator
@@ -131,8 +132,13 @@ class DeapSetup(object):
     pset.addPrimitive(
         _combine_dfs, [DataFrame, DataFrame], DataFrame, name='_combine_dfs',
     )
+    pset.addPrimitive(
+        _combine_dfs, [DataFrame, Series], DataFrame, name='_combine_dfs_series',
+    )
     pset.addPrimitive(_zero_count, [DataFrame], DataFrame, name='_zero_count')
     pset.addPrimitive(_div, [int, int], float, name='_div')
+
+    pset.addTerminal([], Series, name='series')
 
     for val in range(0, 101):
         pset.addTerminal(val, int)
@@ -245,10 +251,13 @@ class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
         self.toolbox.register('mutate', self._random_mutation_operator)
 
         self.set_models(self.base_models)
-        del self.pset.terminals[Series]
 
     def fit(self, X, **kwargs):
-
+        self.pset.terminals[Series][0].value = Series(
+            [0]*len(X),
+            index = X.index,
+        )
+        
         self.set_params(**kwargs)
         self.data_source = prepare_dataframe(X, self.class_column)
 
