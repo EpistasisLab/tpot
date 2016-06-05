@@ -68,5 +68,5 @@ class passive_aggressive(EvaluateEstimator):
         apply=lambda x: (x % 2) == 0
     )
     loss = Int(0).tag(
-        apply=lambda x: ['hinge', 'square_hinge'][x % 2]
+        apply=lambda x: ['hinge', 'squared_hinge'][x % 2]
     )

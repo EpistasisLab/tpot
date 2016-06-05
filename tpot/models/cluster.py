@@ -24,6 +24,7 @@ from sklearn.cluster import (
 from toolz import (
     partial,
     curry,
+    pipe,
 )
 from traitlets import (
     Int,
@@ -50,7 +51,10 @@ class feat_agg(EvaluateEstimator):
     """
     model = FeatureAgglomeration
     n_clusters = Int(1).tag(
-        apply=partial(max, 1),
+        df=True,
+        apply=lambda df, n: pipe(
+            n, partial(max, 1), partial(min, len(df.columns)),
+        ),
     )
     affinity = Int(1).tag(
         apply=attr(_affinity_types),

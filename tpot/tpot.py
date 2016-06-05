@@ -14,9 +14,6 @@ You should have received a copy of the GNU General Public License along with
 the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
-from .models.base import (
-    PipelineEstimator,
-)
 from .models.cluster import (
     feat_agg,
 )
@@ -67,7 +64,10 @@ from .primitives import (
     _zero_count,
 )
 
-from pandas import np
+from pandas import (
+    np,
+    Series,
+)
 from sklearn.cross_validation import (
     train_test_split,
 )
@@ -91,6 +91,7 @@ from deap import (
 )
 from toolz import (
     partial,
+    pipe,
 )
 
 import operator
@@ -116,18 +117,24 @@ class DeapSetup(object):
         knnc,
         variance_threshold, select_kbest, select_percentile, rfe,
         standard_scaler, binarizer, max_abs_scaler, min_max_scaler,
-            polynomial_features, robust_scaler,
+            polynomial_features,
+            robust_scaler,
+
     ]
     # This can be changed for numpy arrays later
     input_types = [DataFrame]
 
-    pset = gp.PrimitiveSetTyped('MAIN', [DataFrame], DataFrame)
+    pset = gp.PrimitiveSetTyped('MAIN', [DataFrame], Series)
     pset.addPrimitive(operator.add, [int, int], int)
     pset.addPrimitive(operator.sub, [int, int], int)
     pset.addPrimitive(operator.mul, [int, int], int)
     pset.addPrimitive(
-        _combine_dfs, [DataFrame, DataFrame], DataFrame, name='_combine_dfs'
+        _combine_dfs, [DataFrame, DataFrame], DataFrame, name='_combine_dfs',
     )
+    pset.addPrimitive(
+        _combine_dfs, [DataFrame, Series], DataFrame, name='_combine_series1',
+    )
+
     pset.addPrimitive(_zero_count, [DataFrame], DataFrame, name='_zero_count')
     pset.addPrimitive(_div, [int, int], float, name='_div')
 
@@ -135,6 +142,8 @@ class DeapSetup(object):
         pset.addTerminal(val, int)
     for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
         pset.addTerminal(val, float)
+
+    pset.renameArguments(ARG0='df')
 
     creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
     creator.create(
@@ -221,11 +230,18 @@ class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
         self.toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, X, **kwargs):
+
         self.set_params(**kwargs)
         for model in [*self.base_models, *self.models]:
             if model.__name__ not in self.pset.mapping:
+                if model.output_type in [Series]:
+                    self.pset.addTerminal(
+                        model.fit_primitive,
+                        Series,
+                        name=model.__name__+'_terminal',
+                    )
                 self.pset.addPrimitive(
-                    model.fit_predict,
+                    model.fit_primitive,
                     [*self.input_types, *model.trait_types()],
                     model.output_type,
                     name=model.__name__,
@@ -241,43 +257,48 @@ class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
             data_source=self.data_source
         )
 
-        pop = self._model(
+        self._model(
             population=pop,
             ngen=self.generations,
             cxpb=self.crossover_rate,
             mutpb=self.mutation_rate,
         )
 
-        top_score = 0.0
-        for pipeline in self.halloffame:
-            pipeline_score = PipelineEstimator(
-                self.toolbox.compile(expr=pipeline)
-            ).score(self.data_source.ix[False])
-            if pipeline_score > top_score:
-                top_score = pipeline_score
-                self._optimized_pipeline = pipeline
+        return self
 
     def predict(self, X):
-        return self.toolbox.compile(
-            self._optimized_pipeline
-        )(X)
+        return X
 
     def evaluate(self, individual, data_source):
         self.viewer.value = """<pre><code>{}</code></pre>""".format(
             individual.__str__(),
         )
-        model = PipelineEstimator(
+        result = pipe(
+            data_source,
             self.toolbox.compile(expr=individual)
         )
-        # inherited from ClassifierMixin
-        score = 1.
+        import networkx as nx
+        import matplotlib.pyplot as plt
+        self.nodes, self.edges, self.labels = gp.graph(individual)
+        g = nx.Graph()
 
+        import sys
+        sys.stdout.flush()
+        g.add_nodes_from(self.nodes)
+        g.add_edges_from(self.edges)
+        pos = nx.nx_pydot.graphviz_layout(g)
+
+        nx.draw_networkx_nodes(g, pos)
+        nx.draw_networkx_edges(g, pos)
+        nx.draw_networkx_labels(g, pos, self.labels)
+        plt.show()
+        score = self.score(
+            data_source.ix[False].index.values.ravel(),
+            result.ix[False].values.ravel(),
+        )
         try:
-            # print(individual)
-            if hasattr(model, 'score'):
-                score = model.score(
-                    data_source,
-                )
+            pass
+
         except MemoryError:
             # Throw out GP expressions that are too large to be
             # compiled in Python

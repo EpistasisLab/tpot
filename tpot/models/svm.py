@@ -15,7 +15,7 @@ along with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import (
-    EvaluateEstimator,
+    PredictEstimator,
 )
 
 from sklearn.svm import (
@@ -29,8 +29,7 @@ from traitlets import (
     Int,
 )
 
-
-class svc(EvaluateEstimator):
+class svc(PredictEstimator):
     """Fits a C-support vector classifier
     Parameters
     ----------
@@ -43,7 +42,7 @@ class svc(EvaluateEstimator):
     )
 
 
-class linear_svc(EvaluateEstimator):
+class linear_svc(PredictEstimator):
     """Fits a logistic regression classifier
     Parameters
     ----------
@@ -59,5 +58,5 @@ class linear_svc(EvaluateEstimator):
         apply=lambda x: (x % 2) == 0
     )
     loss = Int(0).tag(
-        apply=lambda x: ['hinge', 'square_hinge'][x % 2]
+        apply=lambda x: ['hinge', 'squared_hinge'][x % 2]
     )

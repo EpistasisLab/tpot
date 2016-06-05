@@ -15,7 +15,7 @@ along with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import (
-    EvaluateEstimator,
+    PredictEstimator,
 )
 from sklearn.neighbors import (
     KNeighborsClassifier,
@@ -28,12 +28,13 @@ from traitlets import (
 )
 
 
-class knnc(EvaluateEstimator):
+class knnc(PredictEstimator):
     """Fits a k-nearest neighbor classifier
     Parameters
     ----------
     n_neighbors: int
-        Number of neighbors to use by default for k_neighbors queries; must be a positive value
+        Number of neighbors to use by default for k_neighbors queries; must
+        be a positive value
     """
     model = KNeighborsClassifier
     n_neighbors = Int(3).tag(

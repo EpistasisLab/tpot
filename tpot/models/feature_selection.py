@@ -30,7 +30,7 @@ class variance_threshold(EvaluateEstimator):
         the threshold
     """
     model = VarianceThreshold
-    threshold = Float()
+    threshold = Float(.5)
 
 
 class select_kbest(EvaluateEstimator):
@@ -46,9 +46,11 @@ class select_kbest(EvaluateEstimator):
     default_params = {
         'score_func': f_classif,
     }
-    k = Int(10).tag(
+    k = Int(1).tag(
         df=True,
-        apply=lambda df, k: max(1, 'all' if len(df.columns) > k else k)
+        apply=lambda df, k: pipe(
+            k, partial(max, 0), partial(min, len(df.columns)),
+        ),
     )
 
 
@@ -81,13 +83,14 @@ class rfe(EvaluateEstimator):
         'estimator': SVC(kernel='linear'),
     }
     n_features_to_select = Int(50).tag(
-        apply=lambda df, n: pipe(
-            n, partial(max, 1), partial(min, len(df.columns))
+        apply=lambda s, n: pipe(
+            n, partial(max, 1), partial(min, len(s))
         )
     )
     step = Float(0.5).tag(
         apply=compose(partial(min, .99), partial(max, .1))
     )
+
 
 class select_fwe(EvaluateEstimator):
     """Uses scikit-learn's SelectKBest feature selection to learn the subset

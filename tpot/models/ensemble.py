@@ -1,5 +1,5 @@
 from .base import (
-    EvaluateEstimator,
+    PredictEstimator,
 )
 from sklearn.ensemble import (
     RandomForestClassifier,
@@ -15,7 +15,7 @@ from toolz import (
 )
 
 
-class random_forest(EvaluateEstimator):
+class random_forest(PredictEstimator):
     model = RandomForestClassifier
     n_estimators = Int(default_value=500).tag(
         apply=lambda ne: pipe(ne, partial(min, 500),  partial(max, 1))
@@ -27,7 +27,7 @@ class random_forest(EvaluateEstimator):
     )
 
 
-class ada_boost(EvaluateEstimator):
+class ada_boost(PredictEstimator):
     model = AdaBoostClassifier
     n_estimators = Int(500).tag(
         apply=lambda ne: pipe(ne, partial(min, 500),  partial(max, 1), int)
@@ -37,7 +37,7 @@ class ada_boost(EvaluateEstimator):
     )
 
 
-class extra_trees(EvaluateEstimator):
+class extra_trees(PredictEstimator):
     model = ExtraTreesClassifier
     n_estimators = Int(500).tag(
         df=True,
@@ -53,7 +53,7 @@ class extra_trees(EvaluateEstimator):
             pipe(mf, partial(min, 1), partial(max, len(df.columns)))
     )
 
-class gradient_boost(EvaluateEstimator):
+class gradient_boost(PredictEstimator):
     model = GradientBoostingClassifier
 
     learning_rate = Float().tag(

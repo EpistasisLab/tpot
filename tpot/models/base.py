@@ -20,9 +20,9 @@ from traitlets import (
 )
 from pandas import (
     DataFrame,
+    Series,
 )
 from sklearn.base import (
-    BaseEstimator,
     ClassifierMixin,
     RegressorMixin,
     TransformerMixin,
@@ -37,29 +37,46 @@ from toolz import (
 default_class_column = 'species'
 
 
-class PipelineEstimator(ClassifierMixin, BaseEstimator):
-    def __init__(self, model=identity, class_column=default_class_column):
-        self.model = model
-        self.class_column = class_column
+def evaluate_classifier(model, X):
+    v = model.predict(
+        X.values,
+    )
+    return Series(
+        v, name='guess',
+        index=X.index,
+    )
 
-    def predict(self, X):
-        result = self.model(X).ix[False]
-        if len(result.columns) == 1 and 'guess' in result.columns:
-            if result.guess.isnull().values.any():
-                return result['guess'].values - 1
-            return result['guess'].values
-        else:
-            return result.index.values - 1
 
-    def score(self, X):
-        return super().score(
-            X, X.ix[False].index.values
+def evaluate_selection(model, X):
+    return X[model.get_support(True)]
+
+
+def evaluate_transform(model, X):
+    try:
+        transformed = model.transform(
+            X.values, X.index.get_level_values(-1)
         )
-
+    except:
+        transformed = model.transform(X.values)
+    return DataFrame(
+        transformed,
+        index=X.index,
+    )
 
 class EvaluateEstimator(HasTraits):
     output_type = DataFrame
     default_params = {}
+
+    @property
+    def exports(self):
+        for subclass in [
+            base.SelectorMixin,
+            RegressorMixin,
+            ClassifierMixin,
+            TransformerMixin,
+        ]:
+            if issubclass(self.model, subclass):
+                return subclass
 
     @classmethod
     def trait_types(cls):
@@ -72,49 +89,57 @@ class EvaluateEstimator(HasTraits):
 
     def _args_to_kwargs(self, X, *args):
         traits = self.trait_names()
-        kwargs = {
-            k: args[i] for i, k in pipe(traits, enumerate)
-        }
-        for trait in traits:
-            func = self.trait_metadata(trait, 'apply')
+        kwargs = {}
+        if args:
+            kwargs = {
+                k: args[i] for i, k in enumerate(traits)
+            }
+        for key, value in kwargs.items():
+            func = self.trait_metadata(key, 'apply')
             if func:
-                if self.trait_metadata(trait, 'df'):
+                if self.trait_metadata(key, 'df'):
                     func = partial(func, X)
             else:
                 func = identity
-            kwargs[trait] = func(kwargs[trait])
+            kwargs[key] = func(value)
         return kwargs
 
     @classmethod
-    def fit_predict(cls, X, *args):
+    def fit_primitive(cls, X, *args):
         self = cls()
 
+        kwargs = self._args_to_kwargs(X, *args)
+        
         # Initialize the model in the class
         model = self.model(
-            **self._args_to_kwargs(X, *args)
+            **kwargs,
         )
 
         # Apply any default parameters to the model.
         model.set_params(**cls.default_params)
 
         # Fit the model
-        model.fit(X.ix[True].values, X.ix[True].index.values)
+        if not isinstance(X, DataFrame):
+            X = DataFrame(X)
+
+        if len(X.columns) == 0:
+            return X
+
+        # Fit the testing data
+        model.fit(X.ix[True].values, X.ix[True].index.values.ravel())
 
         # Use sklearn Mixins to choose the output
-        if issubclass(model.__class__, base.SelectorMixin):
-            v = X[model.get_support(True)]
-            return v
+        return self.mixins(model, X)
 
-        if issubclass(model.__class__, (RegressorMixin, ClassifierMixin,)):
-            return DataFrame(
-                    model.predict(
-                        X.values,
-                    ), columns=['guess'],
-                    index=X.index,
-                )
-        if issubclass(model.__class__, TransformerMixin):
-            return DataFrame(
-                model.transform(
-                    X.values, X.index.get_level_values(-1)
-                ), index=X.index
-            )
+    def mixins(self, model, X):
+        method = {
+            base.SelectorMixin: evaluate_selection,
+            RegressorMixin: evaluate_classifier,
+            ClassifierMixin: evaluate_classifier,
+            TransformerMixin: evaluate_transform,
+        }[self.exports]
+        return method(model, X)
+
+
+class PredictEstimator(EvaluateEstimator):
+    output_type = Series
