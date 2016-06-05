@@ -131,10 +131,6 @@ class DeapSetup(object):
     pset.addPrimitive(
         _combine_dfs, [DataFrame, DataFrame], DataFrame, name='_combine_dfs',
     )
-    pset.addPrimitive(
-        _combine_dfs, [DataFrame, Series], DataFrame, name='_combine_series1',
-    )
-
     pset.addPrimitive(_zero_count, [DataFrame], DataFrame, name='_zero_count')
     pset.addPrimitive(_div, [int, int], float, name='_div')
 
@@ -187,6 +183,24 @@ class DeapSetup(object):
         else:
             return gp.mutShrink(individual)
 
+    def set_models(self, models):
+        for model in models:
+            if model.__name__ not in self.pset.mapping:
+                output_type = model.output_type()
+                self.pset.addPrimitive(
+                    model.fit_terminal,
+                    [*self.input_types, *model.trait_types()],
+                    model.output_type(),
+                    name=model.__name__,
+                )
+                if issubclass(output_type, Series):
+                        self.pset.addPrimitive(
+                            model.fit_primitive,
+                            [*self.input_types, *model.trait_types()],
+                            DataFrame,
+                            name=model.__name__+'_df',
+                        )
+
 
 def prepare_dataframe(data_source, class_column=default_class_column):
     data_source = DataFrame(data_source)
@@ -211,9 +225,10 @@ def prepare_dataframe(data_source, class_column=default_class_column):
 def get_fitness_attr(x): return x.fitness.values[1]
 
 
-from ipywidgets import HTML
 class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
-    viewer = HTML()
+    fit_error = []
+    score_error = []
+    last_score = 0
     def __init__(
         self, models=[], population=10, generations=10,
         mutation_rate=0.9, crossover_rate=0.05, random_state=0,
@@ -229,24 +244,12 @@ class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
 
         self.toolbox.register('mutate', self._random_mutation_operator)
 
+        self.set_models(self.base_models)
+        del self.pset.terminals[Series]
+
     def fit(self, X, **kwargs):
 
         self.set_params(**kwargs)
-        for model in [*self.base_models, *self.models]:
-            if model.__name__ not in self.pset.mapping:
-                if model.output_type in [Series]:
-                    self.pset.addTerminal(
-                        model.fit_primitive,
-                        Series,
-                        name=model.__name__+'_terminal',
-                    )
-                self.pset.addPrimitive(
-                    model.fit_primitive,
-                    [*self.input_types, *model.trait_types()],
-                    model.output_type,
-                    name=model.__name__,
-                )
-
         self.data_source = prepare_dataframe(X, self.class_column)
 
         pop = self.toolbox.population(
@@ -270,41 +273,19 @@ class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
         return X
 
     def evaluate(self, individual, data_source):
-        self.viewer.value = """<pre><code>{}</code></pre>""".format(
-            individual.__str__(),
-        )
-        result = pipe(
-            data_source,
-            self.toolbox.compile(expr=individual)
-        )
-        import networkx as nx
-        import matplotlib.pyplot as plt
-        self.nodes, self.edges, self.labels = gp.graph(individual)
-        g = nx.Graph()
-
-        import sys
-        sys.stdout.flush()
-        g.add_nodes_from(self.nodes)
-        g.add_edges_from(self.edges)
-        pos = nx.nx_pydot.graphviz_layout(g)
-
-        nx.draw_networkx_nodes(g, pos)
-        nx.draw_networkx_edges(g, pos)
-        nx.draw_networkx_labels(g, pos, self.labels)
-        plt.show()
-        score = self.score(
-            data_source.ix[False].index.values.ravel(),
-            result.ix[False].values.ravel(),
-        )
         try:
-            pass
-
+            result = pipe(
+                data_source,
+                self.toolbox.compile(expr=individual)
+            )
+        except ValueError as e:
+            self.fit_error.append(e)
+            return 5000., 0.
         except MemoryError:
             # Throw out GP expressions that are too large to be
             # compiled in Python
             return 5000., 0.
-        except (KeyboardInterrupt, SystemExit):
-            raise
+
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause
             # TPOT to crash Instead assign the crashing pipeline a poor fitness
@@ -320,8 +301,12 @@ class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
             ]:
                 continue
 
-            operator_count += 1
-        if isinstance(score, (float, np.float64, np.float32)):
-            return max(1, operator_count), score
-        else:
-            raise ValueError('Scoring function does not return a float')
+        try:
+            self.last_score = self.score(
+               data_source.ix[False].index.values.ravel(),
+               result.ix[False].values.ravel(),
+            )
+            return max(1, operator_count), self.last_score
+        except ValueError as e:
+            self.score_error.append(e)
+            return 5000., 0.

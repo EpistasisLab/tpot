@@ -31,7 +31,7 @@ from traitlets import (
 )
 
 _affinity_types = [
-    'euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed',
+    'euclidean', 'l1', 'l2', 'cosine', 'precomputed',
 ]
 _linkage_types = [
     'ward', 'complete', 'average',

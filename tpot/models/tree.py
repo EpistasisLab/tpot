@@ -1,5 +1,5 @@
 from .base import (
-    PredictEstimator,
+    EvaluateEstimator,
 )
 from sklearn.tree import (
     DecisionTreeClassifier,
@@ -12,7 +12,7 @@ from toolz import (
 )
 
 
-class decision_tree(PredictEstimator):
+class decision_tree(EvaluateEstimator):
     model = DecisionTreeClassifier
     max_depth = Int(default_value=500).tag(
         apply=lambda x: None if x < 1 else x,

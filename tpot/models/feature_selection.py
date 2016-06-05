@@ -83,6 +83,7 @@ class rfe(EvaluateEstimator):
         'estimator': SVC(kernel='linear'),
     }
     n_features_to_select = Int(50).tag(
+        df=True,
         apply=lambda s, n: pipe(
             n, partial(max, 1), partial(min, len(s))
         )

@@ -27,8 +27,8 @@ from sklearn.base import (
     RegressorMixin,
     TransformerMixin,
 )
-from sklearn.feature_selection import (
-    base,
+from sklearn.feature_selection.base import (
+    SelectorMixin,
 )
 from toolz import (
     partial, pipe, identity,
@@ -38,17 +38,18 @@ default_class_column = 'species'
 
 
 def evaluate_classifier(model, X):
-    v = model.predict(
-        X.values,
-    )
     return Series(
-        v, name='guess',
+        model.predict(
+            X.values,
+        ), name='guess',
         index=X.index,
     )
 
 
 def evaluate_selection(model, X):
-    return X[model.get_support(True)]
+    return X[
+        X.columns[model.get_support(True)]
+    ]
 
 
 def evaluate_transform(model, X):
@@ -64,19 +65,25 @@ def evaluate_transform(model, X):
     )
 
 class EvaluateEstimator(HasTraits):
-    output_type = DataFrame
     default_params = {}
 
-    @property
-    def exports(self):
-        for subclass in [
-            base.SelectorMixin,
-            RegressorMixin,
+    @classmethod
+    def output_type(cls):
+        if issubclass(cls.model, (
             ClassifierMixin,
-            TransformerMixin,
-        ]:
-            if issubclass(self.model, subclass):
-                return subclass
+        )):
+            return Series
+        return DataFrame
+
+    def predict(self, model, X):
+        for subclass, predictor in {
+            SelectorMixin: evaluate_selection,
+            RegressorMixin: evaluate_classifier,
+            ClassifierMixin: evaluate_classifier,
+            TransformerMixin: evaluate_transform,
+        }.items():
+            if issubclass(model.__class__, subclass):
+                return predictor(model, X)
 
     @classmethod
     def trait_types(cls):
@@ -105,18 +112,16 @@ class EvaluateEstimator(HasTraits):
         return kwargs
 
     @classmethod
-    def fit_primitive(cls, X, *args):
+    def fit_terminal(cls, X, *args):
         self = cls()
 
         kwargs = self._args_to_kwargs(X, *args)
-        
+
         # Initialize the model in the class
         model = self.model(
+            **cls.default_params,
             **kwargs,
         )
-
-        # Apply any default parameters to the model.
-        model.set_params(**cls.default_params)
 
         # Fit the model
         if not isinstance(X, DataFrame):
@@ -129,17 +134,10 @@ class EvaluateEstimator(HasTraits):
         model.fit(X.ix[True].values, X.ix[True].index.values.ravel())
 
         # Use sklearn Mixins to choose the output
-        return self.mixins(model, X)
+        return self.predict(model, X)
 
-    def mixins(self, model, X):
-        method = {
-            base.SelectorMixin: evaluate_selection,
-            RegressorMixin: evaluate_classifier,
-            ClassifierMixin: evaluate_classifier,
-            TransformerMixin: evaluate_transform,
-        }[self.exports]
-        return method(model, X)
-
-
-class PredictEstimator(EvaluateEstimator):
-    output_type = Series
+    @classmethod
+    def fit_primitive(cls, X, *args):
+        return DataFrame(
+            cls.fit_terminal(X, *args),
+        )
