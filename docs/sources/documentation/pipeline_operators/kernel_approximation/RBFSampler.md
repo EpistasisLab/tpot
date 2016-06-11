@@ -13,8 +13,6 @@ Parameters
         Input DataFrame to scale
     gamma:
       Parameter of RBF kernel: exp(-gamma * x^2)
-    n_components: int
-        The number of components to keep
 
 Returns
 -------
@@ -44,7 +42,7 @@ training_features = result1.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # RBF must be fit on only the training data
-    rbf = RBFSampler(n_components=min(59, len(training_features.columns.values)), gamma=0.001)
+    rbf = RBFSampler(gamma=0.001)
     rbf.fit(training_features.values.astype(np.float64))
     transformed_features = rbf.transform(result1.drop('class', axis=1).values.astype(np.float64))
     result1 = pd.DataFrame(data=transformed_features)

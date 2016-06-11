@@ -11,8 +11,6 @@ Parameters
 ----------
     input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame to scale
-    n_components: int
-        The number of components to keep
     iterated_power: int
         Number of iterations for the power method. [1, 10]
 
@@ -42,7 +40,7 @@ training_features = tpot_data.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # RandomizedPCA must be fit on only the training data
-    pca = RandomizedPCA(n_components=1, iterated_power=10)
+    pca = RandomizedPCA(iterated_power=10)
     pca.fit(training_features.values.astype(np.float64))
     transformed_features = pca.transform(tpot_data.drop('class', axis=1).values.astype(np.float64))
 

@@ -156,9 +156,9 @@ class TPOT(object):
         self._pset.addPrimitive(self._max_abs_scaler, [pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._binarizer, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._polynomial_features, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._pca, [pd.DataFrame, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._rbf, [pd.DataFrame, float, int], pd.DataFrame)
-        self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, int, float], pd.DataFrame)
+        self._pset.addPrimitive(self._pca, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._rbf, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._fast_ica, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._zero_count, [pd.DataFrame], pd.DataFrame)
@@ -1257,15 +1257,13 @@ class TPOT(object):
 
         return modified_df.copy()
 
-    def _pca(self, input_df, n_components, iterated_power):
+    def _pca(self, input_df, iterated_power):
         """Uses scikit-learn's RandomizedPCA to transform the feature set
 
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame to scale
-        n_components: int
-            The number of components to keep
         iterated_power: int
             Number of iterations for the power method. [1, 10]
 
@@ -1280,16 +1278,11 @@ class TPOT(object):
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
-        if n_components < 1:
-            n_components = 1
-        else:
-            n_components = min(n_components, len(training_features.columns.values))
-
         # Thresholding iterated_power [1, 10]
         iterated_power = min(10, max(1, iterated_power))
 
         # PCA must be fit on only the training data
-        pca = RandomizedPCA(n_components=n_components, iterated_power=iterated_power, copy=False)
+        pca = RandomizedPCA(iterated_power=iterated_power, copy=False)
         pca.fit(training_features.values.astype(np.float64))
         transformed_features = pca.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
@@ -1306,7 +1299,7 @@ class TPOT(object):
 
         return modified_df.copy()
 
-    def _rbf(self, input_df, gamma, n_components):
+    def _rbf(self, input_df, gamma):
         """Uses scikit-learn's RBFSampler to transform the feature set
 
         Parameters
@@ -1315,8 +1308,6 @@ class TPOT(object):
             Input DataFrame to scale
         gamma: float
             Parameter of RBF kernel: exp(-gamma * x^2)
-        n_components: int
-            The number of components to keep
 
         Returns
         -------
@@ -1329,13 +1320,8 @@ class TPOT(object):
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
-        if n_components < 1:
-            n_components = 1
-        else:
-            n_components = min(n_components, len(training_features.columns.values))
-
         # RBF must be fit on only the training data
-        rbf = RBFSampler(gamma=gamma, n_components=n_components)
+        rbf = RBFSampler(gamma=gamma)
         rbf.fit(training_features.values.astype(np.float64))
         transformed_features = rbf.transform(input_df.drop(self.non_feature_columns, axis=1).values.astype(np.float64))
 
@@ -1352,15 +1338,13 @@ class TPOT(object):
 
         return modified_df.copy()
 
-    def _fast_ica(self, input_df, n_components, tol):
+    def _fast_ica(self, input_df, tol):
         """Uses scikit-learn's FastICA to transform the feature set
 
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame to scale
-        n_components: int
-            The number of components to keep
         tol: float
             Tolerance on update at each iteration.
 
@@ -1375,22 +1359,10 @@ class TPOT(object):
         if len(training_features.columns.values) == 0:
             return input_df.copy()
 
-        if n_components < 1:
-            n_components = 1
-        else:
-            n_components = len(training_features.columns.values)
-
-            # Temporarily copied logic from sklearn's FastICA code to prevent
-            # erronious debugging print statment from occuring
-            n, p = training_features.shape
-
-            if (n_components > min(n, p)):
-                    n_components = min(n, p)
-
         # Ensure that tol does not get to be too small
         tol = max(tol, 0.0001)
 
-        ica = FastICA(n_components=n_components, tol=tol, random_state=42)
+        ica = FastICA(tol=tol, random_state=42)
 
         # Ignore convergence warnings during GP
         with warnings.catch_warnings():
