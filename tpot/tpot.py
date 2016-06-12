@@ -169,16 +169,17 @@ class TPOT(object):
         self._pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
 
-        # Mathematical operators
-        self._pset.addPrimitive(operator.add, [int, int], int)
-        self._pset.addPrimitive(operator.sub, [int, int], int)
-        self._pset.addPrimitive(operator.mul, [int, int], int)
-        self._pset.addPrimitive(self._div, [int, int], float)
-
         for val in range(0, 101):
             self._pset.addTerminal(val, int)
         for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
             self._pset.addTerminal(val, float)
+
+        # Remove this immediately
+        def dummy(foo):
+            return foo
+
+        self._pset.addPrimitive(dummy, [int], int)
+        self._pset.addPrimitive(dummy, [float], float)
 
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
@@ -192,6 +193,8 @@ class TPOT(object):
         self._toolbox.register('mate', gp.cxOnePoint)
         self._toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
         self._toolbox.register('mutate', self._random_mutation_operator)
+
+        self.hof = None
 
         if not scoring_function:
             self.scoring_function = self._balanced_accuracy
@@ -290,20 +293,22 @@ class TPOT(object):
             pass
         finally:
             # Close the progress bar
-            self.pbar.close()
+            if type(self.pbar) != None: # Standard truthiness checks won't work for tqdm
+                self.pbar.close()
 
             # Reset gp_generation counter to restore initial state
             self.gp_generation = 0
 
             # Store the pipeline with the highest internal testing accuracy
-            top_score = 0.
-            for pipeline in self.hof:
-                pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
-                if pipeline_score > top_score:
-                    top_score = pipeline_score
-                    self._optimized_pipeline = pipeline
+            if self.hof:
+                top_score = 0.
+                for pipeline in self.hof:
+                    pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
+                    if pipeline_score > top_score:
+                        top_score = pipeline_score
+                        self._optimized_pipeline = pipeline
 
-            if self.verbosity >= 1:
+            if self.verbosity >= 1 and self._optimized_pipeline:
                 if verbose: # Add an extra line of spacing if the progress bar was used
                     print()
 
@@ -447,9 +452,6 @@ class TPOT(object):
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
         exported_pipeline = self._optimized_pipeline
-
-        # Replace all of the mathematical operators with their results. Check export_utils.py for details.
-        exported_pipeline = replace_mathematical_operators(exported_pipeline)
 
         # Unroll the nested function calls into serial code. Check export_utils.py for details.
         exported_pipeline, pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
@@ -1555,25 +1557,6 @@ class TPOT(object):
 
         return modified_df.copy()
 
-    @staticmethod
-    def _div(num1, num2):
-        """Divides two numbers
-
-        Parameters
-        ----------
-        num1: int
-            The dividend
-        num2: int
-            The divisor
-
-        Returns
-        -------
-        result: float
-            Returns num1 / num2, or 0. if num2 == 0.
-
-        """
-        return float(num1) / float(num2) if num2 != 0. else 0.
-
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data
 
@@ -1600,7 +1583,7 @@ class TPOT(object):
                 node = individual[i]
                 if type(node) is deap.gp.Terminal:
                     continue
-                if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div', '_combine_dfs']:
+                if type(node) is deap.gp.Primitive and node.name == '_combine_dfs':
                     continue
 
                 operator_count += 1

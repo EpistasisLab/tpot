@@ -564,12 +564,6 @@ def test_nystroem_2():
 
     assert in_rows == out_rows
 
-def test_div():
-    """Ensure that the TPOT protected division function outputs 0 when the divisor is 0"""
-
-    tpot_obj = TPOT()
-    assert tpot_obj._div(5, 0) == 0
-
 def test_binarizer():
     """Ensure that the TPOT binarizer outputs the input dataframe when no. of training features is 0"""
     tpot_obj = TPOT()
