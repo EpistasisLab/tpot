@@ -169,9 +169,18 @@ class TPOT(object):
         self._pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
 
-        for val in range(0, 101):
+        int_terminals = np.concatenate((np.arange(0, 51, 1),
+                np.arange(60, 110, 10)))
+
+        for val in int_terminals:
             self._pset.addTerminal(val, int)
-        for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
+
+        float_terminals = np.concatenate(([0., 1e-6, 1e-5, 1e-4, 1e-3],
+                np.linspace(0.01, 1.00, 100),
+                np.linspace(2., 50., 49),
+                np.linspace(60., 100., 5)))
+
+        for val in float_terminals:
             self._pset.addTerminal(val, float)
 
         # Remove this immediately
@@ -293,7 +302,7 @@ class TPOT(object):
             pass
         finally:
             # Close the progress bar
-            if type(self.pbar) != None: # Standard truthiness checks won't work for tqdm
+            if type(self.pbar) != type(None): # Standard truthiness checks won't work for tqdm
                 self.pbar.close()
 
             # Reset gp_generation counter to restore initial state
