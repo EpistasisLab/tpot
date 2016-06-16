@@ -97,6 +97,10 @@ class TPOT(object):
         None
 
         """
+        # Save params to be recalled later by get_params()
+        self.params = locals() # Must be placed before any local variable definitions
+        self.params.pop('self')
+
         # Do not prompt the user to update during this session if they ever disabled the update check
         if disable_update_check:
             TPOT.update_checked = True
@@ -408,6 +412,23 @@ class TPOT(object):
         training_testing_data.rename(columns=new_col_names, inplace=True)
 
         return self._evaluate_individual(self._optimized_pipeline, training_testing_data)[1]
+
+    def get_params(self, deep=None):
+        """Get parameters for this estimator.
+
+        Parameters
+        ----------
+        deep: unused
+            Only implemented to maintain interface for sklearn
+
+        Returns
+        -------
+        params : mapping of string to any
+            Parameter names mapped to their values.
+
+        """
+
+        return self.params
 
     def export(self, output_file_name):
         """Exports the current optimized pipeline as Python code
@@ -1412,7 +1433,7 @@ class TPOT(object):
 
         Returns
         -------
-        modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+        modified_df: pandas.DataFrame {n_samples, n_clusters + ['guess', 'group', 'class']}
             Returns a DataFrame containing the transformed features
         """
         training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)

@@ -11,6 +11,7 @@ import numpy as np
 from collections import Counter
 import random
 import warnings
+import inspect
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
@@ -187,6 +188,23 @@ result2['dtc2-classification'] = dtc2.predict(result2.drop('class', axis=1).valu
     exported_code = replace_function_calls(pipeline)
 
     assert reference_code == exported_code
+
+def test_get_params():
+    """Ensure that get_params returns the exact dictionary of parameters used by TPOT"""
+    kwargs = {
+        'population_size': 500,
+        'generations': 1000,
+        'verbosity': 1
+    }
+
+    tpot_obj = TPOT(**kwargs)
+
+    # Get default parameters of TPOT and merge with our specified parameters
+    initializer = inspect.getargspec(TPOT.__init__)
+    default_kwargs = dict(zip(initializer.args[1:], initializer.defaults))
+    default_kwargs.update(kwargs)
+
+    assert tpot_obj.get_params() == default_kwargs
 
 def test_decision_tree():
     """Ensure that the TPOT decision tree method outputs the same as the sklearn decision tree"""
