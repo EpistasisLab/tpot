@@ -71,26 +71,6 @@ def test_init():
     assert tpot_obj._pset
     assert tpot_obj.non_feature_columns
 
-def test_replace_mathematical_operators():
-    """Ensure export utils' replace_mathematical_operators outputs as expected"""
-
-    tpot_obj = TPOT()
-
-    pipeline = creator.Individual.\
-        from_string('_logistic_regression(ARG0, _div(add(1, sub(3, 1)), mul(1, 3)))', tpot_obj._pset)
-
-    assert '_logistic_regression(ARG0, 1.0)' == str(creator.Individual(replace_mathematical_operators(pipeline)))
-
-def test_replace_mathematical_operators_2():
-    """Ensure export utils' replace_mathematical_operators outputs as expected when dividing by 0"""
-
-    tpot_obj = TPOT()
-
-    pipeline = creator.Individual.\
-        from_string('_logistic_regression(ARG0, _div(3, 0))', tpot_obj._pset)
-
-    assert '_logistic_regression(ARG0, 0.0)' == str(creator.Individual(replace_mathematical_operators(pipeline)))
-
 def test_unroll_nested():
     """Ensure that export utils' unroll_nested_fuction_calls outputs pipeline_list as expected"""
 
@@ -522,8 +502,6 @@ def test_select_percentile_4():
         mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
         assert np.array_equal(tpot_obj._select_percentile(training_testing_data, 42), training_testing_data[mask_cols])
-
-
 
 def test_select_kbest():
         """Ensure that the TPOT select kbest outputs the input dataframe when no. of training features is 0"""
@@ -1026,39 +1004,3 @@ def test_gp_new_generation():
     dummy_function(tpot_obj, None)
 
     assert(tpot_obj.gp_generation == 1)
-
-def test_random_mutation_operator():
-    """Assert that the TPOT random_mutation_operator behaves as expected when mutUniform technique is specified"""
-    tpot_obj = TPOT(random_state=34)
-    individual = creator.Individual.\
-        from_string('_logistic_regression(ARG0, _div(2, 1))', tpot_obj._pset)
-
-    # Mutate individual and re-cast as an Individual object
-    mut_individual = tpot_obj._random_mutation_operator(individual)
-    mut_individual = creator.Individual(mut_individual[0])
-
-    assert '_logistic_regression(ARG0, _div(2, mul(add(29, 3), sub(46, 8))))' == str(mut_individual)
-
-def test_random_mutation_operator_2():
-    """Assert that the TPOT random_mutation_operator behaves as expected when mutInsert technique is specified"""
-    tpot_obj = TPOT(random_state=42)
-    individual = creator.Individual.\
-        from_string('_logistic_regression(ARG0, _div(2, 1))', tpot_obj._pset)
-
-    # Mutate individual and re-cast as an Individual object
-    mut_individual = tpot_obj._random_mutation_operator(individual)
-    mut_individual = creator.Individual(mut_individual[0])
-
-    assert '_decision_tree(_logistic_regression(ARG0, _div(2, 1)), 31, 28)' == str(mut_individual)
-
-def test_random_mutation_operator_3():
-    """Assert that the TPOT random_mutation_operator behaves as expected when mutShrink technique is specified"""
-    tpot_obj = TPOT(random_state=56)
-    individual = creator.Individual.\
-        from_string('_logistic_regression(ARG0, _div(2, 1))', tpot_obj._pset)
-
-    # Mutate individual and re-cast as an Individual object
-    mut_individual = tpot_obj._random_mutation_operator(individual)
-    mut_individual = creator.Individual(mut_individual[0])
-
-    assert '_logistic_regression(ARG0, _div(2, 1))' == str(mut_individual)
