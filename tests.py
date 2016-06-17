@@ -3,6 +3,7 @@
 """
 
 from tpot import TPOT
+from tpot.export_utils import *
 from tpot.decorators import _gp_new_generation
 
 import pandas as pd
@@ -22,6 +23,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
 
+from deap import gp, creator
 from tqdm import tqdm
 
 # Set up the MNIST data set for testing
@@ -49,8 +51,12 @@ for column in training_testing_data.columns.values:
 def test_init():
     """Ensure that the TPOT instantiator stores the TPOT variables properly"""
 
-    tpot_obj = TPOT(population_size=500, generations=1000,
-                    mutation_rate=0.05, crossover_rate=0.9, verbosity=1, disable_update_check=True, scoring_function="_balanced_accuracy")
+    def dummy_scoring_func(foo, bar):
+        return
+
+    tpot_obj = TPOT(population_size=500, generations=1000, scoring_function=dummy_scoring_func,
+                    mutation_rate=0.05, crossover_rate=0.9, verbosity=1, random_state=42,
+                    disable_update_check=True)
 
     assert tpot_obj.population_size == 500
     assert tpot_obj.generations == 1000
@@ -58,7 +64,110 @@ def test_init():
     assert tpot_obj.crossover_rate == 0.9
     assert tpot_obj.verbosity == 1
     assert tpot_obj.update_checked == True
-    assert tpot_obj.scoring_function == "_balanced_accuracy"
+    assert tpot_obj._optimized_pipeline == None
+    assert tpot_obj._training_classes == None
+    assert tpot_obj._training_features == None
+    assert tpot_obj.scoring_function == dummy_scoring_func
+    assert tpot_obj._pset
+    assert tpot_obj.non_feature_columns
+
+def test_unroll_nested():
+    """Ensure that export utils' unroll_nested_fuction_calls outputs pipeline_list as expected"""
+
+    tpot_obj = TPOT()
+
+    expected_list = [['result1', '_logistic_regression', 'ARG0', '1.0']]
+
+    pipeline = creator.Individual.\
+        from_string('_logistic_regression(ARG0, 1.0)', tpot_obj._pset)
+
+    pipeline_list = unroll_nested_fuction_calls(pipeline)
+
+    assert expected_list == pipeline_list
+
+def test_generate_import_code():
+    """Ensure export utils' generate_import_code outputs as expected"""
+
+    reference_code = """\
+import numpy as np
+import pandas as pd
+
+from sklearn.cross_validation import train_test_split
+from sklearn.decomposition import RandomizedPCA
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.linear_model import LogisticRegression
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
+"""
+
+    pipeline = [['result1', '_variance_threshold', 'ARG0', '100.0'],
+                ['result2', '_pca', 'ARG0', '66', '34'],
+                ['result3', '_combine_dfs', 'result2', 'result1'],
+                ['result4', '_logistic_regression', 'result3', '0.12030075187969924']]
+
+    import_code = generate_import_code(pipeline)
+
+    assert reference_code == import_code
+
+def test_generate_import_code_2():
+    """Ensure export utils' generate_import_code outputs as expected when using multiple classes from the same module"""
+
+    reference_code = """\
+import numpy as np
+import pandas as pd
+
+from sklearn.cross_validation import train_test_split
+from sklearn.decomposition import FastICA, RandomizedPCA
+from sklearn.linear_model import LogisticRegression
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
+"""
+
+    pipeline = [['result1', '_fast_ica', 'ARG0', '5', '0.1'],
+                ['result2', '_pca', 'ARG0', '66', '34'],
+                ['result3', '_combine_dfs', 'result2', 'result1'],
+                ['result4', '_logistic_regression', 'result3', '0.12030075187969924']]
+
+    import_code = generate_import_code(pipeline)
+
+    assert reference_code == import_code
+
+def test_replace_function_calls():
+    """Ensure export utils' replace_function_calls outputs as expected"""
+
+    reference_code = """
+result1 = tpot_data.copy()
+
+# Use Scikit-learn's SelectKBest for feature selection
+training_features = result1.loc[training_indices].drop('class', axis=1)
+training_class_vals = result1.loc[training_indices, 'class'].values
+
+if len(training_features.columns.values) == 0:
+    result1 = result1.copy()
+else:
+    selector = SelectKBest(f_classif, k=min(26, len(training_features.columns)))
+    selector.fit(training_features.values, training_class_vals)
+    mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + ['class']
+    result1 = result1[mask_cols]
+
+# Perform classification with a decision tree classifier
+dtc2 = DecisionTreeClassifier(max_features=min(3, len(result1.columns) - 1), max_depth=81)
+dtc2.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
+result2 = result1.copy()
+result2['dtc2-classification'] = dtc2.predict(result2.drop('class', axis=1).values)
+"""
+
+    pipeline = [['result1', '_select_kbest', 'ARG0', '26'],
+                ['result2', '_decision_tree', 'result1', '3', '81']]
+
+    exported_code = replace_function_calls(pipeline)
+
+    assert reference_code == exported_code
 
 def test_get_params():
     """Ensure that get_params returns the exact dictionary of parameters used by TPOT"""
@@ -149,6 +258,30 @@ def test_random_forest_3():
 
     assert np.array_equal(result['guess'].values, rfc.predict(testing_features))
 
+def test_knnc():
+    """Ensure that the TPOT k-nearest neighbor classifier outputs the same as the sklearn classifier"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._knnc(training_testing_data, 100)
+    result = result[result['group'] == 'testing']
+
+    knnc = KNeighborsClassifier(n_neighbors=100)
+    knnc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, knnc.predict(testing_features))
+
+def test_knnc_2():
+    """Ensure that the TPOT k-nearest neighbor classifier outputs the same as the sklearn classifier when n_neighbor=0"""
+
+    tpot_obj = TPOT()
+    result = tpot_obj._knnc(training_testing_data, 0)
+    result = result[result['group'] == 'testing']
+
+    knnc = KNeighborsClassifier(n_neighbors=2)
+    knnc.fit(training_features, training_classes)
+
+    assert np.array_equal(result['guess'].values, knnc.predict(testing_features))
+
 def test_svc():
     """Ensure that the TPOT random forest method outputs the same as the sklearn svc when C>0.0001"""
 
@@ -179,6 +312,91 @@ def test_train_model_and_predict():
     tpot_obj = TPOT()
 
     assert np.array_equal(training_testing_data.ix[:,-3:],tpot_obj._train_model_and_predict(training_testing_data.ix[:,-3:], SVC))
+
+# def test_train_model_and_predict_2():
+#     """Ensure that the TPOT train_model_and_predict outputs the same as sklearn"""
+#
+#     tpot_obj = TPOT()
+#
+#     # Run TPOT prediction function on model
+#     result = tpot_obj._train_model_and_predict(training_testing_data, DecisionTreeClassifier, max_features=3)
+#
+#     # Manually call fit and predict on the classifier
+#     dtc = DecisionTreeClassifier(max_features=2, random_state=42)
+#     dtc.fit(training_features, training_classes)
+#
+#     all_features = training_testing_data.drop(tpot_obj.non_feature_columns, axis=1).values
+#
+#     # Compare TPOT guess with sklearn guess
+#     assert np.array_equal(result['guess'].values, dtc.predict(all_features))
+
+def test_score():
+    """Ensure that the TPOT score function raises a ValueError when no optimized pipeline exists"""
+
+    tpot_obj = TPOT()
+
+    try:
+        tpot_obj.score(testing_features, testing_classes)
+        assert False # Should be unreachable
+    except ValueError:
+        pass
+
+def test_score_2():
+    """Ensure that the TPOT score function outputs a known score for a fixed pipeline"""
+
+    tpot_obj = TPOT()
+    tpot_obj._training_classes = training_classes
+    tpot_obj._training_features = training_features
+    tpot_obj.pbar = tqdm(total=1, disable=True)
+    known_score = 0.981922663339 # Assumes use of the TPOT balanced_accuracy function
+
+    # Reify pipeline with known score
+    tpot_obj._optimized_pipeline = creator.Individual.\
+        from_string('_logistic_regression(ARG0, 1.0)', tpot_obj._pset)
+
+    # Get score from TPOT
+    score = tpot_obj.score(testing_features, testing_classes)
+
+    # http://stackoverflow.com/questions/5595425/
+    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+        return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+    assert isclose(known_score, score)
+
+def test_predict():
+    """Ensure that the TPOT predict function raises a ValueError when no optimized pipeline exists"""
+
+    tpot_obj = TPOT()
+
+    try:
+        tpot_obj.predict(testing_features)
+        assert False # Should be unreachable
+    except ValueError:
+        pass
+
+def test_predict_2():
+    """Ensure that the TPOT predict function returns a DataFrame of shape (num_testing_rows,)"""
+
+    tpot_obj = TPOT()
+    tpot_obj._training_classes = training_classes
+    tpot_obj._training_features = training_features
+    tpot_obj._optimized_pipeline = creator.Individual.\
+        from_string('_logistic_regression(ARG0, 1.0)', tpot_obj._pset)
+
+    result = tpot_obj.predict(testing_features)
+
+    assert result.shape == (testing_features.shape[0],)
+
+def test_export():
+    """Ensure that the TPOT export function raises a ValueError when no optimized pipeline exists"""
+
+    tpot_obj = TPOT()
+
+    try:
+        tpot_obj.export('will_not_output')
+        assert False # Should be unreachable
+    except ValueError:
+        pass
 
 def test_combine_dfs():
     """Check combine_dfs operator"""
@@ -284,8 +502,6 @@ def test_select_percentile_4():
         mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
         assert np.array_equal(tpot_obj._select_percentile(training_testing_data, 42), training_testing_data[mask_cols])
-
-
 
 def test_select_kbest():
         """Ensure that the TPOT select kbest outputs the input dataframe when no. of training features is 0"""
@@ -437,35 +653,12 @@ def test_max_abs_scaler():
 
         assert np.array_equal(tpot_obj._max_abs_scaler(training_testing_data.ix[:,-3:]),training_testing_data.ix[:,-3:])
 
-def test_static_models():
-    """Ensure that the TPOT classifiers output the same predictions as the sklearn output"""
-    tpot_obj = TPOT()
-    models = [(tpot_obj._decision_tree, DecisionTreeClassifier, {'max_features':0, 'max_depth':0}, {'max_features':'auto', 'max_depth':None}),
-              (tpot_obj._svc, SVC , {'C':0.0001}, {'C':0.0001}),
-              (tpot_obj._random_forest, RandomForestClassifier,{'max_features':0}, {'n_estimators':500, 'max_features':'auto', 'n_jobs':-1}),
-              (tpot_obj._logistic_regression, LogisticRegression, {'C':0.0001}, {'C':0.0001}),
-              (tpot_obj._knnc, KNeighborsClassifier, {'n_neighbors':100}, {'n_neighbors':100})]
-
-    for model, sklearn_model, model_params, sklearn_params in models:
-
-        result = model(training_testing_data, **model_params)
-        try:
-            sklearn_model_obj = sklearn_model(random_state=42, **sklearn_params)
-            sklearn_model_obj.fit(training_features, training_classes)
-        except TypeError:
-            sklearn_model_obj = sklearn_model(**sklearn_params)
-            sklearn_model_obj.fit(training_features, training_classes)
-
-        result = result[result['group'] == 'testing']
-
-        assert np.array_equal(result['guess'].values, sklearn_model_obj.predict(testing_features)), "Model {} failed".format(str(model))
-
 def test_rbf():
     """Assert that the TPOT RBFSampler outputs the input dataframe when # of
     training features is 0"""
     tpot_obj = TPOT()
 
-    assert np.array_equal(tpot_obj._rbf(training_testing_data.ix[:,-3:], 0.1, 3),
+    assert np.array_equal(tpot_obj._rbf(training_testing_data.ix[:,-3:], 0.1),
                           training_testing_data.ix[:,-3:])
 
 def test_rbf_2():
@@ -477,7 +670,7 @@ def test_rbf_2():
     tpot_obj = TPOT()
 
     input_df = training_testing_data
-    output_df = tpot_obj._rbf(input_df, 0.1, 3)
+    output_df = tpot_obj._rbf(input_df, 0.1)
 
     assert type(input_df) == type(output_df)
 
@@ -491,7 +684,7 @@ def test_fast_ica():
     when the number of training features is 0"""
     tpot_obj = TPOT()
 
-    assert np.array_equal(tpot_obj._fast_ica(training_testing_data.ix[:,-3:], 1, 1.0),
+    assert np.array_equal(tpot_obj._fast_ica(training_testing_data.ix[:,-3:], 1.0),
                           training_testing_data.ix[:,-3:])
 
 def test_fast_ica_2():
@@ -503,7 +696,7 @@ def test_fast_ica_2():
     tpot_obj = TPOT()
 
     input_df = training_testing_data
-    output_df = tpot_obj._fast_ica(input_df, 1, 1.0)
+    output_df = tpot_obj._fast_ica(input_df, 1.0)
 
     assert type(input_df) == type(output_df)
 
@@ -574,7 +767,7 @@ def test_pca():
     """Ensure that the TPOT PCA outputs the input dataframe when no. of training features is 0"""
     tpot_obj = TPOT()
 
-    assert np.array_equal(tpot_obj._pca(training_testing_data.ix[:,-3:], 1, 1),training_testing_data.ix[:,-3:])
+    assert np.array_equal(tpot_obj._pca(training_testing_data.ix[:,-3:], 1),training_testing_data.ix[:,-3:])
 
 def test_zero_count():
     """Ensure that the TPOT _zero_count preprocessor outputs the input dataframe when no. of training features is 0"""
@@ -781,3 +974,20 @@ def test_gradient_boosting_2():
     gbc.fit(training_features, training_classes)
 
     assert np.array_equal(result['guess'].values, gbc.predict(testing_features))
+
+def test_gp_new_generation():
+    """Assert that the gp_generation count gets incremented when _gp_new_generation is called"""
+    tpot_obj = TPOT()
+    tpot_obj.pbar = tqdm(total=1, disable=True)
+
+    assert(tpot_obj.gp_generation == 0)
+
+    # Since _gp_new_generation is a decorator, and we dont want to run a full
+    # fit(), decorate a dummy function and then call the dummy function.
+    @_gp_new_generation
+    def dummy_function(self, foo):
+        pass
+
+    dummy_function(tpot_obj, None)
+
+    assert(tpot_obj.gp_generation == 1)
