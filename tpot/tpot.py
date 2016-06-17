@@ -452,7 +452,7 @@ class TPOT(object):
         exported_pipeline = replace_mathematical_operators(exported_pipeline)
 
         # Unroll the nested function calls into serial code. Check export_utils.py for details.
-        exported_pipeline, pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
+        pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
 
         # Have the exported code import all of the necessary modules and functions
         pipeline_text = generate_import_code(pipeline_list)
@@ -1665,9 +1665,9 @@ class TPOT(object):
 
         """
         roll = np.random.random()
-        if roll <= 0.333333:
+        if roll <= 1/3:
             return gp.mutUniform(individual, expr=self._toolbox.expr_mut, pset=self._pset)
-        elif roll <= 0.666666:
+        elif roll <= 2/3:
             return gp.mutInsert(individual, pset=self._pset)
         else:
             return gp.mutShrink(individual)
