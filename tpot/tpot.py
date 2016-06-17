@@ -54,6 +54,9 @@ from deap import algorithms, base, creator, tools, gp
 
 from tqdm import tqdm
 
+# Boolean class used for deap due to deap's poor handling of ints and booleans
+class Bool(object): pass
+
 class TPOT(object):
 
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
@@ -140,12 +143,12 @@ class TPOT(object):
         # self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._gradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
-        self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, bool], pd.DataFrame)
+        self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, Bool], pd.DataFrame)
         self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float, bool], pd.DataFrame)
-        self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, bool], pd.DataFrame)
-        self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int, bool], pd.DataFrame)
+        self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float, Bool], pd.DataFrame)
+        self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, Bool], pd.DataFrame)
+        self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int, Bool], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -183,8 +186,8 @@ class TPOT(object):
         for val in float_terminals:
             self._pset.addTerminal(val, float)
 
-        self._pset.addTerminal(True, bool)
-        self._pset.addTerminal(False, bool)
+        self._pset.addTerminal(True, Bool)
+        self._pset.addTerminal(False, Bool)
 
         # Remove this immediately
         def dummy(foo):
@@ -192,7 +195,7 @@ class TPOT(object):
 
         self._pset.addPrimitive(dummy, [int], int)
         self._pset.addPrimitive(dummy, [float], float)
-        self._pset.addPrimitive(dummy, [bool], bool)
+        self._pset.addPrimitive(dummy, [Bool], Bool)
 
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
