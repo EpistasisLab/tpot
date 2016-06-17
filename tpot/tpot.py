@@ -173,6 +173,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
 
+        # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
                 np.arange(60, 110, 10)))
 
@@ -1694,6 +1695,7 @@ class TPOT(object):
                         return None
                 return frame.f_locals[name]
 
+            # Warning: Likely will break in a multi-threaded or non-CPython environment
             return calling_scope_variable('type_') != pd.DataFrame or depth == height
 
         return gp.generate(pset, min_, max_, condition, type_)
