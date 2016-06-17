@@ -180,8 +180,8 @@ class TPOT(object):
         for val in int_terminals:
             self._pset.addTerminal(val, int)
 
-        float_terminals = np.concatenate(([0., 1e-6, 1e-5, 1e-4, 1e-3],
-                np.linspace(0.01, 1.00, 100),
+        float_terminals = np.concatenate(([1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+                np.linspace(0., 1., 101),
                 np.linspace(2., 50., 49),
                 np.linspace(60., 100., 5)))
 
