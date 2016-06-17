@@ -443,8 +443,8 @@ pagr{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).v
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_bool, LOSS=loss_selection)
 
         elif operator_name == '_gradient_boosting':
-            learning_rate = max(learning_rate, 0.0001)
-            max_depth = max(max_depth, 3)
+            learning_rate = max(float(operator[3]), 0.0001)
+            max_depth = max(int(operator[4]), 3)
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
