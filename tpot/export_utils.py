@@ -348,7 +348,7 @@ gnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
 
         elif operator_name == '_multinomial_nb':
             alpha = float(operator[3])
-            fit_prior = int(operator[4])
+            fit_prior = bool(operator[4])
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
