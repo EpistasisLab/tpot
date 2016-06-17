@@ -23,6 +23,7 @@ import argparse
 import operator
 import random
 import hashlib
+import inspect
 from collections import Counter
 
 import numpy as np
@@ -189,25 +190,17 @@ class TPOT(object):
         self._pset.addTerminal(True, Bool)
         self._pset.addTerminal(False, Bool)
 
-        # Remove this immediately
-        def dummy(foo):
-            return foo
-
-        self._pset.addPrimitive(dummy, [int], int)
-        self._pset.addPrimitive(dummy, [float], float)
-        self._pset.addPrimitive(dummy, [Bool], Bool)
-
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
         self._toolbox = base.Toolbox()
-        self._toolbox.register('expr', gp.genHalfAndHalf, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
         self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', gp.compile, pset=self._pset)
         self._toolbox.register('select', self._combined_selection_operator)
         self._toolbox.register('mate', gp.cxOnePoint)
-        self._toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
+        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=0, max_=3)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
         self.hof = None
@@ -1660,6 +1653,50 @@ class TPOT(object):
             return gp.mutInsert(individual, pset=self._pset)
         else:
             return gp.mutShrink(individual)
+
+    def _gen_grow_safe(self, pset, min_, max_, type_=None):
+        """Generate an expression where each leaf might have a different depth
+        between *min* and *max*.
+
+        Parameters
+        ----------
+            pset: PrimitiveSetTyped
+                Primitive set from which primitives are selected.
+            min_: int
+                Minimum height of the produced trees.
+            max_: int
+                Maximum Height of the produced trees.
+            type_: object
+                The type that should return the tree when called, when
+                      :obj:`None` (default) the type of :pset: (pset.ret)
+                      is assumed.
+        Returns
+        -------
+        individual:
+            A grown tree with leaves at possibly different depths.
+        """
+
+        def condition(height, depth):
+            """Expression generation stops when the depth is equal to height
+            or when it is randomly determined that a a node should be a terminal.
+            """
+            def calling_scope_variable(name):
+                """Find a variable from the calling function's scope by name
+
+                http://stackoverflow.com/questions/14692071
+                """
+                frame = inspect.stack()[1][0]
+
+                while name not in frame.f_locals:
+                    frame = frame.f_back
+
+                    if frame is None:
+                        return None
+                return frame.f_locals[name]
+
+            return calling_scope_variable('type_') != pd.DataFrame or depth == height
+
+        return gp.generate(pset, min_, max_, condition, type_)
 
 def main():
     """Main function that is called when TPOT is run on the command line"""
