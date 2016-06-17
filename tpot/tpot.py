@@ -1661,44 +1661,90 @@ class TPOT(object):
 
         Parameters
         ----------
-            pset: PrimitiveSetTyped
-                Primitive set from which primitives are selected.
-            min_: int
-                Minimum height of the produced trees.
-            max_: int
-                Maximum Height of the produced trees.
-            type_: object
-                The type that should return the tree when called, when
-                      :obj:`None` (default) the type of :pset: (pset.ret)
-                      is assumed.
+        pset: PrimitiveSetTyped
+            Primitive set from which primitives are selected.
+        min_: int
+            Minimum height of the produced trees.
+        max_: int
+            Maximum Height of the produced trees.
+        type_: class
+            The type that should return the tree when called, when
+                  :obj:`None` (default) the type of :pset: (pset.ret)
+                  is assumed.
         Returns
         -------
-        individual:
+        individual: list
             A grown tree with leaves at possibly different depths.
         """
 
-        def condition(height, depth):
+        def condition(height, depth, type_):
             """Expression generation stops when the depth is equal to height
             or when it is randomly determined that a a node should be a terminal.
             """
-            def calling_scope_variable(name):
-                """Find a variable from the calling function's scope by name
+            return type_ != pd.DataFrame or depth == height
 
-                http://stackoverflow.com/questions/14692071
-                """
-                frame = inspect.stack()[1][0]
+        return self._generate(pset, min_, max_, condition, type_)
 
-                while name not in frame.f_locals:
-                    frame = frame.f_back
+    # Generate function stolen straight from deap.gp.generate
+    def _generate(self, pset, min_, max_, condition, type_=None):
+        """Generate a Tree as a list of list. The tree is build
+        from the root to the leaves, and it stop growing when the
+        condition is fulfilled.
 
-                    if frame is None:
-                        return None
-                return frame.f_locals[name]
+        Parameters
+        ----------
+        pset: PrimitiveSetTyped
+            Primitive set from which primitives are selected.
+        min_: int
+            Minimum height of the produced trees.
+        max_: int
+            Maximum Height of the produced trees.
+        condition: function
+            The condition is a function that takes two arguments,
+            the height of the tree to build and the current
+            depth in the tree.
+        type_: class
+            The type that should return the tree when called, when
+            :obj:`None` (default) no return type is enforced.
 
-            # Warning: Likely will break in a multi-threaded or non-CPython environment
-            return calling_scope_variable('type_') != pd.DataFrame or depth == height
+        Returns
+        -------
+        individual: list
+            A grown tree with leaves at possibly different depths
+            dependending on the condition function.
+        """
+        if type_ is None:
+            type_ = pset.ret
+        expr = []
+        height = random.randint(min_, max_)
+        stack = [(0, type_)]
+        while len(stack) != 0:
+            depth, type_ = stack.pop()
 
-        return gp.generate(pset, min_, max_, condition, type_)
+            # We've added a type_ parameter to the condition function
+            if condition(height, depth, type_):
+                try:
+                    term = random.choice(pset.terminals[type_])
+                except IndexError:
+                    _, _, traceback = sys.exc_info()
+                    raise IndexError("The gp.generate function tried to add "\
+                                      "a terminal of type '%s', but there is "\
+                                      "none available." % (type_,)).with_traceback(traceback)
+                if inspect.isclass(term):
+                    term = term()
+                expr.append(term)
+            else:
+                try:
+                    prim = random.choice(pset.primitives[type_])
+                except IndexError:
+                    _, _, traceback = sys.exc_info()
+                    raise IndexError("The gp.generate function tried to add "\
+                                      "a primitive of type '%s', but there is "\
+                                      "none available." % (type_,)).with_traceback(traceback)
+                expr.append(prim)
+                for arg in reversed(prim.args):
+                    stack.append((depth+1, arg))
+        return expr
 
 def main():
     """Main function that is called when TPOT is run on the command line"""
