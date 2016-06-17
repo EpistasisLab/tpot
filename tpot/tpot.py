@@ -140,12 +140,12 @@ class TPOT(object):
         # self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._gradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
-        self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, bool], pd.DataFrame)
         self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float, int], pd.DataFrame)
-        self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float, bool], pd.DataFrame)
+        self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, bool], pd.DataFrame)
+        self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int, bool], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -183,12 +183,16 @@ class TPOT(object):
         for val in float_terminals:
             self._pset.addTerminal(val, float)
 
+        self._pset.addTerminal(True, bool)
+        self._pset.addTerminal(False, bool)
+
         # Remove this immediately
         def dummy(foo):
             return foo
 
         self._pset.addPrimitive(dummy, [int], int)
         self._pset.addPrimitive(dummy, [float], float)
+        self._pset.addPrimitive(dummy, [bool], bool)
 
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
@@ -566,9 +570,8 @@ class TPOT(object):
             Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
         binarize: float
             Threshold for binarizing (mapping to booleans) of sample features.
-        fit_prior: int
+        fit_prior: bool
             Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
-            Reduced to a boolean with modulus.
 
         Returns
         -------
@@ -577,10 +580,8 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        fit_bool = (fit_prior % 2) == 0
-
         return self._train_model_and_predict(input_df, BernoulliNB, alpha=alpha,
-            binarize=binarize, fit_prior=fit_bool)
+            binarize=binarize, fit_prior=fit_prior)
 
     def _extra_trees(self, input_df, criterion, max_features):
         """Fits an Extra Trees Classifier
@@ -643,9 +644,8 @@ class TPOT(object):
             Input DataFrame for fitting the classifier
         alpha: float
             Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
-        fit_prior: int
+        fit_prior: bool
             Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
-            Reduced to a boolean with modulus.
 
         Returns
         -------
@@ -654,10 +654,8 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        fit_bool = (fit_prior % 2) == 0
-
         return self._train_model_and_predict(input_df, MultinomialNB, alpha=alpha,
-            fit_prior=fit_bool)
+            fit_prior=fit_prior)
 
     def _linear_svc(self, input_df, C, loss, fit_intercept):
         """Fits a Linear Support Vector Classifier
@@ -670,8 +668,8 @@ class TPOT(object):
             Penalty parameter C of the error term.
         loss: int
             Integer used to determine the loss function (either 'hinge' or 'squared_hinge')
-        fit_intercept : int
-            Whether to calculate the intercept for this model (even for True, odd for False)
+        fit_intercept : bool
+            Whether to calculate the intercept for this model
 
         Returns
         -------
@@ -680,15 +678,13 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        fit_bool = (fit_intercept % 2) == 0
-
         loss_values = ['hinge', 'squared_hinge']
         loss_selection = loss_values[loss % len(loss_values)]
 
         C = max(0.0001, C)
 
         return self._train_model_and_predict(input_df, LinearSVC, C=C,
-            loss=loss_selection, fit_intercept=fit_bool, random_state=42)
+            loss=loss_selection, fit_intercept=fit_intercept, random_state=42)
 
     def _passive_aggressive(self, input_df, C, loss, fit_intercept):
         """Fits a Linear Support Vector Classifier
@@ -701,7 +697,7 @@ class TPOT(object):
             Penalty parameter C of the error term.
         loss: int
             Integer used to determine the loss function (either 'hinge' or 'squared_hinge')
-        fit_intercept : int
+        fit_intercept : bool
             Whether to calculate the intercept for this model (even for True, odd for False)
 
         Returns
@@ -711,15 +707,13 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        fit_bool = (fit_intercept % 2) == 0
-
         loss_values = ['hinge', 'squared_hinge']
         loss_selection = loss_values[loss % len(loss_values)]
 
         C = max(0.0001, C)
 
         return self._train_model_and_predict(input_df, PassiveAggressiveClassifier,
-            C=C, loss=loss_selection, fit_intercept=fit_bool, random_state=42)
+            C=C, loss=loss_selection, fit_intercept=fit_intercept, random_state=42)
 
     def _logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier

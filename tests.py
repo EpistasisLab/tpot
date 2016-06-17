@@ -831,7 +831,7 @@ def test_bernoulli_nb():
     """Ensure that the TPOT BernoulliNB outputs the same as the sklearn BernoulliNB"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._bernoulli_nb(training_testing_data, 1.0, 0.0, 0)
+    result = tpot_obj._bernoulli_nb(training_testing_data, 1.0, 0.0, True)
     result = result[result['group'] == 'testing']
 
     bnb = BernoulliNB(alpha=1.0, binarize=0.0, fit_prior=True)
@@ -894,7 +894,7 @@ def test_multinomial_nb():
     """Ensure that the TPOT MultinomialNB outputs the same as the sklearn MultinomialNB"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._multinomial_nb(training_testing_data, 1.0, 0)
+    result = tpot_obj._multinomial_nb(training_testing_data, 1.0, True)
     result = result[result['group'] == 'testing']
 
     mnb = MultinomialNB(alpha=1.0, fit_prior=True)
@@ -906,7 +906,7 @@ def test_linear_svc():
     """Ensure that the TPOT LinearSVC outputs the same as the sklearn LinearSVC"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._linear_svc(training_testing_data, 1.0, 0, 0)
+    result = tpot_obj._linear_svc(training_testing_data, 1.0, 0, True)
     result = result[result['group'] == 'testing']
 
     lsvc = LinearSVC(C=1.0, loss='hinge', fit_intercept=True, random_state=42)
@@ -918,7 +918,7 @@ def test_linear_svc_2():
     """Ensure that the TPOT LinearSVC outputs the same as the sklearn LinearSVC when C == 0.0"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._linear_svc(training_testing_data, 0.0, 0, 0)
+    result = tpot_obj._linear_svc(training_testing_data, 0.0, 0, True)
     result = result[result['group'] == 'testing']
 
     lsvc = LinearSVC(C=0.0001, loss='hinge', fit_intercept=True, random_state=42)
@@ -930,7 +930,7 @@ def test_passive_aggressive():
     """Ensure that the TPOT PassiveAggressiveClassifier outputs the same as the sklearn PassiveAggressiveClassifier"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._passive_aggressive(training_testing_data, 1.0, 0, 0)
+    result = tpot_obj._passive_aggressive(training_testing_data, 1.0, 0, True)
     result = result[result['group'] == 'testing']
 
     pagg = PassiveAggressiveClassifier(C=1.0, loss='hinge', fit_intercept=True, random_state=42)
@@ -943,7 +943,7 @@ def test_passive_aggressive_2():
     """Ensure that the TPOT PassiveAggressiveClassifier outputs the same as the sklearn classifier when C == 0.0"""
 
     tpot_obj = TPOT()
-    result = tpot_obj._passive_aggressive(training_testing_data, 0.0, 0, 0)
+    result = tpot_obj._passive_aggressive(training_testing_data, 0.0, 0, True)
     result = result[result['group'] == 'testing']
 
     pagg = PassiveAggressiveClassifier(C=0.0001, loss='hinge', fit_intercept=True, random_state=42)

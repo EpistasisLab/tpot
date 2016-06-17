@@ -301,7 +301,7 @@ adab{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).v
         elif operator_name == '_bernoulli_nb':
             alpha = float(operator[3])
             binarize = float(operator[4])
-            fit_prior = (int(operator[5])) % 2 == 0
+            fit_prior = bool(operator[5])
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
@@ -348,7 +348,7 @@ gnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
 
         elif operator_name == '_multinomial_nb':
             alpha = float(operator[3])
-            fit_prior = (int(operator[4]) % 2) == 0
+            fit_prior = int(operator[4])
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
@@ -364,9 +364,7 @@ mnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
         elif operator_name == '_linear_svc':
             C = max(0.0001, float(operator[3]))
             loss = int(operator[4])
-            fit_intercept = int(operator[5])
-
-            fit_bool = (fit_intercept % 2) == 0
+            fit_intercept = bool(operator[5])
 
             loss_values = ['hinge', 'squared_hinge']
             loss_selection = loss_values[loss % len(loss_values)]
@@ -380,14 +378,12 @@ lsvc{OPERATOR_NUM} = LinearSVC(C={C}, loss="{LOSS}", fit_intercept={FIT_INTERCEP
 lsvc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['lsvc{OPERATOR_NUM}-classification'] = lsvc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_bool, LOSS=loss_selection)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_intercept, LOSS=loss_selection)
 
         elif operator_name == '_passive_aggressive':
             C = max(0.0001, float(operator[3]))
             loss = int(operator[4])
-            fit_intercept = int(operator[5])
-
-            fit_bool = (fit_intercept % 2) == 0
+            fit_intercept = bool(operator[5])
 
             loss_values = ['hinge', 'squared_hinge']
             loss_selection = loss_values[loss % len(loss_values)]
@@ -401,7 +397,7 @@ pagr{OPERATOR_NUM} = PassiveAggressiveClassifier(C={C}, loss="{LOSS}", fit_inter
 pagr{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['pagr{OPERATOR_NUM}-classification'] = pagr{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_bool, LOSS=loss_selection)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_intercept, LOSS=loss_selection)
 
         elif operator_name == '_gradient_boosting':
             learning_rate = max(float(operator[3]), 0.0001)
