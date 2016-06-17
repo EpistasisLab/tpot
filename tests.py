@@ -465,7 +465,7 @@ def test_rbf():
     training features is 0"""
     tpot_obj = TPOT()
 
-    assert np.array_equal(tpot_obj._rbf(training_testing_data.ix[:,-3:], 0.1, 3),
+    assert np.array_equal(tpot_obj._rbf(training_testing_data.ix[:,-3:], 0.1),
                           training_testing_data.ix[:,-3:])
 
 def test_rbf_2():
@@ -477,7 +477,7 @@ def test_rbf_2():
     tpot_obj = TPOT()
 
     input_df = training_testing_data
-    output_df = tpot_obj._rbf(input_df, 0.1, 3)
+    output_df = tpot_obj._rbf(input_df, 0.1)
 
     assert type(input_df) == type(output_df)
 
@@ -491,7 +491,7 @@ def test_fast_ica():
     when the number of training features is 0"""
     tpot_obj = TPOT()
 
-    assert np.array_equal(tpot_obj._fast_ica(training_testing_data.ix[:,-3:], 1, 1.0),
+    assert np.array_equal(tpot_obj._fast_ica(training_testing_data.ix[:,-3:], 1.0),
                           training_testing_data.ix[:,-3:])
 
 def test_fast_ica_2():
@@ -503,7 +503,7 @@ def test_fast_ica_2():
     tpot_obj = TPOT()
 
     input_df = training_testing_data
-    output_df = tpot_obj._fast_ica(input_df, 1, 1.0)
+    output_df = tpot_obj._fast_ica(input_df, 1.0)
 
     assert type(input_df) == type(output_df)
 
@@ -580,7 +580,7 @@ def test_pca():
     """Ensure that the TPOT PCA outputs the input dataframe when no. of training features is 0"""
     tpot_obj = TPOT()
 
-    assert np.array_equal(tpot_obj._pca(training_testing_data.ix[:,-3:], 1, 1),training_testing_data.ix[:,-3:])
+    assert np.array_equal(tpot_obj._pca(training_testing_data.ix[:,-3:], 1),training_testing_data.ix[:,-3:])
 
 def test_zero_count():
     """Ensure that the TPOT _zero_count preprocessor outputs the input dataframe when no. of training features is 0"""

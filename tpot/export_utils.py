@@ -667,11 +667,7 @@ else:
 '''.format(INPUT_DF=operator[2], OUTPUT_DF=result_name)
 
         elif operator_name == '_pca':
-            n_components = int(operator[3])
-            iterated_power = int(operator[4])
-            if n_components < 1:
-                n_components = 1
-            n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
+            iterated_power = int(operator[3])
 
             if iterated_power < 1:
                 iterated_power = 1
@@ -684,18 +680,17 @@ training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # PCA must be fit on only the training data
-    pca = RandomizedPCA(n_components={N_COMPONENTS}, iterated_power={ITERATED_POWER})
+    pca = RandomizedPCA(iterated_power={ITERATED_POWER})
     pca.fit(training_features.values.astype(np.float64))
     transformed_features = pca.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
     {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
     {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
     {OUTPUT_DF} = {INPUT_DF}.copy()
-'''.format(INPUT_DF=operator[2], N_COMPONENTS=n_components, ITERATED_POWER=iterated_power, OUTPUT_DF=result_name)
+'''.format(INPUT_DF=operator[2], ITERATED_POWER=iterated_power, OUTPUT_DF=result_name)
 
         elif operator_name == '_rbf':
             gamma = float(operator[3])
-            n_components = int(operator[4])
             if n_components < 1:
                 n_components = 1
             n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
@@ -706,18 +701,17 @@ training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # RBF must be fit on only the training data
-    rbf = RBFSampler(n_components={N_COMPONENTS}, gamma={GAMMA})
+    rbf = RBFSampler(gamma={GAMMA})
     rbf.fit(training_features.values.astype(np.float64))
     transformed_features = rbf.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
     {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
     {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
     {OUTPUT_DF} = {INPUT_DF}.copy()
-'''.format(INPUT_DF=operator[2], GAMMA=gamma, N_COMPONENTS=n_components, OUTPUT_DF=result_name)
+'''.format(INPUT_DF=operator[2], GAMMA=gamma, OUTPUT_DF=result_name)
 
         elif operator_name == '_fast_ica':
-            n_components = int(operator[3])
-            tol = max(float(operator[4]), 0.0001) # Ensure tol is not too small
+            tol = max(float(operator[3]), 0.0001) # Ensure tol is not too small
 
             if n_components < 1:
                 n_components = 1
@@ -729,14 +723,14 @@ training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # FastICA must be fit on only the training data
-    ica = FastICA(n_components={N_COMPONENTS}, tol={TOL}, random_state=42)
+    ica = FastICA(tol={TOL}, random_state=42)
     ica.fit(training_features.values.astype(np.float64))
     transformed_features = ica.transform({INPUT_DF}.drop('class', axis=1).values.astype(np.float64))
     {OUTPUT_DF} = pd.DataFrame(data=transformed_features)
     {OUTPUT_DF}['class'] = {INPUT_DF}['class'].values
 else:
     {OUTPUT_DF} = {INPUT_DF}.copy()
-'''.format(INPUT_DF=operator[2], N_COMPONENTS=n_components, TOL=tol, OUTPUT_DF=result_name)
+'''.format(INPUT_DF=operator[2], TOL=tol, OUTPUT_DF=result_name)
 
         elif operator_name == '_feat_agg':
             n_clusters = int(operator[3])

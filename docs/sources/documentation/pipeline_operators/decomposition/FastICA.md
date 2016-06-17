@@ -11,8 +11,6 @@ Parameters
 ----------
     input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame to scale
-    n_components: int
-            The number of components to keep
     tol: float
         Tolerance on update at each iteration.
 
@@ -42,7 +40,7 @@ training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 if len(training_features.columns.values) > 0:
     # FastICA must be fit on only the training data
-    ica = FastICA(n_components=2, tol=0.1, random_state=42)
+    ica = FastICA(tol=0.1, random_state=42)
     ica.fit(training_features.values.astype(np.float64))
     transformed_features = ica.transform(tpot_data.drop('class', axis=1).values.astype(np.float64))
     result1 = pd.DataFrame(data=transformed_features)
