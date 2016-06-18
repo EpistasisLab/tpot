@@ -23,6 +23,7 @@ import argparse
 import operator
 import random
 import hashlib
+import inspect
 from collections import Counter
 
 import numpy as np
@@ -53,6 +54,9 @@ import deap
 from deap import algorithms, base, creator, tools, gp
 
 from tqdm import tqdm
+
+# Boolean class used for deap due to deap's poor handling of ints and booleans
+class Bool(object): pass
 
 class TPOT(object):
 
@@ -140,12 +144,12 @@ class TPOT(object):
         # self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._gradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
-        self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, int], pd.DataFrame)
+        self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, Bool], pd.DataFrame)
         self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float, int], pd.DataFrame)
-        self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float, Bool], pd.DataFrame)
+        self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, Bool], pd.DataFrame)
+        self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int, Bool], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -169,29 +173,38 @@ class TPOT(object):
         self._pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
 
-        # Mathematical operators
-        self._pset.addPrimitive(operator.add, [int, int], int)
-        self._pset.addPrimitive(operator.sub, [int, int], int)
-        self._pset.addPrimitive(operator.mul, [int, int], int)
-        self._pset.addPrimitive(self._div, [int, int], float)
+        # Terminals
+        int_terminals = np.concatenate((np.arange(0, 51, 1),
+                np.arange(60, 110, 10)))
 
-        for val in range(0, 101):
+        for val in int_terminals:
             self._pset.addTerminal(val, int)
-        for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
+
+        float_terminals = np.concatenate(([1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+                np.linspace(0., 1., 101),
+                np.linspace(2., 50., 49),
+                np.linspace(60., 100., 5)))
+
+        for val in float_terminals:
             self._pset.addTerminal(val, float)
+
+        self._pset.addTerminal(True, Bool)
+        self._pset.addTerminal(False, Bool)
 
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
         self._toolbox = base.Toolbox()
-        self._toolbox.register('expr', gp.genHalfAndHalf, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
         self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', gp.compile, pset=self._pset)
         self._toolbox.register('select', self._combined_selection_operator)
         self._toolbox.register('mate', gp.cxOnePoint)
-        self._toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
+        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=0, max_=3)
         self._toolbox.register('mutate', self._random_mutation_operator)
+
+        self.hof = None
 
         if not scoring_function:
             self.scoring_function = self._balanced_accuracy
@@ -290,20 +303,22 @@ class TPOT(object):
             pass
         finally:
             # Close the progress bar
-            self.pbar.close()
+            if type(self.pbar) != type(None): # Standard truthiness checks won't work for tqdm
+                self.pbar.close()
 
             # Reset gp_generation counter to restore initial state
             self.gp_generation = 0
 
             # Store the pipeline with the highest internal testing accuracy
-            top_score = 0.
-            for pipeline in self.hof:
-                pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
-                if pipeline_score > top_score:
-                    top_score = pipeline_score
-                    self._optimized_pipeline = pipeline
+            if self.hof:
+                top_score = 0.
+                for pipeline in self.hof:
+                    pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
+                    if pipeline_score > top_score:
+                        top_score = pipeline_score
+                        self._optimized_pipeline = pipeline
 
-            if self.verbosity >= 1:
+            if self.verbosity >= 1 and self._optimized_pipeline:
                 if verbose: # Add an extra line of spacing if the progress bar was used
                     print()
 
@@ -448,9 +463,6 @@ class TPOT(object):
 
         exported_pipeline = self._optimized_pipeline
 
-        # Replace all of the mathematical operators with their results. Check export_utils.py for details.
-        exported_pipeline = replace_mathematical_operators(exported_pipeline)
-
         # Unroll the nested function calls into serial code. Check export_utils.py for details.
         pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
 
@@ -555,9 +567,8 @@ class TPOT(object):
             Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
         binarize: float
             Threshold for binarizing (mapping to booleans) of sample features.
-        fit_prior: int
+        fit_prior: bool
             Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
-            Reduced to a boolean with modulus.
 
         Returns
         -------
@@ -566,10 +577,8 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        fit_bool = (fit_prior % 2) == 0
-
         return self._train_model_and_predict(input_df, BernoulliNB, alpha=alpha,
-            binarize=binarize, fit_prior=fit_bool)
+            binarize=binarize, fit_prior=fit_prior)
 
     def _extra_trees(self, input_df, criterion, max_features):
         """Fits an Extra Trees Classifier
@@ -632,9 +641,8 @@ class TPOT(object):
             Input DataFrame for fitting the classifier
         alpha: float
             Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
-        fit_prior: int
+        fit_prior: bool
             Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
-            Reduced to a boolean with modulus.
 
         Returns
         -------
@@ -643,10 +651,8 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        fit_bool = (fit_prior % 2) == 0
-
         return self._train_model_and_predict(input_df, MultinomialNB, alpha=alpha,
-            fit_prior=fit_bool)
+            fit_prior=fit_prior)
 
     def _linear_svc(self, input_df, C, loss, fit_intercept):
         """Fits a Linear Support Vector Classifier
@@ -659,8 +665,8 @@ class TPOT(object):
             Penalty parameter C of the error term.
         loss: int
             Integer used to determine the loss function (either 'hinge' or 'squared_hinge')
-        fit_intercept : int
-            Whether to calculate the intercept for this model (even for True, odd for False)
+        fit_intercept : bool
+            Whether to calculate the intercept for this model
 
         Returns
         -------
@@ -669,15 +675,13 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        fit_bool = (fit_intercept % 2) == 0
-
         loss_values = ['hinge', 'squared_hinge']
         loss_selection = loss_values[loss % len(loss_values)]
 
         C = max(0.0001, C)
 
         return self._train_model_and_predict(input_df, LinearSVC, C=C,
-            loss=loss_selection, fit_intercept=fit_bool, random_state=42)
+            loss=loss_selection, fit_intercept=fit_intercept, random_state=42)
 
     def _passive_aggressive(self, input_df, C, loss, fit_intercept):
         """Fits a Linear Support Vector Classifier
@@ -690,7 +694,7 @@ class TPOT(object):
             Penalty parameter C of the error term.
         loss: int
             Integer used to determine the loss function (either 'hinge' or 'squared_hinge')
-        fit_intercept : int
+        fit_intercept : bool
             Whether to calculate the intercept for this model (even for True, odd for False)
 
         Returns
@@ -700,15 +704,13 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        fit_bool = (fit_intercept % 2) == 0
-
         loss_values = ['hinge', 'squared_hinge']
         loss_selection = loss_values[loss % len(loss_values)]
 
         C = max(0.0001, C)
 
         return self._train_model_and_predict(input_df, PassiveAggressiveClassifier,
-            C=C, loss=loss_selection, fit_intercept=fit_bool, random_state=42)
+            C=C, loss=loss_selection, fit_intercept=fit_intercept, random_state=42)
 
     def _logistic_regression(self, input_df, C):
         """Fits a logistic regression classifier
@@ -1527,25 +1529,6 @@ class TPOT(object):
 
         return modified_df.copy()
 
-    @staticmethod
-    def _div(num1, num2):
-        """Divides two numbers
-
-        Parameters
-        ----------
-        num1: int
-            The dividend
-        num2: int
-            The divisor
-
-        Returns
-        -------
-        result: float
-            Returns num1 / num2, or 0. if num2 == 0.
-
-        """
-        return float(num1) / float(num2) if num2 != 0. else 0.
-
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data
 
@@ -1572,7 +1555,7 @@ class TPOT(object):
                 node = individual[i]
                 if type(node) is deap.gp.Terminal:
                     continue
-                if type(node) is deap.gp.Primitive and node.name in ['add', 'sub', 'mul', '_div', '_combine_dfs']:
+                if type(node) is deap.gp.Primitive and node.name == '_combine_dfs':
                     continue
 
                 operator_count += 1
@@ -1671,6 +1654,97 @@ class TPOT(object):
             return gp.mutInsert(individual, pset=self._pset)
         else:
             return gp.mutShrink(individual)
+
+    def _gen_grow_safe(self, pset, min_, max_, type_=None):
+        """Generate an expression where each leaf might have a different depth
+        between *min* and *max*.
+
+        Parameters
+        ----------
+        pset: PrimitiveSetTyped
+            Primitive set from which primitives are selected.
+        min_: int
+            Minimum height of the produced trees.
+        max_: int
+            Maximum Height of the produced trees.
+        type_: class
+            The type that should return the tree when called, when
+                  :obj:`None` (default) the type of :pset: (pset.ret)
+                  is assumed.
+        Returns
+        -------
+        individual: list
+            A grown tree with leaves at possibly different depths.
+        """
+
+        def condition(height, depth, type_):
+            """Expression generation stops when the depth is equal to height
+            or when it is randomly determined that a a node should be a terminal.
+            """
+            return type_ != pd.DataFrame or depth == height
+
+        return self._generate(pset, min_, max_, condition, type_)
+
+    # Generate function stolen straight from deap.gp.generate
+    def _generate(self, pset, min_, max_, condition, type_=None):
+        """Generate a Tree as a list of list. The tree is build
+        from the root to the leaves, and it stop growing when the
+        condition is fulfilled.
+
+        Parameters
+        ----------
+        pset: PrimitiveSetTyped
+            Primitive set from which primitives are selected.
+        min_: int
+            Minimum height of the produced trees.
+        max_: int
+            Maximum Height of the produced trees.
+        condition: function
+            The condition is a function that takes two arguments,
+            the height of the tree to build and the current
+            depth in the tree.
+        type_: class
+            The type that should return the tree when called, when
+            :obj:`None` (default) no return type is enforced.
+
+        Returns
+        -------
+        individual: list
+            A grown tree with leaves at possibly different depths
+            dependending on the condition function.
+        """
+        if type_ is None:
+            type_ = pset.ret
+        expr = []
+        height = random.randint(min_, max_)
+        stack = [(0, type_)]
+        while len(stack) != 0:
+            depth, type_ = stack.pop()
+
+            # We've added a type_ parameter to the condition function
+            if condition(height, depth, type_):
+                try:
+                    term = random.choice(pset.terminals[type_])
+                except IndexError:
+                    _, _, traceback = sys.exc_info()
+                    raise IndexError("The gp.generate function tried to add "\
+                                      "a terminal of type '%s', but there is "\
+                                      "none available." % (type_,)).with_traceback(traceback)
+                if inspect.isclass(term):
+                    term = term()
+                expr.append(term)
+            else:
+                try:
+                    prim = random.choice(pset.primitives[type_])
+                except IndexError:
+                    _, _, traceback = sys.exc_info()
+                    raise IndexError("The gp.generate function tried to add "\
+                                      "a primitive of type '%s', but there is "\
+                                      "none available." % (type_,)).with_traceback(traceback)
+                expr.append(prim)
+                for arg in reversed(prim.args):
+                    stack.append((depth+1, arg))
+        return expr
 
 def main():
     """Main function that is called when TPOT is run on the command line"""
