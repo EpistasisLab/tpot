@@ -230,7 +230,7 @@ def replace_function_calls(pipeline_list):
                 dual = False
 
             operator_text += '\n# Perform classification with a logistic regression classifier'
-            operator_text += '\nlrc{OPERATOR_NUM} = LogisticRegression(C={C}, dual={DUAL}, penalty={PENALTY})\n'.format(OPERATOR_NUM=operator_num,
+            operator_text += '\nlrc{OPERATOR_NUM} = LogisticRegression(C={C}, dual={DUAL}, penalty="{PENALTY}")\n'.format(OPERATOR_NUM=operator_num,
                                                                                                                         C=C,
                                                                                                                         PENALTY=penalty_selection,
                                                                                                                         DUAL=dual)
