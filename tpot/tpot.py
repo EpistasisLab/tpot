@@ -1632,9 +1632,9 @@ class TPOT(object):
 
         """
         roll = np.random.random()
-        if roll <= 1/3:
+        if roll <= 1. / 3.:
             return gp.mutUniform(individual, expr=self._toolbox.expr_mut, pset=self._pset)
-        elif roll <= 2/3:
+        elif roll <= 2. / 3.:
             return gp.mutInsert(individual, pset=self._pset)
         else:
             return gp.mutShrink(individual)
