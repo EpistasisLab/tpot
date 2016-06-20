@@ -1,9 +1,9 @@
 # Random Forest Classifier
-* * * 
+* * *
 
 Fits a Random Forest classifier.
 
-## Dependencies 
+## Dependencies
      sklearn.ensemble.RandomForestClassifier
 
 
@@ -11,8 +11,8 @@ Parameters
 ----------
     input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame for fitting the random forest
-    max_features: int
-        Number of features used to fit the decision tree; must be a positive value
+    min_weight_fraction_leaf: float
+        The minimum weighted fraction of the input samples required to be at a leaf node.
 
 Returns
 -------
@@ -38,7 +38,7 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify=t
 result1 = tpot_data.copy()
 
 # Perform classification with a random forest classifier
-rfc1 = RandomForestClassifier(n_estimators=500, max_features='auto')
+rfc1 = RandomForestClassifier(min_weight_fraction_leaf=0.1, n_estimators=500)
 rfc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 
 result1['rfc1-classification'] = rfc1.predict(result1.drop('class', axis=1).values)

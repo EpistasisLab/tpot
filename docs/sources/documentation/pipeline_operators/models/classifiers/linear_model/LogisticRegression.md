@@ -1,5 +1,5 @@
 # Logistic Regression
-* * * 
+* * *
 
 Fits a Logistic Regression classifier
 
@@ -12,6 +12,10 @@ Parameters
         Input DataFrame for fitting the logistic regression classifier
     C: float
         Inverse of regularization strength; must be a positive value. Like in support vector machines, smaller values specify stronger regularization.
+    penalty: int
+        Integer used to specify the norm used in the penalization (l1 or l2)
+    dual: bool
+        Select the algorithm to either solve the dual or primal optimization problem.
 
 Returns
 -------
@@ -36,7 +40,7 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify=t
 result1 = tpot_data.copy()
 
 # Perform classification with a logistic regression classifier
-lrc1 = LogisticRegression(C=0.0001)
+lrc1 = LogisticRegression(C=0.0001, penalty='l1', dual=False)
 lrc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 result1['lrc1-classification'] = lrc1.predict(result1.drop('class', axis=1).values)
 ```

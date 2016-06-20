@@ -19,6 +19,7 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 from functools import wraps
 
+
 def _gp_new_generation(func):
     """Decorator that wraps functions that indicate the beginning of a new GP
     generation.
@@ -42,7 +43,7 @@ def _gp_new_generation(func):
         if not self.pbar.disable:
             high_score = max([self.hof.keys[x].wvalues[1] for x in range(len(self.hof.keys))])
 
-            self.pbar.write('Generation {} - Current best score: {:0.5f}'.\
+            self.pbar.write('Generation {} - Current best score: {:0.5f}'.
                 format(self.gp_generation, high_score))
 
             # Sometimes the actual evaluated pipeline count does not match the
@@ -52,6 +53,6 @@ def _gp_new_generation(func):
                 missing_pipelines = (self.gp_generation * self.population_size) - self.pbar.n
                 self.pbar.update(missing_pipelines)
 
-        return ret # Pass back return value of func
+        return ret  # Pass back return value of func
 
     return wrapped_func

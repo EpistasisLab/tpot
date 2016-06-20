@@ -9,11 +9,13 @@ Fits a Gradient Boosting classifier.
 Parameters
 ----------
     input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-        Input DataFrame for fitting the random forest
+        Input DataFrame for fitting the XGBoost classifier
     learning_rate: float
-        Learning rate shrinks the contribution of each tree by learning_rate
-    max_depth: int
-        Maximum depth of the individual regression estimators
+        Shrinks the contribution of each tree by learning_rate
+    max_features: float
+        Maximum number of features to use (proportion of total features)
+    min_weight_fraction_leaf: float
+        The minimum weighted fraction of the input samples required to be at a leaf node.
 
 Returns
 -------
@@ -37,7 +39,7 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify=t
 result1 = tpot_data.copy()
 
 # Perform classification with a gradient boosting classifier
-gbc1 = GradientBoostingClassifier(learning_rate=1.0, max_depth=3, n_estimators=500, random_state=42)
+gbc1 = GradientBoostingClassifier(learning_rate=1.0, max_features=0.9, min_weight_fraction_leaf=0.1, n_estimators=500, random_state=42)
 gbc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 
 result1['gbc1-classification'] = gbc1.predict(result1.drop('class', axis=1).values)

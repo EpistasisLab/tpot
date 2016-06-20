@@ -14,9 +14,6 @@ Parameters
         Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
     binarize: float
         Threshold for binarizing (mapping to booleans) of sample features.
-    fit_prior: int
-        Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
-        Reduced to a boolean with modulus.
 
 Returns
 -------
@@ -41,7 +38,7 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify=t
 
 result1 = tpot_data.copy()
 
-bnb1 = BernoulliNB(alpha=0.01, binarize=1.0, fit_prior=False)
+bnb1 = BernoulliNB(alpha=0.01, binarize=1.0, fit_prior=True)
 bnb1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 
 result1['bnb1-classification'] = bnb1.predict(result1.drop('class', axis=1).values)

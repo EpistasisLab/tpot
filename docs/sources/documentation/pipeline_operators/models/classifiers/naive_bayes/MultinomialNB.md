@@ -12,9 +12,6 @@ Parameters
         Input DataFrame for fitting the classifier
     alpha: float
         Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
-    fit_prior: int
-        Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
-        Reduced to a boolean with modulus.
 
 Returns
 -------

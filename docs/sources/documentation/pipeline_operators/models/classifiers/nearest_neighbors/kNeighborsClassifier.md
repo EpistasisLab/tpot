@@ -1,5 +1,5 @@
 # k-Nearest Neighbors Classifier
-* * * 
+* * *
 
 Fits a k-Nearest Neighbors classifier.
 
@@ -12,6 +12,8 @@ Parameters
         Input DataFrame for fitting the k-nearest neighbor classifier
     n_neighbors: int
         Number of neighbors to use by default for k_neighbors queries; must be a positive value
+    weights: int
+            Selects a value from the list: ['uniform', 'distance']
 
 Returns
 -------
@@ -36,7 +38,7 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify=t
 result1 = tpot_data.copy()
 
 # Perform classification with a k-nearest neighbor classifier
-knnc1 = KNeighborsClassifier(n_neighbors=2)
+knnc1 = KNeighborsClassifier(n_neighbors=2, weights='uniform')
 knnc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 result1['knnc1-classification'] = knnc1.predict(result1.drop('class', axis=1).values)
 
