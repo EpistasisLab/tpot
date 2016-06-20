@@ -305,7 +305,7 @@ class TPOT(object):
             pass
         finally:
             # Close the progress bar
-            if isinstance(self.pbar, type(None)):  # Standard truthiness checks won't work for tqdm
+            if not isinstance(self.pbar, type(None)):  # Standard truthiness checks won't work for tqdm
                 self.pbar.close()
 
             # Reset gp_generation counter to restore initial state
