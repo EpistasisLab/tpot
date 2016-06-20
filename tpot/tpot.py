@@ -63,7 +63,6 @@ class Bool(object):
 
 
 class TPOT(object):
-
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
 
     update_checked = False
@@ -138,6 +137,9 @@ class TPOT(object):
             np.random.seed(random_state)
 
         self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
+
+        # Rename pipeline input to "input_df"
+        self._pset.renameArguments(ARG0='input_df')
 
         # Machine learning model operators
         self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, float], pd.DataFrame)

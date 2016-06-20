@@ -59,6 +59,10 @@ def unroll_nested_fuction_calls(exported_pipeline):
             break
         else:
             break
+
+    # Replace 'ARG0' with 'input_df'
+    pipeline_list = [[x if x != 'ARG0' else 'input_df' for x in pipeline_list[0]]]
+
     return pipeline_list
 
 
@@ -173,12 +177,12 @@ def replace_function_calls(pipeline_list):
         result_name = operator[0]
         operator_name = operator[1]
 
-        # Make copies of the data set for each reference to ARG0
-        if operator[2] == 'ARG0':
+        # Make copies of the data set for each reference to input_df
+        if operator[2] == 'input_df':
             operator[2] = 'result{}'.format(operator_num)
             operator_text += '\n{} = tpot_data.copy()\n'.format(operator[2])
 
-        if len(operator) > 3 and operator[3] == 'ARG0':
+        if len(operator) > 3 and operator[3] == 'input_df':
             operator[3] = 'result{}'.format(operator_num)
             operator_text += '\n{} = tpot_data.copy()\n'.format(operator[3])
 

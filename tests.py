@@ -76,10 +76,10 @@ def test_unroll_nested():
 
     tpot_obj = TPOT()
 
-    expected_list = [['result1', '_logistic_regression', 'ARG0', '1.0', '0', 'True']]
+    expected_list = [['result1', '_logistic_regression', 'input_df', '1.0', '0', 'True']]
 
     pipeline = creator.Individual.\
-        from_string('_logistic_regression(ARG0, 1.0, 0, True)', tpot_obj._pset)
+        from_string('_logistic_regression(input_df, 1.0, 0, True)', tpot_obj._pset)
 
     pipeline_list = unroll_nested_fuction_calls(pipeline)
 
@@ -103,8 +103,8 @@ tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
 """
 
-    pipeline = [['result1', '_variance_threshold', 'ARG0', '100.0'],
-                ['result2', '_pca', 'ARG0', '66', '34'],
+    pipeline = [['result1', '_variance_threshold', 'input_df', '100.0'],
+                ['result2', '_pca', 'input_df', '66', '34'],
                 ['result3', '_combine_dfs', 'result2', 'result1'],
                 ['result4', '_logistic_regression', 'result3', '0.12030075187969924', '0', 'True']]
 
@@ -129,8 +129,8 @@ tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
 """
 
-    pipeline = [['result1', '_fast_ica', 'ARG0', '5', '0.1'],
-                ['result2', '_pca', 'ARG0', '66', '34'],
+    pipeline = [['result1', '_fast_ica', 'input_df', '5', '0.1'],
+                ['result2', '_pca', 'input_df', '66', '34'],
                 ['result3', '_combine_dfs', 'result2', 'result1'],
                 ['result4', '_logistic_regression', 'result3', '0.12030075187969924', '0', 'True']]
 
@@ -165,7 +165,7 @@ result2 = result1.copy()
 result2['dtc2-classification'] = dtc2.predict(result2.drop('class', axis=1).values)
 """
 
-    pipeline = [['result1', '_select_kbest', 'ARG0', '26'],
+    pipeline = [['result1', '_select_kbest', 'input_df', '26'],
                 ['result2', '_decision_tree', 'result1', '0.1']]
 
     exported_code = replace_function_calls(pipeline)
@@ -326,7 +326,7 @@ def test_score_2():
 
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('_logistic_regression(ARG0, 1.0, 0, True)', tpot_obj._pset)
+        from_string('_logistic_regression(input_df, 1.0, 0, True)', tpot_obj._pset)
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
@@ -357,7 +357,7 @@ def test_predict_2():
     tpot_obj._training_classes = training_classes
     tpot_obj._training_features = training_features
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('_logistic_regression(ARG0, 1.0, 0, True)', tpot_obj._pset)
+        from_string('_logistic_regression(input_df, 1.0, 0, True)', tpot_obj._pset)
 
     result = tpot_obj.predict(testing_features)
 
