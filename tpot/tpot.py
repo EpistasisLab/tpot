@@ -431,7 +431,10 @@ class TPOT(object):
         return self._evaluate_individual(self._optimized_pipeline, training_testing_data)[1]
 
     def get_params(self, deep=None):
-        """Get parameters for this estimator.
+        """Get parameters for this estimator
+
+        This function is necessary for TPOT to work as a drop-in estimator in,
+        e.g., sklearn.cross_validation.cross_val_score
 
         Parameters
         ----------
