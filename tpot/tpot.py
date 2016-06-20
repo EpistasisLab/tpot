@@ -24,6 +24,7 @@ import random
 import hashlib
 import inspect
 import sys
+from functools import partial
 from collections import Counter
 
 import numpy as np
@@ -431,7 +432,7 @@ class TPOT(object):
 
     def get_params(self, deep=None):
         """Get parameters for this estimator
-        
+
         This function is necessary for TPOT to work as a drop-in estimator in,
         e.g., sklearn.cross_validation.cross_val_score
 
@@ -1634,13 +1635,12 @@ class TPOT(object):
             Returns the individual with one of the mutations applied to it
 
         """
-        roll = np.random.random()
-        if roll <= 1. / 3.:
-            return gp.mutUniform(individual, expr=self._toolbox.expr_mut, pset=self._pset)
-        elif roll <= 2. / 3.:
-            return gp.mutInsert(individual, pset=self._pset)
-        else:
-            return gp.mutShrink(individual)
+        mutation_techniques = [
+            partial(gp.mutUniform, expr=self._toolbox.expr_mut, pset=self._pset),
+            partial(gp.mutInsert, pset=self._pset),
+            partial(gp.mutShrink)
+        ]
+        return np.random.choice(mutation_techniques)(individual)
 
     def _gen_grow_safe(self, pset, min_, max_, type_=None):
         """Generate an expression where each leaf might have a different depth
