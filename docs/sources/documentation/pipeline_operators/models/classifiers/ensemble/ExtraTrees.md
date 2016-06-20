@@ -13,8 +13,10 @@ Parameters
     criterion: int
         Integer that is used to select from the list of valid criteria,
         either 'gini', or 'entropy'
-    max_features: int
+    max_features: float
         The number of features to consider when looking for the best split
+    min_weight_fraction_leaf: float
+        The minimum weighted fraction of the input samples required to be at a leaf node.
 
 Returns
 -------
@@ -39,7 +41,7 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify=t
 
 result1 = tpot_data.copy()
 
-etc1 = ExtraTreesClassifier(criterion="entropy", max_features=5, n_estimators=500, random_state=42)
+etc1 = ExtraTreesClassifier(n_estimators=500, random_state=42, max_features=1., min_weight_fraction_leaf=0.1, criterion='gini')
 etc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 
 result1['etc1-classification'] = etc1.predict(result1.drop('class', axis=1).values)

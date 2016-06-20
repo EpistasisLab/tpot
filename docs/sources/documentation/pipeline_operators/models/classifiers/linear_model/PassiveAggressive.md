@@ -10,11 +10,10 @@ Parameters
 ----------
     input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame for fitting the classifier
-    criterion: int
-        Integer that is used to select from the list of valid criteria,
-        either 'gini', or 'entropy'
-    max_features: int
-        The number of features to consider when looking for the best split
+    C: float
+        Penalty parameter C of the error term.
+    loss: int
+        Integer used to determine the loss function (either 'hinge' or 'squared_hinge')
 
 Returns
 -------
@@ -39,9 +38,9 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify=t
 
 result1 = tpot_data.copy()
 
-etc1 = ExtraTreesClassifier(criterion="gini", max_features=6, n_estimators=500, random_state=42)
-etc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
+pagr1 = PassiveAggressiveClassifier(C=1.0, loss='hinge', fit_intercept=True, random_state=42)
+pagr1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 
-result1['etc1-classification'] = etc1.predict(result1.drop('class', axis=1).values)
+result1['etc1-classification'] = pagr1.predict(result1.drop('class', axis=1).values)
 
 ```

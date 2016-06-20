@@ -12,10 +12,10 @@ Parameters
         Input DataFrame for fitting the classifier
     C: float
         Penalty parameter C of the error term.
-    loss: int
-        Integer used to determine the loss function (either 'hinge' or 'squared_hinge')
-    fit_intercept : int
-        Whether to calculate the intercept for this model (even for True, odd for False)
+    penalty: int
+        Integer used to specify the norm used in the penalization (l1 or l2)
+    dual: bool
+        Select the algorithm to either solve the dual or primal optimization problem.
 
 Returns
 -------
@@ -40,7 +40,7 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify=t
 
 result1 = tpot_data.copy()
 
-lsvc1 = LinearSVC(C=1.0, loss="hinge", fit_intercept=True, random_state=42)
+lsvc1 = LinearSVC(C=1.0, penalty='l1', dual=False, random_state=42)
 lsvc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
 
 result1['lsvc1-classification'] = lsvc1.predict(result1.drop('class', axis=1).values)

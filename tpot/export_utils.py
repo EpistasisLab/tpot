@@ -22,6 +22,7 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 import deap
 
+
 def unroll_nested_fuction_calls(exported_pipeline):
     """Unroll the nested function calls into serial code for use in TPOT.export()
 
@@ -59,6 +60,7 @@ def unroll_nested_fuction_calls(exported_pipeline):
         else:
             break
     return pipeline_list
+
 
 def generate_import_code(pipeline_list):
     """Generate all library import calls for use in TPOT.export()
@@ -111,7 +113,6 @@ def generate_import_code(pipeline_list):
         '_gradient_boosting':   {'sklearn.ensemble': ['GradientBoostingClassifier']},
         '_logistic_regression': {'sklearn.linear_model': ['LogisticRegression']},
         '_passive_aggressive':  {'sklearn.linear_model': ['PassiveAggressiveClassifier']},
-        '_svc':                 {'sklearn.svm': ['SVC']},
         '_linear_svc':          {'sklearn.svm': ['LinearSVC']},
         '_knnc':                {'sklearn.neighbors': ['KNeighborsClassifier']},
         '_feat_agg':            {'sklearn.cluster': ['FeatureAgglomeration']},
@@ -135,7 +136,7 @@ def generate_import_code(pipeline_list):
             operator_import = import_relations[op]
             merge_imports(pipeline_imports, operator_import)
         except KeyError:
-            pass # Operator does not require imports
+            pass  # Operator does not require imports
 
     # Build import string
     for key in sorted(pipeline_imports.keys()):
@@ -149,6 +150,7 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify =
 '''
 
     return pipeline_text
+
 
 def replace_function_calls(pipeline_list):
     """Replace the function calls with their corresponding Python code for use in TPOT.export()
@@ -182,24 +184,12 @@ def replace_function_calls(pipeline_list):
 
         # Replace the TPOT functions with their corresponding Python code
         if operator_name == '_decision_tree':
-            max_features = int(operator[3])
-            max_depth = int(operator[4])
-
-            if max_features < 1:
-                max_features = '\'auto\''
-            elif max_features == 1:
-                max_features = None
-            else:
-                max_features = 'min({MAX_FEATURES}, len({INPUT_DF}.columns) - 1)'.format(MAX_FEATURES=max_features, INPUT_DF=operator[2])
-
-            if max_depth < 1:
-                max_depth = None
+            min_weight = float(operator[3])
 
             operator_text += '\n# Perform classification with a decision tree classifier'
             operator_text += ('\ndtc{OPERATOR_NUM} = DecisionTreeClassifier('
-                              'max_features={MAX_FEATURES}, max_depth={MAX_DEPTH})\n').format(OPERATOR_NUM=operator_num,
-                                                                                              MAX_FEATURES=max_features,
-                                                                                              MAX_DEPTH=max_depth)
+                              'min_weight_fraction_leaf={MIN_WEIGHT})\n').format(OPERATOR_NUM=operator_num,
+                                                                                MIN_WEIGHT=min_weight)
             operator_text += ('''dtc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', '''
                               '''axis=1).values, {INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
                                                                                                                 INPUT_DF=operator[2])
@@ -210,20 +200,11 @@ def replace_function_calls(pipeline_list):
                                                                                         OPERATOR_NUM=operator_num)
 
         elif operator_name == '_random_forest':
-            max_features = int(operator[3])
-
-            if max_features < 1:
-                max_features = '\'auto\''
-            elif max_features == 1:
-                max_features = 'None'
-            else:
-                max_features = 'min({MAX_FEATURES}, len({INPUT_DF}.columns) - 1)'.format(MAX_FEATURES=max_features, INPUT_DF=operator[2])
+            min_weight = min(0.5, max(0., operator[3]))
 
             operator_text += '\n# Perform classification with a random forest classifier'
             operator_text += ('\nrfc{OPERATOR_NUM} = RandomForestClassifier('
-                              'n_estimators={N_ESTIMATORS}, max_features={MAX_FEATURES})\n').format(OPERATOR_NUM=operator_num,
-                                                                                                    N_ESTIMATORS=500,
-                                                                                                    MAX_FEATURES=max_features)
+                              'n_estimators=500, min_weight_fraction_leaf={MIN_WEIGHT})\n').format(OPERATOR_NUM=operator_num, MIN_WEIGHT=min_weight)
             operator_text += ('''rfc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
                               '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
                                                                                                 INPUT_DF=operator[2])
@@ -234,33 +215,26 @@ def replace_function_calls(pipeline_list):
                                                                                                                   OPERATOR_NUM=operator_num)
 
         elif operator_name == '_logistic_regression':
-            C = float(operator[3])
-            if C <= 0.:
-                C = 0.0001
+            C = min(50., max(0.0001, float(operator[3])))
+
+            penalty_values = ['l1', 'l2']
+            penalty_selection = penalty_values[int(operator[4]) % len(penalty_values)]
+
+            dual = bool(operator[5])
+
+            if penalty_selection == 'l1':
+                dual = False
 
             operator_text += '\n# Perform classification with a logistic regression classifier'
-            operator_text += '\nlrc{OPERATOR_NUM} = LogisticRegression(C={C})\n'.format(OPERATOR_NUM=operator_num, C=C)
+            operator_text += '\nlrc{OPERATOR_NUM} = LogisticRegression(C={C}, dual={DUAL}, penalty={PENALTY})\n'.format(OPERATOR_NUM=operator_num,
+                                                                                                                        C=C,
+                                                                                                                        PENALTY=penalty_selection,
+                                                                                                                        DUAL=dual)
             operator_text += ('''lrc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
                               '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num, INPUT_DF=operator[2])
             if result_name != operator[2]:
                 operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
             operator_text += ('''{OUTPUT_DF}['lrc{OPERATOR_NUM}-classification'] = lrc{OPERATOR_NUM}.predict('''
-                              '''{OUTPUT_DF}.drop('class', axis=1).values)\n''').format(OUTPUT_DF=result_name,
-                                                                                        OPERATOR_NUM=operator_num)
-
-        elif operator_name == '_svc':
-            C = float(operator[3])
-            if C <= 0.:
-                C = 0.0001
-
-            operator_text += '\n# Perform classification with a C-support vector classifier'
-            operator_text += '\nsvc{OPERATOR_NUM} = SVC(C={C})\n'.format(OPERATOR_NUM=operator_num, C=C)
-            operator_text += ('''svc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
-                              '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
-                                                                                                INPUT_DF=operator[2])
-            if result_name != operator[2]:
-                operator_text += '{OUTPUT_DF} = {INPUT_DF}.copy()\n'.format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
-            operator_text += ('''{OUTPUT_DF}['svc{OPERATOR_NUM}-classification'] = svc{OPERATOR_NUM}.predict('''
                               '''{OUTPUT_DF}.drop('class', axis=1).values)\n''').format(OUTPUT_DF=result_name,
                                                                                         OPERATOR_NUM=operator_num)
 
@@ -271,9 +245,13 @@ def replace_function_calls(pipeline_list):
             else:
                 n_neighbors = 'min({N_NEIGHBORS}, len(training_indices))'.format(N_NEIGHBORS=n_neighbors)
 
+            weights_values = ['uniform', 'distance']
+            weights_selection = weights_values[int(operator[4]) % len(weights_values)]
+
             operator_text += '\n# Perform classification with a k-nearest neighbor classifier'
-            operator_text += '\nknnc{OPERATOR_NUM} = KNeighborsClassifier(n_neighbors={N_NEIGHBORS})\n'.format(OPERATOR_NUM=operator_num,
-                                                                                                               N_NEIGHBORS=n_neighbors)
+            operator_text += '\nknnc{OPERATOR_NUM} = KNeighborsClassifier(n_neighbors={N_NEIGHBORS}, weights={WEIGHTS})\n'.format(OPERATOR_NUM=operator_num,
+                                                                                                               N_NEIGHBORS=n_neighbors,
+                                                                                                               WEIGHTS=weights_selection)
             operator_text += ('''knnc{OPERATOR_NUM}.fit({INPUT_DF}.loc[training_indices].drop('class', axis=1).values, '''
                               '''{INPUT_DF}.loc[training_indices, 'class'].values)\n''').format(OPERATOR_NUM=operator_num,
                                                                                                 INPUT_DF=operator[2])
@@ -284,8 +262,8 @@ def replace_function_calls(pipeline_list):
                                                                                         OPERATOR_NUM=operator_num)
 
         elif operator_name == '_ada_boost':
-            learning_rate = max(0.0001, float(operator[3]))
-            n_estimators = min(500, int(operator[4]))
+            learning_rate = min(1., max(0.0001, float(operator[3])))
+            n_estimators = 500
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
@@ -301,22 +279,22 @@ adab{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).v
         elif operator_name == '_bernoulli_nb':
             alpha = float(operator[3])
             binarize = float(operator[4])
-            fit_prior = bool(operator[5])
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
             operator_text += """
 # Perform classification with a BernoulliNB classifier
-bnb{OPERATOR_NUM} = BernoulliNB(alpha={ALPHA}, binarize={BINARIZE}, fit_prior={FIT_PRIOR})
+bnb{OPERATOR_NUM} = BernoulliNB(alpha={ALPHA}, binarize={BINARIZE})
 bnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['bnb{OPERATOR_NUM}-classification'] = bnb{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, ALPHA=alpha, BINARIZE=binarize, FIT_PRIOR=fit_prior)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, ALPHA=alpha, BINARIZE=binarize)
 
         elif operator_name == '_extra_trees':
             criterion = int(operator[3])
-            max_features = 'min({MAX_FEATURES}, len(training_features.columns))'.format(MAX_FEATURES=int(operator[4]))
+            max_features = min(1., max(0., float(operator[4])))
+            min_weight = min(0.5, max(0., float(operator[5])))
 
             criterion_values = ['gini', 'entropy']
             criterion_selection = criterion_values[criterion % len(criterion_values)]
@@ -328,11 +306,11 @@ bnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
 training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
 
 # Perform classification with an extra trees classifier
-etc{OPERATOR_NUM} = ExtraTreesClassifier(criterion="{CRITERION}", max_features={MAX_FEATURES}, n_estimators=500, random_state=42)
+etc{OPERATOR_NUM} = ExtraTreesClassifier(criterion="{CRITERION}", max_features={MAX_FEATURES}, min_weight_fraction_leaf={MIN_WEIGHT}, n_estimators=500, random_state=42)
 etc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['etc{OPERATOR_NUM}-classification'] = etc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], CRITERION=criterion_selection, MAX_FEATURES=max_features)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, INPUT_DF=operator[2], CRITERION=criterion_selection, MAX_FEATURES=max_features, MIN_WEIGHT=min_weight)
 
         elif operator_name == '_gaussian_nb':
             if result_name != operator[2]:
@@ -348,42 +326,43 @@ gnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
 
         elif operator_name == '_multinomial_nb':
             alpha = float(operator[3])
-            fit_prior = bool(operator[4])
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
             operator_text += """
 # Performan classification with a multinomial naive bayes classifier
-mnb{OPERATOR_NUM} = MultinomialNB(alpha={ALPHA}, fit_prior={FIT_PRIOR})
+mnb{OPERATOR_NUM} = MultinomialNB(alpha={ALPHA}, fit_prior=True)
 mnb{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['mnb{OPERATOR_NUM}-classification'] = mnb{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, ALPHA=alpha, FIT_PRIOR=fit_prior)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, ALPHA=alpha)
 
         elif operator_name == '_linear_svc':
-            C = max(0.0001, float(operator[3]))
-            loss = int(operator[4])
-            fit_intercept = bool(operator[5])
+            penalty_values = ['l1', 'l2']
+            penalty_selection = penalty_values[int(operator[4]) % len(penalty_values)]
 
-            loss_values = ['hinge', 'squared_hinge']
-            loss_selection = loss_values[loss % len(loss_values)]
+            C = min(50., max(0.0001, operator[3]))
+
+            dual = bool(operator[5])
+
+            if penalty_selection == 'l1':
+                dual = False
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
             operator_text += """
 # Perform classification with a LinearSVC classifier
-lsvc{OPERATOR_NUM} = LinearSVC(C={C}, loss="{LOSS}", fit_intercept={FIT_INTERCEPT}, random_state=42)
+lsvc{OPERATOR_NUM} = LinearSVC(C={C}, penalty="{PENALTY}", dual={DUAL}, random_state=42)
 lsvc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['lsvc{OPERATOR_NUM}-classification'] = lsvc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_intercept, LOSS=loss_selection)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, PENALTY=penalty_selection, DUAL=dual)
 
         elif operator_name == '_passive_aggressive':
-            C = max(0.0001, float(operator[3]))
+            C = min(1., max(0.0001, float(operator[3])))
             loss = int(operator[4])
-            fit_intercept = bool(operator[5])
 
             loss_values = ['hinge', 'squared_hinge']
             loss_selection = loss_values[loss % len(loss_values)]
@@ -393,26 +372,27 @@ lsvc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).v
 
             operator_text += """
 # Perform classification with a passive aggressive classifier
-pagr{OPERATOR_NUM} = PassiveAggressiveClassifier(C={C}, loss="{LOSS}", fit_intercept={FIT_INTERCEPT}, random_state=42)
+pagr{OPERATOR_NUM} = PassiveAggressiveClassifier(C={C}, loss="{LOSS}", fit_intercept=True, random_state=42)
 pagr{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['pagr{OPERATOR_NUM}-classification'] = pagr{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, FIT_INTERCEPT=fit_intercept, LOSS=loss_selection)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, C=C, LOSS=loss_selection)
 
         elif operator_name == '_gradient_boosting':
-            learning_rate = max(float(operator[3]), 0.0001)
-            max_depth = max(int(operator[4]), 3)
+            learning_rate = min(1., max(float(operator[3]), 0.0001))
+            max_features = min(1., max(0., float(operator[4])))
+            min_weight = min(0.5, max(0., float(operator[6])))
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
             operator_text += """
 # Perform classification with a gradient boosting classifier
-gbc{OPERATOR_NUM} = GradientBoostingClassifier(learning_rate={LEARNING_RATE}, max_depth={MAX_DEPTH}, n_estimators=500, random_state=42)
+gbc{OPERATOR_NUM} = GradientBoostingClassifier(learning_rate={LEARNING_RATE}, max_features={MAX_FEATURES}, min_weight_fraction_leaf={MIN_WEIGHT}, n_estimators=500, random_state=42)
 gbc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['gbc{OPERATOR_NUM}-classification'] = gbc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, LEARNING_RATE=learning_rate, MAX_DEPTH=max_depth)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, LEARNING_RATE=learning_rate, MAX_FEATURES=max_features, MIN_WEIGHT=min_weight)
 
         elif operator_name == '_combine_dfs':
             operator_text += '\n# Combine two DataFrames'
@@ -648,6 +628,8 @@ else:
 
         elif operator_name == '_rbf':
             gamma = float(operator[3])
+            n_components = int(operator[4])
+
             if n_components < 1:
                 n_components = 1
             n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
@@ -668,7 +650,7 @@ else:
 '''.format(INPUT_DF=operator[2], GAMMA=gamma, OUTPUT_DF=result_name)
 
         elif operator_name == '_fast_ica':
-            tol = max(float(operator[3]), 0.0001) # Ensure tol is not too small
+            tol = max(float(operator[3]), 0.0001)  # Ensure tol is not too small
 
             if n_components < 1:
                 n_components = 1

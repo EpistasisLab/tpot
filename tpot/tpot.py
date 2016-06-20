@@ -20,10 +20,10 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 from __future__ import print_function
 import argparse
-import operator
 import random
 import hashlib
 import inspect
+import sys
 from collections import Counter
 
 import numpy as np
@@ -47,7 +47,7 @@ import warnings
 from update_checker import update_check
 
 from ._version import __version__
-from .export_utils import *
+from .export_utils import unroll_nested_fuction_calls, generate_import_code, replace_function_calls
 from .decorators import _gp_new_generation
 
 import deap
@@ -55,8 +55,11 @@ from deap import algorithms, base, creator, tools, gp
 
 from tqdm import tqdm
 
-# Boolean class used for deap due to deap's poor handling of ints and booleans
-class Bool(object): pass
+
+class Bool(object):
+    """Boolean class used for deap due to deap's poor handling of ints and booleans"""
+    pass
+
 
 class TPOT(object):
 
@@ -102,7 +105,7 @@ class TPOT(object):
 
         """
         # Save params to be recalled later by get_params()
-        self.params = locals() # Must be placed before any local variable definitions
+        self.params = locals()  # Must be placed before any local variable definitions
         self.params.pop('self')
 
         # Do not prompt the user to update during this session if they ever disabled the update check
@@ -136,20 +139,18 @@ class TPOT(object):
         self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
 
         # Machine learning model operators
-        self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._random_forest, [pd.DataFrame, int], pd.DataFrame)
-        self._pset.addPrimitive(self._ada_boost, [pd.DataFrame, float, int], pd.DataFrame)
-        self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float], pd.DataFrame)
-        # Temporarily remove SVC -- badly overfits on multiclass data sets
-        # self._pset.addPrimitive(self._svc, [pd.DataFrame, float], pd.DataFrame)
-        self._pset.addPrimitive(self._knnc, [pd.DataFrame, int], pd.DataFrame)
-        self._pset.addPrimitive(self._gradient_boosting, [pd.DataFrame, float, int], pd.DataFrame)
-        self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float, Bool], pd.DataFrame)
-        self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._random_forest, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._ada_boost, [pd.DataFrame, float], pd.DataFrame)
+        self._pset.addPrimitive(self._logistic_regression, [pd.DataFrame, float, int, Bool], pd.DataFrame)
+        self._pset.addPrimitive(self._knnc, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._gradient_boosting, [pd.DataFrame, float, float, float], pd.DataFrame)
+        self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float], pd.DataFrame)
+        self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, float, float], pd.DataFrame)
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float, Bool], pd.DataFrame)
+        self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, Bool], pd.DataFrame)
-        self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int, Bool], pd.DataFrame)
+        self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -303,7 +304,7 @@ class TPOT(object):
             pass
         finally:
             # Close the progress bar
-            if type(self.pbar) != type(None): # Standard truthiness checks won't work for tqdm
+            if isinstance(self.pbar, type(None)):  # Standard truthiness checks won't work for tqdm
                 self.pbar.close()
 
             # Reset gp_generation counter to restore initial state
@@ -319,7 +320,7 @@ class TPOT(object):
                         self._optimized_pipeline = pipeline
 
             if self.verbosity >= 1 and self._optimized_pipeline:
-                if verbose: # Add an extra line of spacing if the progress bar was used
+                if verbose:  # Add an extra line of spacing if the progress bar was used
                     print()
 
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
@@ -475,17 +476,15 @@ class TPOT(object):
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
 
-    def _decision_tree(self, input_df, max_features, max_depth):
+    def _decision_tree(self, input_df, min_weight):
         """Fits a decision tree classifier
 
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame for fitting the decision tree
-        max_features: int
-            Number of features used to fit the decision tree; must be a positive value
-        max_depth: int
-            Maximum depth of the decision tree; must be a positive value
+        min_weight_fraction_leaf: float
+            The minimum weighted fraction of the input samples required to be at a leaf node.
 
         Returns
         -------
@@ -494,27 +493,21 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if max_features < 1:
-            max_features = 'auto'
-        elif max_features == 1:
-            max_features = None
-        else:
-            max_features = min(max_features, len(input_df.columns) - 3)
 
-        if max_depth < 1:
-            max_depth = None
+        min_weight = min(0.5, max(0., min_weight))
 
-        return self._train_model_and_predict(input_df, DecisionTreeClassifier, max_features=max_features, max_depth=max_depth, random_state=42)
+        return self._train_model_and_predict(input_df, DecisionTreeClassifier,
+            min_weight_fraction_leaf=min_weight, random_state=42)
 
-    def _random_forest(self, input_df, max_features):
+    def _random_forest(self, input_df, min_weight):
         """Fits a random forest classifier
 
         Parameters
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame for fitting the random forest
-        max_features: int
-            Number of features used to fit the decision tree; must be a positive value
+        min_weight_fraction_leaf: float
+            The minimum weighted fraction of the input samples required to be at a leaf node.
 
         Returns
         -------
@@ -523,17 +516,13 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        if max_features < 1:
-            max_features = 'auto'
-        elif max_features == 1:
-            max_features = None
-        elif max_features > len(input_df.columns) - 3:
-            max_features = len(input_df.columns) - 3
 
-        return self._train_model_and_predict(input_df, RandomForestClassifier, n_estimators=500,
-                                             max_features=max_features, random_state=42, n_jobs=-1)
+        min_weight = min(0.5, max(0., min_weight))
 
-    def _ada_boost(self, input_df, learning_rate, n_estimators):
+        return self._train_model_and_predict(input_df, RandomForestClassifier,
+            min_weight_fraction_leaf=min_weight, n_estimators=500, random_state=42, n_jobs=-1)
+
+    def _ada_boost(self, input_df, learning_rate):
         """Fits an AdaBoost classifier
 
         Parameters
@@ -550,13 +539,12 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        learning_rate = max(0.0001, learning_rate)
-        n_estimators = min(500, n_estimators)
+        learning_rate = min(1., max(0.0001, learning_rate))
 
         return self._train_model_and_predict(input_df, AdaBoostClassifier,
-            learning_rate=learning_rate, n_estimators=n_estimators, random_state=42)
+            learning_rate=learning_rate, n_estimators=500, random_state=42)
 
-    def _bernoulli_nb(self, input_df, alpha, binarize, fit_prior):
+    def _bernoulli_nb(self, input_df, alpha, binarize):
         """Fits a Bernoulli Naive Bayes classifier
 
         Parameters
@@ -567,8 +555,6 @@ class TPOT(object):
             Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
         binarize: float
             Threshold for binarizing (mapping to booleans) of sample features.
-        fit_prior: bool
-            Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
 
         Returns
         -------
@@ -577,10 +563,11 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        return self._train_model_and_predict(input_df, BernoulliNB, alpha=alpha,
-            binarize=binarize, fit_prior=fit_prior)
 
-    def _extra_trees(self, input_df, criterion, max_features):
+        return self._train_model_and_predict(input_df, BernoulliNB, alpha=alpha,
+            binarize=binarize, fit_prior=True)
+
+    def _extra_trees(self, input_df, criterion, max_features, min_weight):
         """Fits an Extra Trees Classifier
 
         Parameters
@@ -590,8 +577,10 @@ class TPOT(object):
         criterion: int
             Integer that is used to select from the list of valid criteria,
             either 'gini', or 'entropy'
-        max_features: int
+        max_features: float
             The number of features to consider when looking for the best split
+        min_weight_fraction_leaf: float
+            The minimum weighted fraction of the input samples required to be at a leaf node.
 
         Returns
         -------
@@ -604,15 +593,11 @@ class TPOT(object):
         criterion_values = ['gini', 'entropy']
         criterion_selection = criterion_values[criterion % len(criterion_values)]
 
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
-
-        if max_features < 1:
-            max_features = 1
-        elif max_features > len(training_features.columns):
-            max_features = len(training_features.columns)
+        min_weight = min(0.5, max(0., min_weight))
+        max_features = min(1., max(0., max_features))
 
         return self._train_model_and_predict(input_df, ExtraTreesClassifier,
-            criterion=criterion_selection, max_features=max_features,
+            criterion=criterion_selection, max_features=max_features, min_weight_fraction_leaf=min_weight,
             n_estimators=500, random_state=42)
 
     def _gaussian_nb(self, input_df):
@@ -632,7 +617,7 @@ class TPOT(object):
         """
         return self._train_model_and_predict(input_df, GaussianNB)
 
-    def _multinomial_nb(self, input_df, alpha, fit_prior):
+    def _multinomial_nb(self, input_df, alpha):
         """Fits a Naive Bayes classifier for multinomial models
 
         Parameters
@@ -641,8 +626,6 @@ class TPOT(object):
             Input DataFrame for fitting the classifier
         alpha: float
             Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
-        fit_prior: bool
-            Whether to learn class prior probabilities or not. If false, a uniform prior will be used.
 
         Returns
         -------
@@ -651,10 +634,9 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        return self._train_model_and_predict(input_df, MultinomialNB, alpha=alpha,
-            fit_prior=fit_prior)
+        return self._train_model_and_predict(input_df, MultinomialNB, alpha=alpha, fit_prior=True)
 
-    def _linear_svc(self, input_df, C, loss, fit_intercept):
+    def _linear_svc(self, input_df, C, penalty, dual):
         """Fits a Linear Support Vector Classifier
 
         Parameters
@@ -663,10 +645,10 @@ class TPOT(object):
             Input DataFrame for fitting the classifier
         C: float
             Penalty parameter C of the error term.
-        loss: int
-            Integer used to determine the loss function (either 'hinge' or 'squared_hinge')
-        fit_intercept : bool
-            Whether to calculate the intercept for this model
+        penalty: int
+            Integer used to specify the norm used in the penalization (l1 or l2)
+        dual: bool
+            Select the algorithm to either solve the dual or primal optimization problem.
 
         Returns
         -------
@@ -675,15 +657,18 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        loss_values = ['hinge', 'squared_hinge']
-        loss_selection = loss_values[loss % len(loss_values)]
+        penalty_values = ['l1', 'l2']
+        penalty_selection = penalty_values[penalty % len(penalty_values)]
 
-        C = max(0.0001, C)
+        C = min(25., max(0.0001, C))
+
+        if penalty_selection == 'l1':
+            dual = False
 
         return self._train_model_and_predict(input_df, LinearSVC, C=C,
-            loss=loss_selection, fit_intercept=fit_intercept, random_state=42)
+            penalty=penalty_selection, dual=dual, random_state=42)
 
-    def _passive_aggressive(self, input_df, C, loss, fit_intercept):
+    def _passive_aggressive(self, input_df, C, loss):
         """Fits a Linear Support Vector Classifier
 
         Parameters
@@ -694,8 +679,6 @@ class TPOT(object):
             Penalty parameter C of the error term.
         loss: int
             Integer used to determine the loss function (either 'hinge' or 'squared_hinge')
-        fit_intercept : bool
-            Whether to calculate the intercept for this model (even for True, odd for False)
 
         Returns
         -------
@@ -707,12 +690,12 @@ class TPOT(object):
         loss_values = ['hinge', 'squared_hinge']
         loss_selection = loss_values[loss % len(loss_values)]
 
-        C = max(0.0001, C)
+        C = min(1., max(0.0001, C))
 
         return self._train_model_and_predict(input_df, PassiveAggressiveClassifier,
-            C=C, loss=loss_selection, fit_intercept=fit_intercept, random_state=42)
+            C=C, loss=loss_selection, fit_intercept=True, random_state=42)
 
-    def _logistic_regression(self, input_df, C):
+    def _logistic_regression(self, input_df, C, penalty, dual):
         """Fits a logistic regression classifier
 
         Parameters
@@ -721,6 +704,10 @@ class TPOT(object):
             Input DataFrame for fitting the logistic regression classifier
         C: float
             Inverse of regularization strength; must be a positive value. Like in support vector machines, smaller values specify stronger regularization.
+        penalty: int
+            Integer used to specify the norm used in the penalization (l1 or l2)
+        dual: bool
+            Select the algorithm to either solve the dual or primal optimization problem.
 
         Returns
         -------
@@ -729,32 +716,18 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        C = max(0.0001, C)
+        C = min(50., max(0.0001, C))
 
-        return self._train_model_and_predict(input_df, LogisticRegression, C=C, random_state=42)
+        penalty_values = ['l1', 'l2']
+        penalty_selection = penalty_values[penalty % len(penalty_values)]
 
-    def _svc(self, input_df, C):
-        """Fits a C-support vector classifier
+        if penalty_selection == 'l1':
+            dual = False
 
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the C-support vector classifier
-        C: float
-            Penalty parameter C of the error term; must be a positive value
+        return self._train_model_and_predict(input_df, LogisticRegression, C=C,
+            penalty=penalty_selection, dual=dual, random_state=42)
 
-        Returns
-        -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
-
-        """
-        C = max(0.0001, C)
-
-        return self._train_model_and_predict(input_df, SVC, C=C, random_state=42)
-
-    def _knnc(self, input_df, n_neighbors):
+    def _knnc(self, input_df, n_neighbors, weights):
         """Fits a k-nearest neighbor classifier
 
         Parameters
@@ -763,6 +736,8 @@ class TPOT(object):
             Input DataFrame for fitting the k-nearest neighbor classifier
         n_neighbors: int
             Number of neighbors to use by default for k_neighbors queries; must be a positive value
+        weights: int
+            Selects a value from the list: ['uniform', 'distance']
 
         Returns
         -------
@@ -774,9 +749,13 @@ class TPOT(object):
         training_set_size = len(input_df.loc[input_df['group'] == 'training'])
         n_neighbors = max(min(training_set_size - 1, n_neighbors), 2)
 
-        return self._train_model_and_predict(input_df, KNeighborsClassifier, n_neighbors=n_neighbors)
+        weights_values = ['uniform', 'distance']
+        weights_selection = weights_values[weights % len(weights_values)]
 
-    def _gradient_boosting(self, input_df, learning_rate, max_depth):
+        return self._train_model_and_predict(input_df, KNeighborsClassifier,
+            n_neighbors=n_neighbors, weights=weights_selection)
+
+    def _gradient_boosting(self, input_df, learning_rate, max_features, min_weight):
         """Fits the sklearn GradientBoostingClassifier classifier
 
         Parameters
@@ -785,8 +764,10 @@ class TPOT(object):
             Input DataFrame for fitting the XGBoost classifier
         learning_rate: float
             Shrinks the contribution of each tree by learning_rate
-        max_depth: int
-            Maximum depth of the individual estimators; the maximum depth limits the number of nodes in the tree
+        max_features: float
+            Maximum number of features to use (proportion of total features)
+        min_weight_fraction_leaf: float
+            The minimum weighted fraction of the input samples required to be at a leaf node.
 
         Returns
         -------
@@ -795,11 +776,13 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        learning_rate = max(learning_rate, 0.0001)
-        max_depth = max(max_depth, 1)
+        learning_rate = min(1., max(learning_rate, 0.0001))
+        max_features = min(1., max(0., learning_rate))
+        min_weight = min(0.5, max(0., min_weight))
 
-        return self._train_model_and_predict(input_df, GradientBoostingClassifier, learning_rate=learning_rate,
-                                             n_estimators=500, max_depth=max_depth, random_state=42)
+        return self._train_model_and_predict(input_df, GradientBoostingClassifier,
+            learning_rate=learning_rate, n_estimators=500,
+            max_features=max_features, random_state=42, min_weight_fraction_leaf=min_weight)
 
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
@@ -1575,7 +1558,7 @@ class TPOT(object):
             return 5000., 0.
         finally:
             if not self.pbar.disable:
-                self.pbar.update(1) # One more pipeline evaluated
+                self.pbar.update(1)  # One more pipeline evaluated
 
         if isinstance(resulting_score, float) or isinstance(resulting_score, np.float64) or isinstance(resulting_score, np.float32):
             return max(1, operator_count), resulting_score
@@ -1599,13 +1582,14 @@ class TPOT(object):
         all_classes = list(set(result['class'].values))
         all_class_accuracies = []
         for this_class in all_classes:
-            this_class_sensitivity = len(result[(result['guess'] == this_class) &\
-                                                (result['class'] == this_class)])\
-            / float(len(result[result['class'] == this_class]))
+            sens_columns = (result['guess'] == this_class) & (result['class'] == this_class)
+            sens_count = float(len(result[result['class'] == this_class]))
+            this_class_sensitivity = len(result[sens_columns]) / sens_count
 
-            this_class_specificity = len(result[(result['guess'] != this_class) &\
-                                                (result['class'] != this_class)])\
-            / float(len(result[result['class'] != this_class]))
+            spec_columns = (result['guess'] != this_class) & (result['class'] != this_class)
+            spec_count = float(len(result[result['class'] != this_class]))
+
+            this_class_specificity = len(result[spec_columns]) / spec_count
 
             this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)
@@ -1727,8 +1711,8 @@ class TPOT(object):
                     term = random.choice(pset.terminals[type_])
                 except IndexError:
                     _, _, traceback = sys.exc_info()
-                    raise IndexError("The gp.generate function tried to add "\
-                                      "a terminal of type '%s', but there is "\
+                    raise IndexError("The gp.generate function tried to add "
+                                      "a terminal of type '%s', but there is "
                                       "none available." % (type_,)).with_traceback(traceback)
                 if inspect.isclass(term):
                     term = term()
@@ -1738,61 +1722,64 @@ class TPOT(object):
                     prim = random.choice(pset.primitives[type_])
                 except IndexError:
                     _, _, traceback = sys.exc_info()
-                    raise IndexError("The gp.generate function tried to add "\
-                                      "a primitive of type '%s', but there is "\
+                    raise IndexError("The gp.generate function tried to add "
+                                      "a primitive of type '%s', but there is "
                                       "none available." % (type_,)).with_traceback(traceback)
                 expr.append(prim)
                 for arg in reversed(prim.args):
                     stack.append((depth+1, arg))
         return expr
 
+
+def positive_integer(value):
+    """Ensures that the provided value is a positive integer; throws an exception otherwise
+
+    Parameters
+    ----------
+    value: int
+        The number to evaluate
+
+    Returns
+    -------
+    value: int
+        Returns a positive integer
+    """
+    try:
+        value = int(value)
+    except Exception:
+        raise argparse.ArgumentTypeError('Invalid int value: \'{}\''.format(value))
+    if value < 0:
+        raise argparse.ArgumentTypeError('Invalid positive int value: \'{}\''.format(value))
+    return value
+
+
+def float_range(value):
+    """Ensures that the provided value is a float integer in the range (0., 1.); throws an exception otherwise
+
+    Parameters
+    ----------
+    value: float
+        The number to evaluate
+
+    Returns
+    -------
+    value: float
+        Returns a float in the range (0., 1.)
+    """
+    try:
+        value = float(value)
+    except:
+        raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
+    if value < 0.0 or value > 1.0:
+        raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
+    return value
+
+
 def main():
     """Main function that is called when TPOT is run on the command line"""
     parser = argparse.ArgumentParser(description='A Python tool that automatically creates and '
                                                  'optimizes machine learning pipelines using genetic programming.',
                                      add_help=False)
-
-    def positive_integer(value):
-        """Ensures that the provided value is a positive integer; throws an exception otherwise
-
-        Parameters
-        ----------
-        value: int
-            The number to evaluate
-
-        Returns
-        -------
-        value: int
-            Returns a positive integer
-        """
-        try:
-            value = int(value)
-        except Exception:
-            raise argparse.ArgumentTypeError('Invalid int value: \'{}\''.format(value))
-        if value < 0:
-            raise argparse.ArgumentTypeError('Invalid positive int value: \'{}\''.format(value))
-        return value
-
-    def float_range(value):
-        """Ensures that the provided value is a float integer in the range (0., 1.); throws an exception otherwise
-
-        Parameters
-        ----------
-        value: float
-            The number to evaluate
-
-        Returns
-        -------
-        value: float
-            Returns a float in the range (0., 1.)
-        """
-        try:
-            value = float(value)
-        except:
-            raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
-        if value < 0.0 or value > 1.0:
-            raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
-        return value
 
     parser.add_argument('INPUT_FILE', type=str, help='Data file to optimize the pipeline on; ensure that the class label column is labeled as "class".')
 
