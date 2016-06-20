@@ -1863,7 +1863,7 @@ def main():
 
     if args.VERBOSITY >= 1:
         print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes)))
-        print('Testing accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
+        print('Holdout accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
 
     if args.OUTPUT_FILE != '':
         tpot.export(args.OUTPUT_FILE)
