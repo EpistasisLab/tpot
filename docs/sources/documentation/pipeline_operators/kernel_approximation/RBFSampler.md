@@ -46,9 +46,9 @@ if len(training_features.columns.values) > 0:
     rbf.fit(training_features.values.astype(np.float64))
     transformed_features = rbf.transform(result1.drop('class', axis=1).values.astype(np.float64))
     result1 = pd.DataFrame(data=transformed_features)
-    result1['class'] = result1['class'].values
+    result1['class'] = tpot_data['class'].values
 else:
-    result1 = result1.copy()
+    result1 = tpot_data.copy()
 
 # Perform classification with a decision tree classifier
 result2 = result1.copy()
