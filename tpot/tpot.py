@@ -158,7 +158,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, Bool], pd.DataFrame)
         self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int], pd.DataFrame)
         if has_xgb:
-            self._pset.addPrimitive(self._xg_boosting, [pd.DataFrame, float, float, float], pd.DataFrame)
+            self._pset.addPrimitive(self._xg_boosting, [pd.DataFrame, float, float, int, int], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -792,7 +792,7 @@ class TPOT(object):
             learning_rate=learning_rate, n_estimators=500,
             max_features=max_features, random_state=42, min_weight_fraction_leaf=min_weight)
 
-    def _xg_boosting(self, input_df, learning_rate, subsample, min_child_weight):
+    def _xg_boosting(self, input_df, learning_rate, subsample, min_child_weight, max_depth):
         """Fits the DMLC XGBoost classifier
 
         Parameters
@@ -813,13 +813,15 @@ class TPOT(object):
             Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
         """
-        learning_rate = min(1., max(learning_rate, 0.0001))
-        subsample = min(1., max(0., subsample))
-        min_child_weight = min(0.5, max(0., min_child_weight))
-
+        learning_rate = min(1., max(learning_rate, 0.0001))        
+        subsample = min(1., max(0.1, subsample))    
+        max_depth = min(100, max(1, max_depth))    
+        # xgboost docs say min_child_weight can range from o to inifity
+        min_child_weight = max(0, min_child_weight)
+        
         return self._train_model_and_predict(input_df, XGBClassifier,
             learning_rate=learning_rate, n_estimators=500,
-            subsample=subsample, min_child_weight=min_child_weight)
+            subsample=subsample, min_child_weight=min_child_weight, seed=42, max_depth=max_depth)
 
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
