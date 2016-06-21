@@ -965,64 +965,69 @@ def test_passive_aggressive_2():
 def test_xgboost():
      """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method"""
 
-     tpot_obj = TPOT()
-     result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=5)
-     result = result[result['group'] == 'testing']
+     if has_xgb:
+        tpot_obj = TPOT()
+        result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=5)
+        result = result[result['group'] == 'testing']
 
-     xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=5)
-     xgb.fit(training_features, training_classes)
+        xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=5)
+        xgb.fit(training_features, training_classes)
 
-     assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
-     
+        assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
+
 
 def test_xgboost_2():
      """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method when learning_rate > 1"""
 
-     tpot_obj = TPOT()
-     result = tpot_obj._xg_boosting(training_testing_data, learning_rate=3, subsample=0.8, min_child_weight=3, max_depth=5)
-     result = result[result['group'] == 'testing']
+     if has_xgb:
+         tpot_obj = TPOT()
+         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=3, subsample=0.8, min_child_weight=3, max_depth=5)
+         result = result[result['group'] == 'testing']
 
-     xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=1, subsample=0.8, min_child_weight=3, max_depth=5)
-     xgb.fit(training_features, training_classes)
+         xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=1, subsample=0.8, min_child_weight=3, max_depth=5)
+         xgb.fit(training_features, training_classes)
 
-     assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
+         assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
 
 def test_xgboost_3():
      """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method when subsample == 0"""
 
-     tpot_obj = TPOT()
-     result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0, min_child_weight=3, max_depth=5)
-     result = result[result['group'] == 'testing']
+     if has_xgb:
+         tpot_obj = TPOT()
+         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0, min_child_weight=3, max_depth=5)
+         result = result[result['group'] == 'testing']
 
-     xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.1, min_child_weight=3, max_depth=5)
-     xgb.fit(training_features, training_classes)
+         xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.1, min_child_weight=3, max_depth=5)
+         xgb.fit(training_features, training_classes)
 
-     assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
-     
+         assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
+
 def test_xgboost_4():
      """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method when max_depth < 0"""
 
-     tpot_obj = TPOT()
-     result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=0.1)
-     result = result[result['group'] == 'testing']
+     if has_xgb:
+         tpot_obj = TPOT()
+         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=0.1)
+         result = result[result['group'] == 'testing']
 
-     xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=1)
-     xgb.fit(training_features, training_classes)
+         xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=1)
+         xgb.fit(training_features, training_classes)
 
-     assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
-     
+         assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
+
 def test_xgboost_5():
      """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method when min_child_weight < 0"""
 
-     tpot_obj = TPOT()
-     result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=-3 , max_depth=5)
-     result = result[result['group'] == 'testing']
+     if has_xgb:
+         tpot_obj = TPOT()
+         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=-3 , max_depth=5)
+         result = result[result['group'] == 'testing']
 
-     xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=0, max_depth=5)
-     xgb.fit(training_features, training_classes)
+         xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=0, max_depth=5)
+         xgb.fit(training_features, training_classes)
 
-     assert np.array_equal(result['guess'].values, xgb.predict(testing_features))     
-     
+         assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
+
 
 def test_gradient_boosting():
     """Ensure that the TPOT GradientBoostingClassifier outputs the same as the sklearn classifier"""
