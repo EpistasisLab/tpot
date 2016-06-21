@@ -43,6 +43,12 @@ from sklearn.kernel_approximation import RBFSampler, Nystroem
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.cross_validation import train_test_split
 
+has_xgb = True
+try:
+    from xgboost import XGBClassifier
+except ImportError:
+    has_xgb = False
+
 import warnings
 from update_checker import update_check
 
@@ -151,6 +157,8 @@ class TPOT(object):
         self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, Bool], pd.DataFrame)
         self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int], pd.DataFrame)
+        if has_xgb:
+            self._pset.addPrimitive(self._xg_boosting, [pd.DataFrame, float, float, float], pd.DataFrame)
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -783,6 +791,35 @@ class TPOT(object):
         return self._train_model_and_predict(input_df, GradientBoostingClassifier,
             learning_rate=learning_rate, n_estimators=500,
             max_features=max_features, random_state=42, min_weight_fraction_leaf=min_weight)
+
+    def _xg_boosting(self, input_df, learning_rate, subsample, min_child_weight):
+        """Fits the DMLC XGBoost classifier
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the XGBoost classifier
+        learning_rate: float
+            Shrinks the contribution of each tree by learning_rate
+        subsample: float
+            Maximum number of features to use (proportion of total features)
+        min_child_weight: float
+            The minimum weighted fraction of the input samples required to be at a leaf node.
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
+            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
+
+        """
+        learning_rate = min(1., max(learning_rate, 0.0001))
+        subsample = min(1., max(0., subsample))
+        min_child_weight = min(0.5, max(0., min_child_weight))
+
+        return self._train_model_and_predict(input_df, XGBClassifier,
+            learning_rate=learning_rate, n_estimators=500,
+            subsample=subsample, min_child_weight=min_child_weight)
 
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
