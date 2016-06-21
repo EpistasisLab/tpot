@@ -173,6 +173,21 @@ result2['dtc2-classification'] = dtc2.predict(result2.drop('class', axis=1).valu
     assert reference_code == exported_code
 
 
+def test_replace_function_calls_2():
+    """Ensure export utils' replace_function_calls generates no exceptions"""
+
+    tpot_obj = TPOT()
+
+    for prim in tpot_obj._pset.primitives[pd.DataFrame]:
+        simple_pipeline = ['result1']
+        simple_pipeline.append(prim.name)
+
+        for arg in prim.args:
+            simple_pipeline.append(tpot_obj._pset.terminals[arg][0].value)
+
+        replace_function_calls([simple_pipeline])
+
+
 def test_get_params():
     """Ensure that get_params returns the exact dictionary of parameters used by TPOT"""
     kwargs = {
