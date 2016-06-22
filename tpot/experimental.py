@@ -11,7 +11,7 @@ from deap.base import (
     Fitness, Toolbox,
 )
 from deap.gp import (
-    cxOnePoint, , genHalfAndHalf, graph,
+    cxOnePoint, genFull, genHalfAndHalf, graph,
     mutInsert, mutShrink, mutUniform,
     Primitive, PrimitiveSetTyped, PrimitiveTree,
 )
@@ -19,12 +19,16 @@ from deap.tools import (
     initRepeat, initIterate, selNSGA2,
     History, ParetoFront, Statistics,
 )
+from sklearn.cross_validation import (
+    train_test_split,
+)
 from sklearn.base import (
     BaseEstimator, ClassifierMixin, TransformerMixin,
 )
 from sklearn.pipeline import (
     make_pipeline, make_union,
 )
+
 
 
 class Tree(PrimitiveTree):
@@ -88,7 +92,7 @@ class experimental(BaseEstimator):
         self.population = population
         self.select = select
 
-    def evaluate(self, individual, df):
+    def evaluate(self, individual, data):
         """Fit and score a classifier model or pipeline.  `df` is a tuple with
         (features, classes).
         """
@@ -96,7 +100,9 @@ class experimental(BaseEstimator):
 
         # Fit the model
         try:
-            model.fit(first(df), second(df))
+            model.fit(
+                data[0], data[2],
+            )
         except:
             # Catch the fitting errors
             self.errors_[0] += 1
@@ -104,7 +110,10 @@ class experimental(BaseEstimator):
 
         # Score the fit model
         try:
-            score = model.score(first(df), second(df))
+            score = model.score(
+                np.concatenate(data[:2]),
+                np.concatenate(data[2:]),
+            )
             return (len(individual), score)
         except:
             # Catch the scoring errors
@@ -117,9 +126,14 @@ class experimental(BaseEstimator):
         """
         self.set_params(**kwargs)
 
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=.33,
+        )
+
         toolbox = self.toolbox_()
         toolbox.register(
-            'evaluate', self.evaluate, df=[X, y],
+            'evaluate', self.evaluate,
+            data=[X_train, X_test, y_train, y_test],
         )
         pop = toolbox.population(
             n=self.population
@@ -139,7 +153,6 @@ class experimental(BaseEstimator):
             verbose=True,
         )
 
-    @staticmethod
     def primitive_set(self, models):
         """Create a `deap` primitive set.
 
