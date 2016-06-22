@@ -39,9 +39,8 @@ if len(training_features.columns.values) > 0:
     scaler = StandardScaler()
     scaler.fit(training_features.values.astype(np.float64))
     scaled_features = scaler.transform(result1.drop('class', axis=1).values.astype(np.float64))
-
-    for col_num, column in enumerate(result1.drop('class', axis=1).columns.values):
-        result1.loc[:, column] = scaled_features[:, col_num]
+    result1 = pd.DataFrame(data=scaled_features)
+    result1['class'] = tpot_data['class'].values
 
 
 # Perform classification with a decision tree classifier

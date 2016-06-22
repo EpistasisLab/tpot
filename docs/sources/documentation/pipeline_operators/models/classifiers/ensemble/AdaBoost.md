@@ -27,7 +27,7 @@ Example Exported Code
 import numpy as np
 import pandas as pd
 from sklearn.cross_validation import train_test_split
-from sklearn.ensumble import AdaBoostClassifier
+from sklearn.ensemble import AdaBoostClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')

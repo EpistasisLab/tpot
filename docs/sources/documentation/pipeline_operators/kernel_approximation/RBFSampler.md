@@ -29,6 +29,7 @@ import pandas as pd
 
 from sklearn.cross_validation import train_test_split
 from sklearn.kernel_approximation import RBFSampler
+from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
