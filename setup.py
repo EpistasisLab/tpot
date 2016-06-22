@@ -45,4 +45,5 @@ This project is hosted at https://github.com/rhiever/tpot
         'Topic :: Scientific/Engineering :: Artificial Intelligence'
     ],
     keywords=['pipeline optimization', 'hyperparameter optimization', 'data science', 'machine learning', 'genetic programming', 'evolutionary computation'],
+    extra_require = {'xgboost': ['xgboost']},
 )
