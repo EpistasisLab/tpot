@@ -105,6 +105,7 @@ def pareto_eq(a, b):
     """
     return np.all(get_fitness_attr(a) == get_fitness_attr(b))
 
+from scoop import futures
 
 class DeapSetup(object):
     base_models = [
@@ -118,7 +119,7 @@ class DeapSetup(object):
         knnc,
         variance_threshold, select_kbest, select_percentile, rfe,
         standard_scaler, binarizer, max_abs_scaler, min_max_scaler,
-            polynomial_features,
+            # polynomial_features,
             robust_scaler,
 
     ]
@@ -140,9 +141,9 @@ class DeapSetup(object):
 
     pset.addTerminal([], Series, name='series')
 
-    for val in range(0, 101):
+    for val in [2,3,5,7,]:
         pset.addTerminal(val, int)
-    for val in [100.0, 10.0, 1.0, 0.1, 0.01, 0.001, 0.0001]:
+    for val in [10.0, 1.0, 0.1]:
         pset.addTerminal(val, float)
 
     pset.renameArguments(ARG0='df')
@@ -161,6 +162,7 @@ class DeapSetup(object):
     toolbox.register('compile', gp.compile, pset=pset)
     toolbox.register('mate', gp.cxOnePoint)
     toolbox.register('expr_mut', gp.genFull, min_=0, max_=3)
+    # toolbox.register('map', futures.map)
 
     stats = tools.Statistics(get_fitness_attr)
     stats.register('Minimum score', np.min)
@@ -257,9 +259,9 @@ class TPOT(ClassifierMixin, BaseEstimator, DeapSetup):
             [0]*len(X),
             index = X.index,
         )
-        
+
         self.set_params(**kwargs)
-        self.data_source = prepare_dataframe(X, self.class_column)
+        self.data_source = X
 
         pop = self.toolbox.population(
             n=self.population
