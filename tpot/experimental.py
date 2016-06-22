@@ -67,16 +67,18 @@ class Tree(PrimitiveTree):
 class tpot_experimental(BaseEstimator):
     def __init__(
         self, crossover_rate=.1, expr=genHalfAndHalf, generation=10,
-        max_=3, min_=0, models=[], mutation_rate=.9, population=50,
-        select=selNSGA2,
+        mate=cxOnePoint, max_=3, min_=0, models=[], mutate=genFull,
+        mutation_rate=.9, population=50, select=selNSGA2,
     ):
         self.crossover_rate = crossover_rate
         self.errors_ = [0]*2
         self.expr = expr
         self.generation = generation
+        self.mate = mate
         self.max_ = max_
         self.min_ = min_
         self.models = models
+        self.mutate = mutate
         self.mutation_rate = mutation_rate
         self.population = population
         self.select = select
@@ -105,28 +107,27 @@ class tpot_experimental(BaseEstimator):
 
     def fit(self, df, **kwargs):
         self.set_params(**kwargs)
-        pset = self.pset = primitives(self.models)
+        pset = self.pset = self.primitive_set(self.models)
 
         creator.create('FitnessMulti', Fitness, weights=(-1.0, 1.0))
-
         creator.create(
             'Individual', Tree, pset=pset, fitness=creator.FitnessMulti,
         )
 
         toolbox = self.toolbox_ = Toolbox()
         toolbox.register(
+            'evaluate', self.evaluate, df=df,
+        )
+        toolbox.register(
             'expr', self.expr, pset=pset, min_=self.min_, max_=self.max_
+        )
+        toolbox.register(
+            'expr_mut', self.mutate, min_=self.min_, max_=self.max_
         )
         toolbox.register(
             'individual', initIterate, creator.Individual, toolbox.expr
         )
-        toolbox.register('population', initRepeat, list, toolbox.individual)
-
-        toolbox.register(
-            'evaluate', self.evaluate, df=df,
-        )
-        toolbox.register('expr_mut', genFull, min_=self.min_, max_=self.max_)
-        toolbox.register('mate', cxOnePoint)
+        toolbox.register('mate', self.mate)
         toolbox.register(
             'mutate',
             lambda individual: pipe(
@@ -136,6 +137,9 @@ class tpot_experimental(BaseEstimator):
                     partial(mutShrink)
                 ][choice(range(3))],
             )
+        )
+        toolbox.register(
+            'population', initRepeat, list, toolbox.individual,
         )
         toolbox.register('select', self.select)
 
@@ -169,26 +173,26 @@ class tpot_experimental(BaseEstimator):
             verbose=True,
         )
 
-
-def primitives(models):
-    pset = PrimitiveSetTyped('main', [], ClassifierMixin)
-    for model in models:
-        if isinstance(
-            model, (ClassifierMixin, TransformerMixin)
-        ):
-            pset.addTerminal(
-                model,
-                ClassifierMixin if isinstance(
-                    model, ClassifierMixin
-                ) else TransformerMixin,
+    @staticmethod
+    def primitive_set(models):
+        pset = PrimitiveSetTyped('main', [], ClassifierMixin)
+        for model in models:
+            if isinstance(
+                model, (ClassifierMixin, TransformerMixin)
+            ):
+                pset.addTerminal(
+                    model,
+                    ClassifierMixin if isinstance(
+                        model, ClassifierMixin
+                    ) else TransformerMixin,
+                )
+        for junction in [make_pipeline, make_union]:
+            pset.addPrimitive(
+                junction, [TransformerMixin]*2, TransformerMixin
             )
-    for junction in [make_pipeline, make_union]:
         pset.addPrimitive(
-            junction, [TransformerMixin]*2, TransformerMixin
+            make_pipeline,
+            [TransformerMixin, ClassifierMixin],
+            ClassifierMixin, name='classify'
         )
-    pset.addPrimitive(
-        make_pipeline,
-        [TransformerMixin, ClassifierMixin],
-        ClassifierMixin, name='classify'
-    )
-    return pset
+        return pset
