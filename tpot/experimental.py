@@ -11,7 +11,7 @@ from deap.base import (
     Fitness, Toolbox,
 )
 from deap.gp import (
-    cxOnePoint, genFull, genHalfAndHalf, graph,
+    cxOnePoint, , genHalfAndHalf, graph,
     mutInsert, mutShrink, mutUniform,
     Primitive, PrimitiveSetTyped, PrimitiveTree,
 )
@@ -69,12 +69,14 @@ class Tree(PrimitiveTree):
 
 class experimental(BaseEstimator):
     def __init__(
-        self, crossover_rate=.1, expr=genHalfAndHalf, generation=10,
-        mate=cxOnePoint, max_=3, min_=0, models=[], mutate=genFull,
-        mutation_rate=.9, population=50, select=selNSGA2,
+        self, crossover_rate=.1, exports=ClassifierMixin, expr=genHalfAndHalf,
+        generation=10, mate=cxOnePoint, max_=3, min_=0, models=[],
+        mutate=genFull, mutation_rate=.9, population=50, select=selNSGA2,
     ):
         self.crossover_rate = crossover_rate
         self.errors_ = [0]*2
+        # Default to classifiermixin
+        self.exports = exports
         self.expr = expr
         self.generation = generation
         self.mate = mate
@@ -138,24 +140,24 @@ class experimental(BaseEstimator):
         )
 
     @staticmethod
-    def primitive_set(models):
+    def primitive_set(self, models):
         """Create a `deap` primitive set.
 
         A list of models create terminals.  Primitives accept `sklearn` types,
         either Transformers or Classifiers.
         """
         # No inputs are required to make a classifier.  Model trees are created.
-        pset = PrimitiveSetTyped('main', [], ClassifierMixin)
+        pset = PrimitiveSetTyped('main', [], self.exports)
 
         # Add a terminal for each model.  This can include grid search methods.
         for model in models:
             if isinstance(
-                model, (ClassifierMixin, TransformerMixin)
+                model, (self.exports, TransformerMixin)
             ):
                 pset.addTerminal(
                     model,
-                    ClassifierMixin if isinstance(
-                        model, ClassifierMixin
+                    self.exports if isinstance(
+                        model, self.exports
                     ) else TransformerMixin,
                 )
 
@@ -166,8 +168,8 @@ class experimental(BaseEstimator):
             )
         pset.addPrimitive(
             make_pipeline,
-            [TransformerMixin, ClassifierMixin],
-            ClassifierMixin, name='classify'
+            [TransformerMixin, self.exports],
+            self.exports, name='predict',
         )
         return pset
 
