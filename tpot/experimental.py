@@ -84,26 +84,32 @@ class experimental(BaseEstimator):
         self.select = select
 
     def evaluate(self, individual, df):
-        """"""
+        """Fit and score a classifier model or pipeline.  `df` is a tuple with
+        (features, classes).
+        """
         model = individual.model
 
-        # Fit the model and catch and fitting errors
+        # Fit the model
         try:
             model.fit(first(df), second(df))
         except:
+            # Catch the fitting errors
             self.errors_[0] += 1
             return (len(individual), 0.)
 
-        # Predict the model and catch and scoring errors.
+        # Score the fit model
         try:
             score = model.score(first(df), second(df))
             return (len(individual), score)
         except:
-            # score error
+            # Catch the scoring errors
             self.errors_[1] += 1
             return (len(individual), 0.)
 
     def fit(self, X, y, **kwargs):
+        """Apply an evolutionary algorithm to many models.
+        `X` are features, `y` are classes/labels.
+        """
         self.set_params(**kwargs)
 
         toolbox = self.toolbox_()
@@ -130,7 +136,15 @@ class experimental(BaseEstimator):
 
     @staticmethod
     def primitive_set(models):
+        """Create a `deap` primitive set.
+
+        A list of models create terminals.  Primitives accept `sklearn` types,
+        either Transformers or Classifiers.
+        """
+        # No inputs are required to make a classifier.  Model trees are created.
         pset = PrimitiveSetTyped('main', [], ClassifierMixin)
+
+        # Add a terminal for each model.  This can include grid search methods.
         for model in models:
             if isinstance(
                 model, (ClassifierMixin, TransformerMixin)
@@ -141,6 +155,8 @@ class experimental(BaseEstimator):
                         model, ClassifierMixin
                     ) else TransformerMixin,
                 )
+
+        # A junction combines two classifiers in a Transformer or Classifier.
         for junction in [make_pipeline, make_union]:
             pset.addPrimitive(
                 junction, [TransformerMixin]*2, TransformerMixin
@@ -153,6 +169,9 @@ class experimental(BaseEstimator):
         return pset
 
     def toolbox_(self):
+        """Set up the `deap` functions for the evolutionary algorithm.
+        Initialize the pset.
+        """
         pset = self.pset = self.primitive_set(self.models)
         creator.create('FitnessMulti', Fitness, weights=(-1.0, 1.0))
         creator.create(
