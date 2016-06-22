@@ -51,14 +51,17 @@ class Tree(PrimitiveTree):
             list, np.where, first, reversed,
         ):
             # first element is a function
-            # second element is a param.
-            label[junction] = label[junction](
-                *pipe(
-                    edge,
-                    filter(compose(lambda v: junction == v, first)),
-                    map(second), map(label.get), list
-                )
+            args = pipe(
+                edge,
+                filter(compose(lambda v: junction == v, first)),
+                map(second), map(label.get), list
             )
+            if first(args) == second(args):
+                label[junction] = first(args)
+            else:
+                label[junction] = label[junction](
+                    *args
+                )
 
         # `0` is the model_id for the main model.
         return label.get(model_id)
