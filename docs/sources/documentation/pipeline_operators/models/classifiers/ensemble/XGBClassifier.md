@@ -13,12 +13,12 @@ Parameters
         Input DataFrame for fitting the XGBoost classifier
     learning_rate: float
         Shrinks the contribution of each tree by learning_rate
-    max_depth: int
-        Maximum depth of the individual estimators; the maximum depth limits the number of nodes in the tree
     subsample: float
         Maximum number of features to use (proportion of total features)
-    min_child_weight: float
+    min_child_weight: int
         The minimum weighted fraction of the input samples required to be at a leaf node.
+    max_depth: int
+        Maximum depth of the individual estimators; the maximum depth limits the number of nodes in the tree
 
 Returns
 -------
