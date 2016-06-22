@@ -64,7 +64,7 @@ class Tree(PrimitiveTree):
         return label.get(model_id)
 
 
-class tpot_experimental(BaseEstimator):
+class experimental(BaseEstimator):
     def __init__(
         self, crossover_rate=.1, expr=genHalfAndHalf, generation=10,
         mate=cxOnePoint, max_=3, min_=0, models=[], mutate=genFull,
@@ -89,78 +89,33 @@ class tpot_experimental(BaseEstimator):
 
         # Fit the model and catch and fitting errors
         try:
-            model.fit(df.ix[True].values, df.ix[True].index)
+            model.fit(first(df), second(df))
         except:
             self.errors_[0] += 1
             return (len(individual), 0.)
 
         # Predict the model and catch and scoring errors.
         try:
-            score = model.score(
-                df.values, df.index.get_level_values(1)
-            )
+            score = model.score(first(df), second(df))
             return (len(individual), score)
         except:
             # score error
             self.errors_[1] += 1
             return (len(individual), 0.)
 
-    def fit(self, df, **kwargs):
+    def fit(self, X, y, **kwargs):
         self.set_params(**kwargs)
-        pset = self.pset = self.primitive_set(self.models)
 
-        creator.create('FitnessMulti', Fitness, weights=(-1.0, 1.0))
-        creator.create(
-            'Individual', Tree, pset=pset, fitness=creator.FitnessMulti,
-        )
-
-        toolbox = self.toolbox_ = Toolbox()
+        toolbox = self.toolbox_()
         toolbox.register(
-            'evaluate', self.evaluate, df=df,
+            'evaluate', self.evaluate, df=[X, y],
         )
-        toolbox.register(
-            'expr', self.expr, pset=pset, min_=self.min_, max_=self.max_
-        )
-        toolbox.register(
-            'expr_mut', self.mutate, min_=self.min_, max_=self.max_
-        )
-        toolbox.register(
-            'individual', initIterate, creator.Individual, toolbox.expr
-        )
-        toolbox.register('mate', self.mate)
-        toolbox.register(
-            'mutate',
-            lambda individual: pipe(
-                individual, [
-                    partial(mutUniform, expr=toolbox.expr_mut, pset=pset),
-                    partial(mutInsert, pset=pset),
-                    partial(mutShrink)
-                ][choice(range(3))],
-            )
-        )
-        toolbox.register(
-            'population', initRepeat, list, toolbox.individual,
-        )
-        toolbox.register('select', self.select)
-
-        halloffame = self.halloffame_ = ParetoFront()
-
-        stats = self.stats_ = Statistics(
-            compose(second, lambda x: x.fitness.values)
-        )
-        stats.register('Minimum score', np.min)
-        stats.register('Average score', np.mean)
-        stats.register('Maximum score', np.max)
-
         pop = toolbox.population(
             n=self.population
         )
+        halloffame = self.halloffame_ = ParetoFront()
 
-        history = self.history_ = History()
-        toolbox.decorate("mate", history.decorator)
-        toolbox.decorate("mutate", history.decorator)
-
-        history.update(pop)
+        self.history.update(pop)
 
         self.result_ = eaSimple(
             cxpb=self.crossover_rate,
@@ -168,7 +123,7 @@ class tpot_experimental(BaseEstimator):
             mutpb=self.mutation_rate,
             ngen=self.generation,
             population=pop,
-            stats=stats,
+            stats=self.stats_,
             toolbox=toolbox,
             verbose=True,
         )
@@ -196,3 +151,49 @@ class tpot_experimental(BaseEstimator):
             ClassifierMixin, name='classify'
         )
         return pset
+
+    def toolbox_(self):
+        pset = self.pset = self.primitive_set(self.models)
+        creator.create('FitnessMulti', Fitness, weights=(-1.0, 1.0))
+        creator.create(
+            'Individual', Tree, pset=pset, fitness=creator.FitnessMulti,
+        )
+
+        toolbox = self.toolbox = Toolbox()
+        toolbox.register(
+            'expr_mut', self.mutate, min_=self.min_, max_=self.max_
+        )
+        toolbox.register(
+            'expr', self.expr, pset=pset, min_=self.min_, max_=self.max_
+        )
+        toolbox.register(
+            'individual', initIterate, creator.Individual, toolbox.expr,
+        )
+        toolbox.register('mate', self.mate)
+        toolbox.register(
+            'mutate',
+            lambda individual: pipe(
+                individual, [
+                    partial(mutUniform, expr=toolbox.expr_mut, pset=pset),
+                    partial(mutInsert, pset=pset),
+                    partial(mutShrink)
+                ][choice(range(3))],
+            )
+        )
+        toolbox.register(
+            'population', initRepeat, list, toolbox.individual,
+        )
+        toolbox.register('select', self.select)
+
+        history = self.history = History()
+        toolbox.decorate("mate", history.decorator)
+        toolbox.decorate("mutate", history.decorator)
+
+        stats = self.stats_ = Statistics(
+            compose(second, lambda x: x.fitness.values)
+        )
+        stats.register('Minimum score', np.min)
+        stats.register('Average score', np.mean)
+        stats.register('Maximum score', np.max)
+
+        return toolbox
