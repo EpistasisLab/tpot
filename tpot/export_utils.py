@@ -61,7 +61,8 @@ def unroll_nested_fuction_calls(exported_pipeline):
             break
 
     # Replace 'ARG0' with 'input_df'
-    pipeline_list = [[x if x != 'ARG0' else 'input_df' for x in pipeline_list[0]]]
+    for index in range(len(pipeline_list)):
+        pipeline_list[index] = [x if x != 'ARG0' else 'input_df' for x in pipeline_list[index]]
 
     return pipeline_list
 
