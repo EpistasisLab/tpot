@@ -70,4 +70,4 @@ target/
 docs/sources/examples/.Rhistory
 
 # PyCharm
-.idea/
+.idea

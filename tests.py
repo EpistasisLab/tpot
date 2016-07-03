@@ -86,6 +86,21 @@ def test_unroll_nested():
     assert expected_list == pipeline_list
 
 
+def test_unroll_nested_2():
+    """Ensure that export utils' unroll_nested_fuction_calls outputs pipelines with nested function calls as expectd"""
+
+    tpot_obj = TPOT()
+
+    expected_list = [['result1', '_select_percentile', 'input_df', '40'], ['result2', '_extra_trees', 'result1', '32', '0.62', '0.45']]
+
+    pipeline = creator.Individual.\
+        from_string('_extra_trees(_select_percentile(input_df, 40), 32, 0.62, 0.45000000000000001)', tpot_obj._pset)
+
+    pipeline_list = unroll_nested_fuction_calls(pipeline)
+
+    assert expected_list == pipeline_list
+
+
 def test_generate_import_code():
     """Ensure export utils' generate_import_code outputs as expected"""
 
@@ -425,10 +440,10 @@ def test_combine_dfs_2():
 
 
 def test_rfe():
-        """Ensure that the TPOT RFE outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
+    """Ensure that the TPOT RFE outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._rfe(training_testing_data.ix[:, -3:], 0, 0.1), training_testing_data.ix[:, -3:])
+    assert np.array_equal(tpot_obj._rfe(training_testing_data.ix[:, -3:], 0, 0.1), training_testing_data.ix[:, -3:])
 
 
 def test_rfe_2():
@@ -447,224 +462,224 @@ def test_rfe_2():
 
 
 def test_select_percentile():
-        """Ensure that the TPOT select percentile outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
+    """Ensure that the TPOT select percentile outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._select_percentile(training_testing_data.ix[:, -3:], 0), training_testing_data.ix[:, -3:])
+    assert np.array_equal(tpot_obj._select_percentile(training_testing_data.ix[:, -3:], 0), training_testing_data.ix[:, -3:])
 
 
 def test_select_percentile_2():
-        """Ensure that the TPOT select percentile outputs the same result as sklearn Select Percentile when percentile < 0"""
-        tpot_obj = TPOT()
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
-        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+    """Ensure that the TPOT select percentile outputs the same result as sklearn Select Percentile when percentile < 0"""
+    tpot_obj = TPOT()
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=UserWarning)
-            selector = SelectPercentile(f_classif, percentile=0)
-            selector.fit(training_features, training_class_vals)
-            mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        selector = SelectPercentile(f_classif, percentile=0)
+        selector.fit(training_features, training_class_vals)
+        mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._select_percentile(training_testing_data, -1), training_testing_data[mask_cols])
+    assert np.array_equal(tpot_obj._select_percentile(training_testing_data, -1), training_testing_data[mask_cols])
 
 
 def test_select_percentile_3():
-        """Ensure that the TPOT select percentile outputs the same result as sklearn select percentile when percentile > 100"""
-        tpot_obj = TPOT()
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
-        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+    """Ensure that the TPOT select percentile outputs the same result as sklearn select percentile when percentile > 100"""
+    tpot_obj = TPOT()
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=UserWarning)
-            selector = SelectPercentile(f_classif, percentile=100)
-            selector.fit(training_features, training_class_vals)
-            mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        selector = SelectPercentile(f_classif, percentile=100)
+        selector.fit(training_features, training_class_vals)
+        mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._select_percentile(training_testing_data, 120), training_testing_data[mask_cols])
+    assert np.array_equal(tpot_obj._select_percentile(training_testing_data, 120), training_testing_data[mask_cols])
 
 
 def test_select_percentile_4():
-        """Ensure that the TPOT select percentile outputs the same result as sklearn select percentile when 0 < percentile < 100"""
-        tpot_obj = TPOT()
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
-        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+    """Ensure that the TPOT select percentile outputs the same result as sklearn select percentile when 0 < percentile < 100"""
+    tpot_obj = TPOT()
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=UserWarning)
-            selector = SelectPercentile(f_classif, percentile=42)
-            selector.fit(training_features, training_class_vals)
-            mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        selector = SelectPercentile(f_classif, percentile=42)
+        selector.fit(training_features, training_class_vals)
+        mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._select_percentile(training_testing_data, 42), training_testing_data[mask_cols])
+    assert np.array_equal(tpot_obj._select_percentile(training_testing_data, 42), training_testing_data[mask_cols])
 
 
 def test_select_kbest():
-        """Ensure that the TPOT select kbest outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
+    """Ensure that the TPOT select kbest outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._select_kbest(training_testing_data.ix[:, -3:], 1), training_testing_data.ix[:, -3:])
+    assert np.array_equal(tpot_obj._select_kbest(training_testing_data.ix[:, -3:], 1), training_testing_data.ix[:, -3:])
 
 
 def test_select_kbest_2():
-        """Ensure that the TPOT select kbest outputs the same result as sklearn select kbest when k<0"""
-        tpot_obj = TPOT()
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
-        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+    """Ensure that the TPOT select kbest outputs the same result as sklearn select kbest when k<0"""
+    tpot_obj = TPOT()
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=UserWarning)
-            selector = SelectKBest(f_classif, k=1)
-            selector.fit(training_features, training_class_vals)
-            mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        selector = SelectKBest(f_classif, k=1)
+        selector.fit(training_features, training_class_vals)
+        mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._select_kbest(training_testing_data, -1), training_testing_data[mask_cols])
+    assert np.array_equal(tpot_obj._select_kbest(training_testing_data, -1), training_testing_data[mask_cols])
 
 
 def test_select_kbest_3():
-        """Ensure that the TPOT select kbest outputs the same result as sklearn select kbest when k> no. of features"""
-        tpot_obj = TPOT()
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
-        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+    """Ensure that the TPOT select kbest outputs the same result as sklearn select kbest when k> no. of features"""
+    tpot_obj = TPOT()
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=UserWarning)
-            selector = SelectKBest(f_classif, k=64)
-            selector.fit(training_features, training_class_vals)
-            mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        selector = SelectKBest(f_classif, k=64)
+        selector.fit(training_features, training_class_vals)
+        mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._select_kbest(training_testing_data, 100), training_testing_data[mask_cols])
+    assert np.array_equal(tpot_obj._select_kbest(training_testing_data, 100), training_testing_data[mask_cols])
 
 
 def test_select_kbest_4():
-        """Ensure that the TPOT select kbest outputs the same result as sklearn select kbest when 0< k< features"""
-        tpot_obj = TPOT()
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
-        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+    """Ensure that the TPOT select kbest outputs the same result as sklearn select kbest when 0< k< features"""
+    tpot_obj = TPOT()
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=UserWarning)
-            selector = SelectKBest(f_classif, k=42)
-            selector.fit(training_features, training_class_vals)
-            mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        selector = SelectKBest(f_classif, k=42)
+        selector.fit(training_features, training_class_vals)
+        mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._select_kbest(training_testing_data, 42), training_testing_data[mask_cols])
+    assert np.array_equal(tpot_obj._select_kbest(training_testing_data, 42), training_testing_data[mask_cols])
 
 
 def test_select_fwe():
-        """Ensure that the TPOT select fwe outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
+    """Ensure that the TPOT select fwe outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._select_fwe(training_testing_data.ix[:, -3:], 0.005), training_testing_data.ix[:, -3:])
+    assert np.array_equal(tpot_obj._select_fwe(training_testing_data.ix[:, -3:], 0.005), training_testing_data.ix[:, -3:])
 
 
 def test_select_fwe_2():
-        """Ensure that the TPOT select fwe outputs the same result as sklearn fwe when alpha > 0.05"""
-        tpot_obj = TPOT()
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
-        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+    """Ensure that the TPOT select fwe outputs the same result as sklearn fwe when alpha > 0.05"""
+    tpot_obj = TPOT()
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=UserWarning)
-            selector = SelectFwe(f_classif, alpha=0.05)
-            selector.fit(training_features, training_class_vals)
-            mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        selector = SelectFwe(f_classif, alpha=0.05)
+        selector.fit(training_features, training_class_vals)
+        mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._select_fwe(training_testing_data, 1), training_testing_data[mask_cols])
+    assert np.array_equal(tpot_obj._select_fwe(training_testing_data, 1), training_testing_data[mask_cols])
 
 
 def test_select_fwe_3():
-        """Ensure that the TPOT select fwe outputs the same result as sklearn fwe when alpha < 0.001"""
-        tpot_obj = TPOT()
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
-        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+    """Ensure that the TPOT select fwe outputs the same result as sklearn fwe when alpha < 0.001"""
+    tpot_obj = TPOT()
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=UserWarning)
-            selector = SelectFwe(f_classif, alpha=0.001)
-            selector.fit(training_features, training_class_vals)
-            mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        selector = SelectFwe(f_classif, alpha=0.001)
+        selector.fit(training_features, training_class_vals)
+        mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._select_fwe(training_testing_data, 0.0001), training_testing_data[mask_cols])
+    assert np.array_equal(tpot_obj._select_fwe(training_testing_data, 0.0001), training_testing_data[mask_cols])
 
 
 def test_select_fwe_4():
-        """Ensure that the TPOT select fwe outputs the same result as sklearn fwe when 0.001 < alpha < 0.05"""
-        tpot_obj = TPOT()
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
-        training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
+    """Ensure that the TPOT select fwe outputs the same result as sklearn fwe when 0.001 < alpha < 0.05"""
+    tpot_obj = TPOT()
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    training_class_vals = training_testing_data.loc[training_testing_data['group'] == 'training', 'class'].values
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=UserWarning)
-            selector = SelectFwe(f_classif, alpha=0.042)
-            selector.fit(training_features, training_class_vals)
-            mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        selector = SelectFwe(f_classif, alpha=0.042)
+        selector.fit(training_features, training_class_vals)
+        mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._select_fwe(training_testing_data, 0.042), training_testing_data[mask_cols])
+    assert np.array_equal(tpot_obj._select_fwe(training_testing_data, 0.042), training_testing_data[mask_cols])
 
 
 def test_variance_threshold():
-        tpot_obj = TPOT()
-        non_feature_columns = ['class', 'group', 'guess']
-        training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
-        selector = VarianceThreshold(threshold=0)
-        selector.fit(training_features)
-        mask = selector.get_support(True)
-        mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
+    """Ensure that the tpot variance_threshold function behaves the same as the sklearn classifier"""
+    tpot_obj = TPOT()
+    non_feature_columns = ['class', 'group', 'guess']
+    training_features = training_testing_data.loc[training_testing_data['group'] == 'training'].drop(non_feature_columns, axis=1)
+    selector = VarianceThreshold(threshold=0)
+    selector.fit(training_features)
+    mask = selector.get_support(True)
+    mask_cols = list(training_features.iloc[:, mask].columns) + non_feature_columns
 
-        assert np.array_equal(tpot_obj._variance_threshold(training_testing_data, 0), training_testing_data[mask_cols])
+    assert np.array_equal(tpot_obj._variance_threshold(training_testing_data, 0), training_testing_data[mask_cols])
 
 
 def test_standard_scaler():
-        """Ensure that the TPOT standard scaler outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
-
-        assert np.array_equal(tpot_obj._standard_scaler(training_testing_data.ix[:, -3:]), training_testing_data.ix[:, -3:])
+    """Ensure that the TPOT standard scaler outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
+    assert np.array_equal(tpot_obj._standard_scaler(training_testing_data.ix[:, -3:]), training_testing_data.ix[:, -3:])
 
 
 def test_robust_scaler():
-        """Ensure that the TPOT robust scaler outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
+    """Ensure that the TPOT robust scaler outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._robust_scaler(training_testing_data.ix[:, -3:]), training_testing_data.ix[:, -3:])
+    assert np.array_equal(tpot_obj._robust_scaler(training_testing_data.ix[:, -3:]), training_testing_data.ix[:, -3:])
 
 
 def test_polynomial_features():
-        """Ensure that the TPOT polynomial features outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
+    """Ensure that the TPOT polynomial features outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._polynomial_features(training_testing_data.ix[:, -3:]), training_testing_data.ix[:, -3:])
+    assert np.array_equal(tpot_obj._polynomial_features(training_testing_data.ix[:, -3:]), training_testing_data.ix[:, -3:])
 
 
 def test_min_max_scaler():
-        """Ensure that the TPOT min max scaler outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
+    """Ensure that the TPOT min max scaler outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._min_max_scaler(training_testing_data.ix[:, -3:]), training_testing_data.ix[:, -3:])
+    assert np.array_equal(tpot_obj._min_max_scaler(training_testing_data.ix[:, -3:]), training_testing_data.ix[:, -3:])
 
 
 def test_max_abs_scaler():
-        """Ensure that the TPOT max abs scaler outputs the input dataframe when no. of training features is 0"""
-        tpot_obj = TPOT()
+    """Ensure that the TPOT max abs scaler outputs the input dataframe when no. of training features is 0"""
+    tpot_obj = TPOT()
 
-        assert np.array_equal(tpot_obj._max_abs_scaler(training_testing_data.ix[:, -3:]), training_testing_data.ix[:, -3:])
+    assert np.array_equal(tpot_obj._max_abs_scaler(training_testing_data.ix[:, -3:]), training_testing_data.ix[:, -3:])
 
 
 def test_rbf():
