@@ -386,7 +386,7 @@ pagr{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).v
         elif operator_name == '_gradient_boosting':
             learning_rate = min(1., max(float(operator[3]), 0.0001))
             max_features = min(1., max(0., float(operator[4])))
-            min_weight = min(0.5, max(0., float(operator[6])))
+            min_weight = min(0.5, max(0., float(operator[5])))
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
@@ -633,11 +633,6 @@ else:
 
         elif operator_name == '_rbf':
             gamma = float(operator[3])
-            n_components = int(operator[4])
-
-            if n_components < 1:
-                n_components = 1
-            n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
 
             operator_text += '''
 # Use Scikit-learn's RBFSampler to transform the feature set
@@ -657,10 +652,6 @@ else:
         elif operator_name == '_fast_ica':
             tol = max(float(operator[3]), 0.0001)  # Ensure tol is not too small
 
-            if n_components < 1:
-                n_components = 1
-            n_components = 'min({}, len(training_features.columns.values))'.format(n_components)
-
             operator_text += '''
 # Use Scikit-learn's FastICA to transform the feature set
 training_features = {INPUT_DF}.loc[training_indices].drop('class', axis=1)
@@ -677,12 +668,9 @@ else:
 '''.format(INPUT_DF=operator[2], TOL=tol, OUTPUT_DF=result_name)
 
         elif operator_name == '_feat_agg':
-            n_clusters = int(operator[3])
+            n_clusters = min(1, int(operator[3]))
             affinity = int(operator[4])
             linkage = int(operator[5])
-
-            if n_clusters < 1:
-                n_clusters = 1
 
             affinity_types = ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed']
             linkage_types = ['ward', 'complete', 'average']

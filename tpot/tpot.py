@@ -1469,7 +1469,7 @@ class TPOT(object):
         if n_components < 1:
             n_components = 1
         else:
-            n_components = min(n_components, len(training_features.columns.values))
+            n_components = min(n_components, len(training_features.columns.values), len(training_features))
 
         # Pulled from sklearn.metrics.pairwise.PAIRWISE_KERNEL_FUNCTIONS
         kernel_types = ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']
