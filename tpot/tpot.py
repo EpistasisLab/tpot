@@ -12,9 +12,9 @@ any later version.
 
 The TPOT library is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-You should have received a copy of the GNU General Public License along with
-the TPOT library. If not, see http://www.gnu.org/licenses/.
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details. You should have received a copy of the GNU General Public License along
+with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
@@ -34,10 +34,10 @@ from sklearn.cross_validation import train_test_split
 from update_checker import update_check
 
 from ._version import __version__
-from .export_utils import unroll_nested_fuction_calls, generate_import_code, replace_function_calls
+from .export_utils import unroll_nested_fuction_calls, generate_import_code, replace_calls
 from .decorators import _gp_new_generation
 from .operators import *
-from .helpers import Bool
+from .helpers import Bool, Output_DF
 
 import deap
 from deap import algorithms, base, creator, tools, gp
@@ -120,7 +120,7 @@ class TPOT(object):
             self.scoring_function = scoring_function
 
     def _setup_pset(self):
-        self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
+        self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], Output_DF)
 
         # Rename pipeline input to "input_df"
         self._pset.renameArguments(ARG0='input_df')
@@ -130,7 +130,7 @@ class TPOT(object):
             self._pset.addPrimitive(op, *op.parameter_types())
 
         # Add the combine_dfs operator
-        self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        # self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
 
         # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
@@ -426,7 +426,7 @@ class TPOT(object):
         pipeline_text = generate_import_code(pipeline_list)
 
         # Replace the function calls with their corresponding Python code. Check export_utils.py for details.
-        pipeline_text += replace_function_calls(pipeline_list)
+        pipeline_text += replace_calls(pipeline_list)
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
@@ -493,6 +493,8 @@ class TPOT(object):
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
+            import traceback
+            traceback.print_exc()
             return 5000., 0.
         finally:
             if not self.pbar.disable:
@@ -602,7 +604,7 @@ class TPOT(object):
             """Expression generation stops when the depth is equal to height
             or when it is randomly determined that a a node should be a terminal.
             """
-            return type_ != pd.DataFrame or depth == height
+            return type_ not in [pd.DataFrame, Output_DF] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
 

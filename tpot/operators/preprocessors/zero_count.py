@@ -45,7 +45,7 @@ class ZeroCount(BaseEstimator):
 
 
 class TPOTZeroCount(Preprocessor):
-    """Uses scikit-learn's ======== to transform the feature set
+    """Uses TPOT's ZeroCount to transform the feature set
 
     Parameters
     ----------

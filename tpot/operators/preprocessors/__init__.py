@@ -35,5 +35,5 @@ from .polynomial_features import *
 # from .select_kbest import *
 # from .select_fwe import *
 # from .variance_threshold import *
-# from .standard_scaler import *
+# from .standard_scalar import *
 # from .zero_count import *

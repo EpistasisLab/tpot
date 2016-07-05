@@ -28,6 +28,8 @@ from tpot.operators import Operator
 class Preprocessor(Operator):
     """Parent class for Feature Preprocessors in TPOT"""
 
+    root = False  # Whether this operator type can be the root of the tree
+
     def _call(self, input_df, *args, **kwargs):
         # Calculate arguments to be passed directly to sklearn
         operator_args = self.preprocess_args(*args, **kwargs)
@@ -69,11 +71,8 @@ class Preprocessor(Operator):
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', category=UserWarning)
 
-            op.fit(self.training_features.values.astype(np.float64))
+            op.fit(self.training_features.astype(np.float64))
             transformed_features = op.transform(input_df.drop(self.non_feature_columns, axis=1).
                 values.astype(np.float64))
 
         return pd.DataFrame(data=transformed_features)
-
-    def export(self, *args, **kwargs):
-        pass

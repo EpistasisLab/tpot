@@ -88,17 +88,16 @@ def generate_import_code(pipeline_list):
     pipeline_text = 'import numpy as np\n'
     pipeline_text += 'import pandas as pd\n\n'
 
-    # Always start with train_test_split as an import requirement
-    pipeline_imports = {'sklearn.cross_validation': ['train_test_split']}
+    # Always start with these imports
+    pipeline_imports = {
+        'sklearn.cross_validation': ['train_test_split'],
+        'sklearn.pipeline':         ['Pipeline']
+    }
 
     # Build dict of import requirments from list of operators
     import_relations = {}
     for op in Operator.inheritors():
         import_relations[op.__name__] = op.import_hash
-
-    import_relations = {
-        '_select_kbest':        {'sklearn.feature_selection': ['SelectKBest', 'f_classif']},
-    }
 
     # Build import dict from operators used
     for op in operators_used:
@@ -125,11 +124,26 @@ def generate_import_code(pipeline_list):
     pipeline_text += '''
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
 '''
 
     return pipeline_text
 
 
-def replace_function_calls(pipeline_list):
-    pass
+def replace_calls(pipeline_list):
+    steps = []
+    for _out, name, _in, *args in pipeline_list:
+        args = [eval(x) for x in args]  # TODO: Don't use eval()
+        steps.append("(\"{}\", {})".format(name, Operator.get_by_name(name).export(*args)))
+
+    pipeline_text = """
+exported_pipeline = Pipeline([
+    {STEPS}
+])
+
+exported_pipeline.fit(tpot_data.loc[training_indices].drop('class', axis=1).values,
+                      tpot_data.loc[training_indices, 'class'].values)
+results = exported_pipeline.predict(tpot_data.loc[testing_indices].drop('class', axis=1))
+""".format(STEPS=",\n    ".join(steps))
+
+    return pipeline_text

@@ -27,8 +27,6 @@ class TPOTFeatureAgglomeration(Preprocessor):
 
     Parameters
     ----------
-    n_clusters: int
-        The number of clusters to find.
     affinity: int
         Metric used to compute the linkage. Can be "euclidean", "l1", "l2",
         "manhattan", "cosine", or "precomputed". If linkage is "ward", only
@@ -46,10 +44,7 @@ class TPOTFeatureAgglomeration(Preprocessor):
     def __init__(self):
         pass
 
-    def preprocess_args(self, n_clusters: int, affinity: int, linkage: int):
-        # Pulled from sklearn.metrics.pairwise.PAIRWISE_KERNEL_FUNCTIONS
-        n_clusters = max(1, n_clusters)
-
+    def preprocess_args(self, affinity: int, linkage: int):
         linkage_types = ['ward', 'complete', 'average']
         linkage_name = linkage_types[linkage % len(linkage_types)]
 
@@ -58,6 +53,5 @@ class TPOTFeatureAgglomeration(Preprocessor):
 
         return {
             'affinity': affinity_name,
-            'linkage': linkage_name,
-            'n_clusters': n_clusters
+            'linkage': linkage_name
         }

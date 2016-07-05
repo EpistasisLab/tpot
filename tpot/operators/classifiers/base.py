@@ -26,6 +26,8 @@ from tpot.operators import Operator
 class Classifier(Operator):
     """Parent class for classifiers in TPOT"""
 
+    root = True  # Whether this operator type can be the root of the tree
+
     def _call(self, input_df, *args, **kwargs):
         # Calculate arguments to be passed directly to sklearn
         operator_args = self.preprocess_args(*args, **kwargs)
@@ -70,11 +72,9 @@ class Classifier(Operator):
         sf_hash = '-'.join(sorted(column_names)) + \
                   str(self.sklearn_class.__class__) + \
                   '-'.join(operator_args)
-        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
+        sf_identifier = 'SyntheticFeature-{}'.\
+            format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
 
         input_df.loc[:, sf_identifier] = input_df['guess'].values
 
         return input_df
-
-    def export(self, *args, **kwargs):
-        pass

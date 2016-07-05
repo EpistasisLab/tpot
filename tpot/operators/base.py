@@ -20,6 +20,9 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 import pandas as pd
 from inspect import signature, Signature
+from types import FunctionType
+
+from ..helpers import Output_DF
 
 
 class Operator(object):
@@ -46,6 +49,24 @@ class Operator(object):
         # Call child class' call function
         return self._call(input_df, *args, **kwargs)
 
+    def export(self, *args, **kwargs):
+        """Represent the operator as a string so that it can be exported to a
+        file.
+        """
+        operator_args = self.preprocess_args(*args, **kwargs)
+
+        arguments = []
+        for key in operator_args.keys():
+            val = operator_args[key]
+            if isinstance(val, str):
+                val = '\"{}\"'.format(val)
+            elif isinstance(val, FunctionType):
+                val = val.__name__
+
+            arguments.append("{}={}".format(key, val))
+
+        return "{}({})".format(self.sklearn_class.__name__, ", ".join(arguments))
+
     @property
     def __name__(self):
         """Necessary for deap so that it can generate a string identifier for
@@ -57,11 +78,11 @@ class Operator(object):
         """Apply defined default parameters to the sklearn class where applicable
         while also integrating specified arguments
         """
-        operator_argument_names = set(signature(self.sklearn_class).parameters.keys())
+        sklearn_argument_names = set(signature(self.sklearn_class).parameters.keys())
         default_argument_names = set(self.default_arguments.keys())
 
-        # Find which arguments are defined in both the defaults and the operator
-        applicable_defaults = operator_argument_names.intersection(default_argument_names)
+        # Find which arguments are defined in both the defaults and the sklearn class
+        applicable_defaults = sklearn_argument_names.intersection(default_argument_names)
 
         for new_arg in applicable_defaults:
             kwargs[new_arg] = self.default_arguments[new_arg]
@@ -89,7 +110,9 @@ class Operator(object):
             else:
                 arg_types.append(annotation)
 
-        return (arg_types, pd.DataFrame)  # Return type is always a DataFrame
+        return_type = Output_DF if self.root else pd.DataFrame
+
+        return (arg_types, return_type)
 
     @classmethod
     def inheritors(cls):
@@ -103,3 +126,12 @@ class Operator(object):
                 operators.add(grandchild())  # Instantiate class and append
 
         return operators
+
+    @classmethod
+    def get_by_name(cls, name):
+        """Returns operator class instance by name
+        """
+        for child in cls.__subclasses__():
+            for grandchild in child.__subclasses__():
+                if grandchild.sklearn_class.__name__ == name:
+                    return grandchild()
