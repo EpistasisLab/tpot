@@ -399,19 +399,19 @@ gbc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
             
             learning_rate = min(1., max(float(operator[3]), 0.0001))
             subsample = min(1., max(0.1, float(operator[4])))            
-            min_child_weight = min(100, max(0, int(operator[5])))
-            max_depth = min(100, max(1, int(operator[6])))            
+            min_child_weight = max(1, int(operator[5]))
+            n_estimators = min(5000, max(1, int(operator[6])))
 
             if result_name != operator[2]:
                 operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
 
             operator_text += """
 # Perform classification with a extreme gradient boosting classifier
-xgbc{OPERATOR_NUM} = XGBClassifier(learning_rate={LEARNING_RATE}, subsample={SUBSAMPLE}, min_child_weight={MIN_WEIGHT}, max_depth={MAX_DEPTH}, n_estimators=500)
+xgbc{OPERATOR_NUM} = XGBClassifier(learning_rate={LEARNING_RATE}, subsample={SUBSAMPLE}, min_child_weight={MIN_WEIGHT}, max_depth=100, n_estimators={N_ESTIMATORS})
 xgbc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
 
 {OUTPUT_DF}['xgbc{OPERATOR_NUM}-classification'] = xgbc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
-""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, LEARNING_RATE=learning_rate, SUBSAMPLE=subsample, MIN_WEIGHT=min_child_weight, MAX_DEPTH=max_depth)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, LEARNING_RATE=learning_rate, SUBSAMPLE=subsample, MIN_WEIGHT=min_child_weight, N_ESTIMATORS=n_estimators)
 
         elif operator_name == '_combine_dfs':
             operator_text += '\n# Combine two DataFrames'

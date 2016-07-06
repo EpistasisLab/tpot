@@ -184,7 +184,9 @@ class TPOT(object):
 
         # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
-                np.arange(60, 110, 10)))
+                np.arange(60, 110, 10),
+                np.arange(120, 1000, 100),
+                np.arange(1100, 2600, 500),))
 
         for val in int_terminals:
             self._pset.addTerminal(val, int)
@@ -792,7 +794,7 @@ class TPOT(object):
             learning_rate=learning_rate, n_estimators=500,
             max_features=max_features, random_state=42, min_weight_fraction_leaf=min_weight)
 
-    def _xg_boosting(self, input_df, learning_rate, subsample, min_child_weight, max_depth):
+    def _xg_boosting(self, input_df, learning_rate, subsample, min_child_weight, n_estimators):
         """Fits the DMLC XGBoost classifier
 
         Parameters
@@ -803,8 +805,10 @@ class TPOT(object):
             Shrinks the contribution of each tree by learning_rate
         subsample: float
             Maximum number of features to use (proportion of total features)
-        min_child_weight: float
+        min_child_weight: int
             The minimum weighted fraction of the input samples required to be at a leaf node.
+        n_estimators: int
+            The number of estimators (boosting rounds) to perform
 
         Returns
         -------
@@ -815,13 +819,13 @@ class TPOT(object):
         """
         learning_rate = min(1., max(learning_rate, 0.0001))        
         subsample = min(1., max(0.1, subsample))    
-        max_depth = min(100, max(1, max_depth))    
+        n_estimators = min(5000, max(1, n_estimators))
         # xgboost docs say min_child_weight can range from o to inifity
-        min_child_weight = max(0, min_child_weight)
+        min_child_weight = max(1, min_child_weight)
         
         return self._train_model_and_predict(input_df, XGBClassifier,
-            learning_rate=learning_rate, n_estimators=500,
-            subsample=subsample, min_child_weight=min_child_weight, seed=42, max_depth=max_depth)
+            learning_rate=learning_rate, n_estimators=n_estimators,
+            subsample=subsample, min_child_weight=min_child_weight, seed=42, max_depth=100)
 
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters

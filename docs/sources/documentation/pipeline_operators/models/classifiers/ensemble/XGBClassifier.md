@@ -17,8 +17,8 @@ Parameters
         Maximum number of features to use (proportion of total features)
     min_child_weight: int
         The minimum weighted fraction of the input samples required to be at a leaf node.
-    max_depth: int
-        Maximum depth of the individual estimators; the maximum depth limits the number of nodes in the tree
+    n_estimators: int
+        The number of estimators (boosting rounds) to perform
 
 Returns
 -------
