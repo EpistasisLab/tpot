@@ -967,10 +967,10 @@ def test_xgboost():
 
      if has_xgb:
         tpot_obj = TPOT()
-        result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=5)
+        result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=3, n_estimators=50)
         result = result[result['group'] == 'testing']
 
-        xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=5)
+        xgb = XGBClassifier(max_depth=100, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=3, n_estimators=50)
         xgb.fit(training_features, training_classes)
 
         assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
@@ -981,10 +981,10 @@ def test_xgboost_2():
 
      if has_xgb:
          tpot_obj = TPOT()
-         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=3, subsample=0.8, min_child_weight=3, max_depth=5)
+         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=3, subsample=0.8, min_child_weight=3, n_estimators=50)
          result = result[result['group'] == 'testing']
 
-         xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=1, subsample=0.8, min_child_weight=3, max_depth=5)
+         xgb = XGBClassifier(max_depth=100, seed=42, learning_rate=1, subsample=0.8, min_child_weight=3, n_estimators=50)
          xgb.fit(training_features, training_classes)
 
          assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
@@ -994,23 +994,23 @@ def test_xgboost_3():
 
      if has_xgb:
          tpot_obj = TPOT()
-         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0, min_child_weight=3, max_depth=5)
+         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0, min_child_weight=3, n_estimators=50)
          result = result[result['group'] == 'testing']
 
-         xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.1, min_child_weight=3, max_depth=5)
+         xgb = XGBClassifier(max_depth=100, seed=42, learning_rate=0.0001, subsample=0.1, min_child_weight=3, n_estimators=50)
          xgb.fit(training_features, training_classes)
 
          assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
 
 def test_xgboost_4():
-     """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method when max_depth < 0"""
+     """Ensure that the TPOT xgboost method outputs the same as the xgboost classfier method when n_estimators < 0"""
 
      if has_xgb:
          tpot_obj = TPOT()
-         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=0.1)
+         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=3, n_estimators=0.5)
          result = result[result['group'] == 'testing']
 
-         xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=3, max_depth=1)
+         xgb = XGBClassifier(max_depth=100, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=3, n_estimators=1)
          xgb.fit(training_features, training_classes)
 
          assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
@@ -1020,10 +1020,10 @@ def test_xgboost_5():
 
      if has_xgb:
          tpot_obj = TPOT()
-         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=-3 , max_depth=5)
+         result = tpot_obj._xg_boosting(training_testing_data, learning_rate=0.0001, subsample=0.8, min_child_weight=-3, n_estimators=50)
          result = result[result['group'] == 'testing']
 
-         xgb = XGBClassifier(n_estimators=500, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=0, max_depth=5)
+         xgb = XGBClassifier(max_depth=100, seed=42, learning_rate=0.0001, subsample=0.8, min_child_weight=1, n_estimators=50)
          xgb.fit(training_features, training_classes)
 
          assert np.array_equal(result['guess'].values, xgb.predict(testing_features))
