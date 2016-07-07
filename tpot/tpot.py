@@ -161,7 +161,7 @@ class TPOT(object):
         self._toolbox.register('compile', gp.compile, pset=self._pset)
         self._toolbox.register('select', self._combined_selection_operator)
         self._toolbox.register('mate', gp.cxOnePoint)
-        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=0, max_=3)
+        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=3)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes):
@@ -493,8 +493,8 @@ class TPOT(object):
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
-            import traceback
-            traceback.print_exc()
+            # import traceback
+            # traceback.print_exc()
             return 5000., 0.
         finally:
             if not self.pbar.disable:

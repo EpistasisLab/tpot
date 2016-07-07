@@ -18,30 +18,9 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.feature_selection import RFE
-from sklearn.svm import SVC
-
-
-class TPOTRFE(Preprocessor):
-    """Uses scikit-learn's RFE to transform the feature set
-
-    Parameters
-    ----------
-    step: float
-        The percentage of features to drop each iteration
-
-    """
-    import_hash = {'sklearn.feature_selection': ['RFE'], 'sklearn.svm': ['SVC']}
-    sklearn_class = RFE
-
-    def __init__(self):
-        pass
-
-    def preprocess_args(self, step: float):
-        step = max(min(0.99, step), 0.1)
-
-        return {
-            'step': step,
-            'estimator': SVC(kernel='linear')
-        }
+from .base import *
+from .rfe import *
+from .select_fwe import *
+from .select_kbest import *
+from .select_percentile import *
+from .variance_threshold import *

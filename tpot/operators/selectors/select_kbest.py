@@ -18,30 +18,29 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.feature_selection import SelectPercentile, f_classif
+from .base import Selector
+from sklearn.feature_selection import SelectKBest, f_classif
 
 
-class TPOTSelectPercentile(Preprocessor):
-    """Uses scikit-learn's SelectPercentile to transform the feature set
+class TPOTSelectKBest(Selector):
+    """Uses scikit-learn's SelectKBest to transform the feature set
 
     Parameters
     ----------
-    percentile: int
-        The features that belong in the top percentile to keep from the original
-        set of features in the training data
+    k: int
+        The top k features to keep from the original set of features in the training data
 
     """
-    import_hash = {'sklearn.feature_selection': ['SelectPercentile', 'f_classif']}
-    sklearn_class = SelectPercentile
+    import_hash = {'sklearn.feature_selection': ['SelectKBest', 'f_classif']}
+    sklearn_class = SelectKBest
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, percentile: int):
-        percentile = max(min(100, percentile), 0)
+    def preprocess_args(self, k: int):
+        k = max(1, min(k, len(self.training_features)))
 
         return {
             'score_func': f_classif,
-            'percentile': percentile
+            'k': k
         }

@@ -18,26 +18,30 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.feature_selection import VarianceThreshold
+from .base import Selector
+from sklearn.feature_selection import SelectPercentile, f_classif
 
 
-class TPOTVarianceThreshold(Preprocessor):
-    """Uses scikit-learn's VarianceThreshold to transform the feature set
+class TPOTSelectPercentile(Selector):
+    """Uses scikit-learn's SelectPercentile to transform the feature set
 
     Parameters
     ----------
-    threshold: float
-        The variance threshold that removes features that fall under the threshold
+    percentile: int
+        The features that belong in the top percentile to keep from the original
+        set of features in the training data
 
     """
-    import_hash = {'sklearn.feature_selection': ['VarianceThreshold']}
-    sklearn_class = VarianceThreshold
+    import_hash = {'sklearn.feature_selection': ['SelectPercentile', 'f_classif']}
+    sklearn_class = SelectPercentile
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, threshold: float):
+    def preprocess_args(self, percentile: int):
+        percentile = max(min(100, percentile), 0)
+
         return {
-            'threshold': threshold
+            'score_func': f_classif,
+            'percentile': percentile
         }

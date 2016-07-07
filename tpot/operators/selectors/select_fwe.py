@@ -18,11 +18,11 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
+from .base import Selector
 from sklearn.feature_selection import SelectFwe, f_classif
 
 
-class TPOTSelectFwe(Preprocessor):
+class TPOTSelectFwe(Selector):
     """Uses scikit-learn's SelectFwe to transform the feature set
 
     Parameters
