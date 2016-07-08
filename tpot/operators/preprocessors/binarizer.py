@@ -33,11 +33,12 @@ class TPOTBinarizer(Preprocessor):
     """
     import_hash = {'sklearn.preprocessing': ['Binarizer']}
     sklearn_class = Binarizer
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, threshold: float):
+    def preprocess_args(self, threshold):
         return {
             'threshold': threshold,
             'copy': False

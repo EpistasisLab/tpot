@@ -40,11 +40,12 @@ class TPOTFeatureAgglomeration(Preprocessor):
     """
     import_hash = {'sklearn.cluster': ['FeatureAgglomeration']}
     sklearn_class = FeatureAgglomeration
+    arg_types = (int, int)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, affinity: int, linkage: int):
+    def preprocess_args(self, affinity, linkage):
         linkage_types = ['ward', 'complete', 'average']
         linkage_name = linkage_types[linkage % len(linkage_types)]
 

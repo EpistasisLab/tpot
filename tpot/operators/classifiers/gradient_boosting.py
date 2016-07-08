@@ -37,11 +37,12 @@ class TPOTGradientBoosting(Classifier):
     """
     import_hash = {'sklearn.ensemble': ['GradientBoostingClassifier']}
     sklearn_class = GradientBoostingClassifier
+    arg_types = (float, float, float)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, learning_rate: float, max_features: float, min_weight_fraction_leaf: float):
+    def preprocess_args(self, learning_rate, max_features, min_weight_fraction_leaf):
         learning_rate = min(1., max(learning_rate, 0.0001))
         max_features = min(1., max(0., learning_rate))
         min_weight = min(0.5, max(0., min_weight_fraction_leaf))

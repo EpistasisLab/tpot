@@ -33,11 +33,12 @@ class TPOTAdaBoostClassifier(Classifier):
     """
     import_hash = {'sklearn.ensemble': ['AdaBoostClassifier']}
     sklearn_class = AdaBoostClassifier
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, learning_rate: float):
+    def preprocess_args(self, learning_rate):
         learning_rate = min(1., max(0.0001, learning_rate))
 
         return {

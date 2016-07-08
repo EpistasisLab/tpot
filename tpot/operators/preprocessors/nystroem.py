@@ -40,11 +40,12 @@ class TPOTNystroem(Preprocessor):
     """
     import_hash = {'sklearn.kernel_approximation': ['Nystroem']}
     sklearn_class = Nystroem
+    arg_types = (int, float, int)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, kernel: int, gamma: float, n_components: int):
+    def preprocess_args(self, kernel, gamma, n_components):
         # Pulled from sklearn.metrics.pairwise.PAIRWISE_KERNEL_FUNCTIONS
         kernel_types = ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']
         kernel_name = kernel_types[kernel % len(kernel_types)]

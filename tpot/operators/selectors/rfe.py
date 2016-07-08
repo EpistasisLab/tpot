@@ -34,11 +34,12 @@ class TPOTRFE(Selector):
     """
     import_hash = {'sklearn.feature_selection': ['RFE'], 'sklearn.svm': ['SVC']}
     sklearn_class = RFE
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, step: float):
+    def preprocess_args(self, step):
         step = max(min(0.99, step), 0.1)
 
         return {

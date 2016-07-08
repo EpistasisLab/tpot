@@ -38,11 +38,12 @@ class TPOTLinearSVC(Classifier):
     """
     import_hash = {'sklearn.svm': ['LinearSVC']}
     sklearn_class = LinearSVC
+    arg_types = (float, int, Bool)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, C: float, penalty: int, dual: Bool):
+    def preprocess_args(self, C, penalty, dual):
         penalty_values = ['l1', 'l2']
         penalty_selection = penalty_values[penalty % len(penalty_values)]
 

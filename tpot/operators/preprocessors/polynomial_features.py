@@ -32,6 +32,7 @@ class TPOTPolynomialFeatures(Preprocessor):
     """
     import_hash = {'sklearn.preprocessing': ['PolynomialFeatures']}
     sklearn_class = PolynomialFeatures
+    arg_types = ()
 
     def __init__(self):
         pass

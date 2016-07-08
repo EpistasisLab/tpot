@@ -77,6 +77,7 @@ class TPOTZeroCount(Preprocessor):
     """
     import_hash = {'tpot.operators.preprocessors': ['ZeroCount']}
     sklearn_class = ZeroCount
+    arg_types = ()
 
     def __init__(self):
         pass

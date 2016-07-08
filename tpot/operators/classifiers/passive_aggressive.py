@@ -35,11 +35,12 @@ class TPOTPassiveAggressive(Classifier):
     """
     import_hash = {'sklearn.linear_model': ['PassiveAggressiveClassifier']}
     sklearn_class = PassiveAggressiveClassifier
+    arg_types = (float, int)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, C: float, loss: int):
+    def preprocess_args(self, C, loss):
         loss_values = ['hinge', 'squared_hinge']
         loss_selection = loss_values[loss % len(loss_values)]
 

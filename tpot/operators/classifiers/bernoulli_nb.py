@@ -35,11 +35,12 @@ class TPOTBernoulliNB(Classifier):
     """
     import_hash = {'sklearn.naive_bayes': ['BernoulliNB']}
     sklearn_class = BernoulliNB
+    arg_types = (float, float)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, alpha: float, binarize: float):
+    def preprocess_args(self, alpha, binarize):
         return {
             'alpha': alpha,
             'binarize': binarize,

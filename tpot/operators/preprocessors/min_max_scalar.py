@@ -33,6 +33,7 @@ class TPOTMaxAbsScaler(Preprocessor):
     """
     import_hash = {'sklearn.preprocessing': ['MinMaxScaler']}
     sklearn_class = MinMaxScaler
+    arg_types = ()
 
     def __init__(self):
         pass

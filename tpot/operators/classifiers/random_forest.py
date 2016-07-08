@@ -33,11 +33,12 @@ class TPOTRandomForestClassifier(Classifier):
     """
     import_hash = {'sklearn.ensemble': ['RandomForestClassifier']}
     sklearn_class = RandomForestClassifier
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, min_weight_fraction_leaf: int):
+    def preprocess_args(self, min_weight_fraction_leaf):
         min_weight = min(0.5, max(0., min_weight_fraction_leaf))
 
         return {

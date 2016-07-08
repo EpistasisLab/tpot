@@ -33,11 +33,12 @@ class TPOTRBFSampler(Preprocessor):
     """
     import_hash = {'sklearn.kernel_approximation': ['RBFSampler']}
     sklearn_class = RBFSampler
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, gamma: float):
+    def preprocess_args(self, gamma):
         return {
             'gamma': gamma
         }

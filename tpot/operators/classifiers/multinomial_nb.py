@@ -33,11 +33,12 @@ class TPOTMultinomialNB(Classifier):
     """
     import_hash = {'sklearn.naive_bayes': ['MultinomialNB']}
     sklearn_class = MultinomialNB
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, alpha: float):
+    def preprocess_args(self, alpha):
         return {
             'alpha': alpha,
             'fit_prior': True

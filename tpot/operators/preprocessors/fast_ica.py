@@ -33,11 +33,12 @@ class TPOTFastICA(Preprocessor):
     """
     import_hash = {'sklearn.decomposition': ['FastICA']}
     sklearn_class = FastICA
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, tol: float):
+    def preprocess_args(self, tol):
         tol = max(tol, 0.0001)
 
         return {

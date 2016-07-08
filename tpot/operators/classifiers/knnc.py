@@ -35,11 +35,12 @@ class TPOTKNeighborsClassifier(Classifier):
     """
     import_hash = {'sklearn.neighbors': ['KNeighborsClassifier']}
     sklearn_class = KNeighborsClassifier
+    arg_types = (int, int)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, n_neighbors: int, weights: int):
+    def preprocess_args(self, n_neighbors, weights):
         n_neighbors = max(min(5, n_neighbors), 2)
 
         weights_values = ['uniform', 'distance']

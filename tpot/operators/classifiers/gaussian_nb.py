@@ -32,6 +32,7 @@ class TPOTGaussianNB(Classifier):
     """
     import_hash = {'sklearn.naive_bayes': ['GaussianNB']}
     sklearn_class = GaussianNB
+    arg_types = ()
 
     def __init__(self):
         pass

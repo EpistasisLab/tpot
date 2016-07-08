@@ -33,11 +33,12 @@ class TPOTSelectKBest(Selector):
     """
     import_hash = {'sklearn.feature_selection': ['SelectKBest', 'f_classif']}
     sklearn_class = SelectKBest
+    arg_types = (int, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, k: int):
+    def preprocess_args(self, k):
         k = max(1, min(k, len(self.training_features)))
 
         return {

@@ -34,11 +34,12 @@ class TPOTSelectPercentile(Selector):
     """
     import_hash = {'sklearn.feature_selection': ['SelectPercentile', 'f_classif']}
     sklearn_class = SelectPercentile
+    arg_types = (int, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, percentile: int):
+    def preprocess_args(self, percentile):
         percentile = max(min(100, percentile), 0)
 
         return {

@@ -33,11 +33,12 @@ class TPOTVarianceThreshold(Selector):
     """
     import_hash = {'sklearn.feature_selection': ['VarianceThreshold']}
     sklearn_class = VarianceThreshold
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, threshold: float):
+    def preprocess_args(self, threshold):
         return {
             'threshold': threshold
         }

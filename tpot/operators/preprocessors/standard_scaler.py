@@ -32,6 +32,7 @@ class TPOTStandardScaler(Preprocessor):
     """
     import_hash = {'sklearn.preprocessing': ['StandardScaler']}
     sklearn_class = StandardScaler
+    arg_types = ()
 
     def __init__(self):
         pass

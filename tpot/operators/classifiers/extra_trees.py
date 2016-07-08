@@ -38,11 +38,12 @@ class TPOTExtraTreesClassifier(Classifier):
     """
     import_hash = {'sklearn.ensemble': ['ExtraTreesClassifier']}
     sklearn_class = ExtraTreesClassifier
+    arg_types = (int, float, float)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, criterion: int, max_features: float, min_weight_fraction_leaf: float):
+    def preprocess_args(self, criterion, max_features, min_weight_fraction_leaf):
         # Select criterion string from list of valid parameters
         criterion_values = ['gini', 'entropy']
         criterion_selection = criterion_values[criterion % len(criterion_values)]

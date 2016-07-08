@@ -33,11 +33,12 @@ class TPOTRandomizedPCA(Preprocessor):
     """
     import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
     sklearn_class = RandomizedPCA
+    arg_types = (int, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, iterated_power: int):
+    def preprocess_args(self, iterated_power):
         iterated_power = min(10, max(1, iterated_power))
 
         return {

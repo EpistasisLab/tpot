@@ -38,11 +38,12 @@ class TPOTLogisticRegression(Classifier):
     """
     import_hash = {'sklearn.linear_model': ['LogisticRegression']}
     sklearn_class = LogisticRegression
+    arg_types = (float, int, Bool)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, C: float, penalty: int, dual: Bool):
+    def preprocess_args(self, C, penalty, dual):
         C = min(50., max(0.0001, C))
 
         penalty_values = ['l1', 'l2']

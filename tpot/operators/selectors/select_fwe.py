@@ -33,11 +33,12 @@ class TPOTSelectFwe(Selector):
     """
     import_hash = {'sklearn.feature_selection': ['SelectFwe', 'f_classif']}
     sklearn_class = SelectFwe
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, alpha: float):
+    def preprocess_args(self, alpha):
         alpha = max(min(0.05, alpha), 0.001)
 
         return {

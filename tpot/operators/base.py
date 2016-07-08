@@ -19,7 +19,12 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 import pandas as pd
-from inspect import signature, Signature
+
+try:
+    from inspect import signature  # Python 3
+except ImportError:
+    from inspect import getargspec  # Python 2
+
 from types import FunctionType
 
 from ..helpers import Output_DF
@@ -103,7 +108,17 @@ class Operator(object):
             arguments and specified arguments.
 
         """
-        sklearn_argument_names = set(signature(self.sklearn_class).parameters.keys())
+        try:
+            # Python 3
+            sklearn_argument_names = set(signature(self.sklearn_class).parameters.keys())
+        except NameError:
+            # Python 2
+            try:
+                sklearn_argument_names = set(getargspec(self.sklearn_class.__init__).args)
+            except TypeError:
+                # For when __init__ comes from C code and can not be inspected
+                sklearn_argument_names = set([])  # Assume no parameters
+
         default_argument_names = set(self.default_arguments.keys())
 
         # Find which arguments are defined in both the defaults and the sklearn class
@@ -129,23 +144,20 @@ class Operator(object):
             operator
 
         """
-        arg_types = [pd.DataFrame]  # First argument is always a DataFrame
+        try:
+            # Python 3
+            num_args = len(signature(self.preprocess_args).parameters.keys())
+        except NameError:
+            # Python 2
+            num_args = len(getargspec(self.preprocess_args).args[1:])  # Remove 'self'
 
-        # Inspect preprocess_args function to get parameter information
-        # Uses function parameter annotations to determine parameter types
-        operator_parameters = signature(self.preprocess_args).parameters
-        param_names = list(operator_parameters.keys())
+        # Make sure the class has been written properly
+        if num_args != len(self.arg_types):
+            raise RuntimeError(("{}'s arg_types does not correspond to the "
+                                "arguments defined for itself".format(self.__name__)))
 
-        for param in param_names:
-            annotation = operator_parameters[param].annotation
-
-            # Raise RuntimeError if a type is not annotated
-            if annotation == Signature.empty:
-                raise RuntimeError('Undocumented argument type for {} in operator {}'.
-                    format(param, self.sklearn_class.__class__.__name__))
-            else:
-                arg_types.append(annotation)
-
+        # First argument is always a DataFrame
+        arg_types = [pd.DataFrame] + list(self.arg_types)
         return_type = Output_DF if self.root else pd.DataFrame
 
         return (arg_types, return_type)

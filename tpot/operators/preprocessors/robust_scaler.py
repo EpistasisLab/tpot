@@ -32,6 +32,7 @@ class TPOTRobustScaler(Preprocessor):
     """
     import_hash = {'sklearn.preprocessing': ['RobustScaler']}
     sklearn_class = RobustScaler
+    arg_types = ()
 
     def __init__(self):
         pass
