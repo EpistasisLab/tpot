@@ -3,12 +3,13 @@
 """
 
 from tpot import TPOT
-from tpot.export_utils import unroll_nested_fuction_calls
+from tpot.export_utils import unroll_nested_fuction_calls, export_pipeline
 from tpot.decorators import _gp_new_generation
 
 from tpot.operators import Operator
 from tpot.operators.classifiers import Classifier
 from tpot.operators.preprocessors import Preprocessor
+from tpot.operators.selectors import Selector
 
 import pandas as pd
 import numpy as np
@@ -18,8 +19,6 @@ from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
 from deap import creator
 from tqdm import tqdm
-
-np.random.seed(42)
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -102,7 +101,7 @@ def test_gp_new_generation():
 
 def check_array_equal(arr1, arr2):
     """Assert that the TPOT foo operator outputs the same as the sklearn counterpart"""
-    assert np.array_equal(arr1, arr2)
+    assert np.allclose(arr1, arr2)
 
 
 def test_classifiers():
@@ -113,9 +112,11 @@ def test_classifiers():
         if not isinstance(op, Classifier):
             continue
 
+        prng = np.random.RandomState(42)
+
         args = []
         for type_ in op.parameter_types()[0][1:]:
-            args.append(np.random.choice(tpot_obj._pset.terminals[type_]).value)
+            args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
 
         result = op(training_testing_data, *args)
 
@@ -138,18 +139,51 @@ def test_classifiers():
 #         if not isinstance(op, Preprocessor):
 #             continue
 #
+#         prng = np.random.RandomState(42)
+#
 #         args = []
 #         for type_ in op.parameter_types()[0][1:]:
-#             args.append(np.random.choice(tpot_obj._pset.terminals[type_]).value)
+#             args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
 #
 #         result = op(training_testing_data, *args)
 #
 #         prp = op._merge_with_default_params(op.preprocess_args(*args))
-#         prp.fit(training_features, training_classes)
-#
+#         prp.fit(training_features.astype(np.float64))
 #         all_features = training_testing_data.drop(non_feature_columns, axis=1).values
+#         sklearn_result = prp.transform(all_features.astype(np.float64))
 #
 #         check_array_equal.description = ("Assert that the TPOT {} operator matches "
 #                                          "the output of the sklearn counterpart".
 #                                          format(op.__name__))
-#         yield check_array_equal, result.drop(non_feature_columns, axis=1).values, prp.transform(all_features)
+#         yield check_array_equal, result.drop(non_feature_columns, axis=1).values, sklearn_result
+
+
+def test_export_pipeline():
+    """Assert that TPOT's export utils outputs a pipeline as expected"""
+    tpot_obj = TPOT(random_state=42)
+    pipeline = creator.Individual.\
+        from_string('ExtraTreesClassifier(PolynomialFeatures(input_df), 42, 0.93, 0.7)', tpot_obj._pset)
+
+    expected_output = """import numpy as np
+import pandas as pd
+
+from sklearn.cross_validation import train_test_split
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+
+exported_pipeline = Pipeline([
+    ("PolynomialFeatures", PolynomialFeatures(degree=2, include_bias=False, interaction_only=False)),
+    ("ExtraTreesClassifier", ExtraTreesClassifier(criterion="gini", max_features=0.93, min_weight_fraction_leaf=0.5, n_estimators=500))
+])
+
+exported_pipeline.fit(tpot_data.loc[training_indices].drop('class', axis=1).values,
+                      tpot_data.loc[training_indices, 'class'].values)
+results = exported_pipeline.predict(tpot_data.loc[testing_indices].drop('class', axis=1))
+"""
+
+    assert expected_output == export_pipeline(pipeline)

@@ -173,8 +173,9 @@ def generate_pipeline_code(pipeline_list):
 
     """
     steps = []
-    for _out, name, _in, *args in pipeline_list:
-        args = [eval(x) for x in args]  # TODO: Don't use eval()
+    for operator in pipeline_list:
+        name = operator[1]
+        args = [eval(x) for x in operator[3:]]  # TODO: Don't use eval()
         steps.append("(\"{}\", {})".format(name, Operator.get_by_name(name).export(*args)))
 
     pipeline_text = """

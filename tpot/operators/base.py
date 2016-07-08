@@ -69,7 +69,7 @@ class Operator(object):
         operator_args = self.preprocess_args(*args, **kwargs)
 
         arguments = []
-        for key in operator_args.keys():
+        for key in sorted(operator_args.keys()):
             val = operator_args[key]
             if isinstance(val, str):
                 val = '\"{}\"'.format(val)
