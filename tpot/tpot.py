@@ -34,7 +34,7 @@ from sklearn.cross_validation import train_test_split
 from update_checker import update_check
 
 from ._version import __version__
-from .export_utils import unroll_nested_fuction_calls, generate_import_code, replace_calls
+from .export_utils import export_pipeline
 from .decorators import _gp_new_generation
 from .operators import *
 from .helpers import Bool, Output_DF
@@ -50,7 +50,7 @@ class TPOT(object):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 random_state=0, verbosity=0, scoring_function=None,
+                 random_state=None, verbosity=0, scoring_function=None,
                  disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
@@ -106,7 +106,7 @@ class TPOT(object):
         self.pbar = None
         self.gp_generation = 0
 
-        if random_state > 0:
+        if random_state:
             random.seed(random_state)
             np.random.seed(random_state)
             Operator.default_arguments['random_state'] = random_state
@@ -128,9 +128,6 @@ class TPOT(object):
         # Add all operators to the primitive set
         for op in Operator.inheritors():
             self._pset.addPrimitive(op, *op.parameter_types())
-
-        # Add the combine_dfs operator
-        # self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
 
         # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
@@ -406,7 +403,7 @@ class TPOT(object):
 
         Parameters
         ----------
-        output_file_name: string
+        output_file_name: str
             String containing the path and file name of the desired output file
 
         Returns
@@ -417,38 +414,8 @@ class TPOT(object):
         if self._optimized_pipeline is None:
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        exported_pipeline = self._optimized_pipeline
-
-        # Unroll the nested function calls into serial code. Check export_utils.py for details.
-        pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
-
-        # Have the exported code import all of the necessary modules and functions
-        pipeline_text = generate_import_code(pipeline_list)
-
-        # Replace the function calls with their corresponding Python code. Check export_utils.py for details.
-        pipeline_text += replace_calls(pipeline_list)
-
         with open(output_file_name, 'w') as output_file:
-            output_file.write(pipeline_text)
-
-    @staticmethod
-    def _combine_dfs(input_df1, input_df2):
-        """Function to combine two DataFrames
-
-        Parameters
-        ----------
-        input_df1: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to combine
-        input_df2: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to combine
-
-        Returns
-        -------
-        combined_df: pandas.DataFrame {n_samples, n_both_features+['guess', 'group', 'class']}
-            Returns a DataFrame containing the features of both input_df1 and input_df2
-
-        """
-        return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
+            output_file.write(export_pipeline(self._optimized_pipeline))
 
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data
@@ -748,7 +715,7 @@ def main():
                         type=float_range, help='GP crossover rate in the range [0.0, 1.0]. We recommend using the default parameter unless you '
                                                'understand how the crossover rate affects GP algorithms.')
 
-    parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=0,
+    parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=None,
                         type=int, help='Random number generator seed for reproducibility. Set this seed if you want your TPOT run to be reproducible '
                                        'with the same seed and data set in the future.')
 
@@ -776,7 +743,7 @@ def main():
     if 'Class' in input_data.columns.values:
         input_data.rename(columns={'Class': 'class'}, inplace=True)
 
-    RANDOM_STATE = args.RANDOM_STATE if args.RANDOM_STATE > 0 else None
+    RANDOM_STATE = args.RANDOM_STATE if args.RANDOM_STATE else None
 
     training_indices, testing_indices = train_test_split(input_data.index,
                                                          stratify=input_data['class'].values,

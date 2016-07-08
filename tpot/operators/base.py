@@ -51,7 +51,18 @@ class Operator(object):
 
     def export(self, *args, **kwargs):
         """Represent the operator as a string so that it can be exported to a
-        file.
+        file
+
+        Parameters
+        ----------
+        args, kwargs
+            Arbitrary arguments to be passed to the operator
+
+        Returns
+        -------
+        export_string: str
+            String representation of the sklearn class with its parameters
+
         """
         operator_args = self.preprocess_args(*args, **kwargs)
 
@@ -77,6 +88,18 @@ class Operator(object):
     def _merge_with_default_params(self, kwargs):
         """Apply defined default parameters to the sklearn class where applicable
         while also integrating specified arguments
+
+        Parameters
+        ----------
+        kwargs: dict
+            Preprocessed arguments from DEAP
+
+        Returns
+        -------
+        sklearn_class
+            The class's sklearn_class instantiated with both the default
+            arguments and specified arguments.
+
         """
         sklearn_argument_names = set(signature(self.sklearn_class).parameters.keys())
         default_argument_names = set(self.default_arguments.keys())
@@ -91,7 +114,18 @@ class Operator(object):
 
     def parameter_types(self):
         """Return tuple of argument types for calling of the operator and the
-        return type of the operator.
+        return type of the operator
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        parameter_types: tuple
+            Tuple of the DEAP parameter types and the DEAP return type for the
+            operator
+
         """
         arg_types = [pd.DataFrame]  # First argument is always a DataFrame
 
@@ -116,7 +150,17 @@ class Operator(object):
 
     @classmethod
     def inheritors(cls):
-        """Returns set of all operators defined.
+        """Returns set of all operators defined
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        operators: set
+            Set of all discovered operators that inherit from the base class
+
         """
         operators = set()
 
@@ -130,6 +174,17 @@ class Operator(object):
     @classmethod
     def get_by_name(cls, name):
         """Returns operator class instance by name
+
+        Parameters
+        ----------
+        name: str
+            Name of the sklearn class that belongs to a TPOT operator
+
+        Returns
+        -------
+        grandchild
+            An instance of the TPOT operator with a matching sklearn class name
+
         """
         for child in cls.__subclasses__():
             for grandchild in child.__subclasses__():

@@ -24,13 +24,40 @@ import deap
 from .operators import *
 
 
+def export_pipeline(exported_pipeline):
+    """Generates the source code of a Python script that recreates the
+    functionality of a TPOT pipeline
+
+    Parameters
+    ----------
+    exported_pipeline: deap.creator.Individual
+        The pipeline that is being exported
+
+    Returns
+    -------
+    pipeline_text: str
+        The source code representing the pipeline
+
+    """
+    # Unroll the nested function calls into serial code. Check export_utils.py for details.
+    pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
+
+    # Have the exported code import all of the necessary modules and functions
+    pipeline_text = generate_import_code(pipeline_list)
+
+    # Replace the function calls with their corresponding Python code. Check export_utils.py for details.
+    pipeline_text += generate_pipeline_code(pipeline_list)
+
+    return pipeline_text
+
+
 def unroll_nested_fuction_calls(exported_pipeline):
     """Unroll the nested function calls into serial code for use in TPOT.export()
 
     Parameters
     ----------
     exported_pipeline: deap.creator.Individual
-       The current optimized pipeline
+       The pipeline that is being exported
 
     Returns
     -------
@@ -121,16 +148,30 @@ def generate_import_code(pipeline_list):
         module_list = ', '.join(sorted(pipeline_imports[key]))
         pipeline_text += 'from {} import {}\n'.format(key, module_list)
 
-    pipeline_text += '''
+    pipeline_text += """
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
-'''
+"""
 
     return pipeline_text
 
 
-def replace_calls(pipeline_list):
+def generate_pipeline_code(pipeline_list):
+    """Generate code specific to the construction and execution of the sklearn
+    Pipeline
+
+    Parameters
+    ----------
+    pipeline_list: list
+        List of operators in the current optimized pipeline
+
+    Returns
+    -------
+    pipeline_text: str
+        Source code containing code related to the sklearn Pipeline
+
+    """
     steps = []
     for _out, name, _in, *args in pipeline_list:
         args = [eval(x) for x in args]  # TODO: Don't use eval()

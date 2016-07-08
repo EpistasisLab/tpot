@@ -22,26 +22,47 @@ import numpy as np
 
 from .base import Preprocessor
 from sklearn.base import BaseEstimator
+from sklearn.utils import check_array
 
 
 class ZeroCount(BaseEstimator):
+    """PreProcessor that adds two virtual features to the dataset, one for the
+    count of zero values in the feature set, and one for the count of non-zeros
+    in the feature set
+    """
     def __init__(self):
         pass
 
     def fit(self, X, y=None):
+        """Dummy function to fit in with the sklearn API"""
         return self
 
-    def transform(self, input_df):
-        feature_cols_only = input_df.drop(self.non_feature_columns, axis=1)
-        num_features = len(feature_cols_only.columns.values)
+    def transform(self, X):
+        """Transform data by adding two virtual features
 
-        modified_df = input_df.copy()
-        modified_df['non_zero'] = feature_cols_only.\
-            apply(lambda row: np.count_nonzero(row), axis=1).astype(np.float64)
-        modified_df['zero_col'] = feature_cols_only.\
-            apply(lambda row: (num_features - np.count_nonzero(row)), axis=1).astype(np.float64)
+        Parameters
+        ----------
+        X: array-like, shape (n_samples, n_components)
+            New data, where n_samples is the number of samples and n_components
+            is the number of components.
 
-        return modified_df.copy()
+        Returns
+        -------
+        X_transformed: array-like, shape (n_samples, n_features)
+            The transformed feature set
+        """
+        X = check_array(X)
+        n_samples, n_features = X.shape
+
+        X_transformed = np.copy(X)
+
+        non_zero = np.apply_along_axis(lambda row: np.count_nonzero(row), axis=1, arr=X)
+        zero_col = np.apply_along_axis(lambda row: (n_features - np.count_nonzero(row)), axis=1, arr=X)
+
+        X_transformed = np.insert(X_transformed, n_features, non_zero, axis=1)
+        X_transformed = np.insert(X_transformed, n_features + 1, zero_col, axis=1)
+
+        return X_transformed
 
 
 class TPOTZeroCount(Preprocessor):
