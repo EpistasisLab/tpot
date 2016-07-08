@@ -14,6 +14,8 @@ from tpot.operators.selectors import Selector
 import pandas as pd
 import numpy as np
 from collections import Counter
+import warnings
+import inspect
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
@@ -66,6 +68,85 @@ def test_init():
     assert tpot_obj._pset
 
 
+def test_get_params():
+    """Ensure that get_params returns the exact dictionary of parameters used by TPOT"""
+    kwargs = {
+        'population_size': 500,
+        'generations': 1000,
+        'verbosity': 1
+    }
+
+    tpot_obj = TPOT(**kwargs)
+
+    # Get default parameters of TPOT and merge with our specified parameters
+    initializer = inspect.getargspec(TPOT.__init__)
+    default_kwargs = dict(zip(initializer.args[1:], initializer.defaults))
+    default_kwargs.update(kwargs)
+
+    assert tpot_obj.get_params() == default_kwargs
+
+
+def test_score():
+    """Ensure that the TPOT score function raises a ValueError when no optimized pipeline exists"""
+
+    tpot_obj = TPOT()
+
+    try:
+        tpot_obj.score(testing_features, testing_classes)
+        assert False  # Should be unreachable
+    except ValueError:
+        pass
+
+
+def test_score_2():
+    """Ensure that the TPOT score function outputs a known score for a fixed pipeline"""
+
+    tpot_obj = TPOT()
+    tpot_obj._training_classes = training_classes
+    tpot_obj._training_features = training_features
+    tpot_obj.pbar = tqdm(total=1, disable=True)
+    known_score = 0.9202817574915823  # Assumes use of the TPOT balanced_accuracy function
+
+    # Reify pipeline with known score
+    tpot_obj._optimized_pipeline = creator.Individual.\
+        from_string('DecisionTreeClassifier(input_df, 0.5)', tpot_obj._pset)
+
+    # Get score from TPOT
+    score = tpot_obj.score(testing_features, testing_classes)
+
+    # http://stackoverflow.com/questions/5595425/
+    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+        return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+    assert isclose(known_score, score)
+
+
+def test_predict():
+    """Ensure that the TPOT predict function raises a ValueError when no optimized pipeline exists"""
+
+    tpot_obj = TPOT()
+
+    try:
+        tpot_obj.predict(testing_features)
+        assert False  # Should be unreachable
+    except ValueError:
+        pass
+
+
+def test_predict_2():
+    """Ensure that the TPOT predict function returns a DataFrame of shape (num_testing_rows,)"""
+
+    tpot_obj = TPOT()
+    tpot_obj._training_classes = training_classes
+    tpot_obj._training_features = training_features
+    tpot_obj._optimized_pipeline = creator.Individual.\
+        from_string('DecisionTreeClassifier(input_df, 0.5)', tpot_obj._pset)
+
+    result = tpot_obj.predict(testing_features)
+
+    assert result.shape == (testing_features.shape[0],)
+
+
 def test_unroll_nested():
     """Assert that export utils' unroll_nested_fuction_calls outputs pipeline_list as expected"""
 
@@ -99,36 +180,71 @@ def test_gp_new_generation():
     assert(tpot_obj.gp_generation == 1)
 
 
-def check_array_equal(arr1, arr2):
-    """Assert that the TPOT foo operator outputs the same as the sklearn counterpart"""
-    assert np.allclose(arr1, arr2)
-
-
-def test_classifiers():
-    """Assert that the TPOT classifiers match the output of their sklearn counterparts"""
+def check_classifier(op):
+    """Assert that a TPOT classifier outputs the same as its sklearn counterpart"""
     tpot_obj = TPOT(random_state=42)
 
+    prng = np.random.RandomState(42)
+
+    args = []
+    for type_ in op.parameter_types()[0][1:]:
+        args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
+
+    result = op(training_testing_data, *args)
+
+    clf = op._merge_with_default_params(op.preprocess_args(*args))
+    clf.fit(training_features, training_classes)
+
+    all_features = training_testing_data.drop(non_feature_columns, axis=1).values
+
+    assert np.array_equal(result['guess'].values, clf.predict(all_features))
+
+
+def check_selector(op):
+    """Assert that a TPOT feature selector outputs the same as its sklearn counterpart"""
+    tpot_obj = TPOT(random_state=42)
+
+    prng = np.random.RandomState(42)
+
+    args = []
+    for type_ in op.parameter_types()[0][1:]:
+        args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
+
+    result = op(training_testing_data, *args)
+
+    sel = op._merge_with_default_params(op.preprocess_args(*args))
+    training_features_df = training_testing_data.loc[training_testing_data['group'] == 'training'].\
+        drop(non_feature_columns, axis=1)
+
+    with warnings.catch_warnings():
+        # Ignore warnings about constant features
+        warnings.simplefilter('ignore', category=UserWarning)
+        sel.fit(training_features_df, training_classes)
+
+    mask = sel.get_support(True)
+    mask_cols = list(training_features_df.iloc[:, mask].columns) + non_feature_columns
+
+    assert np.array_equal(
+        training_testing_data[mask_cols].drop(non_feature_columns, axis=1).values,
+        result.drop(non_feature_columns, axis=1).values
+    )
+
+
+def test_operators():
+    """Assert that the TPOT operators match the output of their sklearn counterparts"""
     for op in Operator.inheritors():
-        if not isinstance(op, Classifier):
-            continue
-
-        prng = np.random.RandomState(42)
-
-        args = []
-        for type_ in op.parameter_types()[0][1:]:
-            args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
-
-        result = op(training_testing_data, *args)
-
-        clf = op._merge_with_default_params(op.preprocess_args(*args))
-        clf.fit(training_features, training_classes)
-
-        all_features = training_testing_data.drop(non_feature_columns, axis=1).values
-
-        check_array_equal.description = ("Assert that the TPOT {} operator matches "
-                                         "the output of the sklearn counterpart".
-                                         format(op.__name__))
-        yield check_array_equal, result['guess'].values, clf.predict(all_features)
+        if isinstance(op, Classifier):
+            check_classifier.description = ("Assert that the TPOT {} classifier "
+                                         "matches the output of the sklearn "
+                                         "counterpart".format(op.__name__))
+            yield check_classifier, op
+        elif isinstance(op, Preprocessor):
+            pass
+        elif isinstance(op, Selector):
+            check_selector.description = ("Assert that the TPOT {} feature selector "
+                                            "matches the output of the sklearn "
+                                            "counterpart".format(op.__name__))
+            yield check_selector, op
 
 
 # def test_preprocessors():
