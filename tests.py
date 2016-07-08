@@ -8,6 +8,7 @@ from tpot.decorators import _gp_new_generation
 
 from tpot.operators import Operator
 from tpot.operators.classifiers import Classifier
+from tpot.operators.preprocessors import Preprocessor
 
 import pandas as pd
 import numpy as np
@@ -40,6 +41,8 @@ training_testing_data['guess'] = most_frequent_class
 for column in training_testing_data.columns.values:
     if type(column) != str:
         training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
+
+non_feature_columns = ['guess', 'class', 'group']
 
 
 def test_init():
@@ -97,14 +100,16 @@ def test_gp_new_generation():
     assert(tpot_obj.gp_generation == 1)
 
 
+def check_array_equal(arr1, arr2):
+    """Assert that the TPOT foo operator outputs the same as the sklearn counterpart"""
+    assert np.array_equal(arr1, arr2)
+
+
 def test_classifiers():
     """Assert that the TPOT classifiers match the output of their sklearn counterparts"""
     tpot_obj = TPOT(random_state=42)
 
-    print()
-
     for op in Operator.inheritors():
-        print("Assert that the TPOT {} classifier matches the output of the sklearn counterpart ... ".format(op.sklearn_class.__name__), end="")
         if not isinstance(op, Classifier):
             continue
 
@@ -117,6 +122,34 @@ def test_classifiers():
         clf = op._merge_with_default_params(op.preprocess_args(*args))
         clf.fit(training_features, training_classes)
 
-        assert np.array_equal(result['guess'].values, clf.predict(testing_features))
+        all_features = training_testing_data.drop(non_feature_columns, axis=1).values
 
-        print("ok")
+        check_array_equal.description = ("Assert that the TPOT {} operator matches "
+                                         "the output of the sklearn counterpart".
+                                         format(op.__name__))
+        yield check_array_equal, result['guess'].values, clf.predict(all_features)
+
+
+# def test_preprocessors():
+#     """Assert that the TPOT preprocessors match the output of their sklearn counterparts"""
+#     tpot_obj = TPOT(random_state=42)
+#
+#     for op in Operator.inheritors():
+#         if not isinstance(op, Preprocessor):
+#             continue
+#
+#         args = []
+#         for type_ in op.parameter_types()[0][1:]:
+#             args.append(np.random.choice(tpot_obj._pset.terminals[type_]).value)
+#
+#         result = op(training_testing_data, *args)
+#
+#         prp = op._merge_with_default_params(op.preprocess_args(*args))
+#         prp.fit(training_features, training_classes)
+#
+#         all_features = training_testing_data.drop(non_feature_columns, axis=1).values
+#
+#         check_array_equal.description = ("Assert that the TPOT {} operator matches "
+#                                          "the output of the sklearn counterpart".
+#                                          format(op.__name__))
+#         yield check_array_equal, result.drop(non_feature_columns, axis=1).values, prp.transform(all_features)

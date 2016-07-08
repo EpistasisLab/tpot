@@ -743,13 +743,11 @@ def main():
     if 'Class' in input_data.columns.values:
         input_data.rename(columns={'Class': 'class'}, inplace=True)
 
-    RANDOM_STATE = args.RANDOM_STATE if args.RANDOM_STATE else None
-
     training_indices, testing_indices = train_test_split(input_data.index,
                                                          stratify=input_data['class'].values,
                                                          train_size=0.75,
                                                          test_size=0.25,
-                                                         random_state=RANDOM_STATE)
+                                                         random_state=args.RANDOM_STATE)
 
     training_features = input_data.loc[training_indices].drop('class', axis=1).values
     training_classes = input_data.loc[training_indices, 'class'].values

@@ -46,7 +46,7 @@ class Operator(object):
         if len(self.training_features) == 0:
             return input_df
 
-        # Call child class' call function
+        # Call child class' _call function
         return self._call(input_df, *args, **kwargs)
 
     def export(self, *args, **kwargs):
@@ -61,7 +61,9 @@ class Operator(object):
         Returns
         -------
         export_string: str
-            String representation of the sklearn class with its parameters
+            String representation of the sklearn class with its parameters in
+            the format:
+            SklearnClassName(param1="val1", param2=val2)
 
         """
         operator_args = self.preprocess_args(*args, **kwargs)
@@ -165,9 +167,9 @@ class Operator(object):
         operators = set()
 
         # Search two levels deep and report leaves in inheritance tree
-        for child in cls.__subclasses__():
-            for grandchild in child.__subclasses__():
-                operators.add(grandchild())  # Instantiate class and append
+        for operator_type in cls.__subclasses__():
+            for operator in operator_type.__subclasses__():
+                operators.add(operator())  # Instantiate class and append
 
         return operators
 
@@ -186,7 +188,7 @@ class Operator(object):
             An instance of the TPOT operator with a matching sklearn class name
 
         """
-        for child in cls.__subclasses__():
-            for grandchild in child.__subclasses__():
-                if grandchild.sklearn_class.__name__ == name:
-                    return grandchild()
+        for operator_type in cls.__subclasses__():
+            for operator in operator_type.__subclasses__():
+                if operator.sklearn_class.__name__ == name:
+                    return operator()

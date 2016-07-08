@@ -37,7 +37,7 @@ class ZeroCount(BaseEstimator):
         """Dummy function to fit in with the sklearn API"""
         return self
 
-    def transform(self, X):
+    def transform(self, X, y=None):
         """Transform data by adding two virtual features
 
         Parameters
@@ -45,6 +45,8 @@ class ZeroCount(BaseEstimator):
         X: array-like, shape (n_samples, n_components)
             New data, where n_samples is the number of samples and n_components
             is the number of components.
+        y: None
+            Unused
 
         Returns
         -------
@@ -56,8 +58,8 @@ class ZeroCount(BaseEstimator):
 
         X_transformed = np.copy(X)
 
-        non_zero = np.apply_along_axis(lambda row: np.count_nonzero(row), axis=1, arr=X)
-        zero_col = np.apply_along_axis(lambda row: (n_features - np.count_nonzero(row)), axis=1, arr=X)
+        non_zero = np.apply_along_axis(lambda row: np.count_nonzero(row), axis=1, arr=X_transformed)
+        zero_col = np.apply_along_axis(lambda row: (n_features - np.count_nonzero(row)), axis=1, arr=X_transformed)
 
         X_transformed = np.insert(X_transformed, n_features, non_zero, axis=1)
         X_transformed = np.insert(X_transformed, n_features + 1, zero_col, axis=1)
