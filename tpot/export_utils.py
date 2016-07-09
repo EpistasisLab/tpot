@@ -173,12 +173,12 @@ def generate_pipeline_code(pipeline_list):
 
     """
     steps = []
-    for operator in pipeline_list:
+    for i, operator in enumerate(pipeline_list):
         tpot_op = Operator.get_by_name(operator[1])
         step_name = tpot_op.__class__.__bases__[0].__name__
 
         args = [eval(x) for x in operator[3:]]  # TODO: Don't use eval()
-        steps.append("(\"{}\", {})".format(step_name, tpot_op.export(*args)))
+        steps.append("(\"{}-{}\", {})".format(i, step_name, tpot_op.export(*args)))
 
     pipeline_text = """
 exported_pipeline = Pipeline([

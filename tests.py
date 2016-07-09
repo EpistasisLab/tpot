@@ -6,7 +6,7 @@ TPOT Unit Tests
 
 from tpot import TPOT
 from tpot.tpot import positive_integer, float_range
-from tpot.export_utils import unroll_nested_fuction_calls, export_pipeline
+from tpot.export_utils import unroll_nested_fuction_calls, export_pipeline, generate_import_code
 from tpot.decorators import _gp_new_generation
 from tpot.helpers import Output_DF
 
@@ -73,7 +73,7 @@ def test_init():
 
 
 def test_get_params():
-    """Ensure that get_params returns the exact dictionary of parameters used by TPOT"""
+    """Assert that get_params returns the exact dictionary of parameters used by TPOT"""
     kwargs = {
         'population_size': 500,
         'generations': 1000,
@@ -91,7 +91,7 @@ def test_get_params():
 
 
 def test_score():
-    """Ensure that the TPOT score function raises a ValueError when no optimized pipeline exists"""
+    """Assert that the TPOT score function raises a ValueError when no optimized pipeline exists"""
 
     tpot_obj = TPOT()
 
@@ -103,7 +103,7 @@ def test_score():
 
 
 def test_score_2():
-    """Ensure that the TPOT score function outputs a known score for a fixed pipeline"""
+    """Assert that the TPOT score function outputs a known score for a fixed pipeline"""
 
     tpot_obj = TPOT()
     tpot_obj._training_classes = training_classes
@@ -126,7 +126,7 @@ def test_score_2():
 
 
 def test_predict():
-    """Ensure that the TPOT predict function raises a ValueError when no optimized pipeline exists"""
+    """Assert that the TPOT predict function raises a ValueError when no optimized pipeline exists"""
 
     tpot_obj = TPOT()
 
@@ -138,7 +138,7 @@ def test_predict():
 
 
 def test_predict_2():
-    """Ensure that the TPOT predict function returns a DataFrame of shape (num_testing_rows,)"""
+    """Assert that the TPOT predict function returns a DataFrame of shape (num_testing_rows,)"""
 
     tpot_obj = TPOT()
     tpot_obj._training_classes = training_classes
@@ -149,6 +149,17 @@ def test_predict_2():
     result = tpot_obj.predict(testing_features)
 
     assert result.shape == (testing_features.shape[0],)
+
+
+def test_fit():
+    """Assert that the TPOT fit function provides an optimized pipeline"""
+    tpot_obj = TPOT(random_state=42, population_size=1, generations=1, verbosity=0)
+    tpot_obj.fit(training_features, training_classes)
+
+    assert isinstance(tpot_obj._training_features, np.ndarray)
+    assert isinstance(tpot_obj._training_classes, np.ndarray)
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert tpot_obj.gp_generation == 0
 
 
 def test_unroll_nested():
@@ -164,6 +175,24 @@ def test_unroll_nested():
     pipeline_list = unroll_nested_fuction_calls(pipeline)
 
     assert expected_list == pipeline_list
+
+
+def test_generate_import_code():
+    """Assert that export utils' generate_import_code properly merges two imports from the same module"""
+    pipeline_list = [['result1', 'SelectPercentile', 'input_df', '50']]
+    expected_imports = """import numpy as np
+import pandas as pd
+
+from sklearn.cross_validation import train_test_split
+from sklearn.feature_selection import SelectPercentile, f_classif
+from sklearn.pipeline import Pipeline
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+"""
+
+    assert expected_imports == generate_import_code(pipeline_list)
 
 
 def test_gp_new_generation():
@@ -254,9 +283,28 @@ def check_preprocessor(op):
     assert np.allclose(result.drop(non_feature_columns, axis=1).values, sklearn_result)
 
 
+def check_export(op):
+    """Assert that a TPOT operator exports as expected"""
+    tpot_obj = TPOT(random_state=42)
+
+    prng = np.random.RandomState(42)
+
+    args = []
+    for type_ in op.parameter_types()[0][1:]:
+        args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
+
+    export_string = op.export(*args)
+
+    assert export_string.startswith(op.__name__)
+
+
 def test_operators():
     """Assert that the TPOT operators match the output of their sklearn counterparts"""
     for op in Operator.inheritors():
+        check_export.description = ("Assert that the TPOT {} operator exports "
+                                    "as expected".format(op.__name__))
+        yield check_export, op
+
         if isinstance(op, Classifier):
             check_classifier.description = ("Assert that the TPOT {} classifier "
                                             "matches the output of the sklearn "
@@ -301,8 +349,8 @@ tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
 
 exported_pipeline = Pipeline([
-    ("Preprocessor", PolynomialFeatures(degree=2, include_bias=False, interaction_only=False)),
-    ("Classifier", ExtraTreesClassifier(criterion="gini", max_features=0.93, min_weight_fraction_leaf=0.5, n_estimators=500))
+    ("0-Preprocessor", PolynomialFeatures(degree=2, include_bias=False, interaction_only=False)),
+    ("1-Classifier", ExtraTreesClassifier(criterion="gini", max_features=0.93, min_weight_fraction_leaf=0.5, n_estimators=500))
 ])
 
 exported_pipeline.fit(tpot_data.loc[training_indices].drop('class', axis=1).values,
@@ -354,6 +402,15 @@ def test_positive_integer_2():
     assert 1 == positive_integer('1')
 
 
+def test_positive_integer_3():
+    """Assert that the TPOT CLI interface's integer parsing throws an exception when n is not an integer"""
+    try:
+        positive_integer('foobar')
+        assert False  # Should be unreachable
+    except Exception:
+        pass
+
+
 def test_float_range():
     """Assert that the TPOT CLI interface's float range returns a float with input is in 0. - 1.0"""
     assert 0.5 == float_range('0.5')
@@ -363,6 +420,15 @@ def test_float_range_2():
     """Assert that the TPOT CLI interface's float range throws an exception when input it out of range"""
     try:
         float_range('2.0')
+        assert False  # Should be unreachable
+    except Exception:
+        pass
+
+
+def test_float_range_3():
+    """Assert that the TPOT CLI interface's float range throws an exception when input is not a float"""
+    try:
+        float_range('foobar')
         assert False  # Should be unreachable
     except Exception:
         pass
