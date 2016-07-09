@@ -132,10 +132,10 @@ def generate_import_code(pipeline_list):
             # Key is a module name
             for key in new_dict.keys():
                 if key in old_dict.keys():
-                    # Append imports from the same module
-                    old_dict[key] = set(list(old_dict[key]) + list(new_dict[key]))
+                    # Union imports from the same module
+                    old_dict[key] = old_dict[key] | set(new_dict[key])
                 else:
-                    old_dict[key] = new_dict[key]
+                    old_dict[key] = set(new_dict[key])
 
         try:
             operator_import = import_relations[op]
@@ -174,9 +174,11 @@ def generate_pipeline_code(pipeline_list):
     """
     steps = []
     for operator in pipeline_list:
-        name = operator[1]
+        tpot_op = Operator.get_by_name(operator[1])
+        step_name = tpot_op.__class__.__bases__[0].__name__
+
         args = [eval(x) for x in operator[3:]]  # TODO: Don't use eval()
-        steps.append("(\"{}\", {})".format(name, Operator.get_by_name(name).export(*args)))
+        steps.append("(\"{}\", {})".format(step_name, tpot_op.export(*args)))
 
     pipeline_text = """
 exported_pipeline = Pipeline([

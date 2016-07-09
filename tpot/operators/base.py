@@ -19,13 +19,11 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 import pandas as pd
-
+from types import FunctionType
 try:
     from inspect import signature  # Python 3
 except ImportError:
     from inspect import getargspec  # Python 2
-
-from types import FunctionType
 
 from ..helpers import Output_DF
 

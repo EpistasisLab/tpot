@@ -1,15 +1,19 @@
+# -*- coding: utf-8 -*-
+
 """
-    Unit tests for TPOT.
+TPOT Unit Tests
 """
 
 from tpot import TPOT
+from tpot.tpot import positive_integer, float_range
 from tpot.export_utils import unroll_nested_fuction_calls, export_pipeline
 from tpot.decorators import _gp_new_generation
+from tpot.helpers import Output_DF
 
 from tpot.operators import Operator
 from tpot.operators.classifiers import Classifier, TPOTDecisionTreeClassifier
 from tpot.operators.preprocessors import Preprocessor
-from tpot.operators.selectors import Selector
+from tpot.operators.selectors import Selector, TPOTSelectKBest
 
 import pandas as pd
 import numpy as np
@@ -255,18 +259,19 @@ def test_operators():
     for op in Operator.inheritors():
         if isinstance(op, Classifier):
             check_classifier.description = ("Assert that the TPOT {} classifier "
-                                      "matches the output of the sklearn "
-                                      "counterpart".format(op.__name__))
+                                            "matches the output of the sklearn "
+                                            "counterpart".format(op.__name__))
             yield check_classifier, op
         elif isinstance(op, Preprocessor):
             check_preprocessor.description = ("Assert that the TPOT {} feature preprocessor "
-                                         "matches the output of the sklearn "
-                                         "counterpart".format(op.__name__))
+                                              "matches the output of the sklearn "
+                                              "counterpart".format(op.__name__))
             yield check_preprocessor, op
         elif isinstance(op, Selector):
             check_selector.description = ("Assert that the TPOT {} feature selector "
-                                         "matches the output of the sklearn "
-                                         "counterpart".format(op.__name__))
+                                          "matches the output of the sklearn "
+                                          "counterpart".format(op.__name__))
+            yield check_selector, op
 
 
 def test_operators_2():
@@ -296,8 +301,8 @@ tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
 
 exported_pipeline = Pipeline([
-    ("PolynomialFeatures", PolynomialFeatures(degree=2, include_bias=False, interaction_only=False)),
-    ("ExtraTreesClassifier", ExtraTreesClassifier(criterion="gini", max_features=0.93, min_weight_fraction_leaf=0.5, n_estimators=500))
+    ("Preprocessor", PolynomialFeatures(degree=2, include_bias=False, interaction_only=False)),
+    ("Classifier", ExtraTreesClassifier(criterion="gini", max_features=0.93, min_weight_fraction_leaf=0.5, n_estimators=500))
 ])
 
 exported_pipeline.fit(tpot_data.loc[training_indices].drop('class', axis=1).values,
@@ -313,7 +318,51 @@ def test_export():
     tpot_obj = TPOT()
 
     try:
-        tpot_obj.export("test.py")
+        tpot_obj.export("test_export.py")
         assert False  # Should be unreachable
     except ValueError:
+        pass
+
+
+def test_operator_export():
+    """Assert that a TPOT operator can export properly with a function as a parameter to a classifier"""
+    export_string = TPOTSelectKBest().export(5)
+    assert export_string == "SelectKBest(k=5, score_func=f_classif)"
+
+
+def test_gen():
+    """Assert that TPOT's gen_grow_safe function returns a pipeline of expected structure"""
+    tpot_obj = TPOT()
+
+    pipeline = tpot_obj._gen_grow_safe(tpot_obj._pset, 1, 3)
+
+    assert len(pipeline) > 1
+    assert pipeline[0].ret == Output_DF
+
+
+def test_positive_integer():
+    """Assert that the TPOT CLI interface's integer parsing throws an exception when n < 0"""
+    try:
+        positive_integer('-1')
+        assert False  # Should be unreachable
+    except Exception:
+        pass
+
+
+def test_positive_integer_2():
+    """Assert that the TPOT CLI interface's integer parsing returns the integer value of a string encoded integer when n > 0"""
+    assert 1 == positive_integer('1')
+
+
+def test_float_range():
+    """Assert that the TPOT CLI interface's float range returns a float with input is in 0. - 1.0"""
+    assert 0.5 == float_range('0.5')
+
+
+def test_float_range_2():
+    """Assert that the TPOT CLI interface's float range throws an exception when input it out of range"""
+    try:
+        float_range('2.0')
+        assert False  # Should be unreachable
+    except Exception:
         pass

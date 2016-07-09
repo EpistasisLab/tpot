@@ -39,7 +39,7 @@ class TPOTSelectKBest(Selector):
         pass
 
     def preprocess_args(self, k):
-        k = max(1, min(k, len(self.training_features)))
+        k = max(1, k)
 
         return {
             'score_func': f_classif,
