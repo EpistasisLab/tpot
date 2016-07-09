@@ -7,7 +7,7 @@ from tpot.export_utils import unroll_nested_fuction_calls, export_pipeline
 from tpot.decorators import _gp_new_generation
 
 from tpot.operators import Operator
-from tpot.operators.classifiers import Classifier
+from tpot.operators.classifiers import Classifier, TPOTDecisionTreeClassifier
 from tpot.operators.preprocessors import Preprocessor
 from tpot.operators.selectors import Selector
 
@@ -230,48 +230,51 @@ def check_selector(op):
     )
 
 
+def check_preprocessor(op):
+    """Assert that a TPOT feature preprocessor outputs the same as its sklearn counterpart"""
+    tpot_obj = TPOT(random_state=42)
+
+    prng = np.random.RandomState(42)
+
+    args = []
+    for type_ in op.parameter_types()[0][1:]:
+        args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
+
+    result = op(training_testing_data, *args)
+
+    prp = op._merge_with_default_params(op.preprocess_args(*args))
+    prp.fit(training_features.astype(np.float64))
+    all_features = training_testing_data.drop(non_feature_columns, axis=1).values
+    sklearn_result = prp.transform(all_features.astype(np.float64))
+
+    assert np.allclose(result.drop(non_feature_columns, axis=1).values, sklearn_result)
+
+
 def test_operators():
     """Assert that the TPOT operators match the output of their sklearn counterparts"""
     for op in Operator.inheritors():
         if isinstance(op, Classifier):
             check_classifier.description = ("Assert that the TPOT {} classifier "
-                                         "matches the output of the sklearn "
-                                         "counterpart".format(op.__name__))
+                                      "matches the output of the sklearn "
+                                      "counterpart".format(op.__name__))
             yield check_classifier, op
         elif isinstance(op, Preprocessor):
-            pass
+            check_preprocessor.description = ("Assert that the TPOT {} feature preprocessor "
+                                         "matches the output of the sklearn "
+                                         "counterpart".format(op.__name__))
+            yield check_preprocessor, op
         elif isinstance(op, Selector):
             check_selector.description = ("Assert that the TPOT {} feature selector "
-                                            "matches the output of the sklearn "
-                                            "counterpart".format(op.__name__))
-            yield check_selector, op
+                                         "matches the output of the sklearn "
+                                         "counterpart".format(op.__name__))
 
 
-# def test_preprocessors():
-#     """Assert that the TPOT preprocessors match the output of their sklearn counterparts"""
-#     tpot_obj = TPOT(random_state=42)
-#
-#     for op in Operator.inheritors():
-#         if not isinstance(op, Preprocessor):
-#             continue
-#
-#         prng = np.random.RandomState(42)
-#
-#         args = []
-#         for type_ in op.parameter_types()[0][1:]:
-#             args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
-#
-#         result = op(training_testing_data, *args)
-#
-#         prp = op._merge_with_default_params(op.preprocess_args(*args))
-#         prp.fit(training_features.astype(np.float64))
-#         all_features = training_testing_data.drop(non_feature_columns, axis=1).values
-#         sklearn_result = prp.transform(all_features.astype(np.float64))
-#
-#         check_array_equal.description = ("Assert that the TPOT {} operator matches "
-#                                          "the output of the sklearn counterpart".
-#                                          format(op.__name__))
-#         yield check_array_equal, result.drop(non_feature_columns, axis=1).values, sklearn_result
+def test_operators_2():
+    """Assert that TPOT operators return the input_df when no features are supplied"""
+    assert np.array_equal(
+        training_testing_data.ix[:, -3:],
+        TPOTDecisionTreeClassifier()(training_testing_data.ix[:, -3:], 0.5)
+    )
 
 
 def test_export_pipeline():
@@ -303,3 +306,14 @@ results = exported_pipeline.predict(tpot_data.loc[testing_indices].drop('class',
 """
 
     assert expected_output == export_pipeline(pipeline)
+
+
+def test_export():
+    """Assert that TPOT's export function throws a ValueError when no optimized pipeline exists"""
+    tpot_obj = TPOT()
+
+    try:
+        tpot_obj.export("test.py")
+        assert False  # Should be unreachable
+    except ValueError:
+        pass

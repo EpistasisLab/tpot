@@ -48,7 +48,7 @@ class Operator(object):
         self.training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         # If there are no features left then there is nothing to do
-        if len(self.training_features) == 0:
+        if self.training_features.shape[1] == 0:
             return input_df
 
         # Call child class' _call function
