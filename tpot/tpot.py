@@ -43,6 +43,8 @@ from sklearn.decomposition import RandomizedPCA, FastICA
 from sklearn.kernel_approximation import RBFSampler, Nystroem
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.cross_validation import train_test_split
+from mdr import MDR #temporary, will change to make user install MDR as a pre-req 
+from itertools import combinations
 
 import warnings
 from update_checker import update_check
@@ -790,6 +792,51 @@ class TPOT(object):
             learning_rate=learning_rate, n_estimators=500,
             max_features=max_features, random_state=42, min_weight_fraction_leaf=min_weight)
 
+    def _mdr(self, input_df, tie_break, default_label, num_features_to_combined = 2, score = None):
+        """Fits the Multi-dimensionality Reduction Classifier/Feature Constructor
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the MDR feature constructor
+        tie_break: int
+            One of the class values (currently categorical) that determines which class to assign to the combined feature instance, in case class ratio among 
+        possible classes of that feature instance vector is the same as the class ratio in the general population.
+            Maximum number of features to use (proportion of total features)
+        default_label: int
+            One of the class values (currently categorical) that assigns a class label to combine feature instances that the algorithm has not seen before.
+        num_features_to_combined: int
+            Currently 2 or 3: User-specified number of features to be combined. MDR considers all combinations of the given number of features, and output the one that has the highest score metric. 
+        score: None or external metric function (from sklearn)  
+            Default scoring counts how many newly combined feature actually match the class label of the feature instances.  
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class']}
+            Returns a modified input DataFrame with the new combined feature column appended according to MDR's predictions.
+            Also removes feature columns that are used to fit MDR's model.
+
+        """
+        if len(input_df.columns) == 3:
+            return input_df
+        if num_features_to_combined not in [2,3]:
+            raise ValueError("combining > 3 features currently not supported")
+
+        input_df = input_df.copy()
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).values
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+        max_score = 0 
+        for cols in combinations(training_features.columns.values.tolist(), num_features_to_combined):
+            mdr = MDR(tie_break, default_label)
+            train = training_features.loc[:, cols] 
+            score = mdr.score(train, training_classes, score)
+            if score > max_score: 
+                extra_feature = mdr.fit_transform(train, training_classes)
+
+        training_features['extra'] = extra_feature
+        return training_features
+
+         
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
 
