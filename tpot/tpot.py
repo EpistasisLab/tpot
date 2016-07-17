@@ -55,7 +55,7 @@ import deap
 from deap import algorithms, base, creator, tools, gp
 
 from tqdm import tqdm
-
+from ast import literal_eval 
 
 class Bool(object):
     """Boolean class used for deap due to deap's poor handling of ints and booleans"""
@@ -70,7 +70,7 @@ class TPOT(object):
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
                  random_state=0, verbosity=0, scoring_function=None,
-                 disable_update_check=False):
+                 scoring_kwargs={}, disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -210,10 +210,15 @@ class TPOT(object):
 
         self.hof = None
 
-        if not scoring_function:
+        self.score_sign = 1
+
+        if scoring_function is None:
             self.scoring_function = self._balanced_accuracy
+            self.scoring_kwargs = {}
         else:
             self.scoring_function = scoring_function
+            self.scoring_kwargs = scoring_kwargs
+
 
     def fit(self, features, classes):
         """Fits a machine learning pipeline that maximizes classification accuracy on the provided data
@@ -255,6 +260,7 @@ class TPOT(object):
             np.random.shuffle(data_columns)
             training_testing_data = training_testing_data[data_columns]
 
+
             training_indices, testing_indices = train_test_split(training_testing_data.index,
                                                                  stratify=training_testing_data['class'].values,
                                                                  train_size=0.75,
@@ -266,6 +272,9 @@ class TPOT(object):
             # Default guess: the most frequent class in the training data
             most_frequent_training_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
             training_testing_data.loc[:, 'guess'] = most_frequent_training_class
+            
+            if 'loss' in self.scoring_function.__name__:
+                self.score_sign = -1
 
             self._toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
@@ -297,7 +306,7 @@ class TPOT(object):
             num_evaluations = self.population_size * (self.generations + 1)
             self.pbar = tqdm(total=num_evaluations, unit='pipeline', leave=False,
                              disable=(not verbose), desc='GP Progress')
-
+            
             pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                                      mutpb=self.mutation_rate, ngen=self.generations,
                                      halloffame=self.hof, verbose=False)
@@ -315,7 +324,10 @@ class TPOT(object):
 
             # Store the pipeline with the highest internal testing accuracy
             if self.hof:
-                top_score = 0.
+                if self.score_sign == -1:
+                    top_score = -5000.
+                else:
+                    top_score = 0.
                 for pipeline in self.hof:
                     pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
                     if pipeline_score > top_score:
@@ -1537,7 +1549,6 @@ class TPOT(object):
         try:
             # Transform the tree expression in a callable function
             func = self._toolbox.compile(expr=individual)
-
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
             for i in range(len(individual)):
@@ -1548,36 +1559,43 @@ class TPOT(object):
                     continue
 
                 operator_count += 1
-
             result = func(training_testing_data)
             result = result[result['group'] == 'testing']
-            resulting_score = self.scoring_function(result)
-
+            resulting_score = self.scoring_function(result.loc[:, 'class'], result.loc[:, 'guess'], **self.scoring_kwargs)
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
-            return 5000., 0.
+            if self.score_sign == -1:
+                return 5000., -5000.
+            else:
+                return 5000., 0.
         except (KeyboardInterrupt, SystemExit):
             raise
-        except Exception:
+        except Exception as e:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
-            return 5000., 0.
+            if self.score_sign == -1:
+                return 5000., -5000.
+            else:
+                return 5000., 0.
         finally:
             if not self.pbar.disable:
                 self.pbar.update(1)  # One more pipeline evaluated
 
         if isinstance(resulting_score, float) or isinstance(resulting_score, np.float64) or isinstance(resulting_score, np.float32):
-            return max(1, operator_count), resulting_score
+            return max(1, operator_count), resulting_score * self.score_sign
         else:
             raise ValueError('Scoring function does not return a float')
 
-    def _balanced_accuracy(self, result):
+    def _balanced_accuracy(self, y_true, y_pred):
         """Default scoring function: balanced class accuracy
 
         Parameters
         ----------
-        result: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class']}
-            A DataFrame containing a pipeline's predictions and the corresponding classes for the testing data
+        y_true: pandas.DataFrame {n_samples, 1}
+            A DataFrame containing a pipeline's classes for the testing data
+
+        y_pred: pandas.DataFrame {n_samples, 1}
+            A DataFrame containing a pipeline's guesses for the testing data 
 
         Returns
         -------
@@ -1585,6 +1603,10 @@ class TPOT(object):
             Returns a float value indicating the `individual`'s balanced accuracy on the testing data
 
         """
+        result = pd.DataFrame()
+        result['class'] = y_true
+        result['guess'] = y_pred
+
         all_classes = list(set(result['class'].values))
         all_class_accuracies = []
         for this_class in all_classes:
