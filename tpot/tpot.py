@@ -55,7 +55,6 @@ import deap
 from deap import algorithms, base, creator, tools, gp
 
 from tqdm import tqdm
-from ast import literal_eval 
 
 class Bool(object):
     """Boolean class used for deap due to deap's poor handling of ints and booleans"""
@@ -1570,7 +1569,7 @@ class TPOT(object):
                 return 5000., 0.
         except (KeyboardInterrupt, SystemExit):
             raise
-        except Exception as e:
+        except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
             if self.score_sign == -1:
