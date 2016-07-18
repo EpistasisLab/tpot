@@ -210,7 +210,7 @@ class TPOT(object):
         self.hof = None
 
         self.score_sign = 1
-
+        self.predict_proba = False
         if scoring_function is None:
             self.scoring_function = self._balanced_accuracy
             self.scoring_kwargs = {}
@@ -271,9 +271,18 @@ class TPOT(object):
             # Default guess: the most frequent class in the training data
             most_frequent_training_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
             training_testing_data.loc[:, 'guess'] = most_frequent_training_class
-            
+            try:
+                self.scoring_function(training_testing_data.loc[:, 'class'], training_testing_data.loc[:, 'guess'], **self.scoring_kwargs)
+            except (ValueError, IndexError) as err:
+                if any([isinstance(x, str) for x in training_testing_data['guess']]):
+                    raise ValueError('Strings detected in class column.')
+                else:
+                    self.predict_proba = True
+
             if 'loss' in self.scoring_function.__name__:
                 self.score_sign = -1
+                if 'hamming' not in self.scoring_function.__name__ and 'zero_one' not in self.scoring_function.__name__:
+                    self.predict_proba = True
 
             self._toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
@@ -838,7 +847,14 @@ class TPOT(object):
             clf.fit(training_features, training_classes)
 
         all_features = input_df.drop(self.non_feature_columns, axis=1).values
-        input_df.loc[:, 'guess'] = clf.predict(all_features)
+        if self.predict_proba:
+            if 'predict_proba' in dir(clf):
+                input_df.loc[:, 'guess'] = [np.array(x).dumps() for x in clf.predict_proba(all_features)]
+            else:
+                input_df.loc[:, 'guess'] = [np.array([0.] * len(np.unique(training_classes))).dumps() for x in input_df.index ]
+
+        else:
+            input_df.loc[:, 'guess'] = clf.predict(all_features)
 
         # Also store the guesses as a synthetic feature
         sf_hash = '-'.join(sorted(input_df.columns.values))
@@ -846,7 +862,10 @@ class TPOT(object):
         sf_hash += '{}'.format(clf.__class__)
         sf_hash += '-'.join(kwargs)
         sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        input_df.loc[:, sf_identifier] = input_df['guess'].values
+        if self.predict_proba:
+            input_df.loc[:, sf_identifier] = clf.predict(all_features)
+        else:
+            input_df.loc[:, sf_identifier] = input_df['guess'].values
 
         return input_df
 
@@ -1545,6 +1564,7 @@ class TPOT(object):
             Returns a float value indicating the `individual`'s fitness according to its performance on the provided data
 
         """
+
         try:
             # Transform the tree expression in a callable function
             func = self._toolbox.compile(expr=individual)
@@ -1556,11 +1576,14 @@ class TPOT(object):
                     continue
                 if type(node) is deap.gp.Primitive and node.name == '_combine_dfs':
                     continue
-
                 operator_count += 1
             result = func(training_testing_data)
             result = result[result['group'] == 'testing']
-            resulting_score = self.scoring_function(result.loc[:, 'class'], result.loc[:, 'guess'], **self.scoring_kwargs)
+            if self.predict_proba:
+                resulting_score = self.scoring_function(result.loc[:, 'class'], [np.loads(x) for x in result.loc[:, 'guess']], **self.scoring_kwargs)
+            else:
+                resulting_score = self.scoring_function(result.loc[:, 'class'], result.loc[:, 'guess'], **self.scoring_kwargs)
+
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled in Python
             if self.score_sign == -1:
