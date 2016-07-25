@@ -162,13 +162,13 @@ class TPOT(object):
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
         self._toolbox = base.Toolbox()
-        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=4)
+        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
         self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', gp.compile, pset=self._pset)
         self._toolbox.register('select', self._combined_selection_operator)
         self._toolbox.register('mate', gp.cxOnePoint)
-        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
+        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=3)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes):

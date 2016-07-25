@@ -110,7 +110,7 @@ def expr_to_tree(pipeline):
         if isinstance(node, deap.gp.Primitive):
             arity = _true_arity(pipeline[i:])
             primitive_args = expr_to_tree(pipeline[i + 1:i + 1 + arity])
-            pipeline_tree.append([node.name, *primitive_args])
+            pipeline_tree.append([node.name] + primitive_args)
 
             # Skip past the primitive's args
             [next(iterable) for x in range(arity)]
@@ -261,10 +261,8 @@ def process_operator(operator, depth=0):
 
     if op_name == "CombineDFs":
         steps.append(
-            ("make_union(\n"
-            "{},\n"
-            "{})").format(_indent(_make_branch(operator[1]), 4),
-                          _indent(_make_branch(operator[2]), 4))
+            "make_union(\n{},\n{}\n)".format(_indent(_make_branch(operator[1]), 4),
+                                             _indent(_make_branch(operator[2]), 4))
         )
     else:
         input_name, args = operator[1], operator[2:]

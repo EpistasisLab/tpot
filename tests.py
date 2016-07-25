@@ -340,7 +340,8 @@ def test_generate_pipeline_code():
                 ZeroCount(),
                 GaussianNB()
             )
-        )]), FunctionTransformer(lambda X: X))),
+        )]), FunctionTransformer(lambda X: X))
+    ),
     KNeighborsClassifier(n_neighbors=5, weights="distance")
 )"""
 
@@ -400,7 +401,8 @@ exported_pipeline = make_pipeline(
         RFE(estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
           decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
           max_iter=-1, probability=False, random_state=42, shrinking=True,
-          tol=0.001, verbose=False), step=0.18)),
+          tol=0.001, verbose=False), step=0.18)
+    ),
     KNeighborsClassifier(n_neighbors=5, weights="distance")
 )
 
