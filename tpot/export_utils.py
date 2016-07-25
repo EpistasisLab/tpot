@@ -12,16 +12,14 @@ any later version.
 
 The TPOT library is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-You should have received a copy of the GNU General Public License along with
-the TPOT library. If not, see http://www.gnu.org/licenses/.
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details. You should have received a copy of the GNU General Public License along
+with the TPOT library. If not, see http://www.gnu.org/licenses/.
+
 """
 
-# Utility functions that convert the current optimized pipeline into its corresponding Python code
-# For usage, see export() function in tpot.py
-
 import deap
-from .operators import *
+from . import operators
 
 
 def export_pipeline(exported_pipeline):
@@ -39,78 +37,136 @@ def export_pipeline(exported_pipeline):
         The source code representing the pipeline
 
     """
-    # Unroll the nested function calls into serial code. Check export_utils.py for details.
-    pipeline_list = unroll_nested_fuction_calls(exported_pipeline)
+    # Unroll the nested function calls into serial code
+    pipeline_tree = expr_to_tree(exported_pipeline)[0]
 
     # Have the exported code import all of the necessary modules and functions
-    pipeline_text = generate_import_code(pipeline_list)
+    pipeline_text = generate_import_code(exported_pipeline)
 
-    # Replace the function calls with their corresponding Python code. Check export_utils.py for details.
-    pipeline_text += generate_pipeline_code(pipeline_list)
+    # Replace the function calls with their corresponding Python code
+    pipeline_text += pipeline_code_wrapper(generate_pipeline_code(pipeline_tree))
 
     return pipeline_text
 
 
-def unroll_nested_fuction_calls(exported_pipeline):
-    """Unroll the nested function calls into serial code for use in TPOT.export()
+def expr_to_tree(pipeline):
+    """Convert the unstructured DEAP pipeline into a tree data-structure
 
     Parameters
     ----------
-    exported_pipeline: deap.creator.Individual
+    pipeline: deap.creator.Individual
        The pipeline that is being exported
 
     Returns
     -------
-    exported_pipeline: deap.creator.Individual
-       The current optimized pipeline after unrolling the nested function calls
-    pipeline_list: List
+    pipeline_tree: list
        List of operators in the current optimized pipeline
 
+    EXAMPLE:
+        pipeline:
+            "DecisionTreeClassifier(
+                CombineDFs(
+                    KNeighborsClassifier(
+                        RBFSampler(
+                            input_df,
+                            0.9
+                        ),
+                    23,
+                    35
+                    ),
+                    KNeighborsClassifier(
+                        input_df,
+                        23,
+                        35
+                    )
+                ),
+                28.0
+            )"
+        pipeline_tree:
+            ['DecisionTreeClassifier',
+                ['CombineDFs',
+                    ['KNeighborsClassifier',
+                        ['RBFSampler',
+                            'input_df',
+                            0.90000000000000002
+                        ],
+                        23,
+                        35
+                    ],
+                    ['KNeighborsClassifier',
+                        'input_df',
+                        23,
+                        35
+                    ]
+                ],
+                28.0
+            ]
+
     """
-    pipeline_list = []
-    result_num = 1
-    while True:
-        for node_index in range(len(exported_pipeline) - 1, -1, -1):
-            node = exported_pipeline[node_index]
-            if type(node) is not deap.gp.Primitive:
-                continue
+    pipeline_tree = []
+    iterable = enumerate(pipeline)
 
-            node_params = exported_pipeline[node_index + 1:node_index + node.arity + 1]
+    for i, node in iterable:
+        if isinstance(node, deap.gp.Primitive):
+            arity = _true_arity(pipeline[i:])
+            primitive_args = expr_to_tree(pipeline[i + 1:i + 1 + arity])
+            pipeline_tree.append([node.name, *primitive_args])
 
-            new_val = 'result{}'.format(result_num)
-            operator_list = [new_val, node.name]
-            operator_list.extend([x.name for x in node_params])
-            pipeline_list.append(operator_list)
-            result_num += 1
-            new_val = deap.gp.Terminal(symbolic=new_val, terminal=new_val, ret=new_val)
-            exported_pipeline = exported_pipeline[:node_index] + [new_val] + exported_pipeline[node_index + node.arity + 1:]
-            break
+            # Skip past the primitive's args
+            [next(iterable) for x in range(arity)]
         else:
-            break
+            pipeline_tree.append(node.value)
 
-    # Replace 'ARG0' with 'input_df'
-    for index in range(len(pipeline_list)):
-        pipeline_list[index] = [x if x != 'ARG0' else 'input_df' for x in pipeline_list[index]]
-
-    return pipeline_list
+    return pipeline_tree
 
 
-def generate_import_code(pipeline_list):
+def _true_arity(pipeline):
+    """Recursively determines the number of atoms in a pipeline snip that are
+    contained within the outermost primitive.
+
+    Parameters
+    ----------
+    pipeline: list
+        The partial pipeline to be evaulated
+
+    Returns
+    -------
+    arity: int
+        The number of atoms contained within the primitve
+
+    """
+    if len(pipeline) == 0:
+        return 0
+
+    arity = 0
+    if pipeline[0].name == "CombineDFs":
+        left_arity = _true_arity(pipeline[1:])
+        right_arity = _true_arity(pipeline[1 + left_arity:])
+
+        arity += left_arity + right_arity - 2
+    if isinstance(pipeline[0], deap.gp.Primitive):
+        arity += pipeline[0].arity + _true_arity(pipeline[1:])
+
+    return arity
+
+
+def generate_import_code(pipeline):
     """Generate all library import calls for use in TPOT.export()
 
     Parameters
     ----------
-    pipeline_list: List
+    pipeline: List
        List of operators in the current optimized pipeline
 
     Returns
     -------
     pipeline_text: String
-       The Python code that imports all required library used in the current optimized pipeline
+       The Python code that imports all required library used in the current
+       optimized pipeline
 
     """
     # operator[1] is the name of the operator
-    operators_used = set([operator[1] for operator in pipeline_list])
+    operators_used = [x.name for x in pipeline if isinstance(x, deap.gp.Primitive)]
 
     pipeline_text = 'import numpy as np\n'
     pipeline_text += 'import pandas as pd\n\n'
@@ -118,12 +174,14 @@ def generate_import_code(pipeline_list):
     # Always start with these imports
     pipeline_imports = {
         'sklearn.cross_validation': ['train_test_split'],
-        'sklearn.pipeline':         ['Pipeline']
+        'sklearn.pipeline':         ['make_pipeline', 'make_union'],
+        'sklearn.preprocessing':    ['FunctionTransformer'],
+        'sklearn.ensemble':         ['VotingClassifier']
     }
 
     # Build dict of import requirments from list of operators
     import_relations = {}
-    for op in Operator.inheritors():
+    for op in operators.Operator.inheritors():
         import_relations[op.__name__] = op.import_hash
 
     # Build import dict from operators used
@@ -133,7 +191,7 @@ def generate_import_code(pipeline_list):
             for key in new_dict.keys():
                 if key in old_dict.keys():
                     # Union imports from the same module
-                    old_dict[key] = old_dict[key] | set(new_dict[key])
+                    old_dict[key] = set(old_dict[key]) | set(new_dict[key])
                 else:
                     old_dict[key] = set(new_dict[key])
 
@@ -157,37 +215,107 @@ training_indices, testing_indices = train_test_split(tpot_data.index, stratify=t
     return pipeline_text
 
 
-def generate_pipeline_code(pipeline_list):
-    """Generate code specific to the construction and execution of the sklearn
-    Pipeline
+def pipeline_code_wrapper(pipeline_code):
+    """Generate code specific to the execution of the sklearn pipeline
 
     Parameters
     ----------
-    pipeline_list: list
-        List of operators in the current optimized pipeline
+    pipeline_code: str
+        Code that defines the final sklearn pipeline
 
     Returns
     -------
-    pipeline_text: str
-        Source code containing code related to the sklearn Pipeline
+    Source code for the sklearn pipeline and calls to fit and predict
 
     """
-    steps = []
-    for i, operator in enumerate(pipeline_list):
-        tpot_op = Operator.get_by_name(operator[1])
-        step_name = tpot_op.__class__.__bases__[0].__name__
-
-        args = [eval(x) for x in operator[3:]]  # TODO: Don't use eval()
-        steps.append("(\"{}-{}\", {})".format(i, step_name, tpot_op.export(*args)))
-
-    pipeline_text = """
-exported_pipeline = Pipeline([
-    {STEPS}
-])
+    return """
+exported_pipeline = {}
 
 exported_pipeline.fit(tpot_data.loc[training_indices].drop('class', axis=1).values,
                       tpot_data.loc[training_indices, 'class'].values)
 results = exported_pipeline.predict(tpot_data.loc[testing_indices].drop('class', axis=1))
-""".format(STEPS=",\n    ".join(steps))
+""".format(pipeline_code)
 
+
+def generate_pipeline_code(pipeline_tree):
+    """Generate code specific to the construction of the sklearn Pipeline
+
+    Parameters
+    ----------
+    pipeline_tree: list
+        List of operators in the current optimized pipeline
+
+    Returns
+    -------
+    Source code for the sklearn pipeline
+
+    """
+    steps = process_operator(pipeline_tree)
+    pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
     return pipeline_text
+
+
+def process_operator(operator, depth=0):
+    steps = []
+    op_name = operator[0]
+
+    if op_name == "CombineDFs":
+        steps.append(
+            ("make_union(\n"
+            "{},\n"
+            "{})").format(_indent(_make_branch(operator[1]), 4),
+                          _indent(_make_branch(operator[2]), 4))
+        )
+    else:
+        input_name, args = operator[1], operator[2:]
+        tpot_op = operators.Operator.get_by_name(op_name)
+
+        if input_name != 'input_df':
+            steps.extend(process_operator(input_name, depth + 1))
+
+        # If the step is a classifier and is not the last step then we must
+        # add its guess as a synthetic feature
+        if tpot_op.type == "Classifier" and depth > 0:
+            steps.append(
+                "make_union(VotingClassifier(estimators=[(\"clf\", {})]), FunctionTransformer(lambda X: X))".
+                format(tpot_op.export(*args))
+            )
+        else:
+            steps.append(tpot_op.export(*args))
+
+    return steps
+
+
+def _indent(text, amount):
+    """Indent a multiline string by some number of spaces
+
+    Parameters
+    ----------
+    text: str
+        The text to be indented
+    amount: int
+        The number of spaces to indent the text
+
+    Returns
+    -------
+    indented_text
+
+    """
+    indentation = amount * ' '
+    return indentation + ('\n' + indentation).join(text.split('\n'))
+
+
+def _make_branch(branch):
+    if branch[1] == "input_df":  # If depth of branch == 1
+        tpot_op = operators.Operator.get_by_name(branch[0])
+
+        if tpot_op.type == "Classifier":
+            return """make_union(VotingClassifier(estimators=[('branch',
+{}
+)]), FunctionTransformer(lambda X: X))""".format(_indent(process_operator(branch)[0], 4))
+        else:
+            return process_operator(branch)[0]
+    else:
+        return """make_union(VotingClassifier(estimators=[('branch',
+{}
+)]), FunctionTransformer(lambda X: X))""".format(_indent(generate_pipeline_code(branch), 4))

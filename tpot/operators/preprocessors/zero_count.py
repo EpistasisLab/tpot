@@ -54,7 +54,7 @@ class ZeroCount(BaseEstimator):
             The transformed feature set
         """
         X = check_array(X)
-        n_samples, n_features = X.shape
+        n_features = X.shape[1]
 
         X_transformed = np.copy(X)
 

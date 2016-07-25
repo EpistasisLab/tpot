@@ -28,21 +28,17 @@ from collections import Counter
 
 import numpy as np
 import pandas as pd
-
+import deap
+from deap import algorithms, base, creator, tools, gp
+from tqdm import tqdm
 from sklearn.cross_validation import train_test_split
-
 from update_checker import update_check
 
 from ._version import __version__
 from .export_utils import export_pipeline
 from .decorators import _gp_new_generation
-from .operators import *
+from . import operators
 from .helpers import Bool, Output_DF
-
-import deap
-from deap import algorithms, base, creator, tools, gp
-
-from tqdm import tqdm
 
 
 class TPOT(object):
@@ -109,7 +105,7 @@ class TPOT(object):
         if random_state:
             random.seed(random_state)
             np.random.seed(random_state)
-            Operator.default_arguments['random_state'] = random_state
+            operators.Operator.default_arguments['random_state'] = random_state
 
         self._setup_pset()
         self._setup_toolbox()
@@ -126,20 +122,34 @@ class TPOT(object):
         self._pset.renameArguments(ARG0='input_df')
 
         # Add all operators to the primitive set
-        for op in Operator.inheritors():
+        for op in operators.Operator.inheritors():
+            if op.root:
+                # We need to add rooted primitives twice so that they can
+                # return both an Output_DF (and thus be the root of the tree),
+                # and return a pd.DataFrame so they can exist elsewhere in the
+                # tree.
+                p_types = (op.parameter_types()[0], Output_DF)
+                self._pset.addPrimitive(op, *p_types)
+
             self._pset.addPrimitive(op, *op.parameter_types())
 
+        self._pset.addPrimitive(operators.CombineDFs(), [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+
         # Terminals
-        int_terminals = np.concatenate((np.arange(0, 51, 1),
-            np.arange(60, 110, 10)))
+        int_terminals = np.concatenate((
+            np.arange(0, 51, 1),
+            np.arange(60, 110, 10))
+        )
 
         for val in int_terminals:
             self._pset.addTerminal(val, int)
 
-        float_terminals = np.concatenate(([1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+        float_terminals = np.concatenate((
+            [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
             np.linspace(0., 1., 101),
             np.linspace(2., 50., 49),
-            np.linspace(60., 100., 5)))
+            np.linspace(60., 100., 5))
+        )
 
         for val in float_terminals:
             self._pset.addTerminal(val, float)
@@ -152,13 +162,13 @@ class TPOT(object):
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
         self._toolbox = base.Toolbox()
-        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=4)
         self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', gp.compile, pset=self._pset)
         self._toolbox.register('select', self._combined_selection_operator)
         self._toolbox.register('mate', gp.cxOnePoint)
-        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=3)
+        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes):
@@ -395,7 +405,6 @@ class TPOT(object):
             Parameter names mapped to their values.
 
         """
-
         return self.params
 
     def export(self, output_file_name):
@@ -443,7 +452,7 @@ class TPOT(object):
                 node = individual[i]
                 if type(node) is deap.gp.Terminal:
                     continue
-                if type(node) is deap.gp.Primitive and node.name == '_combine_dfs':
+                if type(node) is deap.gp.Primitive and node.name == 'CombineDFs':
                     continue
 
                 operator_count += 1
@@ -460,8 +469,6 @@ class TPOT(object):
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
-            # import traceback
-            # traceback.print_exc()
             return 5000., 0.
         finally:
             if not self.pbar.disable:
@@ -634,6 +641,7 @@ class TPOT(object):
                 expr.append(prim)
                 for arg in reversed(prim.args):
                     stack.append((depth+1, arg))
+
         return expr
 
 

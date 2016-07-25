@@ -25,8 +25,6 @@ try:
 except ImportError:
     from inspect import getargspec  # Python 2
 
-from ..helpers import Output_DF
-
 
 class Operator(object):
     """Base class for operators in TPOT"""
@@ -89,6 +87,13 @@ class Operator(object):
         each opeartor.
         """
         return self.__class__.sklearn_class.__name__
+
+    @property
+    def type(self):
+        """Returns the type of the operator, e.g:
+        ("Classifier","Selector","Preprocessor")
+        """
+        return self.__class__.__bases__[0].__name__
 
     def _merge_with_default_params(self, kwargs):
         """Apply defined default parameters to the sklearn class where applicable
@@ -156,7 +161,7 @@ class Operator(object):
 
         # First argument is always a DataFrame
         arg_types = [pd.DataFrame] + list(self.arg_types)
-        return_type = Output_DF if self.root else pd.DataFrame
+        return_type = pd.DataFrame
 
         return (arg_types, return_type)
 

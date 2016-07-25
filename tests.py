@@ -6,11 +6,11 @@ TPOT Unit Tests
 
 from tpot import TPOT
 from tpot.tpot import positive_integer, float_range
-from tpot.export_utils import unroll_nested_fuction_calls, export_pipeline, generate_import_code
+from tpot.export_utils import export_pipeline, generate_import_code, expr_to_tree, _indent, _true_arity, generate_pipeline_code
 from tpot.decorators import _gp_new_generation
 from tpot.helpers import Output_DF
 
-from tpot.operators import Operator
+from tpot.operators import Operator, CombineDFs
 from tpot.operators.classifiers import Classifier, TPOTDecisionTreeClassifier
 from tpot.operators.preprocessors import Preprocessor
 from tpot.operators.selectors import Selector, TPOTSelectKBest
@@ -162,39 +162,6 @@ def test_fit():
     assert tpot_obj.gp_generation == 0
 
 
-def test_unroll_nested():
-    """Assert that export utils' unroll_nested_fuction_calls outputs pipeline_list as expected"""
-
-    tpot_obj = TPOT()
-
-    expected_list = [['result1', 'LogisticRegression', 'input_df', '1.0', '0', 'True']]
-
-    pipeline = creator.Individual.\
-        from_string('LogisticRegression(input_df, 1.0, 0, True)', tpot_obj._pset)
-
-    pipeline_list = unroll_nested_fuction_calls(pipeline)
-
-    assert expected_list == pipeline_list
-
-
-def test_generate_import_code():
-    """Assert that export utils' generate_import_code properly merges two imports from the same module"""
-    pipeline_list = [['result1', 'SelectPercentile', 'input_df', '50']]
-    expected_imports = """import numpy as np
-import pandas as pd
-
-from sklearn.cross_validation import train_test_split
-from sklearn.feature_selection import SelectPercentile, f_classif
-from sklearn.pipeline import Pipeline
-
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
-"""
-
-    assert expected_imports == generate_import_code(pipeline_list)
-
-
 def test_gp_new_generation():
     """Assert that the gp_generation count gets incremented when _gp_new_generation is called"""
     tpot_obj = TPOT()
@@ -330,35 +297,11 @@ def test_operators_2():
     )
 
 
-def test_export_pipeline():
-    """Assert that TPOT's export utils outputs a pipeline as expected"""
-    tpot_obj = TPOT(random_state=42)
-    pipeline = creator.Individual.\
-        from_string('ExtraTreesClassifier(PolynomialFeatures(input_df), 42, 0.93, 0.7)', tpot_obj._pset)
-
-    expected_output = """import numpy as np
-import pandas as pd
-
-from sklearn.cross_validation import train_test_split
-from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import PolynomialFeatures
-
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
-
-exported_pipeline = Pipeline([
-    ("0-Preprocessor", PolynomialFeatures(degree=2, include_bias=False, interaction_only=False)),
-    ("1-Classifier", ExtraTreesClassifier(criterion="gini", max_features=0.93, min_weight_fraction_leaf=0.5, n_estimators=500))
-])
-
-exported_pipeline.fit(tpot_data.loc[training_indices].drop('class', axis=1).values,
-                      tpot_data.loc[training_indices, 'class'].values)
-results = exported_pipeline.predict(tpot_data.loc[testing_indices].drop('class', axis=1))
-"""
-
-    assert expected_output == export_pipeline(pipeline)
+def test_combine_dfs():
+    """Assert that the TPOT CombineDFs operator creates a combined feature set from two input sets"""
+    combined_dfs = training_testing_data.\
+        join(training_testing_data[[column for column in training_testing_data.columns.values if column not in training_testing_data.columns.values]])
+    assert np.array_equal(CombineDFs()(training_testing_data, training_testing_data), combined_dfs)
 
 
 def test_export():
@@ -372,10 +315,133 @@ def test_export():
         pass
 
 
+def test_generate_pipeline_code():
+    """Assert that generate_pipeline_code() returns the correct code given a specific pipeline"""
+    pipeline = ['KNeighborsClassifier',
+        ['CombineDFs',
+            ['GradientBoostingClassifier',
+                'input_df',
+                38.0,
+                0.87,
+                30.0],
+            ['GaussianNB',
+                ['ZeroCount',
+                    'input_df']]],
+        18,
+        33]
+
+    expected_code = """make_pipeline(
+    make_union(
+        make_union(VotingClassifier(estimators=[('branch',
+            GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, min_weight_fraction_leaf=0.5, n_estimators=500)
+        )]), FunctionTransformer(lambda X: X)),
+        make_union(VotingClassifier(estimators=[('branch',
+            make_pipeline(
+                ZeroCount(),
+                GaussianNB()
+            )
+        )]), FunctionTransformer(lambda X: X))),
+    KNeighborsClassifier(n_neighbors=5, weights="distance")
+)"""
+
+    assert expected_code == generate_pipeline_code(pipeline)
+
+
+def test_generate_import_code():
+    """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline"""
+    tpot_obj = TPOT()
+    pipeline = creator.Individual.\
+        from_string('DecisionTreeClassifier(SelectKBest(input_df, 7), 0.5)', tpot_obj._pset)
+
+    expected_code = """import numpy as np
+import pandas as pd
+
+from sklearn.cross_validation import train_test_split
+from sklearn.ensemble import VotingClassifier
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import FunctionTransformer
+from sklearn.tree import DecisionTreeClassifier
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+"""
+
+    assert expected_code == generate_import_code(pipeline)
+
+
+def test_export_pipeline():
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline"""
+    tpot_obj = TPOT()
+    pipeline = creator.Individual.\
+        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_df, 38.0, 0.87, 30.0), RFE(input_df, 0.17999999999999999)), 18, 33)", tpot_obj._pset)
+
+    expected_code = """import numpy as np
+import pandas as pd
+
+from sklearn.cross_validation import train_test_split
+from sklearn.ensemble import GradientBoostingClassifier, VotingClassifier
+from sklearn.feature_selection import RFE
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import FunctionTransformer
+from sklearn.svm import SVC
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+
+exported_pipeline = make_pipeline(
+    make_union(
+        make_union(VotingClassifier(estimators=[('branch',
+            GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, min_weight_fraction_leaf=0.5, n_estimators=500)
+        )]), FunctionTransformer(lambda X: X)),
+        RFE(estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+          decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
+          max_iter=-1, probability=False, random_state=42, shrinking=True,
+          tol=0.001, verbose=False), step=0.18)),
+    KNeighborsClassifier(n_neighbors=5, weights="distance")
+)
+
+exported_pipeline.fit(tpot_data.loc[training_indices].drop('class', axis=1).values,
+                      tpot_data.loc[training_indices, 'class'].values)
+results = exported_pipeline.predict(tpot_data.loc[testing_indices].drop('class', axis=1))
+"""
+
+    assert expected_code == export_pipeline(pipeline)
+
+
 def test_operator_export():
     """Assert that a TPOT operator can export properly with a function as a parameter to a classifier"""
     export_string = TPOTSelectKBest().export(5)
     assert export_string == "SelectKBest(k=5, score_func=f_classif)"
+
+
+def test_indent():
+    """Assert that indenting a multiline string by 4 spaces prepends 4 spaces before each new line"""
+
+    multiline_string = """test
+test1
+test2
+test3"""
+
+    indented_multiline_string = """    test
+    test1
+    test2
+    test3"""
+
+    assert indented_multiline_string == _indent(multiline_string, 4)
+
+
+def test_operator_type():
+    """Assert that TPOT operators return their type, e.g. "Classifier", "Preprocessor" """
+    assert TPOTSelectKBest().type == "Selector"
+
+
+def test_get_by_name():
+    """Assert that the Operator class returns operators by name appropriately"""
+    assert Operator.get_by_name("SelectKBest").__class__ == TPOTSelectKBest
 
 
 def test_gen():
