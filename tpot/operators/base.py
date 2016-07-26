@@ -40,8 +40,10 @@ class Operator(object):
         input_df = input_df.copy()  # Make a copy of the input dataframe
 
         self.training_features = input_df.\
-            loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).values
-        self.training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+            loc[input_df['group'] == 'training'].\
+            drop(self.non_feature_columns, axis=1).values
+        self.training_classes = input_df.\
+            loc[input_df['group'] == 'training', 'class'].values
 
         # If there are no features left then there is nothing to do
         if self.training_features.shape[1] == 0:
@@ -113,19 +115,23 @@ class Operator(object):
         """
         try:
             # Python 3
-            sklearn_argument_names = set(signature(self.sklearn_class).parameters.keys())
+            sklearn_argument_names = set(signature(self.sklearn_class).\
+                parameters.keys())
         except NameError:
             # Python 2
             try:
-                sklearn_argument_names = set(getargspec(self.sklearn_class.__init__).args)
+                sklearn_argument_names = \
+                    set(getargspec(self.sklearn_class.__init__).args)
             except TypeError:
                 # For when __init__ comes from C code and can not be inspected
                 sklearn_argument_names = set([])  # Assume no parameters
 
         default_argument_names = set(self.default_arguments.keys())
 
-        # Find which arguments are defined in both the defaults and the sklearn class
-        applicable_defaults = sklearn_argument_names.intersection(default_argument_names)
+        # Find which arguments are defined in both the defaults and the
+        # sklearn class
+        applicable_defaults = sklearn_argument_names.\
+            intersection(default_argument_names)
 
         for new_arg in applicable_defaults:
             kwargs[new_arg] = self.default_arguments[new_arg]
@@ -152,12 +158,15 @@ class Operator(object):
             num_args = len(signature(self.preprocess_args).parameters.keys())
         except NameError:
             # Python 2
-            num_args = len(getargspec(self.preprocess_args).args[1:])  # Remove 'self'
+
+            # Remove 'self'
+            num_args = len(getargspec(self.preprocess_args).args[1:])
 
         # Make sure the class has been written properly
         if num_args != len(self.arg_types):
             raise RuntimeError(("{}'s arg_types does not correspond to the "
-                                "arguments defined for itself".format(self.__name__)))
+                                "arguments defined for itself".
+                                format(self.__name__)))
 
         # First argument is always a DataFrame
         arg_types = [pd.DataFrame] + list(self.arg_types)

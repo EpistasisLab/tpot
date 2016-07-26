@@ -8,7 +8,7 @@ from tpot import TPOT
 from tpot.tpot import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, expr_to_tree, _indent, _true_arity, generate_pipeline_code
 from tpot.decorators import _gp_new_generation
-from tpot.helpers import Output_DF
+from tpot.types import Output_DF
 
 from tpot.operators import Operator, CombineDFs
 from tpot.operators.classifiers import Classifier, TPOTDecisionTreeClassifier

@@ -38,11 +38,13 @@ from ._version import __version__
 from .export_utils import export_pipeline
 from .decorators import _gp_new_generation
 from . import operators
-from .helpers import Bool, Output_DF
+from .types import Bool, Output_DF
 
 
 class TPOT(object):
-    """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
+    """TPOT automatically creates and optimizes machine learning pipelines using
+    genetic programming
+    """
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
@@ -53,26 +55,34 @@ class TPOT(object):
         Parameters
         ----------
         population_size: int (default: 100)
-            The number of pipelines in the genetic algorithm population. Must be > 0.
-            The more pipelines in the population, the slower TPOT will run, but it's also more likely to find better pipelines.
+            The number of pipelines in the genetic algorithm population. Must
+            be > 0.The more pipelines in the population, the slower TPOT will
+            run, but it's also more likely to find better pipelines.
         generations: int (default: 100)
-            The number of generations to run pipeline optimization for. Must be > 0.
-            The more generations you give TPOT to run, the longer it takes, but it's also more likely to find better pipelines.
+            The number of generations to run pipeline optimization for. Must
+            be > 0. The more generations you give TPOT to run, the longer it
+            takes, but it's also more likely to find better pipelines.
         mutation_rate: float (default: 0.9)
-            The mutation rate for the genetic programming algorithm in the range [0.0, 1.0].
-            This tells the genetic programming algorithm how many pipelines to apply random changes to every generation.
-            We don't recommend that you tweak this parameter unless you know what you're doing.
+            The mutation rate for the genetic programming algorithm in the range
+            [0.0, 1.0]. This tells the genetic programming algorithm how many
+            pipelines to apply random changes to every generation. We don't
+            recommend that you tweak this parameter unless you know what you're
+            doing.
         crossover_rate: float (default: 0.05)
-            The crossover rate for the genetic programming algorithm in the range [0.0, 1.0].
-            This tells the genetic programming algorithm how many pipelines to "breed" every generation.
-            We don't recommend that you tweak this parameter unless you know what you're doing.
+            The crossover rate for the genetic programming algorithm in the
+            range [0.0, 1.0]. This tells the genetic programming algorithm how
+            many pipelines to "breed" every generation. We don't recommend that
+            you tweak this parameter unless you know what you're doing.
         random_state: int (default: 0)
-            The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time
-            you run it against the same data set with that seed.
+            The random number generator seed for TPOT. Use this to make sure
+            that TPOT will give you the same results each time you run it
+            against the same data set with that seed.
         verbosity: int (default: 0)
-            How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all
+            How much information TPOT communicates while it's running.
+            0 = none, 1 = minimal, 2 = all
         scoring_function: function (default: balanced accuracy)
-            Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used.
+            Function used to evaluate the goodness of a given pipeline for the
+            classification problem. By default, balanced class accuracy is used.
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 
@@ -82,7 +92,7 @@ class TPOT(object):
 
         """
         # Save params to be recalled later by get_params()
-        self.params = locals()  # Must be placed before any local variable definitions
+        self.params = locals()  # Must be before any local variable definitions
         self.params.pop('self')
 
         # Prompt the user if their version is out of date
@@ -133,7 +143,8 @@ class TPOT(object):
 
             self._pset.addPrimitive(op, *op.parameter_types())
 
-        self._pset.addPrimitive(operators.CombineDFs(), [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(operators.CombineDFs(),
+            [pd.DataFrame, pd.DataFrame], pd.DataFrame)
 
         # Terminals
         int_terminals = np.concatenate((
@@ -159,12 +170,16 @@ class TPOT(object):
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
-        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
+        creator.create('Individual',
+            gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
         self._toolbox = base.Toolbox()
-        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
-        self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
-        self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
+        self._toolbox.register('expr',
+            self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('individual',
+            tools.initIterate, creator.Individual, self._toolbox.expr)
+        self._toolbox.register('population',
+            tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', gp.compile, pset=self._pset)
         self._toolbox.register('select', self._combined_selection_operator)
         self._toolbox.register('mate', gp.cxOnePoint)
@@ -172,12 +187,13 @@ class TPOT(object):
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes):
-        """Fits a machine learning pipeline that maximizes classification accuracy on the provided data
+        """Fits a machine learning pipeline that maximizes classification
+        accuracy on the provided data
 
         Uses genetic programming to optimize a machine learning pipeline that
-        maximizes classification accuracy on the provided `features` and `classes`.
-        Performs an internal stratified training/testing cross-validaton split to avoid
-        overfitting on the provided data.
+        maximizes classification accuracy on the provided features and classes.
+        Performs an internal stratified training/testing cross-validaton split
+        to avoid overfitting on the provided data.
 
         Parameters
         ----------
@@ -205,30 +221,36 @@ class TPOT(object):
                     new_col_names[column] = str(column).zfill(10)
             training_testing_data.rename(columns=new_col_names, inplace=True)
 
-            # Randomize the order of the columns so there is no potential bias introduced by the initial order
-            # of the columns, e.g., the most predictive features at the beginning or end.
+            # Randomize the order of the columns so there is no potential bias
+            # introduced by the initial order of the columns, e.g., the most
+            # predictive features at the beginning or end.
             data_columns = list(training_testing_data.columns.values)
             np.random.shuffle(data_columns)
             training_testing_data = training_testing_data[data_columns]
 
-            training_indices, testing_indices = train_test_split(training_testing_data.index,
-                                                                 stratify=training_testing_data['class'].values,
-                                                                 train_size=0.75,
-                                                                 test_size=0.25)
+            training_indices, testing_indices = train_test_split(
+                training_testing_data.index,
+                stratify=training_testing_data['class'].values,
+                train_size=0.75,
+                test_size=0.25)
 
             training_testing_data.loc[training_indices, 'group'] = 'training'
             training_testing_data.loc[testing_indices, 'group'] = 'testing'
 
             # Default guess: the most frequent class in the training data
-            most_frequent_training_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
+            most_frequent_training_class = Counter(
+                training_testing_data.loc[training_indices, 'class'].values
+            ).most_common(1)[0][0]
             training_testing_data.loc[:, 'guess'] = most_frequent_training_class
 
-            self._toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
+            self._toolbox.register('evaluate',
+                self._evaluate_individual, training_testing_data=training_testing_data)
 
             pop = self._toolbox.population(n=self.population_size)
 
             def pareto_eq(ind1, ind2):
-                """Function used to determine whether two individuals are equal on the Pareto front
+                """Function used to determine whether two individuals are equal
+                on the Pareto front
 
                 Parameters
                 ----------
@@ -240,7 +262,8 @@ class TPOT(object):
                 Returns
                 ----------
                 individuals_equal: bool
-                    Boolean indicating whether the two individuals are equal on the Pareto front
+                    Boolean indicating whether the two individuals are equal on
+                    the Pareto front
 
                 """
                 return np.all(ind1.fitness.values == ind2.fitness.values)
@@ -254,16 +277,18 @@ class TPOT(object):
             self.pbar = tqdm(total=num_evaluations, unit='pipeline', leave=False,
                              disable=(not verbose), desc='GP Progress')
 
-            pop, _ = algorithms.eaSimple(population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
-                                     mutpb=self.mutation_rate, ngen=self.generations,
-                                     halloffame=self.hof, verbose=False)
+            pop, _ = algorithms.eaSimple(
+                population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
+                mutpb=self.mutation_rate, ngen=self.generations,
+                halloffame=self.hof, verbose=False)
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
             pass
         finally:
             # Close the progress bar
-            if not isinstance(self.pbar, type(None)):  # Standard truthiness checks won't work for tqdm
+            # Standard truthiness checks won't work for tqdm
+            if not isinstance(self.pbar, type(None)):
                 self.pbar.close()
 
             # Reset gp_generation counter to restore initial state
@@ -273,13 +298,15 @@ class TPOT(object):
             if self.hof:
                 top_score = 0.
                 for pipeline in self.hof:
-                    pipeline_score = self._evaluate_individual(pipeline, training_testing_data)[1]
+                    pipeline_score = self._evaluate_individual(pipeline,
+                                                              training_testing_data)[1]
                     if pipeline_score > top_score:
                         top_score = pipeline_score
                         self._optimized_pipeline = pipeline
 
             if self.verbosity >= 1 and self._optimized_pipeline:
-                if verbose:  # Add an extra line of spacing if the progress bar was used
+                # Add an extra line of spacing if the progress bar was used
+                if verbose:
                     print()
 
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
@@ -299,7 +326,8 @@ class TPOT(object):
 
         """
         if self._optimized_pipeline is None:
-            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
+            raise ValueError(('A pipeline has not yet been optimized.'
+                              'Please call fit() first.'))
 
         training_data = pd.DataFrame(self._training_features)
         training_data['class'] = self._training_classes
@@ -312,7 +340,8 @@ class TPOT(object):
         training_testing_data = pd.concat([training_data, testing_data])
 
         # Default guess: the most frequent class in the training data
-        most_frequent_training_class = Counter(self._training_classes).most_common(1)[0][0]
+        most_frequent_training_class = Counter(self._training_classes).\
+            most_common(1)[0][0]
         training_testing_data.loc[:, 'guess'] = most_frequent_training_class
 
         new_col_names = {}
@@ -329,7 +358,8 @@ class TPOT(object):
         return result.loc[result['group'] == 'testing', 'guess'].values
 
     def fit_predict(self, features, classes):
-        """Convenience function that fits a pipeline then predicts on the provided features
+        """Convenience function that fits a pipeline then predicts on the
+        provided features
 
         Parameters
         ----------
@@ -364,7 +394,8 @@ class TPOT(object):
 
         """
         if self._optimized_pipeline is None:
-            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
+            raise ValueError(('A pipeline has not yet been optimized.'
+                              'Please call fit() first.'))
 
         training_data = pd.DataFrame(self._training_features)
         training_data['class'] = self._training_classes
@@ -377,7 +408,8 @@ class TPOT(object):
         training_testing_data = pd.concat([training_data, testing_data])
 
         # Default guess: the most frequent class in the training data
-        most_frequent_training_class = Counter(self._training_classes).most_common(1)[0][0]
+        most_frequent_training_class = Counter(self._training_classes).\
+            most_common(1)[0][0]
         training_testing_data.loc[:, 'guess'] = most_frequent_training_class
 
         new_col_names = {}
@@ -386,7 +418,8 @@ class TPOT(object):
                 new_col_names[column] = str(column).zfill(10)
         training_testing_data.rename(columns=new_col_names, inplace=True)
 
-        return self._evaluate_individual(self._optimized_pipeline, training_testing_data)[1]
+        return self._evaluate_individual(self._optimized_pipeline,
+                                        training_testing_data)[1]
 
     def get_params(self, deep=None):
         """Get parameters for this estimator
@@ -421,32 +454,38 @@ class TPOT(object):
 
         """
         if self._optimized_pipeline is None:
-            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
+            raise ValueError(('A pipeline has not yet been optimized.'
+                              'Please call fit() first.'))
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(export_pipeline(self._optimized_pipeline))
 
     def _evaluate_individual(self, individual, training_testing_data):
-        """Determines the `individual`'s fitness according to its performance on the provided data
+        """Determines the `individual`'s fitness according to its performance on
+        the provided data
 
         Parameters
         ----------
         individual: DEAP individual
-            A list of pipeline operators and model parameters that can be compiled by DEAP into a callable function
-        training_testing_data: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class']}
-            A DataFrame containing the training and testing data for the `individual`'s evaluation
+            A list of pipeline operators and model parameters that can be
+            compiled by DEAP into a callable function
+        training_testing_data: pandas.DataFrame {n_samples, n_features}
+            A DataFrame containing the training and testing data for the
+            `individual`'s evaluation
 
         Returns
         -------
         fitness: float
-            Returns a float value indicating the `individual`'s fitness according to its performance on the provided data
+            Returns a float value indicating the `individual`'s fitness
+            according to its performance on the provided data
 
         """
         try:
             # Transform the tree expression in a callable function
             func = self._toolbox.compile(expr=individual)
 
-            # Count the number of pipeline operators as a measure of pipeline complexity
+            # Count the number of pipeline operators as a measure of pipeline
+            # complexity
             operator_count = 0
             for i in range(len(individual)):
                 node = individual[i]
@@ -462,19 +501,19 @@ class TPOT(object):
             resulting_score = self.scoring_function(result)
 
         except MemoryError:
-            # Throw out GP expressions that are too large to be compiled in Python
+            # Throw out GP expressions that are too large to be compiled
             return 5000., 0.
         except (KeyboardInterrupt, SystemExit):
             raise
         except Exception:
-            # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
-            # Instead, assign the crashing pipeline a poor fitness
+            # Catch-all: Do not allow one pipeline that crashes to cause TPOT
+            # to crash. Instead, assign the crashing pipeline a poor fitness
             return 5000., 0.
         finally:
             if not self.pbar.disable:
                 self.pbar.update(1)  # One more pipeline evaluated
 
-        if isinstance(resulting_score, float) or isinstance(resulting_score, np.float64) or isinstance(resulting_score, np.float32):
+        if type(resulting_score) in [float, np.float64, np.float32]:
             return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
@@ -484,23 +523,27 @@ class TPOT(object):
 
         Parameters
         ----------
-        result: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class']}
-            A DataFrame containing a pipeline's predictions and the corresponding classes for the testing data
+        result: pandas.DataFrame {n_samples, n_features}
+            A DataFrame containing a pipeline's predictions and the
+            corresponding classes for the testing data
 
         Returns
         -------
         fitness: float
-            Returns a float value indicating the `individual`'s balanced accuracy on the testing data
+            Returns a float value indicating the `individual`'s balanced
+            accuracy on the testing data
 
         """
         all_classes = list(set(result['class'].values))
         all_class_accuracies = []
         for this_class in all_classes:
-            sens_columns = (result['guess'] == this_class) & (result['class'] == this_class)
+            sens_columns = (result['guess'] == this_class) &\
+                           (result['class'] == this_class)
             sens_count = float(len(result[result['class'] == this_class]))
             this_class_sensitivity = len(result[sens_columns]) / sens_count
 
-            spec_columns = (result['guess'] != this_class) & (result['class'] != this_class)
+            spec_columns = (result['guess'] != this_class) &\
+                           (result['class'] != this_class)
             spec_count = float(len(result[result['class'] != this_class]))
 
             this_class_specificity = len(result[spec_columns]) / spec_count
@@ -514,7 +557,8 @@ class TPOT(object):
 
     @_gp_new_generation
     def _combined_selection_operator(self, individuals, k):
-        """Perform NSGA2 selection on the population according to their Pareto fitness
+        """Perform NSGA2 selection on the population according to their Pareto
+        fitness
 
         Parameters
         ----------
@@ -537,7 +581,8 @@ class TPOT(object):
         Parameters
         ----------
         individual: DEAP individual
-            A list of pipeline operators and model parameters that can be compiled by DEAP into a callable function
+            A list of pipeline operators and model parameters that can be
+            compiled by DEAP into a callable function
 
         Returns
         -------
@@ -576,7 +621,7 @@ class TPOT(object):
 
         def condition(height, depth, type_):
             """Expression generation stops when the depth is equal to height
-            or when it is randomly determined that a a node should be a terminal.
+            or when it is randomly determined that a a node should be a terminal
             """
             return type_ not in [pd.DataFrame, Output_DF] or depth == height
 
@@ -626,7 +671,8 @@ class TPOT(object):
                     _, _, traceback = sys.exc_info()
                     raise IndexError("The gp.generate function tried to add "
                                       "a terminal of type '%s', but there is "
-                                      "none available." % (type_,)).with_traceback(traceback)
+                                      "none available." % (type_,)).\
+                                      with_traceback(traceback)
                 if inspect.isclass(term):
                     term = term()
                 expr.append(term)
@@ -637,7 +683,8 @@ class TPOT(object):
                     _, _, traceback = sys.exc_info()
                     raise IndexError("The gp.generate function tried to add "
                                       "a primitive of type '%s', but there is "
-                                      "none available." % (type_,)).with_traceback(traceback)
+                                      "none available." % (type_,)).\
+                                      with_traceback(traceback)
                 expr.append(prim)
                 for arg in reversed(prim.args):
                     stack.append((depth+1, arg))
@@ -646,7 +693,8 @@ class TPOT(object):
 
 
 def positive_integer(value):
-    """Ensures that the provided value is a positive integer; throws an exception otherwise
+    """Ensures that the provided value is a positive integer; throws an
+    exception otherwise
 
     Parameters
     ----------
@@ -668,7 +716,8 @@ def positive_integer(value):
 
 
 def float_range(value):
-    """Ensures that the provided value is a float integer in the range (0., 1.); throws an exception otherwise
+    """Ensures that the provided value is a float integer in the range (0., 1.)
+    throws an exception otherwise
 
     Parameters
     ----------
