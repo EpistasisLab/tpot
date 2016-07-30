@@ -43,6 +43,7 @@ from sklearn.decomposition import RandomizedPCA, FastICA
 from sklearn.kernel_approximation import RBFSampler, Nystroem
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.cross_validation import train_test_split
+from sklearn import metrics
 
 import warnings
 from update_checker import update_check
@@ -210,11 +211,12 @@ class TPOT(object):
         self.hof = None
 
         self.score_sign = 1
-        self.predict_proba = False
+        self.clf_eval_func = False
         if scoring_function is None:
             self.scoring_function = self._balanced_accuracy
             self.scoring_kwargs = {}
         else:
+            
             self.scoring_function = scoring_function
             self.scoring_kwargs = scoring_kwargs
 
@@ -271,18 +273,12 @@ class TPOT(object):
             # Default guess: the most frequent class in the training data
             most_frequent_training_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
             training_testing_data.loc[:, 'guess'] = most_frequent_training_class
-            try:
-                self.scoring_function(training_testing_data.loc[:, 'class'], training_testing_data.loc[:, 'guess'], **self.scoring_kwargs)
-            except (ValueError, IndexError) as err:
-                if any([isinstance(x, str) for x in training_testing_data['guess']]):
-                    raise ValueError('Strings detected in class column.')
-                else:
-                    self.predict_proba = True
+            
+
 
             if 'loss' in self.scoring_function.__name__:
                 self.score_sign = -1
-                if 'hamming' not in self.scoring_function.__name__ and 'zero_one' not in self.scoring_function.__name__:
-                    self.predict_proba = True
+            self.clf_eval_func = self._parse_scoring_docstring(self.scoring_function)
 
             self._toolbox.register('evaluate', self._evaluate_individual, training_testing_data=training_testing_data)
 
@@ -501,6 +497,34 @@ class TPOT(object):
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(pipeline_text)
+
+    def _parse_scoring_docstring(self, scoring_function):
+        """Function used to determine what function a classifier will need to use to supply to the scoring function
+
+        Parameters
+        ----------
+        scoring_function: method: [true labels], [predicted labels OR prediction probabilities OR decision function output] -> float
+            Classification metric used to evaluate a pipeline's fitness
+
+        Returns
+        -------
+        clf_eval_func: string - {'predict', 'predict_proba', 'decision_function'}
+            String representation of what each classifier will need to supply to the scoring function 
+
+        """
+        
+        possible_sklearn_metrics = [name for name, val in metrics.__dict__.items()]
+
+        if str(scoring_function.__name__ ) in possible_sklearn_metrics:
+            docstring = str(scoring_function.__doc__)
+            if 'decision_function' in docstring:
+                return 'decision_function'
+            elif 'predict_proba' in docstring:
+                return 'predict_proba'
+            elif 'predicted labels' in docstring.lower() or 'estimated targets' in docstring.lower():
+                return 'predict'
+
+        return 'predict'
 
     def _decision_tree(self, input_df, min_weight):
         """Fits a decision tree classifier
@@ -847,12 +871,17 @@ class TPOT(object):
             clf.fit(training_features, training_classes)
 
         all_features = input_df.drop(self.non_feature_columns, axis=1).values
-        if self.predict_proba:
+        if self.clf_eval_func == 'predict_proba':
             if 'predict_proba' in dir(clf):
                 input_df.loc[:, 'guess'] = [np.array(x).dumps() for x in clf.predict_proba(all_features)]
             else:
                 input_df.loc[:, 'guess'] = [np.array([0.] * len(np.unique(training_classes))).dumps() for x in input_df.index ]
 
+        elif self.clf_eval_func == 'decision_function':
+            if 'decision_function' in dir(clf):
+                input_df.loc[:, 'guess'] = [np.array(x).dumps() for x in clf.decision_function(all_features)]
+            else:
+                input_df.loc[:, 'guess'] = [np.array([0.] * len(np.unique(training_classes))).dumps() for x in input_df.index ]
         else:
             input_df.loc[:, 'guess'] = clf.predict(all_features)
 
@@ -862,7 +891,7 @@ class TPOT(object):
         sf_hash += '{}'.format(clf.__class__)
         sf_hash += '-'.join(kwargs)
         sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        if self.predict_proba:
+        if self.clf_eval_func == 'predict_proba' or self.clf_eval_func == 'decision_function':
             input_df.loc[:, sf_identifier] = clf.predict(all_features)
         else:
             input_df.loc[:, sf_identifier] = input_df['guess'].values
@@ -1579,7 +1608,7 @@ class TPOT(object):
                 operator_count += 1
             result = func(training_testing_data)
             result = result[result['group'] == 'testing']
-            if self.predict_proba:
+            if self.clf_eval_func == 'predict_proba' or self.clf_eval_func == 'decision_function':
                 resulting_score = self.scoring_function(result.loc[:, 'class'], [np.loads(x) for x in result.loc[:, 'guess']], **self.scoring_kwargs)
             else:
                 resulting_score = self.scoring_function(result.loc[:, 'class'], result.loc[:, 'guess'], **self.scoring_kwargs)
@@ -1592,7 +1621,7 @@ class TPOT(object):
                 return 5000., 0.
         except (KeyboardInterrupt, SystemExit):
             raise
-        except Exception:
+        except Exception as e:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
             if self.score_sign == -1:
