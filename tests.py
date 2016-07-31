@@ -21,6 +21,7 @@ from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
+from sklearn import metrics
 
 from deap import creator
 from tqdm import tqdm
@@ -1016,3 +1017,62 @@ def test_gp_new_generation():
     dummy_function(tpot_obj, None)
 
     assert(tpot_obj.gp_generation == 1)
+
+def test_scoring_functions_1():
+    """Assert that the default _balanced_accuracy is used when no scoring function is passed"""
+    tpot_obj = TPOT()
+
+    assert(tpot_obj.scoring_function == tpot_obj._balanced_accuracy)
+
+def test_scoring_functions_2():
+    """Assert that a custom classification-based scoring function uses the predict function of each classifier"""
+    def custom_scoring_function(y_true, y_pred):
+        return 1.0
+
+    tpot_obj = TPOT(scoring_function=custom_scoring_function)
+    
+    tpot_obj._training_classes = training_classes
+    tpot_obj._training_features = training_features
+    tpot_obj.pbar = tqdm(total=1, disable=True)
+
+    # Reify pipeline with known score
+    tpot_obj._optimized_pipeline = creator.Individual.\
+        from_string('_logistic_regression(input_df, 1.0, 0, True)', tpot_obj._pset)
+
+    # Get score from TPOT
+    score = tpot_obj.score(testing_features, testing_classes)
+
+    assert(tpot_obj.scoring_function == custom_scoring_function)
+    
+
+def test_scoring_function_3():
+    """Assert that the parse_scoring_docstring works for classification metrics"""
+
+    tpot_obj = TPOT()
+
+    assert(tpot_obj._parse_scoring_docstring(tpot_obj._balanced_accuracy) == 'predict')
+
+    for scoring_func in [metrics.fbeta_score,
+                         metrics.jaccard_similarity_score,
+                         metrics.matthews_corrcoef,
+                         metrics.f1_score,
+                         metrics.precision_score,
+                         metrics.silhouette_score,
+                         metrics.zero_one_loss,
+                         metrics.accuracy_score,
+                         metrics.recall_score,
+                         metrics.hamming_loss]:
+
+        tpot_obj = TPOT(scoring_function=scoring_func)
+        assert(tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function) == 'predict')
+
+    for scoring_func in [metrics.log_loss]:
+        tpot_obj = TPOT(scoring_function=scoring_func)
+        assert(tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function) == 'predict_proba')
+
+    for scoring_func in [metrics.hinge_loss]:
+        tpot_obj = TPOT(scoring_function=scoring_func)
+        assert(tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function) == 'decision_function')
+
+
+
