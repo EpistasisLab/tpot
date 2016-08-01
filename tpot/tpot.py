@@ -874,8 +874,8 @@ class TPOT(object):
 
         input_df = input_df.copy()
 
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
-        training_classes = input_df.loc[input_df['group'] == 'training', 'class']
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).values
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values 
 
         # Try to seed the random_state parameter if the model accepts it.
         try:
