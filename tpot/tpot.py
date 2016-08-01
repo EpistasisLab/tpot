@@ -172,6 +172,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._zero_count, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int, int], pd.DataFrame)
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
