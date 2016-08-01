@@ -11,7 +11,7 @@ import numpy as np
 from collections import Counter
 import warnings
 import inspect
-
+import hashlib
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier, GradientBoostingClassifier
@@ -1031,3 +1031,154 @@ def test_gp_new_generation():
     dummy_function(tpot_obj, None)
 
     assert(tpot_obj.gp_generation == 1)
+
+
+def test_mdr_2_from_2():
+    """Assert that the mdr integration chooses the right set of features to combine, and outputs the right training dataset with the new constructed feature. """
+    training_features = np.array([[2,0],
+                        [0, 0],
+                        [0, 1],
+                        [0, 0],
+                        [0, 0],
+                        [0, 0],
+                        [0, 1],
+                        [0, 0],
+                        [0, 0],
+                        [0, 1],
+                        [0, 0],
+                        [0, 0],
+                        [0, 0],
+                        [1, 1],
+                        [1, 1]])
+    training_classes = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0])
+
+    testing_features =          np.array([[2, 2],
+                                [1, 1], 
+                                [0, 0], 
+                                [0, 0], 
+                                [0, 0], 
+                                [0, 0], 
+                                [1, 1], 
+                                [0, 0], 
+                                [0, 0], 
+                                [0, 0], 
+                                [0, 1], 
+                                [1, 0], 
+                                [0, 0], 
+                                [1, 0], 
+                                [0, 0]])
+    testing_classes = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0])
+
+    training_data = pd.DataFrame(training_features)
+    training_data['class'] = training_classes
+    training_data['group'] = 'training'
+
+    testing_data = pd.DataFrame(testing_features)
+    testing_data['class'] = testing_classes
+    testing_data['group'] = 'testing'
+
+    training_testing_data = pd.concat([training_data, testing_data])
+    most_frequent_class = Counter(training_classes).most_common(1)[0][0]
+    training_testing_data['guess'] = most_frequent_class
+
+    for column in training_testing_data.columns.values:
+        if type(column) != str:
+            training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
+    tpot_obj = TPOT()
+    tie_break = 7
+    default_label = 7
+    num_features_to_combined = 2
+    result = tpot_obj._mdr(training_testing_data, tie_break = tie_break, default_label = default_label, num_features_to_combined = num_features_to_combined)
+
+    non_feature_columns = ['class', 'group', 'guess']
+    all_features = training_testing_data.drop(non_feature_columns, axis=1).columns.values.tolist()
+    mdr_hash = '-'.join(sorted(all_features))
+    mdr_hash += 'MDR'
+    mdr_hash += '-'.join([str(param) for param in [tie_break, default_label, num_features_to_combined]])
+    mdr_identifier = 'ConstructedFeature-{}'.format(hashlib.sha224(mdr_hash.encode('UTF-8')).hexdigest())
+    print (result[mdr_identifier])
+    assert np.array_equal(result[mdr_identifier], [1,0,1,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0])
+
+# def test_mdr_2_from_3():
+#     """Assert that the mdr integration chooses the right set of features to combine, and outputs the right training dataset with the new constructed feature. """
+#     training_features = np.array([[2, 0, 1],
+#                         [0, 0, 0],
+#                         [0, 1, 0],
+#                         [0, 0, 0],
+#                         [0, 0, 0],
+#                         [0, 0, 1],
+#                         [0, 1, 0],
+#                         [0, 0, 0],
+#                         [0, 0, 0],
+#                         [0, 1, 0],
+#                         [0, 0, 1],
+#                         [0, 0, 0],
+#                         [0, 0, 1],
+#                         [1, 1, 0],
+#                         [1, 1, 2]])
+
+#     #matrix count: 
+#     2 0 1 - maps to 1 
+#     0 0 0 - maps to 1
+#     0 1 0 - maps to 1 
+#     0 0 1 - maps to 0 
+#     110  - maps to 0 
+#     112 maps to 0 
+#     ----------------
+#     first two columns: 
+#     2 0 maps to 1
+#     0 0 maps to 1
+#     0 1 maps to 1 
+#     11 maps to 0 
+
+
+
+#     training_classes = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0])
+
+#     testing_features =          np.array([[1, 2, 0],
+#                                 [1, 1, 0], 
+#                                 [0, 0, 1], 
+#                                 [0, 0, 0], 
+#                                 [0, 0, 0], 
+#                                 [0, 0, 0], 
+#                                 [1, 1, 1], 
+#                                 [0, 0, 0], 
+#                                 [0, 0, 0], 
+#                                 [0, 0, 1], 
+#                                 [0, 1, 0], 
+#                                 [1, 0, 0], 
+#                                 [0, 0, 0], 
+#                                 [1, 0, 1], 
+#                                 [0, 0, 1]])
+#     testing_classes = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0])
+
+#     training_data = pd.DataFrame(training_features)
+#     training_data['class'] = training_classes
+#     training_data['group'] = 'training'
+
+#     testing_data = pd.DataFrame(testing_features)
+#     testing_data['class'] = testing_classes
+#     testing_data['group'] = 'testing'
+
+#     training_testing_data = pd.concat([training_data, testing_data])
+#     most_frequent_class = Counter(training_classes).most_common(1)[0][0]
+#     training_testing_data['guess'] = most_frequent_class
+
+#     for column in training_testing_data.columns.values:
+#         if type(column) != str:
+#             training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
+#     tpot_obj = TPOT()
+#     tie_break = 7
+#     default_label = 7
+#     num_features_to_combined = 2
+#     result = tpot_obj._mdr(training_testing_data, tie_break = tie_break, default_label = default_label, num_features_to_combined = num_features_to_combined)
+
+#     non_feature_columns = ['class', 'group', 'guess']
+#     all_features = training_testing_data.drop(non_feature_columns, axis=1).columns.values.tolist()
+#     mdr_hash = '-'.join(sorted(all_features))
+#     mdr_hash += 'MDR'
+#     mdr_hash += '-'.join([str(param) for param in [tie_break, default_label, num_features_to_combined]])
+#     mdr_identifier = 'ConstructedFeature-{}'.format(hashlib.sha224(mdr_hash.encode('UTF-8')).hexdigest())
+#     print (result[mdr_identifier])
+#     assert np.array_equal(result[mdr_identifier], [1,0,1,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0])
+
