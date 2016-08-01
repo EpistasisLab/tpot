@@ -18,6 +18,10 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
+import numpy as np
+
+from tpot.indices import non_feature_columns
+
 
 class CombineDFs(object):
     """Operator to combine two DataFrames"""
@@ -29,17 +33,27 @@ class CombineDFs(object):
     def __name__(self):
         return self.__class__.__name__
 
-    def __call__(self, input_df1, input_df2):
+    def __call__(self, input_mat1, input_mat2):
         """
         Parameters
         ----------
-        input_df1: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to combine
-        input_df2: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame to combine
+        input_df1: numpy.ndarray {n_samples, n_features+['class', 'group', 'guess']}
+            Input matrix to combine
+        input_df2: numpy.ndarray {n_samples, n_features+['class', 'group', 'guess']}
+            Input matrix to combine
         Returns
         -------
-        combined_df: pandas.DataFrame {n_samples, n_both_features+['guess', 'group', 'class']}
+        combined_features: numpy.ndarray {n_samples, n_both_features+['guess', 'group', 'class']}
             Returns a DataFrame containing the features of both input_df1 and input_df2
         """
-        return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
+        features1 = np.copy(input_mat1)
+        np.delete(features1, non_feature_columns)
+        features2 = np.copy(input_mat2)
+        np.delete(features2, non_feature_columns)
+
+        combined_features = np.concatenate([features1, features2], axis=1)
+
+        for col in non_feature_columns:
+            np.insert(combined_features, 0, input_mat1[:, col], axis=1)
+
+        return combined_features

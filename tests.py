@@ -6,16 +6,16 @@ TPOT Unit Tests
 
 from tpot import TPOT
 from tpot.tpot import positive_integer, float_range
-from tpot.export_utils import export_pipeline, generate_import_code, expr_to_tree, _indent, _true_arity, generate_pipeline_code
+from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
 from tpot.decorators import _gp_new_generation
 from tpot.types import Output_DF
+from tpot.indices import non_feature_columns
 
 from tpot.operators import Operator, CombineDFs
 from tpot.operators.classifiers import Classifier, TPOTDecisionTreeClassifier
 from tpot.operators.preprocessors import Preprocessor
 from tpot.operators.selectors import Selector, TPOTSelectKBest
 
-import pandas as pd
 import numpy as np
 from collections import Counter
 import warnings
@@ -28,26 +28,19 @@ from tqdm import tqdm
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
-training_features, testing_features, training_classes, testing_classes =\
-        train_test_split(mnist_data.data, mnist_data.target, random_state=42)
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(mnist_data.data, mnist_data.target, random_state=42)
 
-training_data = pd.DataFrame(training_features)
-training_data['class'] = training_classes
-training_data['group'] = 'training'
+# Training data group is 0 testing data group is 1
+training_data = np.insert(training_features, 0, training_classes, axis=1)  # Insert the classes
+training_data = np.insert(training_data, 0, np.zeros((training_data.shape[0],)), axis=1)  # Insert the group
+testing_data = np.insert(testing_features, 0, np.zeros((testing_features.shape[0],)), axis=1)  # Insert the classes
+testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
 
-testing_data = pd.DataFrame(testing_features)
-testing_data['class'] = 0
-testing_data['group'] = 'testing'
-
-training_testing_data = pd.concat([training_data, testing_data])
+# Insert guess
 most_frequent_class = Counter(training_classes).most_common(1)[0][0]
-training_testing_data['guess'] = most_frequent_class
-
-for column in training_testing_data.columns.values:
-    if type(column) != str:
-        training_testing_data.rename(columns={column: str(column).zfill(5)}, inplace=True)
-
-non_feature_columns = ['guess', 'class', 'group']
+data = np.concatenate([training_data, testing_data])
+data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
 
 
 def test_init():
@@ -190,12 +183,12 @@ def check_classifier(op):
     for type_ in op.parameter_types()[0][1:]:
         args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
 
-    result = op(training_testing_data, *args)
+    result = op(data, *args)
 
     clf = op._merge_with_default_params(op.preprocess_args(*args))
     clf.fit(training_features, training_classes)
 
-    all_features = training_testing_data.drop(non_feature_columns, axis=1).values
+    all_features = data.drop(non_feature_columns, axis=1).values
 
     assert np.array_equal(result['guess'].values, clf.predict(all_features))
 
@@ -210,10 +203,10 @@ def check_selector(op):
     for type_ in op.parameter_types()[0][1:]:
         args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
 
-    result = op(training_testing_data, *args)
+    result = op(data, *args)
 
     sel = op._merge_with_default_params(op.preprocess_args(*args))
-    training_features_df = training_testing_data.loc[training_testing_data['group'] == 'training'].\
+    training_features_df = data.loc[data['group'] == 'training'].\
         drop(non_feature_columns, axis=1)
 
     with warnings.catch_warnings():
@@ -225,7 +218,7 @@ def check_selector(op):
     mask_cols = list(training_features_df.iloc[:, mask].columns) + non_feature_columns
 
     assert np.array_equal(
-        training_testing_data[mask_cols].drop(non_feature_columns, axis=1).values,
+        data[mask_cols].drop(non_feature_columns, axis=1).values,
         result.drop(non_feature_columns, axis=1).values
     )
 
@@ -240,11 +233,11 @@ def check_preprocessor(op):
     for type_ in op.parameter_types()[0][1:]:
         args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
 
-    result = op(training_testing_data, *args)
+    result = op(data, *args)
 
     prp = op._merge_with_default_params(op.preprocess_args(*args))
     prp.fit(training_features.astype(np.float64))
-    all_features = training_testing_data.drop(non_feature_columns, axis=1).values
+    all_features = data.drop(non_feature_columns, axis=1).values
     sklearn_result = prp.transform(all_features.astype(np.float64))
 
     assert np.allclose(result.drop(non_feature_columns, axis=1).values, sklearn_result)
@@ -292,16 +285,16 @@ def test_operators():
 def test_operators_2():
     """Assert that TPOT operators return the input_df when no features are supplied"""
     assert np.array_equal(
-        training_testing_data.ix[:, -3:],
-        TPOTDecisionTreeClassifier()(training_testing_data.ix[:, -3:], 0.5)
+        data.ix[:, -3:],
+        TPOTDecisionTreeClassifier()(data.ix[:, -3:], 0.5)
     )
 
 
 def test_combine_dfs():
     """Assert that the TPOT CombineDFs operator creates a combined feature set from two input sets"""
-    combined_dfs = training_testing_data.\
-        join(training_testing_data[[column for column in training_testing_data.columns.values if column not in training_testing_data.columns.values]])
-    assert np.array_equal(CombineDFs()(training_testing_data, training_testing_data), combined_dfs)
+    combined_dfs = data.\
+        join(data[[column for column in data.columns.values if column not in data.columns.values]])
+    assert np.array_equal(CombineDFs()(data, data), combined_dfs)
 
 
 def test_export():
@@ -355,7 +348,6 @@ def test_generate_import_code():
         from_string('DecisionTreeClassifier(SelectKBest(input_df, 7), 0.5)', tpot_obj._pset)
 
     expected_code = """import numpy as np
-import pandas as pd
 
 from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import VotingClassifier
@@ -365,8 +357,11 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
+np.delete(features, tpot_data.dtype.names.index('class'))
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(features, tpot_data['class'], random_state=42)
 """
 
     assert expected_code == generate_import_code(pipeline)
@@ -379,7 +374,6 @@ def test_export_pipeline():
         from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_df, 38.0, 0.87, 30.0), RFE(input_df, 0.17999999999999999)), 18, 33)", tpot_obj._pset)
 
     expected_code = """import numpy as np
-import pandas as pd
 
 from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import GradientBoostingClassifier, VotingClassifier
@@ -390,8 +384,11 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.svm import SVC
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
+np.delete(features, tpot_data.dtype.names.index('class'))
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
     make_union(

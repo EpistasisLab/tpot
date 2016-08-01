@@ -42,7 +42,7 @@ class ZeroCount(BaseEstimator):
 
         Parameters
         ----------
-        X: array-like, shape (n_samples, n_components)
+        X: numpy ndarray, {n_samples, n_components}
             New data, where n_samples is the number of samples and n_components
             is the number of components.
         y: None
@@ -58,8 +58,10 @@ class ZeroCount(BaseEstimator):
 
         X_transformed = np.copy(X)
 
-        non_zero = np.apply_along_axis(lambda row: np.count_nonzero(row), axis=1, arr=X_transformed)
-        zero_col = np.apply_along_axis(lambda row: (n_features - np.count_nonzero(row)), axis=1, arr=X_transformed)
+        non_zero = np.apply_along_axis(lambda row: np.count_nonzero(row),
+                                        axis=1, arr=X_transformed)
+        zero_col = np.apply_along_axis(lambda row: (n_features - np.count_nonzero(row)),
+                                        axis=1, arr=X_transformed)
 
         X_transformed = np.insert(X_transformed, n_features, non_zero, axis=1)
         X_transformed = np.insert(X_transformed, n_features + 1, zero_col, axis=1)

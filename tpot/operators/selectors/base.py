@@ -18,6 +18,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
+import numpy as np
 import warnings
 
 from tpot.operators import Operator
@@ -28,40 +29,37 @@ class Selector(Operator):
 
     root = False  # Whether this operator type can be the root of the tree
 
-    def _call(self, input_df, *args, **kwargs):
+    def _call(self, input_matrix, *args, **kwargs):
         # Calculate arguments to be passed directly to sklearn
         operator_args = self.preprocess_args(*args, **kwargs)
 
         # Run the feature-selector with args
-        return self._fit_mask(input_df, operator_args)
+        return self._fit_mask(input_matrix, operator_args)
 
-    def _fit_mask(self, input_df, operator_args):
+    def _fit_mask(self, input_matrix, operator_args):
         """Run the Selector and return the modified DataFrame
 
         Parameters
         ----------
-            input_df: pd.DataFrame
+            input_matrix: numpy.ndarray
             operator_args: dict
                 Dictionary of arguments to be passed to the selector
 
         Returns
         -------
-            modified_df: pd.DataFrame
+            modified_df: numpy.ndarrayy
 
         """
         # Send arguments to selector but also attempt to add in default
         # arguments defined in the Operator class
         op = self._merge_with_default_params(operator_args)
 
-        training_features_df = input_df.loc[input_df['group'] == 'training'].\
-            drop(self.non_feature_columns, axis=1)
-
         with warnings.catch_warnings():
             # Ignore warnings about constant features
             warnings.simplefilter('ignore', category=UserWarning)
-            op.fit(training_features_df, self.training_classes)
+            op.fit(self.training_features, self.training_classes)
 
         mask = op.get_support(True)
-        mask_cols = list(training_features_df.iloc[:, mask].columns) + self.non_feature_columns
+        np.delete(input_matrix, mask, axis=1)
 
-        return input_df[mask_cols]
+        return input_matrix

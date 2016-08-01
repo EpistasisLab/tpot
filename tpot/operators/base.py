@@ -18,8 +18,10 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-import pandas as pd
+import numpy as np
 from types import FunctionType
+from tpot.indices import CLASS_COL, GROUP_COL, TRAINING_GROUP, non_feature_columns
+
 try:
     from inspect import signature  # Python 3
 except ImportError:
@@ -28,7 +30,6 @@ except ImportError:
 
 class Operator(object):
     """Base class for operators in TPOT"""
-    non_feature_columns = ['class', 'group', 'guess']
 
     # Default parameters for sklearn classes
     default_arguments = {
@@ -36,21 +37,19 @@ class Operator(object):
         'n_jobs': -1
     }
 
-    def __call__(self, input_df, *args, **kwargs):
-        input_df = input_df.copy()  # Make a copy of the input dataframe
+    def __call__(self, input_matrix, *args, **kwargs):
+        input_matrix = np.copy(input_matrix)  # Make a copy of the input dataframe
 
-        self.training_features = input_df.\
-            loc[input_df['group'] == 'training'].\
-            drop(self.non_feature_columns, axis=1).values
-        self.training_classes = input_df.\
-            loc[input_df['group'] == 'training', 'class'].values
+        self.training_features = input_matrix[input_matrix[:, GROUP_COL] == TRAINING_GROUP]
+        np.delete(self.training_features, non_feature_columns, axis=1)
+        self.training_classes = input_matrix[input_matrix[:, GROUP_COL] == TRAINING_GROUP][:, CLASS_COL]
 
         # If there are no features left then there is nothing to do
         if self.training_features.shape[1] == 0:
-            return input_df
+            return input_matrix
 
         # Call child class' _call function
-        return self._call(input_df, *args, **kwargs)
+        return self._call(input_matrix, *args, **kwargs)
 
     def export(self, *args, **kwargs):
         """Represent the operator as a string so that it can be exported to a
@@ -93,7 +92,7 @@ class Operator(object):
     @property
     def type(self):
         """Returns the type of the operator, e.g:
-        ("Classifier","Selector","Preprocessor")
+        ("Classifier", "Selector", "Preprocessor")
         """
         return self.__class__.__bases__[0].__name__
 
@@ -115,7 +114,7 @@ class Operator(object):
         """
         try:
             # Python 3
-            sklearn_argument_names = set(signature(self.sklearn_class).\
+            sklearn_argument_names = set(signature(self.sklearn_class).
                 parameters.keys())
         except NameError:
             # Python 2
@@ -124,7 +123,7 @@ class Operator(object):
                     set(getargspec(self.sklearn_class.__init__).args)
             except TypeError:
                 # For when __init__ comes from C code and can not be inspected
-                sklearn_argument_names = set([])  # Assume no parameters
+                sklearn_argument_names = set()  # Assume no parameters
 
         default_argument_names = set(self.default_arguments.keys())
 
@@ -169,8 +168,8 @@ class Operator(object):
                                 format(self.__name__)))
 
         # First argument is always a DataFrame
-        arg_types = [pd.DataFrame] + list(self.arg_types)
-        return_type = pd.DataFrame
+        arg_types = [np.ndarray] + list(self.arg_types)
+        return_type = np.ndarray
 
         return (arg_types, return_type)
 

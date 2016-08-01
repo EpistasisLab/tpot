@@ -168,8 +168,7 @@ def generate_import_code(pipeline):
     # operator[1] is the name of the operator
     operators_used = [x.name for x in pipeline if isinstance(x, deap.gp.Primitive)]
 
-    pipeline_text = 'import numpy as np\n'
-    pipeline_text += 'import pandas as pd\n\n'
+    pipeline_text = 'import numpy as np\n\n'
 
     # Always start with these imports
     pipeline_imports = {
@@ -208,8 +207,11 @@ def generate_import_code(pipeline):
 
     pipeline_text += """
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
+np.delete(features, tpot_data.dtype.names.index('class'))
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(features, tpot_data['class'], random_state=42)
 """
 
     return pipeline_text
@@ -231,9 +233,8 @@ def pipeline_code_wrapper(pipeline_code):
     return """
 exported_pipeline = {}
 
-exported_pipeline.fit(tpot_data.loc[training_indices].drop('class', axis=1).values,
-                      tpot_data.loc[training_indices, 'class'].values)
-results = exported_pipeline.predict(tpot_data.loc[testing_indices].drop('class', axis=1))
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
 """.format(pipeline_code)
 
 

@@ -19,10 +19,10 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 import numpy as np
-import pandas as pd
 import warnings
 
 from tpot.operators import Operator
+from tpot.indicies import non_feature_columns
 
 
 class Preprocessor(Operator):
@@ -30,38 +30,33 @@ class Preprocessor(Operator):
 
     root = False  # Whether this operator type can be the root of the tree
 
-    def _call(self, input_df, *args, **kwargs):
+    def _call(self, input_matrix, *args, **kwargs):
         # Calculate arguments to be passed directly to sklearn
         operator_args = self.preprocess_args(*args, **kwargs)
 
         # Run the feature-preprocessor with args
-        modified_df = self._fit_transform(input_df, operator_args)
+        features = np.copy(input_matrix)
+        np.delete(features, non_feature_columns, axis=1)
+        modified_df = self._fit_transform(features, operator_args)
 
-        # Add non_feature_columns back to DataFrame
-        for non_feature_column in self.non_feature_columns:
-            modified_df[non_feature_column] = input_df[non_feature_column].values
-
-        # Translate non-string column titles into strings
-        new_col_names = {}
-        for column in modified_df.columns.values:
-            if type(column) != str:
-                new_col_names[column] = str(column).zfill(10)
-        modified_df.rename(columns=new_col_names, inplace=True)
+        # Add non_feature_columns back to the matrix
+        for col in non_feature_columns:
+            np.insert(modified_df, 0, input_matrix[:, col], axis=1)
 
         return modified_df
 
-    def _fit_transform(self, input_df, operator_args):
+    def _fit_transform(self, features, operator_args):
         """Run the Preprocessor and return the modified DataFrame
 
         Parameters
         ----------
-            input_df: pd.DataFrame
+            features: numpy.ndarray
             operator_args: dict
                 Dictionary of arguments to be passed to the preprocessor
 
         Returns
         -------
-            modified_df: pd.DataFrame
+            transformed_features: numpy.ndarray
 
         """
         # Send arguments to preprocessor but also attempt to add in default
@@ -72,7 +67,6 @@ class Preprocessor(Operator):
             warnings.simplefilter('ignore', category=UserWarning)
 
             op.fit(self.training_features.astype(np.float64))
-            transformed_features = op.transform(input_df.drop(self.non_feature_columns, axis=1).
-                values.astype(np.float64))
+            transformed_features = op.transform(features, axis=1).astype(np.float64)
 
-        return pd.DataFrame(data=transformed_features)
+        return transformed_features

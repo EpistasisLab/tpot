@@ -18,9 +18,10 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-import hashlib
+import numpy as np
 
 from tpot.operators import Operator
+from tpot.indices import GUESS_COL, non_feature_columns
 
 
 class Classifier(Operator):
@@ -28,29 +29,24 @@ class Classifier(Operator):
 
     root = True  # Whether this operator type can be the root of the tree
 
-    def _call(self, input_df, *args, **kwargs):
+    def _call(self, input_matrix, *args, **kwargs):
         # Calculate arguments to be passed directly to sklearn
         operator_args = self.preprocess_args(*args, **kwargs)
 
-        return self._train_and_predict(input_df, operator_args)
+        return self._train_and_predict(input_matrix, operator_args)
 
-    def _train_and_predict(self, input_df, operator_args):
+    def _train_and_predict(self, input_matrix, operator_args):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
 
         Parameters
         ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the k-neares
+        input_matrix: numpy.ndarray
         operator_args: dict
             Input parameters to pass to the model's constructor
 
         Returns
         -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated
-            according to the classifier's predictions. Also adds the
-            classifiers's predictions as a 'SyntheticFeature' column.
-
+        modified_df: numpy.ndarray
         """
 
         # Send arguments to classifier but also attempt to add in default
@@ -60,21 +56,10 @@ class Classifier(Operator):
         # Fit classifier to the data set
         clf.fit(self.training_features, self.training_classes)
 
-        all_features = input_df.drop(self.non_feature_columns, axis=1).values
-        input_df.loc[:, 'guess'] = clf.predict(all_features)
-
+        all_features = np.copy(input_matrix)
+        np.delete(all_features, non_feature_columns, axis=1)
+        input_matrix[:, GUESS_COL] = clf.predict(all_features)
         # Store the guesses as a synthetic feature
-        return self._add_synth_feature(input_df, operator_args)
+        input_matrix[:, :-1] = input_matrix[GUESS_COL]
 
-    def _add_synth_feature(self, input_df, operator_args):
-        column_names = [str(x) for x in input_df.columns.values.tolist()]
-
-        sf_hash = '-'.join(sorted(column_names)) + \
-                  str(self.sklearn_class.__class__) + \
-                  '-'.join(operator_args)
-        sf_identifier = 'SyntheticFeature-{}'.\
-            format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-
-        input_df.loc[:, sf_identifier] = input_df['guess'].values
-
-        return input_df
+        return input_matrix

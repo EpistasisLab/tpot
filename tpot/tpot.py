@@ -27,7 +27,6 @@ from functools import partial
 from collections import Counter
 
 import numpy as np
-import pandas as pd
 import deap
 from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
@@ -39,6 +38,7 @@ from .export_utils import export_pipeline
 from .decorators import _gp_new_generation
 from . import operators
 from .types import Bool, Output_DF
+from .indices import GUESS_COL
 
 
 class TPOT(object):
@@ -126,17 +126,17 @@ class TPOT(object):
             self.scoring_function = scoring_function
 
     def _setup_pset(self):
-        self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], Output_DF)
+        self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_DF)
 
         # Rename pipeline input to "input_df"
-        self._pset.renameArguments(ARG0='input_df')
+        self._pset.renameArguments(ARG0='input_matrix')
 
         # Add all operators to the primitive set
         for op in operators.Operator.inheritors():
             if op.root:
                 # We need to add rooted primitives twice so that they can
                 # return both an Output_DF (and thus be the root of the tree),
-                # and return a pd.DataFrame so they can exist elsewhere in the
+                # and return a np.ndarray so they can exist elsewhere in the
                 # tree.
                 p_types = (op.parameter_types()[0], Output_DF)
                 self._pset.addPrimitive(op, *p_types)
@@ -144,7 +144,7 @@ class TPOT(object):
             self._pset.addPrimitive(op, *op.parameter_types())
 
         self._pset.addPrimitive(operators.CombineDFs(),
-            [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+            [np.ndarray, np.ndarray], np.ndarray)
 
         # Terminals
         int_terminals = np.concatenate((
@@ -212,39 +212,28 @@ class TPOT(object):
             self._training_features = features
             self._training_classes = classes
 
-            training_testing_data = pd.DataFrame(data=features)
-            training_testing_data['class'] = classes
-
-            new_col_names = {}
-            for column in training_testing_data.columns.values:
-                if type(column) != str:
-                    new_col_names[column] = str(column).zfill(10)
-            training_testing_data.rename(columns=new_col_names, inplace=True)
-
             # Randomize the order of the columns so there is no potential bias
             # introduced by the initial order of the columns, e.g., the most
             # predictive features at the beginning or end.
-            data_columns = list(training_testing_data.columns.values)
-            np.random.shuffle(data_columns)
-            training_testing_data = training_testing_data[data_columns]
+            np.take(features, np.random.permutation(features.shape[0]), axis=1,
+                out=features)
 
-            training_indices, testing_indices = train_test_split(
-                training_testing_data.index,
-                stratify=training_testing_data['class'].values,
-                train_size=0.75,
-                test_size=0.25)
+            training_features, testing_features, training_classes, testing_classes = \
+                train_test_split(features, classes, train_size=0.75, test_size=0.25)
 
-            training_testing_data.loc[training_indices, 'group'] = 'training'
-            training_testing_data.loc[testing_indices, 'group'] = 'testing'
+            # Training group is 0. testing group is 1.
+            training_data = np.insert(training_features, 0, training_classes, axis=1)  # Insert the classes
+            training_data = np.insert(training_data, 0, np.zeros((training_data.shape[0],)), axis=1)  # Insert the group
+            testing_data = np.insert(testing_features, 0, np.zeros((testing_features.shape[0],)), axis=1)  # Insert the classes
+            testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
 
-            # Default guess: the most frequent class in the training data
-            most_frequent_training_class = Counter(
-                training_testing_data.loc[training_indices, 'class'].values
-            ).most_common(1)[0][0]
-            training_testing_data.loc[:, 'guess'] = most_frequent_training_class
+            # Insert guess
+            most_frequent_class = Counter(training_classes).most_common(1)[0][0]
+            data = np.concatenate([training_data, testing_data])
+            data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
 
             self._toolbox.register('evaluate',
-                self._evaluate_individual, training_testing_data=training_testing_data)
+                self._evaluate_individual, training_testing_data=data)
 
             pop = self._toolbox.population(n=self.population_size)
 
@@ -298,8 +287,7 @@ class TPOT(object):
             if self.hof:
                 top_score = 0.
                 for pipeline in self.hof:
-                    pipeline_score = self._evaluate_individual(pipeline,
-                                                              training_testing_data)[1]
+                    pipeline_score = self._evaluate_individual(pipeline, data)[1]
                     if pipeline_score > top_score:
                         top_score = pipeline_score
                         self._optimized_pipeline = pipeline
@@ -329,33 +317,21 @@ class TPOT(object):
             raise ValueError(('A pipeline has not yet been optimized.'
                               'Please call fit() first.'))
 
-        training_data = pd.DataFrame(self._training_features)
-        training_data['class'] = self._training_classes
-        training_data['group'] = 'training'
+        training_data = np.insert(self._training_features, 0, self._training_classes, axis=1)  # Insert the classes
+        training_data = np.insert(training_data, 0, np.zeros((training_data.shape[0],)), axis=1)  # Insert the group
+        testing_data = np.insert(testing_features, 0, np.zeros((testing_features.shape[0],)), axis=1)  # Insert the classes
+        testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
 
-        testing_data = pd.DataFrame(testing_features)
-        testing_data['class'] = 0
-        testing_data['group'] = 'testing'
-
-        training_testing_data = pd.concat([training_data, testing_data])
-
-        # Default guess: the most frequent class in the training data
-        most_frequent_training_class = Counter(self._training_classes).\
-            most_common(1)[0][0]
-        training_testing_data.loc[:, 'guess'] = most_frequent_training_class
-
-        new_col_names = {}
-        for column in training_testing_data.columns.values:
-            if type(column) != str:
-                new_col_names[column] = str(column).zfill(10)
-        training_testing_data.rename(columns=new_col_names, inplace=True)
+        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
+        data = np.concatenate([training_data, testing_data])
+        data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
 
         # Transform the tree expression in a callable function
         func = self._toolbox.compile(expr=self._optimized_pipeline)
 
-        result = func(training_testing_data)
+        result = func(data)
 
-        return result.loc[result['group'] == 'testing', 'guess'].values
+        return result[:, GUESS_COL]
 
     def fit_predict(self, features, classes):
         """Convenience function that fits a pipeline then predicts on the
@@ -397,29 +373,21 @@ class TPOT(object):
             raise ValueError(('A pipeline has not yet been optimized.'
                               'Please call fit() first.'))
 
-        training_data = pd.DataFrame(self._training_features)
-        training_data['class'] = self._training_classes
-        training_data['group'] = 'training'
+        training_data = np.insert(self._training_features, 0, self._training_classes, axis=1)  # Insert the classes
+        training_data = np.insert(training_data, 0, np.zeros((training_data.shape[0],)), axis=1)  # Insert the group
+        testing_data = np.insert(testing_features, 0, testing_classes, axis=1)  # Insert the classes
+        testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
 
-        testing_data = pd.DataFrame(testing_features)
-        testing_data['class'] = testing_classes
-        testing_data['group'] = 'testing'
-
-        training_testing_data = pd.concat([training_data, testing_data])
+        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
+        data = np.concatenate([training_data, testing_data])
+        data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
 
         # Default guess: the most frequent class in the training data
-        most_frequent_training_class = Counter(self._training_classes).\
-            most_common(1)[0][0]
-        training_testing_data.loc[:, 'guess'] = most_frequent_training_class
+        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
+        data = np.concatenate([training_data, testing_data])
+        data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
 
-        new_col_names = {}
-        for column in training_testing_data.columns.values:
-            if type(column) != str:
-                new_col_names[column] = str(column).zfill(10)
-        training_testing_data.rename(columns=new_col_names, inplace=True)
-
-        return self._evaluate_individual(self._optimized_pipeline,
-                                        training_testing_data)[1]
+        return self._evaluate_individual(self._optimized_pipeline, data)[1]
 
     def get_params(self, deep=None):
         """Get parameters for this estimator
@@ -469,8 +437,8 @@ class TPOT(object):
         individual: DEAP individual
             A list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
-        training_testing_data: pandas.DataFrame {n_samples, n_features}
-            A DataFrame containing the training and testing data for the
+        training_testing_data: numpy.ndarray {n_samples, n_features}
+            A numpy matrix containing the training and testing data for the
             `individual`'s evaluation
 
         Returns
@@ -523,8 +491,8 @@ class TPOT(object):
 
         Parameters
         ----------
-        result: pandas.DataFrame {n_samples, n_features}
-            A DataFrame containing a pipeline's predictions and the
+        result: numpy.ndarray {n_samples, n_features}
+            A numpy matrix containing a pipeline's predictions and the
             corresponding classes for the testing data
 
         Returns
@@ -623,7 +591,7 @@ class TPOT(object):
             """Expression generation stops when the depth is equal to height
             or when it is randomly determined that a a node should be a terminal
             """
-            return type_ not in [pd.DataFrame, Output_DF] or depth == height
+            return type_ not in [np.ndarray, Output_DF] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
 
@@ -795,22 +763,12 @@ def main():
             print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
         print('')
 
-    input_data = pd.read_csv(args.INPUT_FILE, sep=args.INPUT_SEPARATOR)
+    input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+    features = input_data.view((np.float64, len(input_data.dtype.names)))
+    np.delete(features, input_data.dtype.names.index('class'))
 
-    if 'Class' in input_data.columns.values:
-        input_data.rename(columns={'Class': 'class'}, inplace=True)
-
-    training_indices, testing_indices = train_test_split(input_data.index,
-                                                         stratify=input_data['class'].values,
-                                                         train_size=0.75,
-                                                         test_size=0.25,
-                                                         random_state=args.RANDOM_STATE)
-
-    training_features = input_data.loc[training_indices].drop('class', axis=1).values
-    training_classes = input_data.loc[training_indices, 'class'].values
-
-    testing_features = input_data.loc[testing_indices].drop('class', axis=1).values
-    testing_classes = input_data.loc[testing_indices, 'class'].values
+    training_features, testing_features, training_classes, testing_classes = \
+        train_test_split(features, input_data['class'], random_state=args.RANDOM_STATE)
 
     tpot = TPOT(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
