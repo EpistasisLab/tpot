@@ -793,7 +793,7 @@ class TPOT(object):
             max_features=max_features, random_state=42, min_weight_fraction_leaf=min_weight)
 
     def _mdr(self, input_df, tie_break, default_label, num_features_to_combined):
-        """Fits the Multi-dimensionality Reduction Classifier/Feature Constructor
+        """Fits the Multifactor Dimensionality Reduction feature construction algorithm
 
         Parameters
         ----------
