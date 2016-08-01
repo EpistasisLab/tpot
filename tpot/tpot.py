@@ -43,7 +43,7 @@ from sklearn.decomposition import RandomizedPCA, FastICA
 from sklearn.kernel_approximation import RBFSampler, Nystroem
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.cross_validation import train_test_split
-from mdr import MDR #temporary, will change to make user install MDR as a pre-req 
+from mdr import MDR
 from itertools import combinations
 
 import warnings
@@ -792,7 +792,7 @@ class TPOT(object):
             learning_rate=learning_rate, n_estimators=500,
             max_features=max_features, random_state=42, min_weight_fraction_leaf=min_weight)
 
-    def _mdr(self, input_df, tie_break, default_label, num_features_to_combined = 2, score = None):
+    def _mdr(self, input_df, tie_break, default_label, num_features_to_combined):
         """Fits the Multi-dimensionality Reduction Classifier/Feature Constructor
 
         Parameters
@@ -818,23 +818,35 @@ class TPOT(object):
         """
         if len(input_df.columns) == 3:
             return input_df
-        if num_features_to_combined not in [2,3]:
-            raise ValueError("combining > 3 features currently not supported")
 
-        input_df = input_df.copy()
+        num_features_to_combined = (num_features_to_combined % 2) + 2
 
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).values
+        input_df = input_df.copy() #is this needed? 
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-        max_score = 0 
-        for cols in combinations(training_features.columns.values.tolist(), num_features_to_combined):
-            mdr = MDR(tie_break, default_label)
-            train = training_features.loc[:, cols] 
-            score = mdr.score(train, training_classes, score)
-            if score > max_score: 
-                extra_feature = mdr.fit_transform(train, training_classes)
 
-        training_features['extra'] = extra_feature
-        return training_features
+        all_classes = input_df['class'].unique() # make sure this is a consistently sorted list - checked, unique does sort the list 
+        tie_break_choice = all_classes[tie_break % len(all_classes)]
+        default_label_choice = all_classes[default_label % len(all_classes)]
+
+        training_features_names = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).columns.values.tolist()
+        # all_features = input_df.drop(self.non_feature_columns, axis=1).values # this should only be run once above the for loop
+        mdr = MDR(tie_break_choice, default_label_choice)
+
+        for cols in combinations(training_features_names, num_features_to_combined):
+            training_features_subset = training_features.loc[:, cols].values
+            mdr.fit(training_features_subset, training_classes) #should I 1-line these 3 lines? 
+            mdr_hash = '-'.join(sorted(cols))
+            # Use the classifier object's class name in the synthetic feature
+            mdr_hash += 'MDR'
+            mdr_hash += '-'.join([str(param) for param in [tie_break, default_label, num_features_to_combined]])
+            mdr_identifier = 'ConstructedFeature-{}'.format(hashlib.sha224(mdr_hash.encode('UTF-8')).hexdigest())
+            print (mdr_identifier)
+            print(type(mdr_identifier))
+            input_df[mdr_identifier] = mdr.transform(input_df.loc[:, cols])
+
+        return input_df
 
          
     def _train_model_and_predict(self, input_df, model, **kwargs):
@@ -862,8 +874,8 @@ class TPOT(object):
 
         input_df = input_df.copy()
 
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).values
-        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class']
 
         # Try to seed the random_state parameter if the model accepts it.
         try:
