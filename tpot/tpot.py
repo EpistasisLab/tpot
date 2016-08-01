@@ -529,7 +529,7 @@ class TPOT(object):
         min_weight = min(0.5, max(0., min_weight))
 
         return self._train_model_and_predict(input_df, RandomForestClassifier,
-            min_weight_fraction_leaf=min_weight, n_estimators=500, random_state=42, n_jobs=-1)
+            min_weight_fraction_leaf=min_weight, n_estimators=500, random_state=42)
 
     def _ada_boost(self, input_df, learning_rate):
         """Fits an AdaBoost classifier
