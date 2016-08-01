@@ -826,6 +826,9 @@ class TPOT(object):
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+        
+        if len(training_features) > 500:
+            return input_df
 
         training_features_names = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).columns.values.tolist()
         mdr = MDR(tie_break_choice, default_label_choice)
