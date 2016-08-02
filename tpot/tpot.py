@@ -273,9 +273,8 @@ class TPOT(object):
             # Default guess: the most frequent class in the training data
             most_frequent_training_class = Counter(training_testing_data.loc[training_indices, 'class'].values).most_common(1)[0][0]
             training_testing_data.loc[:, 'guess'] = most_frequent_training_class
-            
 
-
+            # If the scoring function has loss in the name, maximize the negative of the fitness score
             if 'loss' in self.scoring_function.__name__:
                 self.score_sign = -1
             self.clf_eval_func = self._parse_scoring_docstring(self.scoring_function)
@@ -872,16 +871,18 @@ class TPOT(object):
 
         all_features = input_df.drop(self.non_feature_columns, axis=1).values
         if self.clf_eval_func == 'predict_proba':
+            # Pickle the prediction probabilities if the classifier can generate them
             if 'predict_proba' in dir(clf):
-                input_df.loc[:, 'guess'] = [np.array(x).dumps() for x in clf.predict_proba(all_features)]
+                input_df.loc[:, 'guess'] = [x.dumps() for x in clf.predict_proba(all_features)]
             else:
-                input_df.loc[:, 'guess'] = [np.array([0.] * len(np.unique(training_classes))).dumps() for x in input_df.index ]
+                input_df.loc[:, 'guess'] = [np.array([0.] * max(1,len(np.unique(training_classes)))).dumps() for x in input_df.index ]
 
         elif self.clf_eval_func == 'decision_function':
+            # Pickle the decision function scores if the classifier can generate them
             if 'decision_function' in dir(clf):
-                input_df.loc[:, 'guess'] = [np.array(x).dumps() for x in clf.decision_function(all_features)]
+                input_df.loc[:, 'guess'] = [x.dumps() for x in clf.decision_function(all_features)]
             else:
-                input_df.loc[:, 'guess'] = [np.array([0.] * len(np.unique(training_classes))).dumps() for x in input_df.index ]
+                input_df.loc[:, 'guess'] = [np.array([0.] * max(1,len(np.unique(training_classes)))).dumps() for x in input_df.index ]
         else:
             input_df.loc[:, 'guess'] = clf.predict(all_features)
 
@@ -891,6 +892,7 @@ class TPOT(object):
         sf_hash += '{}'.format(clf.__class__)
         sf_hash += '-'.join(kwargs)
         sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
+        # If we pickled the prediction probabilities or decision function score, store the predictions instead
         if self.clf_eval_func == 'predict_proba' or self.clf_eval_func == 'decision_function':
             input_df.loc[:, sf_identifier] = clf.predict(all_features)
         else:
@@ -1608,6 +1610,7 @@ class TPOT(object):
                 operator_count += 1
             result = func(training_testing_data)
             result = result[result['group'] == 'testing']
+            #If the scoring function requires we use predict_proba or decision_function then unpickle the data we pickled when training the classifier
             if self.clf_eval_func == 'predict_proba' or self.clf_eval_func == 'decision_function':
                 resulting_score = self.scoring_function(result.loc[:, 'class'], [np.loads(x) for x in result.loc[:, 'guess']], **self.scoring_kwargs)
             else:
@@ -1621,7 +1624,7 @@ class TPOT(object):
                 return 5000., 0.
         except (KeyboardInterrupt, SystemExit):
             raise
-        except Exception as e:
+        except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT to crash
             # Instead, assign the crashing pipeline a poor fitness
             if self.score_sign == -1:
