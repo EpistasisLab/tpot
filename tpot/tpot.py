@@ -172,7 +172,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._zero_count, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int], pd.DataFrame)
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
@@ -793,7 +793,7 @@ class TPOT(object):
             learning_rate=learning_rate, n_estimators=500,
             max_features=max_features, random_state=42, min_weight_fraction_leaf=min_weight)
 
-    def _mdr(self, input_df, tie_break, default_label, num_features_to_combined):
+    def _mdr(self, input_df, tie_break, default_label):
         """Fits the Multifactor Dimensionality Reduction feature construction algorithm
 
         Parameters
@@ -804,9 +804,6 @@ class TPOT(object):
             Default class label that is used when a MDR cell has an equal number of each class
         default_label: int
             Default class label that is used when MDR encounters a feature pair that it did not encounter in the training set
-        num_features_to_combined: int
-            User-specified number of features to be combined in each MDR model
-            MDR considers all combinations of the given number of features
 
         Returns
         -------
@@ -817,7 +814,6 @@ class TPOT(object):
         if len(input_df.columns) == 3:
             return input_df
 
-        num_features_to_combined = (num_features_to_combined % 2) + 2
         all_classes = input_df['class'].unique()
         tie_break_choice = all_classes[tie_break % len(all_classes)]
         default_label_choice = all_classes[default_label % len(all_classes)]
@@ -826,21 +822,22 @@ class TPOT(object):
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-        
-        if len(training_features) > 500:
+
+        # Place a practical limit on the number of features that can be constructed
+        if training_features.shape[1] > 500:
             return input_df
 
         training_features_names = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).columns.values.tolist()
         mdr = MDR(tie_break_choice, default_label_choice)
 
-        for cols in combinations(training_features_names, num_features_to_combined):
+        for cols in combinations(training_features_names, 2):
             training_features_subset = training_features.loc[:, cols].values
             mdr.fit(training_features_subset, training_classes)
             mdr_hash = '-'.join(sorted(cols))
             mdr_hash += 'MDR'
-            mdr_hash += '-'.join([str(param) for param in [tie_break, default_label, num_features_to_combined]])
+            mdr_hash += '-'.join([str(param) for param in [tie_break, default_label]])
             mdr_identifier = 'ConstructedFeature-{}'.format(hashlib.sha224(mdr_hash.encode('UTF-8')).hexdigest())
-            input_df[mdr_identifier] = mdr.transform(input_df.loc[:, cols])
+            input_df[mdr_identifier] = mdr.transform(input_df.loc[:, cols].values)
 
         return input_df
          
