@@ -9,7 +9,7 @@ from tpot.tpot import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
 from tpot.decorators import _gp_new_generation
 from tpot.types import Output_DF
-from tpot.indices import non_feature_columns
+from tpot.indices import non_feature_columns, GUESS_COL
 
 from tpot.operators import Operator, CombineDFs
 from tpot.operators.classifiers import Classifier, TPOTDecisionTreeClassifier
@@ -106,7 +106,7 @@ def test_score_2():
 
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(input_df, 0.5)', tpot_obj._pset)
+        from_string('DecisionTreeClassifier(input_matrix, 0.5)', tpot_obj._pset)
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
@@ -137,7 +137,7 @@ def test_predict_2():
     tpot_obj._training_classes = training_classes
     tpot_obj._training_features = training_features
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(input_df, 0.5)', tpot_obj._pset)
+        from_string('DecisionTreeClassifier(input_matrix, 0.5)', tpot_obj._pset)
 
     result = tpot_obj.predict(testing_features)
 
@@ -188,9 +188,9 @@ def check_classifier(op):
     clf = op._merge_with_default_params(op.preprocess_args(*args))
     clf.fit(training_features, training_classes)
 
-    all_features = data.drop(non_feature_columns, axis=1).values
+    all_features = np.delete(data, non_feature_columns, axis=1)
 
-    assert np.array_equal(result['guess'].values, clf.predict(all_features))
+    assert np.array_equal(result[:, GUESS_COL], clf.predict(all_features))
 
 
 def check_selector(op):
@@ -206,20 +206,17 @@ def check_selector(op):
     result = op(data, *args)
 
     sel = op._merge_with_default_params(op.preprocess_args(*args))
-    training_features_df = data.loc[data['group'] == 'training'].\
-        drop(non_feature_columns, axis=1)
 
     with warnings.catch_warnings():
         # Ignore warnings about constant features
         warnings.simplefilter('ignore', category=UserWarning)
-        sel.fit(training_features_df, training_classes)
+        op.fit(training_features, training_classes)
 
     mask = sel.get_support(True)
-    mask_cols = list(training_features_df.iloc[:, mask].columns) + non_feature_columns
 
     assert np.array_equal(
-        data[mask_cols].drop(non_feature_columns, axis=1).values,
-        result.drop(non_feature_columns, axis=1).values
+        np.delete(data, mask + non_feature_columns, axis=1),
+        np.delete(result, non_feature_columns, axis=1)
     )
 
 
@@ -237,10 +234,10 @@ def check_preprocessor(op):
 
     prp = op._merge_with_default_params(op.preprocess_args(*args))
     prp.fit(training_features.astype(np.float64))
-    all_features = data.drop(non_feature_columns, axis=1).values
+    all_features = np.delete(data, non_feature_columns, axis=1)
     sklearn_result = prp.transform(all_features.astype(np.float64))
 
-    assert np.allclose(result.drop(non_feature_columns, axis=1).values, sklearn_result)
+    assert np.allclose(np.delete(result, non_feature_columns, axis=1), sklearn_result)
 
 
 def check_export(op):
@@ -283,7 +280,7 @@ def test_operators():
 
 
 def test_operators_2():
-    """Assert that TPOT operators return the input_df when no features are supplied"""
+    """Assert that TPOT operators return the input_matrix when no features are supplied"""
     assert np.array_equal(
         data.ix[:, -3:],
         TPOTDecisionTreeClassifier()(data.ix[:, -3:], 0.5)
@@ -313,13 +310,13 @@ def test_generate_pipeline_code():
     pipeline = ['KNeighborsClassifier',
         ['CombineDFs',
             ['GradientBoostingClassifier',
-                'input_df',
+                'input_matrix',
                 38.0,
                 0.87,
                 30.0],
             ['GaussianNB',
                 ['ZeroCount',
-                    'input_df']]],
+                    'input_matrix']]],
         18,
         33]
 
@@ -345,7 +342,7 @@ def test_generate_import_code():
     """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline"""
     tpot_obj = TPOT()
     pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(SelectKBest(input_df, 7), 0.5)', tpot_obj._pset)
+        from_string('DecisionTreeClassifier(SelectKBest(input_matrix, 7), 0.5)', tpot_obj._pset)
 
     expected_code = """import numpy as np
 
@@ -359,7 +356,7 @@ from sklearn.tree import DecisionTreeClassifier
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
-np.delete(features, tpot_data.dtype.names.index('class'))
+features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes = \
     train_test_split(features, tpot_data['class'], random_state=42)
 """
@@ -371,7 +368,7 @@ def test_export_pipeline():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline"""
     tpot_obj = TPOT()
     pipeline = creator.Individual.\
-        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_df, 38.0, 0.87, 30.0), RFE(input_df, 0.17999999999999999)), 18, 33)", tpot_obj._pset)
+        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87, 30.0), RFE(input_matrix, 0.17999999999999999)), 18, 33)", tpot_obj._pset)
 
     expected_code = """import numpy as np
 
@@ -386,7 +383,7 @@ from sklearn.svm import SVC
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
-np.delete(features, tpot_data.dtype.names.index('class'))
+features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes = \
     train_test_split(features, tpot_data['class'], random_state=42)
 

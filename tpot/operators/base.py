@@ -41,7 +41,7 @@ class Operator(object):
         input_matrix = np.copy(input_matrix)  # Make a copy of the input dataframe
 
         self.training_features = input_matrix[input_matrix[:, GROUP_COL] == TRAINING_GROUP]
-        np.delete(self.training_features, non_feature_columns, axis=1)
+        self.training_features = np.delete(self.training_features, non_feature_columns, axis=1)
         self.training_classes = input_matrix[input_matrix[:, GROUP_COL] == TRAINING_GROUP][:, CLASS_COL]
 
         # If there are no features left then there is nothing to do
@@ -49,7 +49,12 @@ class Operator(object):
             return input_matrix
 
         # Call child class' _call function
-        return self._call(input_matrix, *args, **kwargs)
+        ret = self._call(input_matrix, *args, **kwargs)
+
+        del self.training_features
+        del self.training_classes
+
+        return ret
 
     def export(self, *args, **kwargs):
         """Represent the operator as a string so that it can be exported to a

@@ -56,10 +56,9 @@ class Classifier(Operator):
         # Fit classifier to the data set
         clf.fit(self.training_features, self.training_classes)
 
-        all_features = np.copy(input_matrix)
-        np.delete(all_features, non_feature_columns, axis=1)
+        all_features = np.delete(input_matrix, non_feature_columns, axis=1)
         input_matrix[:, GUESS_COL] = clf.predict(all_features)
         # Store the guesses as a synthetic feature
-        input_matrix[:, :-1] = input_matrix[GUESS_COL]
+        np.insert(input_matrix, input_matrix.shape[1], input_matrix[:, GUESS_COL], axis=1)
 
         return input_matrix

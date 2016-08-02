@@ -22,6 +22,7 @@ import numpy as np
 import warnings
 
 from tpot.operators import Operator
+from tpot.indices import non_feature_columns
 
 
 class Selector(Operator):
@@ -60,6 +61,4 @@ class Selector(Operator):
             op.fit(self.training_features, self.training_classes)
 
         mask = op.get_support(True)
-        np.delete(input_matrix, mask, axis=1)
-
-        return input_matrix
+        return np.delete(input_matrix, [x + len(non_feature_columns) for x in mask], axis=1)

@@ -38,7 +38,7 @@ from .export_utils import export_pipeline
 from .decorators import _gp_new_generation
 from . import operators
 from .types import Bool, Output_DF
-from .indices import GUESS_COL
+from .indices import GUESS_COL, GROUP_COL, CLASS_COL, TESTING_GROUP
 
 
 class TPOT(object):
@@ -115,7 +115,6 @@ class TPOT(object):
         if random_state:
             random.seed(random_state)
             np.random.seed(random_state)
-            operators.Operator.default_arguments['random_state'] = random_state
 
         self._setup_pset()
         self._setup_toolbox()
@@ -215,8 +214,7 @@ class TPOT(object):
             # Randomize the order of the columns so there is no potential bias
             # introduced by the initial order of the columns, e.g., the most
             # predictive features at the beginning or end.
-            np.take(features, np.random.permutation(features.shape[0]), axis=1,
-                out=features)
+            np.take(features, np.random.permutation(features.shape[1]), axis=1, out=features)
 
             training_features, testing_features, training_classes, testing_classes = \
                 train_test_split(features, classes, train_size=0.75, test_size=0.25)
@@ -232,8 +230,7 @@ class TPOT(object):
             data = np.concatenate([training_data, testing_data])
             data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
 
-            self._toolbox.register('evaluate',
-                self._evaluate_individual, training_testing_data=data)
+            self._toolbox.register('evaluate', self._evaluate_individual, data=data)
 
             pop = self._toolbox.population(n=self.population_size)
 
@@ -328,10 +325,9 @@ class TPOT(object):
 
         # Transform the tree expression in a callable function
         func = self._toolbox.compile(expr=self._optimized_pipeline)
-
         result = func(data)
 
-        return result[:, GUESS_COL]
+        return result[result[:, GROUP_COL] == TESTING_GROUP][:, CLASS_COL]
 
     def fit_predict(self, features, classes):
         """Convenience function that fits a pipeline then predicts on the
@@ -428,7 +424,7 @@ class TPOT(object):
         with open(output_file_name, 'w') as output_file:
             output_file.write(export_pipeline(self._optimized_pipeline))
 
-    def _evaluate_individual(self, individual, training_testing_data):
+    def _evaluate_individual(self, individual, data):
         """Determines the `individual`'s fitness according to its performance on
         the provided data
 
@@ -437,7 +433,7 @@ class TPOT(object):
         individual: DEAP individual
             A list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
-        training_testing_data: numpy.ndarray {n_samples, n_features}
+        data: numpy.ndarray {n_samples, n_features}
             A numpy matrix containing the training and testing data for the
             `individual`'s evaluation
 
@@ -464,8 +460,8 @@ class TPOT(object):
 
                 operator_count += 1
 
-            result = func(training_testing_data)
-            result = result[result['group'] == 'testing']
+            result = func(data)
+            result = result[result[:, GROUP_COL] == TESTING_GROUP]
             resulting_score = self.scoring_function(result)
 
         except MemoryError:
@@ -473,10 +469,10 @@ class TPOT(object):
             return 5000., 0.
         except (KeyboardInterrupt, SystemExit):
             raise
-        except Exception:
+        # except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
-            return 5000., 0.
+        #     return 5000., 0.
         finally:
             if not self.pbar.disable:
                 self.pbar.update(1)  # One more pipeline evaluated
@@ -502,19 +498,18 @@ class TPOT(object):
             accuracy on the testing data
 
         """
-        all_classes = list(set(result['class'].values))
+        all_classes = list(set(result[:, CLASS_COL]))
         all_class_accuracies = []
         for this_class in all_classes:
-            sens_columns = (result['guess'] == this_class) &\
-                           (result['class'] == this_class)
-            sens_count = float(len(result[result['class'] == this_class]))
-            this_class_sensitivity = len(result[sens_columns]) / sens_count
+            this_class_sensitivity = \
+                float(result[(result[:, GUESS_COL] == this_class) &
+                             (result[:, CLASS_COL] == this_class)].shape[0]) /\
+                float(result[result[:, CLASS_COL] == this_class].shape[0])
 
-            spec_columns = (result['guess'] != this_class) &\
-                           (result['class'] != this_class)
-            spec_count = float(len(result[result['class'] != this_class]))
-
-            this_class_specificity = len(result[spec_columns]) / spec_count
+            this_class_specificity = \
+                float(result[(result[:, GUESS_COL] != this_class) &
+                             (result[:, CLASS_COL] != this_class)].shape[0]) /\
+                float(result[result[:, CLASS_COL] != this_class].shape[0])
 
             this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)
@@ -626,7 +621,7 @@ class TPOT(object):
         if type_ is None:
             type_ = pset.ret
         expr = []
-        height = random.randint(min_, max_)
+        height = np.random.randint(min_, max_)
         stack = [(0, type_)]
         while len(stack) != 0:
             depth, type_ = stack.pop()
@@ -634,7 +629,7 @@ class TPOT(object):
             # We've added a type_ parameter to the condition function
             if condition(height, depth, type_):
                 try:
-                    term = random.choice(pset.terminals[type_])
+                    term = np.random.choice(pset.terminals[type_])
                 except IndexError:
                     _, _, traceback = sys.exc_info()
                     raise IndexError("The gp.generate function tried to add "
@@ -646,7 +641,7 @@ class TPOT(object):
                 expr.append(term)
             else:
                 try:
-                    prim = random.choice(pset.primitives[type_])
+                    prim = np.random.choice(pset.primitives[type_])
                 except IndexError:
                     _, _, traceback = sys.exc_info()
                     raise IndexError("The gp.generate function tried to add "
@@ -765,7 +760,7 @@ def main():
 
     input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
     features = input_data.view((np.float64, len(input_data.dtype.names)))
-    np.delete(features, input_data.dtype.names.index('class'))
+    features = np.delete(features, input_data.dtype.names.index('class'))
 
     training_features, testing_features, training_classes, testing_classes = \
         train_test_split(features, input_data['class'], random_state=args.RANDOM_STATE)

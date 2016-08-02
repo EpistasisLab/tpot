@@ -22,7 +22,7 @@ import numpy as np
 import warnings
 
 from tpot.operators import Operator
-from tpot.indicies import non_feature_columns
+from tpot.indices import non_feature_columns
 
 
 class Preprocessor(Operator):
@@ -35,8 +35,7 @@ class Preprocessor(Operator):
         operator_args = self.preprocess_args(*args, **kwargs)
 
         # Run the feature-preprocessor with args
-        features = np.copy(input_matrix)
-        np.delete(features, non_feature_columns, axis=1)
+        features = np.delete(input_matrix, non_feature_columns, axis=1)
         modified_df = self._fit_transform(features, operator_args)
 
         # Add non_feature_columns back to the matrix
@@ -67,6 +66,6 @@ class Preprocessor(Operator):
             warnings.simplefilter('ignore', category=UserWarning)
 
             op.fit(self.training_features.astype(np.float64))
-            transformed_features = op.transform(features, axis=1).astype(np.float64)
+            transformed_features = op.transform(features).astype(np.float64)
 
         return transformed_features
