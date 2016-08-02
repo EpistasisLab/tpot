@@ -1045,7 +1045,7 @@ def test_scoring_functions_2():
     assert(tpot_obj.scoring_function == custom_scoring_function)
     
 
-def test_scoring_function_3():
+def test_scoring_functions_3():
     """Assert that the parse_scoring_docstring works for classification metrics"""
 
     tpot_obj = TPOT()
@@ -1074,5 +1074,43 @@ def test_scoring_function_3():
         tpot_obj = TPOT(scoring_function=scoring_func)
         assert(tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function) == 'decision_function')
 
+def test_scoring_functions_4():
+    """ Assert that a loss function gets the sign flipped and the correct function is used in evaluation """
 
+    tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.hamming_loss)
+    tpot_obj.fit(training_features, training_classes)
+    
+    assert(tpot_obj.score_sign == -1)
+    assert(tpot_obj.clf_eval_func == 'predict')
+
+def test_train_model_and_predict_2():
+    """ Assert that training an individual classifier and predicting makes use of correct function, un/pickling as necessary"""
+
+    tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.hamming_loss)
+    tpot_obj.clf_eval_func = tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function)
+
+    try:
+        result = tpot_obj._train_model_and_predict(training_testing_data, LinearSVC, C=5., penalty='l1', dual=False)
+        [np.loads(x) for x in result.loc[:, 'guess']]
+        assert False
+    except:
+        pass
+
+    tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.log_loss)
+    tpot_obj.clf_eval_func = tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function)
+
+    try:
+        result = tpot_obj._train_model_and_predict(training_testing_data, GaussianNB)
+        [np.loads(x) for x in result.loc[:, 'guess']]
+    except:
+        assert False
+
+    tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.hinge_loss)
+    tpot_obj.clf_eval_func = tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function)
+
+    try:
+        result = tpot_obj._train_model_and_predict(training_testing_data, LinearSVC, C=5., penalty='l1', dual=False)
+        [np.loads(x) for x in result.loc[:, 'guess']]
+    except:
+        assert False
 
