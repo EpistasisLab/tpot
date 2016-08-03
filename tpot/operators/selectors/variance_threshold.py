@@ -18,5 +18,27 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import Selector
+from sklearn.feature_selection import VarianceThreshold
+
+
+class TPOTVarianceThreshold(Selector):
+    """Uses scikit-learn's VarianceThreshold to transform the feature set
+
+    Parameters
+    ----------
+    threshold: float
+        The variance threshold that removes features that fall under the threshold
+
+    """
+    import_hash = {'sklearn.feature_selection': ['VarianceThreshold']}
+    sklearn_class = VarianceThreshold
+    arg_types = (float, )
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self, threshold):
+        return {
+            'threshold': threshold
+        }

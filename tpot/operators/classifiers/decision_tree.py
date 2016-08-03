@@ -18,5 +18,29 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import Classifier
+from sklearn.tree import DecisionTreeClassifier
+
+
+class TPOTDecisionTreeClassifier(Classifier):
+    """Fits a decision tree classifier
+
+    Parameters
+    ----------
+    min_weight_fraction_leaf: float
+        The minimum weighted fraction of the input samples required to be at a leaf node.
+
+    """
+    import_hash = {'sklearn.tree': ['DecisionTreeClassifier']}
+    sklearn_class = DecisionTreeClassifier
+    arg_types = (float, )
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self, min_weight_fraction_leaf):
+        min_weight = min(0.5, max(0., min_weight_fraction_leaf))
+
+        return {
+            'min_weight_fraction_leaf': min_weight
+        }

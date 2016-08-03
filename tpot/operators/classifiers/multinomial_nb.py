@@ -18,5 +18,28 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import Classifier
+from sklearn.naive_bayes import MultinomialNB
+
+
+class TPOTMultinomialNB(Classifier):
+    """Fits a Multinomial Naive Bayes Classifier
+
+    Parameters
+    ----------
+    alpha: float
+        Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
+
+    """
+    import_hash = {'sklearn.naive_bayes': ['MultinomialNB']}
+    sklearn_class = MultinomialNB
+    arg_types = (float, )
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self, alpha):
+        return {
+            'alpha': alpha,
+            'fit_prior': True
+        }

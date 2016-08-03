@@ -18,5 +18,27 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import Preprocessor
+from sklearn.preprocessing import MinMaxScaler
+
+
+class TPOTMaxAbsScaler(Preprocessor):
+    """Uses scikit-learn's MinMaxScaler to transform all of the features by
+    scaling them to the range [0, 1].
+
+    Parameters
+    ----------
+    None
+
+    """
+    import_hash = {'sklearn.preprocessing': ['MinMaxScaler']}
+    sklearn_class = MinMaxScaler
+    arg_types = ()
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self):
+        return {
+            'copy': False
+        }

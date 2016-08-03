@@ -18,5 +18,12 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+
+class Bool(object):
+    """Boolean class used for deap due to deap's poor handling of booleans"""
+    pass
+
+
+class Output_DF(object):
+    """Output data type of pipelines"""
+    pass

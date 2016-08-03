@@ -18,5 +18,28 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import Preprocessor
+from sklearn.preprocessing import Binarizer
+
+
+class TPOTBinarizer(Preprocessor):
+    """Uses scikit-learn's Binarizer to transform the feature set
+
+    Parameters
+    ----------
+    threshold: float
+        Feature values below or equal to this value are replaced by 0, above it by 1
+
+    """
+    import_hash = {'sklearn.preprocessing': ['Binarizer']}
+    sklearn_class = Binarizer
+    arg_types = (float, )
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self, threshold):
+        return {
+            'threshold': threshold,
+            'copy': False
+        }

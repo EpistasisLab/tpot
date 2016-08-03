@@ -18,5 +18,26 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import Preprocessor
+from sklearn.preprocessing import RobustScaler
+
+
+class TPOTRobustScaler(Preprocessor):
+    """Uses scikit-learn's RobustScaler to transform the feature set
+
+    Parameters
+    ----------
+    None
+
+    """
+    import_hash = {'sklearn.preprocessing': ['RobustScaler']}
+    sklearn_class = RobustScaler
+    arg_types = ()
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self):
+        return {
+            'copy': False
+        }

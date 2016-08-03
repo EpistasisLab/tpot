@@ -18,5 +18,30 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import Selector
+from sklearn.feature_selection import SelectKBest, f_classif
+
+
+class TPOTSelectKBest(Selector):
+    """Uses scikit-learn's SelectKBest to transform the feature set
+
+    Parameters
+    ----------
+    k: int
+        The top k features to keep from the original set of features in the training data
+
+    """
+    import_hash = {'sklearn.feature_selection': ['SelectKBest', 'f_classif']}
+    sklearn_class = SelectKBest
+    arg_types = (int, )
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self, k):
+        k = max(1, k)
+
+        return {
+            'score_func': f_classif,
+            'k': k
+        }

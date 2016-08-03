@@ -18,5 +18,28 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import Preprocessor
+from sklearn.preprocessing import PolynomialFeatures
+
+
+class TPOTPolynomialFeatures(Preprocessor):
+    """Uses scikit-learn's PolynomialFeatures to transform the feature set
+
+    Parameters
+    ----------
+    None
+
+    """
+    import_hash = {'sklearn.preprocessing': ['PolynomialFeatures']}
+    sklearn_class = PolynomialFeatures
+    arg_types = ()
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self):
+        return {
+            'degree': 2,
+            'include_bias': False,
+            'interaction_only': False
+        }
