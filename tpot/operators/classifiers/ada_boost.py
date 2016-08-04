@@ -18,5 +18,30 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import Classifier
+from sklearn.ensemble import AdaBoostClassifier
+
+
+class TPOTAdaBoostClassifier(Classifier):
+    """Fits an AdaBoost classifier
+
+    Parameters
+    ----------
+    learning_rate: float
+        Learning rate shrinks the contribution of each classifier by learning_rate.
+
+    """
+    import_hash = {'sklearn.ensemble': ['AdaBoostClassifier']}
+    sklearn_class = AdaBoostClassifier
+    arg_types = (float, )
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self, learning_rate):
+        learning_rate = min(1., max(0.0001, learning_rate))
+
+        return {
+            'learning_rate': learning_rate,
+            'n_estimators': 500
+        }

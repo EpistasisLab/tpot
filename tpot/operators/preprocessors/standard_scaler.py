@@ -18,5 +18,26 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import Preprocessor
+from sklearn.preprocessing import StandardScaler
+
+
+class TPOTStandardScaler(Preprocessor):
+    """Uses scikit-learn's StandardScaler to transform the feature set
+
+    Parameters
+    ----------
+    None
+
+    """
+    import_hash = {'sklearn.preprocessing': ['StandardScaler']}
+    sklearn_class = StandardScaler
+    arg_types = ()
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self):
+        return {
+            'copy': False
+        }

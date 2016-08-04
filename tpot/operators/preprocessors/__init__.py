@@ -18,5 +18,16 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+from .base import *
+# from .pca import *
+from .nystroem import *
+from .feat_agg import *
+from .fast_ica import *
+from .rbf import *
+from .binarizer import *
+from .min_max_scalar import *
+from .max_abs_scalar import *
+from .polynomial_features import *
+from .robust_scaler import *
+from .standard_scaler import *
+from .zero_count import *

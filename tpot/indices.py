@@ -18,5 +18,12 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ._version import __version__
-from .tpot import TPOT, main
+CLASS_COL = 2
+GROUP_COL = 1
+GUESS_COL = 0
+
+TRAINING_GROUP = 0
+TESTING_GROUP = 1
+
+# Order is important here
+non_feature_columns = [CLASS_COL, GROUP_COL, GUESS_COL]
