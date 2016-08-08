@@ -207,6 +207,9 @@ class TPOT(object):
 
         """
         try:
+            features = features.astype(np.float64)
+            classes = classes.astype(np.float64)
+
             # Store the training features and classes for later use
             self._training_features = features
             self._training_classes = classes
@@ -222,7 +225,7 @@ class TPOT(object):
             # Training group is 0. testing group is 1.
             training_data = np.insert(training_features, 0, training_classes, axis=1)  # Insert the classes
             training_data = np.insert(training_data, 0, np.zeros((training_data.shape[0],)), axis=1)  # Insert the group
-            testing_data = np.insert(testing_features, 0, np.zeros((testing_features.shape[0],)), axis=1)  # Insert the classes
+            testing_data = np.insert(testing_features, 0, testing_classes, axis=1)  # Insert the classes
             testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
 
             # Insert guess
@@ -310,6 +313,8 @@ class TPOT(object):
             Predicted classes for the testing set
 
         """
+        testing_features = testing_features.astype(np.float64)
+
         if self._optimized_pipeline is None:
             raise ValueError(('A pipeline has not yet been optimized.'
                               'Please call fit() first.'))

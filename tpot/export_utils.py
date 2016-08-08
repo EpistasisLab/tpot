@@ -68,14 +68,14 @@ def expr_to_tree(pipeline):
                 CombineDFs(
                     KNeighborsClassifier(
                         RBFSampler(
-                            input_df,
+                            input_matrix,
                             0.9
                         ),
                     23,
                     35
                     ),
                     KNeighborsClassifier(
-                        input_df,
+                        input_matrix,
                         23,
                         35
                     )
@@ -87,14 +87,14 @@ def expr_to_tree(pipeline):
                 ['CombineDFs',
                     ['KNeighborsClassifier',
                         ['RBFSampler',
-                            'input_df',
+                            'input_matrix',
                             0.90000000000000002
                         ],
                         23,
                         35
                     ],
                     ['KNeighborsClassifier',
-                        'input_df',
+                        'input_matrix',
                         23,
                         35
                     ]
@@ -269,7 +269,7 @@ def process_operator(operator, depth=0):
         input_name, args = operator[1], operator[2:]
         tpot_op = operators.Operator.get_by_name(op_name)
 
-        if input_name != 'input_df':
+        if input_name != 'input_matrix':
             steps.extend(process_operator(input_name, depth + 1))
 
         # If the step is a classifier and is not the last step then we must
@@ -305,7 +305,7 @@ def _indent(text, amount):
 
 
 def _make_branch(branch):
-    if branch[1] == "input_df":  # If depth of branch == 1
+    if branch[1] == "input_matrix":  # If depth of branch == 1
         tpot_op = operators.Operator.get_by_name(branch[0])
 
         if tpot_op.type == "Classifier":

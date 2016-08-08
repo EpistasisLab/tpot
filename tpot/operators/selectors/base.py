@@ -35,7 +35,9 @@ class Selector(Operator):
         operator_args = self.preprocess_args(*args, **kwargs)
 
         # Run the feature-selector with args
-        return self._fit_mask(input_matrix, operator_args)
+        modified_df = self._fit_mask(input_matrix, operator_args)
+
+        return modified_df
 
     def _fit_mask(self, input_matrix, operator_args):
         """Run the Selector and return the modified DataFrame
@@ -48,7 +50,7 @@ class Selector(Operator):
 
         Returns
         -------
-            modified_df: numpy.ndarrayy
+            modified_df: numpy.ndarray
 
         """
         # Send arguments to selector but also attempt to add in default
