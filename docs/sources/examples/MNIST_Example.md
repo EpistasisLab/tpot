@@ -21,19 +21,24 @@ Running this code should discover a pipeline that achieves ~98% testing accuracy
 
 ```python
 import numpy as np
-import pandas as pd
 
 from sklearn.cross_validation import train_test_split
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import ExtraTreesClassifier, GradientBoostingClassifier, VotingClassifier
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import FunctionTransformer, PolynomialFeatures
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
+features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = train_test_split(features, tpot_data['class'], random_state=42)
 
-result1 = tpot_data.copy()
+exported_pipeline = make_pipeline(
+    PolynomialFeatures(degree=2, include_bias=False, interaction_only=False),
+    make_union(VotingClassifier(estimators=[("clf", GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, min_weight_fraction_leaf=1e-05, n_estimators=500))]), FunctionTransformer(lambda X: X)),
+    ExtraTreesClassifier(criterion="entropy", max_features=0.1, min_weight_fraction_leaf=0.05, n_estimators=500)
+)
 
-# Perform classification with a logistic regression classifier
-lrc1 = LogisticRegression(C=2.8214285714285716)
-lrc1.fit(result1.loc[training_indeces].drop('class', axis=1).values, result1.loc[training_indeces, 'class'].values)
-result1['lrc1-classification'] = lrc1.predict(result1.drop('class', axis=1).values)
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
 ```

@@ -474,10 +474,10 @@ class TPOT(object):
             return 5000., 0.
         except (KeyboardInterrupt, SystemExit):
             raise
-        # except Exception:
+        except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
-        #     return 5000., 0.
+            return 5000., 0.
         finally:
             if not self.pbar.disable:
                 self.pbar.update(1)  # One more pipeline evaluated
