@@ -364,7 +364,7 @@ tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
 features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+train_test_split(features, tpot_data['class'], random_state=42)
 """
 
     assert expected_code == generate_import_code(pipeline)
@@ -391,7 +391,7 @@ tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
 features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
     make_union(
