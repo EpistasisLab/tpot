@@ -9,14 +9,14 @@ Uses Scikit-learn's RandomizedPCA to transform the feature set.
 
 Parameters
 ----------
-    input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+    input_df: numpy.ndarray {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame to scale
     iterated_power: int
         Number of iterations for the power method. [1, 10]
 
 Returns
 -------
-    modified_df: pandas.DataFrame {n_samples, n_components + ['guess', 'group', 'class']}
+    modified_df: numpy.ndarray {n_samples, n_components + ['guess', 'group', 'class']}
         Returns a DataFrame containing the transformed features
 
 
@@ -24,38 +24,26 @@ Example Exported Code
 ---------------------
 
 ```Python
-import numpy as np
-import pandas as pd
 from sklearn.cross_validation import train_test_split
+from sklearn.decomposition import FastICA
+from sklearn.ensemble import VotingClassifier
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import FunctionTransformer
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.decomposition import RandomizedPCA
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
+features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes =     train_test_split(features, tpot_data['class'], random_state=42)
 
 
-# Use Scikit-learn's RandomizedPCA to transform the feature set
-training_features = tpot_data.loc[training_indices].drop('class', axis=1)
+exported_pipeline = make_pipeline(
+    RandomizedPCS(iterated_power=5),
+    DecisionTreeClassifier(min_weight_fraction_leaf=0.5)
+)
 
-if len(training_features.columns.values) > 0:
-    # RandomizedPCA must be fit on only the training data
-    pca = RandomizedPCA(iterated_power=10)
-    pca.fit(training_features.values.astype(np.float64))
-    transformed_features = pca.transform(tpot_data.drop('class', axis=1).values.astype(np.float64))
-
-    tpot_data_classes = tpot_data['class'].values
-    result1 = pd.DataFrame(data=transformed_features)
-    result1['class'] = tpot_data_classes
-else:
-    result1 = tpot_data.copy()
-
-# Perform classification with a decision tree classifier
-result2 = result1.copy()
-
-dtc1 = DecisionTreeClassifier(max_features='auto', max_depth=None)
-dtc1.fit(result2.loc[training_indices].drop('class', axis=1).values, result2.loc[training_indices, 'class'].values)
-
-result2['dtc1-classification'] = dtc1.predict(result2.drop('class', axis=1).values)
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
 
 ```

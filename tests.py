@@ -29,7 +29,7 @@ from tqdm import tqdm
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
 training_features, testing_features, training_classes, testing_classes = \
-    train_test_split(mnist_data.data, mnist_data.target, random_state=42)
+    train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
 
 # Training data group is 0 testing data group is 1
 training_data = np.insert(training_features, 0, training_classes, axis=1)  # Insert the classes
@@ -131,7 +131,7 @@ def test_predict():
 
 
 def test_predict_2():
-    """Assert that the TPOT predict function returns a DataFrame of shape (num_testing_rows,)"""
+    """Assert that the TPOT predict function returns a numpy matrix of shape (num_testing_rows,)"""
 
     tpot_obj = TPOT()
     tpot_obj._training_classes = training_classes
@@ -210,12 +210,12 @@ def check_selector(op):
     with warnings.catch_warnings():
         # Ignore warnings about constant features
         warnings.simplefilter('ignore', category=UserWarning)
-        op.fit(training_features, training_classes)
+        sel.fit(training_features, training_classes)
 
     mask = sel.get_support(True)
 
     assert np.array_equal(
-        np.delete(data, mask + non_feature_columns, axis=1),
+        np.delete(data, non_feature_columns + [x + len(non_feature_columns) for x in mask], axis=1),
         np.delete(result, non_feature_columns, axis=1)
     )
 
@@ -282,16 +282,22 @@ def test_operators():
 def test_operators_2():
     """Assert that TPOT operators return the input_matrix when no features are supplied"""
     assert np.array_equal(
-        data.ix[:, -3:],
-        TPOTDecisionTreeClassifier()(data.ix[:, -3:], 0.5)
+        data[:, :3],
+        TPOTDecisionTreeClassifier()(data[:, :3], 0.5)
     )
 
 
 def test_combine_dfs():
     """Assert that the TPOT CombineDFs operator creates a combined feature set from two input sets"""
-    combined_dfs = data.\
-        join(data[[column for column in data.columns.values if column not in data.columns.values]])
-    assert np.array_equal(CombineDFs()(data, data), combined_dfs)
+    features1 = np.delete(data, non_feature_columns, axis=1)
+    features2 = np.delete(data, non_feature_columns, axis=1)
+
+    combined_features = np.concatenate([features1, features2], axis=1)
+
+    for col in non_feature_columns:
+        combined_features = np.insert(combined_features, 0, data[:, col], axis=1)
+
+    assert np.array_equal(CombineDFs()(data, data), combined_features)
 
 
 def test_export():
@@ -358,7 +364,7 @@ tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
 features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+train_test_split(features, tpot_data['class'], random_state=42)
 """
 
     assert expected_code == generate_import_code(pipeline)
@@ -385,7 +391,7 @@ tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
 features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
     make_union(
@@ -400,9 +406,8 @@ exported_pipeline = make_pipeline(
     KNeighborsClassifier(n_neighbors=5, weights="distance")
 )
 
-exported_pipeline.fit(tpot_data.loc[training_indices].drop('class', axis=1).values,
-                      tpot_data.loc[training_indices, 'class'].values)
-results = exported_pipeline.predict(tpot_data.loc[testing_indices].drop('class', axis=1))
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
 """
 
     assert expected_code == export_pipeline(pipeline)

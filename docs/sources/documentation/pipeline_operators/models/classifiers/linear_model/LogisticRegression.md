@@ -8,7 +8,7 @@ Fits a Logistic Regression classifier
 
 Parameters
 ----------
-    input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+    input_df: numpy.ndarray {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame for fitting the logistic regression classifier
     C: float
         Inverse of regularization strength; must be a positive value. Like in support vector machines, smaller values specify stronger regularization.
@@ -19,7 +19,7 @@ Parameters
 
 Returns
 -------
-    input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+    input_df: numpy.ndarray {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
         Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
         Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
@@ -28,19 +28,24 @@ Example Exported Code
 
 ```Python
 import numpy as np
-import pandas as pd
+
 from sklearn.cross_validation import train_test_split
+from sklearn.ensemble import VotingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import FunctionTransformer
+
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
+features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes =     train_test_split(features, tpot_data['class'], random_state=42)
 
+exported_pipeline = make_pipeline(
+    LogisticRegression(C=0.96, dual=False, penalty="l1")
+)
 
-result1 = tpot_data.copy()
-
-# Perform classification with a logistic regression classifier
-lrc1 = LogisticRegression(C=0.0001, penalty='l1', dual=False)
-lrc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
-result1['lrc1-classification'] = lrc1.predict(result1.drop('class', axis=1).values)
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
 ```
