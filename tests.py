@@ -500,7 +500,7 @@ def test_scoring_functions_1():
     tpot_obj = TPOT()
 
     assert(tpot_obj.scoring_function == tpot_obj._balanced_accuracy)
-
+'''
 def test_scoring_functions_2():
     """Assert that a custom classification-based scoring function uses the predict function of each classifier"""
     def custom_scoring_function(y_true, y_pred):
@@ -590,6 +590,7 @@ def test_train_model_and_predict_2():
         [np.loads(x) for x in result.loc[:, 'guess']]
     except:
         assert False # Should be unreachable
+'''
 
 def test_float_range_3():
     """Assert that the TPOT CLI interface's float range throws an exception when input is not a float"""

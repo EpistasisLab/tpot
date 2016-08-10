@@ -119,9 +119,6 @@ class TPOT(object):
             random.seed(random_state)
             np.random.seed(random_state)
 
-        self._setup_pset()
-        self._setup_toolbox()
-
         self.score_sign = 1
         self.clf_eval_func = False
         if scoring_function is None:
@@ -131,6 +128,14 @@ class TPOT(object):
             self.scoring_function = scoring_function
             self.scoring_kwargs = scoring_kwargs
 
+        # If the scoring function has loss in the name, maximize the negative of the fitness score
+        if 'loss' in self.scoring_function.__name__:
+            self.score_sign = -1
+        self.clf_eval_func = self._parse_scoring_docstring(self.scoring_function)
+    
+        self._setup_pset()
+        self._setup_toolbox()
+    
     def _setup_pset(self):
         self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_DF)
 
@@ -144,10 +149,10 @@ class TPOT(object):
                 # return both an Output_DF (and thus be the root of the tree),
                 # and return a np.ndarray so they can exist elsewhere in the
                 # tree.
-                p_types = (op.parameter_types()[0], Output_DF)
+                p_types = ([str] +  op.parameter_types()[0], Output_DF)
                 self._pset.addPrimitive(op, *p_types)
 
-            self._pset.addPrimitive(op, *op.parameter_types())
+            self._pset.addPrimitive(op, [str] +  op.parameter_types()[0], op.parameter_types()[1])
 
         self._pset.addPrimitive(operators.CombineDFs(),
             [np.ndarray, np.ndarray], np.ndarray)
@@ -173,6 +178,7 @@ class TPOT(object):
 
         self._pset.addTerminal(True, Bool)
         self._pset.addTerminal(False, Bool)
+        self._pset.addTerminal(self.clf_eval_func, str)
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
@@ -238,10 +244,7 @@ class TPOT(object):
             data = np.concatenate([training_data, testing_data])
             data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
 
-            # If the scoring function has loss in the name, maximize the negative of the fitness score
-            if 'loss' in self.scoring_function.__name__:
-                self.score_sign = -1
-            self.clf_eval_func = self._parse_scoring_docstring(self.scoring_function)
+
 
             self._toolbox.register('evaluate', self._evaluate_individual, data=data)
 
@@ -467,73 +470,6 @@ class TPOT(object):
                 return 'predict'
 
         return 'predict'
-
-    def _train_model_and_predict(self, input_df, model, **kwargs):
-        """Fits an arbitrary sklearn classifier model with a set of keyword parameters
-
-        Parameters
-        ----------
-        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
-            Input DataFrame for fitting the k-neares
-        model: sklearn classifier
-            Input model to fit and predict on input_df
-        kwargs: unpacked parameters
-            Input parameters to pass to the model's constructor, does not need to be a dictionary
-
-        Returns
-        -------
-        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-            Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-            Also adds the classifiers's predictions as a 'SyntheticFeature' column.
-
-        """
-        # If there are no features left (i.e., only 'class', 'group', and 'guess' remain in the DF), then there is nothing to do
-        if len(input_df.columns) == 3:
-            return input_df
-
-        input_df = input_df.copy()
-
-        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).values
-        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
-
-        # Try to seed the random_state parameter if the model accepts it.
-        try:
-            clf = model(random_state=42, **kwargs)
-            clf.fit(training_features, training_classes)
-        except TypeError:
-            clf = model(**kwargs)
-            clf.fit(training_features, training_classes)
-
-        all_features = input_df.drop(self.non_feature_columns, axis=1).values
-        if self.clf_eval_func == 'predict_proba':
-            # Pickle the prediction probabilities if the classifier can generate them
-            if 'predict_proba' in dir(clf):
-                input_df.loc[:, 'guess'] = [x.dumps() for x in clf.predict_proba(all_features)]
-            else:
-                input_df.loc[:, 'guess'] = [np.array([0.] * max(1,len(np.unique(training_classes)))).dumps() for x in input_df.index ]
-
-        elif self.clf_eval_func == 'decision_function':
-            # Pickle the decision function scores if the classifier can generate them
-            if 'decision_function' in dir(clf):
-                input_df.loc[:, 'guess'] = [x.dumps() for x in clf.decision_function(all_features)]
-            else:
-                input_df.loc[:, 'guess'] = [np.array([0.] * max(1,len(np.unique(training_classes)))).dumps() for x in input_df.index ]
-        else:
-            input_df.loc[:, 'guess'] = clf.predict(all_features)
-
-        # Also store the guesses as a synthetic feature
-        sf_hash = '-'.join(sorted(input_df.columns.values))
-        # Use the classifier object's class name in the synthetic feature
-        sf_hash += '{}'.format(clf.__class__)
-        sf_hash += '-'.join(kwargs)
-        sf_identifier = 'SyntheticFeature-{}'.format(hashlib.sha224(sf_hash.encode('UTF-8')).hexdigest())
-        # If we pickled the prediction probabilities or decision function score, store the predictions instead
-        if self.clf_eval_func == 'predict_proba' or self.clf_eval_func == 'decision_function':
-            input_df.loc[:, sf_identifier] = clf.predict(all_features)
-        else:
-            input_df.loc[:, sf_identifier] = input_df['guess'].values
-
-        return input_df
 
     def _evaluate_individual(self, individual, data):
         """Determines the `individual`'s fitness according to its performance on
