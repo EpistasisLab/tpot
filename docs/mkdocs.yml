@@ -51,6 +51,7 @@ pages:
     - Feature Selection:
       - VarianceThreshold: documentation/pipeline_operators/feature_selection/VarianceThreshold.md
       - SelectKBest: documentation/pipeline_operators/feature_selection/SelectKBest.md
+      - SelectFwe: documentation/pipeline_operators/feature_selection/SelectFwe.md
       - SelectPercentile: documentation/pipeline_operators/feature_selection/SelectPercentile.md
       - RFE: documentation/pipeline_operators/feature_selection/RFE.md
     - Decomposition:

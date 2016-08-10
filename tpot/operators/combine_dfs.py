@@ -46,12 +46,12 @@ class CombineDFs(object):
         combined_features: numpy.ndarray {n_samples, n_both_features+['guess', 'group', 'class']}
             Returns a DataFrame containing the features of both input_df1 and input_df2
         """
-        features1 = np.delete(input_mat1, non_feature_columns)
-        features2 = np.delete(input_mat2, non_feature_columns)
+        features1 = np.delete(input_mat1, non_feature_columns, axis=1)
+        features2 = np.delete(input_mat2, non_feature_columns, axis=1)
 
         combined_features = np.concatenate([features1, features2], axis=1)
 
         for col in non_feature_columns:
-            np.insert(combined_features, 0, input_mat1[:, col], axis=1)
+            combined_features = np.insert(combined_features, 0, input_mat1[:, col], axis=1)
 
         return combined_features

@@ -40,7 +40,7 @@ class Preprocessor(Operator):
 
         # Add non_feature_columns back to the matrix
         for col in non_feature_columns:
-            np.insert(modified_df, 0, input_matrix[:, col], axis=1)
+            modified_df = np.insert(modified_df, 0, input_matrix[:, col], axis=1)
 
         return modified_df
 

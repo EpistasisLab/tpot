@@ -38,14 +38,14 @@ class Operator(object):
     }
 
     def __call__(self, input_matrix, *args, **kwargs):
-        input_matrix = np.copy(input_matrix)  # Make a copy of the input dataframe
+        input_matrix = np.copy(input_matrix)  # Make a copy of the input matrix
 
         self.training_features = input_matrix[input_matrix[:, GROUP_COL] == TRAINING_GROUP]
         self.training_features = np.delete(self.training_features, non_feature_columns, axis=1)
         self.training_classes = input_matrix[input_matrix[:, GROUP_COL] == TRAINING_GROUP][:, CLASS_COL]
 
         # If there are no features left then there is nothing to do
-        if self.training_features.shape[1] == 0:
+        if input_matrix.shape[1] == 3:
             return input_matrix
 
         # Call child class' _call function

@@ -1,25 +1,24 @@
-# Random Forest Classifier
+# Select Fwe
 * * *
 
-Fits a Random Forest classifier.
+Uses Scikit-learn's SelectFWE feature selection to learn the subset of features that have the highest score according to some scoring function.
 
 ## Dependencies
-     sklearn.ensemble.RandomForestClassifier
+    sklearn.feature_selection.SelectFwe
+    sklearn.feature_selection.f_classif
 
 
 Parameters
 ----------
     input_df: numpy.ndarray {n_samples, n_features+['class', 'group', 'guess']}
-        Input DataFrame for fitting the random forest
-    min_weight_fraction_leaf: float
-        The minimum weighted fraction of the input samples required to be at a leaf node.
+        Input DataFrame to perform feature selection on
+    alpha: float in the range [0.001, 0.05]
+        The highest uncorrected p-value for features to keep
 
 Returns
 -------
-    input_df: numpy.ndarray {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
-        Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
-        Also adds the classifiers's predictions as a 'SyntheticFeature' column.
-
+    subsetted_df: numpy.ndarray {n_samples, n_filtered_features + ['guess', 'group', 'class']}
+        Returns a DataFrame containing the `k` best features
 
 Example Exported Code
 ---------------------
@@ -28,19 +27,22 @@ Example Exported Code
 import numpy as np
 
 from sklearn.cross_validation import train_test_split
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.ensemble import VotingClassifier
+from sklearn.feature_selection import SelectFwe, f_classif
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
+from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
 features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
-features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
 
+features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes =     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    RandomForestClassifier(min_weight_fraction_leaf=0.5, n_estimators=500)
+    SelectFwe(alpha=0.05, score_func=f_classif),
+    DecisionTreeClassifier(min_weight_fraction_leaf=0.5)
 )
 
 exported_pipeline.fit(training_features, training_classes)
