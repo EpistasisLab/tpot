@@ -163,8 +163,8 @@ class TPOT(object):
         """
 
         # Feature preprocessing operators
-        self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         """
+        self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
@@ -183,9 +183,11 @@ class TPOT(object):
 
         # Feature selection operators
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
+        """"
         self._pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
+        """
 
         # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
@@ -831,7 +833,7 @@ class TPOT(object):
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         # Place a practical limit on the number of features that can be constructed
-        if spcomb(training_features.shape[1], 2) > 10000:
+        if spcomb(training_features.shape[1], 2) > 1000:
             return input_df
 
         training_feature_names = training_features.columns.values.tolist()
