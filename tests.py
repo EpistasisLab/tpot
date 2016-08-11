@@ -15,6 +15,7 @@ from tpot.operators import Operator, CombineDFs
 from tpot.operators.classifiers import Classifier, TPOTDecisionTreeClassifier
 from tpot.operators.preprocessors import Preprocessor
 from tpot.operators.selectors import Selector, TPOTSelectKBest
+import tpot.operators.classifiers
 
 import numpy as np
 from collections import Counter
@@ -505,27 +506,14 @@ def test_scoring_functions_1():
     tpot_obj = TPOT()
 
     assert(tpot_obj.scoring_function == tpot_obj._balanced_accuracy)
-'''
+
 def test_scoring_functions_2():
     """Assert that a custom classification-based scoring function uses the predict function of each classifier"""
     def custom_scoring_function(y_true, y_pred):
         return 1.0
 
     tpot_obj = TPOT(scoring_function=custom_scoring_function)
-    
-    tpot_obj._training_classes = training_classes
-    tpot_obj._training_features = training_features
-    tpot_obj.pbar = tqdm(total=1, disable=True)
-
-    # Reify pipeline with known score
-    tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('_logistic_regression(input_df, 1.0, 0, True)', tpot_obj._pset)
-
-    # Get score from TPOT
-    score = tpot_obj.score(testing_features, testing_classes)
-
     assert(tpot_obj.scoring_function == custom_scoring_function)
-    
 
 def test_scoring_functions_3():
     """Assert that the parse_scoring_docstring works for classification metrics"""
@@ -560,7 +548,6 @@ def test_scoring_functions_4():
     """ Assert that a loss function gets the sign flipped and the correct function is used in evaluation """
 
     tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.hamming_loss)
-    tpot_obj.fit(training_features, training_classes)
     
     assert(tpot_obj.score_sign == -1)
     assert(tpot_obj.clf_eval_func == 'predict')
@@ -571,19 +558,25 @@ def test_train_model_and_predict_2():
     tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.hamming_loss)
     tpot_obj.clf_eval_func = tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function)
 
+    n_classes = int(np.unique(training_classes).size)
     try:
-        result = tpot_obj._train_model_and_predict(training_testing_data, LinearSVC, C=5., penalty='l1', dual=False)
-        [np.loads(x) for x in result.loc[:, 'guess']]
-        assert False # Should be unreachable
+        clf = tpot.operators.classifiers.linear_svc.TPOTLinearSVC()
+        n_cols = int(data.shape[1])
+        result = clf(data, 5., 1, False)
+        result_cols = int(result.shape[1])
+        assert result_cols == n_cols + 1
     except:
-        pass
+        assert False # Should be unreachable
 
     tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.log_loss)
     tpot_obj.clf_eval_func = tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function)
 
     try:
-        result = tpot_obj._train_model_and_predict(training_testing_data, GaussianNB)
-        [np.loads(x) for x in result.loc[:, 'guess']]
+        clf = tpot.operators.classifiers.gaussian_nb.TPOTGaussianNB()
+        n_cols = int(data.shape[1])
+        result = clf(data)
+        result_cols = int(result.shape[1])
+        assert result_cols == n_cols + n_classes + 1
     except:
         assert False # Should be unreachable
 
@@ -591,11 +584,13 @@ def test_train_model_and_predict_2():
     tpot_obj.clf_eval_func = tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function)
 
     try:
-        result = tpot_obj._train_model_and_predict(training_testing_data, LinearSVC, C=5., penalty='l1', dual=False)
-        [np.loads(x) for x in result.loc[:, 'guess']]
+        clf = tpot.operators.classifiers.linear_svc.TPOTLinearSVC()
+        n_cols = data.shape[1]
+        result = clf(data, 5., 1, False)
+        result_cols = result.shape[1]
+        assert result_cols == n_cols + n_classes + 1
     except:
         assert False # Should be unreachable
-'''
 
 def test_float_range_3():
     """Assert that the TPOT CLI interface's float range throws an exception when input is not a float"""

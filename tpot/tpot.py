@@ -120,7 +120,7 @@ class TPOT(object):
             np.random.seed(random_state)
 
         self.score_sign = 1
-        self.clf_eval_func = False
+        self.clf_eval_func = 'predict'
         if scoring_function is None:
             self.scoring_function = self._balanced_accuracy
             self.scoring_kwargs = {}
@@ -149,10 +149,10 @@ class TPOT(object):
                 # return both an Output_DF (and thus be the root of the tree),
                 # and return a np.ndarray so they can exist elsewhere in the
                 # tree.
-                p_types = ([str] +  op.parameter_types()[0], Output_DF)
+                p_types = (op.parameter_types()[0], Output_DF)
                 self._pset.addPrimitive(op, *p_types)
 
-            self._pset.addPrimitive(op, [str] +  op.parameter_types()[0], op.parameter_types()[1])
+            self._pset.addPrimitive(op, *op.parameter_types())
 
         self._pset.addPrimitive(operators.CombineDFs(),
             [np.ndarray, np.ndarray], np.ndarray)
@@ -178,7 +178,7 @@ class TPOT(object):
 
         self._pset.addTerminal(True, Bool)
         self._pset.addTerminal(False, Bool)
-        self._pset.addTerminal(self.clf_eval_func, str)
+        operators.Operator.clf_eval_func = self.clf_eval_func
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
@@ -514,12 +514,12 @@ class TPOT(object):
 
             result = func(data)
             result = result[result[:, GROUP_COL] == TESTING_GROUP]
+            n_classes = int(np.unique(self._training_classes).size)
             #If the scoring function requires we use predict_proba or decision_function then unpickle the data we pickled when training the classifier
             if self.clf_eval_func == 'predict_proba' or self.clf_eval_func == 'decision_function':
-                resulting_score = self.scoring_function(result[:, CLASS_COL], [np.loads(x) for x in result[:, GUESS_COL]], **self.scoring_kwargs)
+                resulting_score = self.scoring_function(result[:, CLASS_COL], result[:, GUESS_COL:GUESS_COL+n_classes], **self.scoring_kwargs)
             else:
                 resulting_score = self.scoring_function(result[:, CLASS_COL], result[:, GUESS_COL], **self.scoring_kwargs)
-
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled
             if self.score_sign == -1:
@@ -563,12 +563,11 @@ class TPOT(object):
             accuracy on the testing data
 
         """
-        result = np.zeros((y_true.shape, 2))
+        result = np.zeros((y_true.shape[0], 2))
         class_col = 0
         guess_col = 1
         result[:, class_col] = y_true
         result[:, guess_col] = y_pred
-
         all_classes = list(set(result[:, class_col]))
         all_class_accuracies = []
         for this_class in all_classes:
@@ -584,9 +583,7 @@ class TPOT(object):
 
             this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)
-
         balanced_accuracy = np.mean(all_class_accuracies)
-
         return balanced_accuracy
 
     @_gp_new_generation
