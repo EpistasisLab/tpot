@@ -29,6 +29,7 @@ from collections import Counter
 
 import numpy as np
 import pandas as pd
+from scipy.misc import comb as spcomb
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier, GradientBoostingClassifier
@@ -144,6 +145,7 @@ class TPOT(object):
         self._pset.renameArguments(ARG0='input_df')
 
         # Machine learning model operators
+        """
         self._pset.addPrimitive(self._decision_tree, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._random_forest, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._ada_boost, [pd.DataFrame, float], pd.DataFrame)
@@ -152,13 +154,17 @@ class TPOT(object):
         self._pset.addPrimitive(self._gradient_boosting, [pd.DataFrame, float, float, float], pd.DataFrame)
         self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float], pd.DataFrame)
         self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, float, float], pd.DataFrame)
+        """
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
+        """
         self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, Bool], pd.DataFrame)
         self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int], pd.DataFrame)
+        """
 
         # Feature preprocessing operators
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        """
         self._pset.addPrimitive(self._variance_threshold, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._standard_scaler, [pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._robust_scaler, [pd.DataFrame], pd.DataFrame)
@@ -172,6 +178,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._feat_agg, [pd.DataFrame, int, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._nystroem, [pd.DataFrame, int, float, int], pd.DataFrame)
         self._pset.addPrimitive(self._zero_count, [pd.DataFrame], pd.DataFrame)
+        """
         self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int], pd.DataFrame)
 
         # Feature selection operators
@@ -814,7 +821,7 @@ class TPOT(object):
         if len(input_df.columns) == 3:
             return input_df
 
-        all_classes = input_df['class'].unique()
+        all_classes = sorted(input_df['class'].unique())
         tie_break_choice = all_classes[tie_break % len(all_classes)]
         default_label_choice = all_classes[default_label % len(all_classes)]
 
@@ -824,15 +831,15 @@ class TPOT(object):
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         # Place a practical limit on the number of features that can be constructed
-        if training_features.shape[1] > 500:
+        if spcomb(training_features.shape[1], 2) > 10000:
             return input_df
 
-        training_features_names = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).columns.values.tolist()
+        training_feature_names = training_features.columns.values.tolist()
         mdr = MDR(tie_break_choice, default_label_choice)
 
-        for cols in combinations(training_features_names, 2):
-            training_features_subset = training_features.loc[:, cols].values
-            mdr.fit(training_features_subset, training_classes)
+        for cols in combinations(training_feature_names, 2):
+            training_feature_subset = training_features.loc[:, cols].values
+            mdr.fit(training_feature_subset, training_classes)
             mdr_hash = '-'.join(sorted(cols))
             mdr_hash += 'MDR'
             mdr_hash += '-'.join([str(param) for param in [tie_break, default_label]])
