@@ -515,9 +515,9 @@ class TPOT(object):
             result = func(data)
             result = result[result[:, GROUP_COL] == TESTING_GROUP]
             n_classes = int(np.unique(self._training_classes).size)
-            #If the scoring function requires we use predict_proba or decision_function then unpickle the data we pickled when training the classifier
+            #If the scoring function requires we use predict_proba or decision_function then we slice from the end of the matrix
             if self.clf_eval_func == 'predict_proba' or self.clf_eval_func == 'decision_function':
-                resulting_score = self.scoring_function(result[:, CLASS_COL], result[:, GUESS_COL:GUESS_COL+n_classes], **self.scoring_kwargs)
+                resulting_score = self.scoring_function(result[:, CLASS_COL], result[:, -n_classes:], **self.scoring_kwargs)
             else:
                 resulting_score = self.scoring_function(result[:, CLASS_COL], result[:, GUESS_COL], **self.scoring_kwargs)
         except MemoryError:
