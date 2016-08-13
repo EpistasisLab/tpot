@@ -30,6 +30,7 @@ pages:
     - Models:
       - DecisionTreeClassifier: documentation/pipeline_operators/models/classifiers/tree/DecisionTreeClassifier.md
       - RandomForestClassifier: documentation/pipeline_operators/models/classifiers/ensemble/RandomForestClassifier.md
+      - XGBClassifier: documentation/pipeline_operators/models/classifiers/ensemble/XGBClassifier.md
       - kNeighborsClassifier: documentation/pipeline_operators/models/classifiers/nearest_neighbors/kNeighborsClassifier.md
       - LogisticRegression: documentation/pipeline_operators/models/classifiers/linear_model/LogisticRegression.md
       - AdaBoost: documentation/pipeline_operators/models/classifiers/ensemble/AdaBoost.md

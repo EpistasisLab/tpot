@@ -116,6 +116,7 @@ def generate_import_code(pipeline_list):
         '_ada_boost':           {'sklearn.ensemble': ['AdaBoostClassifier']},
         '_extra_trees':         {'sklearn.ensemble': ['ExtraTreesClassifier']},
         '_gradient_boosting':   {'sklearn.ensemble': ['GradientBoostingClassifier']},
+        '_xg_boosting':         {'xgboost': ['XGBClassifier']},
         '_logistic_regression': {'sklearn.linear_model': ['LogisticRegression']},
         '_passive_aggressive':  {'sklearn.linear_model': ['PassiveAggressiveClassifier']},
         '_linear_svc':          {'sklearn.svm': ['LinearSVC']},
@@ -398,6 +399,24 @@ gbc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).va
 
 {OUTPUT_DF}['gbc{OPERATOR_NUM}-classification'] = gbc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
 """.format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, LEARNING_RATE=learning_rate, MAX_FEATURES=max_features, MIN_WEIGHT=min_weight)
+        
+        elif operator_name == '_xg_boosting':
+            
+            learning_rate = min(1., max(float(operator[3]), 0.0001))
+            subsample = min(1., max(0.1, float(operator[4])))            
+            min_child_weight = max(1, int(operator[5]))
+            n_estimators = min(5000, max(1, int(operator[6])))
+
+            if result_name != operator[2]:
+                operator_text += "\n{OUTPUT_DF} = {INPUT_DF}.copy()".format(OUTPUT_DF=result_name, INPUT_DF=operator[2])
+
+            operator_text += """
+# Perform classification with a extreme gradient boosting classifier
+xgbc{OPERATOR_NUM} = XGBClassifier(learning_rate={LEARNING_RATE}, subsample={SUBSAMPLE}, min_child_weight={MIN_WEIGHT}, max_depth=100, n_estimators={N_ESTIMATORS})
+xgbc{OPERATOR_NUM}.fit({OUTPUT_DF}.loc[training_indices].drop('class', axis=1).values, {OUTPUT_DF}.loc[training_indices, 'class'].values)
+
+{OUTPUT_DF}['xgbc{OPERATOR_NUM}-classification'] = xgbc{OPERATOR_NUM}.predict({OUTPUT_DF}.drop('class', axis=1).values)
+""".format(OUTPUT_DF=result_name, OPERATOR_NUM=operator_num, LEARNING_RATE=learning_rate, SUBSAMPLE=subsample, MIN_WEIGHT=min_child_weight, N_ESTIMATORS=n_estimators)
 
         elif operator_name == '_combine_dfs':
             operator_text += '\n# Combine two DataFrames'
