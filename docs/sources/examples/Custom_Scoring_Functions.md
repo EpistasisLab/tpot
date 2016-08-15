@@ -1,18 +1,23 @@
 # Custom Scoring Functions
 
-Below is a minimal working example of different scoring metrics/fitness functions used with the MNIST dataset.
+Below is a minimal working example of different scoring metrics/fitness functions used with the sklearn digits toy-dataset.
 
 ```python
 
 from tpot import TPOT
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
+import numpy as np
+import pandas as pd
 
 digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
                                                     train_size=0.75, test_size=0.25)
 
-def precision(result):
+def precision(y_true, y_pred):
+    result = pd.DataFrame()
+    result['class'] = y_true
+    result['guess'] = y_pred
     all_classes = list(set(result['class'].values))
     all_class_tps = []
     all_class_tps_fps = []
@@ -30,7 +35,10 @@ def precision(result):
 
     return micro_avg_precision
     
-def recall(result):
+def recall(y_true, y_pred):
+    result = pd.DataFrame()
+    result['class'] = y_true
+    result['guess'] = y_pred
     all_classes = list(set(result['class'].values))
     all_class_tps = []
     all_class_tps_fns = []
@@ -45,7 +53,10 @@ def recall(result):
     micro_avg_recall = float(np.sum(all_class_tps)) / np.sum(all_class_tps_fns)
     return micro_avg_recall
 
-def f1(result):
+def f1(y_true, y_pred):
+    result = pd.DataFrame()
+    result['class'] = y_true
+    result['guess'] = y_pred
     all_classes = list(set(result['class'].values))
     all_class_tps = []
     all_class_tps_fps = []
@@ -65,22 +76,22 @@ def f1(result):
 
     return micro_avg_f1
 
-tpot = TPOT(generations=5)
+tpot = TPOT(generations=5, verbosity=2)
 tpot.fit(X_train, y_train)
-print 'acc: ', tpot.score(X_test, y_test)
+print('acc: {}'.format(tpot.score(X_test, y_test)))
 
-tpot = TPOT(generations=5, scoring_function=precision)
+tpot = TPOT(generations=5, scoring_function=precision, verbosity=2)
 tpot.fit(X_train, y_train)
-print 'precision: ', tpot.score(X_test, y_test)
+print('precision: {}'.format(tpot.score(X_test, y_test)))
 
-tpot = TPOT(generations=5, scoring_function=recall)
+tpot = TPOT(generations=5, scoring_function=recall, verbosity=2)
 tpot.fit(X_train, y_train)
-print 'recall: ', tpot.score(X_test, y_test)
+print('recall: {}'.format(tpot.score(X_test, y_test)))
 
-tpot = TPOT(generations=5, scoring_function=f1)
+tpot = TPOT(generations=5, scoring_function=f1, verbosity=2)
 tpot.fit(X_train, y_train)
-print 'f1: ', tpot.score(X_test, y_test)
+print('f1: {}'.format(tpot.score(X_test, y_test)))
 
 ```
 
-Running this example should discover a pipeline that achieves ~98% testing accuracy, ~93% testing precision, ~97% testing recall, and ~95% testing f1.
+

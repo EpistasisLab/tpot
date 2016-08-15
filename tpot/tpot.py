@@ -31,6 +31,9 @@ import deap
 from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
 from sklearn.cross_validation import train_test_split
+from sklearn import metrics
+
+import warnings
 from update_checker import update_check
 
 from ._version import __version__
@@ -49,7 +52,7 @@ class TPOT(object):
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
                  random_state=None, verbosity=0, scoring_function=None,
-                 disable_update_check=False):
+                 scoring_kwargs={}, disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -116,14 +119,23 @@ class TPOT(object):
             random.seed(random_state)
             np.random.seed(random_state)
 
-        self._setup_pset()
-        self._setup_toolbox()
-
-        if not scoring_function:
+        self.score_sign = 1
+        self.clf_eval_func = 'predict'
+        if scoring_function is None:
             self.scoring_function = self._balanced_accuracy
+            self.scoring_kwargs = {}
         else:
             self.scoring_function = scoring_function
+            self.scoring_kwargs = scoring_kwargs
 
+        # If the scoring function has loss in the name, maximize the negative of the fitness score
+        if 'loss' in self.scoring_function.__name__:
+            self.score_sign = -1
+        self.clf_eval_func = self._parse_scoring_docstring(self.scoring_function)
+    
+        self._setup_pset()
+        self._setup_toolbox()
+    
     def _setup_pset(self):
         self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_DF)
 
@@ -166,6 +178,7 @@ class TPOT(object):
 
         self._pset.addTerminal(True, Bool)
         self._pset.addTerminal(False, Bool)
+        operators.Operator.clf_eval_func = self.clf_eval_func
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
@@ -184,6 +197,7 @@ class TPOT(object):
         self._toolbox.register('mate', gp.cxOnePoint)
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=3)
         self._toolbox.register('mutate', self._random_mutation_operator)
+
 
     def fit(self, features, classes):
         """Fits a machine learning pipeline that maximizes classification
@@ -232,6 +246,8 @@ class TPOT(object):
             most_frequent_class = Counter(training_classes).most_common(1)[0][0]
             data = np.concatenate([training_data, testing_data])
             data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
+
+
 
             self._toolbox.register('evaluate', self._evaluate_individual, data=data)
 
@@ -285,7 +301,10 @@ class TPOT(object):
 
             # Store the pipeline with the highest internal testing accuracy
             if self.hof:
-                top_score = 0.
+                if self.score_sign == -1:
+                    top_score = -5000.
+                else:
+                    top_score = 0.
                 for pipeline in self.hof:
                     pipeline_score = self._evaluate_individual(pipeline, data)[1]
                     if pipeline_score > top_score:
@@ -429,6 +448,34 @@ class TPOT(object):
         with open(output_file_name, 'w') as output_file:
             output_file.write(export_pipeline(self._optimized_pipeline))
 
+    def _parse_scoring_docstring(self, scoring_function):
+        """Function used to determine what function a classifier will need to use to supply to the scoring function
+
+        Parameters
+        ----------
+        scoring_function: method: [true labels], [predicted labels OR prediction probabilities OR decision function output] -> float
+            Classification metric used to evaluate a pipeline's fitness
+
+        Returns
+        -------
+        clf_eval_func: string - {'predict', 'predict_proba', 'decision_function'}
+            String representation of what each classifier will need to supply to the scoring function 
+
+        """
+        
+        possible_sklearn_metrics = [name for name, val in metrics.__dict__.items()]
+
+        if str(scoring_function.__name__ ) in possible_sklearn_metrics:
+            docstring = str(scoring_function.__doc__)
+            if 'decision_function' in docstring:
+                return 'decision_function'
+            elif 'predict_proba' in docstring:
+                return 'predict_proba'
+            elif 'predicted labels' in docstring.lower() or 'estimated targets' in docstring.lower():
+                return 'predict'
+
+        return 'predict'
+
     def _evaluate_individual(self, individual, data):
         """Determines the `individual`'s fitness according to its performance on
         the provided data
@@ -449,6 +496,7 @@ class TPOT(object):
             according to its performance on the provided data
 
         """
+
         try:
             # Transform the tree expression in a callable function
             func = self._toolbox.compile(expr=individual)
@@ -462,39 +510,51 @@ class TPOT(object):
                     continue
                 if type(node) is deap.gp.Primitive and node.name == 'CombineDFs':
                     continue
-
                 operator_count += 1
 
             result = func(data)
             result = result[result[:, GROUP_COL] == TESTING_GROUP]
-            resulting_score = self.scoring_function(result)
-
+            n_classes = int(np.unique(self._training_classes).size)
+            #If the scoring function requires we use predict_proba or decision_function then we slice from the end of the matrix
+            if self.clf_eval_func == 'predict_proba' or self.clf_eval_func == 'decision_function':
+                resulting_score = self.scoring_function(result[:, CLASS_COL], result[:, -n_classes:], **self.scoring_kwargs)
+            else:
+                resulting_score = self.scoring_function(result[:, CLASS_COL], result[:, GUESS_COL], **self.scoring_kwargs)
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled
-            return 5000., 0.
+            if self.score_sign == -1:
+                return 5000., -5000.
+            else:
+                return 5000., 0.
         except (KeyboardInterrupt, SystemExit):
             raise
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
-            return 5000., 0.
+            #     if self.score_sign == -1:
+            #         return 5000., -5000.
+            #     else:
+            #         return 5000., 0.
+             return 5000., 0.
         finally:
             if not self.pbar.disable:
                 self.pbar.update(1)  # One more pipeline evaluated
-
+                
         if type(resulting_score) in [float, np.float64, np.float32]:
-            return max(1, operator_count), resulting_score
+            return max(1, operator_count), resulting_score * self.score_sign
         else:
             raise ValueError('Scoring function does not return a float')
 
-    def _balanced_accuracy(self, result):
+    def _balanced_accuracy(self, y_true, y_pred):
         """Default scoring function: balanced class accuracy
 
         Parameters
         ----------
-        result: numpy.ndarray {n_samples, n_features}
-            A numpy matrix containing a pipeline's predictions and the
-            corresponding classes for the testing data
+        y_true: numpy.ndarray {n_samples, 1}
+            A numpy matrix containing a pipeline's classes for the testing data
+
+        y_pred: numpy.ndarray {n_samples, 1}
+            A numpy matrix containing a pipeline's guesses for the testing data 
 
         Returns
         -------
@@ -503,24 +563,27 @@ class TPOT(object):
             accuracy on the testing data
 
         """
-        all_classes = list(set(result[:, CLASS_COL]))
+        result = np.zeros((y_true.shape[0], 2))
+        class_col = 0
+        guess_col = 1
+        result[:, class_col] = y_true
+        result[:, guess_col] = y_pred
+        all_classes = list(set(result[:, class_col]))
         all_class_accuracies = []
         for this_class in all_classes:
             this_class_sensitivity = \
-                float(result[(result[:, GUESS_COL] == this_class) &
-                             (result[:, CLASS_COL] == this_class)].shape[0]) /\
-                float(result[result[:, CLASS_COL] == this_class].shape[0])
+                float(result[(result[:, guess_col] == this_class) &
+                             (result[:, class_col] == this_class)].shape[0]) /\
+                float(result[result[:, class_col] == this_class].shape[0])
 
             this_class_specificity = \
-                float(result[(result[:, GUESS_COL] != this_class) &
-                             (result[:, CLASS_COL] != this_class)].shape[0]) /\
-                float(result[result[:, CLASS_COL] != this_class].shape[0])
+                float(result[(result[:, guess_col] != this_class) &
+                             (result[:, class_col] != this_class)].shape[0]) /\
+                float(result[result[:, class_col] != this_class].shape[0])
 
             this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)
-
         balanced_accuracy = np.mean(all_class_accuracies)
-
         return balanced_accuracy
 
     @_gp_new_generation
