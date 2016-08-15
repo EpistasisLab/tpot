@@ -20,6 +20,7 @@ import numpy as np
 from collections import Counter
 import warnings
 import inspect
+import random
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
@@ -41,6 +42,9 @@ testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axi
 most_frequent_class = Counter(training_classes).most_common(1)[0][0]
 data = np.concatenate([training_data, testing_data])
 data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
+
+np.random.seed(42)
+random.seed(42)
 
 
 def test_init():
@@ -102,11 +106,11 @@ def test_score_2():
     tpot_obj._training_classes = training_classes
     tpot_obj._training_features = training_features
     tpot_obj.pbar = tqdm(total=1, disable=True)
-    known_score = 0.9202817574915823  # Assumes use of the TPOT balanced_accuracy function
+    known_score = 0.981993770448  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(input_matrix, 0.5)', tpot_obj._pset)
+        from_string('LogisticRegression(input_matrix, 1.0, 0, True)', tpot_obj._pset)
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
@@ -178,6 +182,7 @@ def check_classifier(op):
     tpot_obj = TPOT(random_state=42)
 
     prng = np.random.RandomState(42)
+    np.random.seed(42)
 
     args = []
     for type_ in op.parameter_types()[0][1:]:
@@ -198,6 +203,7 @@ def check_selector(op):
     tpot_obj = TPOT(random_state=42)
 
     prng = np.random.RandomState(42)
+    np.random.seed(42)
 
     args = []
     for type_ in op.parameter_types()[0][1:]:
@@ -210,9 +216,14 @@ def check_selector(op):
     with warnings.catch_warnings():
         # Ignore warnings about constant features
         warnings.simplefilter('ignore', category=UserWarning)
-        sel.fit(training_features, training_classes)
 
-    mask = sel.get_support(True)
+        old_err_settings = np.seterr()
+        np.seterr(all='ignore')
+
+        sel.fit(training_features, training_classes)
+        mask = sel.get_support(True)
+
+        np.seterr(**old_err_settings)
 
     assert np.array_equal(
         np.delete(data, non_feature_columns + [x + len(non_feature_columns) for x in mask], axis=1),
@@ -225,6 +236,7 @@ def check_preprocessor(op):
     tpot_obj = TPOT(random_state=42)
 
     prng = np.random.RandomState(42)
+    np.random.seed(42)
 
     args = []
     for type_ in op.parameter_types()[0][1:]:
@@ -245,6 +257,7 @@ def check_export(op):
     tpot_obj = TPOT(random_state=42)
 
     prng = np.random.RandomState(42)
+    np.random.seed(42)
 
     args = []
     for type_ in op.parameter_types()[0][1:]:
@@ -252,7 +265,7 @@ def check_export(op):
 
     export_string = op.export(*args)
 
-    assert export_string.startswith(op.__name__)
+    assert export_string.startswith(op.__name__ + "(") and export_string.endswith(")")
 
 
 def test_operators():

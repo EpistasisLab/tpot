@@ -40,7 +40,7 @@ class TPOTSelectPercentile(Selector):
         pass
 
     def preprocess_args(self, percentile):
-        percentile = max(min(100, percentile), 0)
+        percentile = max(min(99, percentile), 1)
 
         return {
             'score_func': f_classif,

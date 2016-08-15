@@ -273,7 +273,8 @@ class TPOT(object):
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
-            pass
+            if self.verbosity > 0:
+                print('GP closed prematurely - will use current best pipeline')
         finally:
             # Close the progress bar
             # Standard truthiness checks won't work for tqdm
@@ -285,11 +286,9 @@ class TPOT(object):
 
             # Store the pipeline with the highest internal testing accuracy
             if self.hof:
-                top_score = 0.
-                for pipeline in self.hof:
-                    pipeline_score = self._evaluate_individual(pipeline, data)[1]
-                    if pipeline_score > top_score:
-                        top_score = pipeline_score
+                high_score = 0.
+                for i, pipeline in enumerate(self.hof.items):
+                    if self.hof.keys[i].wvalues[1] > high_score:
                         self._optimized_pipeline = pipeline
 
             if self.verbosity >= 1 and self._optimized_pipeline:
@@ -378,10 +377,6 @@ class TPOT(object):
         training_data = np.insert(training_data, 0, np.zeros((training_data.shape[0],)), axis=1)  # Insert the group
         testing_data = np.insert(testing_features, 0, testing_classes, axis=1)  # Insert the classes
         testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
-
-        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
-        data = np.concatenate([training_data, testing_data])
-        data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
 
         # Default guess: the most frequent class in the training data
         most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]

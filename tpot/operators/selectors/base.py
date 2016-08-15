@@ -60,7 +60,14 @@ class Selector(Operator):
         with warnings.catch_warnings():
             # Ignore warnings about constant features
             warnings.simplefilter('ignore', category=UserWarning)
-            op.fit(self.training_features, self.training_classes)
+            # Ignore numpy division errors like pandas does
+            old_err_settings = np.seterr()
+            np.seterr(all='ignore')
 
-        mask = op.get_support(True)
+            op.fit(self.training_features, self.training_classes)
+            mask = op.get_support(True)
+
+            # Return error handling to previous config
+            np.seterr(**old_err_settings)
+
         return np.delete(input_matrix, [x + len(non_feature_columns) for x in mask], axis=1)
