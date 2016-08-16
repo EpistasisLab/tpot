@@ -40,7 +40,7 @@ from ._version import __version__
 from .export_utils import export_pipeline
 from .decorators import _gp_new_generation
 from . import operators
-from .types import Bool, Output_DF
+from .gp_types import Bool, Output_DF
 from .indices import GUESS_COL, GROUP_COL, CLASS_COL, TESTING_GROUP
 
 
@@ -132,10 +132,10 @@ class TPOT(object):
         if 'loss' in self.scoring_function.__name__:
             self.score_sign = -1
         self.clf_eval_func = self._parse_scoring_docstring(self.scoring_function)
-    
+
         self._setup_pset()
         self._setup_toolbox()
-    
+
     def _setup_pset(self):
         self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_DF)
 
@@ -289,7 +289,8 @@ class TPOT(object):
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
-            pass
+            if self.verbosity > 0:
+                print('GP closed prematurely - will use current best pipeline')
         finally:
             # Close the progress bar
             # Standard truthiness checks won't work for tqdm
@@ -305,10 +306,8 @@ class TPOT(object):
                     top_score = -5000.
                 else:
                     top_score = 0.
-                for pipeline in self.hof:
-                    pipeline_score = self._evaluate_individual(pipeline, data)[1]
-                    if pipeline_score > top_score:
-                        top_score = pipeline_score
+                for i, pipeline in enumerate(self.hof.items):
+                    if self.hof.keys[i].wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
 
             if self.verbosity >= 1 and self._optimized_pipeline:
@@ -398,10 +397,6 @@ class TPOT(object):
         testing_data = np.insert(testing_features, 0, testing_classes, axis=1)  # Insert the classes
         testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
 
-        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
-        data = np.concatenate([training_data, testing_data])
-        data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
-
         # Default guess: the most frequent class in the training data
         most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
         data = np.concatenate([training_data, testing_data])
@@ -459,10 +454,10 @@ class TPOT(object):
         Returns
         -------
         clf_eval_func: string - {'predict', 'predict_proba', 'decision_function'}
-            String representation of what each classifier will need to supply to the scoring function 
+            String representation of what each classifier will need to supply to the scoring function
 
         """
-        
+
         possible_sklearn_metrics = [name for name, val in metrics.__dict__.items()]
 
         if str(scoring_function.__name__ ) in possible_sklearn_metrics:
@@ -539,7 +534,7 @@ class TPOT(object):
         finally:
             if not self.pbar.disable:
                 self.pbar.update(1)  # One more pipeline evaluated
-                
+
         if type(resulting_score) in [float, np.float64, np.float32]:
             return max(1, operator_count), resulting_score * self.score_sign
         else:
@@ -554,7 +549,7 @@ class TPOT(object):
             A numpy matrix containing a pipeline's classes for the testing data
 
         y_pred: numpy.ndarray {n_samples, 1}
-            A numpy matrix containing a pipeline's guesses for the testing data 
+            A numpy matrix containing a pipeline's guesses for the testing data
 
         Returns
         -------
@@ -826,9 +821,9 @@ def main():
             print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
         print('')
 
-    input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-    features = input_data.view((np.float64, len(input_data.dtype.names)))
-    features = np.delete(features, input_data.dtype.names.index('class'))
+    input_data = np.recfromcsv(args.INPUT_FILE, delimiter=args.INPUT_SEPARATOR, dtype=np.float64)
+    features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1),
+                         input_data.dtype.names.index('class'), axis=1)
 
     training_features, testing_features, training_classes, testing_classes = \
         train_test_split(features, input_data['class'], random_state=args.RANDOM_STATE)

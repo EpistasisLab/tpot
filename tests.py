@@ -8,7 +8,7 @@ from tpot import TPOT
 from tpot.tpot import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
 from tpot.decorators import _gp_new_generation
-from tpot.types import Output_DF
+from tpot.gp_types import Output_DF
 from tpot.indices import non_feature_columns, GUESS_COL
 
 from tpot.operators import Operator, CombineDFs
@@ -21,6 +21,7 @@ import numpy as np
 from collections import Counter
 import warnings
 import inspect
+import random
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
@@ -51,6 +52,9 @@ testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axi
 most_frequent_class = Counter(training_classes).most_common(1)[0][0]
 data = np.concatenate([training_data, testing_data])
 data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
+
+np.random.seed(42)
+random.seed(42)
 
 
 def test_init():
@@ -112,11 +116,11 @@ def test_score_2():
     tpot_obj._training_classes = training_classes
     tpot_obj._training_features = training_features
     tpot_obj.pbar = tqdm(total=1, disable=True)
-    known_score = 0.9202817574915823  # Assumes use of the TPOT balanced_accuracy function
+    known_score = 0.981993770448  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(input_matrix, 0.5)', tpot_obj._pset)
+        from_string('LogisticRegression(input_matrix, 1.0, 0, True)', tpot_obj._pset)
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
@@ -188,6 +192,7 @@ def check_classifier(op):
     tpot_obj = TPOT(random_state=42)
 
     prng = np.random.RandomState(42)
+    np.random.seed(42)
 
     args = []
     for type_ in op.parameter_types()[0][1:]:
@@ -208,6 +213,7 @@ def check_selector(op):
     tpot_obj = TPOT(random_state=42)
 
     prng = np.random.RandomState(42)
+    np.random.seed(42)
 
     args = []
     for type_ in op.parameter_types()[0][1:]:
@@ -220,9 +226,14 @@ def check_selector(op):
     with warnings.catch_warnings():
         # Ignore warnings about constant features
         warnings.simplefilter('ignore', category=UserWarning)
-        sel.fit(training_features, training_classes)
 
-    mask = sel.get_support(True)
+        old_err_settings = np.seterr()
+        np.seterr(all='ignore')
+
+        sel.fit(training_features, training_classes)
+        mask = sel.get_support(True)
+
+        np.seterr(**old_err_settings)
 
     assert np.array_equal(
         np.delete(data, non_feature_columns + [x + len(non_feature_columns) for x in mask], axis=1),
@@ -235,6 +246,7 @@ def check_preprocessor(op):
     tpot_obj = TPOT(random_state=42)
 
     prng = np.random.RandomState(42)
+    np.random.seed(42)
 
     args = []
     for type_ in op.parameter_types()[0][1:]:
@@ -255,6 +267,7 @@ def check_export(op):
     tpot_obj = TPOT(random_state=42)
 
     prng = np.random.RandomState(42)
+    np.random.seed(42)
 
     args = []
     for type_ in op.parameter_types()[0][1:]:
@@ -262,7 +275,7 @@ def check_export(op):
 
     export_string = op.export(*args)
 
-    assert export_string.startswith(op.__name__)
+    assert export_string.startswith(op.__name__ + "(") and export_string.endswith(")")
 
 
 def test_operators():
@@ -370,9 +383,8 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
-features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
+input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1), input_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes = \
 train_test_split(features, tpot_data['class'], random_state=42)
 """
@@ -397,9 +409,8 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.svm import SVC
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
-features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
+input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1), input_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes = \
 train_test_split(features, tpot_data['class'], random_state=42)
 
@@ -548,7 +559,7 @@ def test_scoring_functions_4():
     """ Assert that a loss function gets the sign flipped and the correct function is used in evaluation """
 
     tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.hamming_loss)
-    
+
     assert(tpot_obj.score_sign == -1)
     assert(tpot_obj.clf_eval_func == 'predict')
 

@@ -19,7 +19,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import *
-# from .pca import *
+from .pca import *
 from .nystroem import *
 from .feat_agg import *
 from .fast_ica import *
