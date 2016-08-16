@@ -8,7 +8,7 @@ from tpot import TPOT
 from tpot.tpot import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
 from tpot.decorators import _gp_new_generation
-from tpot.types import Output_DF
+from tpot.gp_types import Output_DF
 from tpot.indices import non_feature_columns, GUESS_COL
 
 from tpot.operators import Operator, CombineDFs
@@ -383,9 +383,8 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
-features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
+input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1), input_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes = \
 train_test_split(features, tpot_data['class'], random_state=42)
 """
@@ -410,9 +409,8 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.svm import SVC
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
-features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
+input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1), input_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes = \
 train_test_split(features, tpot_data['class'], random_state=42)
 
@@ -561,7 +559,7 @@ def test_scoring_functions_4():
     """ Assert that a loss function gets the sign flipped and the correct function is used in evaluation """
 
     tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.hamming_loss)
-    
+
     assert(tpot_obj.score_sign == -1)
     assert(tpot_obj.clf_eval_func == 'predict')
 
