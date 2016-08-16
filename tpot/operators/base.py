@@ -37,6 +37,8 @@ class Operator(object):
         'n_jobs': -1
     }
 
+    clf_eval_func = 'predict'
+
     def __call__(self, input_matrix, *args, **kwargs):
         input_matrix = np.copy(input_matrix)  # Make a copy of the input matrix
 
