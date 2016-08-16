@@ -18,7 +18,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ...types import Bool
+from ...gp_types import Bool
 from .base import Classifier
 from sklearn.svm import LinearSVC
 

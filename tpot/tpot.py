@@ -37,7 +37,7 @@ from ._version import __version__
 from .export_utils import export_pipeline
 from .decorators import _gp_new_generation
 from . import operators
-from .types import Bool, Output_DF
+from .gp_types import Bool, Output_DF
 from .indices import GUESS_COL, GROUP_COL, CLASS_COL, TESTING_GROUP
 
 
@@ -758,9 +758,9 @@ def main():
             print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
         print('')
 
-    input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-    features = input_data.view((np.float64, len(input_data.dtype.names)))
-    features = np.delete(features, input_data.dtype.names.index('class'))
+    input_data = np.recfromcsv(args.INPUT_FILE, delimiter=args.INPUT_SEPARATOR, dtype=np.float64)
+    features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1),
+                         input_data.dtype.names.index('class'), axis=1)
 
     training_features, testing_features, training_classes, testing_classes = \
         train_test_split(features, input_data['class'], random_state=args.RANDOM_STATE)
