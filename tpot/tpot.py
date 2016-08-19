@@ -327,12 +327,12 @@ class TPOT(object):
 
         """
         if not self._optimized_pipeline:
-            raise ValueError(('A pipeline has not yet been optimized.'
+            raise ValueError(('A pipeline has not yet been optimized. '
                               'Please call fit() first.'))
 
         features = features.astype(np.float64)
 
-        # Transform the tree expression in a callable function
+        # Transform the tree expression into a sklearn pipeline
         sklearn_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
         sklearn_pipeline.fit(self._training_features, self._training_classes)
 
@@ -359,7 +359,7 @@ class TPOT(object):
         return self.predict(features)
 
     def score(self, testing_features, testing_classes):
-        """Estimates the testing accuracy of the optimized pipeline.
+        """Estimates the balanced testing accuracy of the optimized pipeline.
 
         Parameters
         ----------
@@ -375,13 +375,17 @@ class TPOT(object):
 
         """
         if self._optimized_pipeline is None:
-            raise ValueError(('A pipeline has not yet been optimized.'
+            raise ValueError(('A pipeline has not yet been optimized. '
                               'Please call fit() first.'))
 
-        features = np.concatenate([self._training_features, testing_features])
-        classes = np.concatenate([self._training_classes, np.zeros((testing_features.shape[0],))])
+        testing_features = testing_features.astype(np.float64)
 
-        return self._evaluate_individual(self._optimized_pipeline, features, classes)[1]
+        # Transform the tree expression into a sklearn pipeline
+        sklearn_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+        sklearn_pipeline.fit(self._training_features, self._training_classes)
+        testing_predictions = sklearn_pipeline.predict(testing_features)
+
+        return self._balanced_accuracy(sklearn_pipeline, testing_features, testing_classes):
 
     def get_params(self, deep=None):
         """Get parameters for this estimator
@@ -416,7 +420,7 @@ class TPOT(object):
 
         """
         if self._optimized_pipeline is None:
-            raise ValueError(('A pipeline has not yet been optimized.'
+            raise ValueError(('A pipeline has not yet been optimized. '
                               'Please call fit() first.'))
 
         with open(output_file_name, 'w') as output_file:
@@ -495,7 +499,10 @@ class TPOT(object):
             raise ValueError('Scoring function does not return a float')
 
     def _balanced_accuracy(self, estimator, X_test, y_test):
-        """Default scoring function: balanced class accuracy
+        """Default scoring function: balanced accuracy
+        
+        Balanced accuracy computes each class' accuracy on a per-class basis using a
+        one-vs-rest encoding, then computes an unweighted average of the class accuracies.
 
         Parameters
         ----------
@@ -533,6 +540,7 @@ class TPOT(object):
 
             this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)
+
         balanced_accuracy = np.mean(all_class_accuracies)
         return balanced_accuracy
 
