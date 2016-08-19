@@ -24,24 +24,25 @@ import random
 import inspect
 import sys
 from functools import partial
-from collections import Counter
 
 import numpy as np
 import deap
 from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
-from sklearn.cross_validation import train_test_split
-from sklearn import metrics
 
-import warnings
+from sklearn.cross_validation import train_test_split, cross_val_score
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import FunctionTransformer
+from sklearn.ensemble import VotingClassifier
+
 from update_checker import update_check
 
 from ._version import __version__
-from .export_utils import export_pipeline
+from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _gp_new_generation
 from . import operators
+from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
-from .indices import GUESS_COL, GROUP_COL, CLASS_COL, TESTING_GROUP
 
 
 class TPOT(object):
@@ -86,6 +87,8 @@ class TPOT(object):
         scoring_function: function (default: balanced accuracy)
             Function used to evaluate the goodness of a given pipeline for the
             classification problem. By default, balanced class accuracy is used.
+        scoring_kwargs: dict
+            kwargs to pass to the scoring function
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 
@@ -111,6 +114,12 @@ class TPOT(object):
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
+        self.operators_context = {
+            'make_pipeline': make_pipeline,
+            'make_union': make_union,
+            'VotingClassifier': VotingClassifier,
+            'FunctionTransformer': FunctionTransformer
+        }
 
         self.pbar = None
         self.gp_generation = 0
@@ -119,19 +128,10 @@ class TPOT(object):
             random.seed(random_state)
             np.random.seed(random_state)
 
-        self.score_sign = 1
-        self.clf_eval_func = 'predict'
-        if scoring_function is None:
-            self.scoring_function = self._balanced_accuracy
-            self.scoring_kwargs = {}
+        if scoring_function:
+            self.scoring_function = partial(scoring_function, **scoring_kwargs)
         else:
-            self.scoring_function = scoring_function
-            self.scoring_kwargs = scoring_kwargs
-
-        # If the scoring function has loss in the name, maximize the negative of the fitness score
-        if 'loss' in self.scoring_function.__name__:
-            self.score_sign = -1
-        self.clf_eval_func = self._parse_scoring_docstring(self.scoring_function)
+            self.scoring_function = None
 
         self._setup_pset()
         self._setup_toolbox()
@@ -154,8 +154,16 @@ class TPOT(object):
 
             self._pset.addPrimitive(op, *op.parameter_types())
 
-        self._pset.addPrimitive(operators.CombineDFs(),
-            [np.ndarray, np.ndarray], np.ndarray)
+            # Import required modules into local namespace so that pipelines
+            # may be evaluated directly
+            for key in sorted(op.import_hash.keys()):
+                module_list = ', '.join(sorted(op.import_hash[key]))
+                exec('from {} import {}'.format(key, module_list))
+
+                for var in op.import_hash[key]:
+                    self.operators_context[var] = eval(var)
+
+        self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
 
         # Terminals
         int_terminals = np.concatenate((
@@ -178,7 +186,6 @@ class TPOT(object):
 
         self._pset.addTerminal(True, Bool)
         self._pset.addTerminal(False, Bool)
-        operators.Operator.clf_eval_func = self.clf_eval_func
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
@@ -192,12 +199,11 @@ class TPOT(object):
             tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population',
             tools.initRepeat, list, self._toolbox.individual)
-        self._toolbox.register('compile', gp.compile, pset=self._pset)
+        self._toolbox.register('compile', self._compile_to_sklearn)
         self._toolbox.register('select', self._combined_selection_operator)
         self._toolbox.register('mate', gp.cxOnePoint)
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=3)
         self._toolbox.register('mutate', self._random_mutation_operator)
-
 
     def fit(self, features, classes):
         """Fits a machine learning pipeline that maximizes classification
@@ -233,24 +239,7 @@ class TPOT(object):
             # predictive features at the beginning or end.
             np.take(features, np.random.permutation(features.shape[1]), axis=1, out=features)
 
-            training_features, testing_features, training_classes, testing_classes = \
-                train_test_split(features, classes, train_size=0.75, test_size=0.25)
-
-            # Training group is 0. testing group is 1.
-            training_data = np.insert(training_features, 0, training_classes, axis=1)  # Insert the classes
-            training_data = np.insert(training_data, 0, np.zeros((training_data.shape[0],)), axis=1)  # Insert the group
-            testing_data = np.insert(testing_features, 0, testing_classes, axis=1)  # Insert the classes
-            testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
-
-            # Insert guess
-            most_frequent_class = Counter(training_classes).most_common(1)[0][0]
-            data = np.concatenate([training_data, testing_data])
-            data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
-
-
-
-            self._toolbox.register('evaluate', self._evaluate_individual, data=data)
-
+            self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
             pop = self._toolbox.population(n=self.population_size)
 
             def pareto_eq(ind1, ind2):
@@ -302,10 +291,7 @@ class TPOT(object):
 
             # Store the pipeline with the highest internal testing accuracy
             if self.hof:
-                if self.score_sign == -1:
-                    top_score = -5000.
-                else:
-                    top_score = 0.
+                top_score = 0.
                 for i, pipeline in enumerate(self.hof.items):
                     if self.hof.keys[i].wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
@@ -333,24 +319,18 @@ class TPOT(object):
         """
         testing_features = testing_features.astype(np.float64)
 
-        if self._optimized_pipeline is None:
+        if not self._optimized_pipeline:
             raise ValueError(('A pipeline has not yet been optimized.'
                               'Please call fit() first.'))
 
-        training_data = np.insert(self._training_features, 0, self._training_classes, axis=1)  # Insert the classes
-        training_data = np.insert(training_data, 0, np.zeros((training_data.shape[0],)), axis=1)  # Insert the group
-        testing_data = np.insert(testing_features, 0, np.zeros((testing_features.shape[0],)), axis=1)  # Insert the classes
-        testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
-
-        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
-        data = np.concatenate([training_data, testing_data])
-        data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
+        features = np.concatenate([self._training_features, testing_features])
+        classes = np.concatenate([self._training_classes, np.zeros((testing_features.shape[0],))])
 
         # Transform the tree expression in a callable function
-        func = self._toolbox.compile(expr=self._optimized_pipeline)
-        result = func(data)
+        sklearn_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+        result = sklearn_pipeline.predict(features, classes)
 
-        return result[result[:, GROUP_COL] == TESTING_GROUP][:, CLASS_COL]
+        return result
 
     def fit_predict(self, features, classes):
         """Convenience function that fits a pipeline then predicts on the
@@ -392,17 +372,10 @@ class TPOT(object):
             raise ValueError(('A pipeline has not yet been optimized.'
                               'Please call fit() first.'))
 
-        training_data = np.insert(self._training_features, 0, self._training_classes, axis=1)  # Insert the classes
-        training_data = np.insert(training_data, 0, np.zeros((training_data.shape[0],)), axis=1)  # Insert the group
-        testing_data = np.insert(testing_features, 0, testing_classes, axis=1)  # Insert the classes
-        testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
+        features = np.concatenate([self._training_features, testing_features])
+        classes = np.concatenate([self._training_classes, np.zeros((testing_features.shape[0],))])
 
-        # Default guess: the most frequent class in the training data
-        most_frequent_class = Counter(self._training_classes).most_common(1)[0][0]
-        data = np.concatenate([training_data, testing_data])
-        data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
-
-        return self._evaluate_individual(self._optimized_pipeline, data)[1]
+        return self._evaluate_individual(self._optimized_pipeline, features, classes)[1]
 
     def get_params(self, deep=None):
         """Get parameters for this estimator
@@ -443,35 +416,23 @@ class TPOT(object):
         with open(output_file_name, 'w') as output_file:
             output_file.write(export_pipeline(self._optimized_pipeline))
 
-    def _parse_scoring_docstring(self, scoring_function):
-        """Function used to determine what function a classifier will need to use to supply to the scoring function
+    def _compile_to_sklearn(self, expr):
+        """Compiles a DEAP pipeline into a sklearn pipeline
 
         Parameters
         ----------
-        scoring_function: method: [true labels], [predicted labels OR prediction probabilities OR decision function output] -> float
-            Classification metric used to evaluate a pipeline's fitness
+        expr: DEAP individual
+            The DEAP pipeline to be compiled
 
         Returns
         -------
-        clf_eval_func: string - {'predict', 'predict_proba', 'decision_function'}
-            String representation of what each classifier will need to supply to the scoring function
-
+        sklearn_pipeline: sklearn.pipeline.Pipeline
         """
 
-        possible_sklearn_metrics = [name for name, val in metrics.__dict__.items()]
+        sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr)[0])
+        return eval(sklearn_pipeline, self.operators_context)
 
-        if str(scoring_function.__name__ ) in possible_sklearn_metrics:
-            docstring = str(scoring_function.__doc__)
-            if 'decision_function' in docstring:
-                return 'decision_function'
-            elif 'predict_proba' in docstring:
-                return 'predict_proba'
-            elif 'predicted labels' in docstring.lower() or 'estimated targets' in docstring.lower():
-                return 'predict'
-
-        return 'predict'
-
-    def _evaluate_individual(self, individual, data):
+    def _evaluate_individual(self, individual, features, classes):
         """Determines the `individual`'s fitness according to its performance on
         the provided data
 
@@ -480,8 +441,11 @@ class TPOT(object):
         individual: DEAP individual
             A list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
-        data: numpy.ndarray {n_samples, n_features}
-            A numpy matrix containing the training and testing data for the
+        features: numpy.ndarray {n_samples, n_features}
+            A numpy matrix containing the training and testing features for the
+            `individual`'s evaluation
+        classes: numpy.ndarray {n_samples, }
+            A numpy matrix containing the training and testing classes for the
             `individual`'s evaluation
 
         Returns
@@ -494,92 +458,36 @@ class TPOT(object):
 
         try:
             # Transform the tree expression in a callable function
-            func = self._toolbox.compile(expr=individual)
+            sklearn_pipeline = self._toolbox.compile(expr=individual)
 
             # Count the number of pipeline operators as a measure of pipeline
             # complexity
             operator_count = 0
             for i in range(len(individual)):
                 node = individual[i]
-                if type(node) is deap.gp.Terminal:
-                    continue
-                if type(node) is deap.gp.Primitive and node.name == 'CombineDFs':
+                if ((type(node) is deap.gp.Terminal) or
+                     type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
                     continue
                 operator_count += 1
 
-            result = func(data)
-            result = result[result[:, GROUP_COL] == TESTING_GROUP]
-            n_classes = int(np.unique(self._training_classes).size)
-            #If the scoring function requires we use predict_proba or decision_function then we slice from the end of the matrix
-            if self.clf_eval_func == 'predict_proba' or self.clf_eval_func == 'decision_function':
-                resulting_score = self.scoring_function(result[:, CLASS_COL], result[:, -n_classes:], **self.scoring_kwargs)
-            else:
-                resulting_score = self.scoring_function(result[:, CLASS_COL], result[:, GUESS_COL], **self.scoring_kwargs)
+            scores = cross_val_score(sklearn_pipeline, features, classes,
+                scoring=self.scoring_function)
+            resulting_score = np.mean(scores)
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled
-            if self.score_sign == -1:
-                return 5000., -5000.
-            else:
-                return 5000., 0.
-        except (KeyboardInterrupt, SystemExit):
-            raise
+            return 5000., 0.
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
-            #     if self.score_sign == -1:
-            #         return 5000., -5000.
-            #     else:
-            #         return 5000., 0.
-             return 5000., 0.
+            return 5000., 0.
         finally:
             if not self.pbar.disable:
                 self.pbar.update(1)  # One more pipeline evaluated
 
         if type(resulting_score) in [float, np.float64, np.float32]:
-            return max(1, operator_count), resulting_score * self.score_sign
+            return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
-
-    def _balanced_accuracy(self, y_true, y_pred):
-        """Default scoring function: balanced class accuracy
-
-        Parameters
-        ----------
-        y_true: numpy.ndarray {n_samples, 1}
-            A numpy matrix containing a pipeline's classes for the testing data
-
-        y_pred: numpy.ndarray {n_samples, 1}
-            A numpy matrix containing a pipeline's guesses for the testing data
-
-        Returns
-        -------
-        fitness: float
-            Returns a float value indicating the `individual`'s balanced
-            accuracy on the testing data
-
-        """
-        result = np.zeros((y_true.shape[0], 2))
-        class_col = 0
-        guess_col = 1
-        result[:, class_col] = y_true
-        result[:, guess_col] = y_pred
-        all_classes = list(set(result[:, class_col]))
-        all_class_accuracies = []
-        for this_class in all_classes:
-            this_class_sensitivity = \
-                float(result[(result[:, guess_col] == this_class) &
-                             (result[:, class_col] == this_class)].shape[0]) /\
-                float(result[result[:, class_col] == this_class].shape[0])
-
-            this_class_specificity = \
-                float(result[(result[:, guess_col] != this_class) &
-                             (result[:, class_col] != this_class)].shape[0]) /\
-                float(result[result[:, class_col] != this_class].shape[0])
-
-            this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
-            all_class_accuracies.append(this_class_accuracy)
-        balanced_accuracy = np.mean(all_class_accuracies)
-        return balanced_accuracy
 
     @_gp_new_generation
     def _combined_selection_operator(self, individuals, k):

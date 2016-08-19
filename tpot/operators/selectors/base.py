@@ -18,56 +18,10 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-import numpy as np
-import warnings
-
 from tpot.operators import Operator
-from tpot.indices import non_feature_columns
 
 
 class Selector(Operator):
     """Parent class for Feature Selectors in TPOT"""
 
     root = False  # Whether this operator type can be the root of the tree
-
-    def _call(self, input_matrix, *args, **kwargs):
-        # Calculate arguments to be passed directly to sklearn
-        operator_args = self.preprocess_args(*args, **kwargs)
-
-        # Run the feature-selector with args
-        modified_df = self._fit_mask(input_matrix, operator_args)
-
-        return modified_df
-
-    def _fit_mask(self, input_matrix, operator_args):
-        """Run the Selector and return the modified DataFrame
-
-        Parameters
-        ----------
-            input_matrix: numpy.ndarray
-            operator_args: dict
-                Dictionary of arguments to be passed to the selector
-
-        Returns
-        -------
-            modified_df: numpy.ndarray
-
-        """
-        # Send arguments to selector but also attempt to add in default
-        # arguments defined in the Operator class
-        op = self._merge_with_default_params(operator_args)
-
-        with warnings.catch_warnings():
-            # Ignore warnings about constant features
-            warnings.simplefilter('ignore', category=UserWarning)
-            # Ignore numpy division errors like pandas does
-            old_err_settings = np.seterr()
-            np.seterr(all='ignore')
-
-            op.fit(self.training_features, self.training_classes)
-            mask = op.get_support(True)
-
-            # Return error handling to previous config
-            np.seterr(**old_err_settings)
-
-        return np.delete(input_matrix, [x + len(non_feature_columns) for x in mask], axis=1)
