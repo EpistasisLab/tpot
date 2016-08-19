@@ -32,8 +32,7 @@ class Operator(object):
 
     # Default parameters for sklearn classes
     default_arguments = {
-        'random_state': 42,
-        'n_jobs': -1
+        'random_state': 42
     }
 
     def export(self, *args, **kwargs):
