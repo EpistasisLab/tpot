@@ -84,9 +84,17 @@ class TPOT(object):
         verbosity: int (default: 0)
             How much information TPOT communicates while it's running.
             0 = none, 1 = minimal, 2 = all
-        scoring_function: function (default: balanced accuracy)
+        scoring_function: str (default: balanced accuracy)
             Function used to evaluate the goodness of a given pipeline for the
             classification problem. By default, balanced class accuracy is used.
+            
+            Offers the same options as sklearn.cross_validation.cross_val_score:
+            
+            ['accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro',
+            'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error',
+            'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro',
+            'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall',
+            'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc']
         scoring_kwargs: dict
             kwargs to pass to the scoring function
         disable_update_check: bool (default: False)
@@ -128,10 +136,10 @@ class TPOT(object):
             random.seed(random_state)
             np.random.seed(random_state)
 
-        if scoring_function:
-            self.scoring_function = partial(scoring_function, **scoring_kwargs)
+        if scoring_function is None:
+            self.scoring_function = self._balanced_accuracy
         else:
-            self.scoring_function = None
+            self.scoring_function = scoring_function
 
         self._setup_pset()
         self._setup_toolbox()
@@ -470,9 +478,8 @@ class TPOT(object):
                     continue
                 operator_count += 1
 
-            scores = cross_val_score(sklearn_pipeline, features, classes,
-                scoring=self.scoring_function)
-            resulting_score = np.mean(scores)
+            cv_scores = cross_val_score(sklearn_pipeline, features, classes, cv=3, scoring=self.scoring_function)
+            resulting_score = np.mean(cv_scores)
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled
             return 5000., 0.
@@ -488,6 +495,48 @@ class TPOT(object):
             return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
+
+    def _balanced_accuracy(self, estimator, X_test, y_test):
+        """Default scoring function: balanced class accuracy
+
+        Parameters
+        ----------
+        estimator: scikit-learn estimator
+            The estimator for which to evaluate the balanced accuracy
+        X_test: numpy.ndarray {n_samples, n_features}
+            Test data that will be fed to estimator.predict.
+        y_test: numpy.ndarray {n_samples, 1}
+            Target values for X_test.
+
+        Returns
+        -------
+        fitness: float
+            Returns a float value indicating the `individual`'s balanced accuracy
+            0.5 is as good as chance, and 1.0 is perfect predictive accuracy
+        """
+        y_pred = estimator.predict(X_test)
+        result = np.zeros((y_test.shape[0], 2))
+        class_col = 0
+        guess_col = 1
+        result[:, class_col] = y_test
+        result[:, guess_col] = y_pred
+        all_classes = list(set(result[:, class_col]))
+        all_class_accuracies = []
+        for this_class in all_classes:
+            this_class_sensitivity = \
+                float(result[(result[:, guess_col] == this_class) &
+                             (result[:, class_col] == this_class)].shape[0]) /\
+                float(result[result[:, class_col] == this_class].shape[0])
+
+            this_class_specificity = \
+                float(result[(result[:, guess_col] != this_class) &
+                             (result[:, class_col] != this_class)].shape[0]) /\
+                float(result[result[:, class_col] != this_class].shape[0])
+
+            this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
+            all_class_accuracies.append(this_class_accuracy)
+        balanced_accuracy = np.mean(all_class_accuracies)
+        return balanced_accuracy
 
     @_gp_new_generation
     def _combined_selection_operator(self, individuals, k):
