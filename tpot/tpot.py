@@ -243,11 +243,6 @@ class TPOT(object):
             self._training_features = features
             self._training_classes = classes
 
-            # Randomize the order of the columns so there is no potential bias
-            # introduced by the initial order of the columns, e.g., the most
-            # predictive features at the beginning or end.
-            np.take(features, np.random.permutation(features.shape[1]), axis=1, out=features)
-
             self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
             pop = self._toolbox.population(n=self.population_size)
 
@@ -385,7 +380,7 @@ class TPOT(object):
         sklearn_pipeline.fit(self._training_features, self._training_classes)
         testing_predictions = sklearn_pipeline.predict(testing_features)
 
-        return self._balanced_accuracy(sklearn_pipeline, testing_features, testing_classes):
+        return self._balanced_accuracy(sklearn_pipeline, testing_features, testing_classes) 
 
     def get_params(self, deep=None):
         """Get parameters for this estimator
