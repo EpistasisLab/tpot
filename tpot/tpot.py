@@ -52,8 +52,9 @@ class TPOT(object):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 random_state=None, verbosity=0, scoring_function=None,
-                 scoring_kwargs={}, disable_update_check=False):
+                 random_state=None, verbosity=0,
+                 scoring_function=None, num_cv_folds=3,
+                 disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -87,8 +88,8 @@ class TPOT(object):
         scoring_function: str (default: balanced accuracy)
             Function used to evaluate the goodness of a given pipeline for the
             classification problem. By default, balanced class accuracy is used.
-            TPOT assumes that this scoring function should be maximized, i.e., higher is
-            better.
+            TPOT assumes that this scoring function should be maximized, i.e.,
+            higher is better.
             
             Offers the same options as sklearn.cross_validation.cross_val_score:
             
@@ -96,8 +97,9 @@ class TPOT(object):
             'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'precision', 'precision_macro',
             'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall',
             'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc']
-        scoring_kwargs: dict
-            kwargs to pass to the scoring function
+        num_cv_folds: int (default: 3)
+            The number of folds to evaluate each pipeline over in k-fold cross-validation
+            during the TPOT pipeline optimization process
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 
@@ -141,6 +143,8 @@ class TPOT(object):
             self.scoring_function = self._balanced_accuracy
         else:
             self.scoring_function = scoring_function
+
+        self.num_cv_folds = num_cv_folds
 
         self._setup_pset()
         self._setup_toolbox()
@@ -475,7 +479,7 @@ class TPOT(object):
                     continue
                 operator_count += 1
 
-            cv_scores = cross_val_score(sklearn_pipeline, features, classes, cv=3, scoring=self.scoring_function)
+            cv_scores = cross_val_score(sklearn_pipeline, features, classes, cv=self.num_cv_folds, scoring=self.scoring_function)
             resulting_score = np.mean(cv_scores)
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled
