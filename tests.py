@@ -9,7 +9,6 @@ from tpot.tpot import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
 from tpot.decorators import _gp_new_generation
 from tpot.gp_types import Output_DF
-from tpot.indices import non_feature_columns, GUESS_COL
 
 from tpot.operators import Operator, CombineDFs
 from tpot.operators.classifiers import Classifier, TPOTDecisionTreeClassifier
@@ -41,17 +40,6 @@ from tqdm import tqdm
 mnist_data = load_digits()
 training_features, testing_features, training_classes, testing_classes = \
     train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
-
-# Training data group is 0 testing data group is 1
-training_data = np.insert(training_features, 0, training_classes, axis=1)  # Insert the classes
-training_data = np.insert(training_data, 0, np.zeros((training_data.shape[0],)), axis=1)  # Insert the group
-testing_data = np.insert(testing_features, 0, np.zeros((testing_features.shape[0],)), axis=1)  # Insert the classes
-testing_data = np.insert(testing_data, 0, np.ones((testing_data.shape[0],)), axis=1)  # Insert the group
-
-# Insert guess
-most_frequent_class = Counter(training_classes).most_common(1)[0][0]
-data = np.concatenate([training_data, testing_data])
-data = np.insert(data, 0, np.array([most_frequent_class] * data.shape[0]), axis=1)
 
 np.random.seed(42)
 random.seed(42)
@@ -310,19 +298,6 @@ def test_operators_2():
     )
 
 
-def test_combine_dfs():
-    """Assert that the TPOT CombineDFs operator creates a combined feature set from two input sets"""
-    features1 = np.delete(data, non_feature_columns, axis=1)
-    features2 = np.delete(data, non_feature_columns, axis=1)
-
-    combined_features = np.concatenate([features1, features2], axis=1)
-
-    for col in non_feature_columns:
-        combined_features = np.insert(combined_features, 0, data[:, col], axis=1)
-
-    assert np.array_equal(CombineDFs()(data, data), combined_features)
-
-
 def test_export():
     """Assert that TPOT's export function throws a ValueError when no optimized pipeline exists"""
     tpot_obj = TPOT()
@@ -512,96 +487,6 @@ def test_float_range_2():
     except Exception:
         pass
 
-def test_scoring_functions_1():
-    """Assert that the default _balanced_accuracy is used when no scoring function is passed"""
-    tpot_obj = TPOT()
-
-    assert(tpot_obj.scoring_function == tpot_obj._balanced_accuracy)
-
-def test_scoring_functions_2():
-    """Assert that a custom classification-based scoring function uses the predict function of each classifier"""
-    def custom_scoring_function(y_true, y_pred):
-        return 1.0
-
-    tpot_obj = TPOT(scoring_function=custom_scoring_function)
-    assert(tpot_obj.scoring_function == custom_scoring_function)
-
-def test_scoring_functions_3():
-    """Assert that the parse_scoring_docstring works for classification metrics"""
-
-    tpot_obj = TPOT()
-
-    assert(tpot_obj._parse_scoring_docstring(tpot_obj._balanced_accuracy) == 'predict')
-
-    for scoring_func in [metrics.fbeta_score,
-                         metrics.jaccard_similarity_score,
-                         metrics.matthews_corrcoef,
-                         metrics.f1_score,
-                         metrics.precision_score,
-                         metrics.silhouette_score,
-                         metrics.zero_one_loss,
-                         metrics.accuracy_score,
-                         metrics.recall_score,
-                         metrics.hamming_loss]:
-
-        tpot_obj = TPOT(scoring_function=scoring_func)
-        assert(tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function) == 'predict')
-
-    for scoring_func in [metrics.log_loss]:
-        tpot_obj = TPOT(scoring_function=scoring_func)
-        assert(tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function) == 'predict_proba')
-
-    for scoring_func in [metrics.hinge_loss]:
-        tpot_obj = TPOT(scoring_function=scoring_func)
-        assert(tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function) == 'decision_function')
-
-def test_scoring_functions_4():
-    """ Assert that a loss function gets the sign flipped and the correct function is used in evaluation """
-
-    tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.hamming_loss)
-
-    assert(tpot_obj.score_sign == -1)
-    assert(tpot_obj.clf_eval_func == 'predict')
-
-def test_train_model_and_predict_2():
-    """ Assert that training an individual classifier and predicting makes use of correct function, un/pickling as necessary"""
-
-    tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.hamming_loss)
-    tpot_obj.clf_eval_func = tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function)
-
-    n_classes = int(np.unique(training_classes).size)
-    try:
-        clf = tpot.operators.classifiers.linear_svc.TPOTLinearSVC()
-        n_cols = int(data.shape[1])
-        result = clf(data, 5., 1, False)
-        result_cols = int(result.shape[1])
-        assert result_cols == n_cols + 1
-    except:
-        assert False # Should be unreachable
-
-    tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.log_loss)
-    tpot_obj.clf_eval_func = tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function)
-
-    try:
-        clf = tpot.operators.classifiers.gaussian_nb.TPOTGaussianNB()
-        n_cols = int(data.shape[1])
-        result = clf(data)
-        result_cols = int(result.shape[1])
-        assert result_cols == n_cols + n_classes + 1
-    except:
-        assert False # Should be unreachable
-
-    tpot_obj = TPOT(population_size=1, generations=1, scoring_function=metrics.hinge_loss)
-    tpot_obj.clf_eval_func = tpot_obj._parse_scoring_docstring(tpot_obj.scoring_function)
-
-    try:
-        clf = tpot.operators.classifiers.linear_svc.TPOTLinearSVC()
-        n_cols = data.shape[1]
-        result = clf(data, 5., 1, False)
-        result_cols = result.shape[1]
-        assert result_cols == n_cols + n_classes + 1
-    except:
-        assert False # Should be unreachable
 
 def test_float_range_3():
     """Assert that the TPOT CLI interface's float range throws an exception when input is not a float"""

@@ -20,7 +20,6 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 import numpy as np
 from types import FunctionType
-from tpot.indices import CLASS_COL, GROUP_COL, TRAINING_GROUP, non_feature_columns
 
 try:
     from inspect import signature  # Python 3
@@ -36,27 +35,6 @@ class Operator(object):
         'random_state': 42,
         'n_jobs': -1
     }
-
-    clf_eval_func = 'predict'
-
-    def __call__(self, input_matrix, *args, **kwargs):
-        input_matrix = np.copy(input_matrix)  # Make a copy of the input matrix
-
-        self.training_features = input_matrix[input_matrix[:, GROUP_COL] == TRAINING_GROUP]
-        self.training_features = np.delete(self.training_features, non_feature_columns, axis=1)
-        self.training_classes = input_matrix[input_matrix[:, GROUP_COL] == TRAINING_GROUP][:, CLASS_COL]
-
-        # If there are no features left then there is nothing to do
-        if input_matrix.shape[1] == 3:
-            return input_matrix
-
-        # Call child class' _call function
-        ret = self._call(input_matrix, *args, **kwargs)
-
-        del self.training_features
-        del self.training_classes
-
-        return ret
 
     def export(self, *args, **kwargs):
         """Represent the operator as a string so that it can be exported to a
@@ -102,47 +80,6 @@ class Operator(object):
         ("Classifier", "Selector", "Preprocessor")
         """
         return self.__class__.__bases__[0].__name__
-
-    def _merge_with_default_params(self, kwargs):
-        """Apply defined default parameters to the sklearn class where applicable
-        while also integrating specified arguments
-
-        Parameters
-        ----------
-        kwargs: dict
-            Preprocessed arguments from DEAP
-
-        Returns
-        -------
-        sklearn_class
-            The class's sklearn_class instantiated with both the default
-            arguments and specified arguments.
-
-        """
-        try:
-            # Python 3
-            sklearn_argument_names = set(signature(self.sklearn_class).
-                parameters.keys())
-        except NameError:
-            # Python 2
-            try:
-                sklearn_argument_names = \
-                    set(getargspec(self.sklearn_class.__init__).args)
-            except TypeError:
-                # For when __init__ comes from C code and can not be inspected
-                sklearn_argument_names = set()  # Assume no parameters
-
-        default_argument_names = set(self.default_arguments.keys())
-
-        # Find which arguments are defined in both the defaults and the
-        # sklearn class
-        applicable_defaults = sklearn_argument_names.\
-            intersection(default_argument_names)
-
-        for new_arg in applicable_defaults:
-            kwargs[new_arg] = self.default_arguments[new_arg]
-
-        return self.sklearn_class(**kwargs)
 
     def parameter_types(self):
         """Return tuple of argument types for calling of the operator and the

@@ -18,40 +18,10 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-import numpy as np
-
-from tpot.indices import non_feature_columns
-
 
 class CombineDFs(object):
     """Operator to combine two DataFrames"""
 
-    def __init__(self):
-        pass
-
     @property
     def __name__(self):
         return self.__class__.__name__
-
-    def __call__(self, input_mat1, input_mat2):
-        """
-        Parameters
-        ----------
-        input_df1: numpy.ndarray {n_samples, n_features+['class', 'group', 'guess']}
-            Input matrix to combine
-        input_df2: numpy.ndarray {n_samples, n_features+['class', 'group', 'guess']}
-            Input matrix to combine
-        Returns
-        -------
-        combined_features: numpy.ndarray {n_samples, n_both_features+['guess', 'group', 'class']}
-            Returns a DataFrame containing the features of both input_df1 and input_df2
-        """
-        features1 = np.delete(input_mat1, non_feature_columns, axis=1)
-        features2 = np.delete(input_mat2, non_feature_columns, axis=1)
-
-        combined_features = np.concatenate([features1, features2], axis=1)
-
-        for col in non_feature_columns:
-            combined_features = np.insert(combined_features, 0, input_mat1[:, col], axis=1)
-
-        return combined_features
