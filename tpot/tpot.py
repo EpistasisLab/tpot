@@ -29,6 +29,7 @@ from collections import Counter
 
 import numpy as np
 import pandas as pd
+from scipy.misc import comb as spcomb
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier, GradientBoostingClassifier
@@ -43,6 +44,8 @@ from sklearn.decomposition import RandomizedPCA, FastICA
 from sklearn.kernel_approximation import RBFSampler, Nystroem
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.cross_validation import train_test_split
+from mdr import MDR
+from itertools import combinations, compress
 
 import warnings
 from update_checker import update_check
@@ -61,7 +64,6 @@ class Bool(object):
     """Boolean class used for deap due to deap's poor handling of ints and booleans"""
     pass
 
-
 class TPOT(object):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
 
@@ -70,7 +72,8 @@ class TPOT(object):
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
                  random_state=0, verbosity=0, scoring_function=None,
-                 disable_update_check=False):
+                 disable_update_check=False, expert_source=None,
+                 ekf_index=0, k_best=5):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -98,6 +101,8 @@ class TPOT(object):
             Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used.
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
+        expert_source: list (default: None)
+            List of expert knowledge features filter. Must be =< number of features of the input data.
 
         Returns
         -------
@@ -125,6 +130,10 @@ class TPOT(object):
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
+        
+        self.ekf_index = ekf_index
+        self.k_best = k_best
+        self.expert_source = expert_source
 
         self.pbar = None
         self.gp_generation = 0
@@ -151,6 +160,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float], pd.DataFrame)
         self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, float, float], pd.DataFrame)
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, Bool], pd.DataFrame)
         self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int], pd.DataFrame)
@@ -176,6 +186,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
+        self._pset.addPrimitive(self._ekf, [pd.DataFrame, int, int], pd.DataFrame)
 
         # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
@@ -235,6 +246,10 @@ class TPOT(object):
         None
 
         """
+        
+        if self.expert_source != None:
+            self._ekf(features, self.ekf_index, self.k_best)        
+        
         try:
             # Store the training features and classes for later use
             self._training_features = features
@@ -790,6 +805,55 @@ class TPOT(object):
             learning_rate=learning_rate, n_estimators=500,
             max_features=max_features, random_state=42, min_weight_fraction_leaf=min_weight)
 
+
+    def _mdr(self, input_df, tie_break, default_label):
+        """Fits the Multifactor Dimensionality Reduction feature construction algorithm
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the MDR feature constructor
+        tie_break: int
+            Default class label that is used when a MDR cell has an equal number of each class
+        default_label: int
+            Default class label that is used when MDR encounters a feature pair that it did not encounter in the training set
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class']}
+            Returns a modified input DataFrame with the new MDR constructed features appended
+
+        """
+        if len(input_df.columns) == 3:
+            return input_df
+
+        all_classes = sorted(input_df['class'].unique())
+        tie_break_choice = all_classes[tie_break % len(all_classes)]
+        default_label_choice = all_classes[default_label % len(all_classes)]
+
+        input_df = input_df.copy()
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        # Place a practical limit on the number of features that can be constructed
+        if spcomb(training_features.shape[1], 2) > 1000:
+            return input_df
+
+        training_feature_names = training_features.columns.values.tolist()
+        mdr = MDR(tie_break_choice, default_label_choice)
+
+        for cols in combinations(training_feature_names, 2):
+            training_feature_subset = training_features.loc[:, cols].values
+            mdr.fit(training_feature_subset, training_classes)
+            mdr_hash = '-'.join(sorted(cols))
+            mdr_hash += 'MDR'
+            mdr_hash += '-'.join([str(param) for param in [tie_break, default_label]])
+            mdr_identifier = 'ConstructedFeature-{}'.format(hashlib.sha224(mdr_hash.encode('UTF-8')).hexdigest())
+            input_df[mdr_identifier] = mdr.transform(input_df.loc[:, cols].values)
+
+        return input_df    
+
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
 
@@ -1007,6 +1071,39 @@ class TPOT(object):
 
         mask_cols = list(training_features.iloc[:, mask].columns) + self.non_feature_columns
         return input_df[mask_cols].copy()
+
+    def _ekf(self, input_df, ekf_index, k_best):
+        """Uses expert knowledge source to subset/mask columns of the input data
+        
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to perform feature selecton on
+        expert_source: Boolean list/mask for features provided by user
+        
+        Returns
+        -------
+        subsetted_df: andas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the 'best' features provided by expert_source
+        
+        """
+#        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+#        all_ekf_cols = len(training_features.columns)
+        training_features = input_df
+        all_ekf_cols = training_features.shape[1]
+    
+        if k_best < 1:
+            k_best = 1
+        elif k_best >= all_ekf_cols:
+            k_best = all_ekf_cols        
+        
+        if self.expert_source[ekf_index].dtype==int:
+            ekf_source = self.expert_source[ekf_index].astype(bool)
+            return training_features[:, ekf_source].copy()
+        else:
+            ekf_source = np.argsort(self.expert_source)[::-1][:10]
+            ekf_source = ekf_source[:k_best]
+            return training_features[:, ekf_source].copy()
 
     def _variance_threshold(self, input_df, threshold):
         """Uses scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the threshold
