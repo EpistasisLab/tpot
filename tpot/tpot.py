@@ -90,9 +90,9 @@ class TPOT(object):
             classification problem. By default, balanced class accuracy is used.
             TPOT assumes that this scoring function should be maximized, i.e.,
             higher is better.
-            
+
             Offers the same options as sklearn.cross_validation.cross_val_score:
-            
+
             ['accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro',
             'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'precision', 'precision_macro',
             'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall',
@@ -384,7 +384,7 @@ class TPOT(object):
         sklearn_pipeline.fit(self._training_features, self._training_classes)
         testing_predictions = sklearn_pipeline.predict(testing_features)
 
-        return self._balanced_accuracy(sklearn_pipeline, testing_features, testing_classes) 
+        return self._balanced_accuracy(sklearn_pipeline, testing_features, testing_classes)
 
     def get_params(self, deep=None):
         """Get parameters for this estimator
@@ -499,7 +499,7 @@ class TPOT(object):
 
     def _balanced_accuracy(self, estimator, X_test, y_test):
         """Default scoring function: balanced accuracy
-        
+
         Balanced accuracy computes each class' accuracy on a per-class basis using a
         one-vs-rest encoding, then computes an unweighted average of the class accuracies.
 
@@ -518,24 +518,25 @@ class TPOT(object):
             Returns a float value indicating the `individual`'s balanced accuracy
             0.5 is as good as chance, and 1.0 is perfect predictive accuracy
         """
+        def filter_length(func, iterable):
+            """Returns the length of a list after applying a filter to each
+            element.
+            """
+            return float(len(list(filter(func, iterable))))
+
         y_pred = estimator.predict(X_test)
-        result = np.zeros((y_test.shape[0], 2))
-        class_col = 0
-        guess_col = 1
-        result[:, class_col] = y_test
-        result[:, guess_col] = y_pred
-        all_classes = list(set(result[:, class_col]))
+
+        all_classes = list(set(y_test))
         all_class_accuracies = []
+
         for this_class in all_classes:
             this_class_sensitivity = \
-                float(result[(result[:, guess_col] == this_class) &
-                             (result[:, class_col] == this_class)].shape[0]) /\
-                float(result[result[:, class_col] == this_class].shape[0])
+                filter_length(lambda x: x == this_class, y_pred + y_test) /\
+                filter_length(lambda x: x == this_class, y_test)
 
             this_class_specificity = \
-                float(result[(result[:, guess_col] != this_class) &
-                             (result[:, class_col] != this_class)].shape[0]) /\
-                float(result[result[:, class_col] != this_class].shape[0])
+                filter_length(lambda x: x != this_class, y_pred + y_test) /\
+                filter_length(lambda x: x != this_class, y_test)
 
             this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)

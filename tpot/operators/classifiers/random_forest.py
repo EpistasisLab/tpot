@@ -27,21 +27,17 @@ class TPOTRandomForestClassifier(Classifier):
 
     Parameters
     ----------
-    min_weight_fraction_leaf: float
-        The minimum weighted fraction of the input samples required to be at a leaf node.
+    None
 
     """
     import_hash = {'sklearn.ensemble': ['RandomForestClassifier']}
     sklearn_class = RandomForestClassifier
-    arg_types = (float, )
+    arg_types = ()
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, min_weight_fraction_leaf):
-        min_weight = min(0.5, max(0., min_weight_fraction_leaf))
-
+    def preprocess_args(self):
         return {
-            'n_estimators': 500,
-            'min_weight_fraction_leaf': min_weight
+            'n_estimators': 500
         }

@@ -10,28 +10,16 @@ from tpot.export_utils import export_pipeline, generate_import_code, _indent, ge
 from tpot.decorators import _gp_new_generation
 from tpot.gp_types import Output_DF
 
-from tpot.operators import Operator, CombineDFs
-from tpot.operators.classifiers import Classifier, TPOTDecisionTreeClassifier
-from tpot.operators.preprocessors import Preprocessor
-from tpot.operators.selectors import Selector, TPOTSelectKBest
-import tpot.operators.classifiers
+from tpot.operators import Operator
+from tpot.operators.selectors import TPOTSelectKBest
 
 import numpy as np
-from collections import Counter
-import warnings
 import inspect
 import random
+from functools import partial
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier, GradientBoostingClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import LinearSVC
-from sklearn.linear_model import LogisticRegression, PassiveAggressiveClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
-from sklearn.feature_selection import RFE, SelectPercentile, f_classif, SelectKBest, SelectFwe, VarianceThreshold
-from sklearn import metrics
 
 from deap import creator
 from tqdm import tqdm
@@ -104,18 +92,18 @@ def test_score_2():
     tpot_obj._training_classes = training_classes
     tpot_obj._training_features = training_features
     tpot_obj.pbar = tqdm(total=1, disable=True)
-    known_score = 0.981993770448  # Assumes use of the TPOT balanced_accuracy function
+    known_score = 0.785304123483369  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('LogisticRegression(input_matrix, 1.0, 0, True)', tpot_obj._pset)
+        from_string('RandomForestClassifier(input_matrix)', tpot_obj._pset)
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
 
     # http://stackoverflow.com/questions/5595425/
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-        return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
     assert isclose(known_score, score)
 
@@ -139,7 +127,7 @@ def test_predict_2():
     tpot_obj._training_classes = training_classes
     tpot_obj._training_features = training_features
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(input_matrix, 0.5)', tpot_obj._pset)
+        from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
 
     result = tpot_obj.predict(testing_features)
 
@@ -175,81 +163,6 @@ def test_gp_new_generation():
     assert(tpot_obj.gp_generation == 1)
 
 
-def check_classifier(op):
-    """Assert that a TPOT classifier outputs the same as its sklearn counterpart"""
-    tpot_obj = TPOT(random_state=42)
-
-    prng = np.random.RandomState(42)
-    np.random.seed(42)
-
-    args = []
-    for type_ in op.parameter_types()[0][1:]:
-        args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
-
-    result = op(data, *args)
-
-    clf = op._merge_with_default_params(op.preprocess_args(*args))
-    clf.fit(training_features, training_classes)
-
-    all_features = np.delete(data, non_feature_columns, axis=1)
-
-    assert np.array_equal(result[:, GUESS_COL], clf.predict(all_features))
-
-
-def check_selector(op):
-    """Assert that a TPOT feature selector outputs the same as its sklearn counterpart"""
-    tpot_obj = TPOT(random_state=42)
-
-    prng = np.random.RandomState(42)
-    np.random.seed(42)
-
-    args = []
-    for type_ in op.parameter_types()[0][1:]:
-        args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
-
-    result = op(data, *args)
-
-    sel = op._merge_with_default_params(op.preprocess_args(*args))
-
-    with warnings.catch_warnings():
-        # Ignore warnings about constant features
-        warnings.simplefilter('ignore', category=UserWarning)
-
-        old_err_settings = np.seterr()
-        np.seterr(all='ignore')
-
-        sel.fit(training_features, training_classes)
-        mask = sel.get_support(True)
-
-        np.seterr(**old_err_settings)
-
-    assert np.array_equal(
-        np.delete(data, non_feature_columns + [x + len(non_feature_columns) for x in mask], axis=1),
-        np.delete(result, non_feature_columns, axis=1)
-    )
-
-
-def check_preprocessor(op):
-    """Assert that a TPOT feature preprocessor outputs the same as its sklearn counterpart"""
-    tpot_obj = TPOT(random_state=42)
-
-    prng = np.random.RandomState(42)
-    np.random.seed(42)
-
-    args = []
-    for type_ in op.parameter_types()[0][1:]:
-        args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
-
-    result = op(data, *args)
-
-    prp = op._merge_with_default_params(op.preprocess_args(*args))
-    prp.fit(training_features.astype(np.float64))
-    all_features = np.delete(data, non_feature_columns, axis=1)
-    sklearn_result = prp.transform(all_features.astype(np.float64))
-
-    assert np.allclose(np.delete(result, non_feature_columns, axis=1), sklearn_result)
-
-
 def check_export(op):
     """Assert that a TPOT operator exports as expected"""
     tpot_obj = TPOT(random_state=42)
@@ -273,30 +186,6 @@ def test_operators():
                                     "as expected".format(op.__name__))
         yield check_export, op
 
-        if isinstance(op, Classifier):
-            check_classifier.description = ("Assert that the TPOT {} classifier "
-                                            "matches the output of the sklearn "
-                                            "counterpart".format(op.__name__))
-            yield check_classifier, op
-        elif isinstance(op, Preprocessor):
-            check_preprocessor.description = ("Assert that the TPOT {} feature preprocessor "
-                                              "matches the output of the sklearn "
-                                              "counterpart".format(op.__name__))
-            yield check_preprocessor, op
-        elif isinstance(op, Selector):
-            check_selector.description = ("Assert that the TPOT {} feature selector "
-                                          "matches the output of the sklearn "
-                                          "counterpart".format(op.__name__))
-            yield check_selector, op
-
-
-def test_operators_2():
-    """Assert that TPOT operators return the input_matrix when no features are supplied"""
-    assert np.array_equal(
-        data[:, :3],
-        TPOTDecisionTreeClassifier()(data[:, :3], 0.5)
-    )
-
 
 def test_export():
     """Assert that TPOT's export function throws a ValueError when no optimized pipeline exists"""
@@ -317,7 +206,7 @@ def test_generate_pipeline_code():
                 'input_matrix',
                 38.0,
                 0.87,
-                30.0],
+                0.5],
             ['GaussianNB',
                 ['ZeroCount',
                     'input_matrix']]],
@@ -358,10 +247,10 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1), input_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \
-train_test_split(features, tpot_data['class'], random_state=42)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
 """
 
     assert expected_code == generate_import_code(pipeline)
@@ -371,7 +260,7 @@ def test_export_pipeline():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline"""
     tpot_obj = TPOT()
     pipeline = creator.Individual.\
-        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87, 30.0), RFE(input_matrix, 0.17999999999999999)), 18, 33)", tpot_obj._pset)
+        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87, 0.5), RFE(input_matrix, 0.17999999999999999)), 18, 33)", tpot_obj._pset)
 
     expected_code = """import numpy as np
 
@@ -384,10 +273,10 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.svm import SVC
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1), input_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \
-train_test_split(features, tpot_data['class'], random_state=42)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
     make_union(
