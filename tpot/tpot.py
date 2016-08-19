@@ -172,7 +172,11 @@ class TPOT(object):
             # may be evaluated directly
             for key in sorted(op.import_hash.keys()):
                 module_list = ', '.join(sorted(op.import_hash[key]))
-                exec('from {} import {}'.format(key, module_list))
+
+                if key.startswith("tpot."):
+                    exec('from {} import {}'.format(key[4:], module_list))
+                else:
+                    exec('from {} import {}'.format(key, module_list))
 
                 for var in op.import_hash[key]:
                     self.operators_context[var] = eval(var)
