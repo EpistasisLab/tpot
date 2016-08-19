@@ -519,23 +519,16 @@ class TPOT(object):
             0.5 is as good as chance, and 1.0 is perfect predictive accuracy
         """
         y_pred = estimator.predict(X_test)
-        result = np.zeros((y_test.shape[0], 2))
-        class_col = 0
-        guess_col = 1
-        result[:, class_col] = y_test
-        result[:, guess_col] = y_pred
-        all_classes = list(set(result[:, class_col]))
+        all_classes = list(set(np.append(y_test, y_pred)))
         all_class_accuracies = []
         for this_class in all_classes:
             this_class_sensitivity = \
-                float(result[(result[:, guess_col] == this_class) &
-                             (result[:, class_col] == this_class)].shape[0]) /\
-                float(result[result[:, class_col] == this_class].shape[0])
+                float(sum((y_pred == this_class) & (y_test == this_class))) /\
+                float(sum((y_test == this_class)))
 
             this_class_specificity = \
-                float(result[(result[:, guess_col] != this_class) &
-                             (result[:, class_col] != this_class)].shape[0]) /\
-                float(result[result[:, class_col] != this_class].shape[0])
+                float(sum((y_pred != this_class) & (y_test != this_class))) /\
+                float(sum((y_test != this_class)))
 
             this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)
