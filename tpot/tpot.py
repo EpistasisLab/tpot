@@ -90,9 +90,9 @@ class TPOT(object):
             classification problem. By default, balanced class accuracy is used.
             TPOT assumes that this scoring function should be maximized, i.e.,
             higher is better.
-            
+
             Offers the same options as sklearn.cross_validation.cross_val_score:
-            
+
             ['accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro',
             'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'precision', 'precision_macro',
             'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall',
@@ -382,9 +382,8 @@ class TPOT(object):
         # Transform the tree expression into a sklearn pipeline
         sklearn_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
         sklearn_pipeline.fit(self._training_features, self._training_classes)
-        testing_predictions = sklearn_pipeline.predict(testing_features)
 
-        return self._balanced_accuracy(sklearn_pipeline, testing_features, testing_classes) 
+        return self._balanced_accuracy(sklearn_pipeline, testing_features, testing_classes)
 
     def get_params(self, deep=None):
         """Get parameters for this estimator
@@ -499,7 +498,7 @@ class TPOT(object):
 
     def _balanced_accuracy(self, estimator, X_test, y_test):
         """Default scoring function: balanced accuracy
-        
+
         Balanced accuracy computes each class' accuracy on a per-class basis using a
         one-vs-rest encoding, then computes an unweighted average of the class accuracies.
 

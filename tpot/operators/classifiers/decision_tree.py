@@ -27,20 +27,15 @@ class TPOTDecisionTreeClassifier(Classifier):
 
     Parameters
     ----------
-    min_weight_fraction_leaf: float
-        The minimum weighted fraction of the input samples required to be at a leaf node.
+    None
 
     """
     import_hash = {'sklearn.tree': ['DecisionTreeClassifier']}
     sklearn_class = DecisionTreeClassifier
-    arg_types = (float, )
+    arg_types = ()
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, min_weight_fraction_leaf):
-        min_weight = min(0.5, max(0., min_weight_fraction_leaf))
-
-        return {
-            'min_weight_fraction_leaf': min_weight
-        }
+    def preprocess_args(self):
+        return {}
