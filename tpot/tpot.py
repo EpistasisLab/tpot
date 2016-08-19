@@ -447,8 +447,7 @@ class TPOT(object):
         -------
         sklearn_pipeline: sklearn.pipeline.Pipeline
         """
-
-        sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr)[0])
+        sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr))
 
         return eval(sklearn_pipeline, self.operators_context)
 
