@@ -30,11 +30,6 @@ except ImportError:
 class Operator(object):
     """Base class for operators in TPOT"""
 
-    # Default parameters for sklearn classes
-    default_arguments = {
-        'random_state': 42
-    }
-
     def export(self, *args, **kwargs):
         """Represent the operator as a string so that it can be exported to a
         file

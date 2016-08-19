@@ -16,7 +16,6 @@ from tpot.operators.selectors import TPOTSelectKBest
 import numpy as np
 import inspect
 import random
-from functools import partial
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
@@ -92,7 +91,7 @@ def test_score_2():
     tpot_obj._training_classes = training_classes
     tpot_obj._training_features = training_features
     tpot_obj.pbar = tqdm(total=1, disable=True)
-    known_score = 0.785304123483369  # Assumes use of the TPOT balanced_accuracy function
+    known_score = 0.986318199045  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\

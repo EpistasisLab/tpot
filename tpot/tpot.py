@@ -22,6 +22,7 @@ from __future__ import print_function
 import argparse
 import random
 import inspect
+import warnings
 import sys
 from functools import partial
 
@@ -333,7 +334,10 @@ class TPOT(object):
 
         # Transform the tree expression into a sklearn pipeline
         sklearn_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
-        sklearn_pipeline.fit(self._training_features, self._training_classes)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sklearn_pipeline.fit(self._training_features, self._training_classes)
 
         return sklearn_pipeline.predict(features)
 
@@ -381,7 +385,10 @@ class TPOT(object):
 
         # Transform the tree expression into a sklearn pipeline
         sklearn_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
-        sklearn_pipeline.fit(self._training_features, self._training_classes)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sklearn_pipeline.fit(self._training_features, self._training_classes)
 
         return self._balanced_accuracy(sklearn_pipeline, testing_features, testing_classes)
 
@@ -438,6 +445,7 @@ class TPOT(object):
         """
 
         sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr)[0])
+
         return eval(sklearn_pipeline, self.operators_context)
 
     def _evaluate_individual(self, individual, features, classes):
@@ -478,7 +486,10 @@ class TPOT(object):
                     continue
                 operator_count += 1
 
-            cv_scores = cross_val_score(sklearn_pipeline, features, classes, cv=self.num_cv_folds, scoring=self.scoring_function)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                cv_scores = cross_val_score(sklearn_pipeline, features, classes, cv=self.num_cv_folds, scoring=self.scoring_function)
+
             resulting_score = np.mean(cv_scores)
         except MemoryError:
             # Throw out GP expressions that are too large to be compiled
