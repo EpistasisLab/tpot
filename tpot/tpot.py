@@ -382,7 +382,6 @@ class TPOT(object):
         # Transform the tree expression into a sklearn pipeline
         sklearn_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
         sklearn_pipeline.fit(self._training_features, self._training_classes)
-        testing_predictions = sklearn_pipeline.predict(testing_features)
 
         return self._balanced_accuracy(sklearn_pipeline, testing_features, testing_classes)
 
@@ -518,25 +517,17 @@ class TPOT(object):
             Returns a float value indicating the `individual`'s balanced accuracy
             0.5 is as good as chance, and 1.0 is perfect predictive accuracy
         """
-        def filter_length(func, iterable):
-            """Returns the length of a list after applying a filter to each
-            element.
-            """
-            return float(len(list(filter(func, iterable))))
-
         y_pred = estimator.predict(X_test)
-
-        all_classes = list(set(y_test))
+        all_classes = list(set(np.append(y_test, y_pred)))
         all_class_accuracies = []
-
         for this_class in all_classes:
             this_class_sensitivity = \
-                filter_length(lambda x: x == this_class, y_pred + y_test) /\
-                filter_length(lambda x: x == this_class, y_test)
+                float(sum((y_pred == this_class) & (y_test == this_class))) /\
+                float(sum((y_test == this_class)))
 
             this_class_specificity = \
-                filter_length(lambda x: x != this_class, y_pred + y_test) /\
-                filter_length(lambda x: x != this_class, y_test)
+                float(sum((y_pred != this_class) & (y_test != this_class))) /\
+                float(sum((y_test != this_class)))
 
             this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
             all_class_accuracies.append(this_class_accuracy)

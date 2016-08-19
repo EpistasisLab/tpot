@@ -11,8 +11,6 @@ Parameters
 ----------
     input_df: numpy.ndarray {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame for fitting the random forest
-    min_weight_fraction_leaf: float
-        The minimum weighted fraction of the input samples required to be at a leaf node.
 
 Returns
 -------
@@ -39,7 +37,7 @@ features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1), i
 training_features, testing_features, training_classes, testing_classes =     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    RandomForestClassifier(min_weight_fraction_leaf=0.5, n_estimators=500)
+    RandomForestClassifier(n_estimators=500)
 )
 
 exported_pipeline.fit(training_features, training_classes)

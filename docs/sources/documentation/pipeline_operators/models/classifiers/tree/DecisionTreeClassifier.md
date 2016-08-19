@@ -10,8 +10,6 @@ Parameters
 ----------
     input_df: numpy.ndarray {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame for fitting the decision tree
-    min_weight_fraction_leaf: float
-        The minimum weighted fraction of the input samples required to be at a leaf node.
 
 Returns
 -------
@@ -38,7 +36,7 @@ training_features, testing_features, training_classes, testing_classes =\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    DecisionTreeClassifier(min_weight_fraction_leaf=0.5)
+    DecisionTreeClassifier()
 )
 
 exported_pipeline.fit(training_features, training_classes)
