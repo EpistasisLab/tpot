@@ -43,6 +43,8 @@ from sklearn.decomposition import RandomizedPCA, FastICA
 from sklearn.kernel_approximation import RBFSampler, Nystroem
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.cross_validation import train_test_split
+from mdr import MDR
+from itertools import combinations, compress
 
 import warnings
 from update_checker import update_check
@@ -61,6 +63,10 @@ class Bool(object):
     """Boolean class used for deap due to deap's poor handling of ints and booleans"""
     pass
 
+class MaskableInput(list):
+    def __getitem__(self, index):
+        try: return super(MaskableInput, self).__getitem__(index)
+        except TypeError: return MaskableInput(compress(self, index))
 
 class TPOT(object):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
@@ -70,7 +76,7 @@ class TPOT(object):
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
                  random_state=0, verbosity=0, scoring_function=None,
-                 disable_update_check=False):
+                 disable_update_check=False, expert_source=None):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -98,6 +104,8 @@ class TPOT(object):
             Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used.
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
+        expert_source: list (default: None)
+            List of expert knowledge features filter. Must be =< number of features of the input data.
 
         Returns
         -------
@@ -125,6 +133,8 @@ class TPOT(object):
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
+        
+        self.expert_source = expert_source
 
         self.pbar = None
         self.gp_generation = 0
@@ -151,6 +161,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._bernoulli_nb, [pd.DataFrame, float, float], pd.DataFrame)
         self._pset.addPrimitive(self._extra_trees, [pd.DataFrame, int, float, float], pd.DataFrame)
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._multinomial_nb, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._linear_svc, [pd.DataFrame, float, int, Bool], pd.DataFrame)
         self._pset.addPrimitive(self._passive_aggressive, [pd.DataFrame, float, int], pd.DataFrame)
@@ -176,6 +187,10 @@ class TPOT(object):
         self._pset.addPrimitive(self._select_fwe, [pd.DataFrame, float], pd.DataFrame)
         self._pset.addPrimitive(self._select_percentile, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._rfe, [pd.DataFrame, int, float], pd.DataFrame)
+        self._pset.addPrimitive(self._ekf_mask, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
+        self._pset.addPrimitive(self._ekf_select_kbest, [pd.DataFrame, pd.DataFrame, int], 
+                                pd.DataFrame)
+
 
         # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
@@ -235,6 +250,17 @@ class TPOT(object):
         None
 
         """
+        if self.expert_source != None:
+            input_ekf_source = pd.read_csv(self.expert_source, sep='\t')
+            if input_ekf_source.values[0].dtype==bool:
+                print("Using expert source for a mask")
+                ekf_source = np.genfromtxt(self.expert_source, dtype=bool, delimiter='\t', skip_header=1)
+                self._ekf_mask(features, ekf_source)
+            else:
+                print("Using expert source that is not a mask")
+                ekf_source = np.genfromtxt(self.expert_source, dtype=float, delimiter='\t', skip_header=1)
+                self._ekf_select_kbest(features, ekf_source, top_k=5)  
+        
         try:
             # Store the training features and classes for later use
             self._training_features = features
@@ -790,6 +816,54 @@ class TPOT(object):
             learning_rate=learning_rate, n_estimators=500,
             max_features=max_features, random_state=42, min_weight_fraction_leaf=min_weight)
 
+        def _mdr(self, input_df, tie_break, default_label):
+        """Fits the Multifactor Dimensionality Reduction feature construction algorithm
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame for fitting the MDR feature constructor
+        tie_break: int
+            Default class label that is used when a MDR cell has an equal number of each class
+        default_label: int
+            Default class label that is used when MDR encounters a feature pair that it did not encounter in the training set
+
+        Returns
+        -------
+        input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class']}
+            Returns a modified input DataFrame with the new MDR constructed features appended
+
+        """
+        if len(input_df.columns) == 3:
+            return input_df
+
+        all_classes = sorted(input_df['class'].unique())
+        tie_break_choice = all_classes[tie_break % len(all_classes)]
+        default_label_choice = all_classes[default_label % len(all_classes)]
+
+        input_df = input_df.copy()
+
+        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
+
+        # Place a practical limit on the number of features that can be constructed
+        if spcomb(training_features.shape[1], 2) > 1000:
+            return input_df
+
+        training_feature_names = training_features.columns.values.tolist()
+        mdr = MDR(tie_break_choice, default_label_choice)
+
+        for cols in combinations(training_feature_names, 2):
+            training_feature_subset = training_features.loc[:, cols].values
+            mdr.fit(training_feature_subset, training_classes)
+            mdr_hash = '-'.join(sorted(cols))
+            mdr_hash += 'MDR'
+            mdr_hash += '-'.join([str(param) for param in [tie_break, default_label]])
+            mdr_identifier = 'ConstructedFeature-{}'.format(hashlib.sha224(mdr_hash.encode('UTF-8')).hexdigest())
+            input_df[mdr_identifier] = mdr.transform(input_df.loc[:, cols].values)
+
+        return input_df
+
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
 
@@ -1007,6 +1081,51 @@ class TPOT(object):
 
         mask_cols = list(training_features.iloc[:, mask].columns) + self.non_feature_columns
         return input_df[mask_cols].copy()
+    
+    def _ekf_mask(self, input_df, expert_source):
+        """Uses expert knowledge source to subset/mask columns of the input data
+        
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to perform feature selecton on
+        expert_source: Boolean list/mask for features provided by user
+        
+        Returns
+        -------
+        subsetted_df: andas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the 'best' features provided by expert_source
+        
+        """
+#        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+#        training_class_vals = input_df.loc[input_df['group'] == 'training', 'class'].values
+        training_features = input_df
+        filtered_features = MaskableInput(training_features)
+        ekf_list = filtered_features[expert_source]
+        return input_df.ix[:, ekf_list].copy()
+        
+    def _ekf_select_kbest(self, input_df, expert_source, top_k):
+        """ 
+        
+        
+        """
+        
+#        training_features = input_df.drop(self.non_feature_columns, axis=1)
+#        training_class_vals = input_df.loc['class'].values
+        training_features = input_df
+
+        if top_k < 1:
+            top_k = 1
+        elif top_k >= len(training_features.columns):
+            top_k = 'all'
+
+        if len(training_features.columns.values) == 0:
+            return input_df.copy()
+
+        ekf_features_sort = np.argsort(expert_source)[::-1][:10]
+        ekf_features_sort = ekf_features_sort[:top_k]
+        
+        return training_features.ix[:, ekf_features_sort].copy()
 
     def _variance_threshold(self, input_df, threshold):
         """Uses scikit-learn's VarianceThreshold feature selection to learn the subset of features that pass the threshold
