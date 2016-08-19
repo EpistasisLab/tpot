@@ -44,5 +44,5 @@ class TPOTRFE(Selector):
 
         return {
             'step': step,
-            'estimator': SVC(kernel='linear', random_state=self.default_arguments['random_state'])
+            'estimator': SVC(kernel='linear', random_state=42)
         }
