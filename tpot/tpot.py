@@ -312,34 +312,31 @@ class TPOT(object):
 
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
-    def predict(self, testing_features):
-        """Uses the optimized pipeline to predict the classes for a feature set.
+    def predict(self, features):
+        """Uses the optimized pipeline to predict the classes for a feature set
 
         Parameters
         ----------
-        testing_features: array-like {n_samples, n_features}
-            Feature matrix of the testing set
+        features: array-like {n_samples, n_features}
+            Feature matrix to predict on
 
         Returns
         ----------
         array-like: {n_samples}
-            Predicted classes for the testing set
+            Predicted classes for the feature matrix
 
         """
-        testing_features = testing_features.astype(np.float64)
-
         if not self._optimized_pipeline:
             raise ValueError(('A pipeline has not yet been optimized.'
                               'Please call fit() first.'))
 
-        features = np.concatenate([self._training_features, testing_features])
-        classes = np.concatenate([self._training_classes, np.zeros((testing_features.shape[0],))])
+        features = features.astype(np.float64)
 
         # Transform the tree expression in a callable function
         sklearn_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
-        result = sklearn_pipeline.predict(features, classes)
+        sklearn_pipeline.fit(self._training_features, self._training_classes)
 
-        return result
+        return sklearn_pipeline.predict(features)
 
     def fit_predict(self, features, classes):
         """Convenience function that fits a pipeline then predicts on the
