@@ -243,10 +243,10 @@ class TPOT(object):
         None
 
         """
-        if np.shape(features)[1]==
-        
+
         if self.expert_source is not None:
-            self._ekf(features, self.ekf_index, self.k_best)        
+            if isinstance(features.size/(self.expert_source).size, int)==True:
+                self._ekf(features, self.ekf_index, self.k_best)        
         
         try:
             # Store the training features and classes for later use
