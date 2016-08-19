@@ -44,7 +44,7 @@ from sklearn.kernel_approximation import RBFSampler, Nystroem
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.cross_validation import train_test_split
 from mdr import MDR
-from itertools import combinations,compress
+from itertools import combinations, compress
 
 import warnings
 from update_checker import update_check
