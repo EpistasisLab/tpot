@@ -87,12 +87,13 @@ class TPOT(object):
         scoring_function: str (default: balanced accuracy)
             Function used to evaluate the goodness of a given pipeline for the
             classification problem. By default, balanced class accuracy is used.
+            TPOT assumes that this scoring function should be maximized, i.e., higher is
+            better.
             
             Offers the same options as sklearn.cross_validation.cross_val_score:
             
             ['accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro',
-            'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error',
-            'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro',
+            'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'precision', 'precision_macro',
             'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall',
             'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc']
         scoring_kwargs: dict
