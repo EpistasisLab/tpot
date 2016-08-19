@@ -38,7 +38,7 @@ def export_pipeline(exported_pipeline):
 
     """
     # Unroll the nested function calls into serial code
-    pipeline_tree = expr_to_tree(exported_pipeline)[0]
+    pipeline_tree = expr_to_tree(exported_pipeline)
 
     # Have the exported code import all of the necessary modules and functions
     pipeline_text = generate_import_code(exported_pipeline)
@@ -49,12 +49,12 @@ def export_pipeline(exported_pipeline):
     return pipeline_text
 
 
-def expr_to_tree(pipeline):
+def expr_to_tree(ind):
     """Convert the unstructured DEAP pipeline into a tree data-structure
 
     Parameters
     ----------
-    pipeline: deap.creator.Individual
+    ind: deap.creator.Individual
        The pipeline that is being exported
 
     Returns
@@ -64,90 +64,29 @@ def expr_to_tree(pipeline):
 
     EXAMPLE:
         pipeline:
-            "DecisionTreeClassifier(
-                CombineDFs(
-                    KNeighborsClassifier(
-                        RBFSampler(
-                            input_matrix,
-                            0.9
-                        ),
-                    23,
-                    35
-                    ),
-                    KNeighborsClassifier(
-                        input_matrix,
-                        23,
-                        35
-                    )
-                ),
-                28.0
-            )"
+            "DecisionTreeClassifier(input_matrix, 28.0)"
         pipeline_tree:
-            ['DecisionTreeClassifier',
-                ['CombineDFs',
-                    ['KNeighborsClassifier',
-                        ['RBFSampler',
-                            'input_matrix',
-                            0.90000000000000002
-                        ],
-                        23,
-                        35
-                    ],
-                    ['KNeighborsClassifier',
-                        'input_matrix',
-                        23,
-                        35
-                    ]
-                ],
-                28.0
-            ]
+            ['DecisionTreeClassifier', 'input_matrix', 28.0]
 
     """
-    pipeline_tree = []
-    iterable = enumerate(pipeline)
+    def prim_to_list(prim, args):
+        if isinstance(prim, deap.gp.Terminal):
+            return prim.value
 
-    for i, node in iterable:
-        if isinstance(node, deap.gp.Primitive):
-            arity = _true_arity(pipeline[i:])
-            primitive_args = expr_to_tree(pipeline[i + 1:i + 1 + arity])
-            pipeline_tree.append([node.name] + primitive_args)
+        return [prim.name] + args
 
-            # Skip past the primitive's args
-            [next(iterable) for x in range(arity)]
-        else:
-            pipeline_tree.append(node.value)
+    tree = []
+    stack = []
+    for node in ind:
+        stack.append((node, []))
+        while len(stack[-1][1]) == stack[-1][0].arity:
+            prim, args = stack.pop()
+            tree = prim_to_list(prim, args)
+            if len(stack) == 0:
+                break   # If stack is empty, all nodes should have been seen
+            stack[-1][1].append(tree)
 
-    return pipeline_tree
-
-
-def _true_arity(pipeline):
-    """Recursively determines the number of atoms in a pipeline snip that are
-    contained within the outermost primitive.
-
-    Parameters
-    ----------
-    pipeline: list
-        The partial pipeline to be evaulated
-
-    Returns
-    -------
-    arity: int
-        The number of atoms contained within the primitve
-
-    """
-    if len(pipeline) == 0:
-        return 0
-
-    arity = 0
-    if pipeline[0].name == "CombineDFs":
-        left_arity = _true_arity(pipeline[1:])
-        right_arity = _true_arity(pipeline[1 + left_arity:])
-
-        arity += left_arity + right_arity - 2
-    if isinstance(pipeline[0], deap.gp.Primitive):
-        arity += pipeline[0].arity + _true_arity(pipeline[1:])
-
-    return arity
+    return tree
 
 
 def generate_import_code(pipeline):
@@ -261,8 +200,7 @@ def process_operator(operator, depth=0):
 
     if op_name == "CombineDFs":
         steps.append(
-            "make_union(\n{},\n{}\n)".format(_indent(_make_branch(operator[1]), 4),
-                                             _indent(_make_branch(operator[2]), 4))
+            combine_dfs(operator[1], operator[2])
         )
     else:
         input_name, args = operator[1], operator[2:]
@@ -303,17 +241,25 @@ def _indent(text, amount):
     return indentation + ('\n' + indentation).join(text.split('\n'))
 
 
-def _make_branch(branch):
-    if branch[1] == "input_matrix":  # If depth of branch == 1
-        tpot_op = operators.Operator.get_by_name(branch[0])
+def combine_dfs(left, right):
+    def _make_branch(branch):
+        if branch == "input_matrix":
+            return "FunctionTransformer(lambda X: X)"
+        elif branch[0] == "CombineDFs":
+            return combine_dfs(branch[1], branch[2])
+        elif branch[1] == "input_matrix":  # If depth of branch == 1
+            tpot_op = operators.Operator.get_by_name(branch[0])
 
-        if tpot_op.type == "Classifier":
-            return """make_union(VotingClassifier(estimators=[('branch',
+            if tpot_op.type == "Classifier":
+                return """make_union(VotingClassifier(estimators=[('branch',
 {}
 )]), FunctionTransformer(lambda X: X))""".format(_indent(process_operator(branch)[0], 4))
+            else:
+                return process_operator(branch)[0]
         else:
-            return process_operator(branch)[0]
-    else:
-        return """make_union(VotingClassifier(estimators=[('branch',
+            return """make_union(VotingClassifier(estimators=[('branch',
 {}
 )]), FunctionTransformer(lambda X: X))""".format(_indent(generate_pipeline_code(branch), 4))
+
+    return "make_union(\n{},\n{}\n)".\
+        format(_indent(_make_branch(left), 4), _indent(_make_branch(right), 4))
