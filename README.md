@@ -73,7 +73,7 @@ Running this code should discover a pipeline that achieves ~98% testing accuracy
 import numpy as np
 
 from sklearn.cross_validation import train_test_split
-from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -83,7 +83,7 @@ features = np.delete(features, tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_classes, testing_classes =     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    LogisticRegression(C=1.0, dual=True, penalty="l1")
+    KNeighborsClassifier(n_neighbors=3, weights="uniform")
 )
 
 exported_pipeline.fit(training_features, training_classes)
