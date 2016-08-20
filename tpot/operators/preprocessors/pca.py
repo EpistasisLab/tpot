@@ -42,6 +42,5 @@ class TPOTRandomizedPCA(Preprocessor):
         iterated_power = min(10, max(1, iterated_power))
 
         return {
-            'iterated_power': iterated_power,
-            'copy': False
+            'iterated_power': iterated_power
         }

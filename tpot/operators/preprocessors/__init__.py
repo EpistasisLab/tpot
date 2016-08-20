@@ -25,6 +25,7 @@ from .feat_agg import *
 from .fast_ica import *
 from .rbf import *
 from .binarizer import *
+from .normalizer import *
 from .min_max_scalar import *
 from .max_abs_scalar import *
 from .polynomial_features import *

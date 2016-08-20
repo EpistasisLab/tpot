@@ -19,25 +19,29 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Preprocessor
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import Normalizer
 
 
-class TPOTRobustScaler(Preprocessor):
-    """Uses scikit-learn's RobustScaler to transform the feature set
+class TPOTNormalizer(Preprocessor):
+    """Uses scikit-learn's Normalizer to normalize samples individually to unit norm
 
     Parameters
     ----------
-    None
+    norm: 'l1', 'l2', or 'max'
+        The norm to use to normalize each non zero sample.
 
     """
-    import_hash = {'sklearn.preprocessing': ['RobustScaler']}
-    sklearn_class = RobustScaler
-    arg_types = ()
+    import_hash = {'sklearn.preprocessing': ['Normalizer']}
+    sklearn_class = Normalizer
+    arg_types = (int, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self):
+    def preprocess_args(self, norm):
+        norm_types = ['l1', 'l2', 'max']
+        norm = norm_types[norm % len(norm_types)]
+        
         return {
-            
+            'norm': norm
         }

@@ -40,6 +40,5 @@ class TPOTBinarizer(Preprocessor):
 
     def preprocess_args(self, threshold):
         return {
-            'threshold': threshold,
-            'copy': False
+            'threshold': threshold
         }
