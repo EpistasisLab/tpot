@@ -48,8 +48,7 @@ def test_init():
     assert tpot_obj.crossover_rate == 0.9
     assert tpot_obj.verbosity == 1
     assert tpot_obj._optimized_pipeline is None
-    assert tpot_obj._training_classes is None
-    assert tpot_obj._training_features is None
+    assert tpot_obj._fitted_pipeline is None
     assert tpot_obj.scoring_function == dummy_scoring_func
     assert tpot_obj._pset
 
@@ -88,14 +87,14 @@ def test_score_2():
     """Assert that the TPOT score function outputs a known score for a fixed pipeline"""
 
     tpot_obj = TPOT()
-    tpot_obj._training_classes = training_classes
-    tpot_obj._training_features = training_features
     tpot_obj.pbar = tqdm(total=1, disable=True)
     known_score = 0.986318199045  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
         from_string('RandomForestClassifier(input_matrix)', tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
@@ -123,10 +122,10 @@ def test_predict_2():
     """Assert that the TPOT predict function returns a numpy matrix of shape (num_testing_rows,)"""
 
     tpot_obj = TPOT()
-    tpot_obj._training_classes = training_classes
-    tpot_obj._training_features = training_features
     tpot_obj._optimized_pipeline = creator.Individual.\
         from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
     result = tpot_obj.predict(testing_features)
 
@@ -138,8 +137,6 @@ def test_fit():
     tpot_obj = TPOT(random_state=42, population_size=1, generations=1, verbosity=0)
     tpot_obj.fit(training_features, training_classes)
 
-    assert isinstance(tpot_obj._training_features, np.ndarray)
-    assert isinstance(tpot_obj._training_classes, np.ndarray)
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert tpot_obj.gp_generation == 0
 
