@@ -24,3 +24,4 @@ from .select_fwe import *
 from .select_kbest import *
 from .select_percentile import *
 from .variance_threshold import *
+from .select_from_model import *

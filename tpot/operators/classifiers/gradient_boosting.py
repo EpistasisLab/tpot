@@ -31,25 +31,21 @@ class TPOTGradientBoosting(Classifier):
         Shrinks the contribution of each tree by learning_rate
     max_features: float
         Maximum number of features to use (proportion of total features)
-    min_weight_fraction_leaf: float
-        The minimum weighted fraction of the input samples required to be at a leaf node.
 
     """
     import_hash = {'sklearn.ensemble': ['GradientBoostingClassifier']}
     sklearn_class = GradientBoostingClassifier
-    arg_types = (float, float, float)
+    arg_types = (float, float)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, learning_rate, max_features, min_weight_fraction_leaf):
+    def preprocess_args(self, learning_rate, max_features):
         learning_rate = min(1., max(learning_rate, 0.0001))
         max_features = min(1., max(0., learning_rate))
-        min_weight = min(0.5, max(0., min_weight_fraction_leaf))
 
         return {
             'learning_rate': learning_rate,
             'max_features': max_features,
-            'min_weight_fraction_leaf': min_weight,
             'n_estimators': 500
         }

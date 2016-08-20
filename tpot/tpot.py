@@ -457,7 +457,7 @@ class TPOT(object):
         """
 
         try:
-            # Transform the tree expression in a callable function
+            # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
             # Count the number of pipeline operators as a measure of pipeline
@@ -481,6 +481,8 @@ class TPOT(object):
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
+            # import traceback
+            # traceback.print_exc()
             return 5000., 0.
         finally:
             if not self.pbar.disable:
