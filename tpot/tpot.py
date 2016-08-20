@@ -192,10 +192,10 @@ class TPOT(object):
             self._pset.addTerminal(val, int)
 
         float_terminals = np.concatenate((
-            [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-            np.linspace(0., 1., 101),
-            np.linspace(2., 50., 49),
-            np.linspace(60., 100., 5))
+            [1e-6, 1e-5, 1e-4, 1e-3],
+            np.arange(0., 1.01, 0.01),
+            np.arange(2., 51., 1.),
+            np.arange(60., 101., 10.))
         )
 
         for val in float_terminals:
