@@ -201,8 +201,7 @@ def test_generate_pipeline_code():
             ['GradientBoostingClassifier',
                 'input_matrix',
                 38.0,
-                0.87,
-                0.5],
+                0.87],
             ['GaussianNB',
                 ['ZeroCount',
                     'input_matrix']]],
@@ -212,7 +211,7 @@ def test_generate_pipeline_code():
     expected_code = """make_pipeline(
     make_union(
         make_union(VotingClassifier(estimators=[('branch',
-            GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, min_weight_fraction_leaf=0.5, n_estimators=500)
+            GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, n_estimators=500)
         )]), FunctionTransformer(lambda X: X)),
         make_union(VotingClassifier(estimators=[('branch',
             make_pipeline(
@@ -256,7 +255,7 @@ def test_export_pipeline():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline"""
     tpot_obj = TPOT()
     pipeline = creator.Individual.\
-        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87, 0.5), RFE(input_matrix, 0.17999999999999999)), 18, 33)", tpot_obj._pset)
+        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87), RFE(input_matrix, 0.17999999999999999)), 18, 33)", tpot_obj._pset)
 
     expected_code = """import numpy as np
 
@@ -277,7 +276,7 @@ training_features, testing_features, training_classes, testing_classes = \\
 exported_pipeline = make_pipeline(
     make_union(
         make_union(VotingClassifier(estimators=[('branch',
-            GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, min_weight_fraction_leaf=0.5, n_estimators=500)
+            GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, n_estimators=500)
         )]), FunctionTransformer(lambda X: X)),
         RFE(estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
           decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
