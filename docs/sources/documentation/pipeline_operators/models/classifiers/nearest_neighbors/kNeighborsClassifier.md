@@ -8,7 +8,7 @@ Fits a k-Nearest Neighbors classifier.
 
 Parameters
 ----------
-    input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+    input_df: numpy.ndarray {n_samples, n_features+['class', 'group', 'guess']}
         Input DataFrame for fitting the k-nearest neighbor classifier
     n_neighbors: int
         Number of neighbors to use by default for k_neighbors queries; must be a positive value
@@ -17,7 +17,7 @@ Parameters
 
 Returns
 -------
-    input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
+    input_df: numpy.ndarray {n_samples, n_features+['guess', 'group', 'class', 'SyntheticFeature']}
         Returns a modified input DataFrame with the guess column updated according to the classifier's predictions.
         Also adds the classifiers's predictions as a 'SyntheticFeature' column.
 
@@ -26,20 +26,23 @@ Example Exported Code
 
 ```Python
 import numpy as np
-import pandas as pd
+
 from sklearn.cross_validation import train_test_split
+from sklearn.ensemble import VotingClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import FunctionTransformer
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify=tpot_data['class'].values, train_size=0.75, test_size=0.25)
 
+input_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1), input_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes =     train_test_split(features, tpot_data['class'], random_state=42)
 
-result1 = tpot_data.copy()
+exported_pipeline = make_pipeline(
+    KNeighborsClassifier(n_neighbors=5, weights="uniform")
+)
 
-# Perform classification with a k-nearest neighbor classifier
-knnc1 = KNeighborsClassifier(n_neighbors=2, weights='uniform')
-knnc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
-result1['knnc1-classification'] = knnc1.predict(result1.drop('class', axis=1).values)
-
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
 ```

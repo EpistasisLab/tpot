@@ -6,8 +6,6 @@ TPOT is built on top of several existing Python libraries, including:
 
 * SciPy
 
-* pandas
-
 * scikit-learn
 
 * DEAP
@@ -18,10 +16,10 @@ TPOT is built on top of several existing Python libraries, including:
 
 Most of the necessary Python packages can be installed via the [Anaconda Python distribution](https://www.continuum.io/downloads), which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.
 
-NumPy, SciPy, pandas, and scikit-learn can be installed in Anaconda via the command:
+NumPy, SciPy, and scikit-learn can be installed in Anaconda via the command:
 
 ```Shell
-conda install numpy scipy pandas scikit-learn
+conda install numpy scipy scikit-learn
 ```
 
 DEAP, and TQDM (used for verbose TPOT runs) can be installed with `pip`

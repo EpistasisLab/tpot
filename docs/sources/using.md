@@ -79,7 +79,8 @@ Note that you can pass several parameters to the TPOT instantiation call:
 * `crossover_rate`: The crossover rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to "breed" every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
 * `random_state`: The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
 * `verbosity`: How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all. A setting of 2 will add a progress bar to calls to fit()
-* `scoring_function`: Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. See [here](examples/Custom_Scoring_Functions.md) for more information on custom scoring functions.
+* `scoring_function`: Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. It is possible to use both custom scoring functions and classification metrics from scikit-learn. See [here](#scoring-functions) for detailed instructions and caveats about using these functions.
+* `scoring_kwargs`: Dictionary of keyword arguments to pass to the scoring_function. By default no arguments are passed.
 * `disable_update_check`: Flag indicating whether the TPOT version checker should be disabled.
 
 Some example code with custom TPOT parameters might look like:
@@ -98,6 +99,7 @@ from tpot import TPOT
 pipeline_optimizer = TPOT(generations=100, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 ```
+
 The `fit()` function takes in a training data set, then further divides it into a training and validation data set (so as to do cross-validation). It then initializes the Genetic Algoritm to find the best pipeline based on the validation set performance evaluated on the basis of a scoring function (generally the classification accuracy, but can be user defined as well like precision/recall/f1, etc).   
 
 You can then proceed to evaluate the final pipeline on the test set with the `score()` function:
@@ -124,3 +126,35 @@ pipeline_optimizer.export('tpot_exported_pipeline.py')
 Once this code finishes running, `tpot_exported_pipeline.py` will contain the Python code for the optimized pipeline.
 
 Check our [examples](examples/MNIST_Example/) to see TPOT applied to some specific data sets.
+
+# Scoring Functions
+TPOT is designed to use the two following method signatures for a scoring function `method(y_true, y_pred)`:
+
+1. > `y_true` - [n_samples] 
+   >
+   > > The true class labels for each sample in the evaluated dataset.
+   > 
+   > `y_pred` - [n_samples, n_classes]
+   >
+   > > The predicted probabilities for each class for each sample.
+
+2. > `y_true` - [n_samples]
+   >
+   > > The true class labels for each sample in the evaluated dataset.
+   > 
+   > `y_pred` - [n_samples] 
+   > 
+   > > The predicted labels for each sample.
+
+3. > `y_true` - [n_samples] 
+   > 
+   > > The true class labels for each sample in the evaluated dataset.
+   > 
+   > `pred_decision` - [n_samples] or [n_samples, n_classes] 
+   > 
+   > > The decision score for each class for each sample.
+
+It is up to the user to decide whether or not the classification metric (and any keyword arguments) they use is appropriate for their purposes, as some metrics may fit in one of the above method signatures, but the returned value 
+may not be appropriate as a fitness measure (e.g., correlation). TPOT automatically handles the case of a loss function by flipping its sign to negative. 
+
+See [here](examples/Custom_Scoring_Functions) for an example of writing your own scoring function.
