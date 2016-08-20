@@ -119,8 +119,7 @@ class TPOT(object):
 
         self.hof = None
         self._optimized_pipeline = None
-        self._training_features = None
-        self._training_classes = None
+        self._fitted_pipeline = None
         self.population_size = population_size
         self.generations = generations
         self.mutation_rate = mutation_rate
@@ -248,10 +247,6 @@ class TPOT(object):
             features = features.astype(np.float64)
             classes = classes.astype(np.float64)
 
-            # Store the training features and classes for later use
-            self._training_features = features
-            self._training_classes = classes
-
             self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
             pop = self._toolbox.population(n=self.population_size)
 
@@ -309,6 +304,11 @@ class TPOT(object):
                     if self.hof.keys[i].wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
 
+                self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    self._fitted_pipeline.fit(features, classes)
+
             if self.verbosity >= 1 and self._optimized_pipeline:
                 # Add an extra line of spacing if the progress bar was used
                 if verbose:
@@ -330,20 +330,10 @@ class TPOT(object):
             Predicted classes for the feature matrix
 
         """
-        if not self._optimized_pipeline:
+        if not self._fitted_pipeline:
             raise ValueError(('A pipeline has not yet been optimized. '
                               'Please call fit() first.'))
-
-        features = features.astype(np.float64)
-
-        # Transform the tree expression into a sklearn pipeline
-        sklearn_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            sklearn_pipeline.fit(self._training_features, self._training_classes)
-
-        return sklearn_pipeline.predict(features)
+        return self._fitted_pipeline.predict(features.astype(np.float64))
 
     def fit_predict(self, features, classes):
         """Convenience function that fits a pipeline then predicts on the
@@ -381,20 +371,11 @@ class TPOT(object):
             The estimated test set accuracy
 
         """
-        if self._optimized_pipeline is None:
+        if self._fitted_pipeline is None:
             raise ValueError(('A pipeline has not yet been optimized. '
                               'Please call fit() first.'))
 
-        testing_features = testing_features.astype(np.float64)
-
-        # Transform the tree expression into a sklearn pipeline
-        sklearn_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            sklearn_pipeline.fit(self._training_features, self._training_classes)
-
-        return self._balanced_accuracy(sklearn_pipeline, testing_features, testing_classes)
+        return self._balanced_accuracy(self._fitted_pipeline, testing_features.astype(np.float64), testing_classes)
 
     def get_params(self, deep=None):
         """Get parameters for this estimator
