@@ -21,7 +21,7 @@ GitHub:
 
           $ git checkout -b my-contribution
 
-4. Make sure your local environment is setup correctly for development. Installation instructions are almost identical to [the user instructions](installing.md) except that TPOT should *not* be installed. If you have TPOT installed on your computer then make sure you are using a virtual environment (as detailed in the instructions) that does not have TPOT installed. Furthermore, you should make sure you have installed the `nose` package into your development environment so that you can test changes locally.
+4. Make sure your local environment is setup correctly for development. Installation instructions are almost identical to [the user instructions](installing.md) except that TPOT should *not* be installed. If you have TPOT installed on your computer then make sure you are using a virtual environment that does not have TPOT installed. Furthermore, you should make sure you have installed the `nose` package into your development environment so that you can test changes locally.
 
           $ conda install nose
 
@@ -37,7 +37,7 @@ GitHub:
 
           $ nosetests -s -v
 
-8. When you're done editing and local testing, do:
+8. When you're done editing and local testing, run:
 
           $ git add modified_files
           $ git commit
@@ -46,7 +46,7 @@ GitHub:
 
           $ git push -u origin my-contribution
 
-Finally, go to the web page of your fork of the TPOT repo, and click 'Pull Request' (PR) to send your changes to the maintainers for review. This will start the CI server to check all the project's unit tests run and send an email to the maintainers.
+Finally, go to the web page of your fork of the TPOT repo, and click 'Pull Request' (PR) to send your changes to the maintainers for review. Make sure that you send your PR to the `development` branch, as the `master` branch is reserved for the latest stable release. This will start the CI server to check all the project's unit tests run and send an email to the maintainers.
 
 (If any of the above seems like magic to you, then look up the 
 [Git documentation](http://git-scm.com/documentation) on the web.)
@@ -69,7 +69,7 @@ If your contribution involves any code changes:
 
 * If your code affected any of the pipeline operators, make sure that the corresponding [export functionality](https://github.com/rhiever/tpot/blob/master/tpot/export_utils.py) reflects those changes.
 
-If your contribution requires a new library dependency outside of DEAP and scikit-learn:
+If your contribution requires a new library dependency:
 
 * Double-check that the new dependency is easy to install via `pip` or Anaconda and supports both Python 2 and 3. If the dependency requires a complicated installation, then we most likely won't merge your changes because we want to keep TPOT easy to install.
 
@@ -77,9 +77,9 @@ If your contribution requires a new library dependency outside of DEAP and sciki
 
 * Add a line to pip install the library to [.travis_install.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L46)
 
-* Add a line to print the version of the library to [.travis_install.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L58)
+* Add a line to print the version of the library to [.travis_install.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L61)
 
-* Similarly add a line to print the version of the library to [.travis_test.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_test.sh#L17)
+* Similarly add a line to print the version of the library to [.travis_test.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_test.sh#L13)
 
 ## Updating the documentation
 
