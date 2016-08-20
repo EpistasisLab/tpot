@@ -200,7 +200,7 @@ def process_operator(operator, depth=0):
 
     if op_name == "CombineDFs":
         steps.append(
-            combine_dfs(operator[1], operator[2])
+            _combine_dfs(operator[1], operator[2])
         )
     else:
         input_name, args = operator[1], operator[2:]
@@ -241,12 +241,12 @@ def _indent(text, amount):
     return indentation + ('\n' + indentation).join(text.split('\n'))
 
 
-def combine_dfs(left, right):
+def _combine_dfs(left, right):
     def _make_branch(branch):
         if branch == "input_matrix":
             return "FunctionTransformer(lambda X: X)"
         elif branch[0] == "CombineDFs":
-            return combine_dfs(branch[1], branch[2])
+            return _combine_dfs(branch[1], branch[2])
         elif branch[1] == "input_matrix":  # If depth of branch == 1
             tpot_op = operators.Operator.get_by_name(branch[0])
 
@@ -256,10 +256,15 @@ def combine_dfs(left, right):
 )]), FunctionTransformer(lambda X: X))""".format(_indent(process_operator(branch)[0], 4))
             else:
                 return process_operator(branch)[0]
-        else:
-            return """make_union(VotingClassifier(estimators=[('branch',
+        else:  # We're going to have to make a pipeline
+            tpot_op = operators.Operator.get_by_name(branch[0])
+
+            if tpot_op.type == "Classifier":
+                return """make_union(VotingClassifier(estimators=[('branch',
 {}
 )]), FunctionTransformer(lambda X: X))""".format(_indent(generate_pipeline_code(branch), 4))
+            else:
+                return generate_pipeline_code(branch)
 
     return "make_union(\n{},\n{}\n)".\
         format(_indent(_make_branch(left), 4), _indent(_make_branch(right), 4))
