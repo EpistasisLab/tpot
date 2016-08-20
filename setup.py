@@ -34,7 +34,7 @@ or Twitter: https://twitter.com/randal_olson
 This project is hosted at https://github.com/rhiever/tpot
 ''',
     zip_safe=True,
-    install_requires=['numpy', 'scipy', 'pandas', 'scikit-learn', 'deap', 'update_checker', 'tqdm'],
+    install_requires=['numpy', 'scipy', 'scikit-learn', 'deap', 'update_checker', 'tqdm'],
     classifiers=[
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
