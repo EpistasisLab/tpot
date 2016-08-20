@@ -211,7 +211,7 @@ class TPOT(object):
 
         self._toolbox = base.Toolbox()
         self._toolbox.register('expr',
-            self._gen_grow_safe, pset=self._pset, min_=1, max_=6)
+            self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
         self._toolbox.register('individual',
             tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population',
@@ -300,8 +300,8 @@ class TPOT(object):
             # Store the pipeline with the highest internal testing accuracy
             if self.hof:
                 top_score = 0.
-                for i, pipeline in enumerate(self.hof.items):
-                    if self.hof.keys[i].wvalues[1] > top_score:
+                for pipeline_num, pipeline in enumerate(self.hof.items):
+                    if self.hof.keys[pipeline_num].wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
 
                 self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
@@ -747,6 +747,21 @@ def main():
                         type=float_range, help='GP crossover rate in the range [0.0, 1.0]. We recommend using the default parameter unless you '
                                                'understand how the crossover rate affects GP algorithms.')
 
+    parser.add_argument('-cv', action='store', dest='NUM_CV_FOLDS', default=3,
+                        type=int, help='The number of folds to evaluate each pipeline over in k-fold cross-validation during the '
+                                       'TPOT pipeline optimization process.')
+
+    parser.add_argument('-scoring', action='store', dest='SCORING_FN', default=None,
+                        type=str, help='Function used to evaluate the goodness of a given pipeline for the '
+                        'classification problem. By default, balanced class accuracy is used. '
+                        'TPOT assumes that this scoring function should be maximized, i.e., '
+                        'higher is better. '
+                        'Offers the same options as sklearn.cross_validation.cross_val_score: '
+                        '["accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", '
+                        '"f1_micro", "f1_samples", "f1_weighted", "log_loss", "precision", "precision_macro", '
+                        '"precision_micro", "precision_samples", "precision_weighted", "r2", "recall", '
+                        '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"]')
+
     parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=None,
                         type=int, help='Random number generator seed for reproducibility. Set this seed if you want your TPOT run to be reproducible '
                                        'with the same seed and data set in the future.')
@@ -765,9 +780,12 @@ def main():
     if args.VERBOSITY >= 2:
         print('\nTPOT settings:')
         for arg in sorted(args.__dict__):
+            arg_val = args.__dict__[arg]
             if arg == 'DISABLE_UPDATE_CHECK':
                 continue
-            print('{}\t=\t{}'.format(arg, args.__dict__[arg]))
+            elif arg == 'SCORING_FN' and args.__dict__[arg] is None:
+                arg_val = 'balanced_accuracy'
+            print('{}\t=\t{}'.format(arg, arg_val))
         print('')
 
     input_data = np.recfromcsv(args.INPUT_FILE, delimiter=args.INPUT_SEPARATOR, dtype=np.float64)
@@ -779,6 +797,7 @@ def main():
 
     tpot = TPOT(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
+                num_cv_folds=args.NUM_CV_FOLDS, scoring_function=args.SCORING_FN,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
                 disable_update_check=args.DISABLE_UPDATE_CHECK)
 
