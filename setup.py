@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
+
 def calculate_version():
     initpy = open('tpot/_version.py').read().split('\n')
     version = list(filter(lambda x: '__version__' in x, initpy))[0].split('\'')[1]
@@ -33,7 +34,7 @@ or Twitter: https://twitter.com/randal_olson
 This project is hosted at https://github.com/rhiever/tpot
 ''',
     zip_safe=True,
-    install_requires=['numpy', 'scipy', 'pandas', 'scikit-learn', 'deap', 'update_checker', 'tqdm'],
+    install_requires=['numpy', 'scipy', 'scikit-learn', 'deap', 'update_checker', 'tqdm'],
     classifiers=[
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
