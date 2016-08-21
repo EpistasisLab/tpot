@@ -16,6 +16,7 @@ from tpot.operators.selectors import TPOTSelectKBest
 import numpy as np
 import inspect
 import random
+from datetime import datetime
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
@@ -32,25 +33,50 @@ np.random.seed(42)
 random.seed(42)
 
 
-def test_init():
+def test_init_custom_parameters():
     """Assert that the TPOT instantiator stores the TPOT variables properly"""
 
     def dummy_scoring_func(foo, bar):
         return
 
-    tpot_obj = TPOT(population_size=500, generations=1000, scoring_function=dummy_scoring_func,
-                    mutation_rate=0.05, crossover_rate=0.9, verbosity=1, random_state=42,
+    tpot_obj = TPOT(population_size=500, generations=1000,
+                    mutation_rate=0.05, crossover_rate=0.9,
+                    scoring_function=dummy_scoring_func,
+                    num_cv_folds=10,
+                    verbosity=1, random_state=42,
                     disable_update_check=True)
 
     assert tpot_obj.population_size == 500
     assert tpot_obj.generations == 1000
     assert tpot_obj.mutation_rate == 0.05
     assert tpot_obj.crossover_rate == 0.9
+    assert tpot_obj.scoring_function == dummy_scoring_func
+    assert tpot_obj.num_cv_folds == 10
+    assert tpot_obj.max_time_mins is None
     assert tpot_obj.verbosity == 1
     assert tpot_obj._optimized_pipeline is None
     assert tpot_obj._fitted_pipeline is None
-    assert tpot_obj.scoring_function == dummy_scoring_func
-    assert tpot_obj._pset
+    assert not (tpot_obj._pset is None)
+    assert not (tpot_obj._toolbox is None)
+
+def test_init_max_time_mins():
+    """Assert that the TPOT instantiator stores the TPOT variables properly when a max
+       run time is provided and all other parameters are default"""
+
+    tpot_obj = TPOT(max_time_mins=30)
+
+    assert tpot_obj.population_size == 100
+    assert tpot_obj.generations == 1000000
+    assert tpot_obj.mutation_rate == 0.9
+    assert tpot_obj.crossover_rate == 0.05
+    assert tpot_obj.scoring_function == tpot_obj._balanced_accuracy
+    assert tpot_obj.num_cv_folds == 3
+    assert tpot_obj.max_time_mins == 30
+    assert tpot_obj.verbosity == 0
+    assert tpot_obj._optimized_pipeline is None
+    assert tpot_obj._fitted_pipeline is None
+    assert not (tpot_obj._pset is None)
+    assert not (tpot_obj._toolbox is None)
 
 
 def test_get_params():
@@ -139,14 +165,24 @@ def test_fit():
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert tpot_obj.gp_generation == 0
+    assert not (tpot_obj.start_datetime is None)
 
+def test_fit_max_time_mins():
+    """Assert that the TPOT fit function finishes within the provided time limit"""
+    tpot_obj = TPOT(random_state=42, population_size=1, max_time_mins=0.1, verbosity=0)
+    tpot_obj.fit(training_features, training_classes)
+
+    assert not (tpot_obj.start_datetime is None)
+    # The current stopping method isn't exact, so as long as it's stopping TPOT within a
+    # reasonable amount of time...
+    assert (datetime.now() - tpot_obj.start_datetime).total_seconds() < 30
 
 def test_gp_new_generation():
     """Assert that the gp_generation count gets incremented when _gp_new_generation is called"""
     tpot_obj = TPOT()
     tpot_obj.pbar = tqdm(total=1, disable=True)
 
-    assert(tpot_obj.gp_generation == 0)
+    assert tpot_obj.gp_generation == 0
 
     # Since _gp_new_generation is a decorator, and we dont want to run a full
     # fit(), decorate a dummy function and then call the dummy function.
@@ -156,7 +192,7 @@ def test_gp_new_generation():
 
     dummy_function(tpot_obj, None)
 
-    assert(tpot_obj.gp_generation == 1)
+    assert tpot_obj.gp_generation == 1
 
 
 def check_export(op):
