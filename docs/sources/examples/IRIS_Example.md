@@ -1,5 +1,3 @@
-# IRIS Example
-
 The following code illustrates the usage of TPOT with the IRIS data set.
 
 ```python

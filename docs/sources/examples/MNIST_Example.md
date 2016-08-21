@@ -1,5 +1,3 @@
-# MNIST Example
-
 Below is a minimal working example with the practice MNIST data set.
 
 ```python

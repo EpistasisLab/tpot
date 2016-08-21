@@ -22,14 +22,11 @@ NumPy, SciPy, and scikit-learn can be installed in Anaconda via the command:
 conda install numpy scipy scikit-learn
 ```
 
-DEAP, and TQDM (used for verbose TPOT runs) can be installed with `pip`
-via the command:
+DEAP, update_checker, and tqdm (used for verbose TPOT runs) can be installed with `pip` via the command:
 
 ```Shell
 pip install deap update_checker tqdm
 ```
-
-Optional: For OS X users who want to use OpenMP-enabled compilers to install XGBoost, gcc-5.x.x can be installed with Homebrew: `brew install gcc --without-multilib`.
 
 Finally to install TPOT itself, run the following command:
 
