@@ -244,9 +244,24 @@ class TPOT(object):
 
         """
 
-        if self.expert_source is not None:
-            if isinstance(features.size/(self.expert_source).size, int)==True:
-                self._ekf(features, self.ekf_index, self.k_best)        
+        for i in range(len(self.expert_source)):
+            if len(self.expert_source[i])==np.shape(features)[1]:
+                if all(isinstance(n, bool) for n in self.expert_source[i]): 
+                    try:
+                        np.isnan(self.expert_source[i])
+                    except:
+                        pass
+                    else:
+                        print("NaN in provided boolean ekf found")
+                else:
+                    try:
+                        np.isnan(self.expert_source[i])
+                    except:
+                        pass
+                    else:
+                        print("NaN in provided ekf found")
+            else:
+                print("Number of expert source features do not match number of input features")
         
         try:
             # Store the training features and classes for later use
