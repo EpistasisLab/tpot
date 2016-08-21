@@ -7,60 +7,66 @@ tpot --help
 
 usage: tpot [-h] [-is INPUT_SEPARATOR] [-o OUTPUT_FILE] [-g GENERATIONS]
             [-p POPULATION_SIZE] [-mr MUTATION_RATE] [-xr CROSSOVER_RATE]
-            [-cv NUM_CV_FOLDS] [-scoring SCORING_FN] [-s RANDOM_STATE]
-            [-v {0,1,2}] [--no-update-check] [--version]
+            [-cv NUM_CV_FOLDS] [-scoring SCORING_FN]
+            [-maxtime MAX_TIME_MINS] [-s RANDOM_STATE] [-v {0,1,2}]
+            [--no-update-check] [--version]
             INPUT_FILE
 
 A Python tool that automatically creates and optimizes machine learning
 pipelines using genetic programming.
 
 positional arguments:
-  INPUT_FILE           Data file to optimize the pipeline on; ensure that the
-                       class label column is labeled as "class".
+  INPUT_FILE            Data file to optimize the pipeline on; ensure that the
+                        class label column is labeled as "class".
 
 optional arguments:
-  -h, --help           Show this help message and exit.
-  -is INPUT_SEPARATOR  Character used to separate columns in the input file.
-  -o OUTPUT_FILE       File to export the final optimized pipeline.
-  -g GENERATIONS       Number of generations to run pipeline optimization
-                       over. Generally, TPOT will work better when you give it
-                       more generations (and therefore time) to optimize over.
-                       TPOT will evaluate GENERATIONS x POPULATION_SIZE number
-                       of pipelines in total.
-  -p POPULATION_SIZE   Number of individuals in the GP population. Generally,
-                       TPOT will work better when you give it more individuals
-                       (and therefore time) to optimize over. TPOT will
-                       evaluate GENERATIONS x POPULATION_SIZE number of
-                       pipelines in total.
-  -mr MUTATION_RATE    GP mutation rate in the range [0.0, 1.0]. We recommend
-                       using the default parameter unless you understand how
-                       the mutation rate affects GP algorithms.
-  -xr CROSSOVER_RATE   GP crossover rate in the range [0.0, 1.0]. We recommend
-                       using the default parameter unless you understand how
-                       the crossover rate affects GP algorithms.
-  -cv NUM_CV_FOLDS     The number of folds to evaluate each pipeline over in
-                       k-fold cross-validation during the TPOT pipeline
-                       optimization process.
-  -scoring SCORING_FN  Function used to evaluate the goodness of a given
-                       pipeline for the classification problem. By default,
-                       balanced class accuracy is used. TPOT assumes that this
-                       scoring function should be maximized, i.e., higher is
-                       better. Offers the same options as cross_val_score:
-                       "accuracy", "adjusted_rand_score", "average_precision",
-                       "f1", "f1_macro", "f1_micro", "f1_samples",
-                       "f1_weighted", "log_loss", "precision",
-                       "precision_macro", "precision_micro",
-                       "precision_samples", "precision_weighted", "r2",
-                       "recall", "recall_macro", "recall_micro",
-                       "recall_samples", "recall_weighted", "roc_auc"
-  -s RANDOM_STATE      Random number generator seed for reproducibility. Set
-                       this seed if you want your TPOT run to be reproducible
-                       with the same seed and data set in the future.
-  -v {0,1,2}           How much information TPOT communicates while it is
-                       running: 0 = none, 1 = minimal, 2 = all.
-  --no-update-check    Flag indicating whether the TPOT version checker should
-                       be disabled.
-  --version            Show TPOT's version number and exit.
+  -h, --help            Show this help message and exit.
+  -is INPUT_SEPARATOR   Character used to separate columns in the input file.
+  -o OUTPUT_FILE        File to export the final optimized pipeline.
+  -g GENERATIONS        Number of generations to run pipeline optimization
+                        over. Generally, TPOT will work better when you give
+                        it more generations (and therefore time) to optimize
+                        over. TPOT will evaluate GENERATIONS x POPULATION_SIZE
+                        number of pipelines in total.
+  -p POPULATION_SIZE    Number of individuals in the GP population. Generally,
+                        TPOT will work better when you give it more
+                        individuals (and therefore time) to optimize over.
+                        TPOT will evaluate GENERATIONS x POPULATION_SIZE
+                        number of pipelines in total.
+  -mr MUTATION_RATE     GP mutation rate in the range [0.0, 1.0]. We recommend
+                        using the default parameter unless you understand how
+                        the mutation rate affects GP algorithms.
+  -xr CROSSOVER_RATE    GP crossover rate in the range [0.0, 1.0]. We
+                        recommend using the default parameter unless you
+                        understand how the crossover rate affects GP
+                        algorithms.
+  -cv NUM_CV_FOLDS      The number of folds to evaluate each pipeline over in
+                        k-fold cross-validation during the TPOT pipeline
+                        optimization process.
+  -scoring SCORING_FN   Function used to evaluate the goodness of a given
+                        pipeline for the classification problem. By default,
+                        balanced class accuracy is used. TPOT assumes that
+                        this scoring function should be maximized, i.e.,
+                        higher is better. Offers the same options as
+                        cross_val_score: "accuracy", "adjusted_rand_score",
+                        "average_precision", "f1", "f1_macro", "f1_micro",
+                        "f1_samples", "f1_weighted", "log_loss", "precision",
+                        "precision_macro", "precision_micro",
+                        "precision_samples", "precision_weighted", "r2",
+                        "recall", "recall_macro", "recall_micro",
+                        "recall_samples", "recall_weighted", "roc_auc"
+  -maxtime MAX_TIME_MINS
+                        How many minutes TPOT has to optimize the pipeline.
+                        This setting will override the `generations`
+                        parameter.
+  -s RANDOM_STATE       Random number generator seed for reproducibility. Set
+                        this seed if you want your TPOT run to be reproducible
+                        with the same seed and data set in the future.
+  -v {0,1,2}            How much information TPOT communicates while it is
+                        running: 0 = none, 1 = minimal, 2 = all.
+  --no-update-check     Flag indicating whether the TPOT version checker
+                        should be disabled.
+  --version             Show TPOT's version number and exit.
 ```
 
 An example command-line call to TPOT may look like:
@@ -95,6 +101,7 @@ Note that you can pass several parameters to the TPOT instantiation call:
 * `crossover_rate`: The crossover rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to "breed" every generation. We don't recommend that you tweak this parameter unless you know what you're doing.
 * `num_cv_folds`: The number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT pipeline optimization process.
 * `scoring_function`: Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. TPOT assumes that this scoring function should be maximized, i.e., higher is better. Offers the same options as cross_val_score: "accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "log_loss", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "r2", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"
+* `max_time_mins`: How many minutes TPOT has to optimize the pipeline. This setting will override the `generations` parameter.
 * `random_state`: The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
 * `verbosity`: How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all. A setting of 2 will add a progress bar to calls to fit()
 * `disable_update_check`: Flag indicating whether the TPOT version checker should be disabled.
