@@ -128,7 +128,7 @@ class TPOT(object):
         self.population_size = population_size
         self.generations = generations
         self.max_time_mins = max_time_mins
-        
+
         # Schedule TPOT to run for a very long time if the user specifies a run-time limit
         # TPOT will automatically interrupt itself when the timer runs out
         if not (max_time_mins is None):
@@ -784,7 +784,8 @@ def main():
                         '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"')
 
     parser.add_argument('-maxtime', action='store', dest='MAX_TIME_MINS', default=None,
-                        type=int, help='How many minutes TPOT has to optimize the pipeline. This setting will override the `generations` parameter.')
+                        type=int, help='How many minutes TPOT has to optimize the pipeline. This setting will override the GENERATIONS parameter '
+                                       'and allow TPOT to run until it runs out of time.')
 
     parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=None,
                         type=int, help='Random number generator seed for reproducibility. Set this seed if you want your TPOT run to be reproducible '
