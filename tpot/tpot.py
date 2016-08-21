@@ -25,6 +25,7 @@ import inspect
 import warnings
 import sys
 from functools import partial
+from datetime import datetime
 
 import numpy as np
 import deap
@@ -53,8 +54,9 @@ class TPOT(object):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 random_state=None, verbosity=0,
                  scoring_function=None, num_cv_folds=3,
+                 max_time_mins=None,
+                 random_state=None, verbosity=0,
                  disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
@@ -79,13 +81,6 @@ class TPOT(object):
             range [0.0, 1.0]. This tells the genetic programming algorithm how
             many pipelines to "breed" every generation. We don't recommend that
             you tweak this parameter unless you know what you're doing.
-        random_state: int (default: 0)
-            The random number generator seed for TPOT. Use this to make sure
-            that TPOT will give you the same results each time you run it
-            against the same data set with that seed.
-        verbosity: int (default: 0)
-            How much information TPOT communicates while it's running.
-            0 = none, 1 = minimal, 2 = all
         scoring_function: str (default: balanced accuracy)
             Function used to evaluate the goodness of a given pipeline for the
             classification problem. By default, balanced class accuracy is used.
@@ -101,6 +96,16 @@ class TPOT(object):
         num_cv_folds: int (default: 3)
             The number of folds to evaluate each pipeline over in k-fold cross-validation
             during the TPOT pipeline optimization process
+        max_time_mins: int (default: None)
+            How many minutes TPOT has to optimize the pipeline. If not None, this setting
+            will override the `generations` parameter.
+        random_state: int (default: 0)
+            The random number generator seed for TPOT. Use this to make sure
+            that TPOT will give you the same results each time you run it
+            against the same data set with that seed.
+        verbosity: int (default: 0)
+            How much information TPOT communicates while it's running.
+            0 = none, 1 = minimal, 2 = all
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 
@@ -122,6 +127,13 @@ class TPOT(object):
         self._fitted_pipeline = None
         self.population_size = population_size
         self.generations = generations
+        self.max_time_mins = max_time_mins
+        
+        # Schedule TPOT to run for a very long time if the user specifies a run-time limit
+        # TPOT will automatically interrupt itself when the timer runs out
+        if not (max_time_mins is None):
+            self.generations = 1000000
+
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
@@ -172,7 +184,7 @@ class TPOT(object):
             for key in sorted(op.import_hash.keys()):
                 module_list = ', '.join(sorted(op.import_hash[key]))
 
-                if key.startswith("tpot."):
+                if key.startswith('tpot.'):
                     exec('from {} import {}'.format(key[4:], module_list))
                 else:
                     exec('from {} import {}'.format(key, module_list))
@@ -244,8 +256,9 @@ class TPOT(object):
 
         """
         try:
+            self.start_datetime = datetime.now()
+
             features = features.astype(np.float64)
-            classes = classes.astype(np.float64)
 
             self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
             pop = self._toolbox.population(n=self.population_size)
@@ -275,8 +288,12 @@ class TPOT(object):
             verbose = (self.verbosity == 2)
 
             # Start the progress bar
-            num_evaluations = self.population_size * (self.generations + 1)
-            self.pbar = tqdm(total=num_evaluations, unit='pipeline', leave=False,
+            if not (self.max_time_mins is None):
+                total_evals = self.population_size
+            else:
+                total_evals = self.population_size * (self.generations + 1)
+
+            self.pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                              disable=(not verbose), desc='GP Progress')
 
             pop, _ = algorithms.eaSimple(
@@ -457,6 +474,11 @@ class TPOT(object):
         """
 
         try:
+            if not (self.max_time_mins is None):
+                total_mins_elapsed = (datetime.now() - self.start_datetime).total_seconds() / 60.
+                if total_mins_elapsed >= self.max_time_mins:
+                    raise KeyboardInterrupt('{} minutes have elapsed; TPOT must close down'.format(total_mins_elapsed))
+
             # Transform the tree expression in a callable function
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
@@ -471,7 +493,7 @@ class TPOT(object):
                 operator_count += 1
 
             with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
+                warnings.simplefilter('ignore')
                 cv_scores = cross_val_score(sklearn_pipeline, features, classes, cv=self.num_cv_folds, scoring=self.scoring_function)
 
             resulting_score = np.mean(cv_scores)
@@ -761,6 +783,9 @@ def main():
                         '"precision_micro", "precision_samples", "precision_weighted", "r2", "recall", '
                         '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"')
 
+    parser.add_argument('-maxtime', action='store', dest='MAX_TIME_MINS', default=None,
+                        type=int, help='How many minutes TPOT has to optimize the pipeline. This setting will override the `generations` parameter.')
+
     parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=None,
                         type=int, help='Random number generator seed for reproducibility. Set this seed if you want your TPOT run to be reproducible '
                                        'with the same seed and data set in the future.')
@@ -797,6 +822,7 @@ def main():
     tpot = TPOT(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
                 num_cv_folds=args.NUM_CV_FOLDS, scoring_function=args.SCORING_FN,
+                max_time_mins=args.MAX_TIME_MINS,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
                 disable_update_check=args.DISABLE_UPDATE_CHECK)
 
