@@ -220,8 +220,9 @@ class TPOT(object):
                 print("Number of expert source features do not match number of input features")
 
         if self.expert_source is not None:
-            if isinstance(features.size/(self.expert_source).size, int)==True:
-                self._ekf(features, self.ekf_index, self.k_best)
+            for i in range(len(self.expert_source)):
+                if isinstance(features.size/(self.expert_source).size, int)==True:
+                    self._ekf(features, self.ekf_index, self.k_best)
 
         try:
             # Store the training features and classes for later use
