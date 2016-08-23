@@ -300,8 +300,8 @@ class TPOT(object):
             # Store the pipeline with the highest internal testing accuracy
             if self.hof:
                 top_score = 0.
-                for pipeline_num, pipeline in enumerate(self.hof.items):
-                    if self.hof.keys[pipeline_num].wvalues[1] > top_score:
+                for pipeline, pipeline_scores in zip(self.hof.items, reversed(self.hof.keys)):
+                    if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
 
                 self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
