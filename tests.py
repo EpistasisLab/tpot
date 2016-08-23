@@ -113,7 +113,7 @@ def test_score_2():
     """Assert that the TPOT score function outputs a known score for a fixed pipeline"""
 
     tpot_obj = TPOT()
-    tpot_obj.pbar = tqdm(total=1, disable=True)
+    tpot_obj._pbar = tqdm(total=1, disable=True)
     known_score = 0.986318199045  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
@@ -164,25 +164,25 @@ def test_fit():
     tpot_obj.fit(training_features, training_classes)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
-    assert tpot_obj.gp_generation == 0
-    assert not (tpot_obj.start_datetime is None)
+    assert tpot_obj._gp_generation == 0
+    assert not (tpot_obj._start_datetime is None)
 
 def test_fit_max_time_mins():
     """Assert that the TPOT fit function finishes within the provided time limit"""
     tpot_obj = TPOT(random_state=42, population_size=1, max_time_mins=0.1, verbosity=0)
     tpot_obj.fit(training_features, training_classes)
 
-    assert not (tpot_obj.start_datetime is None)
+    assert not (tpot_obj._start_datetime is None)
     # The current stopping method isn't exact, so as long as it's stopping TPOT within a
     # reasonable amount of time...
-    assert (datetime.now() - tpot_obj.start_datetime).total_seconds() < 30
+    assert (datetime.now() - tpot_obj._start_datetime).total_seconds() < 30
 
 def test_gp_new_generation():
     """Assert that the gp_generation count gets incremented when _gp_new_generation is called"""
     tpot_obj = TPOT()
-    tpot_obj.pbar = tqdm(total=1, disable=True)
+    tpot_obj._pbar = tqdm(total=1, disable=True)
 
-    assert tpot_obj.gp_generation == 0
+    assert tpot_obj._gp_generation == 0
 
     # Since _gp_new_generation is a decorator, and we dont want to run a full
     # fit(), decorate a dummy function and then call the dummy function.
@@ -192,7 +192,7 @@ def test_gp_new_generation():
 
     dummy_function(tpot_obj, None)
 
-    assert tpot_obj.gp_generation == 1
+    assert tpot_obj._gp_generation == 1
 
 
 def check_export(op):
