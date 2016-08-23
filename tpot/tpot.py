@@ -122,7 +122,7 @@ class TPOT(object):
         if not disable_update_check:
             update_check('tpot', __version__)
 
-        self.hof = None
+        self._hof = None
         self._optimized_pipeline = None
         self._fitted_pipeline = None
         self.population_size = population_size
@@ -144,8 +144,8 @@ class TPOT(object):
             'FunctionTransformer': FunctionTransformer
         }
 
-        self.pbar = None
-        self.gp_generation = 0
+        self._pbar = None
+        self._gp_generation = 0
 
         if random_state:
             random.seed(random_state)
@@ -236,10 +236,10 @@ class TPOT(object):
 
     def fit(self, features, classes):
         """Fits a machine learning pipeline that maximizes classification
-        accuracy on the provided data
+        score on the provided data
 
         Uses genetic programming to optimize a machine learning pipeline that
-        maximizes classification accuracy on the provided features and classes.
+        maximizes classification score on the provided features and classes.
         Performs an internal stratified training/testing cross-validaton split
         to avoid overfitting on the provided data.
 
@@ -256,7 +256,7 @@ class TPOT(object):
 
         """
         try:
-            self.start_datetime = datetime.now()
+            self._start_datetime = datetime.now()
 
             features = features.astype(np.float64)
 
@@ -283,9 +283,7 @@ class TPOT(object):
                 """
                 return np.all(ind1.fitness.values == ind2.fitness.values)
 
-            self.hof = tools.ParetoFront(similar=pareto_eq)
-
-            verbose = (self.verbosity == 2)
+            self._hof = tools.ParetoFront(similar=pareto_eq)
 
             # Start the progress bar
             if not (self.max_time_mins is None):
@@ -293,13 +291,13 @@ class TPOT(object):
             else:
                 total_evals = self.population_size * (self.generations + 1)
 
-            self.pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
-                             disable=(not verbose), desc='GP Progress')
+            self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
+                              disable=not (self.verbosity >= 2), desc='GP Progress')
 
             pop, _ = algorithms.eaSimple(
                 population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                 mutpb=self.mutation_rate, ngen=self.generations,
-                halloffame=self.hof, verbose=False)
+                halloffame=self._hof, verbose=False)
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
@@ -308,17 +306,17 @@ class TPOT(object):
         finally:
             # Close the progress bar
             # Standard truthiness checks won't work for tqdm
-            if not isinstance(self.pbar, type(None)):
-                self.pbar.close()
+            if not isinstance(self._pbar, type(None)):
+                self._pbar.close()
 
             # Reset gp_generation counter to restore initial state
-            self.gp_generation = 0
+            self._gp_generation = 0
 
-            # Store the pipeline with the highest internal testing accuracy
-            if self.hof:
+            # Store the pipeline with the highest internal testing score
+            if self._hof:
                 top_score = 0.
-                for pipeline_num, pipeline in enumerate(self.hof.items):
-                    if self.hof.keys[pipeline_num].wvalues[1] > top_score:
+                for pipeline_num, pipeline in enumerate(self._hof.items):
+                    if self._hof.keys[pipeline_num].wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
 
                 self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
@@ -326,12 +324,20 @@ class TPOT(object):
                     warnings.simplefilter('ignore')
                     self._fitted_pipeline.fit(features, classes)
 
-            if self.verbosity >= 1 and self._optimized_pipeline:
+            if self.verbosity in [1, 2] and self._optimized_pipeline:
                 # Add an extra line of spacing if the progress bar was used
-                if verbose:
+                if self.verbosity >= 2:
                     print()
-
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
+
+            # Store and fit the entire Pareto front if sciencing
+            elif self.verbosity >= 3 and self._hof:
+                self._hof_fitted_pipelines = {}
+                for pipeline in self._hof.items:
+                    self._hof_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore')
+                        self._hof_fitted_pipelines[str(pipeline)].fit(features, classes)
 
     def predict(self, features):
         """Uses the optimized pipeline to predict the classes for a feature set
@@ -475,15 +481,14 @@ class TPOT(object):
 
         try:
             if not (self.max_time_mins is None):
-                total_mins_elapsed = (datetime.now() - self.start_datetime).total_seconds() / 60.
+                total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
                 if total_mins_elapsed >= self.max_time_mins:
                     raise KeyboardInterrupt('{} minutes have elapsed; TPOT must close down'.format(total_mins_elapsed))
 
             # Transform the tree expression in a callable function
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-            # Count the number of pipeline operators as a measure of pipeline
-            # complexity
+            # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
             for i in range(len(individual)):
                 node = individual[i]
@@ -505,8 +510,8 @@ class TPOT(object):
             # to crash. Instead, assign the crashing pipeline a poor fitness
             return 5000., 0.
         finally:
-            if not self.pbar.disable:
-                self.pbar.update(1)  # One more pipeline evaluated
+            if not self._pbar.disable:
+                self._pbar.update(1)  # One more pipeline evaluated
 
         if type(resulting_score) in [float, np.float64, np.float32]:
             return max(1, operator_count), resulting_score
@@ -791,8 +796,8 @@ def main():
                         type=int, help='Random number generator seed for reproducibility. Set this seed if you want your TPOT run to be reproducible '
                                        'with the same seed and data set in the future.')
 
-    parser.add_argument('-v', action='store', dest='VERBOSITY', default=1, choices=[0, 1, 2],
-                        type=int, help='How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = all.')
+    parser.add_argument('-v', action='store', dest='VERBOSITY', default=1, choices=[0, 1, 2, 3],
+                        type=int, help='How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all.')
 
     parser.add_argument('--no-update-check', action='store_true', dest='DISABLE_UPDATE_CHECK', default=False,
                         help='Flag indicating whether the TPOT version checker should be disabled.')
@@ -829,9 +834,15 @@ def main():
 
     tpot.fit(training_features, training_classes)
 
-    if args.VERBOSITY >= 1:
-        print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes)))
-        print('Holdout accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
+    if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
+        print('\nTraining score: {}'.format(max([tpot._hof.keys[x].wvalues[1] for x in range(len(tpot._hof.keys))])))
+        print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
+    elif args.VERBOSITY >= 3 and tpot._hof:
+        print('Final Pareto front testing scores:')
+        for pipeline, pipeline_scores in zip(tpot._hof.items, reversed(tpot._hof.keys)):
+            print('{}\t{}\t{}'.format(-pipeline_scores.wvalues[0],
+                                      tpot._hof_fitted_pipelines[str(pipeline)].score(testing_features, testing_classes),
+                                      pipeline))
 
     if args.OUTPUT_FILE != '':
         tpot.export(args.OUTPUT_FILE)

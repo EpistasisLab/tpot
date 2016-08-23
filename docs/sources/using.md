@@ -78,8 +78,8 @@ TPOT offers several arguments that can be provided at the command line:
 <tr>
 <td>-v</td>
 <td>VERBOSITY</td>
-<td>{0,1,2}</td>
-<td>How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = all.  A setting of 2 will add a progress bar during the optimization procedure.</td>
+<td>{0, 1, 2, 3}</td>
+<td>How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = all. A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
 </tr>
 <tr>
 <td colspan=2>--no-update-check</td>
@@ -172,8 +172,8 @@ Note that you can pass several parameters to the TPOT instantiation call:
 </tr>
 <tr>
 <td>verbosity</td>
-<td>[0, 1, 2]</td>
-<td>How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all. A setting of 2 will add a progress bar to calls to fit().</td>
+<td>{0, 1, 2, 3}</td>
+<td>How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = high, 3 = all. A setting of 2 or higher will add a progress bar to calls to fit().</td>
 </tr>
 <tr>
 <td>disable_update_check</td>
