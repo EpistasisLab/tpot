@@ -330,14 +330,10 @@ class TPOT(object):
                     print()
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
-            # Print, compile, and fit the final Pareto front if sciencing
+            # Store the entire Pareto front if sciencing
             elif self.verbosity >= 3 and self.hof:
-                print('\nFinal Pareto front training scores:')
                 self.hof_fitted_pipelines = {}
                 for pipeline_num, pipeline in enumerate(self.hof.items):
-                    print('{}\t{}\t{}'.format(-self.hof.keys[pipeline_num].wvalues[0],
-                                              self.hof.keys[pipeline_num].wvalues[1],
-                                              pipeline))
                     self.hof_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
@@ -492,8 +488,7 @@ class TPOT(object):
             # Transform the tree expression in a callable function
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-            # Count the number of pipeline operators as a measure of pipeline
-            # complexity
+            # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
             for i in range(len(individual)):
                 node = individual[i]
@@ -843,9 +838,9 @@ def main():
         print('\nTraining score: {}'.format(max([tpot.hof.keys[x].wvalues[1] for x in range(len(tpot.hof.keys))])))
         print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
     elif args.VERBOSITY >= 3 and tpot.hof:
-        print('\nFinal Pareto front testing scores:')
-        for pipeline_num, pipeline in enumerate(tpot.hof.items):
-            print('{}\t{}\t{}'.format(-tpot.hof.keys[pipeline_num].wvalues[0],
+        print('Final Pareto front testing scores:')
+        for pipeline, pipeline_scores in zip(tpot.hof.items, reversed(tpot.hof.keys)):
+            print('{}\t{}\t{}'.format(-pipeline_scores.wvalues[0],
                                       tpot.hof_fitted_pipelines[str(pipeline)].score(testing_features, testing_classes),
                                       pipeline))
 

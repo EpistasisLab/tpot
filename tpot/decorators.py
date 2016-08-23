@@ -42,12 +42,19 @@ def _gp_new_generation(func):
         self.gp_generation = self.gp_generation + 1
 
         if not self.pbar.disable:
-            high_score = max([self.hof.keys[x].wvalues[1] for x in range(len(self.hof.keys))])
+            # Print only the best individual fitness
+            if self.verbosity == 2:
+                high_score = max([self.hof.keys[x].wvalues[1] for x in range(len(self.hof.keys))])
+                self.pbar.write('Generation {0} - Current best internal CV score: {1}'.format(self.gp_generation, high_score))
 
-            # Left pad generation count appropriately to match the number of
-            # base 10 columns in the final generation count
-            self.pbar.write('Generation {0} - Current best internal CV score: {1:0.5f}'.
-                format(self.gp_generation, high_score))
+            # Print the entire Pareto front
+            elif self.verbosity == 3:
+                self.pbar.write('Generation {} - Current Pareto front scores:'.format(self.gp_generation))
+                for pipeline, pipeline_scores in zip(self.hof.items, reversed(self.hof.keys)):
+                    self.pbar.write('{}\t{}\t{}'.format(-pipeline_scores.wvalues[0],
+                                                        pipeline_scores.wvalues[1],
+                                                        pipeline))
+                self.pbar.write('')
 
             # Sometimes the actual evaluated pipeline count does not match the
             # supposed count because DEAP can cache pipelines. Here any missed
