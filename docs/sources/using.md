@@ -60,7 +60,7 @@ TPOT offers several arguments that can be provided at the command line:
 <tr>
 <td>-scoring</td>
 <td>SCORING_FN</td>
-<td>"accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "log_loss", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "r2", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"</td>
+<td>"accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"</td>
 <td>Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. TPOT assumes that this scoring function should be maximized, i.e., higher is better.</td>
 </tr>
 <tr>

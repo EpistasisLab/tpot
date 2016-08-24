@@ -784,8 +784,8 @@ def main():
                         'TPOT assumes that this scoring function should be maximized, i.e., '
                         'higher is better. Offers the same options as cross_val_score: '
                         '"accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", '
-                        '"f1_micro", "f1_samples", "f1_weighted", "log_loss", "precision", "precision_macro", '
-                        '"precision_micro", "precision_samples", "precision_weighted", "r2", "recall", '
+                        '"f1_micro", "f1_samples", "f1_weighted", "precision", "precision_macro", '
+                        '"precision_micro", "precision_samples", "precision_weighted", "recall", '
                         '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"')
 
     parser.add_argument('-maxtime', action='store', dest='MAX_TIME_MINS', default=None,
