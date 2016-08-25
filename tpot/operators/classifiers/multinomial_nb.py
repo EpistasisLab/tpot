@@ -23,14 +23,15 @@ from sklearn.naive_bayes import MultinomialNB
 
 
 class TPOTMultinomialNB(Classifier):
+
     """Fits a Multinomial Naive Bayes Classifier
 
     Parameters
     ----------
     alpha: float
         Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
-
     """
+
     import_hash = {'sklearn.naive_bayes': ['MultinomialNB']}
     sklearn_class = MultinomialNB
     arg_types = (float, )
@@ -39,6 +40,7 @@ class TPOTMultinomialNB(Classifier):
         pass
 
     def preprocess_args(self, alpha):
+        """Preprocess the arguments in case they need to be limited to a certain value range"""
         return {
             'alpha': alpha,
             'fit_prior': True

@@ -18,4 +18,4 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-__version__ = '0.5.1'
+__version__ = '0.6.0'

@@ -21,16 +21,15 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 from .base import Preprocessor
 from sklearn.preprocessing import MinMaxScaler
 
-
 class TPOTMaxAbsScaler(Preprocessor):
-    """Uses scikit-learn's MinMaxScaler to transform all of the features by
-    scaling them to the range [0, 1].
 
+    """Uses scikit-learn's MinMaxScaler to transform all of the features by scaling them to the range [0, 1].
+    
     Parameters
     ----------
     None
-
     """
+
     import_hash = {'sklearn.preprocessing': ['MinMaxScaler']}
     sklearn_class = MinMaxScaler
     arg_types = ()
@@ -39,6 +38,5 @@ class TPOTMaxAbsScaler(Preprocessor):
         pass
 
     def preprocess_args(self):
-        return {
-            
-        }
+        """Preprocess the arguments in case they need to be limited to a certain value range"""
+        return { }

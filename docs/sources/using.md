@@ -64,6 +64,12 @@ TPOT offers several arguments that can be provided at the command line:
 <td>Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. TPOT assumes that this scoring function should be maximized, i.e., higher is better.</td>
 </tr>
 <tr>
+<td>-maxtime</td>
+<td>MAX_TIME_MINS</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize the pipeline. This setting will override the GENERATIONS parameter and allow TPOT to run until it runs out of time.</td>
+</tr>
+<tr>
 <td>-s</td>
 <td>RANDOM_STATE</td>
 <td>Any positive integer</td>
@@ -72,8 +78,8 @@ TPOT offers several arguments that can be provided at the command line:
 <tr>
 <td>-v</td>
 <td>VERBOSITY</td>
-<td>{0,1,2}</td>
-<td>How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = all.  A setting of 2 will add a progress bar during the optimization procedure.</td>
+<td>{0, 1, 2, 3}</td>
+<td>How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = all. A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
 </tr>
 <tr>
 <td colspan=2>--no-update-check</td>
@@ -155,14 +161,19 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. TPOT assumes that this scoring function should be maximized, i.e., higher is better.</td>
 </tr>
 <tr>
+<td>max_time_mins</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize the pipeline. This setting will override the generations parameter.</td>
+</tr>
+<tr>
 <td>random_state</td>
 <td>Any positive integer</td>
 <td>The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.</td>
 </tr>
 <tr>
 <td>verbosity</td>
-<td>[0, 1, 2]</td>
-<td>How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = all. A setting of 2 will add a progress bar to calls to fit().</td>
+<td>{0, 1, 2, 3}</td>
+<td>How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = high, 3 = all. A setting of 2 or higher will add a progress bar to calls to fit().</td>
 </tr>
 <tr>
 <td>disable_update_check</td>

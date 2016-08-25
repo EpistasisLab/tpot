@@ -25,6 +25,7 @@ import inspect
 import warnings
 import sys
 from functools import partial
+from datetime import datetime
 
 import numpy as np
 import deap
@@ -47,14 +48,14 @@ from .gp_types import Bool, Output_DF
 
 
 class TPOT(object):
-    """TPOT automatically creates and optimizes machine learning pipelines using
-    genetic programming
-    """
+
+    """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 random_state=None, verbosity=0,
                  scoring_function=None, num_cv_folds=3,
+                 max_time_mins=None,
+                 random_state=None, verbosity=0,
                  disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
@@ -79,13 +80,6 @@ class TPOT(object):
             range [0.0, 1.0]. This tells the genetic programming algorithm how
             many pipelines to "breed" every generation. We don't recommend that
             you tweak this parameter unless you know what you're doing.
-        random_state: int (default: 0)
-            The random number generator seed for TPOT. Use this to make sure
-            that TPOT will give you the same results each time you run it
-            against the same data set with that seed.
-        verbosity: int (default: 0)
-            How much information TPOT communicates while it's running.
-            0 = none, 1 = minimal, 2 = all
         scoring_function: str (default: balanced accuracy)
             Function used to evaluate the goodness of a given pipeline for the
             classification problem. By default, balanced class accuracy is used.
@@ -101,6 +95,16 @@ class TPOT(object):
         num_cv_folds: int (default: 3)
             The number of folds to evaluate each pipeline over in k-fold cross-validation
             during the TPOT pipeline optimization process
+        max_time_mins: int (default: None)
+            How many minutes TPOT has to optimize the pipeline. If not None, this setting
+            will override the `generations` parameter.
+        random_state: int (default: 0)
+            The random number generator seed for TPOT. Use this to make sure
+            that TPOT will give you the same results each time you run it
+            against the same data set with that seed.
+        verbosity: int (default: 0)
+            How much information TPOT communicates while it's running.
+            0 = none, 1 = minimal, 2 = all
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 
@@ -117,11 +121,18 @@ class TPOT(object):
         if not disable_update_check:
             update_check('tpot', __version__)
 
-        self.hof = None
+        self._hof = None
         self._optimized_pipeline = None
         self._fitted_pipeline = None
         self.population_size = population_size
         self.generations = generations
+        self.max_time_mins = max_time_mins
+
+        # Schedule TPOT to run for a very long time if the user specifies a run-time limit
+        # TPOT will automatically interrupt itself when the timer runs out
+        if not (max_time_mins is None):
+            self.generations = 1000000
+
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
@@ -132,8 +143,8 @@ class TPOT(object):
             'FunctionTransformer': FunctionTransformer
         }
 
-        self.pbar = None
-        self.gp_generation = 0
+        self._pbar = None
+        self._gp_generation = 0
 
         if random_state:
             random.seed(random_state)
@@ -172,7 +183,7 @@ class TPOT(object):
             for key in sorted(op.import_hash.keys()):
                 module_list = ', '.join(sorted(op.import_hash[key]))
 
-                if key.startswith("tpot."):
+                if key.startswith('tpot.'):
                     exec('from {} import {}'.format(key[4:], module_list))
                 else:
                     exec('from {} import {}'.format(key, module_list))
@@ -223,11 +234,10 @@ class TPOT(object):
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes):
-        """Fits a machine learning pipeline that maximizes classification
-        accuracy on the provided data
+        """Fits a machine learning pipeline that maximizes classification score on the provided data
 
         Uses genetic programming to optimize a machine learning pipeline that
-        maximizes classification accuracy on the provided features and classes.
+        maximizes classification score on the provided features and classes.
         Performs an internal stratified training/testing cross-validaton split
         to avoid overfitting on the provided data.
 
@@ -244,15 +254,15 @@ class TPOT(object):
 
         """
         try:
+            self._start_datetime = datetime.now()
+
             features = features.astype(np.float64)
-            classes = classes.astype(np.float64)
 
             self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
             pop = self._toolbox.population(n=self.population_size)
 
             def pareto_eq(ind1, ind2):
-                """Function used to determine whether two individuals are equal
-                on the Pareto front
+                """Function used to determine whether two individuals are equal on the Pareto front
 
                 Parameters
                 ----------
@@ -270,19 +280,21 @@ class TPOT(object):
                 """
                 return np.all(ind1.fitness.values == ind2.fitness.values)
 
-            self.hof = tools.ParetoFront(similar=pareto_eq)
-
-            verbose = (self.verbosity == 2)
+            self._hof = tools.ParetoFront(similar=pareto_eq)
 
             # Start the progress bar
-            num_evaluations = self.population_size * (self.generations + 1)
-            self.pbar = tqdm(total=num_evaluations, unit='pipeline', leave=False,
-                             disable=(not verbose), desc='GP Progress')
+            if not (self.max_time_mins is None):
+                total_evals = self.population_size
+            else:
+                total_evals = self.population_size * (self.generations + 1)
+
+            self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
+                              disable=not (self.verbosity >= 2), desc='GP Progress')
 
             pop, _ = algorithms.eaSimple(
                 population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                 mutpb=self.mutation_rate, ngen=self.generations,
-                halloffame=self.hof, verbose=False)
+                halloffame=self._hof, verbose=False)
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
@@ -291,16 +303,16 @@ class TPOT(object):
         finally:
             # Close the progress bar
             # Standard truthiness checks won't work for tqdm
-            if not isinstance(self.pbar, type(None)):
-                self.pbar.close()
+            if not isinstance(self._pbar, type(None)):
+                self._pbar.close()
 
             # Reset gp_generation counter to restore initial state
-            self.gp_generation = 0
+            self._gp_generation = 0
 
-            # Store the pipeline with the highest internal testing accuracy
-            if self.hof:
+            # Store the pipeline with the highest internal testing score
+            if self._hof:
                 top_score = 0.
-                for pipeline, pipeline_scores in zip(self.hof.items, reversed(self.hof.keys)):
+                for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
 
@@ -309,12 +321,20 @@ class TPOT(object):
                     warnings.simplefilter('ignore')
                     self._fitted_pipeline.fit(features, classes)
 
-            if self.verbosity >= 1 and self._optimized_pipeline:
+            if self.verbosity in [1, 2] and self._optimized_pipeline:
                 # Add an extra line of spacing if the progress bar was used
-                if verbose:
+                if self.verbosity >= 2:
                     print()
-
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
+
+            # Store and fit the entire Pareto front if sciencing
+            elif self.verbosity >= 3 and self._hof:
+                self._hof_fitted_pipelines = {}
+                for pipeline in self._hof.items:
+                    self._hof_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore')
+                        self._hof_fitted_pipelines[str(pipeline)].fit(features, classes)
 
     def predict(self, features):
         """Uses the optimized pipeline to predict the classes for a feature set
@@ -336,8 +356,7 @@ class TPOT(object):
         return self._fitted_pipeline.predict(features.astype(np.float64))
 
     def fit_predict(self, features, classes):
-        """Convenience function that fits a pipeline then predicts on the
-        provided features
+        """Convenience function that fits a pipeline then predicts on the provided features
 
         Parameters
         ----------
@@ -433,8 +452,7 @@ class TPOT(object):
         return eval(sklearn_pipeline, self.operators_context)
 
     def _evaluate_individual(self, individual, features, classes):
-        """Determines the `individual`'s fitness according to its performance on
-        the provided data
+        """Determines the `individual`'s fitness according to its performance on the provided data
 
         Parameters
         ----------
@@ -457,11 +475,15 @@ class TPOT(object):
         """
 
         try:
+            if not (self.max_time_mins is None):
+                total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
+                if total_mins_elapsed >= self.max_time_mins:
+                    raise KeyboardInterrupt('{} minutes have elapsed; TPOT must close down'.format(total_mins_elapsed))
+
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-            # Count the number of pipeline operators as a measure of pipeline
-            # complexity
+            # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
             for i in range(len(individual)):
                 node = individual[i]
@@ -471,13 +493,11 @@ class TPOT(object):
                 operator_count += 1
 
             with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
+                warnings.simplefilter('ignore')
                 cv_scores = cross_val_score(sklearn_pipeline, features, classes, cv=self.num_cv_folds, scoring=self.scoring_function)
 
             resulting_score = np.mean(cv_scores)
-        except MemoryError:
-            # Throw out GP expressions that are too large to be compiled
-            return 5000., 0.
+
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
@@ -485,8 +505,8 @@ class TPOT(object):
             # traceback.print_exc()
             return 5000., 0.
         finally:
-            if not self.pbar.disable:
-                self.pbar.update(1)  # One more pipeline evaluated
+            if not self._pbar.disable:
+                self._pbar.update(1)  # One more pipeline evaluated
 
         if type(resulting_score) in [float, np.float64, np.float32]:
             return max(1, operator_count), resulting_score
@@ -534,8 +554,7 @@ class TPOT(object):
 
     @_gp_new_generation
     def _combined_selection_operator(self, individuals, k):
-        """Perform NSGA2 selection on the population according to their Pareto
-        fitness
+        """Perform NSGA2 selection on the population according to their Pareto fitness
 
         Parameters
         ----------
@@ -575,8 +594,7 @@ class TPOT(object):
         return np.random.choice(mutation_techniques)(individual)
 
     def _gen_grow_safe(self, pset, min_, max_, type_=None):
-        """Generate an expression where each leaf might have a different depth
-        between *min* and *max*.
+        """Generate an expression where each leaf might have a different depth between *min* and *max*.
 
         Parameters
         ----------
@@ -595,20 +613,15 @@ class TPOT(object):
         individual: list
             A grown tree with leaves at possibly different depths.
         """
-
         def condition(height, depth, type_):
-            """Expression generation stops when the depth is equal to height
-            or when it is randomly determined that a a node should be a terminal
-            """
+            """Expression generation stops when the depth is equal to height or when it is randomly determined that a a node should be a terminal"""
             return type_ not in [np.ndarray, Output_DF] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
 
     # Generate function stolen straight from deap.gp.generate
     def _generate(self, pset, min_, max_, condition, type_=None):
-        """Generate a Tree as a list of list. The tree is build
-        from the root to the leaves, and it stop growing when the
-        condition is fulfilled.
+        """Generate a Tree as a list of list. The tree is build from the root to the leaves, and it stop growing when the condition is fulfilled.
 
         Parameters
         ----------
@@ -668,10 +681,8 @@ class TPOT(object):
 
         return expr
 
-
 def positive_integer(value):
-    """Ensures that the provided value is a positive integer; throws an
-    exception otherwise
+    """Ensures that the provided value is a positive integer; throws an exception otherwise
 
     Parameters
     ----------
@@ -693,8 +704,7 @@ def positive_integer(value):
 
 
 def float_range(value):
-    """Ensures that the provided value is a float integer in the range (0., 1.)
-    throws an exception otherwise
+    """Ensures that the provided value is a float integer in the range [0., 1.]; throws an exception otherwise
 
     Parameters
     ----------
@@ -763,12 +773,16 @@ def main():
                         '"precision_micro", "precision_samples", "precision_weighted", "recall", '
                         '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"')
 
+    parser.add_argument('-maxtime', action='store', dest='MAX_TIME_MINS', default=None,
+                        type=int, help='How many minutes TPOT has to optimize the pipeline. This setting will override the GENERATIONS parameter '
+                                       'and allow TPOT to run until it runs out of time.')
+
     parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=None,
                         type=int, help='Random number generator seed for reproducibility. Set this seed if you want your TPOT run to be reproducible '
                                        'with the same seed and data set in the future.')
 
-    parser.add_argument('-v', action='store', dest='VERBOSITY', default=1, choices=[0, 1, 2],
-                        type=int, help='How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = all.')
+    parser.add_argument('-v', action='store', dest='VERBOSITY', default=1, choices=[0, 1, 2, 3],
+                        type=int, help='How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all.')
 
     parser.add_argument('--no-update-check', action='store_true', dest='DISABLE_UPDATE_CHECK', default=False,
                         help='Flag indicating whether the TPOT version checker should be disabled.')
@@ -799,14 +813,21 @@ def main():
     tpot = TPOT(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
                 num_cv_folds=args.NUM_CV_FOLDS, scoring_function=args.SCORING_FN,
+                max_time_mins=args.MAX_TIME_MINS,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
                 disable_update_check=args.DISABLE_UPDATE_CHECK)
 
     tpot.fit(training_features, training_classes)
 
-    if args.VERBOSITY >= 1:
-        print('\nTraining accuracy: {}'.format(tpot.score(training_features, training_classes)))
-        print('Holdout accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
+    if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
+        print('\nTraining score: {}'.format(max([tpot._hof.keys[x].wvalues[1] for x in range(len(tpot._hof.keys))])))
+        print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
+    elif args.VERBOSITY >= 3 and tpot._hof:
+        print('Final Pareto front testing scores:')
+        for pipeline, pipeline_scores in zip(tpot._hof.items, reversed(tpot._hof.keys)):
+            print('{}\t{}\t{}'.format(-pipeline_scores.wvalues[0],
+                                      tpot._hof_fitted_pipelines[str(pipeline)].score(testing_features, testing_classes),
+                                      pipeline))
 
     if args.OUTPUT_FILE != '':
         tpot.export(args.OUTPUT_FILE)

@@ -23,13 +23,14 @@ from sklearn.ensemble import RandomForestClassifier
 
 
 class TPOTRandomForestClassifier(Classifier):
-    """Fits a random forest classifier
 
+    """Fits a random forest classifier.
+    
     Parameters
     ----------
     None
-
     """
+
     import_hash = {'sklearn.ensemble': ['RandomForestClassifier']}
     sklearn_class = RandomForestClassifier
     arg_types = ()
@@ -38,6 +39,7 @@ class TPOTRandomForestClassifier(Classifier):
         pass
 
     def preprocess_args(self):
+        """Preprocess the arguments in case they need to be limited to a certain value range"""
         return {
             'n_estimators': 500
         }
