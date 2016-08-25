@@ -300,8 +300,8 @@ class TPOT(object):
             # Store the pipeline with the highest internal testing accuracy
             if self.hof:
                 top_score = 0.
-                for pipeline_num, pipeline in enumerate(self.hof.items):
-                    if self.hof.keys[pipeline_num].wvalues[1] > top_score:
+                for pipeline, pipeline_scores in zip(self.hof.items, reversed(self.hof.keys)):
+                    if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
 
                 self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
@@ -759,8 +759,8 @@ def main():
                         'TPOT assumes that this scoring function should be maximized, i.e., '
                         'higher is better. Offers the same options as cross_val_score: '
                         '"accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", '
-                        '"f1_micro", "f1_samples", "f1_weighted", "log_loss", "precision", "precision_macro", '
-                        '"precision_micro", "precision_samples", "precision_weighted", "r2", "recall", '
+                        '"f1_micro", "f1_samples", "f1_weighted", "precision", "precision_macro", '
+                        '"precision_micro", "precision_samples", "precision_weighted", "recall", '
                         '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"')
 
     parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=None,

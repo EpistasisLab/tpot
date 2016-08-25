@@ -45,12 +45,7 @@ def _gp_new_generation(func):
         if not self.pbar.disable:
             high_score = max([self.hof.keys[x].wvalues[1] for x in range(len(self.hof.keys))])
 
-            gen_count_n_cols = floor(log10(self.generations)) + 1
-
-            # Left pad generation count appropriately to match the number of
-            # base 10 columns in the final generation count
-            self.pbar.write('Generation {0:0{1}d} - Current best internal CV score: {2:0.5f}'.
-                format(self.gp_generation, gen_count_n_cols, high_score))
+            self.pbar.write('Generation {0} - Current best internal CV score: {1}'.format(self.gp_generation, high_score))
 
             # Sometimes the actual evaluated pipeline count does not match the
             # supposed count because DEAP can cache pipelines. Here any missed

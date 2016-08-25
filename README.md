@@ -67,7 +67,7 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 ```
 
-Running this code should discover a pipeline that achieves ~98% testing accuracy, and the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file and look similar to the following:
+Running this code should discover a pipeline that achieves about 98% testing accuracy, and the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file and look similar to the following:
 
 ```python
 import numpy as np
