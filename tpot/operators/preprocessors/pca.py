@@ -21,16 +21,16 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 from .base import Preprocessor
 from sklearn.decomposition import RandomizedPCA
 
-
 class TPOTRandomizedPCA(Preprocessor):
+
     """Uses scikit-learn's RandomizedPCA to transform the feature set
 
     Parameters
     ----------
     iterated_power: int
         Number of iterations for the power method. [1, 10]
-
     """
+
     import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
     sklearn_class = RandomizedPCA
     arg_types = (int, )
