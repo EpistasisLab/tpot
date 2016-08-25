@@ -48,9 +48,8 @@ from .gp_types import Bool, Output_DF
 
 
 class TPOT(object):
-    """TPOT automatically creates and optimizes machine learning pipelines using
-    genetic programming
-    """
+
+    """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
@@ -235,8 +234,7 @@ class TPOT(object):
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes):
-        """Fits a machine learning pipeline that maximizes classification
-        score on the provided data
+        """Fits a machine learning pipeline that maximizes classification score on the provided data
 
         Uses genetic programming to optimize a machine learning pipeline that
         maximizes classification score on the provided features and classes.
@@ -264,8 +262,7 @@ class TPOT(object):
             pop = self._toolbox.population(n=self.population_size)
 
             def pareto_eq(ind1, ind2):
-                """Function used to determine whether two individuals are equal
-                on the Pareto front
+                """Function used to determine whether two individuals are equal on the Pareto front
 
                 Parameters
                 ----------
@@ -359,8 +356,7 @@ class TPOT(object):
         return self._fitted_pipeline.predict(features.astype(np.float64))
 
     def fit_predict(self, features, classes):
-        """Convenience function that fits a pipeline then predicts on the
-        provided features
+        """Convenience function that fits a pipeline then predicts on the provided features
 
         Parameters
         ----------
@@ -456,8 +452,7 @@ class TPOT(object):
         return eval(sklearn_pipeline, self.operators_context)
 
     def _evaluate_individual(self, individual, features, classes):
-        """Determines the `individual`'s fitness according to its performance on
-        the provided data
+        """Determines the `individual`'s fitness according to its performance on the provided data
 
         Parameters
         ----------
@@ -559,8 +554,7 @@ class TPOT(object):
 
     @_gp_new_generation
     def _combined_selection_operator(self, individuals, k):
-        """Perform NSGA2 selection on the population according to their Pareto
-        fitness
+        """Perform NSGA2 selection on the population according to their Pareto fitness
 
         Parameters
         ----------
@@ -600,8 +594,7 @@ class TPOT(object):
         return np.random.choice(mutation_techniques)(individual)
 
     def _gen_grow_safe(self, pset, min_, max_, type_=None):
-        """Generate an expression where each leaf might have a different depth
-        between *min* and *max*.
+        """Generate an expression where each leaf might have a different depth between *min* and *max*.
 
         Parameters
         ----------
@@ -620,20 +613,15 @@ class TPOT(object):
         individual: list
             A grown tree with leaves at possibly different depths.
         """
-
         def condition(height, depth, type_):
-            """Expression generation stops when the depth is equal to height
-            or when it is randomly determined that a a node should be a terminal
-            """
+            """Expression generation stops when the depth is equal to height or when it is randomly determined that a a node should be a terminal"""
             return type_ not in [np.ndarray, Output_DF] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
 
     # Generate function stolen straight from deap.gp.generate
     def _generate(self, pset, min_, max_, condition, type_=None):
-        """Generate a Tree as a list of list. The tree is build
-        from the root to the leaves, and it stop growing when the
-        condition is fulfilled.
+        """Generate a Tree as a list of list. The tree is build from the root to the leaves, and it stop growing when the condition is fulfilled.
 
         Parameters
         ----------
@@ -693,10 +681,8 @@ class TPOT(object):
 
         return expr
 
-
 def positive_integer(value):
-    """Ensures that the provided value is a positive integer; throws an
-    exception otherwise
+    """Ensures that the provided value is a positive integer; throws an exception otherwise
 
     Parameters
     ----------
@@ -718,8 +704,7 @@ def positive_integer(value):
 
 
 def float_range(value):
-    """Ensures that the provided value is a float integer in the range (0., 1.)
-    throws an exception otherwise
+    """Ensures that the provided value is a float integer in the range [0., 1.]; throws an exception otherwise
 
     Parameters
     ----------

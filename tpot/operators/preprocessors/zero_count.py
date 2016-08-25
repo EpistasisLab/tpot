@@ -26,10 +26,12 @@ from sklearn.utils import check_array
 
 
 class ZeroCount(BaseEstimator):
-    """PreProcessor that adds two virtual features to the dataset, one for the
+
+    """Preprocessor that adds two virtual features to the dataset, one for the
     count of zero values in the feature set, and one for the count of non-zeros
     in the feature set
     """
+
     def __init__(self):
         pass
 
@@ -70,19 +72,17 @@ class ZeroCount(BaseEstimator):
 
 
 class TPOTZeroCount(Preprocessor):
-    """Uses TPOT's ZeroCount to transform the feature set
 
-    Parameters
-    ----------
-    None
+    """Uses TPOT's ZeroCount to transform the feature set"""
 
-    """
     import_hash = {'tpot.operators.preprocessors': ['ZeroCount']}
     sklearn_class = ZeroCount
     arg_types = ()
 
     def __init__(self):
+        """Creates a new TPOTZeroCount instance"""
         pass
 
     def preprocess_args(self):
+        """Preprocesses the arguments in case they need to be constrained in some way"""
         return {}
