@@ -27,10 +27,7 @@ from sklearn.utils import check_array
 
 class ZeroCount(BaseEstimator):
 
-    """Preprocessor that adds two virtual features to the dataset, one for the
-    count of zero values in the feature set, and one for the count of non-zeros
-    in the feature set
-    """
+    """Preprocessor that adds two virtual features to the dataset, one for the count of zero values in the feature set, and one for the count of non-zeros in the feature set"""
 
     def __init__(self):
         pass
