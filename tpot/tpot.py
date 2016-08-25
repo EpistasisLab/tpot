@@ -485,7 +485,7 @@ class TPOT(object):
                 if total_mins_elapsed >= self.max_time_mins:
                     raise KeyboardInterrupt('{} minutes have elapsed; TPOT must close down'.format(total_mins_elapsed))
 
-            # Transform the tree expression in a callable function
+            # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
             # Count the number of pipeline operators as a measure of pipeline complexity
@@ -502,12 +502,12 @@ class TPOT(object):
                 cv_scores = cross_val_score(sklearn_pipeline, features, classes, cv=self.num_cv_folds, scoring=self.scoring_function)
 
             resulting_score = np.mean(cv_scores)
-        except MemoryError:
-            # Throw out GP expressions that are too large to be compiled
-            return 5000., 0.
+
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
+            # import traceback
+            # traceback.print_exc()
             return 5000., 0.
         finally:
             if not self._pbar.disable:
