@@ -130,7 +130,6 @@ class TPOT(object):
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
-
         self.expert_source = expert_source
 
         self.pbar = None
@@ -200,24 +199,25 @@ class TPOT(object):
         None
 
         """
-        for ek_source in self.expert_source:
-            if ek_source.shape[1] == features.shape[1]:
-                if all(isinstance(n, bool) for n in ek_source):
-                    try:
-                        np.isnan(self.expert_source[i])
-                    except:
-                        pass
+        if self.expert_source:
+            for ek_source in self.expert_source:
+                if len(ek_source) == features.shape[1]:
+                    if all(isinstance(n, bool) for n in ek_source):
+                        try:
+                            np.isnan(self.expert_source[i])
+                        except:
+                            pass
+                        else:
+                            raise ValueError('Expert knowledge sources must not have missing values.')
                     else:
-                        raise ValueError('Expert knowledge sources must not have missing values.')
+                        try:
+                            np.isnan(self.expert_source[i])
+                        except:
+                            pass
+                        else:
+                            raise ValueError('Expert knowledge sources must not have missing values.')
                 else:
-                    try:
-                        np.isnan(self.expert_source[i])
-                    except:
-                        pass
-                    else:
-                        raise ValueError('Expert knowledge sources must not have missing values.')
-            else:
-                raise ValueError('Expert knowledge sources must be of the same length as the features.')
+                    raise ValueError('Expert knowledge sources must be of the same length as the features.')
 
         try:
             # Store the training features and classes for later use
@@ -232,12 +232,6 @@ class TPOT(object):
                 if type(column) != str:
                     new_col_names[column] = str(column).zfill(10)
             training_testing_data.rename(columns=new_col_names, inplace=True)
-
-            # Randomize the order of the columns so there is no potential bias introduced by the initial order
-            # of the columns, e.g., the most predictive features at the beginning or end.
-            data_columns = list(training_testing_data.columns.values)
-            np.random.shuffle(data_columns)
-            training_testing_data = training_testing_data[data_columns]
 
             training_indices, testing_indices = train_test_split(training_testing_data.index,
                                                                  stratify=training_testing_data['class'].values,
@@ -636,15 +630,21 @@ class TPOT(object):
         subsetted_df: pandas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
             Returns a DataFrame containing the 'best' features provided by expert_source
         """
+        ekf_index = abs(ekf_index) % len(self.expert_source)
         k_best = max(1, min(k_best, input_df.shape[1]))
 
-        if set(self.expert_source[ekf_index]) == set([True, False]):
-            ekf_source = self.expert_source[ekf_index].astype(bool)
-            return input_df[:, ekf_source].copy()
+        # Mask filter
+        if set(self.expert_source[ekf_index]) in [set([True, False]), set([True]), set([False])]:
+            ekf_source = np.array(self.expert_source[ekf_index])
+            ekf_subset = list(input_df.drop(self.non_feature_columns, axis=1).columns.values[ekf_source]) + self.non_feature_columns
+        # Feature importance filter
         else:
-            ekf_source = np.argsort(self.expert_source)[::-1][:]
+            # Assume higher feature importance score means it's a better feature
+            ekf_source = np.argsort(self.expert_source[ekf_index])[::-1]
             ekf_source = ekf_source[:k_best]
-            return input_df[:, ekf_source].copy()
+            ekf_subset = list(input_df.drop(self.non_feature_columns, axis=1).columns.values[ekf_source]) + self.non_feature_columns
+
+        return input_df.loc[:, ekf_subset].copy()
 
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data
