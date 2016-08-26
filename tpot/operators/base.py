@@ -71,7 +71,7 @@ class Operator(object):
     @property
     def type(self):
         """Returns the type of the operator, e.g:
-        ("Classifier", "Selector", "Preprocessor")
+        ("Classifier", "Regressor", "Selector", "Preprocessor")
         """
         return self.__class__.__bases__[0].__name__
 

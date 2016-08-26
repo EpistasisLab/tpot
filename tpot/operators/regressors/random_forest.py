@@ -18,11 +18,28 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import *
-from .rfe import *
-from .select_fwe import *
-from .select_kbest import *
-from .select_percentile import *
-from .variance_threshold import *
-from .select_from_model import *
-from .select_from_model_r import *
+from .base import Regressor
+from sklearn.ensemble import RandomForestRegressor
+
+
+class TPOTRandomForestClassifier(Regressor):
+
+    """Fits a random forest Regressor.
+
+    Parameters
+    ----------
+    None
+    """
+
+    import_hash = {'sklearn.ensemble': ['RandomForestRegressor']}
+    sklearn_class = RandomForestRegressor
+    arg_types = ()
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self):
+        """Preprocess the arguments in case they need to be limited to a certain value range"""
+        return {
+            'n_estimators': 500
+        }

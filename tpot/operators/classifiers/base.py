@@ -25,3 +25,5 @@ class Classifier(Operator):
     """Parent class for classifiers in TPOT"""
 
     root = True  # Whether this operator type can be the root of the tree
+    regression = False  # Whether this operator can be used in a regression problem
+    classification = True  # Whether the operator can be used for classification

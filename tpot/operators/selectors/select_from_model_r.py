@@ -20,11 +20,11 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 from .base import Selector
 from sklearn.feature_selection import SelectFromModel
-from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.ensemble import ExtraTreesRegressor
 
 
-class TPOTSelectFromModel(Selector):
-    """Uses scikit-learn's ExtraTreesClassifier combined with SelectFromModel
+class TPOTSelectFromModelR(Selector):
+    """Uses scikit-learn's ExtraTreesRegressor combined with SelectFromModel
     to transform the feature set.
 
     Parameters
@@ -43,11 +43,11 @@ class TPOTSelectFromModel(Selector):
     """
     import_hash = {
         'sklearn.feature_selection': ['SelectFromModel'],
-        'sklearn.ensemble':          ['ExtraTreesClassifier']
+        'sklearn.ensemble':          ['ExtraTreesRegressor']
     }
     sklearn_class = SelectFromModel
     arg_types = (float, int, float)
-    regression = False  # Can not be used in regression due to ExtraTreesClassifier
+    classification = False
 
     def __init__(self):
         pass
@@ -62,6 +62,6 @@ class TPOTSelectFromModel(Selector):
         max_features = min(1., max(0., max_features))
 
         return {
-            'estimator': ExtraTreesClassifier(criterion=criterion_selection, max_features=max_features),
+            'estimator': ExtraTreesRegressor(criterion=criterion_selection, max_features=max_features),
             'threshold': threshold
         }

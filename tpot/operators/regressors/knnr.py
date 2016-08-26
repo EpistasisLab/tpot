@@ -18,32 +18,35 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Selector
-from sklearn.feature_selection import RFE
-from sklearn.svm import SVC
+from .base import Regressor
+from sklearn.neighbors import KNeighborsRegressor
 
 
-class TPOTRFE(Selector):
-    """Uses scikit-learn's RFE to transform the feature set
+class TPOTKNeighborsRegressor(Regressor):
+    """Fits a k-nearest neighbor Regressor
 
     Parameters
     ----------
-    step: float
-        The percentage of features to drop each iteration
+    n_neighbors: int
+        Number of neighbors to use by default for k_neighbors queries; must be a positive value
+    weights: int
+        Selects a value from the list: ['uniform', 'distance']
 
     """
-    import_hash = {'sklearn.feature_selection': ['RFE'], 'sklearn.svm': ['SVC']}
-    sklearn_class = RFE
-    arg_types = (float, )
-    regression = False  # Can not be used in regression due to SVC estimator
+    import_hash = {'sklearn.neighbors': ['KNeighborsRegressor']}
+    sklearn_class = KNeighborsRegressor
+    arg_types = (int, int)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, step):
-        step = max(min(0.99, step), 0.1)
+    def preprocess_args(self, n_neighbors, weights):
+        n_neighbors = max(min(5, n_neighbors), 2)
+
+        weights_values = ['uniform', 'distance']
+        weights_selection = weights_values[weights % len(weights_values)]
 
         return {
-            'step': step,
-            'estimator': SVC(kernel='linear', random_state=42)
+            'n_neighbors': n_neighbors,
+            'weights': weights_selection
         }
