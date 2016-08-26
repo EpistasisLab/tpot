@@ -52,6 +52,7 @@ fi
 
 pip install update_checker
 pip install tqdm
+pip install scikit-mdr
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
@@ -66,4 +67,5 @@ python -c "import pandas; print('pandas %s' % pandas.__version__)"
 python -c "import deap; print('deap %s' % deap.__version__)"
 python -c "import update_checker; print('update_checker %s' % update_checker.__version__)"
 python -c "import tqdm; print('tqdm %s' % tqdm.__version__)"
+python -c "import mdr; print('mdr %s' % mdr.__version__)"
 python setup.py build_ext --inplace
