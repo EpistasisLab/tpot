@@ -46,6 +46,7 @@ from .decorators import _gp_new_generation
 from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
+from .metrics import balanced_accuracy
 
 
 class TPOT(BaseEstimator):
@@ -632,46 +633,6 @@ class TPOT(BaseEstimator):
                     stack.append((depth+1, arg))
 
         return expr
-
-
-def balanced_accuracy(estimator, X_test, y_test):
-    """Default scoring function: balanced accuracy
-
-    Balanced accuracy computes each class' accuracy on a per-class basis using a
-    one-vs-rest encoding, then computes an unweighted average of the class accuracies.
-
-    Parameters
-    ----------
-    estimator: scikit-learn estimator
-        The estimator for which to evaluate the balanced accuracy
-    X_test: numpy.ndarray {n_samples, n_features}
-        Test data that will be fed to estimator.predict.
-    y_test: numpy.ndarray {n_samples, 1}
-        Target values for X_test.
-
-    Returns
-    -------
-    fitness: float
-        Returns a float value indicating the `individual`'s balanced accuracy
-        0.5 is as good as chance, and 1.0 is perfect predictive accuracy
-    """
-    y_pred = estimator.predict(X_test)
-    all_classes = list(set(np.append(y_test, y_pred)))
-    all_class_accuracies = []
-    for this_class in all_classes:
-        this_class_sensitivity = \
-            float(sum((y_pred == this_class) & (y_test == this_class))) /\
-            float(sum((y_test == this_class)))
-
-        this_class_specificity = \
-            float(sum((y_pred != this_class) & (y_test != this_class))) /\
-            float(sum((y_test != this_class)))
-
-        this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
-        all_class_accuracies.append(this_class_accuracy)
-
-    balanced_accuracy = np.mean(all_class_accuracies)
-    return balanced_accuracy
 
 
 def positive_integer(value):
