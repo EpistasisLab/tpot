@@ -353,6 +353,32 @@ def test_select_kbest_4():
     assert np.array_equal(tpot_obj._select_kbest(training_testing_data, 42), training_testing_data[mask_cols])
 
 
+def test_ekf_1():
+    """Ensure that the expert knowledge provided mask chooses the right subset of input data to train"""
+    tpot_obj = TPOT()
+
+    ekf_index = 0
+    expert_source_test = [np.random.randint(2, size=10)]
+    ekf_source_test = np.array(expert_source_test[ekf_index])
+    ekf_subset_test = list(input_df[:, ekf_source_test])
+
+    assert np.array_equal(tpot_obj._ekf(input_df, ekf_index, k_best=None), ekf_subset_test)
+
+def test_ekf_2():
+    """ Ensure that the expert knowledge provided subset chooses the right subset of input data to train"""
+    tpot_obj = TPOT()
+
+    ekf_index = 0
+    k_best = 5
+    expert_source_test = [np.random.random(10,)]
+    
+    ekf_source_test = np.argsort(expert_source_test)[::-1][:]
+    ekf_source_test = ekf_source_test[:k_best]
+
+    ekf_subset_test = list(input_df[:, ekf_source_test])
+
+    assert np.array_equal(tpot_obj._ekf(input_df, ekf_index, k_best), ekf_subset_test)
+
 def test_gp_new_generation():
     """Assert that the gp_generation count gets incremented when _gp_new_generation is called"""
     tpot_obj = TPOT()
