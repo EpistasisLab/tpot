@@ -134,10 +134,7 @@ class TPOT(object):
 
         self.pbar = None
         self.gp_generation = 0
-
-        if random_state:
-            random.seed(random_state)
-            np.random.seed(random_state)
+        self.random_state = random_state
 
         if scoring_function is None:
             self.scoring_function = self._balanced_accuracy
@@ -244,6 +241,10 @@ class TPOT(object):
 
         """
         try:
+            if self.random_state:
+                random.seed(self.random_state)
+                np.random.seed(self.random_state)
+
             features = features.astype(np.float64)
             classes = classes.astype(np.float64)
 
