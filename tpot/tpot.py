@@ -304,8 +304,13 @@ class TPOT(object):
                 for pipeline, pipeline_scores in zip(self.hof.items, reversed(self.hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
-
-                self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+                if self._optimized_pipeline is None:
+                    raise ValueError(('No pipeline has been optimized. ' 
+                                        'This could be because the data was not formatted properly,'
+                                        'Or because data for a regression problem was provided to the TPOT classifier pipelines. '
+                                        'Please check your data first.'))
+                else:
+                    self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
                     self._fitted_pipeline.fit(features, classes)
