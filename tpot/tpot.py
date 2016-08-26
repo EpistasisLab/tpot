@@ -255,7 +255,6 @@ class TPOT(BaseEstimator):
                 np.random.seed(self.random_state)
 
             self._start_datetime = datetime.now()
-
             features = features.astype(np.float64)
 
             self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
