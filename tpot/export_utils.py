@@ -23,8 +23,7 @@ from . import operators
 
 
 def export_pipeline(exported_pipeline):
-    """Generates the source code of a Python script that recreates the
-    functionality of a TPOT pipeline
+    """Generates the source code of a TPOT Pipeline
 
     Parameters
     ----------

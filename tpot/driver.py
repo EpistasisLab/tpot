@@ -88,8 +88,9 @@ def main():
     parser.add_argument('-h', '--help', action='help',
         help='Show this help message and exit.')
 
-    parser.add_argument('-regression', action='store_true', dest='REGRESSION',
-        default=False, type=bool, help='Whether TPOT is being used for regression')
+    parser.add_argument('-mode', action='store', dest='MODE',
+        choices=['classification', 'regression'], default='classification', type=bool,
+        help='Whether TPOT is being used for regression')
 
     parser.add_argument('-is', action='store', dest='INPUT_SEPARATOR', default='\t',
         type=str, help='Character used to separate columns in the input file.')
@@ -176,14 +177,14 @@ def main():
     training_features, testing_features, training_classes, testing_classes = \
         train_test_split(features, input_data['class'], random_state=args.RANDOM_STATE)
 
-    if args.REGRESSION:
-        tpot_type = TPOTRegressor
-    else:
+    if args.MODE == 'classification':
         tpot_type = TPOTClassifier
+    else:
+        tpot_type = TPOTRegressor
 
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                num_cv_folds=args.NUM_CV_FOLDS, scoring_function=args.SCORING_FN,
+                num_cv_folds=args.NUM_CV_FOLDS, scoring=args.SCORING_FN,
                 max_time_mins=args.MAX_TIME_MINS,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
                 disable_update_check=args.DISABLE_UPDATE_CHECK)

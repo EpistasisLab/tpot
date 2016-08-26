@@ -36,6 +36,7 @@ from sklearn.cross_validation import cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
+from sklearn.metrics.scorer import get_scorer
 
 from update_checker import update_check
 
@@ -53,8 +54,7 @@ class TPOTBase(BaseEstimator):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 scoring_function=None, num_cv_folds=3,
-                 max_time_mins=None,
+                 scoring=None, num_cv_folds=3, max_time_mins=None,
                  random_state=None, verbosity=0,
                  disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
@@ -80,16 +80,17 @@ class TPOTBase(BaseEstimator):
             range [0.0, 1.0]. This tells the genetic programming algorithm how
             many pipelines to "breed" every generation. We don't recommend that
             you tweak this parameter unless you know what you're doing.
-        scoring_function: str (default: balanced accuracy)
-            Function used to evaluate the goodness of a given pipeline for the
-            classification problem. By default, balanced class accuracy is used.
+        scoring: function or str
+            Function used to evaluate the quality of a given pipeline for the
+            problem. By default, balanced class accuracy is used for
+            classification problems, mean squared error for regression problems.
             TPOT assumes that this scoring function should be maximized, i.e.,
             higher is better.
 
             Offers the same options as sklearn.cross_validation.cross_val_score:
 
             ['accuracy', 'adjusted_rand_score', 'average_precision', 'f1',
-            'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss',
+            'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted',
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
             'recall_samples', 'recall_weighted', 'roc_auc']
@@ -153,8 +154,11 @@ class TPOTBase(BaseEstimator):
             random.seed(random_state)
             np.random.seed(random_state)
 
-        if scoring_function:
-            self.scoring_function = scoring_function
+        if scoring:
+            if isinstance(scoring, str):
+                self.scoring_function = staticmethod(get_scorer(scoring))
+            else:
+                self.scoring_function = staticmethod(scoring)
 
         self.num_cv_folds = num_cv_folds
 
