@@ -59,9 +59,6 @@ from deap import algorithms, base, creator, tools, gp
 
 from tqdm import tqdm
 
-
-class PostFilteredDF(object): pass
-
 class ClassifiedDF(object): pass
 
 class TPOT(object):
@@ -146,11 +143,11 @@ class TPOT(object):
         # Rename pipeline input to "input_df"
         self._pset.renameArguments(ARG0='input_df')
 
-        self._pset.addPrimitive(self._gaussian_nb, [PostFilteredDF], ClassifiedDF)
-        self._pset.addPrimitive(self._mdr, [PostFilteredDF, int, int], PostFilteredDF)
-        self._pset.addPrimitive(self._select_kbest, [PostFilteredDF, int], PostFilteredDF)
-        self._pset.addPrimitive(self._ekf, [pd.DataFrame, int, int], PostFilteredDF)
-        self._pset.addPrimitive(self._combine_dfs, [PostFilteredDF, PostFilteredDF], PostFilteredDF)
+        self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], ClassifiedDF)
+        self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._ekf, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
 
         # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
@@ -159,7 +156,6 @@ class TPOT(object):
         for val in int_terminals:
             self._pset.addTerminal(val, int)
 
-        self._pset.addTerminal([0, 0], PostFilteredDF)
         self._pset.addTerminal([0, 0], ClassifiedDF)
 
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
@@ -818,7 +814,7 @@ class TPOT(object):
             """Expression generation stops when the depth is equal to height
             or when it is randomly determined that a a node should be a terminal.
             """
-            return type_ not in [PostFilteredDF, ClassifiedDF] or depth == height
+            return type_ not in [ClassifiedDF] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
 
