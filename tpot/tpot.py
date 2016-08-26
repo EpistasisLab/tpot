@@ -144,10 +144,7 @@ class TPOT(BaseEstimator):
 
         self._pbar = None
         self._gp_generation = 0
-
-        if random_state:
-            random.seed(random_state)
-            np.random.seed(random_state)
+        self.random_state = random_state
 
         if scoring_function is None:
             self.scoring_function = balanced_accuracy
@@ -253,6 +250,10 @@ class TPOT(BaseEstimator):
 
         """
         try:
+            if self.random_state:
+                random.seed(self.random_state)
+                np.random.seed(self.random_state)
+
             self._start_datetime = datetime.now()
 
             features = features.astype(np.float64)
