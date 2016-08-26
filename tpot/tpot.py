@@ -60,10 +60,9 @@ from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
 
 
-class Bool(object):
-    """Boolean class used for deap due to deap's poor handling of ints and booleans"""
-    pass
+class PostFilteredDF(object): pass
 
+class ClassifiedDF(object): pass
 
 class TPOT(object):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming."""
@@ -142,15 +141,15 @@ class TPOT(object):
             random.seed(random_state)
             np.random.seed(random_state)
 
-        self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], pd.DataFrame)
+        self._pset = gp.PrimitiveSetTyped('MAIN', [pd.DataFrame], ClassifiedDF)
 
         # Rename pipeline input to "input_df"
         self._pset.renameArguments(ARG0='input_df')
 
-        self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
-        self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int], pd.DataFrame)
-        self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
-        self._pset.addPrimitive(self._ekf, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._gaussian_nb, [PostFilteredDF], ClassifiedDF)
+        self._pset.addPrimitive(self._mdr, [PostFilteredDF, int, int], PostFilteredDF)
+        self._pset.addPrimitive(self._select_kbest, [PostFilteredDF, int], PostFilteredDF)
+        self._pset.addPrimitive(self._ekf, [pd.DataFrame, int, int], PostFilteredDF)
 
         # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
@@ -159,11 +158,14 @@ class TPOT(object):
         for val in int_terminals:
             self._pset.addTerminal(val, int)
 
+        self._pset.addTerminal([0, 0], PostFilteredDF)
+        self._pset.addTerminal([0, 0], ClassifiedDF)
+
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
         self._toolbox = base.Toolbox()
-        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=2, max_=5)
         self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', gp.compile, pset=self._pset)
@@ -628,7 +630,7 @@ class TPOT(object):
         Returns
         -------
         subsetted_df: pandas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
-            Returns a DataFrame containing the 'best' features provided by expert_source
+            Returns a DataFrame containing the best features according to the designated expert knowledge source
         """
         ekf_index = abs(ekf_index) % len(self.expert_source)
         k_best = max(1, min(k_best, input_df.shape[1]))
@@ -798,7 +800,7 @@ class TPOT(object):
             """Expression generation stops when the depth is equal to height
             or when it is randomly determined that a a node should be a terminal.
             """
-            return type_ != pd.DataFrame or depth == height
+            return type_ not in [PostFilteredDF, ClassifiedDF] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
 
