@@ -443,8 +443,7 @@ class TPOT(BaseEstimator):
         return eval(sklearn_pipeline, self.operators_context)
 
     def _evaluate_individual(self, individual, features, classes):
-        """Determines the `individual`'s fitness according to its performance on
-        the provided data
+        """Determines the `individual`'s fitness according to its performance on the provided data
 
         Parameters
         ----------
