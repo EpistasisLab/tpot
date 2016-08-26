@@ -649,7 +649,7 @@ class TPOT(object):
 
         return input_df.loc[:, ekf_subset].copy()
 
-    def _combine_dfs(input_df1, input_df2):
+    def _combine_dfs(self, input_df1, input_df2):
          """Function to combine two DataFrames
  
          Parameters
