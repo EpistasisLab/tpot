@@ -150,9 +150,7 @@ class TPOTBase(BaseEstimator):
         self._pbar = None
         self._gp_generation = 0
 
-        if random_state:
-            random.seed(random_state)
-            np.random.seed(random_state)
+        self.random_state = random_state
 
         if scoring:
             if isinstance(scoring, str):
@@ -262,46 +260,50 @@ class TPOTBase(BaseEstimator):
         None
 
         """
+        features = features.astype(np.float64)
+
+        # Set the seed for the GP run
+        if self.random_state:
+            random.seed(self.random_state)
+            np.random.seed(self.random_state)
+
+        self._start_datetime = datetime.now()
+
+        self._toolbox.register('evaluate',
+            self._evaluate_individual, features=features, classes=classes)
+        pop = self._toolbox.population(n=self.population_size)
+
+        def pareto_eq(ind1, ind2):
+            """Determines whether two individuals are equal on the Pareto front
+
+            Parameters
+            ----------
+            ind1: DEAP individual from the GP population
+                First individual to compare
+            ind2: DEAP individual from the GP population
+                Second individual to compare
+
+            Returns
+            ----------
+            individuals_equal: bool
+                Boolean indicating whether the two individuals are equal on
+                the Pareto front
+
+            """
+            return np.all(ind1.fitness.values == ind2.fitness.values)
+
+        self._hof = tools.ParetoFront(similar=pareto_eq)
+
+        # Start the progress bar
+        if self.max_time_mins:
+            total_evals = None
+        else:
+            total_evals = self.population_size * (self.generations + 1)
+
+        self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
+                          disable=not (self.verbosity >= 2), desc='GP Progress')
+
         try:
-            self._start_datetime = datetime.now()
-
-            features = features.astype(np.float64)
-
-            self._toolbox.register('evaluate',
-                self._evaluate_individual, features=features, classes=classes)
-            pop = self._toolbox.population(n=self.population_size)
-
-            def pareto_eq(ind1, ind2):
-                """Function used to determine whether two individuals are equal
-                on the Pareto front
-
-                Parameters
-                ----------
-                ind1: DEAP individual from the GP population
-                    First individual to compare
-                ind2: DEAP individual from the GP population
-                    Second individual to compare
-
-                Returns
-                ----------
-                individuals_equal: bool
-                    Boolean indicating whether the two individuals are equal on
-                    the Pareto front
-
-                """
-                return np.all(ind1.fitness.values == ind2.fitness.values)
-
-            self._hof = tools.ParetoFront(similar=pareto_eq)
-
-            # Start the progress bar
-            if not (self.max_time_mins is None):
-                total_evals = self.population_size
-            else:
-                total_evals = self.population_size * (self.generations + 1)
-
-            self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
-                              disable=not (self.verbosity >= 2), desc='GP Progress')
-
             pop, _ = algorithms.eaSimple(
                 population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                 mutpb=self.mutation_rate, ngen=self.generations,
@@ -323,9 +325,15 @@ class TPOTBase(BaseEstimator):
             # Store the pipeline with the highest internal testing score
             if self._hof:
                 top_score = 0.
+
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
+
+                if not self._optimized_pipeline:
+                    raise RuntimeError('A pipeline was not generated. Either '
+                                       'GP was cut short, or all pipelines '
+                                       'failed.')
 
                 self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 
@@ -342,8 +350,10 @@ class TPOTBase(BaseEstimator):
             # Store and fit the entire Pareto front if sciencing
             elif self.verbosity >= 3 and self._hof:
                 self._hof_fitted_pipelines = {}
+
                 for pipeline in self._hof.items:
                     self._hof_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
                         self._hof_fitted_pipelines[str(pipeline)].fit(features, classes)
@@ -458,8 +468,7 @@ class TPOTBase(BaseEstimator):
         return eval(sklearn_pipeline, self.operators_context)
 
     def _evaluate_individual(self, individual, features, classes):
-        """Determines the `individual`'s fitness according to its performance on
-        the provided data
+        """Determines the `individual`'s fitness
 
         Parameters
         ----------

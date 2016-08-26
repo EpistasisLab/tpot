@@ -89,7 +89,7 @@ def main():
         help='Show this help message and exit.')
 
     parser.add_argument('-mode', action='store', dest='MODE',
-        choices=['classification', 'regression'], default='classification', type=bool,
+        choices=['classification', 'regression'], default='classification', type=str,
         help='Whether TPOT is being used for regression')
 
     parser.add_argument('-is', action='store', dest='INPUT_SEPARATOR', default='\t',
