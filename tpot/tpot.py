@@ -32,6 +32,7 @@ import deap
 from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
 
+from sklearn.base import BaseEstimator
 from sklearn.cross_validation import train_test_split, cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
@@ -45,9 +46,10 @@ from .decorators import _gp_new_generation
 from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
+from .metrics import balanced_accuracy
 
 
-class TPOT(object):
+class TPOT(BaseEstimator):
 
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
 
@@ -113,12 +115,9 @@ class TPOT(object):
         None
 
         """
-        # Save params to be recalled later by get_params()
-        self.params = locals()  # Must be before any local variable definitions
-        self.params.pop('self')
-
         # Prompt the user if their version is out of date
-        if not disable_update_check:
+        self.disable_update_check = disable_update_check
+        if not self.disable_update_check:
             update_check('tpot', __version__)
 
         self._hof = None
@@ -151,7 +150,7 @@ class TPOT(object):
             np.random.seed(random_state)
 
         if scoring_function is None:
-            self.scoring_function = self._balanced_accuracy
+            self.scoring_function = balanced_accuracy
         else:
             self.scoring_function = scoring_function
 
@@ -394,26 +393,18 @@ class TPOT(object):
             raise ValueError(('A pipeline has not yet been optimized. '
                               'Please call fit() first.'))
 
-        return self._balanced_accuracy(self._fitted_pipeline, testing_features.astype(np.float64), testing_classes)
+        return balanced_accuracy(self._fitted_pipeline, testing_features.astype(np.float64), testing_classes)
 
-    def get_params(self, deep=None):
-        """Get parameters for this estimator
-
-        This function is necessary for TPOT to work as a drop-in estimator in,
-        e.g., sklearn.cross_validation.cross_val_score
-
-        Parameters
-        ----------
-        deep: unused
-            Only implemented to maintain interface for sklearn
+    def set_params(self, **params):
+        """Set the parameters of a TPOT instance
 
         Returns
         -------
-        params : mapping of string to any
-            Parameter names mapped to their values.
-
+        self
         """
-        return self.params
+        self.__init__(**params)
+
+        return self
 
     def export(self, output_file_name):
         """Exports the current optimized pipeline as Python code
@@ -452,7 +443,8 @@ class TPOT(object):
         return eval(sklearn_pipeline, self.operators_context)
 
     def _evaluate_individual(self, individual, features, classes):
-        """Determines the `individual`'s fitness according to its performance on the provided data
+        """Determines the `individual`'s fitness according to its performance on
+        the provided data
 
         Parameters
         ----------
@@ -475,10 +467,10 @@ class TPOT(object):
         """
 
         try:
-            if not (self.max_time_mins is None):
+            if self.max_time_mins:
                 total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
                 if total_mins_elapsed >= self.max_time_mins:
-                    raise KeyboardInterrupt('{} minutes have elapsed; TPOT must close down'.format(total_mins_elapsed))
+                    raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down'.format(total_mins_elapsed))
 
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
@@ -512,45 +504,6 @@ class TPOT(object):
             return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
-
-    def _balanced_accuracy(self, estimator, X_test, y_test):
-        """Default scoring function: balanced accuracy
-
-        Balanced accuracy computes each class' accuracy on a per-class basis using a
-        one-vs-rest encoding, then computes an unweighted average of the class accuracies.
-
-        Parameters
-        ----------
-        estimator: scikit-learn estimator
-            The estimator for which to evaluate the balanced accuracy
-        X_test: numpy.ndarray {n_samples, n_features}
-            Test data that will be fed to estimator.predict.
-        y_test: numpy.ndarray {n_samples, 1}
-            Target values for X_test.
-
-        Returns
-        -------
-        fitness: float
-            Returns a float value indicating the `individual`'s balanced accuracy
-            0.5 is as good as chance, and 1.0 is perfect predictive accuracy
-        """
-        y_pred = estimator.predict(X_test)
-        all_classes = list(set(np.append(y_test, y_pred)))
-        all_class_accuracies = []
-        for this_class in all_classes:
-            this_class_sensitivity = \
-                float(sum((y_pred == this_class) & (y_test == this_class))) /\
-                float(sum((y_test == this_class)))
-
-            this_class_specificity = \
-                float(sum((y_pred != this_class) & (y_test != this_class))) /\
-                float(sum((y_test != this_class)))
-
-            this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
-            all_class_accuracies.append(this_class_accuracy)
-
-        balanced_accuracy = np.mean(all_class_accuracies)
-        return balanced_accuracy
 
     @_gp_new_generation
     def _combined_selection_operator(self, individuals, k):
@@ -680,6 +633,7 @@ class TPOT(object):
                     stack.append((depth+1, arg))
 
         return expr
+
 
 def positive_integer(value):
     """Ensures that the provided value is a positive integer; throws an exception otherwise
