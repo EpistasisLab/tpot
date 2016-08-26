@@ -150,6 +150,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._mdr, [PostFilteredDF, int, int], PostFilteredDF)
         self._pset.addPrimitive(self._select_kbest, [PostFilteredDF, int], PostFilteredDF)
         self._pset.addPrimitive(self._ekf, [pd.DataFrame, int, int], PostFilteredDF)
+        self._pset.addPrimitive(self._combine_dfs, [PostFilteredDF, PostFilteredDF], PostFilteredDF)
 
         # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
@@ -647,6 +648,23 @@ class TPOT(object):
             ekf_subset = list(input_df.drop(self.non_feature_columns, axis=1).columns.values[ekf_source]) + self.non_feature_columns
 
         return input_df.loc[:, ekf_subset].copy()
+
+    def _combine_dfs(input_df1, input_df2):
+         """Function to combine two DataFrames
+ 
+         Parameters
+         ----------
+         input_df1: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+             Input DataFrame to combine
+         input_df2: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+             Input DataFrame to combine
+ 
+         Returns
+         -------
+         combined_df: pandas.DataFrame {n_samples, n_both_features+['guess', 'group', 'class']}
+             Returns a DataFrame containing the features of both input_df1 and input_df2
+         """
+         return input_df1.join(input_df2[[column for column in input_df2.columns.values if column not in input_df1.columns.values]]).copy()
 
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data
