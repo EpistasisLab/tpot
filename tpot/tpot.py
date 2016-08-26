@@ -73,7 +73,7 @@ class TPOT(object):
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
                  random_state=0, verbosity=0, scoring_function=None,
-                 disable_update_check=False):
+                 disable_update_check=False, expert_source=None):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -101,6 +101,8 @@ class TPOT(object):
             Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used.
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
+        expert_source: list (default: None)
+            List of expert knowledge features filter. Must be =< number of features of the input data.
 
         Returns
         -------
@@ -129,6 +131,8 @@ class TPOT(object):
         self.crossover_rate = crossover_rate
         self.verbosity = verbosity
 
+        self.expert_source = expert_source
+
         self.pbar = None
         self.gp_generation = 0
 
@@ -147,6 +151,7 @@ class TPOT(object):
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], pd.DataFrame)
         self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
+        self._pset.addPrimitive(self._ekf, [pd.DataFrame, int, int], pd.DataFrame)
 
         # Terminals
         int_terminals = np.concatenate((np.arange(0, 51, 1),
@@ -195,6 +200,30 @@ class TPOT(object):
         None
 
         """
+        for i in range(len(self.expert_source)):
+            if len(self.expert_source[i])==np.shape(features)[1]:
+                if all(isinstance(n, bool) for n in self.expert_source[i]):
+                    try:
+                        np.isnan(self.expert_source[i])
+                    except:
+                        pass
+                    else:
+                        print("NaN in provided boolean ekf found")
+                else:
+                    try:
+                        np.isnan(self.expert_source[i])
+                    except:
+                        pass
+                    else:
+                        print("NaN in provided ekf found")
+            else:
+                print("Number of expert source features do not match number of input features")
+
+        if self.expert_source is not None:
+            for i in range(len(self.expert_source)):
+                if isinstance(features.size/(self.expert_source).size, int)==True:
+                    self._ekf(features, self.ekf_index, self.k_best)
+
         try:
             # Store the training features and classes for later use
             self._training_features = features
@@ -506,7 +535,7 @@ class TPOT(object):
             input_df[mdr_identifier] = mdr.transform(input_df.loc[:, cols].values)
 
         return input_df
-         
+
     def _train_model_and_predict(self, input_df, model, **kwargs):
         """Fits an arbitrary sklearn classifier model with a set of keyword parameters
 
@@ -533,7 +562,7 @@ class TPOT(object):
         input_df = input_df.copy()
 
         training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1).values
-        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values 
+        training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
 
         # Try to seed the random_state parameter if the model accepts it.
         try:
@@ -593,6 +622,38 @@ class TPOT(object):
 
         mask_cols = list(training_features.iloc[:, mask].columns) + self.non_feature_columns
         return input_df[mask_cols].copy()
+
+    def _ekf(self, input_df, ekf_index, k_best):
+        """Uses expert knowledge source to subset/mask columns of the input data
+
+        Parameters
+        ----------
+        input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
+            Input DataFrame to perform feature selecton on
+        expert_source: Boolean list/mask for features provided by user
+
+        Returns
+        -------
+        subsetted_df: andas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
+            Returns a DataFrame containing the 'best' features provided by expert_source
+
+        """
+#        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
+#        all_ekf_cols = len(training_features.columns)
+        all_ekf_cols = input_df.shape[1]
+
+        if k_best < 1:
+            k_best = 1
+        elif k_best >= all_ekf_cols:
+            k_best = all_ekf_cols
+
+        if set(self.expert_source[ekf_index])==set([True, False]):
+            ekf_source = self.expert_source[ekf_index].astype(bool)
+            return input_df[:, ekf_source].copy()
+        else:
+            ekf_source = np.argsort(self.expert_source)[::-1][:]
+            ekf_source = ekf_source[:k_best]
+            return input_df[:, ekf_source].copy()
 
     def _evaluate_individual(self, individual, training_testing_data):
         """Determines the `individual`'s fitness according to its performance on the provided data
