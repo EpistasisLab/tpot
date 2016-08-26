@@ -200,29 +200,24 @@ class TPOT(object):
         None
 
         """
-        for i in range(len(self.expert_source)):
-            if len(self.expert_source[i])==np.shape(features)[1]:
-                if all(isinstance(n, bool) for n in self.expert_source[i]):
+        for ek_source in self.expert_source:
+            if ek_source.shape[1] == features.shape[1]:
+                if all(isinstance(n, bool) for n in ek_source):
                     try:
                         np.isnan(self.expert_source[i])
                     except:
                         pass
                     else:
-                        print("NaN in provided boolean ekf found")
+                        raise ValueError('Expert knowledge sources must not have missing values.')
                 else:
                     try:
                         np.isnan(self.expert_source[i])
                     except:
                         pass
                     else:
-                        print("NaN in provided ekf found")
+                        raise ValueError('Expert knowledge sources must not have missing values.')
             else:
-                print("Number of expert source features do not match number of input features")
-
-        if self.expert_source is not None:
-            for i in range(len(self.expert_source)):
-                if isinstance(features.size/(self.expert_source).size, int)==True:
-                    self._ekf(features, self.ekf_index, self.k_best)
+                raise ValueError('Expert knowledge sources must be of the same length as the features.')
 
         try:
             # Store the training features and classes for later use
@@ -630,24 +625,20 @@ class TPOT(object):
         ----------
         input_df: pandas.DataFrame {n_samples, n_features+['class', 'group', 'guess']}
             Input DataFrame to perform feature selecton on
-        expert_source: Boolean list/mask for features provided by user
+        ekf_index: int
+            What user-provided expert knowledge source to use
+        k_best: int
+            Number of top features to keep according to the expert knowledge source
+            This parameter does not apply if the expert knowledge source is a bool mask
 
         Returns
         -------
-        subsetted_df: andas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
+        subsetted_df: pandas.DataFrame {n_samples, n_filtered_features + ['guess', 'group', 'class']}
             Returns a DataFrame containing the 'best' features provided by expert_source
-
         """
-#        training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
-#        all_ekf_cols = len(training_features.columns)
-        all_ekf_cols = input_df.shape[1]
+        k_best = max(1, min(k_best, input_df.shape[1]))
 
-        if k_best < 1:
-            k_best = 1
-        elif k_best >= all_ekf_cols:
-            k_best = all_ekf_cols
-
-        if set(self.expert_source[ekf_index])==set([True, False]):
+        if set(self.expert_source[ekf_index]) == set([True, False]):
             ekf_source = self.expert_source[ekf_index].astype(bool)
             return input_df[:, ekf_source].copy()
         else:
