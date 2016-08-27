@@ -36,7 +36,7 @@ from sklearn.cross_validation import train_test_split, cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
-from sklearn.metrics import get_scorer, SCORERS
+from sklearn.metrics import get_scorer
 
 from update_checker import update_check
 
@@ -155,11 +155,8 @@ class TPOT(object):
         if scoring_function is None:
             self.scoring_function = self._balanced_accuracy
         else:
-            if not isinstance(scoring_function, str): 
-                raise ValueError('{} is not a valid scoring value. Valid options are {}'.format(scoring_function, sorted(SCORERS.keys())))
             self.scoring_function = get_scorer(scoring_function)
-            if any([x in scoring_function for x in ['error', 'loss']]): 
-                self._scoring_sign = -1.
+            if any([x in scoring_function for x in ['error', 'loss']]): self._scoring_sign = -1.
         
         self.num_cv_folds = num_cv_folds
 
