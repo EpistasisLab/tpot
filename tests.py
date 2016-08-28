@@ -71,14 +71,11 @@ def test_init_max_time_mins():
 def test_get_params():
     """Assert that get_params returns the exact dictionary of parameters used by TPOT"""
     
-    def dummy_func(est, x, y):
-        return 1.0
-    
     kwargs = {
         'population_size': 500,
         'generations': 1000,
         'verbosity': 1,
-        'scoring_function': dummy_func
+        'scoring_function': 'foobar'
     }
 
     tpot_obj = TPOT(**kwargs)

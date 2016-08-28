@@ -37,7 +37,6 @@ from sklearn.cross_validation import train_test_split, cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
-from sklearn.metrics import get_scorer, make_scorer
 
 from update_checker import update_check
 
@@ -155,8 +154,6 @@ class TPOT(BaseEstimator):
             scoring_function_name = scoring_function
             if hasattr(scoring_function, '__call__'):
                 scoring_function_name = scoring_function.__name__
-            else:
-                get_scorer(scoring_function)
             if any([x in scoring_function_name for x in ['error', 'loss']]):
                 self._scoring_sign = 0
         
