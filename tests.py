@@ -48,8 +48,8 @@ def test_init_custom_parameters():
     assert tpot_obj.generations == 1000
     assert tpot_obj.mutation_rate == 0.05
     assert tpot_obj.crossover_rate == 0.9
-    assert tpot_obj.scoring_function == get_scorer('log_loss')
-    assert tpot_obj._scoring_sign == -1
+    assert tpot_obj.scoring_function == 'log_loss'
+    assert tpot_obj._scoring_sign == 0
     assert tpot_obj.num_cv_folds == 10
     assert tpot_obj.max_time_mins is None
     assert tpot_obj.verbosity == 1

@@ -36,7 +36,7 @@ from sklearn.cross_validation import train_test_split, cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
-from sklearn.metrics import get_scorer
+from sklearn.metrics import get_scorer, make_scorer
 
 from update_checker import update_check
 
@@ -151,12 +151,18 @@ class TPOT(object):
             random.seed(random_state)
             np.random.seed(random_state)
 
-        self._scoring_sign = 1.
+        self._scoring_sign = 1
         if scoring_function is None:
             self.scoring_function = self._balanced_accuracy
         else:
-            self.scoring_function = get_scorer(scoring_function)
-            if any([x in scoring_function for x in ['error', 'loss']]): self._scoring_sign = -1.
+            self.scoring_function = scoring_function
+            scoring_function_name = scoring_function
+            if hasattr(scoring_function, '__call__'):
+                scoring_function_name = scoring_function.__name__
+            else:
+                scoring_function = get_scorer(scoring_function)
+            if any([x in scoring_function_name for x in ['error', 'loss']]):
+                self._scoring_sign = 0
         
         self.num_cv_folds = num_cv_folds
 
@@ -314,7 +320,7 @@ class TPOT(object):
 
             # Store the pipeline with the highest internal testing score
             if self._hof:
-                top_score = 0. if self._scoring_sign == 1. else -5000.
+                top_score = 0. if self._scoring_sign else -5000.
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
@@ -506,7 +512,7 @@ class TPOT(object):
             # to crash. Instead, assign the crashing pipeline a poor fitness
             # import traceback
             # traceback.print_exc()
-            return 5000., 0. if self._scoring_sign == 1 else -5000.
+            return 5000., 0. if self._scoring_sign else -5000.
         finally:
             if not self._pbar.disable:
                 self._pbar.update(1)  # One more pipeline evaluated
