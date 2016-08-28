@@ -58,24 +58,14 @@ def test_init_custom_parameters():
     assert not (tpot_obj._pset is None)
     assert not (tpot_obj._toolbox is None)
 
+
 def test_init_max_time_mins():
-    """Assert that the TPOT instantiator stores the TPOT variables properly when a max
-       run time is provided and all other parameters are default"""
+    """Assert that the TPOT init stores max run time and sets generations to 1000000"""
 
-    tpot_obj = TPOT(max_time_mins=30)
+    tpot_obj = TPOT(max_time_mins=30, generations=1000)
 
-    assert tpot_obj.population_size == 100
     assert tpot_obj.generations == 1000000
-    assert tpot_obj.mutation_rate == 0.9
-    assert tpot_obj.crossover_rate == 0.05
-    assert tpot_obj.scoring_function == tpot_obj._balanced_accuracy
-    assert tpot_obj.num_cv_folds == 3
     assert tpot_obj.max_time_mins == 30
-    assert tpot_obj.verbosity == 0
-    assert tpot_obj._optimized_pipeline is None
-    assert tpot_obj._fitted_pipeline is None
-    assert not (tpot_obj._pset is None)
-    assert not (tpot_obj._toolbox is None)
 
 
 def test_get_params():
@@ -83,7 +73,8 @@ def test_get_params():
     kwargs = {
         'population_size': 500,
         'generations': 1000,
-        'verbosity': 1
+        'verbosity': 1,
+        'scoring_function': 'foobar'
     }
 
     tpot_obj = TPOT(**kwargs)
@@ -94,6 +85,21 @@ def test_get_params():
     default_kwargs.update(kwargs)
 
     assert tpot_obj.get_params() == default_kwargs
+
+
+def test_set_params():
+    """Assert that set_params returns a reference to the TPOT instance"""
+
+    tpot_obj = TPOT()
+    assert tpot_obj.set_params() is tpot_obj
+
+
+def test_set_params_2():
+    """Assert that set_params updates TPOT's instance variables"""
+    tpot_obj = TPOT(generations=2)
+    tpot_obj.set_params(generations=3)
+
+    assert tpot_obj.generations == 3
 
 
 def test_score():
