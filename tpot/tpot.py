@@ -156,7 +156,7 @@ class TPOT(BaseEstimator):
             if hasattr(scoring_function, '__call__'):
                 scoring_function_name = scoring_function.__name__
             else:
-                scoring_function = get_scorer(scoring_function)
+                get_scorer(scoring_function)
             if any([x in scoring_function_name for x in ['error', 'loss']]):
                 self._scoring_sign = 0
         
