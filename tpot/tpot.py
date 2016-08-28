@@ -146,7 +146,7 @@ class TPOT(BaseEstimator):
         self._gp_generation = 0
         self.random_state = random_state
 
-        self._scoring_sign = 1
+        self._positive_scoring = 1
         if scoring_function is None:
             self.scoring_function = balanced_accuracy
         else:
@@ -155,7 +155,7 @@ class TPOT(BaseEstimator):
             if hasattr(scoring_function, '__call__'):
                 scoring_function_name = scoring_function.__name__
             if any([x in scoring_function_name for x in ['error', 'loss']]):
-                self._scoring_sign = 0
+                self._positive_scoring = 0
         
         self.num_cv_folds = num_cv_folds
 
@@ -316,7 +316,7 @@ class TPOT(BaseEstimator):
 
             # Store the pipeline with the highest internal testing score
             if self._hof:
-                top_score = 0. if self._scoring_sign else -5000.
+                top_score = 0. if self._positive_scoring else -5000.
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
@@ -500,7 +500,7 @@ class TPOT(BaseEstimator):
             # to crash. Instead, assign the crashing pipeline a poor fitness
             # import traceback
             # traceback.print_exc()
-            return 5000., 0. if self._scoring_sign else -5000.
+            return 5000., 0. if self._positive_scoring else -5000.
         finally:
             if not self._pbar.disable:
                 self._pbar.update(1)  # One more pipeline evaluated
@@ -725,12 +725,13 @@ def main():
     parser.add_argument('-scoring', action='store', dest='SCORING_FN', default=None,
                         type=str, help='Function used to evaluate the goodness of a given pipeline for the '
                         'classification problem. By default, balanced class accuracy is used. '
-                        'TPOT assumes that this scoring function should be maximized, i.e., '
-                        'higher is better. Offers the same options as cross_val_score: '
+                        'TPOT assumes that any function with "error" or "loss" in the name is meant'
+                        'to be minimized, whereas any other functions will be maximized.'
+                        'Offers the same options as cross_val_score: '
                         '"accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", '
                         '"f1_micro", "f1_samples", "f1_weighted", "precision", "precision_macro", '
                         '"precision_micro", "precision_samples", "precision_weighted", "recall", '
-                        '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"')
+                        '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc", "log_loss"')
 
     parser.add_argument('-maxtime', action='store', dest='MAX_TIME_MINS', default=None,
                         type=int, help='How many minutes TPOT has to optimize the pipeline. This setting will override the GENERATIONS parameter '
