@@ -85,8 +85,8 @@ class TPOT(BaseEstimator):
         scoring_function: str (default: balanced accuracy)
             Function used to evaluate the goodness of a given pipeline for the
             classification problem. By default, balanced class accuracy is used.
-            TPOT assumes that this scoring function should be maximized, i.e.,
-            higher is better.
+            TPOT assumes that any function with "error" or "loss" in the name is meant to
+            be minimized, whereas any other functions will be maximized.
 
             Offers the same options as sklearn.cross_validation.cross_val_score:
 
@@ -220,16 +220,12 @@ class TPOT(BaseEstimator):
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
-        creator.create('Individual',
-            gp.PrimitiveTree, fitness=creator.FitnessMulti)
+        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
         self._toolbox = base.Toolbox()
-        self._toolbox.register('expr',
-            self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
-        self._toolbox.register('individual',
-            tools.initIterate, creator.Individual, self._toolbox.expr)
-        self._toolbox.register('population',
-            tools.initRepeat, list, self._toolbox.individual)
+        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
+        self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', self._compile_to_sklearn)
         self._toolbox.register('select', self._combined_selection_operator)
         self._toolbox.register('mate', gp.cxOnePoint)
