@@ -438,6 +438,33 @@ class TPOT(BaseEstimator):
 
         return eval(sklearn_pipeline, self.operators_context)
 
+    def _set_param_recursive(self, pipeline_steps, parameter, value):
+        """Recursively iterates through all objects in the pipeline and sets the given parameter to the specified value
+
+        Parameters
+        ----------
+        pipeline_steps: array-like
+            List of (str, obj) tuples from a scikit-learn pipeline or related object
+        parameter: str
+            The parameter to assign a value for in each pipeline object
+        value: any
+            The value to assign the parameter to in each pipeline object
+
+        Returns
+        -------
+        None
+        """
+        for (name, obj) in pipeline_steps:
+            if hasattr(obj, 'steps'):
+                recurse_pipeline(obj.steps)
+            elif hasattr(obj, 'transformer_list'):
+                recurse_pipeline(obj.transformer_list)
+            elif hasattr(obj, 'estimators'):
+                recurse_pipeline(obj.estimators)
+            else:
+                if hasattr(obj, parameter):
+                    setattr(obj, parameter, value)
+
     def _evaluate_individual(self, individual, features, classes):
         """Determines the `individual`'s fitness according to its performance on the provided data
 
@@ -458,7 +485,6 @@ class TPOT(BaseEstimator):
         fitness: float
             Returns a float value indicating the `individual`'s fitness
             according to its performance on the provided data
-
         """
         try:
             if self.max_time_mins:
@@ -468,6 +494,7 @@ class TPOT(BaseEstimator):
 
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
+            self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
