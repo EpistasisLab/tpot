@@ -147,17 +147,11 @@ class TPOT(BaseEstimator):
         self._gp_generation = 0
         self.random_state = random_state
 
-        self._positive_scoring = True
         if scoring_function is None:
             self.scoring_function = balanced_accuracy
         else:
             self.scoring_function = scoring_function
-            scoring_function_name = scoring_function
-            if hasattr(scoring_function, '__call__'):
-                scoring_function_name = scoring_function.__name__
-            if 'error' in scoring_function_name or 'loss' in scoring_function_name:
-                self._positive_scoring = False
-        
+
         self.num_cv_folds = num_cv_folds
 
         self._setup_pset()
@@ -313,7 +307,7 @@ class TPOT(BaseEstimator):
 
             # Store the pipeline with the highest internal testing score
             if self._hof:
-                top_score = 0. if self._positive_scoring else -5000.
+                top_score = -5000.
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
@@ -472,7 +466,6 @@ class TPOT(BaseEstimator):
             according to its performance on the provided data
 
         """
-
         try:
             if self.max_time_mins:
                 total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
@@ -502,7 +495,7 @@ class TPOT(BaseEstimator):
             # to crash. Instead, assign the crashing pipeline a poor fitness
             # import traceback
             # traceback.print_exc()
-            return 5000., 0. if self._positive_scoring else -5000.
+            return 5000., -5000.
         finally:
             if not self._pbar.disable:
                 self._pbar.update(1)  # One more pipeline evaluated
@@ -784,9 +777,9 @@ def main():
 
     if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
         print('\nTraining score: {}'.format(max([tpot._hof.keys[x].wvalues[1] for x in range(len(tpot._hof.keys))])))
-        print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
+        print('Holdout balanced accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
     elif args.VERBOSITY >= 3 and tpot._hof:
-        print('Final Pareto front testing scores:')
+        print('Final Pareto front holdout balanced accuracy:')
         for pipeline, pipeline_scores in zip(tpot._hof.items, reversed(tpot._hof.keys)):
             print('{}\t{}\t{}'.format(-pipeline_scores.wvalues[0],
                                       tpot._hof_fitted_pipelines[str(pipeline)].score(testing_features, testing_classes),
