@@ -305,10 +305,10 @@ class TPOT(object):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
                 if self._optimized_pipeline is None:
-                    raise ValueError(('No pipeline has been optimized. ' 
-                                        'This could be because the data was not formatted properly,'
-                                        'Or because data for a regression problem was provided to the TPOT classifier pipelines. '
-                                        'Please check your data first.'))
+                    raise ValueError(('There was an error in the TPOT optimization process. ' 
+                                      'This could be because the data was not formatted properly, '
+                                      'or because data for a regression problem was provided to the TPOTClassifier object. '
+                                      'Please make sure you passed the data to TPOT correctly.'))
                 else:
                     self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
                 with warnings.catch_warnings():
