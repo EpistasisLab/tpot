@@ -90,10 +90,11 @@ class TPOT(BaseEstimator):
 
             Offers the same options as sklearn.cross_validation.cross_val_score:
 
-            ['accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro',
-            'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'precision', 'precision_macro',
-            'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall',
-            'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc']
+            ['accuracy', 'average_precision', 'f1', 'f1_macro', 'f1_micro', 'f1_samples',
+             'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error',
+             'median_absolute_error', 'precision', 'precision_macro', 'precision_micro',
+             'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro',
+             'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc']
         num_cv_folds: int (default: 3)
             The number of folds to evaluate each pipeline over in k-fold cross-validation
             during the TPOT pipeline optimization process
@@ -733,10 +734,11 @@ def main():
                         'TPOT assumes that any function with "error" or "loss" in the name is meant'
                         'to be minimized, whereas any other functions will be maximized.'
                         'Offers the same options as cross_val_score: '
-                        '"accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", '
-                        '"f1_micro", "f1_samples", "f1_weighted", "precision", "precision_macro", '
-                        '"precision_micro", "precision_samples", "precision_weighted", "recall", '
-                        '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc", "log_loss"')
+                        '"accuracy", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples",'
+                        '"f1_weighted", "log_loss", "mean_absolute_error", "mean_squared_error",'
+                        '"median_absolute_error", "precision", "precision_macro", "precision_micro",'
+                        '"precision_samples", "precision_weighted", "r2", "recall", "recall_macro",'
+                        '"recall_micro", "recall_samples", "recall_weighted", "roc_auc"')
 
     parser.add_argument('-maxtime', action='store', dest='MAX_TIME_MINS', default=None,
                         type=int, help='How many minutes TPOT has to optimize the pipeline. This setting will override the GENERATIONS parameter '

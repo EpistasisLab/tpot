@@ -60,7 +60,7 @@ TPOT offers several arguments that can be provided at the command line:
 <tr>
 <td>-scoring</td>
 <td>SCORING_FN</td>
-<td>"accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc", "log_loss"</td>
+<td>"accuracy", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "log_loss", "mean_absolute_error", "mean_squared_error", "median_absolute_error", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "r2", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"</td>
 <td>Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized.</td>
 </tr>
 <tr>
@@ -157,7 +157,7 @@ Note that you can pass several parameters to the TPOT instantiation call:
 </tr>
 <tr>
 <td>scoring_function</td>
-<td>"accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc", "log_loss" or a callable function with signature <b>scorer(estimator, X, y)</b></td>
+<td>"accuracy", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "log_loss", "mean_absolute_error", "mean_squared_error", "median_absolute_error", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "r2", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc" or a callable function with signature <b>scorer(estimator, X, y)</b></td>
 <td>Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
 </tr>
 <tr>
