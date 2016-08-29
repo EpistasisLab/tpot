@@ -20,6 +20,7 @@ from datetime import datetime
 
 from sklearn.datasets import load_digits
 from sklearn.cross_validation import train_test_split
+from sklearn.metrics import get_scorer
 
 from deap import creator
 from tqdm import tqdm
@@ -36,12 +37,9 @@ random.seed(42)
 def test_init_custom_parameters():
     """Assert that the TPOT instantiator stores the TPOT variables properly"""
 
-    def dummy_scoring_func(foo, bar):
-        return
-
     tpot_obj = TPOT(population_size=500, generations=1000,
                     mutation_rate=0.05, crossover_rate=0.9,
-                    scoring_function=dummy_scoring_func,
+                    scoring_function='log_loss',
                     num_cv_folds=10,
                     verbosity=1, random_state=42,
                     disable_update_check=True)
@@ -50,7 +48,8 @@ def test_init_custom_parameters():
     assert tpot_obj.generations == 1000
     assert tpot_obj.mutation_rate == 0.05
     assert tpot_obj.crossover_rate == 0.9
-    assert tpot_obj.scoring_function == dummy_scoring_func
+    assert tpot_obj.scoring_function == 'log_loss'
+    assert tpot_obj._positive_scoring == 0
     assert tpot_obj.num_cv_folds == 10
     assert tpot_obj.max_time_mins is None
     assert tpot_obj.verbosity == 1
@@ -71,6 +70,7 @@ def test_init_max_time_mins():
 
 def test_get_params():
     """Assert that get_params returns the exact dictionary of parameters used by TPOT"""
+    
     kwargs = {
         'population_size': 500,
         'generations': 1000,
