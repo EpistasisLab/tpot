@@ -29,7 +29,6 @@ from collections import Counter
 
 import numpy as np
 import pandas as pd
-from scipy.misc import comb as spcomb
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier, GradientBoostingClassifier
@@ -491,8 +490,7 @@ class TPOT(object):
         Returns
         -------
         input_df: pandas.DataFrame {n_samples, n_features+['guess', 'group', 'class']}
-            Returns a modified input DataFrame with the new MDR constructed features appended
-
+            Returns a modified input DataFrame with the new MDR constructed feature appended
         """
         if len(input_df.columns) == 3:
             return input_df
@@ -506,21 +504,14 @@ class TPOT(object):
         training_features = input_df.loc[input_df['group'] == 'training'].drop(self.non_feature_columns, axis=1)
         training_classes = input_df.loc[input_df['group'] == 'training', 'class'].values
 
-        # Place a practical limit on the number of features that can be constructed
-        if spcomb(training_features.shape[1], 2) > 1000:
-            return input_df
-
-        training_feature_names = training_features.columns.values.tolist()
         mdr = MDR(tie_break_choice, default_label_choice)
+        mdr.fit(training_features.values, training_classes)
 
-        for cols in combinations(training_feature_names, 2):
-            training_feature_subset = training_features.loc[:, cols].values
-            mdr.fit(training_feature_subset, training_classes)
-            mdr_hash = '-'.join(sorted(cols))
-            mdr_hash += 'MDR'
-            mdr_hash += '-'.join([str(param) for param in [tie_break, default_label]])
-            mdr_identifier = 'ConstructedFeature-{}'.format(hashlib.sha224(mdr_hash.encode('UTF-8')).hexdigest())
-            input_df[mdr_identifier] = mdr.transform(input_df.loc[:, cols].values)
+        mdr_hash = '-'.join(sorted(training_features.columns.values))
+        mdr_hash += 'MDR'
+        mdr_hash += '-'.join([str(param) for param in [tie_break, default_label]])
+        mdr_identifier = 'ConstructedFeature-{}'.format(hashlib.sha224(mdr_hash.encode('UTF-8')).hexdigest())
+        input_df[mdr_identifier] = mdr.transform(input_df.drop(self.non_feature_columns, axis=1).values)
 
         return input_df
 
@@ -631,6 +622,10 @@ class TPOT(object):
         """
         ekf_index = abs(ekf_index) % len(self.expert_source)
         k_best = max(1, min(k_best, input_df.shape[1]))
+
+        # If the EK filter mask doesn't match the feature space, it can't be used
+        if len(self.expert_source[ekf_index]) != input_df.shape[1] - 3:
+            return input_df
 
         # Mask filter
         if set(self.expert_source[ekf_index]) in [set([True, False]), set([True]), set([False])]:
