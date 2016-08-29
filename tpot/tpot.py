@@ -146,7 +146,7 @@ class TPOT(BaseEstimator):
         self._gp_generation = 0
         self.random_state = random_state
 
-        self._positive_scoring = 1
+        self._positive_scoring = True
         if scoring_function is None:
             self.scoring_function = balanced_accuracy
         else:
@@ -154,8 +154,8 @@ class TPOT(BaseEstimator):
             scoring_function_name = scoring_function
             if hasattr(scoring_function, '__call__'):
                 scoring_function_name = scoring_function.__name__
-            if any([x in scoring_function_name for x in ['error', 'loss']]):
-                self._positive_scoring = 0
+            if 'error' in scoring_function_name or 'loss' in scoring_function_name:
+                self._positive_scoring = False
         
         self.num_cv_folds = num_cv_folds
 
