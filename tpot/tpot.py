@@ -37,7 +37,6 @@ from sklearn.cross_validation import train_test_split, cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
-from sklearn.metrics import make_scorer
 
 from update_checker import update_check
 
@@ -47,7 +46,7 @@ from .decorators import _gp_new_generation
 from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
-from .metrics import balanced_accuracy
+from .metrics import SCORERS
 
 
 class TPOT(BaseEstimator):
@@ -56,7 +55,7 @@ class TPOT(BaseEstimator):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 scoring_function=None, num_cv_folds=3,
+                 scoring_function='balanced_accuracy', num_cv_folds=3,
                  max_time_mins=None,
                  random_state=None, verbosity=0,
                  disable_update_check=False):
@@ -83,7 +82,7 @@ class TPOT(BaseEstimator):
             range [0.0, 1.0]. This tells the genetic programming algorithm how
             many pipelines to "breed" every generation. We don't recommend that
             you tweak this parameter unless you know what you're doing.
-        scoring_function: str (default: balanced accuracy)
+        scoring_function: str (default: balanced_accuracy)
             Function used to evaluate the goodness of a given pipeline for the
             classification problem. By default, balanced class accuracy is used.
             TPOT assumes that any function with "error" or "loss" in the name is meant to
@@ -147,13 +146,7 @@ class TPOT(BaseEstimator):
         self._pbar = None
         self._gp_generation = 0
         self.random_state = random_state
-        
-
-        if scoring_function is None:
-            self.scoring_function = make_scorer(balanced_accuracy)
-        else:
-            self.scoring_function = scoring_function
-
+        self.scoring_function = scoring_function
         self.num_cv_folds = num_cv_folds
 
         self._setup_pset()
@@ -397,7 +390,7 @@ class TPOT(BaseEstimator):
             raise ValueError(('A pipeline has not yet been optimized. '
                               'Please call fit() first.'))
 
-        return make_scorer(balanced_accuracy)(self._fitted_pipeline, testing_features.astype(np.float64), testing_classes)
+        return SCORERS[self.scoring_function](self._fitted_pipeline, testing_features.astype(np.float64), testing_classes)
 
     def set_params(self, **params):
         """Set the parameters of a TPOT instance
@@ -718,7 +711,7 @@ def main():
                         type=int, help='The number of folds to evaluate each pipeline over in k-fold cross-validation during the '
                                        'TPOT pipeline optimization process.')
 
-    parser.add_argument('-scoring', action='store', dest='SCORING_FN', default=None,
+    parser.add_argument('-scoring', action='store', dest='SCORING_FN', default='balanced_accuracy',
                         type=str, help='Function used to evaluate the goodness of a given pipeline for the '
                         'classification problem. By default, balanced class accuracy is used. '
                         'TPOT assumes that any function with "error" or "loss" in the name is meant'
@@ -755,8 +748,6 @@ def main():
             arg_val = args.__dict__[arg]
             if arg == 'DISABLE_UPDATE_CHECK':
                 continue
-            elif arg == 'SCORING_FN' and args.__dict__[arg] is None:
-                arg_val = 'balanced_accuracy'
             print('{}\t=\t{}'.format(arg, arg_val))
         print('')
 
@@ -778,9 +769,9 @@ def main():
 
     if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
         print('\nTraining score: {}'.format(max([tpot._hof.keys[x].wvalues[1] for x in range(len(tpot._hof.keys))])))
-        print('Holdout balanced accuracy: {}'.format(tpot.score(testing_features, testing_classes)))
+        print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
     elif args.VERBOSITY >= 3 and tpot._hof:
-        print('Final Pareto front holdout balanced accuracy:')
+        print('\nFinal Pareto front holdout scores:')
         for pipeline, pipeline_scores in zip(tpot._hof.items, reversed(tpot._hof.keys)):
             print('{}\t{}\t{}'.format(-pipeline_scores.wvalues[0],
                                       tpot._hof_fitted_pipelines[str(pipeline)].score(testing_features, testing_classes),
