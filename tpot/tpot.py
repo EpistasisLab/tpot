@@ -37,6 +37,7 @@ from sklearn.cross_validation import train_test_split, cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
+from sklearn.metrics import make_scorer
 
 from update_checker import update_check
 
@@ -146,9 +147,10 @@ class TPOT(BaseEstimator):
         self._pbar = None
         self._gp_generation = 0
         self.random_state = random_state
+        
 
         if scoring_function is None:
-            self.scoring_function = balanced_accuracy
+            self.scoring_function = make_scorer(balanced_accuracy)
         else:
             self.scoring_function = scoring_function
 
@@ -395,17 +397,16 @@ class TPOT(BaseEstimator):
             raise ValueError(('A pipeline has not yet been optimized. '
                               'Please call fit() first.'))
 
-        return balanced_accuracy(self._fitted_pipeline, testing_features.astype(np.float64), testing_classes)
+        return make_scorer(balanced_accuracy)(self._fitted_pipeline, testing_features.astype(np.float64), testing_classes)
 
     def set_params(self, **params):
         """Set the parameters of a TPOT instance
 
         Returns
         -------
-        self
+            self
         """
         self.__init__(**params)
-
         return self
 
     def export(self, output_file_name):
