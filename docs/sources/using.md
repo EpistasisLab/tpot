@@ -157,7 +157,7 @@ Note that you can pass several parameters to the TPOT instantiation call:
 </tr>
 <tr>
 <td>scoring_function</td>
-<td>"accuracy", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "log_loss", "mean_absolute_error", "mean_squared_error", "median_absolute_error", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "r2", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc" or a callable function with signature <b>scorer(estimator, X, y)</b></td>
+<td>"accuracy", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "log_loss", "mean_absolute_error", "mean_squared_error", "median_absolute_error", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "r2", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc" or a callable function with signature <b>scorer(y_true, y_pred)</b></td>
 <td>Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
 </tr>
 <tr>
@@ -232,10 +232,10 @@ Check our [examples](examples/MNIST_Example/) to see TPOT applied to some specif
 TPOT makes use of `sklearn.cross_validation.cross_val_score`, and as such has the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
 
 1. You can pass in a string from the list described in the table above. Any other strings will cause internal issues that may break your code down the line.
-2. You can pass in a function with the signature `scorer(estimator, X, y)` that takes in a scikit-learn estimator (so in TPOT's case, a pipeline that you can call methods like `predict()` on. To do this, you should implement your own function. See the example below for further explanation.
+
+2. You can pass in a function with the signature `scorer(y_true, y_pred)` that takes in a scikit-learn estimator (so in TPOT's case, a pipeline that you can call methods like `predict()` on. To do this, you should implement your own function. See the example below for further explanation.
 
 ```Python
-def accuracy(estimator, X, y):
-    y_pred = estimator.predict(X)
-    return float(sum(y_pred == y)) / len(y)
+def accuracy(y_true, y_pred):
+    return float(sum(y_pred == y_true)) / len(y_true)
 ```

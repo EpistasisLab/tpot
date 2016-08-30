@@ -37,6 +37,7 @@ from sklearn.cross_validation import train_test_split, cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
+from sklearn.metrics import make_scorer
 
 from update_checker import update_check
 
@@ -95,6 +96,8 @@ class TPOT(BaseEstimator):
              'median_absolute_error', 'precision', 'precision_macro', 'precision_micro',
              'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro',
              'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc']
+             
+              or a callable function with signature scorer(y_true, y_pred)
         num_cv_folds: int (default: 3)
             The number of folds to evaluate each pipeline over in k-fold cross-validation
             during the TPOT pipeline optimization process
@@ -146,7 +149,19 @@ class TPOT(BaseEstimator):
         self._pbar = None
         self._gp_generation = 0
         self.random_state = random_state
-        self.scoring_function = scoring_function
+
+        # If the user passed a custom scoring function, store it in the sklearn SCORERS dictionary
+        if hasattr(scoring_function, '__call__'):
+            scoring_function_name = scoring_function.__name__
+            if 'loss' in scoring_function_name or 'error' in scoring_function_name:
+                greater_is_better = False
+            else:
+                greater_is_better = True
+            SCORERS[scoring_function_name] = make_scorer(scoring_function, greater_is_better=greater_is_better)
+
+        self.scoring_function = scoring_function_name
+        print(scoring_function_name)
+        print(SCORERS[scoring_function_name])
         self.num_cv_folds = num_cv_folds
 
         self._setup_pset()
