@@ -371,7 +371,7 @@ class TPOT(BaseEstimator):
         return self.predict(features)
 
     def score(self, testing_features, testing_classes):
-        """Estimates the balanced testing accuracy of the optimized pipeline.
+        """Estimates the testing score of the optimized pipeline using the scoring function provided to TPOT
 
         Parameters
         ----------
@@ -383,7 +383,7 @@ class TPOT(BaseEstimator):
         Returns
         -------
         accuracy_score: float
-            The estimated test set accuracy
+            The estimated test score
 
         """
         if self._fitted_pipeline is None:
@@ -397,7 +397,8 @@ class TPOT(BaseEstimator):
 
         Returns
         -------
-            self
+        self
+
         """
         self.__init__(**params)
         return self
@@ -433,6 +434,7 @@ class TPOT(BaseEstimator):
         Returns
         -------
         sklearn_pipeline: sklearn.pipeline.Pipeline
+
         """
         sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr))
 
@@ -453,14 +455,15 @@ class TPOT(BaseEstimator):
         Returns
         -------
         None
+
         """
-        for (name, obj) in pipeline_steps:
+        for (_, obj) in pipeline_steps:
             if hasattr(obj, 'steps'):
-                recurse_pipeline(obj.steps)
+                self._set_param_recursive(obj.steps)
             elif hasattr(obj, 'transformer_list'):
-                recurse_pipeline(obj.transformer_list)
+                self._set_param_recursive(obj.transformer_list)
             elif hasattr(obj, 'estimators'):
-                recurse_pipeline(obj.estimators)
+                self._set_param_recursive(obj.estimators)
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
@@ -485,6 +488,7 @@ class TPOT(BaseEstimator):
         fitness: float
             Returns a float value indicating the `individual`'s fitness
             according to its performance on the provided data
+
         """
         try:
             if self.max_time_mins:
