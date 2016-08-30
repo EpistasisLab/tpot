@@ -158,10 +158,10 @@ class TPOT(BaseEstimator):
             else:
                 greater_is_better = True
             SCORERS[scoring_function_name] = make_scorer(scoring_function, greater_is_better=greater_is_better)
+            self.scoring_function = scoring_function_name
+        else:
+            self.scoring_function = scoring_function
 
-        self.scoring_function = scoring_function_name
-        print(scoring_function_name)
-        print(SCORERS[scoring_function_name])
         self.num_cv_folds = num_cv_folds
 
         self._setup_pset()
