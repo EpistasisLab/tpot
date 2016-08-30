@@ -9,6 +9,7 @@ from tpot.decorators import _gp_new_generation
 import pandas as pd
 import numpy as np
 from collections import Counter
+from itertools import compress
 import warnings
 import inspect
 import hashlib
@@ -41,6 +42,35 @@ testing_data['group'] = 'testing'
 training_testing_data = pd.concat([training_data, testing_data])
 most_frequent_class = Counter(training_classes).most_common(1)[0][0]
 training_testing_data['guess'] = most_frequent_class
+
+
+filename = '/home/ansohn/Python/data/oj2_imp_noars_xpd751312_pkyr.txt'
+# tpot_data = np.recfromcsv(filename, delimiter='\t')
+# ekf_features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
+# ekf_classes = ekf_features[:, 10]
+# ekf_features = np.delete(ekf_features, 10, axis=1)
+
+tpot_data = pd.read_csv(filename, sep='\t')
+ekf_classes = tpot_data['class'].values
+ekf_features = tpot_data.drop('class', axis=1)
+
+training_ekf_features, testing_ekf_features, training_ekf_classes, testing_ekf_classes =\
+                                            train_test_split(ekf_features, ekf_classes,
+                                                             train_size=0.75, test_size=0.25, random_state=42)
+
+ekf_training = pd.DataFrame(training_ekf_features)
+ekf_training['class'] = training_ekf_classes
+ekf_training['group'] = 'training'
+
+ekf_testing = pd.DataFrame(testing_ekf_features)
+ekf_testing['class'] = 0
+ekf_testing['group'] = 'testing'
+
+ekf_training_testing = pd.concat([ekf_training, ekf_testing])
+most_frequent_class = Counter(ekf_training).most_common(1)[0][0]
+ekf_training_testing['guess'] = most_frequent_class
+
+expert_source = [[1, 0, 0, 0, 1, 1, 0, 0, 0, 0], [0.23638461, 0.00279466, 0.93006916, 0.84643946, 0.26143625, 0.37413106, 0.20159359, 0.18998851, 0.93691188, 0.95331888]]
 
 for column in training_testing_data.columns.values:
     if type(column) != str:
@@ -356,28 +386,36 @@ def test_select_kbest_4():
 def test_ekf_1():
     """Ensure that the expert knowledge provided mask chooses the right subset of input data to train"""
     tpot_obj = TPOT()
-
+    tpot_obj.expert_source = expert_source
+    non_feature_columns = ['class', 'group', 'guess']
+    
     ekf_index = 0
-    expert_source_test = [np.random.randint(2, size=10)]
-    ekf_source_test = np.array(expert_source_test[ekf_index])
-    ekf_subset_test = list(input_df[:, ekf_source_test])
+    ekf_source_test = np.array(tpot_obj.expert_source[ekf_index])
+    ekf_subset_test = list(compress(ekf_training_testing.columns.values, ekf_source_test))
 
-    assert np.array_equal(tpot_obj._ekf(input_df, ekf_index, k_best=None), ekf_subset_test)
+    ekf_subset_array = ekf_features.loc[:, ekf_subset_test].copy()
+    ekf_subset_array = pd.concat([ekf_subset_array, ekf_training_testing[non_feature_columns]], axis=1)
+
+    assert np.array_equal(tpot_obj._ekf(ekf_training_testing, ekf_index, k_best=10).sort_index(), ekf_subset_array)
 
 def test_ekf_2():
     """ Ensure that the expert knowledge provided subset chooses the right subset of input data to train"""
     tpot_obj = TPOT()
+    tpot_obj.expert_source = expert_source
+    non_feature_columns = ['class', 'group', 'guess']
 
-    ekf_index = 0
+    ekf_index = 1
     k_best = 5
-    expert_source_test = [np.random.random(10,)]
-    
-    ekf_source_test = np.argsort(expert_source_test)[::-1][:]
+
+    ekf_source_test = np.argsort(expert_source[ekf_index])[::-1][:]
     ekf_source_test = ekf_source_test[:k_best]
 
-    ekf_subset_test = list(input_df[:, ekf_source_test])
+    # ekf_subset_test = list(training_ekf_features[:, ekf_source_test])
+    ekf_subset_test = list(ekf_training_testing.columns.values[ekf_source_test])
+    ekf_subset_array = tpot_data.loc[:, ekf_subset_test].copy()
+    ekf_subset_array = pd.concat([ekf_subset_array, ekf_training_testing[non_feature_columns]], axis=1)
 
-    assert np.array_equal(tpot_obj._ekf(input_df, ekf_index, k_best), ekf_subset_test)
+    assert np.array_equal(tpot_obj._ekf(ekf_training_testing, ekf_index=1, k_best=5).sort_index(), ekf_subset_array)
 
 def test_gp_new_generation():
     """Assert that the gp_generation count gets incremented when _gp_new_generation is called"""
