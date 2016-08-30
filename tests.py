@@ -44,7 +44,7 @@ most_frequent_class = Counter(training_classes).most_common(1)[0][0]
 training_testing_data['guess'] = most_frequent_class
 
 
-filename = '/home/ansohn/Python/data/oj2_imp_noars_xpd751312_pkyr.txt'
+filename = './tutorials/data/oj2_imp_noars_xpd751312_pkyr.txt'
 # tpot_data = np.recfromcsv(filename, delimiter='\t')
 # ekf_features = tpot_data.view((np.float64, len(tpot_data.dtype.names)))
 # ekf_classes = ekf_features[:, 10]
