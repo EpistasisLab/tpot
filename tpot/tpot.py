@@ -45,7 +45,7 @@ from sklearn.kernel_approximation import RBFSampler, Nystroem
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
 from sklearn.cross_validation import train_test_split
 from mdr import MDR
-from itertools import combinations
+from itertools import combinations, compress
 
 import warnings
 from update_checker import update_check
@@ -631,11 +631,11 @@ class TPOT(object):
         """
         ekf_index = abs(ekf_index) % len(self.expert_source)
         k_best = max(1, min(k_best, input_df.shape[1]))
-
+        
         # Mask filter
         if set(self.expert_source[ekf_index]) in [set([True, False]), set([True]), set([False])]:
             ekf_source = np.array(self.expert_source[ekf_index])
-            ekf_subset = list(input_df.drop(self.non_feature_columns, axis=1).columns.values[ekf_source]) + self.non_feature_columns
+            ekf_subset = list(compress(input_df.drop(self.non_feature_columns, axis=1).columns.values, ekf_source)) + self.non_feature_columns
         # Feature importance filter
         else:
             # Assume higher feature importance score means it's a better feature
