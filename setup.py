@@ -35,6 +35,7 @@ This project is hosted at https://github.com/rhiever/tpot
 ''',
     zip_safe=True,
     install_requires=['numpy', 'scipy', 'scikit-learn', 'deap', 'update_checker', 'tqdm'],
+    extras_require={'xgboost': ['xgboost']},
     classifiers=[
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
