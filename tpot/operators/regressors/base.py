@@ -18,11 +18,12 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import *
-from .rfe import *
-from .select_fwe import *
-from .select_kbest import *
-from .select_percentile import *
-from .variance_threshold import *
-from .select_from_model import *
-from .select_from_model_r import *
+from tpot.operators import Operator
+
+
+class Regressor(Operator):
+    """Parent class for regressors in TPOT"""
+
+    root = True  # Whether this operator type can be the root of the tree
+    regression = True  # Whether this operator can be used in a regression problem
+    classification = False  # Whether the operator can be used for classification

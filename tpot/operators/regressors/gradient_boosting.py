@@ -18,32 +18,34 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Selector
-from sklearn.feature_selection import RFE
-from sklearn.svm import SVC
+from .base import Regressor
+from sklearn.ensemble import GradientBoostingRegressor
 
 
-class TPOTRFE(Selector):
-    """Uses scikit-learn's RFE to transform the feature set
+class TPOTGradientBRegressor(Regressor):
+    """Fits a Gradient Boosting Regressor
 
     Parameters
     ----------
-    step: float
-        The percentage of features to drop each iteration
+    learning_rate: float
+        Shrinks the contribution of each tree by learning_rate
+    max_features: float
+        Maximum number of features to use (proportion of total features)
 
     """
-    import_hash = {'sklearn.feature_selection': ['RFE'], 'sklearn.svm': ['SVC']}
-    sklearn_class = RFE
-    arg_types = (float, )
-    regression = False  # Can not be used in regression due to SVC estimator
+    import_hash = {'sklearn.ensemble': ['GradientBoostingRegressor']}
+    sklearn_class = GradientBoostingRegressor
+    arg_types = (float, float)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, step):
-        step = max(min(0.99, step), 0.1)
+    def preprocess_args(self, learning_rate, max_features):
+        learning_rate = min(1., max(learning_rate, 0.0001))
+        max_features = min(1., max(0., learning_rate))
 
         return {
-            'step': step,
-            'estimator': SVC(kernel='linear', random_state=42)
+            'learning_rate': learning_rate,
+            'max_features': max_features,
+            'n_estimators': 500
         }

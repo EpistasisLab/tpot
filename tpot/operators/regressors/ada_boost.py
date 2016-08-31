@@ -18,11 +18,30 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import *
-from .rfe import *
-from .select_fwe import *
-from .select_kbest import *
-from .select_percentile import *
-from .variance_threshold import *
-from .select_from_model import *
-from .select_from_model_r import *
+from .base import Regressor
+from sklearn.ensemble import AdaBoostRegressor
+
+
+class TPOTAdaBoostClassifier(Regressor):
+    """Fits an AdaBoost Regressor
+
+    Parameters
+    ----------
+    learning_rate: float
+        Learning rate shrinks the contribution of each classifier by learning_rate.
+
+    """
+    import_hash = {'sklearn.ensemble': ['AdaBoostRegressor']}
+    sklearn_class = AdaBoostRegressor
+    arg_types = (float, )
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self, learning_rate):
+        learning_rate = min(1., max(0.0001, learning_rate))
+
+        return {
+            'learning_rate': learning_rate,
+            'n_estimators': 500
+        }

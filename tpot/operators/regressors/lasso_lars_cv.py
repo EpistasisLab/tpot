@@ -18,11 +18,28 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import *
-from .rfe import *
-from .select_fwe import *
-from .select_kbest import *
-from .select_percentile import *
-from .variance_threshold import *
-from .select_from_model import *
-from .select_from_model_r import *
+from ...gp_types import Bool
+from .base import Regressor
+from sklearn.linear_model import LassoLarsCV
+
+
+class TPOTLassoLarsCV(Regressor):
+    """Fits a LassoLarsCV Regressor
+
+    Parameters
+    ----------
+    normalize: bool
+        If True, the regressors X will be normalized before regression.
+
+    """
+    import_hash = {'sklearn.linear_model': ['LassoLarsCV']}
+    sklearn_class = LassoLarsCV
+    arg_types = (Bool, )
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self, normalize):
+        return {
+            'normalize': normalize
+        }

@@ -18,11 +18,33 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import *
-from .rfe import *
-from .select_fwe import *
-from .select_kbest import *
-from .select_percentile import *
-from .variance_threshold import *
-from .select_from_model import *
-from .select_from_model_r import *
+from .base import Regressor
+from sklearn.linear_model import ElasticNet
+
+
+class TPOTElasticNet(Regressor):
+    """Fits a Elastic Net Regressor
+
+    Parameters
+    ----------
+    alpha: float
+        Constant that multiplies the penalty terms.
+    l1_ratio: int
+        The ElasticNet mixing parameter, with 0 <= l1_ratio <= 1
+
+    """
+    import_hash = {'sklearn.linear_model': ['ElasticNet']}
+    sklearn_class = ElasticNet
+    arg_types = (float, float)
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self, alpha, l1_ratio):
+        alpha = min(1., max(0.0001, alpha))
+        l1_ratio = min(1., max(0.0001, l1_ratio))
+
+        return {
+            'alpha': alpha,
+            'l1_ratio': l1_ratio
+        }

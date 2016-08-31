@@ -21,6 +21,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 import numpy as np
 from sklearn.metrics import make_scorer, SCORERS
 
+
 def balanced_accuracy(y_true, y_pred):
     """Default scoring function: balanced accuracy
 
