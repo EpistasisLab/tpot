@@ -16,6 +16,12 @@ TPOT offers several arguments that can be provided at the command line:
 <th>Effect</th>
 </tr>
 <tr>
+<td>-mode</td>
+<td>MODE</td>
+<td>['classification', 'regression']</td>
+<td>Whether TPOT will run in regression or classification mode</td>
+</tr>
+<tr>
 <td>-is</td>
 <td>INPUT_SEPARATOR</td>
 <td>Any string</td>
@@ -111,15 +117,15 @@ We've taken care to design the TPOT interface to be as similar as possible to sc
 TPOT can be imported just like any regular Python module. To import TPOT, type:
 
 ```Python
-from tpot import TPOT
+from tpot import TPOTClassifier
 ```
 
 then create an instance of TPOT as follows:
 
 ```Python
-from tpot import TPOT
+from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOT()
+pipeline_optimizer = TPOTClassifier()
 ```
 
 Note that you can pass several parameters to the TPOT instantiation call:
@@ -156,7 +162,7 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>The number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT pipeline optimization process.</td>
 </tr>
 <tr>
-<td>scoring_function</td>
+<td>scoring</td>
 <td>"accuracy", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "log_loss", "mean_absolute_error", "mean_squared_error", "median_absolute_error", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "r2", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc" or a callable function with signature <b>scorer(y_true, y_pred)</b></td>
 <td>Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
 </tr>
@@ -185,17 +191,17 @@ Note that you can pass several parameters to the TPOT instantiation call:
 Some example code with custom TPOT parameters might look like:
 
 ```Python
-from tpot import TPOT
+from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOT(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
 ```
 
 Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize a pipeline based on a data set with the `fit` function:
 
 ```Python
-from tpot import TPOT
+from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOT(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 ```
 
@@ -204,9 +210,9 @@ The `fit()` function takes in a training data set and uses k-fold cross-validati
 You can then proceed to evaluate the final pipeline on the testing set with the `score()` function:
 
 ```Python
-from tpot import TPOT
+from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOT(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 print(pipeline_optimizer.score(testing_features, testing_classes))
 ```
@@ -214,9 +220,9 @@ print(pipeline_optimizer.score(testing_features, testing_classes))
 Finally, you can tell TPOT to export the corresponding Python code for the optimized pipeline to a text file with the `export()` function:
 
 ```Python
-from tpot import TPOT
+from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOT(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 print(pipeline_optimizer.score(testing_features, testing_classes))
 pipeline_optimizer.export('tpot_exported_pipeline.py')
