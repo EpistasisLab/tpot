@@ -44,7 +44,7 @@ def test_init_custom_parameters():
 
     tpot_obj = TPOTClassifier(population_size=500, generations=1000,
                     mutation_rate=0.05, crossover_rate=0.9,
-                    scoring='mean_squared_error', num_cv_folds=10,
+                    scoring='accuracy', num_cv_folds=10,
                     verbosity=1, random_state=42,
                     disable_update_check=True)
 
@@ -52,7 +52,7 @@ def test_init_custom_parameters():
     assert tpot_obj.generations == 1000
     assert tpot_obj.mutation_rate == 0.05
     assert tpot_obj.crossover_rate == 0.9
-    assert tpot_obj.scoring_function == 'mean_squared_error'
+    assert tpot_obj.scoring_function == 'accuracy'
     assert tpot_obj.num_cv_folds == 10
     assert tpot_obj.max_time_mins is None
     assert tpot_obj.verbosity == 1

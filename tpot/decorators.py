@@ -45,15 +45,13 @@ def _gp_new_generation(func):
             # Print only the best individual fitness
             if self.verbosity == 2:
                 high_score = abs(max([self._hof.keys[x].wvalues[1] for x in range(len(self._hof.keys))]))
-                self._pbar.write('Generation {0} - Current best internal CV score: {1}'.
-                    format(self._gp_generation, high_score))
+                self._pbar.write('Generation {0} - Current best internal CV score: {1}'.format(self._gp_generation, high_score))
 
             # Print the entire Pareto front
             elif self.verbosity == 3:
                 self._pbar.write('Generation {} - Current Pareto front scores:'.format(self._gp_generation))
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
-                    self._pbar.write('{}\t{}\t{}'.
-                        format(-pipeline_scores.wvalues[0], abs(pipeline_scores.wvalues[1]), pipeline))
+                    self._pbar.write('{}\t{}\t{}'.format(-pipeline_scores.wvalues[0], abs(pipeline_scores.wvalues[1]), pipeline))
                 self._pbar.write('')
 
             # Sometimes the actual evaluated pipeline count does not match the
