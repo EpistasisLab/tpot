@@ -18,29 +18,28 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.decomposition import RandomizedPCA
+from ...gp_types import Bool
+from .base import Regressor
+from sklearn.linear_model import LassoLarsCV
 
-class TPOTRandomizedPCA(Preprocessor):
 
-    """Uses scikit-learn's RandomizedPCA to transform the feature set
+class TPOTLassoLarsCV(Regressor):
+    """Fits a LassoLarsCV Regressor
 
     Parameters
     ----------
-    iterated_power: int
-        Number of iterations for the power method. [1, 10]
-    """
+    normalize: bool
+        If True, the regressors X will be normalized before regression.
 
-    import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
-    sklearn_class = RandomizedPCA
-    arg_types = (int, )
+    """
+    import_hash = {'sklearn.linear_model': ['LassoLarsCV']}
+    sklearn_class = LassoLarsCV
+    arg_types = (Bool, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, iterated_power):
-        iterated_power = min(10, max(1, iterated_power))
-
+    def preprocess_args(self, normalize):
         return {
-            'iterated_power': iterated_power
+            'normalize': normalize
         }

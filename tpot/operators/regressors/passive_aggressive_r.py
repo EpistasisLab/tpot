@@ -18,34 +18,37 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Classifier
-from sklearn.ensemble import GradientBoostingClassifier
+from .base import Regressor
+from sklearn.linear_model import PassiveAggressiveRegressor
 
 
-class TPOTGradientBoosting(Classifier):
-    """Fits a Gradient Boosting classifier
+class TPOTPassiveAggressiveR(Regressor):
+    """Fits a Passive Aggressive Regressor
 
     Parameters
     ----------
-    learning_rate: float
-        Shrinks the contribution of each tree by learning_rate
-    max_features: float
-        Maximum number of features to use (proportion of total features)
+    C: float
+        Penalty parameter C of the error term.
+    loss: int
+        Integer used to determine the loss function
+        (either 'epsilon_insensitive' or 'squared_epsilon_insensitive')
 
     """
-    import_hash = {'sklearn.ensemble': ['GradientBoostingClassifier']}
-    sklearn_class = GradientBoostingClassifier
-    arg_types = (float, float)
+    import_hash = {'sklearn.linear_model': ['PassiveAggressiveRegressor']}
+    sklearn_class = PassiveAggressiveRegressor
+    arg_types = (float, int)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, learning_rate, max_features):
-        learning_rate = min(1., max(learning_rate, 0.0001))
-        max_features = min(1., max(0., learning_rate))
+    def preprocess_args(self, C, loss):
+        loss_values = ['epsilon_insensitive', 'squared_epsilon_insensitive']
+        loss_selection = loss_values[loss % len(loss_values)]
+
+        C = min(1., max(0.0001, C))
 
         return {
-            'learning_rate': learning_rate,
-            'max_features': max_features,
-            'n_estimators': 500
+            'C': C,
+            'loss': loss_selection,
+            'fit_intercept': True
         }

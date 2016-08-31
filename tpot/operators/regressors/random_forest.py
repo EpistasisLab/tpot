@@ -18,29 +18,28 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.decomposition import RandomizedPCA
+from .base import Regressor
+from sklearn.ensemble import RandomForestRegressor
 
-class TPOTRandomizedPCA(Preprocessor):
 
-    """Uses scikit-learn's RandomizedPCA to transform the feature set
+class TPOTRandomForestClassifier(Regressor):
+
+    """Fits a random forest Regressor.
 
     Parameters
     ----------
-    iterated_power: int
-        Number of iterations for the power method. [1, 10]
+    None
     """
 
-    import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
-    sklearn_class = RandomizedPCA
-    arg_types = (int, )
+    import_hash = {'sklearn.ensemble': ['RandomForestRegressor']}
+    sklearn_class = RandomForestRegressor
+    arg_types = ()
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, iterated_power):
-        iterated_power = min(10, max(1, iterated_power))
-
+    def preprocess_args(self):
+        """Preprocess the arguments in case they need to be limited to a certain value range"""
         return {
-            'iterated_power': iterated_power
+            'n_estimators': 500
         }

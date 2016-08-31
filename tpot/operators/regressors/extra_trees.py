@@ -18,29 +18,33 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.decomposition import RandomizedPCA
+from .base import Regressor
+from sklearn.ensemble import ExtraTreesRegressor
 
-class TPOTRandomizedPCA(Preprocessor):
 
-    """Uses scikit-learn's RandomizedPCA to transform the feature set
+class TPOTExtraTreesRegressor(Regressor):
+    """Fits an Extra Trees Regressor
 
     Parameters
     ----------
-    iterated_power: int
-        Number of iterations for the power method. [1, 10]
-    """
+    criterion: int
+        Integer that is used to select from the list of valid criteria,
+        either 'gini', or 'entropy'
+    max_features: float
+        The number of features to consider when looking for the best split
 
-    import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
-    sklearn_class = RandomizedPCA
-    arg_types = (int, )
+    """
+    import_hash = {'sklearn.ensemble': ['ExtraTreesRegressor']}
+    sklearn_class = ExtraTreesRegressor
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, iterated_power):
-        iterated_power = min(10, max(1, iterated_power))
+    def preprocess_args(self, max_features):
+        max_features = min(1., max(0., max_features))
 
         return {
-            'iterated_power': iterated_power
+            'max_features': max_features,
+            'n_estimators': 500
         }

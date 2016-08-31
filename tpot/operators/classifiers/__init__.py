@@ -31,3 +31,7 @@ from .passive_aggressive import *
 from .logistic_regression import *
 from .knnc import *
 from .gradient_boosting import *
+try:
+    from .xg_boost import *
+except ImportError:
+    pass

@@ -18,29 +18,33 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.decomposition import RandomizedPCA
+from ...gp_types import Bool
+from .base import Regressor
+from sklearn.svm import LinearSVR
 
-class TPOTRandomizedPCA(Preprocessor):
 
-    """Uses scikit-learn's RandomizedPCA to transform the feature set
+class TPOTLinearSVR(Regressor):
+    """Fits a Linear Support Vector Regressor
 
     Parameters
     ----------
-    iterated_power: int
-        Number of iterations for the power method. [1, 10]
-    """
+    C: float
+        Penalty parameter C of the error term.
+    dual: bool
+        Select the algorithm to either solve the dual or primal optimization problem.
 
-    import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
-    sklearn_class = RandomizedPCA
-    arg_types = (int, )
+    """
+    import_hash = {'sklearn.svm': ['LinearSVR']}
+    sklearn_class = LinearSVR
+    arg_types = (float, Bool)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, iterated_power):
-        iterated_power = min(10, max(1, iterated_power))
+    def preprocess_args(self, C, dual):
+        C = min(25., max(0.0001, C))
 
         return {
-            'iterated_power': iterated_power
+            'C': C,
+            'dual': dual
         }

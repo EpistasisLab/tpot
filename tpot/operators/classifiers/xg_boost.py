@@ -18,29 +18,34 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.decomposition import RandomizedPCA
+from .base import Classifier
+from xgboost import XGBClassifier
 
-class TPOTRandomizedPCA(Preprocessor):
 
-    """Uses scikit-learn's RandomizedPCA to transform the feature set
+class TPOTXGBClassifier(Classifier):
+    """Fits an XGBoost Classifier
 
     Parameters
     ----------
-    iterated_power: int
-        Number of iterations for the power method. [1, 10]
-    """
+    learning_rate: float
+        Shrinks the contribution of each tree by learning_rate
+    subsample: float
+        Maximum number of features to use (proportion of total features)
 
-    import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
-    sklearn_class = RandomizedPCA
-    arg_types = (int, )
+    """
+    import_hash = {'xgboost': ['XGBClassifier']}
+    sklearn_class = XGBClassifier
+    arg_types = (float, float)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, iterated_power):
-        iterated_power = min(10, max(1, iterated_power))
+    def preprocess_args(self, learning_rate, subsample):
+        learning_rate = min(1., max(learning_rate, 0.0001))
+        subsample = min(1., max(subsample, 0.1))
 
         return {
-            'iterated_power': iterated_power
+            'learning_rate': learning_rate,
+            'subsample': subsample,
+            'n_estimators': 500
         }

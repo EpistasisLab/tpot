@@ -18,30 +18,43 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Classifier
-from sklearn.ensemble import ExtraTreesClassifier
+from .base import Selector
+from sklearn.feature_selection import SelectFromModel
+from sklearn.ensemble import ExtraTreesRegressor
 
 
-class TPOTExtraTreesClassifier(Classifier):
-    """Fits an Extra Trees Classifier
+class TPOTSelectFromModelR(Selector):
+    """Uses scikit-learn's ExtraTreesRegressor combined with SelectFromModel
+    to transform the feature set.
 
     Parameters
     ----------
+    threshold: float
+        Features whose importance is greater or equal are kept while the others
+        are discarded.
     criterion: int
+        For the ExtraTreesRegressor:
         Integer that is used to select from the list of valid criteria,
         either 'gini', or 'entropy'
     max_features: float
+        For the ExtraTreesRegressor:
         The number of features to consider when looking for the best split
 
     """
-    import_hash = {'sklearn.ensemble': ['ExtraTreesClassifier']}
-    sklearn_class = ExtraTreesClassifier
-    arg_types = (int, float)
+    import_hash = {
+        'sklearn.feature_selection': ['SelectFromModel'],
+        'sklearn.ensemble':          ['ExtraTreesRegressor']
+    }
+    sklearn_class = SelectFromModel
+    arg_types = (float, int, float)
+    classification = False
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, criterion, max_features):
+    def preprocess_args(self, threshold, criterion, max_features):
+        threshold = min(1., max(0., threshold))
+
         # Select criterion string from list of valid parameters
         criterion_values = ['gini', 'entropy']
         criterion_selection = criterion_values[criterion % len(criterion_values)]
@@ -49,7 +62,6 @@ class TPOTExtraTreesClassifier(Classifier):
         max_features = min(1., max(0., max_features))
 
         return {
-            'criterion': criterion_selection,
-            'max_features': max_features,
-            'n_estimators': 500
+            'estimator': ExtraTreesRegressor(criterion=criterion_selection, max_features=max_features),
+            'threshold': threshold
         }

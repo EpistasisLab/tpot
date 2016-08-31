@@ -18,29 +18,12 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.decomposition import RandomizedPCA
+from tpot.operators import Operator
 
-class TPOTRandomizedPCA(Preprocessor):
 
-    """Uses scikit-learn's RandomizedPCA to transform the feature set
+class Regressor(Operator):
+    """Parent class for regressors in TPOT"""
 
-    Parameters
-    ----------
-    iterated_power: int
-        Number of iterations for the power method. [1, 10]
-    """
-
-    import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
-    sklearn_class = RandomizedPCA
-    arg_types = (int, )
-
-    def __init__(self):
-        pass
-
-    def preprocess_args(self, iterated_power):
-        iterated_power = min(10, max(1, iterated_power))
-
-        return {
-            'iterated_power': iterated_power
-        }
+    root = True  # Whether this operator type can be the root of the tree
+    regression = True  # Whether this operator can be used in a regression problem
+    classification = False  # Whether the operator can be used for classification

@@ -18,29 +18,35 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.decomposition import RandomizedPCA
+from .base import Regressor
+from sklearn.neighbors import KNeighborsRegressor
 
-class TPOTRandomizedPCA(Preprocessor):
 
-    """Uses scikit-learn's RandomizedPCA to transform the feature set
+class TPOTKNeighborsRegressor(Regressor):
+    """Fits a k-nearest neighbor Regressor
 
     Parameters
     ----------
-    iterated_power: int
-        Number of iterations for the power method. [1, 10]
-    """
+    n_neighbors: int
+        Number of neighbors to use by default for k_neighbors queries; must be a positive value
+    weights: int
+        Selects a value from the list: ['uniform', 'distance']
 
-    import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
-    sklearn_class = RandomizedPCA
-    arg_types = (int, )
+    """
+    import_hash = {'sklearn.neighbors': ['KNeighborsRegressor']}
+    sklearn_class = KNeighborsRegressor
+    arg_types = (int, int)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, iterated_power):
-        iterated_power = min(10, max(1, iterated_power))
+    def preprocess_args(self, n_neighbors, weights):
+        n_neighbors = max(min(5, n_neighbors), 2)
+
+        weights_values = ['uniform', 'distance']
+        weights_selection = weights_values[weights % len(weights_values)]
 
         return {
-            'iterated_power': iterated_power
+            'n_neighbors': n_neighbors,
+            'weights': weights_selection
         }

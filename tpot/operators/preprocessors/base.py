@@ -25,3 +25,5 @@ class Preprocessor(Operator):
     """Parent class for Feature Preprocessors in TPOT"""
 
     root = False  # Whether this operator type can be the root of the tree
+    regression = True  # Whether this operator can be used in a regression problem
+    classification = True  # Whether the operator can be used for classification

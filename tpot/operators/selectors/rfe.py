@@ -35,6 +35,7 @@ class TPOTRFE(Selector):
     import_hash = {'sklearn.feature_selection': ['RFE'], 'sklearn.svm': ['SVC']}
     sklearn_class = RFE
     arg_types = (float, )
+    regression = False  # Can not be used in regression due to SVC estimator
 
     def __init__(self):
         pass
