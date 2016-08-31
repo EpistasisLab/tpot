@@ -36,20 +36,15 @@ class TPOTExtraTreesRegressor(Regressor):
     """
     import_hash = {'sklearn.ensemble': ['ExtraTreesRegressor']}
     sklearn_class = ExtraTreesRegressor
-    arg_types = (int, float)
+    arg_types = (float, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, criterion, max_features):
-        # Select criterion string from list of valid parameters
-        criterion_values = ['gini', 'entropy']
-        criterion_selection = criterion_values[criterion % len(criterion_values)]
-
+    def preprocess_args(self, max_features):
         max_features = min(1., max(0., max_features))
 
         return {
-            'criterion': criterion_selection,
             'max_features': max_features,
             'n_estimators': 500
         }

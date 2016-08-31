@@ -154,7 +154,7 @@ class TPOTBase(BaseEstimator):
 
         if scoring:
             if isinstance(scoring, str):
-                self.scoring_function = staticmethod(get_scorer(scoring))
+                self.scoring_function = scoring
             else:
                 self.scoring_function = staticmethod(scoring)
 
@@ -417,8 +417,14 @@ class TPOTBase(BaseEstimator):
             raise ValueError(('A pipeline has not yet been optimized. '
                               'Please call fit() first.'))
 
-        return self.scoring_function(self._fitted_pipeline,
-            testing_features.astype(np.float64), testing_classes)
+        # If the scoring function is a string, we must adjust to use the sklearn
+        # scoring interface.
+        if isinstance(self.scoring_function, str):
+            return get_scorer(self.scoring_function)(self._fitted_pipeline,
+                testing_features, testing_classes)
+        else:
+            return self.scoring_function(self._fitted_pipeline,
+                testing_features.astype(np.float64), testing_classes)
 
     def set_params(self, **params):
         """Set the parameters of a TPOT instance

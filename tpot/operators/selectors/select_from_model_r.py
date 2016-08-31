@@ -33,11 +33,11 @@ class TPOTSelectFromModelR(Selector):
         Features whose importance is greater or equal are kept while the others
         are discarded.
     criterion: int
-        For the ExtraTreesClassifier:
+        For the ExtraTreesRegressor:
         Integer that is used to select from the list of valid criteria,
         either 'gini', or 'entropy'
     max_features: float
-        For the ExtraTreesClassifier:
+        For the ExtraTreesRegressor:
         The number of features to consider when looking for the best split
 
     """

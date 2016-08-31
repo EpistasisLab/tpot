@@ -20,7 +20,6 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 from .base import TPOTBase
 from .metrics import balanced_accuracy
-from sklearn.metrics import mean_squared_error
 
 
 class TPOTClassifier(TPOTBase):
@@ -43,7 +42,7 @@ class TPOTClassifier(TPOTBase):
 class TPOTRegressor(TPOTBase):
     """TPOT estimator for regression problems"""
 
-    scoring_function = staticmethod(mean_squared_error)  # Regression scoring
+    scoring_function = 'r2'  # Regression scoring
 
     def _ignore_operator(self, op):
         """Filter that describes which operators are not used
