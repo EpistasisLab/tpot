@@ -36,7 +36,7 @@ from sklearn.cross_validation import cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
-from sklearn.metrics.scorer import get_scorer
+from sklearn.metrics.scorer import make_scorer
 
 from update_checker import update_check
 
@@ -46,6 +46,7 @@ from .decorators import _gp_new_generation
 from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
+from .metrics import SCORERS
 
 
 class TPOTBase(BaseEstimator):
@@ -152,11 +153,21 @@ class TPOTBase(BaseEstimator):
 
         self.random_state = random_state
 
+        # If the user passed a custom scoring function, store it in the sklearn
+        # SCORERS dictionary
         if scoring:
-            if isinstance(scoring, str):
-                self.scoring_function = scoring
+            if hasattr(scoring, '__call__'):
+                scoring_name = scoring.__name__
+
+                if 'loss' in scoring_name or 'error' in scoring_name:
+                    greater_is_better = False
+                else:
+                    greater_is_better = True
+
+                SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
+                self.scoring_function = scoring_name
             else:
-                self.scoring_function = staticmethod(scoring)
+                self.scoring_function = scoring
 
         self.num_cv_folds = num_cv_folds
 
@@ -324,16 +335,19 @@ class TPOTBase(BaseEstimator):
 
             # Store the pipeline with the highest internal testing score
             if self._hof:
-                top_score = 0.
+                top_score = -5000.
 
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
 
                 if not self._optimized_pipeline:
-                    raise RuntimeError('A pipeline was not generated. Either '
-                                       'GP was cut short, or all pipelines '
-                                       'failed.')
+                    raise ValueError('There was an error in the TPOT optimization '
+                                     'process. This could be because the data was '
+                                     'not formatted properly, or because data for '
+                                     'a regression problem was provided to the '
+                                     'TPOTClassifier object. Please make sure you '
+                                     'passed the data to TPOT correctly.')
 
                 self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 
@@ -419,12 +433,8 @@ class TPOTBase(BaseEstimator):
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface.
-        if isinstance(self.scoring_function, str):
-            return get_scorer(self.scoring_function)(self._fitted_pipeline,
-                testing_features, testing_classes)
-        else:
-            return self.scoring_function(self._fitted_pipeline,
-                testing_features.astype(np.float64), testing_classes)
+        return SCORERS[self.scoring_function](self._fitted_pipeline,
+            testing_features.astype(np.float64), testing_classes.astype(np.float64))
 
     def set_params(self, **params):
         """Set the parameters of a TPOT instance
@@ -473,6 +483,34 @@ class TPOTBase(BaseEstimator):
 
         return eval(sklearn_pipeline, self.operators_context)
 
+    def _set_param_recursive(self, pipeline_steps, parameter, value):
+        """Recursively iterates through all objects in the pipeline and sets the given parameter to the specified value
+
+        Parameters
+        ----------
+        pipeline_steps: array-like
+            List of (str, obj) tuples from a scikit-learn pipeline or related object
+        parameter: str
+            The parameter to assign a value for in each pipeline object
+        value: any
+            The value to assign the parameter to in each pipeline object
+
+        Returns
+        -------
+        None
+
+        """
+        for (_, obj) in pipeline_steps:
+            if hasattr(obj, 'steps'):
+                self._set_param_recursive(obj.steps)
+            elif hasattr(obj, 'transformer_list'):
+                self._set_param_recursive(obj.transformer_list)
+            elif hasattr(obj, 'estimators'):
+                self._set_param_recursive(obj.estimators)
+            else:
+                if hasattr(obj, parameter):
+                    setattr(obj, parameter, value)
+
     def _evaluate_individual(self, individual, features, classes):
         """Determines the `individual`'s fitness
 
@@ -506,6 +544,10 @@ class TPOTBase(BaseEstimator):
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
+            # Fix random state when specified
+            if self.random_state:
+                self._set_param_recursive(sklearn_pipeline.steps, 'random_state', self.random_state)
+
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
             for i in range(len(individual)):
@@ -527,7 +569,7 @@ class TPOTBase(BaseEstimator):
             # to crash. Instead, assign the crashing pipeline a poor fitness
             # import traceback
             # traceback.print_exc()
-            return 5000., 0.
+            return 5000., -5000.
         finally:
             if not self._pbar.disable:
                 self._pbar.update(1)  # One more pipeline evaluated

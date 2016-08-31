@@ -76,6 +76,7 @@ def test_init_max_time_mins():
 
 def test_get_params():
     """Assert that get_params returns the exact dictionary of parameters used by TPOT"""
+
     kwargs = {
         'population_size': 500,
         'generations': 1000,

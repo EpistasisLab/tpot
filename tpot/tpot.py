@@ -19,13 +19,12 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import TPOTBase
-from .metrics import balanced_accuracy
 
 
 class TPOTClassifier(TPOTBase):
     """TPOT estimator for classification problems"""
 
-    scoring_function = staticmethod(balanced_accuracy)  # Classification scoring
+    scoring_function = 'balanced_accuracy'  # Classification scoring
 
     def _ignore_operator(self, op):
         """Filter that describes which operators are not used
