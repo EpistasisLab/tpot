@@ -567,8 +567,8 @@ class TPOTBase(BaseEstimator):
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
-            import traceback
-            traceback.print_exc()
+            # import traceback
+            # traceback.print_exc()
             return 5000., -5000.
         finally:
             if not self._pbar.disable:
