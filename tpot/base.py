@@ -428,13 +428,13 @@ class TPOTBase(BaseEstimator):
 
         """
         if self._fitted_pipeline is None:
-            raise ValueError(('A pipeline has not yet been optimized. '
-                              'Please call fit() first.'))
+            raise ValueError('A pipeline has not yet been optimized. '
+                             'Please call fit() first.')
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface.
-        return SCORERS[self.scoring_function](self._fitted_pipeline,
-            testing_features.astype(np.float64), testing_classes.astype(np.float64))
+        return abs(SCORERS[self.scoring_function](self._fitted_pipeline,
+            testing_features.astype(np.float64), testing_classes.astype(np.float64)))
 
     def set_params(self, **params):
         """Set the parameters of a TPOT instance

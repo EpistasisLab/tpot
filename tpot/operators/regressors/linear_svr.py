@@ -18,11 +18,33 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import *
-from .extra_trees import *
-from .random_forest import *
-from .knnr import *
-from .gradient_boosting import *
-from .passive_aggressive_r import *
-from .linear_svr import *
-from .elastic_net import *
+from ...gp_types import Bool
+from .base import Regressor
+from sklearn.svm import LinearSVR
+
+
+class TPOTLinearSVR(Regressor):
+    """Fits a Linear Support Vector Regressor
+
+    Parameters
+    ----------
+    C: float
+        Penalty parameter C of the error term.
+    dual: bool
+        Select the algorithm to either solve the dual or primal optimization problem.
+
+    """
+    import_hash = {'sklearn.svm': ['LinearSVR']}
+    sklearn_class = LinearSVR
+    arg_types = (float, Bool)
+
+    def __init__(self):
+        pass
+
+    def preprocess_args(self, C, dual):
+        C = min(25., max(0.0001, C))
+
+        return {
+            'C': C,
+            'dual': dual
+        }
