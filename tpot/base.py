@@ -307,7 +307,7 @@ class TPOTBase(BaseEstimator):
 
         # Start the progress bar
         if self.max_time_mins:
-            total_evals = None
+            total_evals = self.population_size
         else:
             total_evals = self.population_size * (self.generations + 1)
 
