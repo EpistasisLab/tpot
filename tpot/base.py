@@ -545,8 +545,7 @@ class TPOTBase(BaseEstimator):
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
             # Fix random state when specified
-            if self.random_state:
-                self._set_param_recursive(sklearn_pipeline.steps, 'random_state', self.random_state)
+            self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
