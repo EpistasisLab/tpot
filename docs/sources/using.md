@@ -241,7 +241,7 @@ Once this code finishes running, `tpot_exported_pipeline.py` will contain the Py
 Check our [examples](examples/MNIST_Example/) to see TPOT applied to some specific data sets.
 
 <a name="scoringfunctions"></a>
-### Scoring functions
+## Scoring functions
 
 TPOT makes use of `sklearn.cross_validation.cross_val_score`, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
 
