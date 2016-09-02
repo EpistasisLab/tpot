@@ -23,5 +23,6 @@ pages:
   - examples/IRIS_Example.md
   - examples/Titanic_Kaggle_Example.md
 - Contributing: contributing.md
+- Release Notes: releases.md
 - Citing: citing.md
 - Support: support.md
