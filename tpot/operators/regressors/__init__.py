@@ -26,3 +26,4 @@ from .gradient_boosting import *
 from .passive_aggressive_r import *
 from .linear_svr import *
 from .elastic_net import *
+from .xg_boost_r import *
