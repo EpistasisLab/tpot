@@ -34,17 +34,18 @@ class TPOTOneHotEncoder(Preprocessor):
     """
     import_hash = {'tpot.operators._auto_sklearn_onehotencoder': ['_OneHotEncoder']}
     sklearn_class = _OneHotEncoder
-    arg_types = (int, float, bool, float)
+    arg_types = (float)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, categorical_features="all", dtype=np.float,
-                 sparse=False, minimum_fraction=None):
+    def preprocess_args(self, minimum_fraction):
+
+        minimum_fraction = min(1., max(0.0001, minimum_fraction))
 
         return {
-            'categorical_features': categorical_features,
-            'dtype': dtype,
-            'sparse': sparse,
+            'categorical_features': 'all',
+            'dtype': np.float,
+            'sparse': False,
             'minimum_fraction': minimum_fraction
         }
