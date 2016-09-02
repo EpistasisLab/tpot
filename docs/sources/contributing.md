@@ -27,9 +27,9 @@ GitHub:
 
 6. Once some changes are saved locally, you can use your tweaked version of TPOT by navigating to the project's base directory and running TPOT directly from the command line:
 
-          $ python -m tpot.tpot
+          $ python -m tpot.driver
 
-    or by running script that imports and uses the TPOT module with code similar to `from tpot import TPOT`
+    or by running script that imports and uses the TPOT module with code similar to `from tpot import TPOTClassifier`
 
 7. To check your changes haven't broken any existing tests and to check new tests you've added pass run the following (note, you must have the `nose` package installed within your dev environment for this to work):
 
