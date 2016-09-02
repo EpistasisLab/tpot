@@ -23,6 +23,7 @@ from ._auto_sklearn_onehotencoder import _OneHotEncoder
 
 import numpy as np
 
+
 class TPOTOneHotEncoder(Preprocessor):
     """Uses scikit-learn's OneHotEncoder to transform the feature set
 
@@ -31,8 +32,8 @@ class TPOTOneHotEncoder(Preprocessor):
     None
 
     """
-    import_hash = {'_auto_sklearn_onehotencoder': ['_OneHotEncoder']}
-    # sklearn_class = OneHotEncoder
+    import_hash = {'tpot.operators._auto_sklearn_onehotencoder': ['_OneHotEncoder']}
+    sklearn_class = _OneHotEncoder
     arg_types = (int, float, bool, float)
 
     def __init__(self):
