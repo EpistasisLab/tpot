@@ -1,5 +1,19 @@
 We welcome you to [check the existing issues](https://github.com/rhiever/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/rhiever/tpot/issues/new) so we can discuss it.
 
+## Project layout
+
+The latest stable release of TPOT is on the [master branch](https://github.com/rhiever/tpot/tree/master), whereas the latest version of TPOT in development is on the [development branch](https://github.com/rhiever/tpot/tree/development). Make sure you are looking at and working on the correct branch if you're looking to contribute code.
+
+In terms of directory structure:
+
+* All of TPOT's code sources are in the `tpot` directory
+* The documentation sources are in the `docs` directory
+* Images in the documentation are in the `images` directory
+* Tutorials for TPOT are in the `tutorials` directory
+* Unit tests for TPOT are in the `tests.py` file
+
+Make sure to familiarize yourself with the project layout before making any major contributions, and especially make sure to send all code changes to the `development` branch.
+
 ## How to contribute
 
 The preferred way to contribute to TPOT is to fork the 
