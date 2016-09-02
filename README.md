@@ -50,6 +50,8 @@ Click on the corresponding links to find more information on TPOT usage in the d
 
 ## Examples
 
+### Classification
+
 Below is a minimal working example with the practice MNIST data set.
 
 ```python
@@ -91,6 +93,8 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 ```
+
+### Regression
 
 Similarly, TPOT can optimize pipelines for regression problems. Below is a minimal working example with the practice Boston housing prices data set.
 

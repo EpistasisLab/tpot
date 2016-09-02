@@ -21,6 +21,7 @@ pages:
 - Examples:
   - examples/MNIST_Example.md
   - examples/IRIS_Example.md
+  - examples/Boston_Example.md
   - examples/Titanic_Kaggle_Example.md
 - Contributing: contributing.md
 - Release Notes: releases.md
