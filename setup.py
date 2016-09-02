@@ -18,7 +18,7 @@ setup(
     packages=find_packages(),
     url='https://github.com/rhiever/tpot',
     license='GNU/GPLv3',
-    entry_points={'console_scripts': ['tpot=driver:main', ]},
+    entry_points={'console_scripts': ['tpot=tpot:main', ]},
     description=('Tree-based Pipeline Optimization Tool'),
     long_description='''
 A Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.
