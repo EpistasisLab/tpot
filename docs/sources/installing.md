@@ -26,6 +26,14 @@ DEAP, update_checker, and tqdm (used for verbose TPOT runs) can be installed wit
 pip install deap update_checker tqdm
 ```
 
+Optionally, install XGBoost if you would like TPOT to use XGBoost. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.
+
+```Shell
+pip install xgboost
+```
+
+If you have issues installing XGBoost, check the [XGBoost installation documentation](http://xgboost.readthedocs.io/en/latest/build.html).
+
 Finally to install TPOT itself, run the following command:
 
 ```Shell
