@@ -85,15 +85,17 @@ def main():
     parser.add_argument('INPUT_FILE', type=str, help='Data file to optimize the '
         'pipeline on; ensure that the class label column is labeled as "class".')
 
-    parser.add_argument('-h', '--help', action='help',
-        help='Show this help message and exit.')
-
-    parser.add_argument('-mode', action='store', dest='MODE',
-        choices=['classification', 'regression'], default='classification', type=str,
-        help='Whether TPOT is being used for a classification or regression problem.')
+    parser.add_argument('-h', '--help', action='help', help='Show this help message and exit.')
 
     parser.add_argument('-is', action='store', dest='INPUT_SEPARATOR', default='\t',
         type=str, help='Character used to separate columns in the input file.')
+
+    parser.add_argument('-target', action='store', dest='TARGET_NAME', default='class',
+        type=str, help='Name of the target column in the input file.')
+
+    parser.add_argument('-mode', action='store', dest='TPOT_MODE',
+        choices=['classification', 'regression'], default='classification', type=str,
+        help='Whether TPOT is being used for a classification or regression problem.')
 
     parser.add_argument('-o', action='store', dest='OUTPUT_FILE', default='',
         type=str, help='File to export the final optimized pipeline.')
@@ -102,8 +104,7 @@ def main():
         type=positive_integer, help='Number of generations to run pipeline '
         'optimization over.\nGenerally, TPOT will work better when '
         'you give it more generations (and therefore time) to optimize over. '
-        'TPOT will evaluate GENERATIONS x POPULATION_SIZE number of pipelines in '
-        'total.')
+        'TPOT will evaluate GENERATIONS x POPULATION_SIZE number of pipelines in total.')
 
     parser.add_argument('-p', action='store', dest='POPULATION_SIZE', default=100,
         type=positive_integer, help='Number of individuals in the GP population.\n'
@@ -127,7 +128,8 @@ def main():
 
     parser.add_argument('-scoring', action='store', dest='SCORING_FN', default=None,
         type=str, help='Function used to evaluate the quality of a given pipeline for '
-        'the classification problem. By default, balanced class accuracy is used. '
+        'the problem. By default, balanced accuracy is used for classification and mean '
+        'squared error is used for regression. '
         'TPOT assumes that this scoring function should be maximized, i.e., '
         'higher is better. Offers the same options as cross_val_score: '
         '"accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", '
@@ -166,18 +168,25 @@ def main():
             if arg == 'DISABLE_UPDATE_CHECK':
                 continue
             elif arg == 'SCORING_FN' and args.__dict__[arg] is None:
-                arg_val = 'balanced_accuracy'
+                if args.TPOT_MODE == 'classification':
+                    arg_val = 'balanced_accuracy'
+                else:
+                    arg_val = 'mean_squared_error'
             print('{}\t=\t{}'.format(arg, arg_val))
         print('')
 
     input_data = np.recfromcsv(args.INPUT_FILE, delimiter=args.INPUT_SEPARATOR, dtype=np.float64)
+    if args.TARGET_NAME not in input_data.dtype.names:
+        raise ValueError('The provided data file does not seem to have a target column. '
+                         'Please make sure to specify the target column using the -target parameter.')
+
     features = np.delete(input_data.view(np.float64).reshape(input_data.size, -1),
-                         input_data.dtype.names.index('class'), axis=1)
+                         input_data.dtype.names.index(args.TARGET_NAME), axis=1)
 
     training_features, testing_features, training_classes, testing_classes = \
-        train_test_split(features, input_data['class'], random_state=args.RANDOM_STATE)
+        train_test_split(features, input_data[args.TARGET_NAME], random_state=args.RANDOM_STATE)
 
-    if args.MODE == 'classification':
+    if args.TPOT_MODE == 'classification':
         tpot_type = TPOTClassifier
     else:
         tpot_type = TPOTRegressor

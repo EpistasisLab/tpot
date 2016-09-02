@@ -116,9 +116,9 @@ class TPOTBase(BaseEstimator):
         None
 
         """
-        if self.__class__.__name__ == "TPOTBase":
-            raise RuntimeError("Do not instantiate the TPOTBase class directly, "
-                               "use TPOTRegressor or TPOTClassifier instead.")
+        if self.__class__.__name__ == 'TPOTBase':
+            raise RuntimeError('Do not instantiate the TPOTBase class directly; '
+                               'use TPOTRegressor or TPOTClassifier instead.')
 
         # Prompt the user if their version is out of date
         self.disable_update_check = disable_update_check
@@ -132,9 +132,8 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
 
-        # Schedule TPOT to run for a very long time if the user specifies a
-        # run-time limit TPOT will automatically interrupt itself when the timer
-        # runs out
+        # Schedule TPOT to run for a very long time if the user specifies a run-time
+        # limit TPOT will automatically interrupt itself when the timer runs out
         if not (max_time_mins is None):
             self.generations = 1000000
 
@@ -153,8 +152,7 @@ class TPOTBase(BaseEstimator):
 
         self.random_state = random_state
 
-        # If the user passed a custom scoring function, store it in the sklearn
-        # SCORERS dictionary
+        # If the user passed a custom scoring function, store it in the sklearn SCORERS dictionary
         if scoring:
             if hasattr(scoring, '__call__'):
                 scoring_name = scoring.__name__
@@ -200,7 +198,7 @@ class TPOTBase(BaseEstimator):
             for key in sorted(op.import_hash.keys()):
                 module_list = ', '.join(sorted(op.import_hash[key]))
 
-                if key.startswith("tpot."):
+                if key.startswith('tpot.'):
                     exec('from {} import {}'.format(key[4:], module_list))
                 else:
                     exec('from {} import {}'.format(key, module_list))
@@ -234,16 +232,12 @@ class TPOTBase(BaseEstimator):
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
-        creator.create('Individual',
-            gp.PrimitiveTree, fitness=creator.FitnessMulti)
+        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
 
         self._toolbox = base.Toolbox()
-        self._toolbox.register('expr',
-            self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
-        self._toolbox.register('individual',
-            tools.initIterate, creator.Individual, self._toolbox.expr)
-        self._toolbox.register('population',
-            tools.initRepeat, list, self._toolbox.individual)
+        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
+        self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', self._compile_to_sklearn)
         self._toolbox.register('select', self._combined_selection_operator)
         self._toolbox.register('mate', gp.cxOnePoint)
@@ -280,8 +274,7 @@ class TPOTBase(BaseEstimator):
 
         self._start_datetime = datetime.now()
 
-        self._toolbox.register('evaluate',
-            self._evaluate_individual, features=features, classes=classes)
+        self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
         pop = self._toolbox.population(n=self.population_size)
 
         def pareto_eq(ind1, ind2):
@@ -358,7 +351,7 @@ class TPOTBase(BaseEstimator):
             if self.verbosity in [1, 2] and self._optimized_pipeline:
                 # Add an extra line of spacing if the progress bar was used
                 if self.verbosity >= 2:
-                    print()
+                    print('')
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
             # Store and fit the entire Pareto front if sciencing
@@ -387,8 +380,7 @@ class TPOTBase(BaseEstimator):
 
         """
         if not self._fitted_pipeline:
-            raise ValueError(('A pipeline has not yet been optimized. '
-                              'Please call fit() first.'))
+            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
         return self._fitted_pipeline.predict(features.astype(np.float64))
 
     def fit_predict(self, features, classes):
@@ -431,8 +423,7 @@ class TPOTBase(BaseEstimator):
             raise ValueError('A pipeline has not yet been optimized. '
                              'Please call fit() first.')
 
-        # If the scoring function is a string, we must adjust to use the sklearn
-        # scoring interface.
+        # If the scoring function is a string, we must adjust to use the sklearn scoring interface
         return abs(SCORERS[self.scoring_function](self._fitted_pipeline,
             testing_features.astype(np.float64), testing_classes.astype(np.float64)))
 
@@ -461,8 +452,7 @@ class TPOTBase(BaseEstimator):
 
         """
         if self._optimized_pipeline is None:
-            raise ValueError(('A pipeline has not yet been optimized. '
-                              'Please call fit() first.'))
+            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(export_pipeline(self._optimized_pipeline))
