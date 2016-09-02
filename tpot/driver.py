@@ -202,14 +202,17 @@ def main():
 
     if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
         training_score = max([tpot._hof.keys[x].wvalues[1] for x in range(len(tpot._hof.keys))])
-        print('\nTraining score: {}'.format(training_score))
+        print('\nTraining score: {}'.format(abs(training_score)))
         print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
+
     elif args.VERBOSITY >= 3 and tpot._hof:
         print('Final Pareto front testing scores:')
+
         for pipeline, pipeline_scores in zip(tpot._hof.items, reversed(tpot._hof.keys)):
-            print('{}\t{}\t{}'.format(-pipeline_scores.wvalues[0],
-                tpot._hof_fitted_pipelines[str(pipeline)].score(testing_features, testing_classes),
-                pipeline))
+            tpot._fitted_pipeline = tpot._hof_fitted_pipelines[str(pipeline)]
+            print('{}\t{}\t{}'.format(int(abs(pipeline_scores.wvalues[0])),
+                                      tpot.score(testing_features, testing_classes),
+                                      pipeline))
 
     if args.OUTPUT_FILE != '':
         tpot.export(args.OUTPUT_FILE)

@@ -51,7 +51,9 @@ def _gp_new_generation(func):
             elif self.verbosity == 3:
                 self._pbar.write('Generation {} - Current Pareto front scores:'.format(self._gp_generation))
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
-                    self._pbar.write('{}\t{}\t{}'.format(-pipeline_scores.wvalues[0], abs(pipeline_scores.wvalues[1]), pipeline))
+                    self._pbar.write('{}\t{}\t{}'.format(int(abs(pipeline_scores.wvalues[0])),
+                                                         abs(pipeline_scores.wvalues[1]),
+                                                         pipeline))
                 self._pbar.write('')
 
             # Sometimes the actual evaluated pipeline count does not match the
