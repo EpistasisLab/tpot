@@ -134,6 +134,8 @@ exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 ```
 
+Check the documentation for [more examples and tutorials](http://rhiever.github.io/tpot/examples/MNIST_Example/).
+
 ## Contributing to TPOT
 
 We welcome you to [check the existing issues](https://github.com/rhiever/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/rhiever/tpot/issues/new) so we can discuss it.
