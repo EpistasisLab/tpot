@@ -4,10 +4,10 @@ virtualenv:
 env:
   matrix:
     # let's start simple:
-    - PYTHON_VERSION="2.7" LATEST="true" "DEAP_VERSION=1.0.1" "XGBOOST_VERSION=0.4a30"
-    - PYTHON_VERSION="3.4" LATEST="true" "DEAP_VERSION=1.0.1" "XGBOOST_VERSION=0.4a30"
+    - PYTHON_VERSION="2.7" LATEST="true"
+    - PYTHON_VERSION="3.4" LATEST="true"
     - PYTHON_VERSION="3.5" COVERAGE="true" LATEST="true" "DEAP_VERSION=1.0.1" "XGBOOST_VERSION=0.4a30"
-    - PYTHON_VERSION="3.5" LATEST="true" "DEAP_VERSION=1.0.1" "XGBOOST_VERSION=0.4a30"
+    - PYTHON_VERSION="3.5" LATEST="true"
 install: source ./ci/.travis_install.sh
 script: bash ./ci/.travis_test.sh
 after_success:
