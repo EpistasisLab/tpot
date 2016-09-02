@@ -35,16 +35,20 @@ class TPOTXGBClassifier(Classifier):
     """
     import_hash = {'xgboost': ['XGBClassifier']}
     sklearn_class = XGBClassifier
-    arg_types = (float, float)
+    arg_types = (int, int, float, float)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, learning_rate, subsample):
+    def preprocess_args(self, max_depth, min_child_weight, learning_rate, subsample):
+        max_depth = min(10, max(max_depth, 1))
+        min_child_weight = min(20, max(min_child_weight, 1))
         learning_rate = min(1., max(learning_rate, 0.0001))
-        subsample = min(1., max(subsample, 0.1))
+        subsample = min(1., max(subsample, 0.05))
 
         return {
+            'max_depth': max_depth,
+            'min_child_weight': min_child_weight,
             'learning_rate': learning_rate,
             'subsample': subsample,
             'n_estimators': 500
