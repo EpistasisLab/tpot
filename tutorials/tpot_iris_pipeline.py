@@ -1,28 +1,20 @@
-import pandas as pd
+import numpy as np
 
 from sklearn.cross_validation import train_test_split
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import FunctionTransformer
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(features, tpot_data['class'], random_state=42)
 
+exported_pipeline = make_pipeline(
+    LogisticRegression(C=7.0, dual=False, penalty="l1")
+)
 
-result1 = tpot_data.copy()
-
-# Perform classification with a C-support vector classifier
-svc1 = SVC(C=0.1)
-svc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
-result1['svc1-classification'] = svc1.predict(result1.drop('class', axis=1).values)
-
-# Subset the data columns
-subset_df1 = result1[sorted(result1.columns.values)[4042:5640]]
-subset_df2 = result1[[column for column in ['class'] if column not in subset_df1.columns.values]]
-result2 = subset_df1.join(subset_df2)
-
-# Perform classification with a k-nearest neighbor classifier
-knnc3 = KNeighborsClassifier(n_neighbors=min(131, len(training_indices)))
-knnc3.fit(result2.loc[training_indices].drop('class', axis=1).values, result2.loc[training_indices, 'class'].values)
-result3 = result2
-result3['knnc3-classification'] = knnc3.predict(result3.drop('class', axis=1).values)
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
