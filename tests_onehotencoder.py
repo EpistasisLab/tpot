@@ -217,7 +217,6 @@ def test_transform_with_unknown_value():
     ohe.fit(input)
     test_data = np.array(((0, 1, 2, 6), (0, 1, 6, 7))).transpose()
     output = ohe.transform(test_data).todense()
-    # assertEqual(5, np.sum(output))
     assert np.sum(output) == 5
 
     input = np.array(((0, 1, 2, 3, 4, 5), (0, 1, 2, 3, 4, 5))).transpose()
@@ -227,24 +226,5 @@ def test_transform_with_unknown_value():
     test_data = np.array(((0, 1, 2, 6), (0, 1, 6, 7))).transpose()
     tds = scipy.sparse.csr_matrix(test_data)
     output = ohe.transform(tds).todense()
-    # assertEqual(3, np.sum(output))
     assert np.sum(output) == 3
 
-
-if __name__ == '__main__':
-    test_dense1()
-    test_dense1_minimum_fraction()
-    test_dense2()
-    test_dense2_minimum_fraction()
-    test_dense2_with_non_sparse_components()
-    test_dense3()
-    test_sparse1()
-    test_sparse1_minimum_fraction()
-    test_sparse1_with_non_sparse_components()
-    fit_then_transform(sparse1_paratial_1h.todense(), sparse1,
-                            categorical_features=[True, False])
-    test_sparse2()
-    test_sparse2_minimum_fraction()
-    test_sparse2_csr()
-    test_sparse_on_dense2_minimum_fraction()
-    test_transform_with_unknown_value()
