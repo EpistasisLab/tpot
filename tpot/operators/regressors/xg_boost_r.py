@@ -18,12 +18,12 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Classifier
-from xgboost import XGBClassifier
+from .base import Regressor
+from xgboost import XGBRegressor
 
 
-class TPOTXGBClassifier(Classifier):
-    """Fits an XGBoost Classifier
+class TPOTXGBRegressor(Regressor):
+    """Fits an XGBoost Regressor
 
     Parameters
     ----------
@@ -36,8 +36,8 @@ class TPOTXGBClassifier(Classifier):
     subsample: float
         Subsample ratio of the training instance
     """
-    import_hash = {'xgboost': ['XGBClassifier']}
-    sklearn_class = XGBClassifier
+    import_hash = {'xgboost': ['XGBRegressor']}
+    sklearn_class = XGBRegressor
     arg_types = (int, int, float, float)
 
     def __init__(self):
