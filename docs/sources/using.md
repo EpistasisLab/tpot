@@ -16,16 +16,22 @@ TPOT offers several arguments that can be provided at the command line:
 <th>Effect</th>
 </tr>
 <tr>
-<td>-mode</td>
-<td>MODE</td>
-<td>['classification', 'regression']</td>
-<td>Whether TPOT will run in regression or classification mode</td>
-</tr>
-<tr>
 <td>-is</td>
 <td>INPUT_SEPARATOR</td>
 <td>Any string</td>
 <td>Character used to separate columns in the input file.</td>
+</tr>
+<tr>
+<td>-target</td>
+<td>TARGET_NAME</td>
+<td>Any string</td>
+<td>Name of the target column in the input file.</td>
+</tr>
+<tr>
+<td>-mode</td>
+<td>TPOT_MODE</td>
+<td>['classification', 'regression']</td>
+<td>Whether TPOT is being used for a classification or regression problem.</td>
 </tr>
 <tr>
 <td>-o</td>
@@ -60,14 +66,14 @@ TPOT offers several arguments that can be provided at the command line:
 <tr>
 <td>-cv</td>
 <td>NUM_CV_FOLDS</td>
-<td>[2, 10]</td>
+<td>Any integer >2</td>
 <td>The number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT pipeline optimization process.</td>
 </tr>
 <tr>
 <td>-scoring</td>
 <td>SCORING_FN</td>
-<td>"accuracy", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "log_loss", "mean_absolute_error", "mean_squared_error", "median_absolute_error", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "r2", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"</td>
-<td>Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized.</td>
+<td>'accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc'</td>
+<td>Function used to evaluate the quality of a given pipeline for the problem. By default, balanced accuracy is used for classification and mean squared error is used for regression. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
 </tr>
 <tr>
 <td>-maxtime</td>
@@ -107,7 +113,7 @@ TPOT offers several arguments that can be provided at the command line:
 An example command-line call to TPOT may look like:
 
 ```Shell
-tpot data/mnist.csv -is , -o tpot_exported_pipeline.py -g 5 -p 20 -cv 5 -s 42 -v 2
+tpot data/mnist.csv -is , -target class -o tpot_exported_pipeline.py -g 5 -p 20 -cv 5 -s 42 -v 2
 ```
 
 # TPOT with code
@@ -127,6 +133,8 @@ from tpot import TPOTClassifier
 
 pipeline_optimizer = TPOTClassifier()
 ```
+
+It's also possible to use TPOT for regression problems with the `TPOTRegressor` class. Other than the class name, a `TPOTRegressor` is used the same way as a `TPOTClassifier`.
 
 Note that you can pass several parameters to the TPOT instantiation call:
 
@@ -163,8 +171,8 @@ Note that you can pass several parameters to the TPOT instantiation call:
 </tr>
 <tr>
 <td>scoring</td>
-<td>"accuracy", "average_precision", "f1", "f1_macro", "f1_micro", "f1_samples", "f1_weighted", "log_loss", "mean_absolute_error", "mean_squared_error", "median_absolute_error", "precision", "precision_macro", "precision_micro", "precision_samples", "precision_weighted", "r2", "recall", "recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc" or a callable function with signature <b>scorer(y_true, y_pred)</b></td>
-<td>Function used to evaluate the goodness of a given pipeline for the classification problem. By default, balanced class accuracy is used. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
+<td>'accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc' or a callable function with signature <b>scorer(y_true, y_pred)</b></td>
+<td>Function used to evaluate the quality of a given pipeline for the problem. By default, balanced accuracy is used for classification and mean squared error is used for regression. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
 </tr>
 <tr>
 <td>max_time_mins</td>
@@ -233,13 +241,13 @@ Once this code finishes running, `tpot_exported_pipeline.py` will contain the Py
 Check our [examples](examples/MNIST_Example/) to see TPOT applied to some specific data sets.
 
 <a name="scoringfunctions"></a>
-### Scoring Functions
+### Scoring functions
 
-TPOT makes use of `sklearn.cross_validation.cross_val_score`, and as such has the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
+TPOT makes use of `sklearn.cross_validation.cross_val_score`, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
 
 1. You can pass in a string from the list described in the table above. Any other strings will cause internal issues that may break your code down the line.
 
-2. You can pass in a function with the signature `scorer(y_true, y_pred)` that takes in a scikit-learn estimator (so in TPOT's case, a pipeline that you can call methods like `predict()` on. To do this, you should implement your own function. See the example below for further explanation.
+2. You can pass in a function with the signature `scorer(y_true, y_pred)`, where `y_true` are the true target values and `y_pred` are the predicted target values from an estimator. To do this, you should implement your own function. See the example below for further explanation.
 
 ```Python
 def accuracy(y_true, y_pred):

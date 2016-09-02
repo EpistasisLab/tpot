@@ -130,11 +130,13 @@ def main():
         type=str, help='Function used to evaluate the quality of a given pipeline for '
         'the problem. By default, balanced accuracy is used for classification and mean '
         'squared error is used for regression. '
-        'TPOT assumes that this scoring function should be maximized, i.e., '
-        'higher is better. Offers the same options as cross_val_score: '
+        'TPOT assumes that any function with "error" or "loss" in the name is meant to '
+        'be minimized, whereas any other functions will be maximized. '
+        'Offers the same options as cross_val_score: '
         '"accuracy", "adjusted_rand_score", "average_precision", "f1", "f1_macro", '
-        '"f1_micro", "f1_samples", "f1_weighted", "precision", "precision_macro", '
-        '"precision_micro", "precision_samples", "precision_weighted", "recall", '
+        '"f1_micro", "f1_samples", "f1_weighted", "log_loss", "mean_absolute_error", '
+        '"mean_squared_error", "median_absolute_error", "precision", "precision_macro", '
+        '"precision_micro", "precision_samples", "precision_weighted", "r2", "recall", '
         '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"')
 
     parser.add_argument('-maxtime', action='store', dest='MAX_TIME_MINS', default=None,
