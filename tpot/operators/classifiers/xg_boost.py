@@ -19,33 +19,40 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Classifier
-from sklearn.ensemble import GradientBoostingClassifier
+from xgboost import XGBClassifier
 
 
-class TPOTGradientBoosting(Classifier):
-    """Fits a Gradient Boosting classifier
+class TPOTXGBClassifier(Classifier):
+    """Fits an XGBoost Classifier
 
     Parameters
     ----------
+    max_depth: int
+        Maximum tree depth for base learners
+    min_child_weight: int
+        Minimum sum of instance weight(hessian) needed in a child
     learning_rate: float
         Shrinks the contribution of each tree by learning_rate
-    max_features: float
-        Maximum number of features to use (proportion of total features)
-
+    subsample: float
+        Subsample ratio of the training instance
     """
-    import_hash = {'sklearn.ensemble': ['GradientBoostingClassifier']}
-    sklearn_class = GradientBoostingClassifier
-    arg_types = (float, float)
+    import_hash = {'xgboost': ['XGBClassifier']}
+    sklearn_class = XGBClassifier
+    arg_types = (int, int, float, float)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, learning_rate, max_features):
+    def preprocess_args(self, max_depth, min_child_weight, learning_rate, subsample):
+        max_depth = min(10, max(max_depth, 1))
+        min_child_weight = min(20, max(min_child_weight, 1))
         learning_rate = min(1., max(learning_rate, 0.0001))
-        max_features = min(1., max(0., learning_rate))
+        subsample = min(1., max(subsample, 0.05))
 
         return {
+            'max_depth': max_depth,
+            'min_child_weight': min_child_weight,
             'learning_rate': learning_rate,
-            'max_features': max_features,
+            'subsample': subsample,
             'n_estimators': 500
         }

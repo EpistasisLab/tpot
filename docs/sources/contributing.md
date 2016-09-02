@@ -1,5 +1,19 @@
 We welcome you to [check the existing issues](https://github.com/rhiever/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/rhiever/tpot/issues/new) so we can discuss it.
 
+## Project layout
+
+The latest stable release of TPOT is on the [master branch](https://github.com/rhiever/tpot/tree/master), whereas the latest version of TPOT in development is on the [development branch](https://github.com/rhiever/tpot/tree/development). Make sure you are looking at and working on the correct branch if you're looking to contribute code.
+
+In terms of directory structure:
+
+* All of TPOT's code sources are in the `tpot` directory
+* The documentation sources are in the `docs` directory
+* Images in the documentation are in the `images` directory
+* Tutorials for TPOT are in the `tutorials` directory
+* Unit tests for TPOT are in the `tests.py` file
+
+Make sure to familiarize yourself with the project layout before making any major contributions, and especially make sure to send all code changes to the `development` branch.
+
 ## How to contribute
 
 The preferred way to contribute to TPOT is to fork the 
@@ -27,9 +41,9 @@ GitHub:
 
 6. Once some changes are saved locally, you can use your tweaked version of TPOT by navigating to the project's base directory and running TPOT directly from the command line:
 
-          $ python -m tpot.tpot
+          $ python -m tpot.driver
 
-    or by running script that imports and uses the TPOT module with code similar to `from tpot import TPOT`
+    or by running script that imports and uses the TPOT module with code similar to `from tpot import TPOTClassifier`
 
 7. To check your changes haven't broken any existing tests and to check new tests you've added pass run the following (note, you must have the `nose` package installed within your dev environment for this to work):
 

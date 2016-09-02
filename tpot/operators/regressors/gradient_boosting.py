@@ -18,29 +18,34 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.decomposition import RandomizedPCA
+from .base import Regressor
+from sklearn.ensemble import GradientBoostingRegressor
 
-class TPOTRandomizedPCA(Preprocessor):
 
-    """Uses scikit-learn's RandomizedPCA to transform the feature set
+class TPOTGradientBRegressor(Regressor):
+    """Fits a Gradient Boosting Regressor
 
     Parameters
     ----------
-    iterated_power: int
-        Number of iterations for the power method. [1, 10]
-    """
+    learning_rate: float
+        Shrinks the contribution of each tree by learning_rate
+    max_features: float
+        Maximum number of features to use (proportion of total features)
 
-    import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
-    sklearn_class = RandomizedPCA
-    arg_types = (int, )
+    """
+    import_hash = {'sklearn.ensemble': ['GradientBoostingRegressor']}
+    sklearn_class = GradientBoostingRegressor
+    arg_types = (float, float)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, iterated_power):
-        iterated_power = min(10, max(1, iterated_power))
+    def preprocess_args(self, learning_rate, max_features):
+        learning_rate = min(1., max(learning_rate, 0.0001))
+        max_features = min(1., max(0., learning_rate))
 
         return {
-            'iterated_power': iterated_power
+            'learning_rate': learning_rate,
+            'max_features': max_features,
+            'n_estimators': 500
         }

@@ -23,8 +23,7 @@ from . import operators
 
 
 def export_pipeline(exported_pipeline):
-    """Generates the source code of a Python script that recreates the
-    functionality of a TPOT pipeline
+    """Generates the source code of a TPOT Pipeline
 
     Parameters
     ----------
@@ -209,11 +208,11 @@ def process_operator(operator, depth=0):
         if input_name != 'input_matrix':
             steps.extend(process_operator(input_name, depth + 1))
 
-        # If the step is a classifier and is not the last step then we must
+        # If the step is an estimator and is not the last step then we must
         # add its guess as a synthetic feature
-        if tpot_op.type == "Classifier" and depth > 0:
+        if tpot_op.root and depth > 0:
             steps.append(
-                "make_union(VotingClassifier(estimators=[(\"clf\", {})]), FunctionTransformer(lambda X: X))".
+                "make_union(VotingClassifier([(\"est\", {})]), FunctionTransformer(lambda X: X))".
                 format(tpot_op.export(*args))
             )
         else:
@@ -250,8 +249,8 @@ def _combine_dfs(left, right):
         elif branch[1] == "input_matrix":  # If depth of branch == 1
             tpot_op = operators.Operator.get_by_name(branch[0])
 
-            if tpot_op.type == "Classifier":
-                return """make_union(VotingClassifier(estimators=[('branch',
+            if tpot_op.root:
+                return """make_union(VotingClassifier([('branch',
 {}
 )]), FunctionTransformer(lambda X: X))""".format(_indent(process_operator(branch)[0], 4))
             else:
@@ -259,8 +258,8 @@ def _combine_dfs(left, right):
         else:  # We're going to have to make a pipeline
             tpot_op = operators.Operator.get_by_name(branch[0])
 
-            if tpot_op.type == "Classifier":
-                return """make_union(VotingClassifier(estimators=[('branch',
+            if tpot_op.root:
+                return """make_union(VotingClassifier([('branch',
 {}
 )]), FunctionTransformer(lambda X: X))""".format(_indent(generate_pipeline_code(branch), 4))
             else:
