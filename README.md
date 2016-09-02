@@ -48,7 +48,7 @@ TPOT can be used [on the command line](http://rhiever.github.io/tpot/using/#tpot
 
 Click on the corresponding links to find more information on TPOT usage in the documentation.
 
-## Example
+## Examples
 
 Below is a minimal working example with the practice MNIST data set.
 
@@ -84,6 +84,46 @@ training_features, testing_features, training_classes, testing_classes =     tra
 
 exported_pipeline = make_pipeline(
     KNeighborsClassifier(n_neighbors=3, weights="uniform")
+)
+
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
+```
+
+Similarly, TPOT can optimize pipelines for regression problems. Below is a minimal working example with the practice Boston housing prices data set.
+
+```python
+from tpot import TPOTRegressor
+from sklearn.datasets import load_boston
+from sklearn.cross_validation import train_test_split
+
+digits = load_boston()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25)
+
+tpot = TPOTRegressor(generations=5, population_size=20, verbosity=2)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_boston_pipeline.py')
+```
+
+which should result in a pipeline that achieves about 12.77 mean squared error (MSE), and the Python code in `tpot_boston_pipeline.py` should look similar to:
+
+```python
+import numpy as np
+
+from sklearn.cross_validation import train_test_split
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.pipeline import make_pipeline
+
+# NOTE: Make sure that the target is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(features, tpot_data['class'], random_state=42)
+
+exported_pipeline = make_pipeline(
+    ExtraTreesRegressor(max_features=0.76, n_estimators=500)
 )
 
 exported_pipeline.fit(training_features, training_classes)
