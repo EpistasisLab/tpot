@@ -33,3 +33,4 @@ from .robust_scaler import *
 from .standard_scaler import *
 from .zero_count import *
 from .onehotencoder import *
+from .auto_sklearn_onehotencoder import *

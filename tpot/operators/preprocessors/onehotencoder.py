@@ -19,7 +19,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Preprocessor
-from ._auto_sklearn_onehotencoder import _OneHotEncoder
+from .auto_sklearn_onehotencoder import OneHotEncoder
 
 import numpy as np
 
@@ -32,8 +32,8 @@ class TPOTOneHotEncoder(Preprocessor):
     None
 
     """
-    import_hash = {'tpot.operators._auto_sklearn_onehotencoder': ['_OneHotEncoder']}
-    sklearn_class = _OneHotEncoder
+    import_hash = {'tpot.operators.preprocessors.auto_sklearn_onehotencoder': ['OneHotEncoder']}
+    sklearn_class = OneHotEncoder
     arg_types = (float, )
 
     def __init__(self):

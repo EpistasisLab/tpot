@@ -88,7 +88,7 @@ def _transform_selected(X, transform, selected="all", copy=True):
             return np.hstack((X_sel, X_not_sel))
 
 
-class _OneHotEncoder(BaseEstimator, TransformerMixin):
+class OneHotEncoder(BaseEstimator, TransformerMixin):
     """Encode categorical integer features using a one-hot aka one-of-K scheme.
 
     The input to this transformer should be a matrix of integers, denoting

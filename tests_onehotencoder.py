@@ -32,7 +32,7 @@ import numpy as np
 import scipy.sparse
 from sklearn.utils.testing import assert_array_almost_equal
 
-from tpot.operators.preprocessors._auto_sklearn_onehotencoder import _OneHotEncoder as OneHotEncoder
+from tpot.operators.preprocessors import OneHotEncoder
 
 
 dense1 = np.array([[0, 1, 0],
