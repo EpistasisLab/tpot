@@ -90,7 +90,7 @@ def main():
 
     parser.add_argument('-mode', action='store', dest='MODE',
         choices=['classification', 'regression'], default='classification', type=str,
-        help='Whether TPOT is being used for regression')
+        help='Whether TPOT is being used for a classification or regression problem.')
 
     parser.add_argument('-is', action='store', dest='INPUT_SEPARATOR', default='\t',
         type=str, help='Character used to separate columns in the input file.')
