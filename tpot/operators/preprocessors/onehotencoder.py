@@ -34,7 +34,7 @@ class TPOTOneHotEncoder(Preprocessor):
     """
     import_hash = {'tpot.operators._auto_sklearn_onehotencoder': ['_OneHotEncoder']}
     sklearn_class = _OneHotEncoder
-    arg_types = (float)
+    arg_types = (float, )
 
     def __init__(self):
         pass
