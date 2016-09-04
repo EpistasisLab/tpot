@@ -71,7 +71,7 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.05,
                  scoring=None, num_cv_folds=3, max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
-                 disable_update_check=False):
+                 disable_update_check=False, warm_start=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -128,6 +128,9 @@ class TPOTBase(BaseEstimator):
             0 = none, 1 = minimal, 2 = all
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
+        warm_start: bool (default: False)
+            Flag indicating whether TPOT will reuse models from previous calls to
+            fit for faster operation
 
         Returns
         -------
@@ -146,6 +149,8 @@ class TPOTBase(BaseEstimator):
         self._hof = None
         self._optimized_pipeline = None
         self._fitted_pipeline = None
+        self._pop = None
+        self.warm_start = warm_start
         self.population_size = population_size
         self.generations = generations
         self.max_time_mins = max_time_mins
@@ -293,7 +298,8 @@ class TPOTBase(BaseEstimator):
         self._start_datetime = datetime.now()
 
         self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
-        pop = self._toolbox.population(n=self.population_size)
+        # assign population, self._pop can only be not None if warm_start is enabled
+        pop = self._pop if self._pop else self._toolbox.population(n=self.population_size)
 
         def pareto_eq(ind1, ind2):
             """Determines whether two individuals are equal on the Pareto front
@@ -314,7 +320,9 @@ class TPOTBase(BaseEstimator):
             """
             return np.all(ind1.fitness.values == ind2.fitness.values)
 
-        self._hof = tools.ParetoFront(similar=pareto_eq)
+        # generate new pareto front if it doesn't already exist for warm start
+        if not self.warm_start or not self._hof:
+            self._hof = tools.ParetoFront(similar=pareto_eq)
 
         # Start the progress bar
         if self.max_time_mins:
@@ -330,6 +338,10 @@ class TPOTBase(BaseEstimator):
                 population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                 mutpb=self.mutation_rate, ngen=self.generations,
                 halloffame=self._hof, verbose=False)
+
+            # store population for the next call
+            if self.warm_start:
+                self._pop = pop
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
