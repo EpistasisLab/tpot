@@ -18,23 +18,23 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Preprocessor
-from sklearn.preprocessing import PolynomialFeatures
+from .base import Regressor
+from ..gp_types import MinSamplesSplit, MinSamplesLeaf, MaxDepth
+from sklearn.tree import DecisionTreeRegressor
 
 
-class TPOTPolynomialFeatures(Preprocessor):
-    """Uses scikit-learn's PolynomialFeatures to transform the feature set"""
-
-    import_hash = {'sklearn.preprocessing': ['PolynomialFeatures']}
-    sklearn_class = PolynomialFeatures
-    arg_types = ()
+class TPOTDecisionTreeRegressor(Regressor):
+    """Fits a Decision Tree Regressor"""
+    import_hash = {'sklearn.tree': ['DecisionTreeRegressor']}
+    sklearn_class = DecisionTreeRegressor
+    arg_types = (MaxDepth, MinSamplesLeaf, MinSamplesSplit)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self):
+    def preprocess_args(self, max_depth, min_samples_leaf, min_samples_split):
         return {
-            'degree': 2,
-            'include_bias': False,
-            'interaction_only': False
+            'max_depth': max_depth,
+            'min_samples_leaf': min_samples_leaf,
+            'min_samples_split': min_samples_split
         }

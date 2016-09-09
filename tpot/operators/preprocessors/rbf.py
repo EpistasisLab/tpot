@@ -19,6 +19,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Preprocessor
+from ..gp_types import Float
 from sklearn.kernel_approximation import RBFSampler
 
 
@@ -27,13 +28,13 @@ class TPOTRBFSampler(Preprocessor):
 
     Parameters
     ----------
-    gamma: float
+    gamma: Float
         Parameter of RBF kernel: exp(-gamma * x^2)
 
     """
     import_hash = {'sklearn.kernel_approximation': ['RBFSampler']}
     sklearn_class = RBFSampler
-    arg_types = (float, )
+    arg_types = (Float, )
 
     def __init__(self):
         pass

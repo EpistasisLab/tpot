@@ -19,33 +19,27 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Classifier
+from ..gp_types import LearningRate, MaxDepth, MinSamplesLeaf, MinSamplesSplit, SubSample, MaxFeatures
 from sklearn.ensemble import GradientBoostingClassifier
 
 
 class TPOTGradientBoosting(Classifier):
-    """Fits a Gradient Boosting classifier
+    """Fits a Gradient Boosting classifier"""
 
-    Parameters
-    ----------
-    learning_rate: float
-        Shrinks the contribution of each tree by learning_rate
-    max_features: float
-        Maximum number of features to use (proportion of total features)
-
-    """
     import_hash = {'sklearn.ensemble': ['GradientBoostingClassifier']}
     sklearn_class = GradientBoostingClassifier
-    arg_types = (float, float)
+    arg_types = (LearningRate, MaxDepth, MinSamplesLeaf, MinSamplesSplit, SubSample, MaxFeatures)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, learning_rate, max_features):
-        learning_rate = min(1., max(learning_rate, 0.0001))
-        max_features = min(1., max(0., learning_rate))
-
+    def preprocess_args(self, learning_rate, max_depth, min_samples_leaf, min_samples_split, subsample, max_features):
         return {
             'learning_rate': learning_rate,
+            'max_depth': max_depth,
+            'min_samples_leaf': min_samples_leaf,
+            'min_samples_split': min_samples_split,
+            'subsample': subsample,
             'max_features': max_features,
             'n_estimators': 500
         }

@@ -23,13 +23,8 @@ from sklearn.preprocessing import StandardScaler
 
 
 class TPOTStandardScaler(Preprocessor):
-    """Uses scikit-learn's StandardScaler to transform the feature set
+    """Uses scikit-learn's StandardScaler to transform the feature set"""
 
-    Parameters
-    ----------
-    None
-
-    """
     import_hash = {'sklearn.preprocessing': ['StandardScaler']}
     sklearn_class = StandardScaler
     arg_types = ()
@@ -38,6 +33,4 @@ class TPOTStandardScaler(Preprocessor):
         pass
 
     def preprocess_args(self):
-        return {
-            
-        }
+        return {}

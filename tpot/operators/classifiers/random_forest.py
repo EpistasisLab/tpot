@@ -19,27 +19,26 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Classifier
+from ..gp_types import ClassCriterion, MinSamplesSplit, MinSamplesLeaf, MaxDepth, Bool
 from sklearn.ensemble import RandomForestClassifier
 
 
 class TPOTRandomForestClassifier(Classifier):
-
-    """Fits a random forest classifier.
-    
-    Parameters
-    ----------
-    None
-    """
+    """Fits a random forest classifier"""
 
     import_hash = {'sklearn.ensemble': ['RandomForestClassifier']}
     sklearn_class = RandomForestClassifier
-    arg_types = ()
+    arg_types = (ClassCriterion, MaxDepth, MinSamplesLeaf, MinSamplesSplit, Bool)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self):
-        """Preprocess the arguments in case they need to be limited to a certain value range"""
+    def preprocess_args(self, criterion, max_depth, min_samples_leaf, min_samples_split, bootstrap):
         return {
+            'criterion': criterion,
+            'max_depth': max_depth,
+            'min_samples_leaf': min_samples_leaf,
+            'min_samples_split': min_samples_split,
+            'bootstrap': bootstrap,
             'n_estimators': 500
         }

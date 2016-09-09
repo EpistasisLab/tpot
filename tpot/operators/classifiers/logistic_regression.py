@@ -18,42 +18,27 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ...gp_types import Bool
 from .base import Classifier
+from ..gp_types import Penalty, CType, Bool
 from sklearn.linear_model import LogisticRegression
 
 
 class TPOTLogisticRegression(Classifier):
-    """Fits a logistic regression classifier
+    """Fits a logistic regression classifier"""
 
-    Parameters
-    ----------
-    C: float
-        Inverse of regularization strength; must be a positive value. Like in support vector machines, smaller values specify stronger regularization.
-    penalty: int
-        Integer used to specify the norm used in the penalization (l1 or l2)
-    dual: bool
-        Select the algorithm to either solve the dual or primal optimization problem.
-
-    """
     import_hash = {'sklearn.linear_model': ['LogisticRegression']}
     sklearn_class = LogisticRegression
-    arg_types = (float, int, Bool)
+    arg_types = (CType, Penalty, Bool)
 
     def __init__(self):
         pass
 
     def preprocess_args(self, C, penalty, dual):
-        C = min(50., max(0.0001, C))
-
-        penalty_values = ['l1', 'l2']
-        penalty_selection = penalty_values[penalty % len(penalty_values)]
-
-        if penalty_selection == 'l1':
+        if penalty == 'l1':
             dual = False
 
         return {
             'C': C,
-            'penalty': penalty_selection,
+            'penalty': penalty,
             'dual': dual
         }

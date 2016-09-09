@@ -19,32 +19,25 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Regressor
+from ..gp_types import MinSamplesSplit, MinSamplesLeaf, MaxFeatures, Bool
 from sklearn.ensemble import ExtraTreesRegressor
 
 
 class TPOTExtraTreesRegressor(Regressor):
-    """Fits an Extra Trees Regressor
+    """Fits an Extra Trees Regressor"""
 
-    Parameters
-    ----------
-    criterion: int
-        Integer that is used to select from the list of valid criteria,
-        either 'gini', or 'entropy'
-    max_features: float
-        The number of features to consider when looking for the best split
-
-    """
     import_hash = {'sklearn.ensemble': ['ExtraTreesRegressor']}
     sklearn_class = ExtraTreesRegressor
-    arg_types = (float, )
+    arg_types = (MaxFeatures, MinSamplesLeaf, MinSamplesSplit, Bool)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, max_features):
-        max_features = min(1., max(0., max_features))
-
+    def preprocess_args(self, max_features, min_samples_leaf, min_samples_split, bootstrap):
         return {
             'max_features': max_features,
+            'min_samples_leaf': min_samples_leaf,
+            'min_samples_split': min_samples_split,
+            'bootstrap': bootstrap,
             'n_estimators': 500
         }

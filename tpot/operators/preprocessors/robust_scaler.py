@@ -23,13 +23,8 @@ from sklearn.preprocessing import RobustScaler
 
 
 class TPOTRobustScaler(Preprocessor):
-    """Uses scikit-learn's RobustScaler to transform the feature set
+    """Uses scikit-learn's RobustScaler to transform the feature set"""
 
-    Parameters
-    ----------
-    None
-
-    """
     import_hash = {'sklearn.preprocessing': ['RobustScaler']}
     sklearn_class = RobustScaler
     arg_types = ()
@@ -38,6 +33,4 @@ class TPOTRobustScaler(Preprocessor):
         pass
 
     def preprocess_args(self):
-        return {
-            
-        }
+        return {}

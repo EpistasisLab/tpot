@@ -19,29 +19,22 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Classifier
+from ..gp_types import Alpha, Bool
 from sklearn.naive_bayes import MultinomialNB
 
 
 class TPOTMultinomialNB(Classifier):
-
-    """Fits a Multinomial Naive Bayes Classifier
-
-    Parameters
-    ----------
-    alpha: float
-        Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
-    """
+    """Fits a Multinomial Naive Bayes Classifier"""
 
     import_hash = {'sklearn.naive_bayes': ['MultinomialNB']}
     sklearn_class = MultinomialNB
-    arg_types = (float, )
+    arg_types = (Alpha, Bool)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, alpha):
-        """Preprocess the arguments in case they need to be limited to a certain value range"""
+    def preprocess_args(self, alpha, fit_prior):
         return {
             'alpha': alpha,
-            'fit_prior': True
+            'fit_prior': fit_prior
         }

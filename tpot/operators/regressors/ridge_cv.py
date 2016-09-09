@@ -18,15 +18,19 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
+from .base import Regressor
+from sklearn.linear_model import RidgeCV
 
-class Bool(object):
 
-    """Boolean class used for deap due to deap's poor handling of booleans"""
+class TPOTRidgeCV(Regressor):
+    """Fits a Ridge Regressor with built-in cross-validation"""
 
-    pass
+    import_hash = {'sklearn.linear_model': ['RidgeCV']}
+    sklearn_class = RidgeCV
+    arg_types = ()
 
-class Output_DF(object):
+    def __init__(self):
+        pass
 
-    """Output data type of pipelines"""
-
-    pass
+    def preprocess_args(self):
+        return {}

@@ -19,49 +19,28 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Selector
+from ..gp_types import SelectorThreshold, MaxFeatures
 from sklearn.feature_selection import SelectFromModel
 from sklearn.ensemble import ExtraTreesRegressor
 
 
 class TPOTSelectFromModelR(Selector):
     """Uses scikit-learn's ExtraTreesRegressor combined with SelectFromModel
-    to transform the feature set.
+    to transform the feature set"""
 
-    Parameters
-    ----------
-    threshold: float
-        Features whose importance is greater or equal are kept while the others
-        are discarded.
-    criterion: int
-        For the ExtraTreesRegressor:
-        Integer that is used to select from the list of valid criteria,
-        either 'gini', or 'entropy'
-    max_features: float
-        For the ExtraTreesRegressor:
-        The number of features to consider when looking for the best split
-
-    """
     import_hash = {
         'sklearn.feature_selection': ['SelectFromModel'],
         'sklearn.ensemble':          ['ExtraTreesRegressor']
     }
     sklearn_class = SelectFromModel
-    arg_types = (float, int, float)
-    classification = False
+    arg_types = (SelectorThreshold, MaxFeatures)
+    classification = False  # Can not be used in regression due to ExtraTreesClassifier
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, threshold, criterion, max_features):
-        threshold = min(1., max(0., threshold))
-
-        # Select criterion string from list of valid parameters
-        criterion_values = ['gini', 'entropy']
-        criterion_selection = criterion_values[criterion % len(criterion_values)]
-
-        max_features = min(1., max(0., max_features))
-
+    def preprocess_args(self, threshold, max_features):
         return {
-            'estimator': ExtraTreesRegressor(criterion=criterion_selection, max_features=max_features),
+            'estimator': ExtraTreesRegressor(max_features=max_features),
             'threshold': threshold
         }

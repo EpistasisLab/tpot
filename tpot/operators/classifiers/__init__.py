@@ -27,7 +27,6 @@ from .gaussian_nb import *
 from .multinomial_nb import *
 from .extra_trees import *
 from .linear_svc import *
-from .passive_aggressive import *
 from .logistic_regression import *
 from .knnc import *
 from .gradient_boosting import *

@@ -44,8 +44,7 @@ from ._version import __version__
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _gp_new_generation
 from . import operators
-from .operators import CombineDFs
-from .gp_types import Bool, Output_DF
+from .operators import CombineDFs, Output_DF, DEAPType
 from .metrics import SCORERS
 
 
@@ -209,26 +208,9 @@ class TPOTBase(BaseEstimator):
         self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
 
         # Terminals
-        int_terminals = np.concatenate((
-            np.arange(0, 51, 1),
-            np.arange(60, 110, 10))
-        )
-
-        for val in int_terminals:
-            self._pset.addTerminal(val, int)
-
-        float_terminals = np.concatenate((
-            [1e-6, 1e-5, 1e-4, 1e-3],
-            np.arange(0., 1.01, 0.01),
-            np.arange(2., 51., 1.),
-            np.arange(60., 101., 10.))
-        )
-
-        for val in float_terminals:
-            self._pset.addTerminal(val, float)
-
-        self._pset.addTerminal(True, Bool)
-        self._pset.addTerminal(False, Bool)
+        for _type in DEAPType.inheritors():
+            for val in _type.values:
+                self._pset.addTerminal(val, _type)
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
@@ -492,11 +474,11 @@ class TPOTBase(BaseEstimator):
         """
         for (_, obj) in pipeline_steps:
             if hasattr(obj, 'steps'):
-                self._set_param_recursive(obj.steps)
+                self._set_param_recursive(obj.steps, parameter, value)
             elif hasattr(obj, 'transformer_list'):
-                self._set_param_recursive(obj.transformer_list)
+                self._set_param_recursive(obj.transformer_list, parameter, value)
             elif hasattr(obj, 'estimators'):
-                self._set_param_recursive(obj.estimators)
+                self._set_param_recursive(obj.estimators, parameter, value)
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)

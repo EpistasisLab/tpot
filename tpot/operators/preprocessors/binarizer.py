@@ -19,6 +19,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Preprocessor
+from ..gp_types import Float
 from sklearn.preprocessing import Binarizer
 
 
@@ -27,13 +28,13 @@ class TPOTBinarizer(Preprocessor):
 
     Parameters
     ----------
-    threshold: float
+    threshold: Float
         Feature values below or equal to this value are replaced by 0, above it by 1
 
     """
     import_hash = {'sklearn.preprocessing': ['Binarizer']}
     sklearn_class = Binarizer
-    arg_types = (float, )
+    arg_types = (Float, )
 
     def __init__(self):
         pass

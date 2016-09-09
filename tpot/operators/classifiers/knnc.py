@@ -19,34 +19,23 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Classifier
+from ..gp_types import KNNeighbors, KNWeights, PType
 from sklearn.neighbors import KNeighborsClassifier
 
 
 class TPOTKNeighborsClassifier(Classifier):
-    """Fits a k-nearest neighbor classifier
+    """Fits a k-nearest neighbor classifier"""
 
-    Parameters
-    ----------
-    n_neighbors: int
-        Number of neighbors to use by default for k_neighbors queries; must be a positive value
-    weights: int
-        Selects a value from the list: ['uniform', 'distance']
-
-    """
     import_hash = {'sklearn.neighbors': ['KNeighborsClassifier']}
     sklearn_class = KNeighborsClassifier
-    arg_types = (int, int)
+    arg_types = (KNNeighbors, KNWeights, PType)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, n_neighbors, weights):
-        n_neighbors = max(min(5, n_neighbors), 2)
-
-        weights_values = ['uniform', 'distance']
-        weights_selection = weights_values[weights % len(weights_values)]
-
+    def preprocess_args(self, n_neighbors, weights, p):
         return {
             'n_neighbors': n_neighbors,
-            'weights': weights_selection
+            'weights': weights,
+            'p': p
         }

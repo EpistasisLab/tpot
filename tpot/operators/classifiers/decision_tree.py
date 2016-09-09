@@ -19,23 +19,24 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Classifier
+from ..gp_types import ClassCriterion, MinSamplesSplit, MinSamplesLeaf, MaxDepth
 from sklearn.tree import DecisionTreeClassifier
 
 
 class TPOTDecisionTreeClassifier(Classifier):
-    """Fits a decision tree classifier
+    """Fits a decision tree classifier"""
 
-    Parameters
-    ----------
-    None
-
-    """
     import_hash = {'sklearn.tree': ['DecisionTreeClassifier']}
     sklearn_class = DecisionTreeClassifier
-    arg_types = ()
+    arg_types = (ClassCriterion, MaxDepth, MinSamplesLeaf, MinSamplesSplit)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self):
-        return {}
+    def preprocess_args(self, criterion, max_depth, min_samples_leaf, min_samples_split):
+        return {
+            'criterion': criterion,
+            'max_depth': max_depth,
+            'min_samples_leaf': min_samples_leaf,
+            'min_samples_split': min_samples_split
+        }

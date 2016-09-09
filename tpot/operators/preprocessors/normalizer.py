@@ -19,29 +19,27 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Preprocessor
+from ..base import DEAPType
 from sklearn.preprocessing import Normalizer
 
 
+class Norm(DEAPType):
+    """The norm to use to normalize each non zero sample"""
+
+    values = ['l1', 'l2', 'max']
+
+
 class TPOTNormalizer(Preprocessor):
-    """Uses scikit-learn's Normalizer to normalize samples individually to unit norm
+    """Uses scikit-learn's Normalizer to normalize samples individually to unit norm"""
 
-    Parameters
-    ----------
-    norm: 'l1', 'l2', or 'max'
-        The norm to use to normalize each non zero sample.
-
-    """
     import_hash = {'sklearn.preprocessing': ['Normalizer']}
     sklearn_class = Normalizer
-    arg_types = (int, )
+    arg_types = (Norm, )
 
     def __init__(self):
         pass
 
     def preprocess_args(self, norm):
-        norm_types = ['l1', 'l2', 'max']
-        norm = norm_types[norm % len(norm_types)]
-        
         return {
             'norm': norm
         }

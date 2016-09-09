@@ -19,37 +19,26 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Classifier
+from ..gp_types import ClassCriterion, MinSamplesSplit, MinSamplesLeaf, MaxDepth, Bool
 from sklearn.ensemble import ExtraTreesClassifier
 
 
 class TPOTExtraTreesClassifier(Classifier):
-    """Fits an Extra Trees Classifier
+    """Fits an Extra Trees Classifier"""
 
-    Parameters
-    ----------
-    criterion: int
-        Integer that is used to select from the list of valid criteria,
-        either 'gini', or 'entropy'
-    max_features: float
-        The number of features to consider when looking for the best split
-
-    """
     import_hash = {'sklearn.ensemble': ['ExtraTreesClassifier']}
     sklearn_class = ExtraTreesClassifier
-    arg_types = (int, float)
+    arg_types = (ClassCriterion, MaxDepth, MinSamplesLeaf, MinSamplesSplit, Bool)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, criterion, max_features):
-        # Select criterion string from list of valid parameters
-        criterion_values = ['gini', 'entropy']
-        criterion_selection = criterion_values[criterion % len(criterion_values)]
-
-        max_features = min(1., max(0., max_features))
-
+    def preprocess_args(self, criterion, max_depth, min_samples_leaf, min_samples_split, bootstrap):
         return {
-            'criterion': criterion_selection,
-            'max_features': max_features,
+            'criterion': criterion,
+            'max_depth': max_depth,
+            'min_samples_leaf': min_samples_leaf,
+            'min_samples_split': min_samples_split,
+            'bootstrap': bootstrap,
             'n_estimators': 500
         }

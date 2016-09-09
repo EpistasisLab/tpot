@@ -18,33 +18,32 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
+import numpy as np
+
 from .base import Regressor
+from ..base import DEAPType
+from ..gp_types import Tol
 from sklearn.linear_model import ElasticNet
 
 
+class L1Ratio(DEAPType):
+    """The ElasticNet mixing parameter, with 0 <= l1_ratio <= 1"""
+
+    values = np.arange(0.0, 1.01, 0.05)
+
+
 class TPOTElasticNet(Regressor):
-    """Fits a Elastic Net Regressor
+    """Fits a Elastic Net Regressor"""
 
-    Parameters
-    ----------
-    alpha: float
-        Constant that multiplies the penalty terms.
-    l1_ratio: int
-        The ElasticNet mixing parameter, with 0 <= l1_ratio <= 1
-
-    """
     import_hash = {'sklearn.linear_model': ['ElasticNet']}
     sklearn_class = ElasticNet
-    arg_types = (float, float)
+    arg_types = (Tol, L1Ratio)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, alpha, l1_ratio):
-        alpha = min(1., max(0.0001, alpha))
-        l1_ratio = min(1., max(0.0001, l1_ratio))
-
+    def preprocess_args(self, tol, l1_ratio):
         return {
-            'alpha': alpha,
+            'tol': tol,
             'l1_ratio': l1_ratio
         }

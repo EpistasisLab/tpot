@@ -19,27 +19,25 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Regressor
+from ..gp_types import MinSamplesSplit, MinSamplesLeaf, MaxFeatures, Bool
 from sklearn.ensemble import RandomForestRegressor
 
 
 class TPOTRandomForestClassifier(Regressor):
-
-    """Fits a random forest Regressor.
-
-    Parameters
-    ----------
-    None
-    """
+    """Fits a random forest Regressor"""
 
     import_hash = {'sklearn.ensemble': ['RandomForestRegressor']}
     sklearn_class = RandomForestRegressor
-    arg_types = ()
+    arg_types = (MaxFeatures, MinSamplesLeaf, MinSamplesSplit, Bool)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self):
-        """Preprocess the arguments in case they need to be limited to a certain value range"""
+    def preprocess_args(self, max_features, min_samples_leaf, min_samples_split, bootstrap):
         return {
+            'max_features': max_features,
+            'min_samples_leaf': min_samples_leaf,
+            'min_samples_split': min_samples_split,
+            'bootstrap': bootstrap,
             'n_estimators': 500
         }
