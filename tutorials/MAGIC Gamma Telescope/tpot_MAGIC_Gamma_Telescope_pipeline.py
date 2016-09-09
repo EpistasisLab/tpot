@@ -5,7 +5,7 @@ from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import GradientBoostingClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR')
 training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
 
 result1 = tpot_data.copy()
