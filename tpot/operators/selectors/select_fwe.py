@@ -19,28 +19,21 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Selector
+from ..gp_types import Alpha
 from sklearn.feature_selection import SelectFwe, f_classif
 
 
 class TPOTSelectFwe(Selector):
-    """Uses scikit-learn's SelectFwe to transform the feature set
+    """Uses scikit-learn's SelectFwe to transform the feature set"""
 
-    Parameters
-    ----------
-    alpha: float in the range [0.001, 0.05]
-        The highest uncorrected p-value for features to keep
-
-    """
     import_hash = {'sklearn.feature_selection': ['SelectFwe', 'f_classif']}
     sklearn_class = SelectFwe
-    arg_types = (float, )
+    arg_types = (Alpha, )
 
     def __init__(self):
         pass
 
     def preprocess_args(self, alpha):
-        alpha = max(min(0.05, alpha), 0.001)
-
         return {
             'score_func': f_classif,
             'alpha': alpha

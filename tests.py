@@ -9,7 +9,7 @@ from tpot.base import TPOTBase
 from tpot.driver import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
 from tpot.decorators import _gp_new_generation
-from tpot.gp_types import Output_DF
+from tpot.operators.gp_types import Output_DF
 
 from tpot.operators import Operator
 from tpot.operators.selectors import TPOTSelectKBest
@@ -129,11 +129,11 @@ def test_score_2():
 
     tpot_obj = TPOTClassifier()
     tpot_obj._pbar = tqdm(total=1, disable=True)
-    known_score = 0.986318199045  # Assumes use of the TPOT balanced_accuracy function
+    known_score = 0.917489942877  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('RandomForestClassifier(input_matrix)', tpot_obj._pset)
+        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
@@ -152,10 +152,10 @@ def test_score_3():
 
     tpot_obj = TPOTRegressor(scoring='mean_squared_error')
     tpot_obj._pbar = tqdm(total=1, disable=True)
-    known_score = 8.9673743407873712  # Assumes use of mse
+    known_score = 22.1748767767  # Assumes use of mse
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('ExtraTreesRegressor(GradientBoostingRegressor(input_matrix, 100.0, 0.11), 0.17999999999999999)', tpot_obj._pset)
+        from_string('RidgeCV(input_matrix)', tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
 
@@ -186,7 +186,7 @@ def test_predict_2():
 
     tpot_obj = TPOTClassifier()
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
+        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
@@ -265,17 +265,22 @@ def test_generate_pipeline_code():
             ['GradientBoostingClassifier',
                 'input_matrix',
                 38.0,
-                0.87],
+                5,
+                5,
+                5,
+                0.05,
+                0.5],
             ['GaussianNB',
                 ['ZeroCount',
                     'input_matrix']]],
         18,
-        33]
+        'uniform',
+        2]
 
     expected_code = """make_pipeline(
     make_union(
         make_union(VotingClassifier([('branch',
-            GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, n_estimators=500)
+            GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=0.5, min_samples_leaf=5, min_samples_split=5, n_estimators=500, subsample=0.05)
         )]), FunctionTransformer(lambda X: X)),
         make_union(VotingClassifier([('branch',
             make_pipeline(
@@ -284,7 +289,7 @@ def test_generate_pipeline_code():
             )
         )]), FunctionTransformer(lambda X: X))
     ),
-    KNeighborsClassifier(n_neighbors=5, weights="distance")
+    KNeighborsClassifier(n_neighbors=18, p=2, weights="uniform")
 )"""
 
     assert expected_code == generate_pipeline_code(pipeline)
@@ -294,16 +299,15 @@ def test_generate_import_code():
     """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline"""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(SelectKBest(input_matrix, 7), 0.5)', tpot_obj._pset)
+        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
 
     expected_code = """import numpy as np
 
 from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import VotingClassifier
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
@@ -319,17 +323,15 @@ def test_export_pipeline():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline"""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.\
-        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87), RFE(input_matrix, 0.17999999999999999)), 18, 33)", tpot_obj._pset)
+        from_string("GaussianNB(input_matrix)", tpot_obj._pset)
 
     expected_code = """import numpy as np
 
 from sklearn.cross_validation import train_test_split
-from sklearn.ensemble import GradientBoostingClassifier, VotingClassifier
-from sklearn.feature_selection import RFE
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import VotingClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.svm import SVC
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
@@ -338,16 +340,7 @@ training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    make_union(
-        make_union(VotingClassifier([('branch',
-            GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, n_estimators=500)
-        )]), FunctionTransformer(lambda X: X)),
-        RFE(estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
-          decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
-          max_iter=-1, probability=False, random_state=42, shrinking=True,
-          tol=0.001, verbose=False), step=0.18)
-    ),
-    KNeighborsClassifier(n_neighbors=5, weights="distance")
+    GaussianNB()
 )
 
 exported_pipeline.fit(training_features, training_classes)

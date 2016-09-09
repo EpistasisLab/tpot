@@ -18,33 +18,42 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from ...gp_types import Bool
 from .base import Regressor
+from ..base import DEAPType
+from ..gp_types import Bool, Tol, CType
 from sklearn.svm import LinearSVR
 
 
+class LinearSVRLoss(DEAPType):
+    """Loss function to use"""
+
+    values = ['epsilon_insensitive', 'squared_epsilon_insensitive']
+
+
+class Epsilon(DEAPType):
+    """Epsilon parameter in the epsilon-insensitive loss function"""
+
+    values = [1e-4, 1e-3, 1e-2, 1e-1, 1.]
+
+
 class TPOTLinearSVR(Regressor):
-    """Fits a Linear Support Vector Regressor
+    """Fits a Linear Support Vector Regressor"""
 
-    Parameters
-    ----------
-    C: float
-        Penalty parameter C of the error term.
-    dual: bool
-        Select the algorithm to either solve the dual or primal optimization problem.
-
-    """
     import_hash = {'sklearn.svm': ['LinearSVR']}
     sklearn_class = LinearSVR
-    arg_types = (float, Bool)
+    arg_types = (LinearSVRLoss, Bool, Tol, CType, Epsilon)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, C, dual):
-        C = min(25., max(0.0001, C))
+    def preprocess_args(self, loss, dual, tol, C, epsilon):
+        if not dual and loss == 'epsilon_insensitive':
+            dual = True
 
         return {
             'C': C,
-            'dual': dual
+            'dual': dual,
+            'loss': loss,
+            'tol': tol,
+            'epsilon': epsilon
         }

@@ -19,7 +19,16 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Preprocessor
+from ..base import DEAPType
+from ..gp_types import Float, NComponents
 from sklearn.kernel_approximation import Nystroem
+
+
+class Kernel(DEAPType):
+    """Kernel type"""
+
+    # Pulled from sklearn.metrics.pairwise.PAIRWISE_KERNEL_FUNCTIONS
+    values = ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']
 
 
 class TPOTNystroem(Preprocessor):
@@ -27,11 +36,6 @@ class TPOTNystroem(Preprocessor):
 
     Parameters
     ----------
-    kernel: int
-        Kernel type is selected from scikit-learn's provided types:
-            'sigmoid', 'polynomial', 'additive_chi2', 'poly', 'laplacian', 'cosine', 'linear', 'rbf', 'chi2'
-
-        Input integer is used to select one of the above strings.
     gamma: float
         Gamma parameter for the kernels.
     n_components: int
@@ -40,20 +44,14 @@ class TPOTNystroem(Preprocessor):
     """
     import_hash = {'sklearn.kernel_approximation': ['Nystroem']}
     sklearn_class = Nystroem
-    arg_types = (int, float, int)
+    arg_types = (Kernel, Float, NComponents)
 
     def __init__(self):
         pass
 
     def preprocess_args(self, kernel, gamma, n_components):
-        # Pulled from sklearn.metrics.pairwise.PAIRWISE_KERNEL_FUNCTIONS
-        kernel_types = ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']
-        kernel_name = kernel_types[kernel % len(kernel_types)]
-
-        n_components = max(1, n_components)
-
         return {
-            'kernel': kernel_name,
+            'kernel': kernel,
             'gamma': gamma,
             'n_components': n_components
         }

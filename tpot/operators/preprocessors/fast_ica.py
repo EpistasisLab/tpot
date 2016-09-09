@@ -19,28 +19,21 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Preprocessor
+from ..gp_types import Tol
 from sklearn.decomposition import FastICA
 
 
 class TPOTFastICA(Preprocessor):
-    """Uses scikit-learn's FastICA to transform the feature set
+    """Uses scikit-learn's FastICA to transform the feature set"""
 
-    Parameters
-    ----------
-    tol: float
-        Tolerance on update at each iteration.
-
-    """
     import_hash = {'sklearn.decomposition': ['FastICA']}
     sklearn_class = FastICA
-    arg_types = (float, )
+    arg_types = (Tol, )
 
     def __init__(self):
         pass
 
     def preprocess_args(self, tol):
-        tol = max(tol, 0.0001)
-
         return {
             'tol': tol
         }

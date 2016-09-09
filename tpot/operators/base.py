@@ -27,6 +27,22 @@ except ImportError:
     from inspect import getargspec  # Python 2
 
 
+class DEAPType(object):
+    """Base class for parameter specifications"""
+
+    @classmethod
+    def inheritors(cls):
+        """Returns set of all DEAP types defined
+
+        Returns
+        -------
+        operators: list
+            List of all discovered operators that inherit from the base class
+
+        """
+        return cls.__subclasses__()
+
+
 class Operator(object):
     """Base class for operators in TPOT"""
 
@@ -114,10 +130,6 @@ class Operator(object):
     @classmethod
     def inheritors(cls):
         """Returns set of all operators defined
-
-        Parameters
-        ----------
-        None
 
         Returns
         -------

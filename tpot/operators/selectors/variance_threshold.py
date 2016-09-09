@@ -19,6 +19,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Selector
+from ..gp_types import Float
 from sklearn.feature_selection import VarianceThreshold
 
 
@@ -33,7 +34,7 @@ class TPOTVarianceThreshold(Selector):
     """
     import_hash = {'sklearn.feature_selection': ['VarianceThreshold']}
     sklearn_class = VarianceThreshold
-    arg_types = (float, )
+    arg_types = (Float, )
 
     def __init__(self):
         pass

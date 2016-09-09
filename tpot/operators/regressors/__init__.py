@@ -19,11 +19,12 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import *
+from .decision_tree import *
+from .ridge_cv import *
 from .extra_trees import *
 from .random_forest import *
 from .knnr import *
 from .gradient_boosting import *
-from .passive_aggressive_r import *
 from .linear_svr import *
 from .elastic_net import *
 try:

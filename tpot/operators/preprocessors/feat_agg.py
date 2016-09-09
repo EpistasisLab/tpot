@@ -19,40 +19,37 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Preprocessor
+from ..base import DEAPType
 from sklearn.cluster import FeatureAgglomeration
 
 
+class FeatAggLinkage(DEAPType):
+    """The linkage criterion determines which distance to use between sets of features"""
+
+    values = ['ward', 'complete', 'average']
+
+
+class FeatAggAffinity(DEAPType):
+    """Metric used to compute the linkage"""
+
+    values = ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed']
+
+
 class TPOTFeatureAgglomeration(Preprocessor):
-    """Uses scikit-learn's Nystroem to transform the feature set
+    """Uses scikit-learn's Nystroem to transform the feature set"""
 
-    Parameters
-    ----------
-    affinity: int
-        Metric used to compute the linkage. Can be "euclidean", "l1", "l2",
-        "manhattan", "cosine", or "precomputed". If linkage is "ward", only
-        "euclidean" is accepted.
-        Input integer is used to select one of the above strings.
-    linkage: int
-        Can be one of the following values:
-            "ward", "complete", "average"
-        Input integer is used to select one of the above strings.
-
-    """
     import_hash = {'sklearn.cluster': ['FeatureAgglomeration']}
     sklearn_class = FeatureAgglomeration
-    arg_types = (int, int)
+    arg_types = (FeatAggLinkage, FeatAggAffinity)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, affinity, linkage):
-        linkage_types = ['ward', 'complete', 'average']
-        linkage_name = linkage_types[linkage % len(linkage_types)]
-
-        affinity_types = ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed']
-        affinity_name = 'euclidean' if linkage_name == 'ward' else affinity_types[affinity % len(affinity_types)]
+    def preprocess_args(self, linkage, affinity):
+        if linkage == 'ward':
+            affinity = 'euclidean'
 
         return {
-            'affinity': affinity_name,
-            'linkage': linkage_name
+            'affinity': affinity,
+            'linkage': linkage
         }

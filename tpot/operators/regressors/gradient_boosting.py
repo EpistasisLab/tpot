@@ -18,34 +18,45 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
+import numpy as np
+
 from .base import Regressor
+from ..base import DEAPType
+from ..gp_types import LearningRate, MaxDepth, MinSamplesLeaf, MinSamplesSplit, SubSample, MaxFeatures
 from sklearn.ensemble import GradientBoostingRegressor
 
 
+class GBRLoss(DEAPType):
+    """Loss function to use"""
+
+    values = ['ls', 'lad', 'huber', 'quantile']
+
+
+class GBAlpha(DEAPType):
+    """The alpha-quantile of the huber loss function and the quantile loss function"""
+
+    values = [0.75, 0.8, 0.85, 0.9, 0.95, 0.99]
+
+
 class TPOTGradientBRegressor(Regressor):
-    """Fits a Gradient Boosting Regressor
+    """Fits a Gradient Boosting Regressor"""
 
-    Parameters
-    ----------
-    learning_rate: float
-        Shrinks the contribution of each tree by learning_rate
-    max_features: float
-        Maximum number of features to use (proportion of total features)
-
-    """
     import_hash = {'sklearn.ensemble': ['GradientBoostingRegressor']}
     sklearn_class = GradientBoostingRegressor
-    arg_types = (float, float)
+    arg_types = (GBRLoss, LearningRate, MaxDepth, MinSamplesLeaf, MinSamplesSplit, SubSample, MaxFeatures, GBAlpha)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, learning_rate, max_features):
-        learning_rate = min(1., max(learning_rate, 0.0001))
-        max_features = min(1., max(0., learning_rate))
-
+    def preprocess_args(self, loss, learning_rate, max_depth, min_leaf, min_split, subsample, max_features, alpha):
         return {
+            'loss': loss,
             'learning_rate': learning_rate,
+            'max_depth': max_depth,
+            'min_samples_leaf': min_leaf,
+            'min_samples_split': min_split,
+            'subsample': subsample,
             'max_features': max_features,
+            'alpha': alpha,
             'n_estimators': 500
         }

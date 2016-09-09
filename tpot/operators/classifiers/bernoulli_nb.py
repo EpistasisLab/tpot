@@ -19,30 +19,22 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Classifier
+from ..gp_types import Alpha, Bool
 from sklearn.naive_bayes import BernoulliNB
 
 
 class TPOTBernoulliNB(Classifier):
-    """Fits a Bernoulli Naive Bayes Classifier
+    """Fits a Bernoulli Naive Bayes Classifier"""
 
-    Parameters
-    ----------
-    alpha: float
-        Additive (Laplace/Lidstone) smoothing parameter (0 for no smoothing).
-    binarize: float
-        Threshold for binarizing (mapping to booleans) of sample features.
-
-    """
     import_hash = {'sklearn.naive_bayes': ['BernoulliNB']}
     sklearn_class = BernoulliNB
-    arg_types = (float, float)
+    arg_types = (Alpha, Bool)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, alpha, binarize):
+    def preprocess_args(self, alpha, fit_prior):
         return {
             'alpha': alpha,
-            'binarize': binarize,
-            'fit_prior': True
+            'fit_prior': fit_prior
         }

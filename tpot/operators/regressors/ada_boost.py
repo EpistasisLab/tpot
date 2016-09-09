@@ -19,29 +19,31 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Regressor
+from ..base import DEAPType
+from ..gp_types import LearningRate, MaxDepth
 from sklearn.ensemble import AdaBoostRegressor
 
 
-class TPOTAdaBoostClassifier(Regressor):
-    """Fits an AdaBoost Regressor
+class AdaBoostRLoss(DEAPType):
+    """The loss function to use when updating the weights after each boosting iteration"""
 
-    Parameters
-    ----------
-    learning_rate: float
-        Learning rate shrinks the contribution of each classifier by learning_rate.
+    values = ['linear', 'square', 'exponential']
 
-    """
+
+class TPOTAdaBoostRegressor(Regressor):
+    """Fits an AdaBoost Regressor"""
+
     import_hash = {'sklearn.ensemble': ['AdaBoostRegressor']}
     sklearn_class = AdaBoostRegressor
-    arg_types = (float, )
+    arg_types = (LearningRate, MaxDepth, AdaBoostRLoss)
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, learning_rate):
-        learning_rate = min(1., max(0.0001, learning_rate))
-
+    def preprocess_args(self, learning_rate, max_depth, loss):
         return {
             'learning_rate': learning_rate,
+            'max_depth': max_depth,
+            'loss': loss,
             'n_estimators': 500
         }
