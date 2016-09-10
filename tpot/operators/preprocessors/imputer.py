@@ -23,21 +23,29 @@ from sklearn.preprocessing import Imputer
 
 
 class TPOTImputer(Preprocessor):
-    """Uses scikit-learn's Imputer to transform the feature set
+    """Uses scikit-learn's Imputer to complete missing values
 
     Parameters
     ----------
-    None
+    strategy: 'mean', 'median', or 'most_frequent'
+        The norm to use to normalize each non zero sample.
 
+    .. _Imputer Documentation:
+       http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html
     """
     import_hash = {'sklearn.preprocessing': ['Imputer']}
     sklearn_class = Imputer
     arg_types = ()
 
+    arg_types = (int, )
+
     def __init__(self):
         pass
 
-    def preprocess_args(self):
-        return {
+    def preprocess_args(self, strategy_id):
+        strategies = ['mean', 'median', 'most_frequent']
+        strategy = strategies[strategy_id % len(strategies)]
 
+        return {
+            'strategy': strategy,
         }
