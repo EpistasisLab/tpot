@@ -26,7 +26,10 @@ import inspect
 import sys
 from functools import partial
 from collections import Counter
-from itertools import compress
+from itertools import compress, chain
+from operator import itemgetter
+
+import math
 
 import numpy as np
 import pandas as pd
@@ -144,7 +147,9 @@ class TPOT(object):
         self._pset.renameArguments(ARG0='input_df')
 
         self._pset.addPrimitive(self._gaussian_nb, [pd.DataFrame], ClassifiedDF)
-        self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int], pd.DataFrame)
+        self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int, int, int, int, int, int], 
+                                            ClassifiedDF)
+#        self._pset.addPrimitive(self._mdr, [pd.DataFrame, int, int], ClassifiedDF)
         self._pset.addPrimitive(self._select_kbest, [pd.DataFrame, int], pd.DataFrame)
         self._pset.addPrimitive(self._ekf, [pd.DataFrame, int, int], pd.DataFrame)
         self._pset.addPrimitive(self._combine_dfs, [pd.DataFrame, pd.DataFrame], pd.DataFrame)
@@ -202,15 +207,16 @@ class TPOT(object):
             for ek_source in self.expert_source:
                 if len(ek_source) == features.shape[1]:
                     if all(isinstance(n, bool) for n in ek_source):
+#                    if all(isinstance(ek_source, bool)):
                         try:
-                            np.isnan(self.expert_source[i])
+                            np.isnan(ek_source)
                         except:
                             pass
                         else:
                             raise ValueError('Expert knowledge sources must not have missing values.')
                     else:
                         try:
-                            np.isnan(self.expert_source[i])
+                            np.isnan(ek_source)
                         except:
                             pass
                         else:
@@ -476,7 +482,9 @@ class TPOT(object):
         """
         return self._train_model_and_predict(input_df, GaussianNB)
 
-    def _mdr(self, input_df, tie_break, default_label):
+    def _mdr(self, input_df, tie_break, default_label, index_1, 
+             index_2, index_3, index_4, index_5):
+#    def _mdr(self, input_df, tie_break, default_label):
         """Fits the Multifactor Dimensionality Reduction feature construction algorithm
 
         Parameters
@@ -487,6 +495,10 @@ class TPOT(object):
             Default class label that is used when a MDR cell has an equal number of each class
         default_label: int
             Default class label that is used when MDR encounters a feature pair that it did not encounter in the training set
+        total_indices: int
+            Number of features to use
+        index_1 to 5: int
+            Which features to use
 
         Returns
         -------
@@ -495,6 +507,24 @@ class TPOT(object):
         """
         if len(input_df.columns) == 3:
             return input_df
+        else:
+            result = list(itemgetter(index_1, index_2, index_3, index_4, index_5)(input_df.columns))
+            input_df = input_df[result + self.non_feature_columns]
+            return input_df
+#        else:
+#            track_input_df = input_df.drop(self.non_feature_columns, axis=1).columns
+#            iterator= list(iter(track_input_df))
+#            K = random.randint(1, len(track_input_df))
+#            result = []
+#            for item in random.sample(iterator, K):
+#                if len(result) < K:
+#                    result.append(item)
+#                else:
+#                    s = itemgetter(index_1, index_2, index_3, index_4, index_5)(result)
+#                    if len(s) < K:
+#                        result = list(s)
+#                    input_df = input_df[result + self.non_feature_columns]
+#                    return input_df
 
         all_classes = sorted(input_df['class'].unique())
         tie_break_choice = all_classes[tie_break % len(all_classes)]
@@ -635,9 +665,11 @@ class TPOT(object):
         # Feature importance filter
         else:
             # Assume higher feature importance score means it's a better feature
-            ekf_source = np.argsort(self.expert_source[ekf_index])[::-1]
-            ekf_source = ekf_source[:k_best]
-            ekf_subset = list(input_df.columns.values[ekf_source]) + self.non_feature_columns
+#            ekf_source = np.argsort(self.expert_source[ekf_index])[::-1]
+#            ekf_source = ekf_source[:k_best]
+            ekf_source = (self.expert_source[ekf_index].iloc[:k_best])['Gene']
+            ekf_subset = list(ekf_source) + self.non_feature_columns
+#            ekf_subset = list(input_df.columns.values[ekf_source]) + self.non_feature_columns
 
         return input_df.loc[:, ekf_subset].copy()
 
