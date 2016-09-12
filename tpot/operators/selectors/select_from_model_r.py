@@ -32,10 +32,6 @@ class TPOTSelectFromModelR(Selector):
     threshold: float
         Features whose importance is greater or equal are kept while the others
         are discarded.
-    criterion: int
-        For the ExtraTreesRegressor:
-        Integer that is used to select from the list of valid criteria,
-        either 'gini', or 'entropy'
     max_features: float
         For the ExtraTreesRegressor:
         The number of features to consider when looking for the best split
@@ -46,22 +42,18 @@ class TPOTSelectFromModelR(Selector):
         'sklearn.ensemble':          ['ExtraTreesRegressor']
     }
     sklearn_class = SelectFromModel
-    arg_types = (float, int, float)
+    arg_types = (float, float)
     classification = False
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, threshold, criterion, max_features):
+    def preprocess_args(self, threshold, max_features):
         threshold = min(1., max(0., threshold))
-
-        # Select criterion string from list of valid parameters
-        criterion_values = ['gini', 'entropy']
-        criterion_selection = criterion_values[criterion % len(criterion_values)]
 
         max_features = min(1., max(0., max_features))
 
         return {
-            'estimator': ExtraTreesRegressor(criterion=criterion_selection, max_features=max_features),
+            'estimator': ExtraTreesRegressor(max_features=max_features),
             'threshold': threshold
         }
