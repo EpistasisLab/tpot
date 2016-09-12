@@ -491,12 +491,12 @@ class TPOTBase(BaseEstimator):
 
         """
         for (_, obj) in pipeline_steps:
-            if hasattr(obj, 'steps'):
-                self._set_param_recursive(obj.steps)
-            elif hasattr(obj, 'transformer_list'):
-                self._set_param_recursive(obj.transformer_list)
-            elif hasattr(obj, 'estimators'):
-                self._set_param_recursive(obj.estimators)
+            recursive_attrs = ['steps', 'transformer_list', 'estimators']
+
+            for attr in recursive_attrs:
+                if hasattr(obj, attr):
+                    self._set_param_recursive(getattr(obj, attr), parameter, value)
+                    break
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)

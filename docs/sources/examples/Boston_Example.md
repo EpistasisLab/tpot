@@ -29,7 +29,7 @@ from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.pipeline import make_pipeline
 
 # NOTE: Make sure that the target is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
 
