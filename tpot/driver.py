@@ -202,15 +202,15 @@ def main():
     tpot.fit(training_features, training_classes)
 
     if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
-        training_score = max([tpot._hof.keys[x].wvalues[1] for x in range(len(tpot._hof.keys))])
+        training_score = max([tpot._pareto_front.keys[x].wvalues[1] for x in range(len(tpot._pareto_front.keys))])
         print('\nTraining score: {}'.format(abs(training_score)))
         print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
 
-    elif args.VERBOSITY >= 3 and tpot._hof:
+    elif args.VERBOSITY >= 3 and tpot._pareto_front:
         print('Final Pareto front testing scores:')
 
-        for pipeline, pipeline_scores in zip(tpot._hof.items, reversed(tpot._hof.keys)):
-            tpot._fitted_pipeline = tpot._hof_fitted_pipelines[str(pipeline)]
+        for pipeline, pipeline_scores in zip(tpot._pareto_front.items, reversed(tpot._pareto_front.keys)):
+            tpot._fitted_pipeline = tpot._pareto_front_fitted_pipelines[str(pipeline)]
             print('{}\t{}\t{}'.format(int(abs(pipeline_scores.wvalues[0])),
                                       tpot.score(testing_features, testing_classes),
                                       pipeline))

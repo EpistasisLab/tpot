@@ -205,6 +205,12 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>[True, False]</td>
 <td>Flag indicating whether the TPOT version checker should be disabled.</td>
 </tr>
+<tr>
+<td>warm_start</td>
+<td>[True, False]</td>
+<td>Flag indicating whether TPOT will reuse models from previous calls
+to fit() for faster operation</td>
+</tr>
 </table>
 
 Some example code with custom TPOT parameters might look like:

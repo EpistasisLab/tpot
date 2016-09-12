@@ -130,7 +130,7 @@ class TPOTBase(BaseEstimator):
             Flag indicating whether the TPOT version checker should be disabled.
         warm_start: bool (default: False)
             Flag indicating whether TPOT will reuse models from previous calls to
-            fit for faster operation
+            fit() for faster operation
 
         Returns
         -------
@@ -146,7 +146,7 @@ class TPOTBase(BaseEstimator):
         if not self.disable_update_check:
             update_check('tpot', __version__)
 
-        self._hof = None
+        self._pareto_front = None
         self._optimized_pipeline = None
         self._fitted_pipeline = None
         self._pop = None
@@ -298,8 +298,12 @@ class TPOTBase(BaseEstimator):
         self._start_datetime = datetime.now()
 
         self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
+
         # assign population, self._pop can only be not None if warm_start is enabled
-        pop = self._pop if self._pop else self._toolbox.population(n=self.population_size)
+        if self._pop:
+            pop = self._pop
+        else:
+            pop = self._toolbox.population(n=self.population_size)
 
         def pareto_eq(ind1, ind2):
             """Determines whether two individuals are equal on the Pareto front
@@ -321,8 +325,8 @@ class TPOTBase(BaseEstimator):
             return np.all(ind1.fitness.values == ind2.fitness.values)
 
         # generate new pareto front if it doesn't already exist for warm start
-        if not self.warm_start or not self._hof:
-            self._hof = tools.ParetoFront(similar=pareto_eq)
+        if not self.warm_start or not self._pareto_front:
+            self._pareto_front = tools.ParetoFront(similar=pareto_eq)
 
         # Start the progress bar
         if self.max_time_mins:
@@ -337,7 +341,7 @@ class TPOTBase(BaseEstimator):
             pop, _ = algorithms.eaSimple(
                 population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                 mutpb=self.mutation_rate, ngen=self.generations,
-                halloffame=self._hof, verbose=False)
+                halloffame=self._pareto_front, verbose=False)
 
             # store population for the next call
             if self.warm_start:
@@ -358,9 +362,9 @@ class TPOTBase(BaseEstimator):
             self._gp_generation = 0
 
             # Store the pipeline with the highest internal testing score
-            if self._hof:
+            if self._pareto_front:
                 top_score = -5000.
-                for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
+                for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
 
@@ -385,15 +389,15 @@ class TPOTBase(BaseEstimator):
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
             # Store and fit the entire Pareto front if sciencing
-            elif self.verbosity >= 3 and self._hof:
-                self._hof_fitted_pipelines = {}
+            elif self.verbosity >= 3 and self._pareto_front:
+                self._pareto_front_fitted_pipelines = {}
 
-                for pipeline in self._hof.items:
-                    self._hof_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                for pipeline in self._pareto_front.items:
+                    self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
 
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
-                        self._hof_fitted_pipelines[str(pipeline)].fit(features, classes)
+                        self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
 
     def predict(self, features):
         """Uses the optimized pipeline to predict the classes for a feature set

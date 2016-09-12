@@ -46,7 +46,7 @@ def test_init_custom_parameters():
                     mutation_rate=0.05, crossover_rate=0.9,
                     scoring='accuracy', num_cv_folds=10,
                     verbosity=1, random_state=42,
-                    disable_update_check=True)
+                    disable_update_check=True, warm_start=True)
 
     assert tpot_obj.population_size == 500
     assert tpot_obj.generations == 1000
@@ -55,6 +55,7 @@ def test_init_custom_parameters():
     assert tpot_obj.scoring_function == 'accuracy'
     assert tpot_obj.num_cv_folds == 10
     assert tpot_obj.max_time_mins is None
+    assert tpot_obj.warm_start is True
     assert tpot_obj.verbosity == 1
     assert tpot_obj._optimized_pipeline is None
     assert tpot_obj._fitted_pipeline is None
@@ -193,6 +194,24 @@ def test_predict_2():
     result = tpot_obj.predict(testing_features)
 
     assert result.shape == (testing_features.shape[0],)
+
+
+def test_warm_start():
+    """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run"""
+    tpot_obj = TPOTClassifier(random_state=42, population_size=1, generations=1, verbosity=0, warm_start=True)
+    tpot_obj.fit(training_features, training_classes)
+
+    assert tpot_obj._pop != None
+    assert tpot_obj._pareto_front != None
+
+    first_pop = tpot_obj._pop
+    first_pareto_front = tpot_obj._pareto_front
+
+    tpot_obj.random_state = 21
+    tpot_obj.fit(training_features, training_classes)
+
+    assert tpot_obj._pop == first_pop
+    assert tpot_obj._pareto_front == first_pareto_front
 
 
 def test_fit():
