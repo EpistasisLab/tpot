@@ -1,0 +1,3 @@
+include README.md LICENSE tests.py
+recursive-include images *
+recursive-include tpot *.py

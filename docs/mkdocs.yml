@@ -1,0 +1,64 @@
+site_name: TPOT
+site_url: http://rhiever.github.io/tpot
+site_author: Randal S. Olson
+site_description: TPOT is a Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.
+
+repo_url: https://github.com/rhiever/tpot
+
+docs_dir: sources
+theme: readthedocs
+
+markdown_extensions:
+  - tables
+  - fenced_code
+
+copyright: Copyright &copy; 2016-Present <a href="http://www.randalolson.com">Randal S. Olson</a>
+
+pages:
+- Home: index.md
+- Installation: installing.md
+- Using TPOT: using.md
+- Examples:
+  - examples/MNIST_Example.md
+  - examples/IRIS_Example.md
+  - examples/Titanic_Kaggle_Example.md
+  - examples/Custom_Scoring_Functions.md
+- Reference:
+  - Index: documentation.md
+  - TPOT Object: documentation/TPOT.md
+  - Pipeline Operators:
+    - Models:
+      - DecisionTreeClassifier: documentation/pipeline_operators/models/classifiers/tree/DecisionTreeClassifier.md
+      - RandomForestClassifier: documentation/pipeline_operators/models/classifiers/ensemble/RandomForestClassifier.md
+      - kNeighborsClassifier: documentation/pipeline_operators/models/classifiers/nearest_neighbors/kNeighborsClassifier.md
+      - LogisticRegression: documentation/pipeline_operators/models/classifiers/linear_model/LogisticRegression.md
+      - AdaBoost: documentation/pipeline_operators/models/classifiers/ensemble/AdaBoost.md
+      - ExtraTrees: documentation/pipeline_operators/models/classifiers/ensemble/ExtraTrees.md
+      - PassiveAggressive: documentation/pipeline_operators/models/classifiers/linear_model/PassiveAggressive.md
+      - BernoulliNB: documentation/pipeline_operators/models/classifiers/naive_bayes/BernoulliNB.md
+      - GaussianNB: documentation/pipeline_operators/models/classifiers/naive_bayes/GaussianNB.md
+      - MultinomialNB: documentation/pipeline_operators/models/classifiers/naive_bayes/MultinomialNB.md
+      - LinearSVC: documentation/pipeline_operators/models/classifiers/svm/LinearSVC.md
+      - GradientBoostingClassifier: documentation/pipeline_operators/models/classifiers/ensemble/GradientBoostingClassifier.md
+    - Pre-Processing:
+      - StandardScaler: documentation/pipeline_operators/preprocessing/scaling/StandardScaler.md
+      - RobustScaler: documentation/pipeline_operators/preprocessing/scaling/RobustScaler.md
+      - MinMaxScaler: documentation/pipeline_operators/preprocessing/scaling/MinMaxScaler.md
+      - MaxAbsScaler: documentation/pipeline_operators/preprocessing/scaling/MaxAbsScaler.md
+      - Binarizer: documentation/pipeline_operators/preprocessing/scaling/Binarizer.md
+      - PolynomialFeatures: documentation/pipeline_operators/preprocessing/PolynomialFeatures.md
+      - ZeroCount: documentation/pipeline_operators/preprocessing/ZeroCount.md
+    - Feature Selection:
+      - VarianceThreshold: documentation/pipeline_operators/feature_selection/VarianceThreshold.md
+      - SelectKBest: documentation/pipeline_operators/feature_selection/SelectKBest.md
+      - SelectPercentile: documentation/pipeline_operators/feature_selection/SelectPercentile.md
+      - RFE: documentation/pipeline_operators/feature_selection/RFE.md
+    - Decomposition:
+      - RandomizedPCA: documentation/pipeline_operators/decomposition/RandomizedPCA.md
+      - FastICA: documentation/pipeline_operators/decomposition/FastICA.md
+    - Kernel Approximation:
+      - RBFSampler: documentation/pipeline_operators/kernel_approximation/RBFSampler.md
+      - Nystroem: documentation/pipeline_operators/kernel_approximation/Nystroem.md
+    - Cluster:
+      - FeatureAgglomeration: documentation/pipeline_operators/cluster/FeatureAgglomeration.md
+  - Contributing: contributing.md

@@ -1,0 +1,19 @@
+language: python
+virtualenv:
+  system_site_packages: true
+env:
+  matrix:
+    # let's start simple:
+    - PYTHON_VERSION="2.7" LATEST="true" "DEAP_VERSION=1.0.1" "XGBOOST_VERSION=0.4a30"
+    - PYTHON_VERSION="3.4" LATEST="true" "DEAP_VERSION=1.0.1" "XGBOOST_VERSION=0.4a30"
+    - PYTHON_VERSION="3.5" COVERAGE="true" LATEST="true" "DEAP_VERSION=1.0.1" "XGBOOST_VERSION=0.4a30"
+    - PYTHON_VERSION="3.5" LATEST="true" "DEAP_VERSION=1.0.1" "XGBOOST_VERSION=0.4a30"
+install: source ./ci/.travis_install.sh
+script: bash ./ci/.travis_test.sh
+after_success:
+    # Ignore coveralls failures as the coveralls server is not very reliable
+    # but we don't want travis to report a failure in the github UI just
+    # because the coverage report failed to be published.
+    - if [[ "$COVERAGE" == "true" ]]; then coveralls || echo "failed"; fi
+cache: apt
+sudo: false

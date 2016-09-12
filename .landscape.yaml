@@ -1,0 +1,5 @@
+doc-warnings: yes
+
+ignore-patterns:
+  - __init__.py
+  - tutorials/*
