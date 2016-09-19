@@ -126,6 +126,7 @@ def _timeout(func):
                 except RuntimeError:
                     self._skip_pipeline += 1
                     self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
+                    ret = None
                 sys.tracebacklimit=1000
                 return ret
             IMPLEMENTATION = "RLIMIT_CPU_Linux_Best_solution"
@@ -147,6 +148,7 @@ def _timeout(func):
                 except RuntimeError:
                     self._skip_pipeline += 1
                     self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
+                    ret = None
                 sys.tracebacklimit=1000
                 return ret
             IMPLEMENTATION = "signal.alarm_non_CPU_time"
@@ -171,6 +173,7 @@ def _timeout(func):
                 except RuntimeError:
                     self._skip_pipeline += 1
                     self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
+                    ret = None
                 timer.cancel()
                 sys.tracebacklimit=1000
                 return ret
