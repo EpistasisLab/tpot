@@ -21,8 +21,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 from functools import wraps
 import sys
-# don't show traceback 
-sys.tracebacklimit=0 
+
 
 def _gp_new_generation(func):
     """Decorator that wraps functions that indicate the beginning of a new GP
@@ -114,6 +113,8 @@ def _timeout(func):
             # timeout uses the CPU time 
             @wraps(func)
             def limitedTime(self,*args, **kw):
+                # don't show traceback 
+                sys.tracebacklimit=0
                 signal(SIGXCPU, timeout_signal_handler)
                 second = Time_Conv(self.max_eval_time_mins)
                 r = getrusage(RUSAGE_SELF)
@@ -125,6 +126,7 @@ def _timeout(func):
                 except RuntimeError:
                     self._skip_pipeline += 1
                     self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
+                sys.tracebacklimit=1000
                 return ret
             IMPLEMENTATION = "RLIMIT_CPU_Linux_Best_solution"
         except ImportError:
@@ -136,6 +138,7 @@ def _timeout(func):
             # time limit is not CPU time but wall time
             @wraps(func)
             def limitedTime(self,*args, **kw):
+                sys.tracebacklimit=0
                 signal(SIGALRM, timeout_signal_handler)
                 second = Time_Conv(self.max_eval_time_mins)
                 try:
@@ -144,6 +147,7 @@ def _timeout(func):
                 except RuntimeError:
                     self._skip_pipeline += 1
                     self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
+                sys.tracebacklimit=1000
                 return ret
             IMPLEMENTATION = "signal.alarm_non_CPU_time"
         except ImportError:
@@ -157,6 +161,7 @@ def _timeout(func):
             # timit limit is not CPU time but wall time
             @wraps(func)
             def limitedTime(self,*args, **kw):
+                sys.tracebacklimit=0
                 signal(SIGINT, timeout_signal_handler)
                 second = Time_Conv(self.max_eval_time_mins)
                 timer = Timer(second, interrupt_main)
@@ -167,6 +172,7 @@ def _timeout(func):
                     self._skip_pipeline += 1
                     self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
                 timer.cancel()
+                sys.tracebacklimit=1000
                 return ret
                 
             IMPLEMENTATION = "threading_in_poor_Windows"
