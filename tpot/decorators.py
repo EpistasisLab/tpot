@@ -111,7 +111,7 @@ def _timeout(func):
             from signal import signal,SIGXCPU
             from resource import getrlimit, setrlimit, RLIMIT_CPU, getrusage, RUSAGE_SELF
             # resource.setrlimit(RLIMIT_CPU) implementation
-            # timeout is the CPU time 
+            # timeout uses the CPU time 
             @wraps(func)
             def limitedTime(self,*args, **kw):
                 signal(SIGXCPU, timeout_signal_handler)
@@ -126,7 +126,7 @@ def _timeout(func):
                     self._skip_pipeline += 1
                     self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
                 return ret
-            IMPLEMENTATION = "RLIMIT_CPU_Python3.5"
+            IMPLEMENTATION = "RLIMIT_CPU_Linux_Best_solution"
         except ImportError:
             pass
     
@@ -145,7 +145,7 @@ def _timeout(func):
                     self._skip_pipeline += 1
                     self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
                 return ret
-            IMPLEMENTATION = "signal.alarm_Python2.7"
+            IMPLEMENTATION = "signal.alarm_non_CPU_time"
         except ImportError:
             pass
 
@@ -169,7 +169,7 @@ def _timeout(func):
                 timer.cancel()
                 return ret
                 
-            IMPLEMENTATION = "threading_at_old_Windows"
+            IMPLEMENTATION = "threading_in_poor_Windows"
         except ImportError:
             pass
     
