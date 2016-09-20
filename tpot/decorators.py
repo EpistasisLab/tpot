@@ -127,34 +127,15 @@ def _timeout(func):
                     self._skip_pipeline += 1
                     self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
                     ret = None
-                sys.tracebacklimit=1000
-                return ret
+                finally:
+                    # reset cpu time limit and trackback
+                    setrlimit(RLIMIT_CPU, current)
+                    sys.tracebacklimit=1000
+                    return ret
             IMPLEMENTATION = "RLIMIT_CPU_Linux_Best_solution"
         except ImportError:
             pass
     
-    if not IMPLEMENTATION:
-        try:
-            from signal import alarm,SIGALRM,signal
-            # time limit is not CPU time but wall time
-            @wraps(func)
-            def limitedTime(self,*args, **kw):
-                sys.tracebacklimit=0
-                signal(SIGALRM, timeout_signal_handler)
-                second = Time_Conv(self.max_eval_time_mins)
-                try:
-                    alarm(second)
-                    ret = func(*args, **kw)
-                except RuntimeError:
-                    self._skip_pipeline += 1
-                    self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
-                    ret = None
-                sys.tracebacklimit=1000
-                return ret
-            IMPLEMENTATION = "signal.alarm_non_CPU_time"
-        except ImportError:
-            pass
-
     if not IMPLEMENTATION:
         try:
             from threading import Timer
@@ -174,10 +155,10 @@ def _timeout(func):
                     self._skip_pipeline += 1
                     self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
                     ret = None
-                timer.cancel()
-                sys.tracebacklimit=1000
-                return ret
-                
+                finally:
+                    timer.cancel()
+                    sys.tracebacklimit=1000
+                    return ret
             IMPLEMENTATION = "threading_in_poor_Windows"
         except ImportError:
             pass
