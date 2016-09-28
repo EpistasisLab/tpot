@@ -213,10 +213,13 @@ def process_operator(operator, depth=0):
         if tpot_op.root  and depth > 0:
             # only for classifier unless will casue error when using regressor
             if tpot_op.classification:
-                step = "make_union(make_pipeline(VotingClassifier([(\"est_prob\", {})], voting = \"soft\"), ".format(tpot_op.export(*args))
-                step += "FunctionTransformer(lambda X: X[0], validate=False)), "
-                step += "VotingClassifier([(\"est_class\", {})], voting = \"hard\")".format(tpot_op.export(*args))
-                step += ", FunctionTransformer(lambda X: X))"
+                step = ("make_union("
+                " make_pipeline("
+                " VotingClassifier([(\"est_prob\", {OP_CODE})], voting=\"soft\"),"
+                " FunctionTransformer(lambda X: X[0], validate=False)),"
+                " VotingClassifier([(\"est_class\", {OP_CODE})], voting=\"hard\"),"
+                " FunctionTransformer(lambda X: X)"
+                ")").format(OP_CODE=tpot_op.export(*args))
             else:
                 step = "make_union(VotingClassifier([(\"est\", {})]), FunctionTransformer(lambda X: X))".format(tpot_op.export(*args))
             steps.append(step)
