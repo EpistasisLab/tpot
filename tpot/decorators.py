@@ -125,7 +125,8 @@ def _timeout(func):
                     setrlimit(RLIMIT_CPU, (cpu_time + second, current[1]))
                     ret = func(*args, **kw)
                 except RuntimeError:
-                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
+                    if self.verbosity > 1:
+                        self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
                     ret = None
                 finally:
                     # reset cpu time limit and trackback
@@ -144,7 +145,7 @@ def _timeout(func):
             # timit limit is not CPU time but wall time
             @wraps(func)
             def limitedTime(self, *args, **kw):
-                sys.tracebacklimit=0
+                sys.tracebacklimit = 0
                 signal(SIGINT, timeout_signal_handler)
                 second = Time_Conv(self.max_eval_time_mins)
                 timer = Timer(second, interrupt_main)
@@ -152,7 +153,8 @@ def _timeout(func):
                     timer.start()
                     ret = func(*args, **kw)
                 except RuntimeError:
-                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
+                    if self.verbosity > 1:
+                        self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
                     ret = None
                 finally:
                     timer.cancel()
@@ -166,7 +168,7 @@ def _timeout(func):
         @wraps(func)
         def limitedTime(self, *args, **kw):
             ret = func(*args, **kw)
-            if self._pbar.n == 0:
+            if self.verbosity > 1 and self._pbar.n == 0:
                 self._pbar.write('Warning: No time limit for evaluating pipeline!')
             return ret
     return limitedTime
