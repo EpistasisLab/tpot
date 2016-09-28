@@ -82,6 +82,12 @@ TPOT offers several arguments that can be provided at the command line:
 <td>How many minutes TPOT has to optimize the pipeline. This setting will override the GENERATIONS parameter and allow TPOT to run until it runs out of time.</td>
 </tr>
 <tr>
+<td>-maxeval</td>
+<td>MAX_EVAL_MINS</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize a single pipeline. Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
+</tr>
+<tr>
 <td>-s</td>
 <td>RANDOM_STATE</td>
 <td>Any positive integer</td>
@@ -178,6 +184,11 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>max_time_mins</td>
 <td>Any positive integer</td>
 <td>How many minutes TPOT has to optimize the pipeline. This setting will override the generations parameter.</td>
+</tr>
+<tr>
+<td>max_eval_time_mins</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize a single pipeline. Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
 </tr>
 <tr>
 <td>random_state</td>

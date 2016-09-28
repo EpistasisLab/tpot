@@ -144,6 +144,11 @@ def main():
         'setting will override the GENERATIONS parameter '
         'and allow TPOT to run until it runs out of time.')
 
+    parser.add_argument('-maxeval', action='store', dest='MAX_EVAL_MINS', default=5,
+        type=int, help='How many minutes TPOT has to evaluate a single pipeline. '
+        'Setting this parameter to higher values will allow TPOT to explore more complex '
+        'pipelines but will also allow TPOT to run longer.')
+
     parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=None,
         type=int, help='Random number generator seed for reproducibility. Set '
         'this seed if you want your TPOT run to be reproducible with the same '
@@ -196,7 +201,7 @@ def main():
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
                 num_cv_folds=args.NUM_CV_FOLDS, scoring=args.SCORING_FN,
-                max_time_mins=args.MAX_TIME_MINS,
+                max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
                 disable_update_check=args.DISABLE_UPDATE_CHECK)
 

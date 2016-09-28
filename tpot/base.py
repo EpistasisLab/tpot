@@ -56,7 +56,7 @@ class TPOTBase(BaseEstimator):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 scoring=None, num_cv_folds=3, max_time_mins=None, max_eval_time_mins=10,
+                 scoring=None, num_cv_folds=3, max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
                  disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
@@ -102,8 +102,10 @@ class TPOTBase(BaseEstimator):
         max_time_mins: int (default: None)
             How many minutes TPOT has to optimize the pipeline. If not None,
             this setting will override the `generations` parameter.
-        max_eval_time_mins: int (default: 10)
-            How many minutes TPOT has to optimize a single pipeline. 
+        max_eval_time_mins: int (default: 5)
+            How many minutes TPOT has to optimize a single pipeline.
+            Setting this parameter to higher values will allow TPOT to explore more complex
+            pipelines but will also allow TPOT to run longer.
         random_state: int (default: 0)
             The random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
