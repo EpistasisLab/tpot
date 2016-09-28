@@ -24,8 +24,7 @@ import sys
 
 
 def _gp_new_generation(func):
-    """Decorator that wraps functions that indicate the beginning of a new GP
-    generation.
+    """Decorator that wraps functions that indicate the beginning of a new GP generation.
 
     Parameters
     ----------
@@ -72,78 +71,79 @@ def _gp_new_generation(func):
 
     return wrapped_func
 
-"""
 
-Runs a function with time limit
-:param time_minute: The time limit in minutes
-:param func: The function to run
-:param args: The functions args, given as tuple
-:param kw: The functions keywords, given as dict
-
-:return: output if the function ended successfully. Timeout error if it was terminated.
-"""
 def _timeout(func):
+    """Runs a function with time limit
+
+    Parameters
+    ----------
+    time_minute: int
+        Time limit in minutes
+    func: Python function
+        Function to run
+    args: tuple
+        Function args
+    kw: dict
+        Function keywords
+
+    Returns
+    -------
+    wrapped_func: function
+        Wrapped function that raises a timeout exception if the time limit is exceeded
+    """
     IMPLEMENTATION = None
     class TIMEOUT(RuntimeError):
-        """
-        Inhertis from RuntimeError
-        """
+        """Timeout exception that is raised when a function evaluation times out"""
         pass
-    
+
     def timeout_signal_handler(signum, frame):
-        """
-        signal handler for _timeout function
-        rasie TIMEOUT exception
-        """
-        raise TIMEOUT("Time Out!")
-        
+        """Signal handler for _timeout function. raises a TIMEOUT exception"""
+        raise TIMEOUT('Function timed out.')
+
     def Time_Conv(time_minute):
-        """
-        Convert time for minutes to seconds
-        """
-        second = int(time_minute*60)
+        """Convert time for minutes to seconds"""
+        second = int(time_minute * 60)
         # time limit should be at least 1 second
         return max(second, 1)
-    
+
     if not IMPLEMENTATION:
         try:
-            from signal import signal,SIGXCPU
+            from signal import signal, SIGXCPU
             from resource import getrlimit, setrlimit, RLIMIT_CPU, getrusage, RUSAGE_SELF
             # resource.setrlimit(RLIMIT_CPU) implementation
             # timeout uses the CPU time 
             @wraps(func)
             def limitedTime(self,*args, **kw):
                 # don't show traceback 
-                sys.tracebacklimit=0
+                sys.tracebacklimit = 0
                 signal(SIGXCPU, timeout_signal_handler)
                 second = Time_Conv(self.max_eval_time_mins)
                 r = getrusage(RUSAGE_SELF)
                 cpu_time = r.ru_utime + r.ru_stime
                 current = getrlimit(RLIMIT_CPU)
                 try:
-                    setrlimit(RLIMIT_CPU, (cpu_time+second, current[1]))
+                    setrlimit(RLIMIT_CPU, (cpu_time + second, current[1]))
                     ret = func(*args, **kw)
                 except RuntimeError:
-                    self._skip_pipeline += 1
-                    self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
+                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
                     ret = None
                 finally:
                     # reset cpu time limit and trackback
                     setrlimit(RLIMIT_CPU, current)
-                    sys.tracebacklimit=1000
+                    sys.tracebacklimit = 1000
                     return ret
-            IMPLEMENTATION = "RLIMIT_CPU_Linux_Best_solution"
+            IMPLEMENTATION = 'RLIMIT_CPU_Linux_Best_solution'
         except ImportError:
             pass
-    
+
     if not IMPLEMENTATION:
         try:
             from threading import Timer
             from _thread import interrupt_main
-            from signal import signal,SIGINT
+            from signal import signal, SIGINT
             # timit limit is not CPU time but wall time
             @wraps(func)
-            def limitedTime(self,*args, **kw):
+            def limitedTime(self, *args, **kw):
                 sys.tracebacklimit=0
                 signal(SIGINT, timeout_signal_handler)
                 second = Time_Conv(self.max_eval_time_mins)
@@ -152,22 +152,21 @@ def _timeout(func):
                     timer.start()
                     ret = func(*args, **kw)
                 except RuntimeError:
-                    self._skip_pipeline += 1
-                    self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
+                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
                     ret = None
                 finally:
                     timer.cancel()
-                    sys.tracebacklimit=1000
+                    sys.tracebacklimit = 1000
                     return ret
-            IMPLEMENTATION = "threading_in_poor_Windows"
+            IMPLEMENTATION = 'threading_in_poor_Windows'
         except ImportError:
             pass
-    
+
     if not IMPLEMENTATION:
         @wraps(func)
-        def limitedTime(self,*args, **kw):
+        def limitedTime(self, *args, **kw):
             ret = func(*args, **kw)
-            if self._eval_pipeline == 0:
-                self._pbar.write("Warning: No time limit for evaluating pipeline!")
+            if self._pbar.n == 0:
+                self._pbar.write('Warning: No time limit for evaluating pipeline!')
             return ret
     return limitedTime
