@@ -209,16 +209,22 @@ def process_operator(operator, depth=0):
             steps.extend(process_operator(input_name, depth + 1))
 
         # If the step is an estimator and is not the last step then we must
-        # add its guess as a synthetic feature
-        if tpot_op.root and depth > 0:
-            steps.append(
-                "make_union(VotingClassifier([(\"est\", {})]), FunctionTransformer(lambda X: X))".
-                format(tpot_op.export(*args))
-            )
+        # add its class probabilities and class prodictions as synthetic features and only for classifier
+        if tpot_op.root  and depth > 0:
+            # only for classifier unless will casue error when using regressor
+            if tpot_op.classification:
+                step = "make_union(make_pipeline(VotingClassifier([(\"est_prob\", {})], voting = \"soft\"), ".format(tpot_op.export(*args))
+                step += "FunctionTransformer(lambda X: X[0], validate=False)), "
+                step += "VotingClassifier([(\"est_class\", {})], voting = \"hard\")".format(tpot_op.export(*args))
+                step += ", FunctionTransformer(lambda X: X))"
+            else:
+                step = "make_union(VotingClassifier([(\"est\", {})]), FunctionTransformer(lambda X: X))".format(tpot_op.export(*args))
+            steps.append(step)
         else:
             steps.append(tpot_op.export(*args))
-
     return steps
+
+
 
 
 def _indent(text, amount):
