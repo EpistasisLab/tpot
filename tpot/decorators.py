@@ -18,7 +18,9 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
+
 from functools import wraps
+import sys
 
 
 def _gp_new_generation(func):
@@ -69,3 +71,103 @@ def _gp_new_generation(func):
         return ret  # Pass back return value of func
 
     return wrapped_func
+
+"""
+
+Runs a function with time limit
+:param time_minute: The time limit in minutes
+:param func: The function to run
+:param args: The functions args, given as tuple
+:param kw: The functions keywords, given as dict
+
+:return: output if the function ended successfully. Timeout error if it was terminated.
+"""
+def _timeout(func):
+    IMPLEMENTATION = None
+    class TIMEOUT(RuntimeError):
+        """
+        Inhertis from RuntimeError
+        """
+        pass
+    
+    def timeout_signal_handler(signum, frame):
+        """
+        signal handler for _timeout function
+        rasie TIMEOUT exception
+        """
+        raise TIMEOUT("Time Out!")
+        
+    def Time_Conv(time_minute):
+        """
+        Convert time for minutes to seconds
+        """
+        second = int(time_minute*60)
+        # time limit should be at least 1 second
+        return max(second, 1)
+    
+    if not IMPLEMENTATION:
+        try:
+            from signal import signal,SIGXCPU
+            from resource import getrlimit, setrlimit, RLIMIT_CPU, getrusage, RUSAGE_SELF
+            # resource.setrlimit(RLIMIT_CPU) implementation
+            # timeout uses the CPU time 
+            @wraps(func)
+            def limitedTime(self,*args, **kw):
+                # don't show traceback 
+                sys.tracebacklimit=0
+                signal(SIGXCPU, timeout_signal_handler)
+                second = Time_Conv(self.max_eval_time_mins)
+                r = getrusage(RUSAGE_SELF)
+                cpu_time = r.ru_utime + r.ru_stime
+                current = getrlimit(RLIMIT_CPU)
+                try:
+                    setrlimit(RLIMIT_CPU, (cpu_time+second, current[1]))
+                    ret = func(*args, **kw)
+                except RuntimeError:
+                    self._skip_pipeline += 1
+                    self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
+                    ret = None
+                finally:
+                    # reset cpu time limit and trackback
+                    setrlimit(RLIMIT_CPU, current)
+                    sys.tracebacklimit=1000
+                    return ret
+            IMPLEMENTATION = "RLIMIT_CPU_Linux_Best_solution"
+        except ImportError:
+            pass
+    
+    if not IMPLEMENTATION:
+        try:
+            from threading import Timer
+            from _thread import interrupt_main
+            from signal import signal,SIGINT
+            # timit limit is not CPU time but wall time
+            @wraps(func)
+            def limitedTime(self,*args, **kw):
+                sys.tracebacklimit=0
+                signal(SIGINT, timeout_signal_handler)
+                second = Time_Conv(self.max_eval_time_mins)
+                timer = Timer(second, interrupt_main)
+                try:
+                    timer.start()
+                    ret = func(*args, **kw)
+                except RuntimeError:
+                    self._skip_pipeline += 1
+                    self._pbar.write('Timeout for evaluating pipeline #{0}! Skip to the next pipeline!'.format(self._eval_pipeline+1))
+                    ret = None
+                finally:
+                    timer.cancel()
+                    sys.tracebacklimit=1000
+                    return ret
+            IMPLEMENTATION = "threading_in_poor_Windows"
+        except ImportError:
+            pass
+    
+    if not IMPLEMENTATION:
+        @wraps(func)
+        def limitedTime(self,*args, **kw):
+            ret = func(*args, **kw)
+            if self._eval_pipeline == 0:
+                self._pbar.write("Warning: No time limit for evaluating pipeline!")
+            return ret
+    return limitedTime

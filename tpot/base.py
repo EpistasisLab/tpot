@@ -42,12 +42,14 @@ from update_checker import update_check
 
 from ._version import __version__
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
-from .decorators import _gp_new_generation
+from .decorators import _gp_new_generation,_timeout
 from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 
+# add time limit for imported function
+cross_val_score = _timeout(cross_val_score)
 
 class TPOTBase(BaseEstimator):
     """TPOT automatically creates and optimizes machine learning pipelines using
@@ -55,7 +57,7 @@ class TPOTBase(BaseEstimator):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 scoring=None, num_cv_folds=3, max_time_mins=None,
+                 scoring=None, num_cv_folds=3, max_time_mins=None, max_eval_time_mins=10,
                  random_state=None, verbosity=0,
                  disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
@@ -101,6 +103,8 @@ class TPOTBase(BaseEstimator):
         max_time_mins: int (default: None)
             How many minutes TPOT has to optimize the pipeline. If not None,
             this setting will override the `generations` parameter.
+        max_eval_time_mins: int (default: 10)
+            How many minutes TPOT has to optimize a single pipeline. 
         random_state: int (default: 0)
             The random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
@@ -131,6 +135,9 @@ class TPOTBase(BaseEstimator):
         self.population_size = population_size
         self.generations = generations
         self.max_time_mins = max_time_mins
+        self.max_eval_time_mins = max_eval_time_mins
+        self._eval_pipeline = 0 # the pipeline number
+        self._skip_pipeline = 0 # the skipped pipeline number
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -352,6 +359,7 @@ class TPOTBase(BaseEstimator):
                 # Add an extra line of spacing if the progress bar was used
                 if self.verbosity >= 2:
                     print('')
+                print('Total skipped pipeline number: {}'.format(self._skip_pipeline))
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
             # Store and fit the entire Pareto front if sciencing
@@ -523,7 +531,6 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
-
         try:
             if self.max_time_mins:
                 total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
@@ -546,6 +553,8 @@ class TPOTBase(BaseEstimator):
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
+            
+            # add time limit for evaluation of pipeline
             for i in range(len(individual)):
                 node = individual[i]
                 if ((type(node) is deap.gp.Terminal) or
@@ -555,7 +564,7 @@ class TPOTBase(BaseEstimator):
 
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
-                cv_scores = cross_val_score(sklearn_pipeline, features, classes,
+                cv_scores = cross_val_score(self,sklearn_pipeline, features, classes,
                     cv=self.num_cv_folds, scoring=self.scoring_function)
 
             resulting_score = np.mean(cv_scores)
@@ -568,6 +577,7 @@ class TPOTBase(BaseEstimator):
             return 5000., -5000.
         finally:
             if not self._pbar.disable:
+                self._eval_pipeline += 1
                 self._pbar.update(1)  # One more pipeline evaluated
 
         if type(resulting_score) in [float, np.float64, np.float32]:
