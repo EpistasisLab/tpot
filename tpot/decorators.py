@@ -113,7 +113,7 @@ def _timeout(func):
             # resource.setrlimit(RLIMIT_CPU) implementation
             # timeout uses the CPU time 
             @wraps(func)
-            def limitedTime(self,*args, **kw):
+            def limitedTime(self, *args, **kw):
                 # don't show traceback 
                 sys.tracebacklimit = 0
                 signal(SIGXCPU, timeout_signal_handler)
