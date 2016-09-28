@@ -491,12 +491,12 @@ class TPOTBase(BaseEstimator):
 
         """
         for (_, obj) in pipeline_steps:
-            if hasattr(obj, 'steps'):
-                self._set_param_recursive(obj.steps)
-            elif hasattr(obj, 'transformer_list'):
-                self._set_param_recursive(obj.transformer_list)
-            elif hasattr(obj, 'estimators'):
-                self._set_param_recursive(obj.estimators)
+            recursive_attrs = ['steps', 'transformer_list', 'estimators']
+
+            for attr in recursive_attrs:
+                if hasattr(obj, attr):
+                    self._set_param_recursive(getattr(obj, attr), parameter, value)
+                    break
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
@@ -529,12 +529,19 @@ class TPOTBase(BaseEstimator):
                 total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
                 if total_mins_elapsed >= self.max_time_mins:
                     raise KeyboardInterrupt('{} minutes have elapsed. '
-                        'TPOT will close down'.format(total_mins_elapsed))
+                        'TPOT will close down.'.format(total_mins_elapsed))
+
+            # Disallow certain combinations of operators because they will take too long or take up too much RAM
+            # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
+            individual_str = str(individual)
+            if (individual_str.count('PolynomialFeatures') > 1 or
+                individual_str.count('RFE') > 1):
+                raise ValueError('Invalid pipeline -- skipping its evaluation')
 
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-            # Fix random state when specified
+            # Fix random state when the operator allows
             self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
             # Count the number of pipeline operators as a measure of pipeline complexity

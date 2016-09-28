@@ -177,7 +177,7 @@ def main():
             print('{}\t=\t{}'.format(arg, arg_val))
         print('')
 
-    input_data = np.recfromcsv(args.INPUT_FILE, delimiter=args.INPUT_SEPARATOR, dtype=np.float64)
+    input_data = np.recfromcsv(args.INPUT_FILE, delimiter=args.INPUT_SEPARATOR, dtype=np.float64, case_sensitive=True)
     if args.TARGET_NAME not in input_data.dtype.names:
         raise ValueError('The provided data file does not seem to have a target column. '
                          'Please make sure to specify the target column using the -target parameter.')
