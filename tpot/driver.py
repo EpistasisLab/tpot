@@ -27,8 +27,7 @@ from ._version import __version__
 
 
 def positive_integer(value):
-    """Ensures that the provided value is a positive integer
-    Throws an exception otherwise
+    """Ensures that the provided value is a positive integer. Throws an exception otherwise.
 
     Parameters
     ----------
@@ -43,17 +42,14 @@ def positive_integer(value):
     try:
         value = int(value)
     except Exception:
-        raise argparse.ArgumentTypeError('Invalid int value: \'{}\''.
-            format(value))
+        raise argparse.ArgumentTypeError('Invalid int value: \'{}\''.format(value))
     if value < 0:
-        raise argparse.ArgumentTypeError('Invalid positive int value: \'{}\''.
-            format(value))
+        raise argparse.ArgumentTypeError('Invalid positive int value: \'{}\''.format(value))
     return value
 
 
 def float_range(value):
-    """Ensures that the provided value is a float integer in the range [0., 1.]
-    Throws an exception otherwise
+    """Ensures that the provided value is a float integer in the range [0., 1.]. Throws an exception otherwise.
 
     Parameters
     ----------
@@ -68,11 +64,9 @@ def float_range(value):
     try:
         value = float(value)
     except:
-        raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.
-            format(value))
+        raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
     if value < 0.0 or value > 1.0:
-        raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.
-            format(value))
+        raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
     return value
 
 
