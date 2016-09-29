@@ -445,6 +445,21 @@ class TPOTBase(BaseEstimator):
         return abs(SCORERS[self.scoring_function](self._fitted_pipeline,
             testing_features.astype(np.float64), testing_classes.astype(np.float64)))
 
+    def predict_proba(self, features):
+        """Uses the optimized pipeline to predict the class probabilities for a feature set
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix of the testing set
+
+        Returns
+        -------
+        array-like: {n_samples, n_classes}
+            The class probabilities of the input samples
+
+        """
+
     def set_params(self, **params):
         """Set the parameters of a TPOT instance
 
