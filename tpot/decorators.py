@@ -90,17 +90,19 @@ def _timeout(func):
     limitedTime: function
         Wrapped function that raises a timeout exception if the time limit is exceeded
     """
-    try:
-        from multiprocessing import Pool, TimeoutError
-        def Time_Conv(time_minute):
-            """Convert time for minutes to seconds"""
-            second = int(time_minute * 60)
-            # time limit should be at least 1 second
-            return max(second, 1)
+    def Time_Conv(time_minute):
+        """Convert time for minutes to seconds"""
+        second = int(time_minute * 60)
+        # time limit should be at least 1 second
+        return max(second, 1)
+    if not sys.platform.startswith('win'):
+        from multiprocessing import Pool, TimeoutError, freeze_support
         @wraps(func) 
         def limitedTime(self, *args, **kw):
             # turn off trackback
             sys.tracebacklimit = 0
+            if __name__ == '__main__':
+                freeze_support()
             # converte time to seconds
             max_time_seconds = Time_Conv(self.max_eval_time_mins)
             pool = Pool(1) # open a pool with only one process
@@ -119,13 +121,28 @@ def _timeout(func):
                 pool.join()
                 # reset trackback info
                 sys.tracebacklimit = 1000
-        return limitedTime
-    except:
+    else:
+        from threading import Timer
+        from _thread import interrupt_main
         @wraps(func)
         def limitedTime(self, *args, **kw):
-            ret = func(*args, **kw)
             if self.verbosity > 1 and self._pbar.n == 0:
-                self._pbar.write('Warning: No time limit for evaluating pipeline!')
-            return ret
+                self._pbar.write('Warning: No KeyBoardInterrupt for evaluating pipelines!')
+            sys.tracebacklimit = 0
+            max_time_seconds = Time_Conv(self.max_eval_time_mins)
+            timer = Timer(max_time_seconds, interrupt_main)
+            try:
+                timer.start()
+                ret = func(*args, **kw)
+            except KeyboardInterrupt:
+                if self.verbosity > 1:
+                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
+                ret = None
+            finally:
+                timer.cancel()
+                sys.tracebacklimit = 1000
+                return ret
+    # return func
+    return limitedTime
 
 
