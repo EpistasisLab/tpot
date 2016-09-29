@@ -459,6 +459,9 @@ class TPOTBase(BaseEstimator):
             The class probabilities of the input samples
 
         """
+        if not self._fitted_pipeline:
+            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
+        return self._fitted_pipeline.predict_proba(features.astype(np.float64))
 
     def set_params(self, **params):
         """Set the parameters of a TPOT instance
