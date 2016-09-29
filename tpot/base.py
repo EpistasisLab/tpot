@@ -463,6 +463,24 @@ class TPOTBase(BaseEstimator):
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
         return self._fitted_pipeline.predict_proba(features.astype(np.float64))
 
+    def predict_log_proba(self, features):
+        """Uses the optimized pipeline to predict the log of the class probabilities for a feature set
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix of the testing set
+
+        Returns
+        -------
+        array-like: {n_samples, n_classes}
+            The class probabilities of the input samples
+
+        """
+        if not self._fitted_pipeline:
+            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
+        return self._fitted_pipeline.predict_log_proba(features.astype(np.float64))
+
     def set_params(self, **params):
         """Set the parameters of a TPOT instance
 
