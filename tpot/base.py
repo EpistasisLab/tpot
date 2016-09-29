@@ -446,7 +446,7 @@ class TPOTBase(BaseEstimator):
             testing_features.astype(np.float64), testing_classes.astype(np.float64)))
 
     def predict_proba(self, features):
-        """Uses the optimized pipeline to predict the class probabilities for a feature set
+        """Uses the optimized pipeline to estimate the class probabilities for a feature set
 
         Parameters
         ----------
@@ -464,7 +464,7 @@ class TPOTBase(BaseEstimator):
         return self._fitted_pipeline.predict_proba(features.astype(np.float64))
 
     def predict_log_proba(self, features):
-        """Uses the optimized pipeline to predict the log of the class probabilities for a feature set
+        """Uses the optimized pipeline to estimate the log of the class probabilities for a feature set
 
         Parameters
         ----------
