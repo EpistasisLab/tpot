@@ -194,6 +194,18 @@ def test_predict_2():
 
     assert result.shape == (testing_features.shape[0],)
 
+def test_predict_proba():
+    """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)"""
+
+    tpot_obj = TPOTClassifier()
+    tpot_obj._optimized_pipeline = creator.Individual. \
+        from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features, training_classes)
+
+    result = tpot_obj.predict_proba(testing_features)
+
+    assert result.shape == (testing_features.shape[0], testing_classes.shape[1])
 
 def test_fit():
     """Assert that the TPOT fit function provides an optimized pipeline"""
