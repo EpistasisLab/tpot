@@ -321,6 +321,7 @@ class TPOTBase(BaseEstimator):
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
+        #except (SIGINT, SystemExit):
             if self.verbosity > 0:
                 print('GP closed prematurely - will use current best pipeline')
         finally:
@@ -335,7 +336,6 @@ class TPOTBase(BaseEstimator):
             # Store the pipeline with the highest internal testing score
             if self._hof:
                 top_score = -5000.
-
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
