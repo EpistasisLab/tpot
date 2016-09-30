@@ -101,8 +101,6 @@ def _timeout(func):
         def limitedTime(self, *args, **kw):
             # turn off trackback
             sys.tracebacklimit = 0
-            if __name__ == '__main__':
-                freeze_support()
             # converte time to seconds
             max_time_seconds = Time_Conv(self.max_eval_time_mins)
             pool = Pool(1) # open a pool with only one process
