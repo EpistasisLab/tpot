@@ -196,7 +196,6 @@ def generate_pipeline_code(pipeline_tree):
 def process_operator(operator, depth=0):
     steps = []
     op_name = operator[0]
-
     if op_name == "CombineDFs":
         steps.append(
             _combine_dfs(operator[1], operator[2])
@@ -204,15 +203,13 @@ def process_operator(operator, depth=0):
     else:
         input_name, args = operator[1], operator[2:]
         tpot_op = operators.Operator.get_by_name(op_name)
-
         if input_name != 'input_matrix':
             steps.extend(process_operator(input_name, depth + 1))
-
         # If the step is an estimator and is not the last step then we must
         # add its class probabilities and class prodictions as synthetic features and only for classifier
         if tpot_op.root  and depth > 0:
-            # only for classifier unless will casue error when using regressor
-            if tpot_op.classification:
+            #  for classifier with predict_proba
+            if tpot_op.classification and hasattr(tpot_op.sklearn_class, 'predict_proba'):
                 step = ("make_union("
                 " make_pipeline("
                 " VotingClassifier([(\"est_prob\", {OP_CODE})], voting=\"soft\"),"
