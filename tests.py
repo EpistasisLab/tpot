@@ -7,7 +7,7 @@ TPOT Unit Tests
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import positive_integer, float_range
-from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
+from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, process_operator
 from tpot.decorators import _gp_new_generation
 from tpot.gp_types import Output_DF
 
@@ -289,6 +289,37 @@ def test_generate_pipeline_code():
 
     assert expected_code == generate_pipeline_code(pipeline)
 
+def test_process_operator():
+    """Assert that process_operator() returns the correct steps for a given pipeline tree"""
+    pipeline_tree = ['KNeighborsClassifier', 
+                     ['GradientBoostingClassifier', 
+                      ['GradientBoostingClassifier', 
+                       ['RobustScaler', 
+                        ['AdaBoostClassifier', 
+                         ['MinMaxScaler', 'input_matrix'], 
+                         0.79000000000000004]],
+                        0.37, 90.0],
+                       0.56000000000000005,
+                        0.63],
+                      4, 21]
+    expected_steps = ['MinMaxScaler()', 
+                      ('make_union( make_pipeline( VotingClassifier([("est_prob", AdaBoostClassifier(learning_rate=0.79, n_estimators=500))], voting="soft"), '
+                      'FunctionTransformer(lambda X: X[0], validate=False)), '
+                      'VotingClassifier([("est_class", AdaBoostClassifier(learning_rate=0.79, n_estimators=500))], voting="hard"),'
+                      ' FunctionTransformer(lambda X: X))'), 
+                      'RobustScaler()', 
+                      ('make_union( make_pipeline( VotingClassifier([("est_prob", '
+                       'GradientBoostingClassifier(learning_rate=0.37, max_features=0.37, n_estimators=500))], voting="soft"), '
+                       'FunctionTransformer(lambda X: X[0], validate=False)), '
+                       'VotingClassifier([("est_class", GradientBoostingClassifier(learning_rate=0.37, max_features=0.37, n_estimators=500))], '
+                       'voting="hard"), FunctionTransformer(lambda X: X))'), 
+                      ('make_union( make_pipeline( VotingClassifier([("est_prob", '
+                       'GradientBoostingClassifier(learning_rate=0.56, max_features=0.56, n_estimators=500))], voting="soft"), '
+                       'FunctionTransformer(lambda X: X[0], validate=False)), '
+                       'VotingClassifier([("est_class", GradientBoostingClassifier(learning_rate=0.56, max_features=0.56, n_estimators=500))], '
+                       'voting="hard"), FunctionTransformer(lambda X: X))'), 
+                      'KNeighborsClassifier(n_neighbors=4, weights="distance")']
+    assert expected_steps == process_operator(pipeline_tree)
 
 def test_generate_import_code():
     """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline"""
