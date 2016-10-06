@@ -90,19 +90,21 @@ def _timeout(func):
     limitedTime: function
         Wrapped function that raises a timeout exception if the time limit is exceeded
     """
-    def Time_Conv(time_minute):
-        """Convert time for minutes to seconds"""
+    def convert_mins_to_secs(time_minute):
+        """Convert time from minutes to seconds"""
         second = int(time_minute * 60)
         # time limit should be at least 1 second
         return max(second, 1)
+
     if not sys.platform.startswith('win'):
         from multiprocessing import Pool, TimeoutError, freeze_support
+
         @wraps(func) 
         def limitedTime(self, *args, **kw):
             # turn off trackback
             sys.tracebacklimit = 0
             # converte time to seconds
-            max_time_seconds = Time_Conv(self.max_eval_time_mins)
+            max_time_seconds = convert_mins_to_secs(self.max_eval_time_mins)
             pool = Pool(1) # open a pool with only one process
             subproc = pool.apply_async(func, args, kw) # submit process
             try:
@@ -122,12 +124,13 @@ def _timeout(func):
     else:
         from threading import Timer
         from _thread import interrupt_main
+
         @wraps(func)
         def limitedTime(self, *args, **kw):
             if self.verbosity > 1 and self._pbar.n == 0:
-                self._pbar.write('Warning: No KeyBoardInterrupt for evaluating pipelines!')
+                self._pbar.write('Warning: No KeyBoardInterrupt for evaluating pipelines.')
             sys.tracebacklimit = 0
-            max_time_seconds = Time_Conv(self.max_eval_time_mins)
+            max_time_seconds = convert_mins_to_secs(self.max_eval_time_mins)
             timer = Timer(max_time_seconds, interrupt_main)
             try:
                 timer.start()
@@ -142,5 +145,3 @@ def _timeout(func):
                 return ret
     # return func
     return limitedTime
-
-
