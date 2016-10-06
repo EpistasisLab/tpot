@@ -32,7 +32,7 @@ from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
 
 from sklearn.base import BaseEstimator
-from sklearn.cross_validation import cross_val_score
+from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
@@ -42,14 +42,14 @@ from update_checker import update_check
 
 from ._version import __version__
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
-from .decorators import _gp_new_generation, _timeout
+from .decorators import _gp_new_generation#, _timeout
 from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 
 # add time limit for imported function
-cross_val_score = _timeout(cross_val_score)
+#cross_val_score = _timeout(cross_val_score)
 
 class TPOTBase(BaseEstimator):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
@@ -89,7 +89,7 @@ class TPOTBase(BaseEstimator):
             TPOT assumes that this scoring function should be maximized, i.e.,
             higher is better.
 
-            Offers the same options as sklearn.cross_validation.cross_val_score:
+            Offers the same options as sklearn.model_selection.cross_val_score:
 
             ['accuracy', 'adjusted_rand_score', 'average_precision', 'f1',
             'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted',
@@ -561,7 +561,7 @@ class TPOTBase(BaseEstimator):
 
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
-                cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
+                cv_scores = cross_val_score(sklearn_pipeline, features, classes,
                     cv=self.num_cv_folds, scoring=self.scoring_function)
 
             resulting_score = np.mean(cv_scores)

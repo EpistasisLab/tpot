@@ -19,11 +19,11 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import Preprocessor
-from sklearn.decomposition import RandomizedPCA
+from sklearn.decomposition import PCA
 
 class TPOTRandomizedPCA(Preprocessor):
 
-    """Uses scikit-learn's RandomizedPCA to transform the feature set
+    """Uses scikit-learn's randomized PCA to transform the feature set
 
     Parameters
     ----------
@@ -31,8 +31,8 @@ class TPOTRandomizedPCA(Preprocessor):
         Number of iterations for the power method. [1, 10]
     """
 
-    import_hash = {'sklearn.decomposition': ['RandomizedPCA']}
-    sklearn_class = RandomizedPCA
+    import_hash = {'sklearn.decomposition': ['PCA']}
+    sklearn_class = PCA
     arg_types = (int, )
 
     def __init__(self):
@@ -42,5 +42,6 @@ class TPOTRandomizedPCA(Preprocessor):
         iterated_power = min(10, max(1, iterated_power))
 
         return {
+            'svd_solver': 'randomized',
             'iterated_power': iterated_power
         }

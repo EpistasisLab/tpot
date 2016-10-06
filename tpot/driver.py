@@ -20,7 +20,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 import numpy as np
 import argparse
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 
 from .tpot import TPOTClassifier, TPOTRegressor
 from ._version import __version__
@@ -139,7 +139,7 @@ def main():
         'and allow TPOT to run until it runs out of time.')
 
     parser.add_argument('-maxeval', action='store', dest='MAX_EVAL_MINS', default=5,
-        type=int, help='How many minutes TPOT has to evaluate a single pipeline. '
+        type=float, help='How many minutes TPOT has to evaluate a single pipeline. '
         'Setting this parameter to higher values will allow TPOT to explore more complex '
         'pipelines but will also allow TPOT to run longer.')
 
