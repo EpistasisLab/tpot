@@ -82,6 +82,12 @@ TPOT offers several arguments that can be provided at the command line:
 <td>How many minutes TPOT has to optimize the pipeline. This setting will override the GENERATIONS parameter and allow TPOT to run until it runs out of time.</td>
 </tr>
 <tr>
+<td>-maxeval</td>
+<td>MAX_EVAL_MINS</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize a single pipeline. Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
+</tr>
+<tr>
 <td>-s</td>
 <td>RANDOM_STATE</td>
 <td>Any positive integer</td>
@@ -180,6 +186,11 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>How many minutes TPOT has to optimize the pipeline. This setting will override the generations parameter.</td>
 </tr>
 <tr>
+<td>max_eval_time_mins</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize a single pipeline. Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
+</tr>
+<tr>
 <td>random_state</td>
 <td>Any positive integer</td>
 <td>The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.</td>
@@ -201,7 +212,7 @@ Some example code with custom TPOT parameters might look like:
 ```Python
 from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, num_cv_folds=5, random_state=42, verbosity=2)
 ```
 
 Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize a pipeline based on a data set with the `fit` function:
@@ -209,7 +220,7 @@ Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize 
 ```Python
 from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, num_cv_folds=5, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 ```
 
@@ -220,7 +231,7 @@ You can then proceed to evaluate the final pipeline on the testing set with the 
 ```Python
 from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, num_cv_folds=5, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 print(pipeline_optimizer.score(testing_features, testing_classes))
 ```
@@ -230,7 +241,7 @@ Finally, you can tell TPOT to export the corresponding Python code for the optim
 ```Python
 from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, num_cv_folds=5, random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 print(pipeline_optimizer.score(testing_features, testing_classes))
 pipeline_optimizer.export('tpot_exported_pipeline.py')

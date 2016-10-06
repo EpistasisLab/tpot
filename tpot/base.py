@@ -42,20 +42,21 @@ from update_checker import update_check
 
 from ._version import __version__
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
-from .decorators import _gp_new_generation
+from .decorators import _gp_new_generation, _timeout
 from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 
+# add time limit for imported function
+cross_val_score = _timeout(cross_val_score)
 
 class TPOTBase(BaseEstimator):
-    """TPOT automatically creates and optimizes machine learning pipelines using
-    genetic programming"""
+    """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 scoring=None, num_cv_folds=3, max_time_mins=None,
+                 scoring=None, num_cv_folds=3, max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
                  disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
@@ -101,6 +102,10 @@ class TPOTBase(BaseEstimator):
         max_time_mins: int (default: None)
             How many minutes TPOT has to optimize the pipeline. If not None,
             this setting will override the `generations` parameter.
+        max_eval_time_mins: int (default: 5)
+            How many minutes TPOT has to optimize a single pipeline.
+            Setting this parameter to higher values will allow TPOT to explore more complex
+            pipelines but will also allow TPOT to run longer.
         random_state: int (default: 0)
             The random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
@@ -131,6 +136,7 @@ class TPOTBase(BaseEstimator):
         self.population_size = population_size
         self.generations = generations
         self.max_time_mins = max_time_mins
+        self.max_eval_time_mins = max_eval_time_mins
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -315,6 +321,7 @@ class TPOTBase(BaseEstimator):
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
+        #except (SIGINT, SystemExit):
             if self.verbosity > 0:
                 print('GP closed prematurely - will use current best pipeline')
         finally:
@@ -329,7 +336,6 @@ class TPOTBase(BaseEstimator):
             # Store the pipeline with the highest internal testing score
             if self._hof:
                 top_score = -5000.
-
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
@@ -523,22 +529,29 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
-
         try:
             if self.max_time_mins:
                 total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
                 if total_mins_elapsed >= self.max_time_mins:
-                    raise KeyboardInterrupt('{} minutes have elapsed. '
-                        'TPOT will close down'.format(total_mins_elapsed))
+                    raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
+
+            # Disallow certain combinations of operators because they will take too long or take up too much RAM
+            # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
+            individual_str = str(individual)
+            if (individual_str.count('PolynomialFeatures') > 1 or
+                individual_str.count('RFE') > 1):
+                raise ValueError('Invalid pipeline -- skipping its evaluation')
 
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-            # Fix random state when specified
+            # Fix random state when the operator allows
             self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
+            
+            # add time limit for evaluation of pipeline
             for i in range(len(individual)):
                 node = individual[i]
                 if ((type(node) is deap.gp.Terminal) or
@@ -548,7 +561,7 @@ class TPOTBase(BaseEstimator):
 
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
-                cv_scores = cross_val_score(sklearn_pipeline, features, classes,
+                cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
                     cv=self.num_cv_folds, scoring=self.scoring_function)
 
             resulting_score = np.mean(cv_scores)
