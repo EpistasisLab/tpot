@@ -192,8 +192,7 @@ class TPOTBase(BaseEstimator):
             if op.root:
                 # We need to add rooted primitives twice so that they can
                 # return both an Output_DF (and thus be the root of the tree),
-                # and return a np.ndarray so they can exist elsewhere in the
-                # tree.
+                # and return a np.ndarray so they can exist elsewhere in the tree.
                 p_types = (op.parameter_types()[0], Output_DF)
                 self._pset.addPrimitive(op, *p_types)
 
@@ -311,7 +310,7 @@ class TPOTBase(BaseEstimator):
             total_evals = self.population_size * (self.generations + 1)
 
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
-                          disable=not (self.verbosity >= 2), desc='GP Progress')
+                          disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         try:
             pop, _ = algorithms.eaSimple(
@@ -321,7 +320,6 @@ class TPOTBase(BaseEstimator):
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
-        #except (SIGINT, SystemExit):
             if self.verbosity > 0:
                 print('GP closed prematurely - will use current best pipeline')
         finally:
