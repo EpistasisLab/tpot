@@ -254,7 +254,7 @@ Check our [examples](examples/MNIST_Example/) to see TPOT applied to some specif
 <a name="scoringfunctions"></a>
 ## Scoring functions
 
-TPOT makes use of `sklearn.cross_validation.cross_val_score`, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
+TPOT makes use of `sklearn.model_selection.cross_val_score`, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
 
 1. You can pass in a string from the list described in the table above. Any other strings will cause internal issues that may break your code down the line.
 

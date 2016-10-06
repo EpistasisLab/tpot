@@ -3,7 +3,7 @@ The following code illustrates the usage of TPOT with the IRIS data set.
 ```python
 from tpot import TPOTClassifier
 from sklearn.datasets import load_iris
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 import numpy as np
 
 iris = load_iris()
@@ -25,7 +25,7 @@ After running the above code, the corresponding Python code should be exported t
 ```python
 import numpy as np
 
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import VotingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline, make_union

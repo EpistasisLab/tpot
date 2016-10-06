@@ -3,7 +3,7 @@ The following code illustrates the usage of TPOT with the Boston house prices da
 ```python
 from tpot import TPOTRegressor
 from sklearn.datasets import load_boston
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 
 digits = load_boston()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
@@ -24,7 +24,7 @@ After running the above code, the corresponding Python code should be exported t
 ```python
 import numpy as np
 
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.pipeline import make_pipeline
 

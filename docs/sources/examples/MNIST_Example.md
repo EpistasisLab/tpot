@@ -3,7 +3,7 @@ Below is a minimal working example with the practice MNIST data set.
 ```python
 from tpot import TPOTClassifier
 from sklearn.datasets import load_digits
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 
 digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
@@ -22,7 +22,7 @@ Running this code should discover a pipeline that achieves about 98% testing acc
 ```python
 import numpy as np
 
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline
 

@@ -40,7 +40,7 @@ class TPOTClassifier(TPOTBase):
 class TPOTRegressor(TPOTBase):
     """TPOT estimator for regression problems"""
 
-    scoring_function = 'mean_squared_error'  # Regression scoring
+    scoring_function = 'neg_mean_squared_error'  # Regression scoring
 
     def _ignore_operator(self, op):
         """Filter that describes which operators are not used
