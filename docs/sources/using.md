@@ -82,6 +82,12 @@ TPOT offers several arguments that can be provided at the command line:
 <td>How many minutes TPOT has to optimize the pipeline. This setting will override the GENERATIONS parameter and allow TPOT to run until it runs out of time.</td>
 </tr>
 <tr>
+<td>-maxeval</td>
+<td>MAX_EVAL_MINS</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize a single pipeline. Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
+</tr>
+<tr>
 <td>-s</td>
 <td>RANDOM_STATE</td>
 <td>Any positive integer</td>
@@ -180,6 +186,11 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>How many minutes TPOT has to optimize the pipeline. This setting will override the generations parameter.</td>
 </tr>
 <tr>
+<td>max_eval_time_mins</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize a single pipeline. Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
+</tr>
+<tr>
 <td>random_state</td>
 <td>Any positive integer</td>
 <td>The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.</td>
@@ -243,7 +254,7 @@ Check our [examples](examples/MNIST_Example/) to see TPOT applied to some specif
 <a name="scoringfunctions"></a>
 ## Scoring functions
 
-TPOT makes use of `sklearn.cross_validation.cross_val_score`, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
+TPOT makes use of `sklearn.model_selection.cross_val_score`, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
 
 1. You can pass in a string from the list described in the table above. Any other strings will cause internal issues that may break your code down the line.
 

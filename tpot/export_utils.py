@@ -110,7 +110,7 @@ def generate_import_code(pipeline):
 
     # Always start with these imports
     pipeline_imports = {
-        'sklearn.cross_validation': ['train_test_split'],
+        'sklearn.model_selection':  ['train_test_split'],
         'sklearn.pipeline':         ['make_pipeline', 'make_union'],
         'sklearn.preprocessing':    ['FunctionTransformer'],
         'sklearn.ensemble':         ['VotingClassifier']

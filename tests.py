@@ -20,7 +20,7 @@ import random
 from datetime import datetime
 
 from sklearn.datasets import load_digits, load_boston
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 
 from deap import creator
 from tqdm import tqdm
@@ -66,7 +66,7 @@ def test_init_default_scoring():
     """Assert that TPOT intitializes with the correct default scoring function"""
 
     tpot_obj = TPOTRegressor()
-    assert tpot_obj.scoring_function == 'mean_squared_error'
+    assert tpot_obj.scoring_function == 'neg_mean_squared_error'
 
 
 def test_init_max_time_mins():
@@ -150,7 +150,7 @@ def test_score_2():
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline"""
 
-    tpot_obj = TPOTRegressor(scoring='mean_squared_error')
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
     tpot_obj._pbar = tqdm(total=1, disable=True)
     known_score = 8.9673743407873712  # Assumes use of mse
     # Reify pipeline with known score
@@ -298,9 +298,9 @@ def test_generate_import_code():
 
     expected_code = """import numpy as np
 
-from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.tree import DecisionTreeClassifier
@@ -323,9 +323,9 @@ def test_export_pipeline():
 
     expected_code = """import numpy as np
 
-from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import GradientBoostingClassifier, VotingClassifier
 from sklearn.feature_selection import RFE
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer

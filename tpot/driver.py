@@ -20,15 +20,14 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 import numpy as np
 import argparse
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 
 from .tpot import TPOTClassifier, TPOTRegressor
 from ._version import __version__
 
 
 def positive_integer(value):
-    """Ensures that the provided value is a positive integer
-    Throws an exception otherwise
+    """Ensures that the provided value is a positive integer. Throws an exception otherwise.
 
     Parameters
     ----------
@@ -43,17 +42,14 @@ def positive_integer(value):
     try:
         value = int(value)
     except Exception:
-        raise argparse.ArgumentTypeError('Invalid int value: \'{}\''.
-            format(value))
+        raise argparse.ArgumentTypeError('Invalid int value: \'{}\''.format(value))
     if value < 0:
-        raise argparse.ArgumentTypeError('Invalid positive int value: \'{}\''.
-            format(value))
+        raise argparse.ArgumentTypeError('Invalid positive int value: \'{}\''.format(value))
     return value
 
 
 def float_range(value):
-    """Ensures that the provided value is a float integer in the range [0., 1.]
-    Throws an exception otherwise
+    """Ensures that the provided value is a float integer in the range [0., 1.]. Throws an exception otherwise.
 
     Parameters
     ----------
@@ -68,11 +64,9 @@ def float_range(value):
     try:
         value = float(value)
     except:
-        raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.
-            format(value))
+        raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
     if value < 0.0 or value > 1.0:
-        raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.
-            format(value))
+        raise argparse.ArgumentTypeError('Invalid float value: \'{}\''.format(value))
     return value
 
 
@@ -144,6 +138,11 @@ def main():
         'setting will override the GENERATIONS parameter '
         'and allow TPOT to run until it runs out of time.')
 
+    parser.add_argument('-maxeval', action='store', dest='MAX_EVAL_MINS', default=5,
+        type=float, help='How many minutes TPOT has to evaluate a single pipeline. '
+        'Setting this parameter to higher values will allow TPOT to explore more complex '
+        'pipelines but will also allow TPOT to run longer.')
+
     parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=None,
         type=int, help='Random number generator seed for reproducibility. Set '
         'this seed if you want your TPOT run to be reproducible with the same '
@@ -196,7 +195,7 @@ def main():
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
                 num_cv_folds=args.NUM_CV_FOLDS, scoring=args.SCORING_FN,
-                max_time_mins=args.MAX_TIME_MINS,
+                max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
                 disable_update_check=args.DISABLE_UPDATE_CHECK)
 

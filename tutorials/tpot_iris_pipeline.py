@@ -1,8 +1,8 @@
 import numpy as np
 
-from sklearn.cross_validation import train_test_split
-from sklearn.ensemble import VotingClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import ExtraTreesClassifier, VotingClassifier
+from sklearn.kernel_approximation import Nystroem
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 
@@ -13,7 +13,8 @@ training_features, testing_features, training_classes, testing_classes = \
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    LogisticRegression(C=7.0, dual=False, penalty="l1")
+    Nystroem(gamma=0.01, kernel="poly", n_components=8),
+    ExtraTreesClassifier(criterion="entropy", max_features=1.0, n_estimators=500)
 )
 
 exported_pipeline.fit(training_features, training_classes)

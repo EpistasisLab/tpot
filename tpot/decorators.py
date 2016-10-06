@@ -18,12 +18,13 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
+
 from functools import wraps
+import sys
 
 
 def _gp_new_generation(func):
-    """Decorator that wraps functions that indicate the beginning of a new GP
-    generation.
+    """Decorator that wraps functions that indicate the beginning of a new GP generation.
 
     Parameters
     ----------
@@ -40,7 +41,6 @@ def _gp_new_generation(func):
         """Increment _gp_generation and bump pipeline count if necessary"""
         ret = func(self, *args, **kwargs)
         self._gp_generation += 1
-
         if not self._pbar.disable:
             # Print only the best individual fitness
             if self.verbosity == 2:
@@ -69,3 +69,94 @@ def _gp_new_generation(func):
         return ret  # Pass back return value of func
 
     return wrapped_func
+
+
+def _timeout(func):
+    """Runs a function with time limit
+
+    Parameters
+    ----------
+    time_minute: int
+        Time limit in minutes
+    func: Python function
+        Function to run
+    args: tuple
+        Function args
+    kw: dict
+        Function keywords
+
+    Returns
+    -------
+    limitedTime: function
+        Wrapped function that raises a timeout exception if the time limit is exceeded
+    """
+    def convert_mins_to_secs(time_minute):
+        """Convert time from minutes to seconds"""
+        second = int(time_minute * 60)
+        # time limit should be at least 1 second
+        return max(second, 1)
+    class TIMEOUT(RuntimeError):
+            """
+            Inhertis from RuntimeError
+            """
+            pass
+    
+    def timeout_signal_handler(signum, frame):
+        """
+        signal handler for _timeout function
+        rasie TIMEOUT exception
+        """
+        raise TIMEOUT("Time Out!")
+    if not sys.platform.startswith('win'):
+        from signal import SIGXCPU, signal, getsignal
+        from resource import getrlimit, setrlimit, RLIMIT_CPU, getrusage, RUSAGE_SELF
+        # timeout uses the CPU time 
+        @wraps(func)
+        def limitedTime(self,*args, **kw):
+            # don't show traceback 
+            sys.tracebacklimit=0
+            # save old signal
+            old_signal_hander = getsignal(SIGXCPU)
+            # change signal
+            signal(SIGXCPU, timeout_signal_handler)
+            max_time_second = convert_mins_to_secs(self.max_eval_time_mins)
+            r = getrusage(RUSAGE_SELF)
+            cpu_time = r.ru_utime + r.ru_stime
+            current = getrlimit(RLIMIT_CPU)
+            try:
+                setrlimit(RLIMIT_CPU, (cpu_time+max_time_second, current[1]))
+                ret = func(*args, **kw)
+            except RuntimeError:
+                if self.verbosity > 1:
+                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
+                ret = None
+            finally:
+                # reset cpu time limit and trackback
+                setrlimit(RLIMIT_CPU, current)
+                sys.tracebacklimit=1000
+                # reset signal
+                signal(SIGXCPU, old_signal_hander)
+            return ret
+    else:
+        from threading import Timer
+        from _thread import interrupt_main
+        @wraps(func)
+        def limitedTime(self, *args, **kw):
+            if self.verbosity > 1 and self._pbar.n == 0:
+                self._pbar.write('Warning: No KeyBoardInterrupt for evaluating pipelines!')
+            sys.tracebacklimit = 0
+            max_time_seconds = convert_mins_to_secs(self.max_eval_time_mins)
+            timer = Timer(max_time_seconds, interrupt_main)
+            try:
+                timer.start()
+                ret = func(*args, **kw)
+            except KeyboardInterrupt:
+                if self.verbosity > 1:
+                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
+                ret = None
+            finally:
+                timer.cancel()
+                sys.tracebacklimit = 1000
+            return ret
+    # return func
+    return limitedTime
