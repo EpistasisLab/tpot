@@ -146,7 +146,8 @@ def _timeout(func):
                 self.kwargs = kwargs
                 self.result = None
                 self.daemon = True
-
+            def stop(self):
+                self._stop.set()
             def run(self):
                 try:
                     # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
@@ -154,7 +155,7 @@ def _timeout(func):
                     current_thread().name = 'MainThread'
                     self.result = func(*self.args, **self.kwargs)
                 except Exception:
-                    raise Exception
+                    pass
         @wraps(func)
         def limitedTime(self, *args, **kw):
             sys.tracebacklimit = 0
@@ -167,6 +168,8 @@ def _timeout(func):
             if tmp_it.isAlive():
                 if self.verbosity > 1:
                     self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
+            sys.tracebacklimit=1000
             return tmp_it.result
+            tmp_it.stop()
     # return func
     return limitedTime
