@@ -107,7 +107,7 @@ def _timeout(func):
         rasie TIMEOUT exception
         """
         raise TIMEOUT("Time Out!")
-    if sys.platform.startswith('win'):#not sys.platform.startswith('win'):
+    if not sys.platform.startswith('win'):
         from signal import SIGXCPU, signal, getsignal
         from resource import getrlimit, setrlimit, RLIMIT_CPU, getrusage, RUSAGE_SELF
         # timeout uses the CPU time 
