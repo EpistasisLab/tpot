@@ -147,7 +147,7 @@ def _timeout(func):
                 self.result = None
                 self.daemon = True
             def stop(self):
-                self._stop.set()
+                self._stop()
             def run(self):
                 try:
                     # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
