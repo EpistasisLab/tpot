@@ -48,6 +48,19 @@ from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 
+# hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
+if sys.platform.startswith('win'):
+    import win32api
+    try:
+        import _thread
+    except ImportError:
+        import thread as _thread
+    def handler(dwCtrlType, hook_sigint=_thread.interrupt_main):
+        if dwCtrlType == 0: # CTRL_C_EVENT
+            hook_sigint()
+            return 1 # don't chain to the next handler
+        return 0
+    win32api.SetConsoleCtrlHandler(handler, 1)
 # add time limit for imported function
 cross_val_score = _timeout(cross_val_score)
 
@@ -321,6 +334,7 @@ class TPOTBase(BaseEstimator):
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
             if self.verbosity > 0:
+                print('') # just for better interface
                 print('GP closed prematurely - will use current best pipeline')
         finally:
             # Close the progress bar
@@ -560,8 +574,10 @@ class TPOTBase(BaseEstimator):
                 warnings.simplefilter('ignore')
                 cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
                     cv=self.num_cv_folds, scoring=self.scoring_function)
-
-            resulting_score = np.mean(cv_scores)
+            try:
+                resulting_score = np.mean(cv_scores)
+            except TypeError:
+                raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
 
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
