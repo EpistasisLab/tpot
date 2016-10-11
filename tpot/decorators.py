@@ -138,25 +138,38 @@ def _timeout(func):
                 signal(SIGXCPU, old_signal_hander)
             return ret
     else:
-        from threading import Timer
-        from _thread import interrupt_main
+        from threading import Thread, current_thread
+        class InterruptableThread(Thread):
+            def __init__(self, args, kwargs):
+                Thread.__init__(self)
+                self.args = args
+                self.kwargs = kwargs
+                self.result = None
+                self.daemon = True
+            def stop(self):
+                self._stop()
+            def run(self):
+                try:
+                    # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
+                    # Note: Need attention if using parallel execution model of scikit-learn
+                    current_thread().name = 'MainThread'
+                    self.result = func(*self.args, **self.kwargs)
+                except Exception:
+                    pass
         @wraps(func)
         def limitedTime(self, *args, **kw):
-            if self.verbosity > 1 and self._pbar.n == 0:
-                self._pbar.write('Warning: No KeyBoardInterrupt for evaluating pipelines!')
             sys.tracebacklimit = 0
             max_time_seconds = convert_mins_to_secs(self.max_eval_time_mins)
-            timer = Timer(max_time_seconds, interrupt_main)
-            try:
-                timer.start()
-                ret = func(*args, **kw)
-            except KeyboardInterrupt:
+            # start thread
+            tmp_it = InterruptableThread(args, kw)
+            tmp_it.start()
+            #timer = Timer(max_time_seconds, interrupt_main)
+            tmp_it.join(max_time_seconds)
+            if tmp_it.isAlive():
                 if self.verbosity > 1:
                     self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
-                ret = None
-            finally:
-                timer.cancel()
-                sys.tracebacklimit = 1000
-            return ret
+            sys.tracebacklimit=1000
+            return tmp_it.result
+            tmp_it.stop()
     # return func
     return limitedTime

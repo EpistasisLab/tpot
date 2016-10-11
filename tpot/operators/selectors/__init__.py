@@ -19,7 +19,9 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import *
-from .rfe import *
+# Temporarily remove the RFE operator. In many cases it seems to be slow and causes TPOT to freeze.
+# TODO: Dig into the freezing issue with RFE and see if we can add it back under certain constraints.
+#from .rfe import *
 from .select_fwe import *
 from .select_kbest import *
 from .select_percentile import *
