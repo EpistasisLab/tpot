@@ -319,17 +319,16 @@ def test_export_pipeline():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline"""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.\
-        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87), RFE(input_matrix, 0.17999999999999999)), 18, 33)", tpot_obj._pset)
+        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87), SelectKBest(input_matrix, 5)), 18, 33)", tpot_obj._pset)
 
     expected_code = """import numpy as np
 
 from sklearn.ensemble import GradientBoostingClassifier, VotingClassifier
-from sklearn.feature_selection import RFE
+from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.svm import SVC
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -342,10 +341,7 @@ exported_pipeline = make_pipeline(
         make_union(VotingClassifier([('branch',
             GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, n_estimators=500)
         )]), FunctionTransformer(lambda X: X)),
-        RFE(estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
-          decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
-          max_iter=-1, probability=False, random_state=42, shrinking=True,
-          tol=0.001, verbose=False), step=0.18)
+        SelectKBest(k=5, score_func=f_classif)
     ),
     KNeighborsClassifier(n_neighbors=5, weights="distance")
 )
