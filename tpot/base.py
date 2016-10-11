@@ -446,7 +446,7 @@ class TPOTBase(BaseEstimator):
         return abs(SCORERS[self.scoring_function](self._fitted_pipeline,
             testing_features.astype(np.float64), testing_classes.astype(np.float64)))
 
-    def predict_proba(self, features, cv='prefit', method='isotonic'):
+    def predict_proba(self, features, method='sigmoid'):
         """Uses the optimized pipeline to estimate the class probabilities for a feature set
 
         Parameters
@@ -455,7 +455,7 @@ class TPOTBase(BaseEstimator):
             Feature matrix of the testing set
         cv: integer, cross-validation generator, iterable or 'prefit' (default: 'prefit')
             Determines the cross-validation splitting strategy
-        method: 'sigmoid' or 'isotonic' (default: 'isotonic')
+        method: 'sigmoid' or 'isotonic' (default: 'sigmoid')
             Type of classifier to be used when creating a CalibratedClassifier
 
         Returns
@@ -468,7 +468,7 @@ class TPOTBase(BaseEstimator):
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
         else:
             if not(hasattr(self._fitted_pipeline, 'predict_proba')):
-                clf = CalibratedClassifierCV(self._fitted_pipeline, cv=cv, method=method)
+                clf = CalibratedClassifierCV(self._fitted_pipeline, cv='prefit', method=method)
                 return clf.predict_proba(features.astype(np.float64))
             return self._fitted_pipeline.predict_proba(features.astype(np.float64))
 
