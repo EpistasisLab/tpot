@@ -536,8 +536,7 @@ class TPOTBase(BaseEstimator):
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual_str = str(individual)
-            if (individual_str.count('PolynomialFeatures') > 1 or
-                individual_str.count('RFE') > 1):
+            if (individual_str.count('PolynomialFeatures') > 1):
                 raise ValueError('Invalid pipeline -- skipping its evaluation')
 
             # Transform the tree expression into an sklearn pipeline
