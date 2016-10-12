@@ -37,7 +37,6 @@ from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics.scorer import make_scorer
-from sklearn.calibration import CalibratedClassifierCV
 
 from update_checker import update_check
 
@@ -446,7 +445,7 @@ class TPOTBase(BaseEstimator):
         return abs(SCORERS[self.scoring_function](self._fitted_pipeline,
             testing_features.astype(np.float64), testing_classes.astype(np.float64)))
 
-    def predict_proba(self, features, method='sigmoid'):
+    def predict_proba(self, features):
         """Uses the optimized pipeline to estimate the class probabilities for a feature set
 
         Parameters
@@ -468,8 +467,7 @@ class TPOTBase(BaseEstimator):
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
         else:
             if not(hasattr(self._fitted_pipeline, 'predict_proba')):
-                clf = CalibratedClassifierCV(self._fitted_pipeline, cv='prefit', method=method)
-                return clf.predict_proba(features.astype(np.float64))
+                raise ValueError('The fitted pipeline does not have probability prediction functionality')
             return self._fitted_pipeline.predict_proba(features.astype(np.float64))
 
     def set_params(self, **params):
