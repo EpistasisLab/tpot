@@ -205,9 +205,9 @@ def test_predict_proba():
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
     result = tpot_obj.predict_proba(testing_features)
+    num_labels = np.amax(testing_classes) + 1
 
-    assert result.shape == (testing_features.shape[0], testing_classes.shape[1])
-
+    assert result.shape == (testing_features.shape[0], num_labels)
 
 def test_predict_proba2():
     """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)"""
@@ -220,8 +220,8 @@ def test_predict_proba2():
 
     result = tpot_obj.predict_proba(testing_features)
 
-    rows = testing_features.shape[0]
-    columns = testing_classes.shape[1]
+    rows = result.shape[0]
+    columns = result.shape[1]
 
     try:
         for i in range(rows):
