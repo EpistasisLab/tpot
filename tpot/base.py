@@ -207,10 +207,10 @@ class TPOTBase(BaseEstimator):
         if self.exclude_operators:
             self.exclude_operators = self.exclude_operators.split(',')
             # recode the operators of remoted operators
-            exclude_op = []
         if self.include_operators:
             self.include_operators = self.include_operators.split(',')
-            include_op = []
+        include_op = []
+        exclude_op = []
         # Add all operators to the primitive set
         for op in operators.Operator.inheritors():
 
@@ -258,19 +258,15 @@ class TPOTBase(BaseEstimator):
         self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
 
         # test if all operators have been excluded/included
-        if self.exclude_operators:
-            if len(self.exclude_operators) != len(exclude_op):
-                for tmpop in self.exclude_operators:
-                    if not exclude_op.count(tmpop):
-                        # A friendly reminder about the operator in customied excluding list is not in TPOTRegressor/TPOTClassifier
-                        print('Warning: {} operator has not been designed to be applied in {}'.format(tmpop,self.__class__.__name__))
-
-        if self.include_operators:
-            if len(self.include_operators) != len(include_op):
-                for tmpop in self.include_operators:
-                    if not include_op.count(tmpop):
-                        # A friendly reminder about the operator in customied including list is not in TPOTRegressor/TPOTClassifier
-                        print('Warning: {} operator has not been designed to be applied in {}'.format(tmpop,self.__class__.__name__))
+        op_init_list = [self.exclude_operators, self.include_operators]
+        op_work_list = [exclude_op, include_op]
+        for op_init,op_work in zip(op_init_list,op_work_list):
+            if op_init:
+                if len(op_init) != len(op_work):
+                    for tmpop in op_init:
+                        if not op_work.count(tmpop):
+                            # A friendly reminder about the operator in customied excluding list is not in TPOTRegressor/TPOTClassifier
+                            print('Warning: {} operator has not been designed to be applied in {}'.format(tmpop,self.__class__.__name__))
 
 
         # Terminals
