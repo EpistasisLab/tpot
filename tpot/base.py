@@ -222,7 +222,7 @@ class TPOTBase(BaseEstimator):
             if self.exclude_operators:
                 if self.exclude_operators.count(op.__name__):
                     exclude_op.append(op.__name__)
-                    # A reminder about which operator has remoted from TPOT pipeline optimization process
+                    # A reminder about which operator is excluded from TPOT pipeline optimization process
                     print('Note: {} operator is excluded from TPOT pipeline optimization process of {}'.format(op.__name__, self.__class__.__name__))
                     continue
 
@@ -230,6 +230,7 @@ class TPOTBase(BaseEstimator):
                 if not self.include_operators.count(op.__name__):
                     continue
                 else:
+                    # A reminder about which operator is included in TPOT pipeline optimization process
                     print('Note: {} operator is included in TPOT pipeline optimization process of {}'.format(op.__name__, self.__class__.__name__))
                     include_op.append(op.__name__)
 
@@ -246,7 +247,6 @@ class TPOTBase(BaseEstimator):
             # may be evaluated directly
             for key in sorted(op.import_hash.keys()):
                 module_list = ', '.join(sorted(op.import_hash[key]))
-
                 if key.startswith('tpot.'):
                     exec('from {} import {}'.format(key[4:], module_list))
                 else:
@@ -269,7 +269,7 @@ class TPOTBase(BaseEstimator):
             if len(self.include_operators) != len(include_op):
                 for tmpop in self.include_operators:
                     if not include_op.count(tmpop):
-                        # A friendly reminder about the operator in customied excluding list is not in TPOTRegressor/TPOTClassifier
+                        # A friendly reminder about the operator in customied including list is not in TPOTRegressor/TPOTClassifier
                         print('Warning: {} operator has not been designed to be applied in {}'.format(tmpop,self.__class__.__name__))
 
 
