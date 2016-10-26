@@ -347,7 +347,7 @@ class TPOTBase(BaseEstimator):
 
             # Store the pipeline with the highest internal testing score
             if self._hof:
-                top_score = -5000.
+                top_score = -float('inf')
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
@@ -584,7 +584,7 @@ class TPOTBase(BaseEstimator):
             # to crash. Instead, assign the crashing pipeline a poor fitness
             # import traceback
             # traceback.print_exc()
-            return 5000., -5000.
+            return 5000., -float('inf')
         finally:
             if not self._pbar.disable:
                 self._pbar.update(1)  # One more pipeline evaluated
