@@ -57,8 +57,6 @@ about:
   license_family: Public-Domain
 
 
-#extra:
-  #recipe-maintainers:
-    # GitHub IDs for maintainers of the recipe.
-    # Always check with the people listed below if they are OK becoming maintainers of the recipe. (There will be spam!)
-    #- rhiever
+extra:
+  recipe-maintainers:
+    - rhiever
