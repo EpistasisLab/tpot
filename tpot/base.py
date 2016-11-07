@@ -69,7 +69,8 @@ class TPOTBase(BaseEstimator):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 scoring=None, num_cv_folds=3, max_time_mins=None, max_eval_time_mins=5,
+                 scoring=None, num_cv_folds=3, num_cpu=1,
+                 max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
                  disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
@@ -111,6 +112,9 @@ class TPOTBase(BaseEstimator):
             'recall_samples', 'recall_weighted', 'roc_auc']
         num_cv_folds: int (default: 3)
             The number of folds to evaluate each pipeline over in k-fold
+            cross-validation during the TPOT pipeline optimization process
+        num_cpu: int (default: 1)
+            The number of CPU for evaluating each pipeline over
             cross-validation during the TPOT pipeline optimization process
         max_time_mins: int (default: None)
             How many minutes TPOT has to optimize the pipeline. If not None,
@@ -187,6 +191,7 @@ class TPOTBase(BaseEstimator):
                 self.scoring_function = scoring
 
         self.num_cv_folds = num_cv_folds
+        self.num_cpu = num_cpu
 
         self._setup_pset()
         self._setup_toolbox()
@@ -561,7 +566,7 @@ class TPOTBase(BaseEstimator):
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
-            
+
             # add time limit for evaluation of pipeline
             for i in range(len(individual)):
                 node = individual[i]
@@ -573,7 +578,7 @@ class TPOTBase(BaseEstimator):
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
-                    cv=self.num_cv_folds, scoring=self.scoring_function)
+                    cv=self.num_cv_folds, scoring=self.scoring_function, n_jobs=self.num_cpu)
             try:
                 resulting_score = np.mean(cv_scores)
             except TypeError:

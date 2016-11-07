@@ -120,6 +120,10 @@ def main():
         type=int, help='The number of folds to evaluate each pipeline over in '
         'k-fold cross-validation during the TPOT pipeline optimization process.')
 
+    parser.add_argument('-cpu', action='store', dest='NUM_CPU', default=1,
+        type=int, help='The number of CPU for evaluating each pipeline in '
+        ' cross-validation during the TPOT pipeline optimization process.')
+
     parser.add_argument('-scoring', action='store', dest='SCORING_FN', default=None,
         type=str, help='Function used to evaluate the quality of a given pipeline for '
         'the problem. By default, balanced accuracy is used for classification and mean '
@@ -194,7 +198,7 @@ def main():
 
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                num_cv_folds=args.NUM_CV_FOLDS, scoring=args.SCORING_FN,
+                num_cv_folds=args.NUM_CV_FOLDS, num_cpu=args.NUM_CPU, scoring=args.SCORING_FN,
                 max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
                 disable_update_check=args.DISABLE_UPDATE_CHECK)
