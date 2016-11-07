@@ -191,7 +191,13 @@ class TPOTBase(BaseEstimator):
                 self.scoring_function = scoring
 
         self.num_cv_folds = num_cv_folds
-        self.num_cpu = num_cpu
+        # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
+        if sys.platform.startswith('win') and num_cpu > 1:
+            print('Warning: Parallelizing cross validation is not supported in Windows OS.',
+                'Reset number of cpu to 1 during TPOT pipeline optimization process')
+            self.num_cpu = 1
+        else:
+            self.num_cpu = num_cpu
 
         self._setup_pset()
         self._setup_toolbox()

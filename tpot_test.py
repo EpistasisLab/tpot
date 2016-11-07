@@ -13,7 +13,7 @@ tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 print('\nTime used with num_cpu = 1:',time.time()-time_start)
 """
-tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2, num_cpu=2, random_state = 42)
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2, num_cpu=1, random_state = 42)
 time_start = time.time()
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
