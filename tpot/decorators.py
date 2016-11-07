@@ -100,7 +100,7 @@ def _timeout(func):
             Inhertis from RuntimeError
             """
             pass
-
+    
     def timeout_signal_handler(signum, frame):
         """
         signal handler for _timeout function
@@ -110,10 +110,10 @@ def _timeout(func):
     if not sys.platform.startswith('win'):
         from signal import SIGXCPU, signal, getsignal
         from resource import getrlimit, setrlimit, RLIMIT_CPU, getrusage, RUSAGE_SELF
-        # timeout uses the CPU time
+        # timeout uses the CPU time 
         @wraps(func)
         def limitedTime(self,*args, **kw):
-            # don't show traceback
+            # don't show traceback 
             sys.tracebacklimit=0
             # save old signal
             old_signal_hander = getsignal(SIGXCPU)
