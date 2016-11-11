@@ -1,8 +1,16 @@
 >DecisionTree
-Type: ['Root', 'Classifor'] #--> op.regression
+Type: ['Root', 'Classifor'] #--> op.root = True, op.classification = True, op.regression = False
 Params: {
 criterion: ["gini", "entropy"]
 max_depth: range(1, 11)
 min_samples_split: range(2, 21)
 min_samples_leaf: range(1, 21)
+}
+
+
+>BernoulliNB
+Type: ['Root', 'Classifor'] #--> op.root = True, op.classification = True, op.regression = False
+Params: {
+alpha: [1e-3, 1e-2, 1e-1, 1., 10., 100.]
+fit_prior: [True, False]
 }
