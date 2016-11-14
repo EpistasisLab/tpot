@@ -486,7 +486,6 @@ class TPOT(object):
 #    def _mdr(self, input_df, tie_break, default_label, track_index, index_1, 
 #             index_2, index_3, index_4, index_5):
     def _mdr(self, input_df, tie_break, default_label, track_index):
-#    def _mdr(self, input_df, tie_break, default_label):
         """Fits the Multifactor Dimensionality Reduction feature construction algorithm
 
         Parameters
