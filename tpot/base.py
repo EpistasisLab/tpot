@@ -47,6 +47,7 @@ from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
+from .gp_deap import eaSimple
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -168,8 +169,8 @@ class TPOTBase(BaseEstimator):
 
         self._pbar = None
         self._gp_generation = 0
-        # a list of individual which has already evaluated in previous generation
-        self.eval_ind = []
+        # a dictionary of individual which has already evaluated in previous generation
+        self.eval_ind = {}
 
         self.random_state = random_state
 
@@ -328,7 +329,7 @@ class TPOTBase(BaseEstimator):
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         try:
-            pop, _ = algorithms.eaSimple(
+            pop, _ = eaSimple(
                 population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                 mutpb=self.mutation_rate, ngen=self.generations,
                 halloffame=self._hof, verbose=False)
@@ -565,10 +566,9 @@ class TPOTBase(BaseEstimator):
             operator_count = 0
 
             # check if the individual are evaluated before
-            if self.eval_ind.count(individual):
+            if individual_str in self.eval_ind:
                 # get fitness score from previous evaluation
-                ind = self.eval_ind[self.eval_ind.index(individual)]
-                operator_count, resulting_score = ind.fitness.values
+                operator_count, resulting_score = self.eval_ind[individual_str]
                 if self.verbosity == 3:
                     self._pbar.write("Pipeline #{0} has been evaluated in a previous generation. "
                     "Continue to the next pipeline.".format(self._pbar.n + 1))
@@ -590,21 +590,18 @@ class TPOTBase(BaseEstimator):
                 except TypeError:
                     raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
 
-        except Exception as e:
+        except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
             # import traceback
             # traceback.print_exc()
-            print(e)
             return 5000., -float('inf')
         finally:
             if not self._pbar.disable:
                 self._pbar.update(1)  # One more pipeline evaluated
 
         if type(resulting_score) in [float, np.float64, np.float32]:
-            tmp_ind = individual
-            tmp_ind.fitness.values = (max(1, operator_count), resulting_score)
-            self.eval_ind.append(tmp_ind)
+            self.eval_ind[individual_str] = (max(1, operator_count), resulting_score)
             return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
