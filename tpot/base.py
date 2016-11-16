@@ -561,15 +561,17 @@ class TPOTBase(BaseEstimator):
             # Fix random state when the operator allows
             self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
-            # Count the number of pipeline operators as a measure of pipeline covamplexity
+            # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
 
-            #print('individual', individual)
-            #print('individual dir', dir(individual))
-            #print('individual fitness', individual.fitness.values)
+            # check if the individual are evaluated before
             if self.eval_ind.count(individual):
+                # get fitness score from previous evaluation
                 ind = self.eval_ind[self.eval_ind.index(individual)]
                 operator_count, resulting_score = ind.fitness.values
+                if self.verbosity == 3:
+                    self._pbar.write("Pipeline #{0} has been evaluated in a previous generation. "
+                    "Continue to the next pipeline.".format(self._pbar.n + 1))
             else:
                 # add time limit for evaluation of pipeline
                 for i in range(len(individual)):
@@ -588,11 +590,12 @@ class TPOTBase(BaseEstimator):
                 except TypeError:
                     raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
 
-        except Exception:
+        except Exception as e:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
             # import traceback
             # traceback.print_exc()
+            print(e)
             return 5000., -float('inf')
         finally:
             if not self._pbar.disable:
