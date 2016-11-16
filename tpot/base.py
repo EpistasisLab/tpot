@@ -168,6 +168,8 @@ class TPOTBase(BaseEstimator):
 
         self._pbar = None
         self._gp_generation = 0
+        # a list of individual which has already evaluated in previous generation
+        self.eval_ind = []
 
         self.random_state = random_state
 
@@ -559,25 +561,32 @@ class TPOTBase(BaseEstimator):
             # Fix random state when the operator allows
             self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
-            # Count the number of pipeline operators as a measure of pipeline complexity
+            # Count the number of pipeline operators as a measure of pipeline covamplexity
             operator_count = 0
-            
-            # add time limit for evaluation of pipeline
-            for i in range(len(individual)):
-                node = individual[i]
-                if ((type(node) is deap.gp.Terminal) or
-                     type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
-                    continue
-                operator_count += 1
 
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
-                    cv=self.num_cv_folds, scoring=self.scoring_function)
-            try:
-                resulting_score = np.mean(cv_scores)
-            except TypeError:
-                raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
+            #print('individual', individual)
+            #print('individual dir', dir(individual))
+            #print('individual fitness', individual.fitness.values)
+            if self.eval_ind.count(individual):
+                ind = self.eval_ind[self.eval_ind.index(individual)]
+                operator_count, resulting_score = ind.fitness.values
+            else:
+                # add time limit for evaluation of pipeline
+                for i in range(len(individual)):
+                    node = individual[i]
+                    if ((type(node) is deap.gp.Terminal) or
+                         type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
+                        continue
+                    operator_count += 1
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
+                        cv=self.num_cv_folds, scoring=self.scoring_function)
+                try:
+                    resulting_score = np.mean(cv_scores)
+                except TypeError:
+                    raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
 
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
@@ -590,6 +599,9 @@ class TPOTBase(BaseEstimator):
                 self._pbar.update(1)  # One more pipeline evaluated
 
         if type(resulting_score) in [float, np.float64, np.float32]:
+            tmp_ind = individual
+            tmp_ind.fitness.values = (max(1, operator_count), resulting_score)
+            self.eval_ind.append(tmp_ind)
             return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
@@ -612,6 +624,7 @@ class TPOTBase(BaseEstimator):
 
         """
         return tools.selNSGA2(individuals, int(k / 5.)) * 5
+
 
     def _random_mutation_operator(self, individual):
         """Perform a replacement, insert, or shrink mutation on an individual
