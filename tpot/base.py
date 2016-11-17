@@ -495,7 +495,7 @@ class TPOTBase(BaseEstimator):
 
         return eval(sklearn_pipeline, self.operators_context)
 
-    def _set_param_recursive(self, pipeline_steps, parameter, value):
+    def _set_param_recursive(self, pipeline_steps, parameter, value, sample_weight = None):
         """Recursively iterates through all objects in the pipeline and sets the given parameter to the specified value
 
         Parameters
@@ -509,12 +509,16 @@ class TPOTBase(BaseEstimator):
 
         Returns
         -------
-        None
+        sample_weight_dict:
+            A dictionary of sample_weight
 
         """
-        for (_, obj) in pipeline_steps:
+        sample_weight_dict = {}
+        for (pname, obj) in pipeline_steps:
+            if inspect.getargspec(obj.fit).args.count('sample_weight') and sample_weight:
+                step_sw = pname + '__sample_weight'
+                sample_weight_dict[step_sw] = sample_weight
             recursive_attrs = ['steps', 'transformer_list', 'estimators']
-
             for attr in recursive_attrs:
                 if hasattr(obj, attr):
                     self._set_param_recursive(getattr(obj, attr), parameter, value)
@@ -522,29 +526,10 @@ class TPOTBase(BaseEstimator):
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
-
-    def _set_sample_weight(self, pipeline_steps, sample_weight):
-        """Recursively iterates through all objects in the pipeline
-        and make a dictionary of sample_weight for operators with sample_weight arguments
-        Parameters
-        ----------
-        pipeline_steps: array-like
-            List of (str, obj) tuples from a scikit-learn pipeline or related object
-        sample_weight: array-like
-            List of sample weights
-        Returns
-        -------
-        sample_weight:
-            A dictionary of sample_weight
-
-        """
-        sample_weight_dict = {}
-        for (pname, pobj) in pipeline_steps:
-            if inspect.getargspec(pobj.fit).args.count('sample_weight'):
-                step_sw = pname + '__sample_weight'
-                sample_weight_dict[step_sw] = sample_weight
-        return sample_weight_dict
-
+        if sample_weight_dict:
+            return sample_weight_dict
+        else:
+            return None
 
 
     def _evaluate_individual(self, individual, features, classes, sample_weight = None):
@@ -584,16 +569,8 @@ class TPOTBase(BaseEstimator):
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-            # Build dict for sample_weight for a pipeline:
-            sample_weight_dict = None
-            if sample_weight:
-                sample_weight_dict = self._set_sample_weight(sklearn_pipeline.steps, sample_weight)
-            # if sample_weight_dict is a empty dictionary then convert sample_weight_dict to None obj
-            if not sample_weight_dict:
-                sample_weight_dict = None
-
-            # Fix random state when the operator allows
-            self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+            # Fix random state when the operator allows and build sample weight dictionary
+            sample_weight_dict = self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42, sample_weight)
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
