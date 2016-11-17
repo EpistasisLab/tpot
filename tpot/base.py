@@ -38,8 +38,6 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics.scorer import make_scorer
 
-from inspect import getargspec
-
 from update_checker import update_check
 
 from ._version import __version__
@@ -65,7 +63,9 @@ if sys.platform.startswith('win'):
         return 0
     win32api.SetConsoleCtrlHandler(handler, 1)
 # add time limit for imported function
+print(inspect.getargspec(cross_val_score).args)
 cross_val_score = _timeout(cross_val_score)
+
 
 class TPOTBase(BaseEstimator):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
@@ -619,8 +619,8 @@ class TPOTBase(BaseEstimator):
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
-            import traceback
-            traceback.print_exc()
+            # import traceback
+            # traceback.print_exc()
             return 5000., -float('inf')
         finally:
             if not self._pbar.disable:
