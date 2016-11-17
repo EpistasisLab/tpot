@@ -63,7 +63,6 @@ if sys.platform.startswith('win'):
         return 0
     win32api.SetConsoleCtrlHandler(handler, 1)
 # add time limit for imported function
-print(inspect.getargspec(cross_val_score).args)
 cross_val_score = _timeout(cross_val_score)
 
 
