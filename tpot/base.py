@@ -38,6 +38,8 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics.scorer import make_scorer
 
+from inspect import getargspec
+
 from update_checker import update_check
 
 from ._version import __version__
@@ -47,6 +49,7 @@ from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
+
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -262,7 +265,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
-    def fit(self, features, classes):
+    def fit(self, features, classes, sample_weight = None):
         """Fits a machine learning pipeline that maximizes classification score
         on the provided data
 
@@ -277,6 +280,8 @@ class TPOTBase(BaseEstimator):
             Feature matrix
         classes: array-like {n_samples}
             List of class labels for prediction
+        sample_weight: array-like {n_samples}
+            List of sample weights
 
         Returns
         -------
@@ -292,7 +297,7 @@ class TPOTBase(BaseEstimator):
 
         self._start_datetime = datetime.now()
 
-        self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
+        self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes, sample_weight = sample_weight)
         pop = self._toolbox.population(n=self.population_size)
 
         def pareto_eq(ind1, ind2):
@@ -519,7 +524,31 @@ class TPOTBase(BaseEstimator):
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
 
-    def _evaluate_individual(self, individual, features, classes):
+    def _set_sample_weight(self, pipeline_steps, sample_weight):
+        """Recursively iterates through all objects in the pipeline
+        and make a dictionary of sample_weight for operators with sample_weight arguments
+        Parameters
+        ----------
+        pipeline_steps: array-like
+            List of (str, obj) tuples from a scikit-learn pipeline or related object
+        sample_weight: array-like
+            List of sample weights
+        Returns
+        -------
+        sample_weight:
+            A dictionary of sample_weight
+
+        """
+        sample_weight_dict = {}
+        for (pname, pobj) in pipeline_steps:
+            if inspect.getargspec(pobj.fit).args.count('sample_weight'):
+                step_sw = pname + '__sample_weight'
+                sample_weight_dict[step_sw] = sample_weight
+        return sample_weight_dict
+
+
+
+    def _evaluate_individual(self, individual, features, classes, sample_weight = None):
         """Determines the `individual`'s fitness
 
         Parameters
@@ -556,12 +585,20 @@ class TPOTBase(BaseEstimator):
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
+            # Build dict for sample_weight for a pipeline:
+            sample_weight_dict = None
+            if sample_weight:
+                sample_weight_dict = self._set_sample_weight(sklearn_pipeline.steps, sample_weight)
+            # if sample_weight_dict is a empty dictionary then convert sample_weight_dict to None obj
+            if not sample_weight_dict:
+                sample_weight_dict = None
+
             # Fix random state when the operator allows
             self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
-            
+
             # add time limit for evaluation of pipeline
             for i in range(len(individual)):
                 node = individual[i]
@@ -573,7 +610,7 @@ class TPOTBase(BaseEstimator):
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
-                    cv=self.num_cv_folds, scoring=self.scoring_function)
+                    cv=self.num_cv_folds, scoring=self.scoring_function, fit_params=sample_weight_dict)
             try:
                 resulting_score = np.mean(cv_scores)
             except TypeError:
