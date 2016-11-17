@@ -168,6 +168,29 @@ def test_score_3():
 
     assert isclose(known_score, score)
 
+def test_sample_weight_func():
+    """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline with sample weights"""
+
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    known_score = 9.61954007496  # Assumes use of mse
+    # Reify pipeline with known score
+    tpot_obj._optimized_pipeline = creator.Individual.\
+        from_string('ExtraTreesRegressor(GradientBoostingRegressor(input_matrix, 100.0, 0.11), 0.17999999999999999)', tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    # make up a sample weight
+    training_classes_r_weight = range(1, len(training_classes_r)+1)
+    training_classes_r_weight_dict = tpot_obj._set_param_recursive(tpot_obj._fitted_pipeline .steps, 'random_state', 42, training_classes_r_weight)
+    tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r, **training_classes_r_weight_dict)
+
+    # Get score from TPOT
+    score = tpot_obj.score(testing_features_r, testing_classes_r)
+    # http://stackoverflow.com/questions/5595425/
+    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+    assert isclose(known_score, score)
+
 
 def test_predict():
     """Assert that the TPOT predict function raises a ValueError when no optimized pipeline exists"""
