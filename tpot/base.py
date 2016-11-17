@@ -169,7 +169,7 @@ class TPOTBase(BaseEstimator):
 
         self._pbar = None
         self._gp_generation = 0
-        # a dictionary of individual which has already evaluated in previous generation
+        # a dictionary of individual which has already evaluated in previous generation.
         self.eval_ind = {}
 
         self.random_state = random_state
