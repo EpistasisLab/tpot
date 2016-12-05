@@ -648,7 +648,10 @@ class TPOTBase(BaseEstimator):
                 for i, tmpnode in enumerate(individual[index+1:], index+ 1):
                     if isinstance(tmpnode, deap.gp.Primitive) and tmpnode.ret in tmpnode.args:
                         rindex = i
-            primitives = [p for p in pset.primitives[node.ret]]
+            #pset.primitives[node.ret] can get a list of the type of node
+            # for example: if op.root is True then the node.ret is Output_DF object
+            # based on the function _setup_pset. Then primitives is the list of classifor or regressor
+            primitives = pset.primitives[node.ret]
             if len(primitives) != 0:
                 new_node = np.random.choice(primitives)
                 new_subtree = [None] * len(new_node.args)
@@ -690,14 +693,15 @@ class TPOTBase(BaseEstimator):
         """
         # debug usage
         #print(str(individual))
-
+        old_ind = str(individual)
+        mut_ind = (str(individual),)
         mutation_techniques = [
-            partial(gp.mutUniform, expr=self._toolbox.expr_mut, pset=self._pset),
             partial(gp.mutInsert, pset=self._pset),
             partial(self._mutNodeReplacement, pset=self._pset),
             partial(gp.mutShrink)
         ]
-        mut_ind = np.random.choice(mutation_techniques)(individual)
+        while str(mut_ind[0]) == old_ind: # infinite loop to make sure mutation happen
+            mut_ind = np.random.choice(mutation_techniques)(individual)
         # debug usage
         #print(str(mut_ind[0]),'\n')
         return mut_ind

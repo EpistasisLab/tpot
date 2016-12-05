@@ -314,6 +314,23 @@ training_features, testing_features, training_classes, testing_classes = \\
 
     assert expected_code == generate_import_code(pipeline)
 
+def test_mutNodeReplacement():
+    """Assert that _mutNodeReplacement() returns the correct type of mutation node in a random pipeline"""
+    tpot_obj = TPOTClassifier()
+    pipeline = tpot_obj._toolbox.population(n =1)[0] # generated with gen_grow_safe function
+    old_ret_type_list = [node.ret for node in pipeline]
+    old_prims_list = [node for node in pipeline if node.arity != 0]
+    mut_ind = tpot_obj._mutNodeReplacement(pipeline, pset = tpot_obj._pset)
+
+    new_ret_type_list = [node.ret for node in mut_ind[0]]
+    new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
+    if new_prims_list == old_prims_list: # Terminal mutated
+        assert new_ret_type_list == old_ret_type_list
+    else: # Primitive mutated
+        diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
+        assert diff_prims[0].ret == diff_prims[1].ret
+    assert mut_ind[0][0].ret == Output_DF
+
 
 def test_export_pipeline():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline"""
