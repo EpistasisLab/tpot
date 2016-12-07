@@ -315,13 +315,15 @@ training_features, testing_features, training_classes, testing_classes = \\
     assert expected_code == generate_import_code(pipeline)
 
 def test_mutNodeReplacement():
-    """Assert that _mutNodeReplacement() returns the correct type of mutation node in a random pipeline"""
+    """Assert that _mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline"""
     tpot_obj = TPOTClassifier()
-    pipeline = tpot_obj._toolbox.population(n =1)[0] # generated with gen_grow_safe function
+    pipeline = creator.Individual.\
+        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87), SelectKBest(input_matrix, 5)), 18, 33)", tpot_obj._pset)
+    # change the last operato's type to Output_DF as op.root = True
+    pipeline[0].ret = Output_DF
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
     mut_ind = tpot_obj._mutNodeReplacement(pipeline, pset = tpot_obj._pset)
-
     new_ret_type_list = [node.ret for node in mut_ind[0]]
     new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
     if new_prims_list == old_prims_list: # Terminal mutated
