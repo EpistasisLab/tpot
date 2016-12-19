@@ -116,7 +116,7 @@ def main():
         'recommend using the default parameter unless you '
         'understand how the crossover rate affects GP algorithms.')
 
-    parser.add_argument('-cv', action='store', dest='NUM_CV_FOLDS', default=3,
+    parser.add_argument('-cv', action='store', dest='NUM_CV_FOLDS', default=5,
         type=int, help='The number of folds to evaluate each pipeline over in '
         'k-fold cross-validation during the TPOT pipeline optimization process.')
 

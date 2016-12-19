@@ -72,7 +72,7 @@ class TPOTBase(BaseEstimator):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 scoring=None, num_cv_folds=3, n_jobs=1,
+                 scoring=None, num_cv_folds=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
                  disable_update_check=False, warm_start=False):
@@ -113,7 +113,7 @@ class TPOTBase(BaseEstimator):
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
             'recall_samples', 'recall_weighted', 'roc_auc']
-        num_cv_folds: int (default: 3)
+        num_cv_folds: int (default: 5)
             The number of folds to evaluate each pipeline over in k-fold
             cross-validation during the TPOT pipeline optimization process
         n_jobs: int (default: 1)
