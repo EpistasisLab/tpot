@@ -19,7 +19,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 import random
 import numpy as np
-from deap import tools
+from deap import tools, gp
 from inspect import isclass
 
 def varAnd(population, toolbox, cxpb, mutpb):
@@ -207,7 +207,7 @@ def mutNodeReplacement(individual, pset):
         rindex = None
         if index + 1 < len(individual):
             for i, tmpnode in enumerate(individual[index+1:], index+ 1):
-                if isinstance(tmpnode, deap.gp.Primitive) and tmpnode.ret in tmpnode.args:
+                if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in tmpnode.args:
                     rindex = i
         #pset.primitives[node.ret] can get a list of the type of node
         # for example: if op.root is True then the node.ret is Output_DF object
