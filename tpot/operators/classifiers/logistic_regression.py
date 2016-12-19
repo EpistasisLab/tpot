@@ -32,13 +32,11 @@ class TPOTLogisticRegression(Classifier):
         Inverse of regularization strength; must be a positive value. Like in support vector machines, smaller values specify stronger regularization.
     penalty: int
         Integer used to specify the norm used in the penalization (l1 or l2)
-    dual: bool = False in each case
-        Select the algorithm to either solve the dual or primal optimization problem.
     solver: sag (Note: sciket-learn version > 0.17) for l1 and liblinear for l2
         Algorithm to use in the optimization problem.
-        Stochastic Average Gradient descent solver.
-        Note that ‘sag’ fast convergence is only guaranteed on features with approximately the same scale.
-        ‘newton-cg’, ‘lbfgs’ and ‘sag’ only handle L2 penalty.
+        SAG = Stochastic Average Gradient descent solver.
+        Note that 'sag' fast convergence is only guaranteed on features with approximately the same scale.
+        'newton-cg', 'lbfgs' and 'sag' only handle L2 penalty.
     """
     import_hash = {'sklearn.linear_model': ['LogisticRegression']}
     sklearn_class = LogisticRegression
@@ -52,7 +50,6 @@ class TPOTLogisticRegression(Classifier):
 
         penalty_values = ['l1', 'l2']
         penalty_selection = penalty_values[penalty % len(penalty_values)]
-        dual = False
         if penalty_selection == 'l1':
             solver = 'liblinear'
         else:
@@ -60,6 +57,5 @@ class TPOTLogisticRegression(Classifier):
         return {
             'C': C,
             'penalty': penalty_selection,
-            'dual': dual,
             'solver': solver
         }
