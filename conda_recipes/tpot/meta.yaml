@@ -1,0 +1,62 @@
+{% set name = "TPOT" %}
+{% set version = "0.6.7" %}
+{% set md5 = "69b7e0cc7733bf3c80f6b37a5474c295" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.python.org/packages/a4/be/b7b5a3e0849efa1f7269d068b9ded6ab8d803f521efa7dce85cce11f96d9/{{ name }}-{{ version }}.tar.gz
+  md5: {{ md5 }}
+
+build:
+  number: 0
+  script: python setup.py install --single-version-externally-managed --record record.txt
+  entry_points:
+    - tpot=tpot:main
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - numpy
+    - scipy
+    - scikit-learn
+    - deap
+    - update_checker
+    - tqdm
+
+  run:
+    - python
+    - numpy
+    - scipy
+    - scikit-learn
+    - deap
+    - update_checker
+    - tqdm
+
+test:
+  imports:
+    - tpot
+    - tpot.operators
+    - tpot.operators.classifiers
+    - tpot.operators.preprocessors
+    - tpot.operators.regressors
+    - tpot.operators.selectors
+
+  commands:
+    - tpot --help
+
+
+about:
+  home: https://github.com/rhiever/tpot
+  license: GNU General Public License v3 (GPLv3)
+  summary: 'Tree-based Pipeline Optimization Tool'
+  license_family: Public-Domain
+
+
+extra:
+  recipe-maintainers:
+    - rhiever
