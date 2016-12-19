@@ -611,8 +611,8 @@ class TPOTBase(BaseEstimator):
                 # get fitness score from previous evaluation
                 operator_count, resulting_score = self.eval_ind[individual_str]
                 if self.verbosity == 3:
-                    self._pbar.write("Pipeline #{0} has been evaluated in a previous generation. "
-                    "Continue to the next pipeline.".format(self._pbar.n + 1))
+                    self._pbar.write("Pipeline #{0} has been evaluated previously. "
+                    "Continuing to the next pipeline.".format(self._pbar.n + 1))
             else:
                 # add time limit for evaluation of pipeline
                 for i in range(len(individual)):
