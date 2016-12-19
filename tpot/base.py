@@ -70,7 +70,7 @@ class TPOTBase(BaseEstimator):
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 scoring=None, num_cv_folds=3, num_cpu=1,
+                 scoring=None, num_cv_folds=3, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
                  disable_update_check=False, warm_start=False):
@@ -114,7 +114,7 @@ class TPOTBase(BaseEstimator):
         num_cv_folds: int (default: 3)
             The number of folds to evaluate each pipeline over in k-fold
             cross-validation during the TPOT pipeline optimization process
-        num_cpu: int (default: 1)
+        n_jobs: int (default: 1)
             The number of CPU for evaluating each pipeline over
             cross-validation during the TPOT pipeline optimization process
         max_time_mins: int (default: None)
@@ -200,12 +200,12 @@ class TPOTBase(BaseEstimator):
 
         self.num_cv_folds = num_cv_folds
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
-        if sys.platform.startswith('win') and num_cpu > 1:
+        if sys.platform.startswith('win') and n_jobs > 1:
             print('Warning: Parallelizing cross validation is not supported in Windows OS.',
                 'Reset number of cpu to 1 during TPOT pipeline optimization process')
-            self.num_cpu = 1
+            self.n_jobs = 1
         else:
-            self.num_cpu = num_cpu
+            self.n_jobs = n_jobs
 
         self._setup_pset()
         self._setup_toolbox()
@@ -612,7 +612,7 @@ class TPOTBase(BaseEstimator):
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
                     cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
-                        cv=self.num_cv_folds, scoring=self.scoring_function, n_jobs=self.num_cpu)
+                        cv=self.num_cv_folds, scoring=self.scoring_function, n_jobs=self.n_jobs)
                 try:
                     resulting_score = np.mean(cv_scores)
                 except TypeError:
