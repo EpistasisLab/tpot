@@ -49,6 +49,7 @@ from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 from .gp_deap import eaSimple
 
+
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
     import win32api
@@ -64,6 +65,7 @@ if sys.platform.startswith('win'):
     win32api.SetConsoleCtrlHandler(handler, 1)
 # add time limit for imported function
 cross_val_score = _timeout(cross_val_score)
+
 
 class TPOTBase(BaseEstimator):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
@@ -281,7 +283,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
-    def fit(self, features, classes):
+    def fit(self, features, classes, sample_weight = None):
         """Fits a machine learning pipeline that maximizes classification score
         on the provided data
 
@@ -296,6 +298,8 @@ class TPOTBase(BaseEstimator):
             Feature matrix
         classes: array-like {n_samples}
             List of class labels for prediction
+        sample_weight: array-like {n_samples}
+            List of sample weights
 
         Returns
         -------
@@ -311,7 +315,7 @@ class TPOTBase(BaseEstimator):
 
         self._start_datetime = datetime.now()
 
-        self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
+        self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes, sample_weight=sample_weight)
 
         # assign population, self._pop can only be not None if warm_start is enabled
         if self._pop:
@@ -522,7 +526,7 @@ class TPOTBase(BaseEstimator):
 
         return eval(sklearn_pipeline, self.operators_context)
 
-    def _set_param_recursive(self, pipeline_steps, parameter, value):
+    def _set_param_recursive(self, pipeline_steps, parameter, value, sample_weight = None):
         """Recursively iterates through all objects in the pipeline and sets the given parameter to the specified value
 
         Parameters
@@ -536,12 +540,16 @@ class TPOTBase(BaseEstimator):
 
         Returns
         -------
-        None
+        sample_weight_dict:
+            A dictionary of sample_weight
 
         """
-        for (_, obj) in pipeline_steps:
+        sample_weight_dict = {}
+        for (pname, obj) in pipeline_steps:
+            if inspect.getargspec(obj.fit).args.count('sample_weight') and sample_weight:
+                step_sw = pname + '__sample_weight'
+                sample_weight_dict[step_sw] = sample_weight
             recursive_attrs = ['steps', 'transformer_list', 'estimators']
-
             for attr in recursive_attrs:
                 if hasattr(obj, attr):
                     self._set_param_recursive(getattr(obj, attr), parameter, value)
@@ -549,8 +557,13 @@ class TPOTBase(BaseEstimator):
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
+        if sample_weight_dict:
+            return sample_weight_dict
+        else:
+            return None
 
-    def _evaluate_individual(self, individual, features, classes):
+
+    def _evaluate_individual(self, individual, features, classes, sample_weight = None):
         """Determines the `individual`'s fitness
 
         Parameters
@@ -587,8 +600,8 @@ class TPOTBase(BaseEstimator):
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-            # Fix random state when the operator allows
-            self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+            # Fix random state when the operator allows and build sample weight dictionary
+            sample_weight_dict = self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42, sample_weight)
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
@@ -612,7 +625,8 @@ class TPOTBase(BaseEstimator):
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
                     cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
-                        cv=self.num_cv_folds, scoring=self.scoring_function, n_jobs=self.n_jobs)
+                        cv=self.num_cv_folds, scoring=self.scoring_function,
+                        n_jobs=self.n_jobs, fit_params=sample_weight_dict)
                 try:
                     resulting_score = np.mean(cv_scores)
                 except TypeError:
