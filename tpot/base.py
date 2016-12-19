@@ -120,7 +120,7 @@ class TPOTBase(BaseEstimator):
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more complex
             pipelines but will also allow TPOT to run longer.
-        random_state: int (default: 0)
+        random_state: int (default: None)
             The random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
@@ -289,7 +289,7 @@ class TPOTBase(BaseEstimator):
         features = features.astype(np.float64)
 
         # Set the seed for the GP run
-        if self.random_state:
+        if self.random_state is not None:
             random.seed(self.random_state)
             np.random.seed(self.random_state)
 

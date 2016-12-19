@@ -139,7 +139,6 @@ def test_score_2():
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
-
     # http://stackoverflow.com/questions/5595425/
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
@@ -294,15 +293,13 @@ def test_generate_import_code():
     """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline"""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(SelectKBest(input_matrix, 7), 0.5)', tpot_obj._pset)
+        from_string('DecisionTreeClassifier(SelectKBest(input_matrix, 7))', tpot_obj._pset)
 
     expected_code = """import numpy as np
 
-from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import make_pipeline, make_union
-from sklearn.preprocessing import FunctionTransformer
+from sklearn.pipeline import make_pipeline
 from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
@@ -316,7 +313,7 @@ training_features, testing_features, training_classes, testing_classes = \\
 
 
 def test_export_pipeline():
-    """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline"""
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed complex pipeline"""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.\
         from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87), SelectKBest(input_matrix, 5)), 18, 33)", tpot_obj._pset)
@@ -350,6 +347,60 @@ exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
 
+    assert expected_code == export_pipeline(pipeline)
+
+
+def test_export_pipeline_2():
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline (only one classifier)"""
+    tpot_obj = TPOTClassifier()
+    pipeline = creator.Individual.\
+        from_string("KNeighborsClassifier(input_matrix, 18, 33)", tpot_obj._pset)
+    expected_code = """import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
+
+exported_pipeline = KNeighborsClassifier(n_neighbors=5, weights="distance")
+
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
+"""
+
+    assert expected_code == export_pipeline(pipeline)
+
+def test_export_pipeline_3():
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with a preprocessor"""
+    tpot_obj = TPOTClassifier()
+    pipeline = creator.Individual.\
+        from_string("DecisionTreeClassifier(SelectKBest(input_matrix, 5))", tpot_obj._pset)
+
+    expected_code = """import numpy as np
+
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.tree import DecisionTreeClassifier
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
+
+exported_pipeline = make_pipeline(
+    SelectKBest(k=5, score_func=f_classif),
+    DecisionTreeClassifier()
+)
+
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
+"""
     assert expected_code == export_pipeline(pipeline)
 
 
