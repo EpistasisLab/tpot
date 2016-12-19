@@ -143,6 +143,16 @@ def main():
         'Setting this parameter to higher values will allow TPOT to explore more complex '
         'pipelines but will also allow TPOT to run longer.')
 
+    parser.add_argument('-exop', action='store', dest='EXCLUDED_OPERATOR', default=None,
+        type=str, help='Operator(s) is excluded from TPOT pipeline optimization process. '
+        'Use "," to separate multiple operators. '
+        'e.g. -exop LogisticRegression,GradientBoostingRegressor/ ')
+
+    parser.add_argument('-inop', action='store', dest='INCLUDED_OPERATOR', default=None,
+        type=str, help='operator(s) is included in TPOT pipeline optimization process. '
+        'Use "," to separate multiple operators. '
+        'e.g. -inop LogisticRegression,GradientBoostingRegressor ')
+
     parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=None,
         type=int, help='Random number generator seed for reproducibility. Set '
         'this seed if you want your TPOT run to be reproducible with the same '
@@ -196,6 +206,7 @@ def main():
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
                 num_cv_folds=args.NUM_CV_FOLDS, scoring=args.SCORING_FN,
                 max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
+                exclude_operators = args.EXCLUDED_OPERATOR, include_operators = args.INCLUDED_OPERATOR,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
                 disable_update_check=args.DISABLE_UPDATE_CHECK)
 

@@ -70,6 +70,7 @@ class TPOTBase(BaseEstimator):
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
                  scoring=None, num_cv_folds=3, max_time_mins=None, max_eval_time_mins=5,
+                 exclude_operators = None, include_operators = None,
                  random_state=None, verbosity=0,
                  disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
@@ -119,6 +120,10 @@ class TPOTBase(BaseEstimator):
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more complex
             pipelines but will also allow TPOT to run longer.
+        exclude_operators: *str (default None, e.g. ExtraTreesClassifier,GradientBoostingClassifier)
+            Operator(s) need to excluded from TPOT pipeline optimization process
+        include_operators: *str (default None)
+            Only operators need to included in TPOT pipeline optimization process
         random_state: int (default: 0)
             The random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
@@ -150,6 +155,8 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
+        self.exclude_operators = exclude_operators
+        self.include_operators = include_operators
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -197,10 +204,35 @@ class TPOTBase(BaseEstimator):
         # Rename pipeline input to "input_df"
         self._pset.renameArguments(ARG0='input_matrix')
 
+        if self.exclude_operators:
+            self.exclude_operators = self.exclude_operators.split(',')
+            # recode the operators of remoted operators
+        if self.include_operators:
+            self.include_operators = self.include_operators.split(',')
+        include_op = []
+        exclude_op = []
         # Add all operators to the primitive set
         for op in operators.Operator.inheritors():
+
+            # _ignore_operator only separate classification and regression
             if self._ignore_operator(op):
                 continue
+            # customize operator settings
+
+            if self.exclude_operators:
+                if self.exclude_operators.count(op.__name__):
+                    exclude_op.append(op.__name__)
+                    # A reminder about which operator is excluded from TPOT pipeline optimization process
+                    print('Note: {} operator is excluded from TPOT pipeline optimization process of {}'.format(op.__name__, self.__class__.__name__))
+                    continue
+
+            if self.include_operators:
+                if not self.include_operators.count(op.__name__):
+                    continue
+                else:
+                    # A reminder about which operator is included in TPOT pipeline optimization process
+                    print('Note: {} operator is included in TPOT pipeline optimization process of {}'.format(op.__name__, self.__class__.__name__))
+                    include_op.append(op.__name__)
 
             if op.root:
                 # We need to add rooted primitives twice so that they can
@@ -215,7 +247,6 @@ class TPOTBase(BaseEstimator):
             # may be evaluated directly
             for key in sorted(op.import_hash.keys()):
                 module_list = ', '.join(sorted(op.import_hash[key]))
-
                 if key.startswith('tpot.'):
                     exec('from {} import {}'.format(key[4:], module_list))
                 else:
@@ -225,6 +256,18 @@ class TPOTBase(BaseEstimator):
                     self.operators_context[var] = eval(var)
 
         self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
+
+        # test if all operators have been excluded/included
+        op_init_list = [self.exclude_operators, self.include_operators]
+        op_work_list = [exclude_op, include_op]
+        for op_init,op_work in zip(op_init_list,op_work_list):
+            if op_init:
+                if len(op_init) != len(op_work):
+                    for tmpop in op_init:
+                        if not op_work.count(tmpop):
+                            # A friendly reminder about the operator in customied excluding list is not in TPOTRegressor/TPOTClassifier
+                            print('Warning: {} operator has not been designed to be applied in {}'.format(tmpop,self.__class__.__name__))
+
 
         # Terminals
         int_terminals = np.concatenate((
@@ -561,7 +604,7 @@ class TPOTBase(BaseEstimator):
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
-            
+
             # add time limit for evaluation of pipeline
             for i in range(len(individual)):
                 node = individual[i]

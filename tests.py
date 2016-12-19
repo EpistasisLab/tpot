@@ -77,6 +77,30 @@ def test_init_max_time_mins():
     assert tpot_obj.generations == 1000000
     assert tpot_obj.max_time_mins == 30
 
+def test_init_exclude_operators():
+    """Assert that the TPOT stores and use the list of excluded operators"""
+
+    tpot_obj = TPOTClassifier(exclude_operators='LogisticRegression,GradientBoostingClassifier')
+    exop_num = 0
+    for op in tpot_obj.exclude_operators:
+        if list(tpot_obj.operators_context.keys()).count(op):
+            exop_num += 1
+
+    assert tpot_obj.exclude_operators == ['LogisticRegression','GradientBoostingClassifier']
+    assert exop_num == 0
+
+def test_init_include_operators():
+    """Assert that the TPOT stores and use the list of included operators"""
+
+    tpot_obj = TPOTClassifier(include_operators='LogisticRegression,GradientBoostingClassifier')
+
+    inop_num = 0
+    for op in tpot_obj.include_operators:
+        if list(tpot_obj.operators_context.keys()).count(op):
+            inop_num += 1
+
+    assert tpot_obj.include_operators == ['LogisticRegression','GradientBoostingClassifier']
+    assert inop_num == 2
 
 def test_get_params():
     """Assert that get_params returns the exact dictionary of parameters used by TPOT"""
