@@ -120,7 +120,7 @@ def main():
         type=int, help='The number of folds to evaluate each pipeline over in '
         'k-fold cross-validation during the TPOT pipeline optimization process.')
 
-    parser.add_argument('-njobs', action='store', dest='N_JOBS', default=1,
+    parser.add_argument('-njobs', action='store', dest='NUM_JOBS', default=1,
         type=int, help='The number of CPU for evaluating each pipeline in '
         ' cross-validation during the TPOT pipeline optimization process.')
 
@@ -198,7 +198,7 @@ def main():
 
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                num_cv_folds=args.NUM_CV_FOLDS, n_jobs=args.N_JOBS,
+                num_cv_folds=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS,
                 scoring=args.SCORING_FN,
                 max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
