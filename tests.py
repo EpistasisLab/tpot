@@ -313,7 +313,7 @@ training_features, testing_features, training_classes, testing_classes = \\
 
 
 def test_export_pipeline():
-    """Assert that exported_pipeline() generated a compile source file as expected given a fixed complext pipeline"""
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed complex pipeline"""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.\
         from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87), SelectKBest(input_matrix, 5)), 18, 33)", tpot_obj._pset)
