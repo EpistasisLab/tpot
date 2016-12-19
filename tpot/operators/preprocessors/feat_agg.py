@@ -49,7 +49,7 @@ class TPOTFeatureAgglomeration(Preprocessor):
         linkage_types = ['ward', 'complete', 'average']
         linkage_name = linkage_types[linkage % len(linkage_types)]
 
-        affinity_types = ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed']
+        affinity_types = ['euclidean', 'l1', 'l2', 'manhattan', 'precomputed']
         affinity_name = 'euclidean' if linkage_name == 'ward' else affinity_types[affinity % len(affinity_types)]
 
         return {

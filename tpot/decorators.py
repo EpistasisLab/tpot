@@ -44,13 +44,13 @@ def _gp_new_generation(func):
         if not self._pbar.disable:
             # Print only the best individual fitness
             if self.verbosity == 2:
-                high_score = abs(max([self._hof.keys[x].wvalues[1] for x in range(len(self._hof.keys))]))
+                high_score = abs(max([self._pareto_front.keys[x].wvalues[1] for x in range(len(self._pareto_front.keys))]))
                 self._pbar.write('Generation {0} - Current best internal CV score: {1}'.format(self._gp_generation, high_score))
 
             # Print the entire Pareto front
             elif self.verbosity == 3:
                 self._pbar.write('Generation {} - Current Pareto front scores:'.format(self._gp_generation))
-                for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
+                for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
                     self._pbar.write('{}\t{}\t{}'.format(int(abs(pipeline_scores.wvalues[0])),
                                                          abs(pipeline_scores.wvalues[1]),
                                                          pipeline))
@@ -100,20 +100,20 @@ def _timeout(func):
             Inhertis from RuntimeError
             """
             pass
-    
+
     def timeout_signal_handler(signum, frame):
         """
         signal handler for _timeout function
         rasie TIMEOUT exception
         """
         raise TIMEOUT("Time Out!")
-    if not sys.platform.startswith('win'):
+    if sys.platform.startswith('linux'):
         from signal import SIGXCPU, signal, getsignal
         from resource import getrlimit, setrlimit, RLIMIT_CPU, getrusage, RUSAGE_SELF
-        # timeout uses the CPU time 
+        # timeout uses the CPU time
         @wraps(func)
         def limitedTime(self,*args, **kw):
-            # don't show traceback 
+            # don't show traceback
             sys.tracebacklimit=0
             # save old signal
             old_signal_hander = getsignal(SIGXCPU)
