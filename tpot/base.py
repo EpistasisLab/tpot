@@ -561,7 +561,7 @@ class TPOTBase(BaseEstimator):
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
-            
+
             # add time limit for evaluation of pipeline
             for i in range(len(individual)):
                 node = individual[i]
