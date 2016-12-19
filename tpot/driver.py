@@ -116,9 +116,13 @@ def main():
         'recommend using the default parameter unless you '
         'understand how the crossover rate affects GP algorithms.')
 
-    parser.add_argument('-cv', action='store', dest='NUM_CV_FOLDS', default=3,
+    parser.add_argument('-cv', action='store', dest='NUM_CV_FOLDS', default=5,
         type=int, help='The number of folds to evaluate each pipeline over in '
         'k-fold cross-validation during the TPOT pipeline optimization process.')
+
+    parser.add_argument('-njobs', action='store', dest='NUM_JOBS', default=1,
+        type=int, help='The number of CPUs for evaluating each pipeline in '
+        ' cross-validation during the TPOT pipeline optimization process.')
 
     parser.add_argument('-scoring', action='store', dest='SCORING_FN', default=None,
         type=str, help='Function used to evaluate the quality of a given pipeline for '
@@ -194,7 +198,8 @@ def main():
 
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                num_cv_folds=args.NUM_CV_FOLDS, scoring=args.SCORING_FN,
+                num_cv_folds=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS,
+                scoring=args.SCORING_FN,
                 max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
                 disable_update_check=args.DISABLE_UPDATE_CHECK)
@@ -202,15 +207,15 @@ def main():
     tpot.fit(training_features, training_classes)
 
     if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
-        training_score = max([tpot._hof.keys[x].wvalues[1] for x in range(len(tpot._hof.keys))])
+        training_score = max([tpot._pareto_front.keys[x].wvalues[1] for x in range(len(tpot._pareto_front.keys))])
         print('\nTraining score: {}'.format(abs(training_score)))
         print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
 
-    elif args.VERBOSITY >= 3 and tpot._hof:
+    elif args.VERBOSITY >= 3 and tpot._pareto_front:
         print('Final Pareto front testing scores:')
 
-        for pipeline, pipeline_scores in zip(tpot._hof.items, reversed(tpot._hof.keys)):
-            tpot._fitted_pipeline = tpot._hof_fitted_pipelines[str(pipeline)]
+        for pipeline, pipeline_scores in zip(tpot._pareto_front.items, reversed(tpot._pareto_front.keys)):
+            tpot._fitted_pipeline = tpot._pareto_front_fitted_pipelines[str(pipeline)]
             print('{}\t{}\t{}'.format(int(abs(pipeline_scores.wvalues[0])),
                                       tpot.score(testing_features, testing_classes),
                                       pipeline))
