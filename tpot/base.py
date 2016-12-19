@@ -33,6 +33,8 @@ from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
 
 from sklearn.base import BaseEstimator
+from sklearn.base import ClassifierMixin
+from sklearn.base import RegressorMixin
 from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
@@ -49,7 +51,13 @@ from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement
+from .config_classifier import classifier_config_dict
+from .config_regressor import regressor_config_dict
 
+#Create another param for init method: string or dict
+#If string: import lite vs actual
+#Lite will use a subset of TPOT normal - models that are simple to learn; nothing expensive
+#If actual dictionary - means user wants to specify their own models/params etc.
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -142,6 +150,9 @@ class TPOTBase(BaseEstimator):
             Flag indicating whether TPOT will reuse models from previous calls to
             fit() for faster operation
 
+        config: dictionary or string (default: classifier_config_dict)
+            Sci-kit learn classifiers or regressors, and respective params to include in pipelines
+
         Returns
         -------
         None
@@ -223,6 +234,14 @@ class TPOTBase(BaseEstimator):
         else:
             self.n_jobs = n_jobs
 
+        if type(config) is dict:
+            self.operators = config
+        else:
+            with open(config, 'r') as f:
+                data = f.read().replace('\n', ' ')
+
+            self.operators = eval(data)
+
         self._setup_pset()
         self._setup_toolbox()
 
@@ -231,6 +250,43 @@ class TPOTBase(BaseEstimator):
 
         # Rename pipeline input to "input_df"
         self._pset.renameArguments(ARG0='input_matrix')
+
+        # Add all specified operator to primitive set
+        # Add from imported dictionary
+        for key, value in self.operators.items():
+            l = key.split('.')
+            op_str = l.pop()
+            op = eval(op_str)
+            import_hash = l.join('.')
+
+            if key.startswith('tpot.'):
+                exec('from {} import {}'.format(import_hash[4:], op_str))
+            else:
+                exec('from {} import {}'.format(import_hash, op_str))
+
+            input_arg_types = []
+
+            for arg_name, arg_vals in value.items():
+
+                input_arg_types = input_arg_types + [type(arg_vals[0])]
+                # First argument is always a DataFrame
+                input_arg_types = [np.ndarray] + input_arg_types
+
+                # Add Terminals
+                for val in arg_vals:
+                    self._pset.addTerminal(val, type(val))
+
+            if issubclass(op, ClassifierMixin) or issubclass(op, RegressorMixin):
+                # We need to add rooted primitives twice so that they can
+                # return both an Output_DF (and thus be the root of the tree),
+                # and return a np.ndarray so they can exist elsewhere in the tree.
+                self._pset.addPrimitive(op, input_arg_types, Output_DF)
+
+            return_type = np.ndarray
+            self._pset.addPrimitive(op, input_arg_types, return_type)
+
+        self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
+
 
         # Add all operators to the primitive set
         for op in operators.Operator.inheritors():
@@ -399,16 +455,15 @@ class TPOTBase(BaseEstimator):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
                         top_score = pipeline_scores.wvalues[1]
-
                 # It won't raise error for a small test like in a unit test because a few pipeline sometimes
                 # may fail due to the training data does not fit the operator's requirement.
                 if not self._optimized_pipeline:
                     print('There was an error in the TPOT optimization '
-                                     'process. This could be because the data was '
-                                     'not formatted properly, or because data for '
-                                     'a regression problem was provided to the '
-                                     'TPOTClassifier object. Please make sure you '
-                                     'passed the data to TPOT correctly.')
+                         'process. This could be because the data was '
+                         'not formatted properly, or because data for '
+                         'a regression problem was provided to the '
+                         'TPOTClassifier object. Please make sure you '
+                         'passed the data to TPOT correctly.')
                 else:
                     self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
                     with warnings.catch_warnings():
@@ -709,11 +764,9 @@ class TPOTBase(BaseEstimator):
             partial(mutNodeReplacement, pset=self._pset),
             partial(gp.mutShrink)
         ]
-        while str(mut_ind[0]) == old_ind: # infinite loop to make sure mutation happen
-            mut_ind = np.random.choice(mutation_techniques)(individual)
-        # debug usage
-        #print(str(mut_ind[0]),'\n')
+        mut_ind = np.random.choice(mutation_techniques)(individual)
         return mut_ind
+
 
     def _gen_grow_safe(self, pset, min_, max_, type_=None):
         """Generate an expression where each leaf might have a different depth
