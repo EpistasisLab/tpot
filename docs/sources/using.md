@@ -66,8 +66,14 @@ TPOT offers several arguments that can be provided at the command line:
 <tr>
 <td>-cv</td>
 <td>NUM_CV_FOLDS</td>
-<td>Any integer >2</td>
+<td>Any integer >1</td>
 <td>The number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT pipeline optimization process.</td>
+</tr>
+<tr>
+<td>-njobs</td>
+<td>NUM_JOBS</td>
+<td>Any positive integer or -1</td>
+<td>The number of CPUs for evaluating each pipeline over cross-validation during the TPOT pipeline optimization process. Assigning this to -1 will use as many threads as possible for cross-validation.</td>
 </tr>
 <tr>
 <td>-scoring</td>
@@ -174,6 +180,11 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>num_cv_folds</td>
 <td>[2, 10]</td>
 <td>The number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT pipeline optimization process.</td>
+</tr>
+<tr>
+<td>n_jobs</td>
+<td>Any positive integer or -1</td>
+<td>The number of CPUs for evaluating each pipeline over cross-validation during the TPOT pipeline optimization process. Assigning this to -1 will use as many threads as possible for cross-validation.</td>
 </tr>
 <tr>
 <td>scoring</td>

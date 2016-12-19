@@ -121,7 +121,7 @@ def main():
         'k-fold cross-validation during the TPOT pipeline optimization process.')
 
     parser.add_argument('-njobs', action='store', dest='NUM_JOBS', default=1,
-        type=int, help='The number of CPU for evaluating each pipeline in '
+        type=int, help='The number of CPUs for evaluating each pipeline in '
         ' cross-validation during the TPOT pipeline optimization process.')
 
     parser.add_argument('-scoring', action='store', dest='SCORING_FN', default=None,

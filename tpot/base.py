@@ -117,7 +117,7 @@ class TPOTBase(BaseEstimator):
             The number of folds to evaluate each pipeline over in k-fold
             cross-validation during the TPOT pipeline optimization process
         n_jobs: int (default: 1)
-            The number of CPU for evaluating each pipeline over
+            The number of CPUs for evaluating each pipeline over
             cross-validation during the TPOT pipeline optimization process
         max_time_mins: int (default: None)
             How many minutes TPOT has to optimize the pipeline. If not None,
