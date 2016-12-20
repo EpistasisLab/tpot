@@ -398,9 +398,9 @@ class TPOTBase(BaseEstimator):
                 else:
                     self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 
-                with warnings.catch_warnings():
-                    warnings.simplefilter('ignore')
-                    self._fitted_pipeline.fit(features, classes)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore')
+                        self._fitted_pipeline.fit(features, classes)
 
             if self.verbosity in [1, 2] and self._optimized_pipeline:
                 # Add an extra line of spacing if the progress bar was used
