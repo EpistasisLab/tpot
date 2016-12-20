@@ -386,7 +386,6 @@ class TPOTBase(BaseEstimator):
                 for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
-                # It won't raise error for a small test like in a unit test becasue a few pipeline sometimes
                 # may fail due to the training data does not fit the operator's requirement.
                 if not self._optimized_pipeline:
                     print('There was an error in the TPOT optimization '
