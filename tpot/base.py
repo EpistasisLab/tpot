@@ -388,15 +388,15 @@ class TPOTBase(BaseEstimator):
                         self._optimized_pipeline = pipeline
                 # It won't raise error for a small test like in a unit test becasue a few pipeline sometimes
                 # may fail due to the training data does not fit the operator's requirement.
-                if self.generations*self.population_size > 5 and not self._optimized_pipeline:
-                    raise ValueError('There was an error in the TPOT optimization '
+                if not self._optimized_pipeline:
+                    print('There was an error in the TPOT optimization '
                                      'process. This could be because the data was '
                                      'not formatted properly, or because data for '
                                      'a regression problem was provided to the '
                                      'TPOTClassifier object. Please make sure you '
                                      'passed the data to TPOT correctly.')
-
-                self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+                else:
+                    self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
