@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Randal S. Olson">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Using TPOT - TPOT</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Using TPOT";
+    var mkdocs_page_input_path = "using.md";
+    var mkdocs_page_url = "/using/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> TPOT</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Home</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../installing/">Installation</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Using TPOT</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#tpot-on-the-command-line">TPOT on the command line</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#tpot-with-code">TPOT with code</a></li>
+                
+                    <li><a class="toctree-l4" href="#scoring-functions">Scoring functions</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Examples</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../examples/MNIST_Example/">MNIST Example</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../examples/IRIS_Example/">IRIS Example</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../examples/Boston_Example/">Boston Example</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../examples/Titanic_Kaggle_Example/">Titanic Kaggle Example</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../contributing/">Contributing</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../releases/">Release Notes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../citing/">Citing</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../support/">Support</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">TPOT</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Using TPOT</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/rhiever/tpot/edit/master/docs_sources/using.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="tpot-on-the-command-line">TPOT on the command line</h1>
+<p>To use TPOT via the command line, enter the following command with a path to the data file:</p>
+<pre><code class="Shell">tpot /path_to/data_file.csv
+</code></pre>
+
+<p>TPOT offers several arguments that can be provided at the command line:</p>
+<table>
+<tr>
+<th>Argument</th>
+<th>Parameter</th>
+<th width="15%">Valid values</th>
+<th>Effect</th>
+</tr>
+<tr>
+<td>-is</td>
+<td>INPUT_SEPARATOR</td>
+<td>Any string</td>
+<td>Character used to separate columns in the input file.</td>
+</tr>
+<tr>
+<td>-target</td>
+<td>TARGET_NAME</td>
+<td>Any string</td>
+<td>Name of the target column in the input file.</td>
+</tr>
+<tr>
+<td>-mode</td>
+<td>TPOT_MODE</td>
+<td>['classification', 'regression']</td>
+<td>Whether TPOT is being used for a classification or regression problem.</td>
+</tr>
+<tr>
+<td>-o</td>
+<td>OUTPUT_FILE</td>
+<td>String path to a file</td>
+<td>File to export the code for the final optimized pipeline.</td>
+</tr>
+<tr>
+<td>-g</td>
+<td>GENERATIONS</td>
+<td>Any positive integer</td>
+<td>Number of generations to run pipeline optimization over. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize over. TPOT will evaluate GENERATIONS x POPULATION_SIZE number of pipelines in total.</td>
+</tr>
+<tr>
+<td>-p</td>
+<td>POPULATION_SIZE</td>
+<td>Any positive integer</td>
+<td>Number of individuals in the GP population. Generally, TPOT will work better when you give it more individuals (and therefore time) to optimize over. TPOT will evaluate GENERATIONS x POPULATION_SIZE number of pipelines in total.</td>
+</tr>
+<tr>
+<td>-mr</td>
+<td>MUTATION_RATE</td>
+<td>[0.0, 1.0]</td>
+<td>GP mutation rate. We recommend using the default parameter unless you understand how the mutation rate affects GP algorithms.</td>
+</tr>
+<tr>
+<td>-xr</td>
+<td>CROSSOVER_RATE</td>
+<td>[0.0, 1.0]</td>
+<td>GP crossover rate in the range [0.0, 1.0]. We recommend using the default parameter unless you understand how the crossover rate affects GP algorithms.</td>
+</tr>
+<tr>
+<td>-cv</td>
+<td>NUM_CV_FOLDS</td>
+<td>Any integer >2</td>
+<td>The number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT pipeline optimization process.</td>
+</tr>
+<tr>
+<td>-scoring</td>
+<td>SCORING_FN</td>
+<td>'accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc'</td>
+<td>Function used to evaluate the quality of a given pipeline for the problem. By default, balanced accuracy is used for classification and mean squared error is used for regression. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
+</tr>
+<tr>
+<td>-maxtime</td>
+<td>MAX_TIME_MINS</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize the pipeline. This setting will override the GENERATIONS parameter and allow TPOT to run until it runs out of time.</td>
+</tr>
+<tr>
+<td>-maxeval</td>
+<td>MAX_EVAL_MINS</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize a single pipeline. Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
+</tr>
+<tr>
+<td>-s</td>
+<td>RANDOM_STATE</td>
+<td>Any positive integer</td>
+<td>Random number generator seed for reproducibility. Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
+</tr>
+<tr>
+<td>-v</td>
+<td>VERBOSITY</td>
+<td>{0, 1, 2, 3}</td>
+<td>How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = all. A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
+</tr>
+<tr>
+<td colspan=2>--no-update-check</td>
+<td>N/A</td>
+<td>Flag indicating whether the TPOT version checker should be disabled.</td>
+</tr>
+<tr>
+<td colspan=2>--version</td>
+<td>N/A</td>
+<td>Show TPOT's version number and exit.</td>
+</tr>
+<tr>
+<td colspan=2>--help</td>
+<td>N/A</td>
+<td>Show TPOT's help documentation and exit.</td>
+</tr>
+</table>
+
+<p>An example command-line call to TPOT may look like:</p>
+<pre><code class="Shell">tpot data/mnist.csv -is , -target class -o tpot_exported_pipeline.py -g 5 -p 20 -cv 5 -s 42 -v 2
+</code></pre>
+
+<h1 id="tpot-with-code">TPOT with code</h1>
+<p>We've taken care to design the TPOT interface to be as similar as possible to scikit-learn.</p>
+<p>TPOT can be imported just like any regular Python module. To import TPOT, type:</p>
+<pre><code class="Python">from tpot import TPOTClassifier
+</code></pre>
+
+<p>then create an instance of TPOT as follows:</p>
+<pre><code class="Python">from tpot import TPOTClassifier
+
+pipeline_optimizer = TPOTClassifier()
+</code></pre>
+
+<p>It's also possible to use TPOT for regression problems with the <code>TPOTRegressor</code> class. Other than the class name, a <code>TPOTRegressor</code> is used the same way as a <code>TPOTClassifier</code>.</p>
+<p>Note that you can pass several parameters to the TPOT instantiation call:</p>
+<table>
+<tr>
+<th>Parameter</th>
+<th width="15%">Valid values</th>
+<th>Effect</th>
+</tr>
+<tr>
+<td>generation</td>
+<td>Any positive integer</td>
+<td>The number of generations to run pipeline optimization over. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize over. TPOT will evaluate generations x population_size number of pipelines in total.</td>
+</tr>
+<tr>
+<td>population_size</td>
+<td>Any positive integer</td>
+<td>The number of individuals in the GP population. Generally, TPOT will work better when you give it more individuals (and therefore time) to optimize over. TPOT will evaluate generations x population_size number of pipelines in total.</td>
+</tr>
+<tr>
+<td>mutation_rate</td>
+<td>[0.0, 1.0]</td>
+<td>The mutation rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to apply random changes to every generation. We don't recommend that you tweak this parameter unless you know what you're doing.</td>
+</tr>
+<tr>
+<td>crossover_rate</td>
+<td>[0.0, 1.0]</td>
+<td>The crossover rate for the genetic programming algorithm in the range [0.0, 1.0]. This tells the genetic programming algorithm how many pipelines to "breed" every generation. We don't recommend that you tweak this parameter unless you know what you're doing.</td>
+</tr>
+<tr>
+<td>num_cv_folds</td>
+<td>[2, 10]</td>
+<td>The number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT pipeline optimization process.</td>
+</tr>
+<tr>
+<td>scoring</td>
+<td>'accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc' or a callable function with signature <b>scorer(y_true, y_pred)</b></td>
+<td>Function used to evaluate the quality of a given pipeline for the problem. By default, balanced accuracy is used for classification and mean squared error is used for regression. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
+</tr>
+<tr>
+<td>max_time_mins</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize the pipeline. This setting will override the generations parameter.</td>
+</tr>
+<tr>
+<td>max_eval_time_mins</td>
+<td>Any positive integer</td>
+<td>How many minutes TPOT has to optimize a single pipeline. Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
+</tr>
+<tr>
+<td>random_state</td>
+<td>Any positive integer</td>
+<td>The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.</td>
+</tr>
+<tr>
+<td>verbosity</td>
+<td>{0, 1, 2, 3}</td>
+<td>How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = high, 3 = all. A setting of 2 or higher will add a progress bar to calls to fit().</td>
+</tr>
+<tr>
+<td>disable_update_check</td>
+<td>[True, False]</td>
+<td>Flag indicating whether the TPOT version checker should be disabled.</td>
+</tr>
+</table>
+
+<p>Some example code with custom TPOT parameters might look like:</p>
+<pre><code class="Python">from tpot import TPOTClassifier
+
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, num_cv_folds=5, random_state=42, verbosity=2)
+</code></pre>
+
+<p>Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize a pipeline based on a data set with the <code>fit</code> function:</p>
+<pre><code class="Python">from tpot import TPOTClassifier
+
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, num_cv_folds=5, random_state=42, verbosity=2)
+pipeline_optimizer.fit(training_features, training_classes)
+</code></pre>
+
+<p>The <code>fit()</code> function takes in a training data set and uses k-fold cross-validation when evaluating pipelines. It then initializes the genetic programming algoritm to find the best pipeline based on average k-fold score.</p>
+<p>You can then proceed to evaluate the final pipeline on the testing set with the <code>score()</code> function:</p>
+<pre><code class="Python">from tpot import TPOTClassifier
+
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, num_cv_folds=5, random_state=42, verbosity=2)
+pipeline_optimizer.fit(training_features, training_classes)
+print(pipeline_optimizer.score(testing_features, testing_classes))
+</code></pre>
+
+<p>Finally, you can tell TPOT to export the corresponding Python code for the optimized pipeline to a text file with the <code>export()</code> function:</p>
+<pre><code class="Python">from tpot import TPOTClassifier
+
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, num_cv_folds=5, random_state=42, verbosity=2)
+pipeline_optimizer.fit(training_features, training_classes)
+print(pipeline_optimizer.score(testing_features, testing_classes))
+pipeline_optimizer.export('tpot_exported_pipeline.py')
+</code></pre>
+
+<p>Once this code finishes running, <code>tpot_exported_pipeline.py</code> will contain the Python code for the optimized pipeline.</p>
+<p>Check our <a href="../examples/MNIST_Example/">examples</a> to see TPOT applied to some specific data sets.</p>
+<p><a name="scoringfunctions"></a></p>
+<h2 id="scoring-functions">Scoring functions</h2>
+<p>TPOT makes use of <code>sklearn.model_selection.cross_val_score</code>, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:</p>
+<ol>
+<li>
+<p>You can pass in a string from the list described in the table above. Any other strings will cause internal issues that may break your code down the line.</p>
+</li>
+<li>
+<p>You can pass in a function with the signature <code>scorer(y_true, y_pred)</code>, where <code>y_true</code> are the true target values and <code>y_pred</code> are the predicted target values from an estimator. To do this, you should implement your own function. See the example below for further explanation.</p>
+</li>
+</ol>
+<pre><code class="Python">def accuracy(y_true, y_pred):
+    return float(sum(y_pred == y_true)) / len(y_true)
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../examples/MNIST_Example/" class="btn btn-neutral float-right" title="MNIST Example">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../installing/" class="btn btn-neutral" title="Installation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2016-Present <a href="http://www.randalolson.com">Randal S. Olson</a></p>
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+    
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/rhiever/tpot" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../installing/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../examples/MNIST_Example/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script src="../js/theme.js"></script>
+
+</body>
+</html>
