@@ -17,9 +17,10 @@ details. You should have received a copy of the GNU General Public License along
 with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
-import random
+import numpy as np
 
 from deap import tools
+
 
 def varAnd(population, toolbox, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
@@ -57,7 +58,7 @@ def varAnd(population, toolbox, cxpb, mutpb):
 
     # Apply crossover and mutation on the offspring
     for i in range(1, len(offspring), 2):
-        if random.random() < cxpb:
+        if np.random.random() < cxpb:
             ind1, ind2 = str(offspring[i - 1]), str(offspring[i])
             offspring[i - 1], offspring[i] = toolbox.mate(offspring[i - 1], offspring[i])
             for child in [offspring[i - 1], offspring[i]]:
@@ -66,7 +67,7 @@ def varAnd(population, toolbox, cxpb, mutpb):
                     del child.fitness.values
 
     for i in range(len(offspring)):
-        if random.random() < mutpb:
+        if np.random.random() < mutpb:
             tmpind = str(offspring[i])
             offspring[i], = toolbox.mutate(offspring[i])
             if tmpind != str(offspring[i]):
@@ -132,9 +133,10 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
 
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
-    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+    """fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
     for ind, fit in zip(invalid_ind, fitnesses):
-        ind.fitness.values = fit
+        ind.fitness.values = fit"""
+    invalid_ind = toolbox.evaluate(invalid_ind)
 
     if halloffame is not None:
         halloffame.update(population)
@@ -154,9 +156,10 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+        """fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
+            ind.fitness.values = fit"""
+        invalid_ind = toolbox.evaluate(invalid_ind)
 
         # Update the hall of fame with the generated individuals
         if halloffame is not None:
