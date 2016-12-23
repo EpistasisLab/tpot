@@ -26,6 +26,9 @@ import sys
 from functools import partial
 from datetime import datetime
 from inspect import isclass
+from pathos.multiprocessing import Pool
+#from joblib import Parallel, delayed
+
 
 import numpy as np
 import deap
@@ -40,6 +43,7 @@ from sklearn.ensemble import VotingClassifier
 from sklearn.metrics.scorer import make_scorer
 
 from update_checker import update_check
+from joblib import Parallel, delayed
 
 from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory
@@ -49,6 +53,8 @@ from .build_in_operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement
+
+
 
 
 
@@ -66,7 +72,7 @@ if sys.platform.startswith('win'):
         return 0
     win32api.SetConsoleCtrlHandler(handler, 1)
 # add time limit for imported function
-cross_val_score = _timeout(cross_val_score)
+#cross_val_score = _timeout(cross_val_score)
 
 
 class TPOTBase(BaseEstimator):
@@ -344,7 +350,7 @@ class TPOTBase(BaseEstimator):
 
         self._start_datetime = datetime.now()
 
-        self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes, sample_weight=sample_weight)
+        self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight)
 
         # assign population, self._pop can only be not None if warm_start is enabled
         if self._pop:
@@ -352,28 +358,10 @@ class TPOTBase(BaseEstimator):
         else:
             pop = self._toolbox.population(n=self.population_size)
 
-        def pareto_eq(ind1, ind2):
-            """Determines whether two individuals are equal on the Pareto front
-
-            Parameters
-            ----------
-            ind1: DEAP individual from the GP population
-                First individual to compare
-            ind2: DEAP individual from the GP population
-                Second individual to compare
-
-            Returns
-            ----------
-            individuals_equal: bool
-                Boolean indicating whether the two individuals are equal on
-                the Pareto front
-
-            """
-            return np.all(ind1.fitness.values == ind2.fitness.values)
 
         # generate new pareto front if it doesn't already exist for warm start
         if not self.warm_start or not self._pareto_front:
-            self._pareto_front = tools.ParetoFront(similar=pareto_eq)
+            self._pareto_front = tools.ParetoFront(similar=self._pareto_eq)
 
         # Start the progress bar
         if self.max_time_mins:
@@ -411,6 +399,7 @@ class TPOTBase(BaseEstimator):
             if self._pareto_front:
                 top_score = -float('inf')
                 for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                    print(pipeline_scores.wvalues)
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
                         top_score = pipeline_scores.wvalues[1]
@@ -693,6 +682,107 @@ class TPOTBase(BaseEstimator):
             raise ValueError('Scoring function does not return a float')
 
 
+    def _evaluate_individuals(self, individuals, features, classes, sample_weight = None):
+        """Determines the `individual`'s fitness
+
+        Parameters
+        ----------
+        individuals: a list of DEAP individual
+            One individual is a list of pipeline operators and model parameters that can be
+            compiled by DEAP into a callable function
+        features: numpy.ndarray {n_samples, n_features}
+            A numpy matrix containing the training and testing features for the
+            `individual`'s evaluation
+        classes: numpy.ndarray {n_samples, }
+            A numpy matrix containing the training and testing classes for the
+            `individual`'s evaluation
+
+        Returns
+        -------
+        fitness: float
+            Returns a float value indicating the `individual`'s fitness
+            according to its performance on the provided data
+
+        """
+        if self.max_time_mins:
+            total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
+            if total_mins_elapsed >= self.max_time_mins:
+                raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
+        # return individuals with fitness scores
+        ret_individuals = []
+        # 3 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
+        eval_individuals = []
+        sklearn_pipeline_list = []
+        operator_count_list = []
+        for individual in individuals:
+            # Disallow certain combinations of operators because they will take too long or take up too much RAM
+            # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
+            individual_str = str(individual)
+            if (individual_str.count('PolynomialFeatures') > 1):
+                print('Invalid pipeline -- skipping its evaluation')
+                individual.fitness.value = (max(1, operator_count), resulting_score)
+                ret_individuals.append(individual)
+                if not self._pbar.disable:
+                    self._pbar.update(1)
+
+            # check if the individual are evaluated before
+            elif individual_str in self.eval_ind:
+                # get fitness score from previous evaluation
+                individual.fitness.value = self.eval_ind[individual_str]
+                if self.verbosity == 3:
+                    self._pbar.write("Pipeline #{0} has been evaluated previously. "
+                    "Continuing to the next pipeline.".format(self._pbar.n + 1))
+                ret_individuals.append(individual)
+                if not self._pbar.disable:
+                    self._pbar.update(1)
+
+            else:
+                # Transform the tree expression into an sklearn pipeline
+                sklearn_pipeline = self._toolbox.compile(expr=individual)
+
+                # Fix random state when the operator allows and build sample weight dictionary
+                sample_weight_dict = self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42, sample_weight)
+
+                # Count the number of pipeline operators as a measure of pipeline complexity
+                operator_count = 0
+                # add time limit for evaluation of pipeline
+                for i in range(len(individual)):
+                    node = individual[i]
+                    if ((type(node) is deap.gp.Terminal) or
+                         type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
+                        continue
+                    operator_count += 1
+
+                eval_individuals.append(individual)
+                operator_count_list.append(operator_count)
+                sklearn_pipeline_list.append(sklearn_pipeline)
+
+            # make partial for pool.map
+            partial_cross_val_score = partial(self._wrapped_cross_val_score, features=features, classes=classes,
+                num_cv_folds=self.num_cv_folds, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict)
+
+            pool = Pool(processes=2)
+            """parallel = Parallel(n_jobs=2, verbose=0)
+            resulting_score_list = parallel(delayed(wrapped_cross_val_score)(sklearn_pipeline, features, classes,
+            self.num_cv_folds, self.scoring_function, sample_weight_dict) for sklearn_pipeline in sklearn_pipeline_list)"""
+            resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)
+            #print(resulting_score_list)
+
+            for resulting_score, operator_count, individual in zip(resulting_score_list, operator_count_list, eval_individuals):
+                individual_str = str(individual)
+                if type(resulting_score) in [float, np.float64, np.float32]:
+                    self.eval_ind[individual_str] = (max(1, operator_count), resulting_score)
+                    individual.fitness.value  = self.eval_ind[individual_str]
+                else:
+                    raise ValueError('Scoring function does not return a float')
+                ret_individuals.append(individual)
+
+        for ind in ret_individuals:
+            print(ind.fitness.value)
+        return ret_individuals
+
+
+
     def _random_mutation_operator(self, individual):
         """Perform a replacement, insert, or shrink mutation on an individual
 
@@ -812,3 +902,41 @@ class TPOTBase(BaseEstimator):
                     stack.append((depth+1, arg))
 
         return expr
+
+    def _pareto_eq(self, ind1, ind2):
+        """Determines whether two individuals are equal on the Pareto front
+
+        Parameters
+        ----------
+        ind1: DEAP individual from the GP population
+            First individual to compare
+        ind2: DEAP individual from the GP population
+            Second individual to compare
+
+        Returns
+        ----------
+        individuals_equal: bool
+            Boolean indicating whether the two individuals are equal on
+            the Pareto front
+
+        """
+        return np.all(ind1.fitness.values == ind2.fitness.values)
+
+
+    def _wrapped_cross_val_score(self, sklearn_pipeline, features, classes, num_cv_folds, scoring_function, sample_weight_dict):
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                cv_scores = cross_val_score(sklearn_pipeline, features, classes,
+                    cv=num_cv_folds, scoring=scoring_function,
+                    n_jobs=1, fit_params=sample_weight_dict)
+            try:
+                resulting_score = np.mean(cv_scores)
+            except TypeError:
+                raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
+        except:
+            resulting_score = -float('inf')
+        print(resulting_score)
+        if not self._pbar.disable:
+            self._pbar.update(1)
+        return resulting_score
