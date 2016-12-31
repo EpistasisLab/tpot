@@ -136,7 +136,9 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
     """fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit"""
-    invalid_ind = toolbox.evaluate(invalid_ind)
+    fitnesses = toolbox.evaluate(invalid_ind)
+    for ind, fit in zip(invalid_ind, fitnesses):
+        ind.fitness.values = fit
 
     if halloffame is not None:
         halloffame.update(population)
@@ -148,6 +150,7 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
 
     # Begin the generational process
     for gen in range(1, ngen + 1):
+        print('Gen:', gen)
         # Select the next generation individuals
         offspring = toolbox.select(population, len(population))
 
@@ -159,7 +162,9 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
         """fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit"""
-        invalid_ind = toolbox.evaluate(invalid_ind)
+        fitnesses = toolbox.evaluate(invalid_ind)
+        for ind, fit in zip(invalid_ind, fitnesses):
+            ind.fitness.values = fit
 
         # Update the hall of fame with the generated individuals
         if halloffame is not None:
