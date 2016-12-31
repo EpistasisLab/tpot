@@ -911,6 +911,7 @@ class TPOTBase(BaseEstimator):
 
         return expr
 
+    # make the function pickleable 
     def _pareto_eq(self, ind1, ind2):
         """Determines whether two individuals are equal on the Pareto front
 
