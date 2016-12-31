@@ -127,7 +127,10 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
-    invalid_ind = toolbox.evaluate(invalid_ind)
+
+    fitnesses = toolbox.evaluate(invalid_ind)
+    for ind, fit in zip(invalid_ind, fitnesses):
+        ind.fitness.values = fit
 
     if halloffame is not None:
         halloffame.update(population)
@@ -137,6 +140,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
     # Begin the generational process
     for gen in range(1, ngen + 1):
+
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
 
@@ -149,7 +153,10 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
             if not (max_time_mins is None) and pbar.n >= pbar.total:
                 pbar.total += lambda_
 
-        invalid_ind = toolbox.evaluate(invalid_ind)
+        fitnesses = toolbox.evaluate(invalid_ind)
+        for ind, fit in zip(invalid_ind, fitnesses):
+            ind.fitness.values = fit
+
 
         # Update the hall of fame with the generated individuals
         if halloffame is not None:
