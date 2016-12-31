@@ -357,7 +357,6 @@ class TPOTBase(BaseEstimator):
             pop = self._pop
         else:
             pop = self._toolbox.population(n=self.population_size)
-            print(self.population_size, len(pop))
 
 
         # generate new pareto front if it doesn't already exist for warm start
@@ -400,12 +399,12 @@ class TPOTBase(BaseEstimator):
             if self._pareto_front:
                 top_score = -float('inf')
                 for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
-                    print(pipeline,pipeline_scores.wvalues)
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
                         top_score = pipeline_scores.wvalues[1]
                 # It won't raise error for a small test like in a unit test because a few pipeline sometimes
                 # may fail due to the training data does not fit the operator's requirement.
+<<<<<<< a669c83e5a07d5fb2890f8520f5790984023d7e5
                 if not self._optimized_pipeline:
                     print('There was an error in the TPOT optimization '
                          'process. This could be because the data was '
@@ -415,6 +414,18 @@ class TPOTBase(BaseEstimator):
                          'passed the data to TPOT correctly.')
                 else:
                     self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+=======
+                if  not self._optimized_pipeline:
+                    print('There was an error in the TPOT optimization '
+                                     'process. This could be because the data was '
+                                     'not formatted properly, or because data for '
+                                     'a regression problem was provided to the '
+                                     'TPOTClassifier object. Please make sure you '
+                                     'passed the data to TPOT correctly.')
+                else:
+                    self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+
+>>>>>>> clean codes, pbar works and fix sample_weight_dict bug
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
                         self._fitted_pipeline.fit(features, classes)
@@ -601,6 +612,7 @@ class TPOTBase(BaseEstimator):
             return None
 
 
+<<<<<<< a669c83e5a07d5fb2890f8520f5790984023d7e5
     def _evaluate_individual(self, individual, features, classes, sample_weight = None):
         """Determines the `individual`'s fitness
 
@@ -683,6 +695,8 @@ class TPOTBase(BaseEstimator):
             raise ValueError('Scoring function does not return a float')
 
 
+=======
+>>>>>>> clean codes, pbar works and fix sample_weight_dict bug
     def _evaluate_individuals(self, individuals, features, classes, sample_weight = None):
         """Determines the `individual`'s fitness
 
@@ -700,8 +714,8 @@ class TPOTBase(BaseEstimator):
 
         Returns
         -------
-        fitness: float
-            Returns a float value indicating the `individual`'s fitness
+        fitnesses: float
+            Returns a list of tuple value indicating the `individual`'s fitness
             according to its performance on the provided data
 
         """
@@ -709,11 +723,11 @@ class TPOTBase(BaseEstimator):
             total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
             if total_mins_elapsed >= self.max_time_mins:
                 raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
-        # return individuals with fitness scores
-        ret_individuals = []
+        if not sample_weight:
+            sample_weight_dict = None
+
+        # return fitness scores
         fitnesses = []
-        num_ind = len(individuals)
-        print(num_ind)
         # 3 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
         eval_individuals = []
         sklearn_pipeline_list = []
@@ -724,24 +738,18 @@ class TPOTBase(BaseEstimator):
             individual_str = str(individual)
             if (individual_str.count('PolynomialFeatures') > 1):
                 print('Invalid pipeline -- skipping its evaluation')
-                #individual.fitness.value = (max(1, operator_count), resulting_score)
                 fitness = (max(1, operator_count), resulting_score)
                 fitnesses.append(fitness)
-                #ret_individuals.append(individual)
                 if not self._pbar.disable:
                     self._pbar.update(1)
 
             # check if the individual are evaluated before
             elif individual_str in self.eval_ind:
                 # get fitness score from previous evaluation
-                #individual.fitness.value = self.eval_ind[individual_str]
-                fitness = self.eval_ind[individual_str]
-                fitnesses.append(fitness)
-                print('duplicated pipeline', self.eval_ind[individual_str])
+                fitnesses.append(self.eval_ind[individual_str])
                 if self.verbosity == 3:
                     self._pbar.write("Pipeline #{0} has been evaluated previously. "
                     "Continuing to the next pipeline.".format(self._pbar.n + 1))
-                ret_individuals.append(individual)
                 if not self._pbar.disable:
                     self._pbar.update(1)
 
@@ -766,31 +774,19 @@ class TPOTBase(BaseEstimator):
                 operator_count_list.append(operator_count)
                 sklearn_pipeline_list.append(sklearn_pipeline)
 
-            # make partial for pool.map
-        """for ind in ret_individuals:
-            print(ind.fitness.value)"""
         partial_cross_val_score = partial(self._wrapped_cross_val_score, features=features, classes=classes,
             num_cv_folds=self.num_cv_folds, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict)
-
-        pool = Pool(processes=2)
-        """parallel = Parallel(n_jobs=2, verbose=0)
-        resulting_score_list = parallel(delayed(wrapped_cross_val_score)(sklearn_pipeline, features, classes,
-        self.num_cv_folds, self.scoring_function, sample_weight_dict) for sklearn_pipeline in sklearn_pipeline_list)"""
+        # parallel computing in evaluation of pipeline
+        pool = Pool(processes=self.n_jobs)
         resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)
-        print(len(resulting_score_list),resulting_score_list)
 
-        print('after_evaluation',len(resulting_score_list), len(operator_count_list))
         for resulting_score, operator_count, individual in zip(resulting_score_list, operator_count_list, eval_individuals):
             individual_str = str(individual)
             if type(resulting_score) in [float, np.float64, np.float32]:
                 self.eval_ind[individual_str] = (max(1, operator_count), resulting_score)
-                fitness = self.eval_ind[individual_str]
-                fitnesses.append(fitness)
+                fitnesses.append(self.eval_ind[individual_str])
             else:
                 raise ValueError('Scoring function does not return a float')
-
-        print('eval_done')
-        #return ret_individuals
         return fitnesses
 
 
@@ -948,7 +944,6 @@ class TPOTBase(BaseEstimator):
                 raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
         except:
             resulting_score = -float('inf')
-        print(resulting_score)
         if not self._pbar.disable:
             self._pbar.update(1)
         return resulting_score
