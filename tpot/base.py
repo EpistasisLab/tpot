@@ -47,6 +47,8 @@ from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
+from .gp_deap import eaSimple
+
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -64,14 +66,16 @@ if sys.platform.startswith('win'):
 # add time limit for imported function
 cross_val_score = _timeout(cross_val_score)
 
+
 class TPOTBase(BaseEstimator):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
 
     def __init__(self, population_size=100, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 scoring=None, num_cv_folds=3, max_time_mins=None, max_eval_time_mins=5,
+                 scoring=None, num_cv_folds=5, n_jobs=1,
+                 max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
-                 disable_update_check=False):
+                 disable_update_check=False, warm_start=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -109,8 +113,11 @@ class TPOTBase(BaseEstimator):
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
             'recall_samples', 'recall_weighted', 'roc_auc']
-        num_cv_folds: int (default: 3)
+        num_cv_folds: int (default: 5)
             The number of folds to evaluate each pipeline over in k-fold
+            cross-validation during the TPOT pipeline optimization process
+        n_jobs: int (default: 1)
+            The number of CPUs for evaluating each pipeline over
             cross-validation during the TPOT pipeline optimization process
         max_time_mins: int (default: None)
             How many minutes TPOT has to optimize the pipeline. If not None,
@@ -119,7 +126,7 @@ class TPOTBase(BaseEstimator):
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more complex
             pipelines but will also allow TPOT to run longer.
-        random_state: int (default: 0)
+        random_state: int (default: None)
             The random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
@@ -128,6 +135,9 @@ class TPOTBase(BaseEstimator):
             0 = none, 1 = minimal, 2 = all
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
+        warm_start: bool (default: False)
+            Flag indicating whether TPOT will reuse models from previous calls to
+            fit() for faster operation
 
         Returns
         -------
@@ -143,9 +153,11 @@ class TPOTBase(BaseEstimator):
         if not self.disable_update_check:
             update_check('tpot', __version__)
 
-        self._hof = None
+        self._pareto_front = None
         self._optimized_pipeline = None
         self._fitted_pipeline = None
+        self._pop = None
+        self.warm_start = warm_start
         self.population_size = population_size
         self.generations = generations
         self.max_time_mins = max_time_mins
@@ -168,6 +180,8 @@ class TPOTBase(BaseEstimator):
 
         self._pbar = None
         self._gp_generation = 0
+        # a dictionary of individual which has already evaluated in previous generation.
+        self.eval_ind = {}
 
         self.random_state = random_state
 
@@ -187,6 +201,13 @@ class TPOTBase(BaseEstimator):
                 self.scoring_function = scoring
 
         self.num_cv_folds = num_cv_folds
+        # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
+        if sys.platform.startswith('win') and n_jobs > 1:
+            print('Warning: Parallelizing cross validation is not supported in Windows OS.',
+                'Reset number of cpu to 1 during TPOT pipeline optimization process')
+            self.n_jobs = 1
+        else:
+            self.n_jobs = n_jobs
 
         self._setup_pset()
         self._setup_toolbox()
@@ -262,7 +283,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
-    def fit(self, features, classes):
+    def fit(self, features, classes, sample_weight = None):
         """Fits a machine learning pipeline that maximizes classification score
         on the provided data
 
@@ -277,6 +298,8 @@ class TPOTBase(BaseEstimator):
             Feature matrix
         classes: array-like {n_samples}
             List of class labels for prediction
+        sample_weight: array-like {n_samples}
+            List of sample weights
 
         Returns
         -------
@@ -286,14 +309,19 @@ class TPOTBase(BaseEstimator):
         features = features.astype(np.float64)
 
         # Set the seed for the GP run
-        if self.random_state:
+        if self.random_state is not None:
             random.seed(self.random_state)
             np.random.seed(self.random_state)
 
         self._start_datetime = datetime.now()
 
-        self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes)
-        pop = self._toolbox.population(n=self.population_size)
+        self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes, sample_weight=sample_weight)
+
+        # assign population, self._pop can only be not None if warm_start is enabled
+        if self._pop:
+            pop = self._pop
+        else:
+            pop = self._toolbox.population(n=self.population_size)
 
         def pareto_eq(ind1, ind2):
             """Determines whether two individuals are equal on the Pareto front
@@ -314,7 +342,9 @@ class TPOTBase(BaseEstimator):
             """
             return np.all(ind1.fitness.values == ind2.fitness.values)
 
-        self._hof = tools.ParetoFront(similar=pareto_eq)
+        # generate new pareto front if it doesn't already exist for warm start
+        if not self.warm_start or not self._pareto_front:
+            self._pareto_front = tools.ParetoFront(similar=pareto_eq)
 
         # Start the progress bar
         if self.max_time_mins:
@@ -326,10 +356,14 @@ class TPOTBase(BaseEstimator):
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         try:
-            pop, _ = algorithms.eaSimple(
+            pop, _ = eaSimple(
                 population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
                 mutpb=self.mutation_rate, ngen=self.generations,
-                halloffame=self._hof, verbose=False)
+                halloffame=self._pareto_front, verbose=False)
+
+            # store population for the next call
+            if self.warm_start:
+                self._pop = pop
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
@@ -346,13 +380,14 @@ class TPOTBase(BaseEstimator):
             self._gp_generation = 0
 
             # Store the pipeline with the highest internal testing score
-            if self._hof:
+            if self._pareto_front:
                 top_score = -float('inf')
-                for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
+                for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
-
-                if not self._optimized_pipeline:
+                # It won't raise error for a small test like in a unit test becasue a few pipeline sometimes
+                # may fail due to the training data does not fit the operator's requirement. 
+                if self.generations*self.population_size > 5 and not self._optimized_pipeline:
                     raise ValueError('There was an error in the TPOT optimization '
                                      'process. This could be because the data was '
                                      'not formatted properly, or because data for '
@@ -373,15 +408,15 @@ class TPOTBase(BaseEstimator):
                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
             # Store and fit the entire Pareto front if sciencing
-            elif self.verbosity >= 3 and self._hof:
-                self._hof_fitted_pipelines = {}
+            elif self.verbosity >= 3 and self._pareto_front:
+                self._pareto_front_fitted_pipelines = {}
 
-                for pipeline in self._hof.items:
-                    self._hof_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                for pipeline in self._pareto_front.items:
+                    self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
 
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
-                        self._hof_fitted_pipelines[str(pipeline)].fit(features, classes)
+                        self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
 
     def predict(self, features):
         """Uses the optimized pipeline to predict the classes for a feature set
@@ -516,7 +551,7 @@ class TPOTBase(BaseEstimator):
 
         return eval(sklearn_pipeline, self.operators_context)
 
-    def _set_param_recursive(self, pipeline_steps, parameter, value):
+    def _set_param_recursive(self, pipeline_steps, parameter, value, sample_weight = None):
         """Recursively iterates through all objects in the pipeline and sets the given parameter to the specified value
 
         Parameters
@@ -530,12 +565,16 @@ class TPOTBase(BaseEstimator):
 
         Returns
         -------
-        None
+        sample_weight_dict:
+            A dictionary of sample_weight
 
         """
-        for (_, obj) in pipeline_steps:
+        sample_weight_dict = {}
+        for (pname, obj) in pipeline_steps:
+            if inspect.getargspec(obj.fit).args.count('sample_weight') and sample_weight:
+                step_sw = pname + '__sample_weight'
+                sample_weight_dict[step_sw] = sample_weight
             recursive_attrs = ['steps', 'transformer_list', 'estimators']
-
             for attr in recursive_attrs:
                 if hasattr(obj, attr):
                     self._set_param_recursive(getattr(obj, attr), parameter, value)
@@ -543,8 +582,13 @@ class TPOTBase(BaseEstimator):
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
+        if sample_weight_dict:
+            return sample_weight_dict
+        else:
+            return None
 
-    def _evaluate_individual(self, individual, features, classes):
+
+    def _evaluate_individual(self, individual, features, classes, sample_weight = None):
         """Determines the `individual`'s fitness
 
         Parameters
@@ -581,28 +625,37 @@ class TPOTBase(BaseEstimator):
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-            # Fix random state when the operator allows
-            self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+            # Fix random state when the operator allows and build sample weight dictionary
+            sample_weight_dict = self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42, sample_weight)
 
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
-            
-            # add time limit for evaluation of pipeline
-            for i in range(len(individual)):
-                node = individual[i]
-                if ((type(node) is deap.gp.Terminal) or
-                     type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
-                    continue
-                operator_count += 1
 
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
-                    cv=self.num_cv_folds, scoring=self.scoring_function)
-            try:
-                resulting_score = np.mean(cv_scores)
-            except TypeError:
-                raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
+            # check if the individual are evaluated before
+            if individual_str in self.eval_ind:
+                # get fitness score from previous evaluation
+                operator_count, resulting_score = self.eval_ind[individual_str]
+                if self.verbosity == 3:
+                    self._pbar.write("Pipeline #{0} has been evaluated previously. "
+                    "Continuing to the next pipeline.".format(self._pbar.n + 1))
+            else:
+                # add time limit for evaluation of pipeline
+                for i in range(len(individual)):
+                    node = individual[i]
+                    if ((type(node) is deap.gp.Terminal) or
+                         type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
+                        continue
+                    operator_count += 1
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
+                        cv=self.num_cv_folds, scoring=self.scoring_function,
+                        n_jobs=self.n_jobs, fit_params=sample_weight_dict)
+                try:
+                    resulting_score = np.mean(cv_scores)
+                except TypeError:
+                    raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
 
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
@@ -615,6 +668,7 @@ class TPOTBase(BaseEstimator):
                 self._pbar.update(1)  # One more pipeline evaluated
 
         if type(resulting_score) in [float, np.float64, np.float32]:
+            self.eval_ind[individual_str] = (max(1, operator_count), resulting_score)
             return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
@@ -637,6 +691,7 @@ class TPOTBase(BaseEstimator):
 
         """
         return tools.selNSGA2(individuals, int(k / 5.)) * 5
+
 
     def _random_mutation_operator(self, individual):
         """Perform a replacement, insert, or shrink mutation on an individual
