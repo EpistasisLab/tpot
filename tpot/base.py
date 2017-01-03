@@ -487,10 +487,6 @@ class TPOTBase(BaseEstimator):
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix of the testing set
-        cv: integer, cross-validation generator, iterable or 'prefit' (default: 'prefit')
-            Determines the cross-validation splitting strategy
-        method: 'sigmoid' or 'isotonic' (default: 'sigmoid')
-            Type of classifier to be used when creating a CalibratedClassifier
 
         Returns
         -------
