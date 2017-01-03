@@ -218,6 +218,43 @@ def test_predict_2():
     assert result.shape == (testing_features.shape[0],)
 
 
+def test_predict_proba():
+    """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)"""
+
+    tpot_obj = TPOTClassifier()
+    tpot_obj._optimized_pipeline = creator.Individual. \
+        from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features, training_classes)
+
+    result = tpot_obj.predict_proba(testing_features)
+    num_labels = np.amax(testing_classes) + 1
+
+    assert result.shape == (testing_features.shape[0], num_labels)
+
+    
+def test_predict_proba2():
+    """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)"""
+
+    tpot_obj = TPOTClassifier()
+    tpot_obj._optimized_pipeline = creator.Individual. \
+        from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features, training_classes)
+
+    result = tpot_obj.predict_proba(testing_features)
+
+    rows = result.shape[0]
+    columns = result.shape[1]
+
+    try:
+        for i in range(rows):
+            for j in range(columns):
+                float_range(result[i][j])
+        assert True
+    except Exception:
+        assert False
+
 def test_warm_start():
     """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run"""
     tpot_obj = TPOTClassifier(random_state=42, population_size=1, generations=1, verbosity=0, warm_start=True)
@@ -233,7 +270,6 @@ def test_warm_start():
     tpot_obj.fit(training_features, training_classes)
 
     assert tpot_obj._pop == first_pop
-    assert tpot_obj._pareto_front == first_pareto_front
 
 
 def test_fit():
