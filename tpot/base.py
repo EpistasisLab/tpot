@@ -43,7 +43,7 @@ from update_checker import update_check
 
 from ._version import __version__
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
-from .decorators import _gp_new_generation, _timeout
+from .decorators import _gp_new_generation, _timeout, TimedOutExc
 from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
@@ -825,7 +825,7 @@ class TPOTBase(BaseEstimator):
                     cv=num_cv_folds, scoring=scoring_function,
                     n_jobs=1, fit_params=sample_weight_dict)
             resulting_score = np.mean(cv_scores)
-        except RuntimeError:
+        except TimedOutExc:
             if self.verbosity > 1:
                 self._pbar.write('Timeout during evaluation of a pipeline. Skipping to the next pipeline.')
             resulting_score = -float('inf')
