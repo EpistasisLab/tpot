@@ -78,24 +78,6 @@ def convert_mins_to_secs(time_minute):
     return max(second, 1)
 
 
-class InterruptableThread(Thread):
-    def __init__(self, args, kwargs):
-        Thread.__init__(self)
-        self.args = args
-        self.kwargs = kwargs
-        self.result = -float('inf')
-        self.daemon = True
-    def stop(self):
-        self._stop()
-    def run(self):
-        try:
-            # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
-            # Note: Need attention if using parallel execution model of scikit-learn
-            current_thread().name = 'MainThread'
-            self.result = func(*self.args, **self.kwargs)
-        except Exception:
-            pass
-
 def timeout_signal_handler(signum, frame):
     """
     signal handler for _timeout function
@@ -133,49 +115,31 @@ def _timeout(func):
                 ret = func(*args, **kw)
             except RuntimeError:
                 raise RuntimeError("Time Out!")
-                """print('timeout!!')
-                ret = -float('inf')
-                if self.verbosity > 1:
-                    self._pbar.write('Timeout during evaluation of a pipeline. Skipping to the next pipeline.') """ # f() always returns, in this scheme
             finally:
                 signal.signal(signal.SIGALRM, old_signal_hander)  # Old signal handler is restored
                 signal.alarm(0)  # Alarm removed
             return ret
-        #return limitedTime
-        """from signal import SIGXCPU, signal, getsignal
-        from resource import getrlimit, setrlimit, RLIMIT_CPU, getrusage, RUSAGE_SELF
-        # timeout uses the CPU time
-        @wraps(func)
-        def limitedTime(self,*args, **kw):
-            # don't show traceback
-            sys.tracebacklimit=0
-            # save old signal
-            old_signal_hander = getsignal(SIGXCPU)
-            # change signal
-            signal(SIGXCPU, timeout_signal_handler)
-            max_time_second = convert_mins_to_secs(self.max_eval_time_mins)
-            r = getrusage(RUSAGE_SELF)
-            cpu_time = r.ru_utime + r.ru_stime
-            current = getrlimit(RLIMIT_CPU)
-            try:
-                setrlimit(RLIMIT_CPU, (cpu_time+max_time_second, current[1]))
-                ret = func(*args, **kw)
-            except RuntimeError:
-                if self.verbosity > 1:
-                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
-                ret = None
-            finally:
-                # reset cpu time limit and trackback
-                setrlimit(RLIMIT_CPU, current)
-                sys.tracebacklimit=1000
-                # reset signal
-                signal(SIGXCPU, old_signal_hander)
-            return ret"""
-
     else:
+        class InterruptableThread(Thread):
+            def __init__(self, args, kwargs):
+                Thread.__init__(self)
+                self.args = args
+                self.kwargs = kwargs
+                self.result = -float('inf')
+                self.daemon = True
+            def stop(self):
+                self._stop()
+            def run(self):
+                try:
+                    # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
+                    # Note: Need attention if using parallel execution model of scikit-learn
+                    current_thread().name = 'MainThread'
+                    self.result = func(*self.args, **self.kwargs)
+                except Exception:
+                    pass
         @wraps(func)
         def limitedTime(self, *args, **kw):
-            #sys.tracebacklimit = 0
+            sys.tracebacklimit = 0
             max_time_seconds = convert_mins_to_secs(self.max_eval_time_mins)
             # start thread
             tmp_it = InterruptableThread(args, kw)
@@ -184,8 +148,8 @@ def _timeout(func):
             tmp_it.join(max_time_seconds)
             if tmp_it.isAlive():
                 if self.verbosity > 1:
-                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
-            #sys.tracebacklimit=1000
+                    self._pbar.write('Timeout during evaluation of a pipeline. Skipping to the next pipeline.')
+            sys.tracebacklimit=1000
             return tmp_it.result
             tmp_it.stop()
         # return func
