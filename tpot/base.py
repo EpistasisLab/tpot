@@ -26,7 +26,6 @@ import sys
 from functools import partial
 from datetime import datetime
 from pathos.multiprocessing import Pool
-#from joblib import Parallel, delayed
 
 import numpy as np
 import deap
