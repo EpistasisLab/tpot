@@ -36,12 +36,17 @@ def convert_mins_to_secs(time_minute):
     return max(second, 1)
 
 
+class TimedOutExc(RuntimeError):
+    """
+    Raised when a timeout happens
+    """
+
 def timeout_signal_handler(signum, frame):
     """
     signal handler for _timeout function
     rasie TIMEOUT exception
     """
-    raise RuntimeError("Time Out!")
+    raise TimedOutExc("Time Out!")
 
 def _timeout(func):
     """Runs a function with time limit
@@ -71,8 +76,8 @@ def _timeout(func):
             signal.alarm(max_time_seconds)
             try:
                 ret = func(*args, **kw)
-            except RuntimeError:
-                raise RuntimeError("Time Out!")
+            except:
+                raise TimedOutExc("Time Out!")
             finally:
                 signal.signal(signal.SIGALRM, old_signal_hander)  # Old signal handler is restored
                 signal.alarm(0)  # Alarm removed
