@@ -190,33 +190,3 @@ def _timeout(func):
             tmp_it.stop()
         # return func
     return limitedTime
-    #return decorate
-
-
-"""class TimedOutExc(Exception):
-
-
-import signal
-def timeout(timeout):
-
-    def decorate(f):
-
-        def handler(signum, frame):
-            raise TimedOutExc()
-
-        def new_f(*args, **kwargs):
-
-            old_handler = signal.signal(signal.SIGALRM, handler)
-            signal.alarm(timeout)
-
-            result = f(*args, **kwargs)  # f() always returns, in this scheme
-
-            signal.signal(signal.SIGALRM, old_handler)  # Old signal handler is restored
-            signal.alarm(0)  # Alarm removed
-
-            return result
-
-        #new_f.func_name = f.func_name
-        return new_f
-
-    return decorate"""
