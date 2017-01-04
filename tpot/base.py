@@ -25,8 +25,10 @@ import warnings
 import sys
 from functools import partial
 from datetime import datetime
+
 from inspect import isclass
 from pathos.multiprocessing import Pool
+
 #from joblib import Parallel, delayed
 
 
@@ -194,6 +196,9 @@ class TPOTBase(BaseEstimator):
             op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key])
             self.operators.append(op_class)
             self.arguments += arg_types
+
+        global max_e_time_mins
+        max_e_time_mins = max_eval_time_mins
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -404,7 +409,6 @@ class TPOTBase(BaseEstimator):
                         top_score = pipeline_scores.wvalues[1]
                 # It won't raise error for a small test like in a unit test because a few pipeline sometimes
                 # may fail due to the training data does not fit the operator's requirement.
-<<<<<<< a669c83e5a07d5fb2890f8520f5790984023d7e5
                 if not self._optimized_pipeline:
                     print('There was an error in the TPOT optimization '
                          'process. This could be because the data was '
@@ -414,18 +418,7 @@ class TPOTBase(BaseEstimator):
                          'passed the data to TPOT correctly.')
                 else:
                     self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
-=======
-                if  not self._optimized_pipeline:
-                    print('There was an error in the TPOT optimization '
-                                     'process. This could be because the data was '
-                                     'not formatted properly, or because data for '
-                                     'a regression problem was provided to the '
-                                     'TPOTClassifier object. Please make sure you '
-                                     'passed the data to TPOT correctly.')
-                else:
-                    self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 
->>>>>>> clean codes, pbar works and fix sample_weight_dict bug
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
                         self._fitted_pipeline.fit(features, classes)
@@ -611,92 +604,6 @@ class TPOTBase(BaseEstimator):
         else:
             return None
 
-
-<<<<<<< a669c83e5a07d5fb2890f8520f5790984023d7e5
-    def _evaluate_individual(self, individual, features, classes, sample_weight = None):
-        """Determines the `individual`'s fitness
-
-        Parameters
-        ----------
-        individual: DEAP individual
-            A list of pipeline operators and model parameters that can be
-            compiled by DEAP into a callable function
-        features: numpy.ndarray {n_samples, n_features}
-            A numpy matrix containing the training and testing features for the
-            `individual`'s evaluation
-        classes: numpy.ndarray {n_samples, }
-            A numpy matrix containing the training and testing classes for the
-            `individual`'s evaluation
-
-        Returns
-        -------
-        fitness: float
-            Returns a float value indicating the `individual`'s fitness
-            according to its performance on the provided data
-
-        """
-        try:
-            if self.max_time_mins:
-                total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
-                if total_mins_elapsed >= self.max_time_mins:
-                    raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
-
-            # Disallow certain combinations of operators because they will take too long or take up too much RAM
-            # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
-            individual_str = str(individual)
-            if (individual_str.count('PolynomialFeatures') > 1):
-                raise ValueError('Invalid pipeline -- skipping its evaluation')
-
-            # Transform the tree expression into an sklearn pipeline
-            sklearn_pipeline = self._toolbox.compile(expr=individual)
-            # Fix random state when the operator allows and build sample weight dictionary
-            sample_weight_dict = self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42, sample_weight)
-
-            # Count the number of pipeline operators as a measure of pipeline complexity
-            operator_count = 0
-
-            # check if the individual are evaluated before
-            if individual_str in self.eval_ind:
-                # get fitness score from previous evaluation
-                operator_count, resulting_score = self.eval_ind[individual_str]
-                if self.verbosity == 3:
-                    self._pbar.write("Pipeline #{0} has been evaluated previously. "
-                    "Continuing to the next pipeline.".format(self._pbar.n + 1))
-            else:
-                # add time limit for evaluation of pipeline
-                for i in range(len(individual)):
-                    node = individual[i]
-                    if ((type(node) is deap.gp.Terminal) or
-                         type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
-                        continue
-                    operator_count += 1
-
-                with warnings.catch_warnings():
-                    warnings.simplefilter('ignore')
-                    cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
-                        cv=self.cv, scoring=self.scoring_function,
-                        n_jobs=self.n_jobs, fit_params=sample_weight_dict)
-                    resulting_score = np.mean(cv_scores)
-
-        except Exception:
-            # Catch-all: Do not allow one pipeline that crashes to cause TPOT
-            # to crash. Instead, assign the crashing pipeline a poor fitness
-            #import traceback
-            #traceback.print_exc()
-            return 5000., -float('inf')
-        finally:
-            if not self._pbar.disable:
-                self._pbar.update(1)  # One more pipeline evaluated
-
-        if type(resulting_score) in [float, np.float64, np.float32]:
-            self.eval_ind[individual_str] = (max(1, operator_count), resulting_score)
-            return max(1, operator_count), resulting_score
-        else:
-            raise ValueError('Scoring function does not return a float')
-
-
-=======
->>>>>>> clean codes, pbar works and fix sample_weight_dict bug
     def _evaluate_individuals(self, individuals, features, classes, sample_weight = None):
         """Determines the `individual`'s fitness
 
@@ -714,7 +621,7 @@ class TPOTBase(BaseEstimator):
 
         Returns
         -------
-        fitnesses: float
+        fitnesses_ordered: float
             Returns a list of tuple value indicating the `individual`'s fitness
             according to its performance on the provided data
 
@@ -728,18 +635,22 @@ class TPOTBase(BaseEstimator):
 
         # return fitness scores
         fitnesses = []
-        # 3 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
-        eval_individuals = []
+        orderlist = []
+        # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
+        eval_individuals_str = []
         sklearn_pipeline_list = []
         operator_count_list = []
-        for individual in individuals:
+        test_idx_list = []
+        for indidx in range(len(individuals)):
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
+            individual = individuals[indidx]
             individual_str = str(individual)
             if (individual_str.count('PolynomialFeatures') > 1):
                 print('Invalid pipeline -- skipping its evaluation')
-                fitness = (max(1, operator_count), resulting_score)
+                fitness = (5000., -float('inf')) ## need reorder !!!
                 fitnesses.append(fitness)
+                orderlist.append(indidx)
                 if not self._pbar.disable:
                     self._pbar.update(1)
 
@@ -747,48 +658,57 @@ class TPOTBase(BaseEstimator):
             elif individual_str in self.eval_ind:
                 # get fitness score from previous evaluation
                 fitnesses.append(self.eval_ind[individual_str])
+                orderlist.append(indidx)
                 if self.verbosity == 3:
                     self._pbar.write("Pipeline #{0} has been evaluated previously. "
                     "Continuing to the next pipeline.".format(self._pbar.n + 1))
                 if not self._pbar.disable:
                     self._pbar.update(1)
-
             else:
-                # Transform the tree expression into an sklearn pipeline
-                sklearn_pipeline = self._toolbox.compile(expr=individual)
+                try:
+                    # Transform the tree expression into an sklearn pipeline
+                    sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-                # Fix random state when the operator allows and build sample weight dictionary
-                sample_weight_dict = self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42, sample_weight)
+                    # Fix random state when the operator allows and build sample weight dictionary
+                    sample_weight_dict = self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42, sample_weight)
 
-                # Count the number of pipeline operators as a measure of pipeline complexity
-                operator_count = 0
-                # add time limit for evaluation of pipeline
-                for i in range(len(individual)):
-                    node = individual[i]
-                    if ((type(node) is deap.gp.Terminal) or
-                         type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
-                        continue
-                    operator_count += 1
-
-                eval_individuals.append(individual)
+                    # Count the number of pipeline operators as a measure of pipeline complexity
+                    operator_count = 0
+                    # add time limit for evaluation of pipeline
+                    for i in range(len(individual)):
+                        node = individual[i]
+                        if ((type(node) is deap.gp.Terminal) or
+                             type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
+                            continue
+                        operator_count += 1
+                except:
+                    fitness = (5000., -float('inf')) ## need reorder !!!
+                    fitnesses.append(fitness)
+                    orderlist.append(indidx)
+                    if not self._pbar.disable:
+                        self._pbar.update(1)
+                    continue
+                eval_individuals_str.append(individual_str)
                 operator_count_list.append(operator_count)
                 sklearn_pipeline_list.append(sklearn_pipeline)
-
-        partial_cross_val_score = partial(self._wrapped_cross_val_score, features=features, classes=classes,
+                test_idx_list.append(indidx)
+        partial_cross_val_score = partial(self._wrapped_cross_val_score, self, features=features, classes=classes,
             num_cv_folds=self.num_cv_folds, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict)
         # parallel computing in evaluation of pipeline
-        pool = Pool(processes=self.n_jobs)
+        pool = ProcessPool(processes=self.n_jobs)
         resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)
 
-        for resulting_score, operator_count, individual in zip(resulting_score_list, operator_count_list, eval_individuals):
-            individual_str = str(individual)
+        for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
             if type(resulting_score) in [float, np.float64, np.float32]:
                 self.eval_ind[individual_str] = (max(1, operator_count), resulting_score)
                 fitnesses.append(self.eval_ind[individual_str])
+                orderlist.append(test_idx)
             else:
                 raise ValueError('Scoring function does not return a float')
-        return fitnesses
-
+        fitnesses_ordered = [None] * len(individuals)
+        for idx, fit in zip(orderlist, fitnesses):
+            fitnesses_ordered[idx] = fit
+        return fitnesses_ordered
 
 
     def _random_mutation_operator(self, individual):
@@ -911,7 +831,7 @@ class TPOTBase(BaseEstimator):
 
         return expr
 
-    # make the function pickleable 
+    # make the function pickleable
     def _pareto_eq(self, ind1, ind2):
         """Determines whether two individuals are equal on the Pareto front
 
@@ -931,7 +851,7 @@ class TPOTBase(BaseEstimator):
         """
         return np.all(ind1.fitness.values == ind2.fitness.values)
 
-
+    @_timeout
     def _wrapped_cross_val_score(self, sklearn_pipeline, features, classes, num_cv_folds, scoring_function, sample_weight_dict):
         try:
             with warnings.catch_warnings():
@@ -939,10 +859,11 @@ class TPOTBase(BaseEstimator):
                 cv_scores = cross_val_score(sklearn_pipeline, features, classes,
                     cv=num_cv_folds, scoring=scoring_function,
                     n_jobs=1, fit_params=sample_weight_dict)
-            try:
-                resulting_score = np.mean(cv_scores)
-            except TypeError:
-                raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
+            resulting_score = np.mean(cv_scores)
+        except RuntimeError:
+            if self.verbosity > 1:
+                self._pbar.write('Timeout during evaluation of a pipeline. Skipping to the next pipeline.')
+            resulting_score = -float('inf')
         except:
             resulting_score = -float('inf')
         if not self._pbar.disable:
