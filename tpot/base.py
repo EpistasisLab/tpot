@@ -25,8 +25,6 @@ import warnings
 import sys
 from functools import partial
 from datetime import datetime
-
-from inspect import isclass
 from pathos.multiprocessing import Pool
 
 #from joblib import Parallel, delayed
@@ -45,7 +43,6 @@ from sklearn.ensemble import VotingClassifier
 from sklearn.metrics.scorer import make_scorer
 
 from update_checker import update_check
-from joblib import Parallel, delayed
 
 from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory
@@ -695,8 +692,11 @@ class TPOTBase(BaseEstimator):
         partial_cross_val_score = partial(self._wrapped_cross_val_score, self, features=features, classes=classes,
             num_cv_folds=self.num_cv_folds, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict)
         # parallel computing in evaluation of pipeline
-        pool = ProcessPool(processes=self.n_jobs)
-        resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)
+        if not sys.platform.startswith('win'):
+            pool = Pool(processes=self.n_jobs)
+            resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)
+        else:
+            resulting_score_list = map(partial_cross_val_score, sklearn_pipeline_list)
 
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
             if type(resulting_score) in [float, np.float64, np.float32]:
