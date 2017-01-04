@@ -40,8 +40,8 @@ class TPOTMDR(Classifier):
         pass
 
     def preprocess_args(self, tie_break, default_label):
-        tie_break = max(0, min(1, tie_break))
-        default_label = max(0, min(1, tie_break))
+        tie_break = tie_break % 2
+        default_label = default_label % 2
 
         return {
             'tie_break': tie_break,

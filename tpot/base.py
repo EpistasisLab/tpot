@@ -613,12 +613,6 @@ class TPOTBase(BaseEstimator):
                 if total_mins_elapsed >= self.max_time_mins:
                     raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
 
-            # Disallow certain combinations of operators because they will take too long or take up too much RAM
-            # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
-            individual_str = str(individual)
-            if (individual_str.count('PolynomialFeatures') > 1):
-                raise ValueError('Invalid pipeline -- skipping its evaluation')
-
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
 
@@ -629,6 +623,7 @@ class TPOTBase(BaseEstimator):
             operator_count = 0
 
             # check if the individual are evaluated before
+            individual_str = str(individual)
             if individual_str in self.eval_ind:
                 # get fitness score from previous evaluation
                 operator_count, resulting_score = self.eval_ind[individual_str]
@@ -657,8 +652,8 @@ class TPOTBase(BaseEstimator):
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
-            # import traceback
-            # traceback.print_exc()
+            #import traceback
+            #traceback.print_exc()
             return 5000., -float('inf')
         finally:
             if not self._pbar.disable:
