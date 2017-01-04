@@ -18,35 +18,29 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Classifier
-from sklearn.neighbors import KNeighborsClassifier
+from .base import Selector
+from skrebate import SURFstar
 
 
-class TPOTKNeighborsClassifier(Classifier):
-    """Fits a k-nearest neighbor classifier
+class TPOTSURF(Selector):
+    """Uses SURF* as an expert knowledge source to subset the feature set
 
     Parameters
     ----------
-    n_neighbors: int
-        Number of neighbors to use by default for k_neighbors queries; must be a positive value
-    weights: int
-        Selects a value from the list: ['uniform', 'distance']
+    k: int
+        The top k features to keep from the original set of features in the training data
 
     """
-    import_hash = {'sklearn.neighbors': ['KNeighborsClassifier']}
-    sklearn_class = KNeighborsClassifier
-    arg_types = (int, int)
+    import_hash = {'skrebate': ['SURFstar']}
+    sklearn_class = SURFstar
+    arg_types = (int, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, n_neighbors, weights):
-        n_neighbors = max(min(5, n_neighbors), 2)
-
-        weights_values = ['uniform', 'distance']
-        weights_selection = weights_values[weights % len(weights_values)]
+    def preprocess_args(self, n_features_to_select):
+        n_features_to_select = max(1, n_features_to_select)
 
         return {
-            'n_neighbors': n_neighbors,
-            'weights': weights_selection
+            'n_features_to_select': n_features_to_select
         }

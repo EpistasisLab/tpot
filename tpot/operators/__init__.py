@@ -20,7 +20,5 @@ the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 from .base import *
 from .classifiers import *
-from .preprocessors import *
 from .selectors import *
-from .regressors import *
 from .combine_dfs import CombineDFs

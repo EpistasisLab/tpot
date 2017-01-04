@@ -19,5 +19,5 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from ._version import __version__
-from .tpot import TPOTClassifier, TPOTRegressor
+from .tpot import TPOTClassifier
 from .driver import main

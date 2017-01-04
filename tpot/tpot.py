@@ -35,19 +35,3 @@ class TPOTClassifier(TPOTBase):
             TPOT Pipeline operator being tested
         """
         return not op.classification
-
-
-class TPOTRegressor(TPOTBase):
-    """TPOT estimator for regression problems"""
-
-    scoring_function = 'neg_mean_squared_error'  # Regression scoring
-
-    def _ignore_operator(self, op):
-        """Filter that describes which operators are not used
-
-        Parameters
-        ----------
-        op: Operator
-            TPOT Pipeline operator being tested
-        """
-        return not op.regression

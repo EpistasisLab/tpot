@@ -18,35 +18,29 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-from .base import Regressor
-from sklearn.neighbors import KNeighborsRegressor
+from .base import Selector
+from skrebate import ReliefF
 
 
-class TPOTKNeighborsRegressor(Regressor):
-    """Fits a k-nearest neighbor Regressor
+class TPOTReliefF(Selector):
+    """Uses ReliefF as an expert knowledge source to subset the feature set
 
     Parameters
     ----------
-    n_neighbors: int
-        Number of neighbors to use by default for k_neighbors queries; must be a positive value
-    weights: int
-        Selects a value from the list: ['uniform', 'distance']
+    k: int
+        The top k features to keep from the original set of features in the training data
 
     """
-    import_hash = {'sklearn.neighbors': ['KNeighborsRegressor']}
-    sklearn_class = KNeighborsRegressor
-    arg_types = (int, int)
+    import_hash = {'skrebate': ['ReliefF']}
+    sklearn_class = ReliefF
+    arg_types = (int, )
 
     def __init__(self):
         pass
 
-    def preprocess_args(self, n_neighbors, weights):
-        n_neighbors = max(min(5, n_neighbors), 2)
-
-        weights_values = ['uniform', 'distance']
-        weights_selection = weights_values[weights % len(weights_values)]
+    def preprocess_args(self, n_features_to_select):
+        n_features_to_select = max(1, n_features_to_select)
 
         return {
-            'n_neighbors': n_neighbors,
-            'weights': weights_selection
+            'n_features_to_select': n_features_to_select
         }

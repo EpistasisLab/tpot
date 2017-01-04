@@ -22,7 +22,7 @@ import numpy as np
 import argparse
 from sklearn.model_selection import train_test_split
 
-from .tpot import TPOTClassifier, TPOTRegressor
+from .tpot import TPOTClassifier
 from ._version import __version__
 
 
@@ -88,8 +88,9 @@ def main():
         type=str, help='Name of the target column in the input file.')
 
     parser.add_argument('-mode', action='store', dest='TPOT_MODE',
-        choices=['classification', 'regression'], default='classification', type=str,
-        help='Whether TPOT is being used for a classification or regression problem.')
+        choices=['classification'], default='classification', type=str,
+        help='Whether TPOT is being used for a classification problem. '
+        'Currently, only classification is supported.')
 
     parser.add_argument('-o', action='store', dest='OUTPUT_FILE', default='',
         type=str, help='File to export the final optimized pipeline.')
@@ -193,8 +194,6 @@ def main():
 
     if args.TPOT_MODE == 'classification':
         tpot_type = TPOTClassifier
-    else:
-        tpot_type = TPOTRegressor
 
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,

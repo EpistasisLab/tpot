@@ -19,17 +19,4 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from .base import *
-from .decision_tree import *
-from .random_forest import *
-from .bernoulli_nb import *
-from .gaussian_nb import *
-from .multinomial_nb import *
-from .extra_trees import *
-from .linear_svc import *
-from .logistic_regression import *
-from .knnc import *
-from .gradient_boosting import *
-try:
-    from .xg_boost import *
-except ImportError:
-    pass
+from .mdr import *

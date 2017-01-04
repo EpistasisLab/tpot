@@ -269,6 +269,7 @@ class TPOTBase(BaseEstimator):
         self._pset.addTerminal(True, Bool)
         self._pset.addTerminal(False, Bool)
 
+
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
         creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
