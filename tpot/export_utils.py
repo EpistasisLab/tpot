@@ -43,7 +43,7 @@ def export_pipeline(exported_pipeline):
     pipeline_text = generate_import_code(exported_pipeline)
 
     # Replace the function calls with their corresponding Python code
-    pipeline_text += pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree))
+    pipeline_text += pipeline_code_wrapper(generate_pipeline_code(pipeline_tree))
 
     return pipeline_text
 
@@ -108,43 +108,18 @@ def generate_import_code(pipeline):
 
     pipeline_text = 'import numpy as np\n\n'
 
-    # number of operators
-    num_op = len(operators_used)
-
-
+    # Always start with these imports
+    pipeline_imports = {
+        'sklearn.model_selection':  ['train_test_split'],
+        'sklearn.pipeline':         ['make_pipeline', 'make_union'],
+        'sklearn.preprocessing':    ['FunctionTransformer'],
+        'sklearn.ensemble':         ['VotingClassifier']
+    }
 
     # Build dict of import requirments from list of operators
     import_relations = {}
     for op in operators.Operator.inheritors():
         import_relations[op.__name__] = op.import_hash
-
-    # number of classifier/regressor or CombineDFs
-    num_op_root = 0
-    for op in operators_used:
-        if op != 'CombineDFs':
-            tpot_op = operators.Operator.get_by_name(op)
-            if tpot_op.root:
-                num_op_root += 1
-        else:
-            num_op_root += 1
-
-    # Always start with these imports
-    if num_op_root > 1:
-        pipeline_imports = {
-            'sklearn.model_selection':  ['train_test_split'],
-            'sklearn.pipeline':         ['make_pipeline', 'make_union'],
-            'sklearn.preprocessing':    ['FunctionTransformer'],
-            'sklearn.ensemble':         ['VotingClassifier']
-        }
-    elif num_op > 1:
-        pipeline_imports = {
-            'sklearn.model_selection':  ['train_test_split'],
-            'sklearn.pipeline':         ['make_pipeline']
-        }
-    else: # if  operators # == 1 and classifier/regressor # == 1, this import statement is simpler
-        pipeline_imports = {
-            'sklearn.model_selection':  ['train_test_split']
-        }
 
     # Build import dict from operators used
     for op in operators_used:
@@ -215,30 +190,6 @@ def generate_pipeline_code(pipeline_tree):
     """
     steps = process_operator(pipeline_tree)
     pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
-    return pipeline_text
-
-def generate_export_pipeline_code(pipeline_tree):
-    """Generate code specific to the construction of the sklearn Pipeline for export_pipeline
-
-    Parameters
-    ----------
-    pipeline_tree: list
-        List of operators in the current optimized pipeline
-
-    Returns
-    -------
-    Source code for the sklearn pipeline
-
-    """
-    steps = process_operator(pipeline_tree)
-    # number of steps in a pipeline
-    num_step = len(steps)
-    if num_step > 1:
-        pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
-    else: # only one operator (root = True)
-        pipeline_text =  "{STEPS}".format(STEPS=_indent(",\n".join(steps), 0))
-        print(pipeline_text)
-
     return pipeline_text
 
 
