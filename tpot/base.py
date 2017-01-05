@@ -351,6 +351,7 @@ class TPOTBase(BaseEstimator):
                 for pipeline, pipeline_scores in zip(self._hof.items, reversed(self._hof.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
+                        top_score = pipeline_scores.wvalues[1]
 
                 if not self._optimized_pipeline:
                     raise ValueError('There was an error in the TPOT optimization '
