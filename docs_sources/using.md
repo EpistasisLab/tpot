@@ -66,8 +66,14 @@ TPOT offers several arguments that can be provided at the command line:
 <tr>
 <td>-cv</td>
 <td>NUM_CV_FOLDS</td>
-<td>Any integer >2</td>
+<td>Any integer >1</td>
 <td>The number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT pipeline optimization process.</td>
+</tr>
+<tr>
+<td>-njobs</td>
+<td>NUM_JOBS</td>
+<td>Any positive integer or -1</td>
+<td>The number of CPUs for evaluating each pipeline over cross-validation during the TPOT pipeline optimization process. Assigning this to -1 will use as many threads as possible for cross-validation.</td>
 </tr>
 <tr>
 <td>-scoring</td>
@@ -176,6 +182,11 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>The number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT pipeline optimization process.</td>
 </tr>
 <tr>
+<td>n_jobs</td>
+<td>Any positive integer or -1</td>
+<td>The number of CPUs for evaluating each pipeline over cross-validation during the TPOT pipeline optimization process. Assigning this to -1 will use as many threads as possible for cross-validation.</td>
+</tr>
+<tr>
 <td>scoring</td>
 <td>'accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc' or a callable function with signature <b>scorer(y_true, y_pred)</b></td>
 <td>Function used to evaluate the quality of a given pipeline for the problem. By default, balanced accuracy is used for classification and mean squared error is used for regression. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
@@ -204,6 +215,12 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>disable_update_check</td>
 <td>[True, False]</td>
 <td>Flag indicating whether the TPOT version checker should be disabled.</td>
+</tr>
+<tr>
+<td>warm_start</td>
+<td>[True, False]</td>
+<td>Flag indicating whether TPOT will reuse models from previous calls
+to fit() for faster operation</td>
 </tr>
 </table>
 
