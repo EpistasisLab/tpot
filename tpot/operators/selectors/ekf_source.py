@@ -21,7 +21,7 @@ class TPOTekf(Selector):
     def preprocess_args(self, expert_source, ekf_index, k_best):
         expert_source = expert_source
         ekf_index = ekf_index % len(expert_source)
-        k_best = k_best % 5
+        k_best = (k_best % 5) + 1
 
         return {
             'expert_source': expert_source,
