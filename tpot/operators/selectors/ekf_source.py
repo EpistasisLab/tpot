@@ -11,7 +11,7 @@ from .ek_filter import EKF_Source
 
 class TPOTekf(Selector):
 
-    import_hash = {'tpot.operators.selectors.ek_filter': ['EKF_source']}
+    import_hash = {'tpot.operators.selectors.ek_filter': ['EKF_Source']}
     sklearn_class = EKF_Source
     arg_types = (list, int, int)
 
