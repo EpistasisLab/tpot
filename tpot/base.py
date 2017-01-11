@@ -75,7 +75,8 @@ class TPOTBase(BaseEstimator):
                  scoring=None, num_cv_folds=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
-                 disable_update_check=False, warm_start=False):
+                 disable_update_check=False, warm_start=False,
+                 expert_source=None):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -162,6 +163,7 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
+        self.expert_source = expert_source
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -268,6 +270,8 @@ class TPOTBase(BaseEstimator):
 
         self._pset.addTerminal(True, Bool)
         self._pset.addTerminal(False, Bool)
+        
+        self._pset.addTerminal(self.expert_source, list)
 
 
     def _setup_toolbox(self):
