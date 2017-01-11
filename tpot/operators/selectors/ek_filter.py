@@ -33,8 +33,7 @@ class EKF_Source(BaseEstimator):
             self.top_features_indices_ = self.top_features_.index.values
         else:
         # Assume higher feature importance score means it's a better feature
-            self.ekf_subset_ = self.ekf_subset_.sort_values(['Score'], ascending=False)
-            self.ekf_subset_ = self.ekf_subset_[:self.k_best]
+            self.ekf_subset_ = self.ekf_subset_.sort_values(['Score'], ascending=False)[:self.k_best]
             self.top_features_ = self.ekf_subset_['Gene']
             
             self.top_features_indices_ = self.top_features_.index.values
