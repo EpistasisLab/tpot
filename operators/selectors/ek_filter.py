@@ -1,0 +1,60 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jan  9 13:55:02 2017
+
+@author: ansohn
+"""
+
+from sklearn.base import BaseEstimator
+
+
+class EKF_Source(BaseEstimator):
+    
+
+    def __init__(self, expert_source=None, ekf_index=None, k_best=None):
+        self.expert_source = expert_source
+        self.ekf_index = ekf_index
+        self.k_best = k_best
+        self.top_features_ = None
+        self.top_features_indices_ = None
+        self.ekf_subset_ = None
+        
+
+    def fit(self, input_data, input_target):
+        self.input_data = input_data
+        self.input_target = input_target
+
+        if set(self.expert_source[self.ekf_index]['Score']) in [set([True, False]), set([True]), set([False])]:
+            self.ekf_subset_ = self.expert_source[self.ekf_index]
+            self.top_features_ = (self.ekf_subset_)[(self.ekf_subset_)['Score'] == 1]
+
+            self.top_features_indices_ = self.top_features_.index.values
+        else:
+        # Assume higher feature importance score means it's a better feature
+            self.ekf_subset_ = (self.expert_source[self.ekf_index]).sort_values(['Score'], ascending=False)
+            self.ekf_subset_ = self.ekf_subset_[:self.k_best]
+            self.top_features_ = self.ekf_subset_['Gene']
+            
+            self.top_features_indices_ = self.top_features_.index.values
+            
+#        return self.top_features_indices_
+        return input_data[:, self.top_features_indices_]
+
+        
+    def transform(self, input_data, input_target):
+#        return input_data[:, self.top_features_indices_]
+        return self.fit(input_data, input_target)
+        
+        
+    def fit_transform(self, input_data, input_target):
+#        self.fit(input_data, input_target)
+        return self.transform(input_data, input_target)
+        
+
+        
+        
+        
+        
+    
+    
+
