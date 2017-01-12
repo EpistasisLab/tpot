@@ -37,15 +37,14 @@ class EKF_Source(BaseEstimator):
             self.top_features_ = self.ekf_subset_['Gene']
             
             self.top_features_indices_ = self.top_features_.index.values
-            
-        # return self.top_features_indices_
-        return input_data[:, self.top_features_indices_]
+        
+        return self
 
         
-    def transform(self, input_data, input_target):
-        return self.fit(input_data, input_target)
+    def transform(self, input_data):
+        return input_data[:, self.top_features_indices_]
         
         
     def fit_transform(self, input_data, input_target):
         self.fit(input_data, input_target)
-        return self.transform(input_data, input_target)
+        return self.transform(input_data)
