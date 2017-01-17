@@ -122,7 +122,7 @@
         },
         {
             "location": "/support/",
-            "text": "TPOT was developed in the \nComputational Genetics Lab\n with funding from the \nNIH\n. We're incredibly grateful for their support during the development of this project.\n\n\nThe TPOT logo was designed by Todd Newmuis, who generously donated his time to the project.",
+            "text": "TPOT was developed in the \nComputational Genetics Lab\n with funding from the \nNIH\n under grant R01 AI117694. We're incredibly grateful for their support during the development of this project.\n\n\nThe TPOT logo was designed by Todd Newmuis, who generously donated his time to the project.",
             "title": "Support"
         }
     ]
