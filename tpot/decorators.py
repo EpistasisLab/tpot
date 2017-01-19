@@ -110,8 +110,7 @@ def _timeout(func):
             #timer = Timer(max_time_seconds, interrupt_main)
             tmp_it.join(max_time_seconds)
             if tmp_it.isAlive():
-                if self.verbosity > 1:
-                    self._pbar.write('Timeout during evaluation of a pipeline. Skipping to the next pipeline.')
+                raise TimedOutExc("Time Out!")
             sys.tracebacklimit=1000
             return tmp_it.result
             tmp_it.stop()
