@@ -74,7 +74,7 @@ classifier_config_dict = {
             'max_features': np.arange(0, 1.01, 0.05),
             'min_samples_split': range(2, 21),
             'min_samples_leaf': range(1, 21),
-            'bootstrap': ["True", "False"]
+            'bootstrap': [True, False]
             }
     },
 
@@ -86,7 +86,7 @@ classifier_config_dict = {
             'max_features': np.arange(0, 1.01, 0.05),
             'min_samples_split': range(2, 21),
             'min_samples_leaf':  range(1, 21),
-            'bootstrap': ["True", "False"]
+            'bootstrap': [True, False]
             }
     },
 
@@ -133,5 +133,17 @@ classifier_config_dict = {
             'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.],
             'dual': [True, False]
             }
+    },
+
+    'XGBClassifier': {
+        'source': 'xgboost',
+        'dependencies': None,
+        'params':{
+            'max_depth': range(1, 11),
+            'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+            'subsample': np.arange(0.05, 1.01, 0.05),
+            'min_child_weight': range(1, 21)
+            }
     }
+
 }
