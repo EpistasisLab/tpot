@@ -1,158 +1,137 @@
-# TODO: figure out xg_boost because it does not import directly from sklearn clf class
+# -*- coding: utf-8 -*-
+
+"""
+Copyright 2016 Randal S. Olson
+
+This file is part of the TPOT library.
+
+The TPOT library is free software: you can redistribute it and/or
+modify it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+The TPOT library is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details. You should have received a copy of the GNU General Public License along
+with the TPOT library. If not, see http://www.gnu.org/licenses/.
+
+"""
+
+"""
+dictionary format (json-like format):
+key:
+    operator name
+value:
+    source: module source (e.g sklearn.tree)
+    dependencies: depended module (e.g. SVC in selectors RFE); None for no dependency
+    params: a dictionary of parameter names (keys) and parameter ranges (values); None for no dependency
+"""
+import numpy as np
+
 classifier_config_dict = {
 
-    'sklearn.tree.DecisionTreeClassifier': {
-        'criterion': ['gini', 'entropy'],
-        'max_depth': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        'min_samples_split': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-        'min_samples_leaf': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    'GaussianNB': {
+        'source': 'sklearn.naive_bayes',
+        'dependencies': None,
+        'params': None
     },
 
-    'sklearn.naive_bayes.BernoulliNB': {
-        'criterion': ['gini', 'entropy'],
-        'max_depth': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        'min_samples_split': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-        'min_samples_leaf': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    'BernoulliNB': {
+        'source': 'sklearn.naive_bayes',
+        'dependencies': None,
+        'params':{
+            'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+            'fit_prior': [True, False]
+            }
     },
 
-    'sklearn.naive_bayes.GaussianNB': {
-        "criterion": ['gini', 'entropy'],
-        "max_features": [0.,  0.05,  0.1,  0.15,  0.2,  0.25,  0.3,  0.35,  0.4,
-                        0.45,  0.5,  0.55,  0.6,  0.65,  0.7,  0.75,  0.8,  0.85,
-                        0.9,  0.95,  1.],
-        "min_samples_split": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-        "min_samples_leaf": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-        "bootstrap": [True, False]
+    'MultinomialNB': {
+        'source': 'sklearn.naive_bayes',
+        'dependencies': None,
+        'params':{
+            'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+            'fit_prior': [True, False]
+            }
     },
 
-    'sklearn.ensemble.ExtraTreesClassifier': {
-        "criterion": ["gini", "entropy"],
-        "max_features": [0.,  0.05,  0.1,  0.15,  0.2,  0.25,  0.3,  0.35,  0.4,
-                        0.45,  0.5,  0.55,  0.6,  0.65,  0.7,  0.75,  0.8,  0.85,
-                        0.9,  0.95,  1.],
-        "min_samples_split": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-        "min_samples_leaf": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-        "bootstrap": [True, False]
+    'DecisionTreeClassifier': {
+        'source': 'sklearn.tree',
+        'dependencies': None,
+        'params':{
+            'criterion': ["gini", "entropy"],
+            'max_depth': range(1, 11),
+            'min_samples_split': range(2, 21),
+            'min_samples_leaf': range(1, 21)
+            }
     },
 
-    'sklearn.ensemble.GradientBoostingClassifier': {
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'max_depth': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        'min_samples_split': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-        'min_samples_leaf': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-        'subsample': [0.,  0.05,  0.1,  0.15,  0.2,  0.25,  0.3,  0.35,  0.4,
-                     0.45,  0.5,  0.55,  0.6,  0.65,  0.7,  0.75,  0.8,  0.85,
-                     0.9,  0.95,  1.],
-        'max_features': [0.,  0.05,  0.1,  0.15,  0.2,  0.25,  0.3,  0.35,  0.4,
-                        0.45,  0.5,  0.55,  0.6,  0.65,  0.7,  0.75,  0.8,  0.85,
-                        0.9,  0.95,  1.]
+    'ExtraTreesClassifier': {
+        'source': 'sklearn.ensemble',
+        'dependencies': None,
+        'params':{
+            'criterion': ["gini", "entropy"],
+            'max_features': np.arange(0, 1.01, 0.05),
+            'min_samples_split': range(2, 21),
+            'min_samples_leaf': range(1, 21),
+            'bootstrap': ["True", "False"]
+            }
     },
 
-    'sklearn.neighbors.KNeighborsClassifier': {
-        'n_neighbors': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-        'weights': ["uniform", "distance"],
-        'p': [1, 2]
+    'RandomForestClassifier': {
+        'source': 'sklearn.ensemble',
+        'dependencies': None,
+        'params':{
+            'criterion': ["gini", "entropy"],
+            'max_features': np.arange(0, 1.01, 0.05),
+            'min_samples_split': range(2, 21),
+            'min_samples_leaf':  range(1, 21),
+            'bootstrap': ["True", "False"]
+            }
     },
 
-    'sklearn.svm.LinearSVC': {
-        'penalty': ["l1", "l2"],
-        'loss': ["hinge", "squared_hinge"],
-        'dual': [True, False],
-        'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-        'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.]
+    'GradientBoostingClassifier': {
+        'source': 'sklearn.ensemble',
+        'dependencies': None,
+        'params':{
+            'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+            'max_depth': range(1, 11),
+            'min_samples_split': range(2, 21),
+            'min_samples_leaf': range(1, 21),
+            'subsample': np.arange(0.05, 1.01, 0.05),
+            'max_features': np.arange(0, 1.01, 0.05)
+            }
     },
 
-
-    'sklearn.linear_model.LogisticRegression': {
-        'penalty': ["l1", "l2"],
-        'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.],
-        'dual': [True, False]
+    'KNeighborsClassifier': {
+        'source': 'sklearn.neighbors',
+        'dependencies': None,
+        'params':{
+            'n_neighbors': range(1, 101),
+            'weights': ["uniform", "distance"],
+            'p': [1, 2]
+            }
     },
 
-    'sklearn.naive_bayes.MultinomialNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
+    'LinearSVC': {
+        'source': 'sklearn.svm',
+        'dependencies': None,
+        'params':{
+            'penalty': ["l1", "l2"],
+            'loss': ["hinge", "squared_hinge"],
+            'dual': [True, False],
+            'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+            'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.]
+            }
     },
 
-    'sklearn.ensemble.RandomForestClassifier': {
-        'criterion': ["gini", "entropy"],
-        'max_features': [0.,  0.05,  0.1,  0.15,  0.2,  0.25,  0.3,  0.35,  0.4,
-                        0.45,  0.5,  0.55,  0.6,  0.65,  0.7,  0.75,  0.8,  0.85,
-                        0.9,  0.95,  1.],
-        'min_samples_split': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-        'min_samples_leaf': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
-        'bootstrap': [True, False]
-    },
-
-    # Preprocessors
-    'sklearn.preprocessing.Binarizer': {
-        'threshold': [0.,  0.05,  0.1,  0.15,  0.2,  0.25,  0.3,  0.35,  0.4,
-                      0.45,  0.5,  0.55,  0.6,  0.65,  0.7,  0.75,  0.8,  0.85,
-                      0.9,  0.95,  1.]
-    },
-
-    'sklearn.decomposition.FastICA': {
-        'tol': [0.,  0.05,  0.1,  0.15,  0.2,  0.25,  0.3,  0.35,  0.4,
-                0.45,  0.5,  0.55,  0.6,  0.65,  0.7,  0.75,  0.8,  0.85,
-                0.9,  0.95,  1.]
-    },
-
-    'sklearn.cluster.FeatureAgglomeration': {
-        'linkage': ['ward', 'complete', 'average'],
-        'affinity': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed']
-    },
-
-    'sklearn.preprocessing.MaxAbsScaler': {
-
-    },
-
-    'sklearn.preprocessing.MinMaxScaler': {
-
-    },
-
-    'sklearn.preprocessing.Normalizer': {
-        'norm': ['l1', 'l2', 'max']
-    },
-
-    'sklearn.kernel_approximation.Nystroem': {
-        'kernel': ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid'],
-        'gamma': [0.,  0.05,  0.1,  0.15,  0.2,  0.25,  0.3,  0.35,  0.4,
-                  0.45,  0.5,  0.55,  0.6,  0.65,  0.7,  0.75,  0.8,  0.85,
-                  0.9,  0.95,  1.],
-        'n_components': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    },
-
-    'sklearn.decomposition.PCA': {
-        'svd_solver': 'randomized',
-        'iterated_power': [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
-    },
-
-    'sklearn.preprocessing.PolynomialFeatures': {
-        'degree': 2,
-        'include_bias': False,
-        'interaction_only': False
-    },
-
-    'sklearn.kernel_approximation.RBFSampler': {
-        'gamma': [0.,  0.05,  0.1,  0.15,  0.2,  0.25,  0.3,  0.35,  0.4,
-                  0.45,  0.5,  0.55,  0.6,  0.65,  0.7,  0.75,  0.8,  0.85,
-                  0.9,  0.95,  1.]
-    },
-
-    'sklearn.preprocessing.RobustScaler': {
-
-    },
-
-    'sklearn.preprocessing.StandardScaler': {
-
-    },
-
-    'tpot.operators.preprocessors.ZeroCount': {
-
-    },
-
-    # Selectors
-
+    'LogisticRegression': {
+        'source': 'sklearn.linear_model',
+        'dependencies': None,
+        'params':{
+            'penalty': ["l1", "l2"],
+            'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.],
+            'dual': [True, False]
+            }
+    }
 }
-
-
