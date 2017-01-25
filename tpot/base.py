@@ -32,8 +32,8 @@ from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
 
 from sklearn.base import BaseEstimator
-from sklearn.base import ClassifierMixin
-from sklearn.base import RegressorMixin
+"""from sklearn.base import ClassifierMixin
+from sklearn.base import RegressorMixin"""
 from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
@@ -50,8 +50,9 @@ from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 from .gp_deap import eaSimple
-from .config_classifier import classifier_config_dict
-from .config_regressor import regressor_config_dict
+"""from .config_classifier import classifier_config_dict
+from .config_regressor import regressor_config_dict"""
+
 
 #Create another param for init method: string or dict
 #If string: import lite vs actual
@@ -685,6 +686,7 @@ class TPOTBase(BaseEstimator):
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
 
+<<<<<<< HEAD
             # check if the individual are evaluated before
             if individual_str in self.eval_ind:
                 # get fitness score from previous evaluation
@@ -710,6 +712,24 @@ class TPOTBase(BaseEstimator):
                     resulting_score = np.mean(cv_scores)
                 except TypeError:
                     raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
+=======
+            # add time limit for evaluation of pipeline
+            for i in range(len(individual)):
+                node = individual[i]
+                if ((type(node) is deap.gp.Terminal) or
+                     type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
+                    continue
+                operator_count += 1
+
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
+                    cv=self.num_cv_folds, scoring=self.scoring_function)
+            try:
+                resulting_score = np.mean(cv_scores)
+            except TypeError:
+                raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
+>>>>>>> 3b3cec2... config class made
 
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
