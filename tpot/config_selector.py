@@ -28,36 +28,62 @@ value:
 import numpy as np
 
 selector_config_dict = {
-    'TPOTRFE': {
-        'source': 'sklearn.feature_selection.RFE',
-        'dependencies': {
-            'sklearn.svm.SVC': {
-                'kernel': ['linear'],
-                'random_state': [42]
-                },
-            'regression': False
-            },
-        'params':{
-            'step': np.arange(0.1, 1.01, 0.05),
-            'estimator': 'SVC(kernel=\'linear\', random_state=42)' # read from dependencies ! need add an exception in preprocess_args
+
+    'sklearn.feature_selection.SelectFromModel': {
+        'threshold': np.arange(0, 1.01, 0.05),
+        'estimator': {
+                'sklearn.ensemble.ExtraTreesRegressor': {
+                    'max_features': np.arange(0, 1.01, 0.05)
+                    }
+                }
+
+    },
+
+    'sklearn.feature_selection.SelectFwe': {
+        'alpha': np.arange(0, 0.05, 0.001),
+        'score_func': {
+            'sklearn.feature_selection.f_classif': None
+            } # read from dependencies ! need add an exception in preprocess_args
+
+    },
+
+    'sklearn.feature_selection.SelectKBest': {
+        'k': range(1, 100), # need check range!
+        'score_func': {
+            'sklearn.feature_selection.f_classif': None
             }
     },
 
-    'TPOTSelectFromModelR': {
-        'source': 'sklearn.feature_selection.SelectFromModel',
-        'dependencies': {
-            'sklearn.ensemble.ExtraTreesRegressor': {
-                'max_features': np.arange(0, 1.01, 0.05)
-                },
-            'classification': False
-            },
-        'params':{
-            'threshold': np.arange(0, 1.01, 0.05),
-            'estimator': 'ExtraTreesRegressor(max_features=max_features)' # read from dependencies ! need add an exception in preprocess_args
+    'sklearn.feature_selection.SelectPercentile': {
+        'percentile': range(1, 100),
+        'score_func': {
+            'sklearn.feature_selection.f_classif': None
             }
     },
 
-    'TPOTSelectFromModel': {
+    'sklearn.feature_selection.VarianceThreshold': {
+        'threshold': np.arange(0, 0.05, 0.001)
+    }
+
+}
+
+"""'TPOTRFE': {
+    'source': 'sklearn.feature_selection.RFE',
+    'dependencies': {
+        'sklearn.svm.SVC': {
+            'kernel': ['linear'],
+            'random_state': [42]
+            },
+        'regression': False
+        },
+    'params':{
+        'step': np.arange(0.1, 1.01, 0.05),
+        'estimator': 'SVC(kernel=\'linear\', random_state=42)' # read from dependencies ! need add an exception in preprocess_args
+        }
+},"""
+
+
+"""    'TPOTSelectFromModel': {
         'source': 'sklearn.feature_selection.SelectFromModel',
         'dependencies': {
             'sklearn.ensemble.ExtraTreesClassifier': {
@@ -71,46 +97,4 @@ selector_config_dict = {
             'estimator': 'ExtraTreesClassifier(criterion=criterion_selection, max_features=max_features)' # read from dependencies ! need add an exception in preprocess_args
             }
     },
-
-    'TPOTSelectFwe': {
-        'source': 'sklearn.feature_selection.SelectFwe',
-        'dependencies': {
-            'sklearn.feature_selection.f_classif': None
-            },
-        'params':{
-            'alpha': np.arange(0, 0.05, 0.001),
-            'score_func': 'f_classif' # read from dependencies ! need add an exception in preprocess_args
-            }
-    },
-
-    'TPOTSelectKBest': {
-        'source': 'sklearn.feature_selection.SelectKBest',
-        'dependencies': {
-            'sklearn.feature_selection.f_classif': None
-            },
-        'params':{
-            'k': range(1, 100), # need check range!
-            'score_func': 'f_classif' # read from dependencies ! need add an exception in preprocess_args
-            }
-    },
-
-    'TPOTSelectPercentile': {
-        'source': 'sklearn.feature_selection.SelectPercentile',
-        'dependencies': {
-            'sklearn.feature_selection.f_classif': None
-            },
-        'params':{
-            'percentile': range(1, 100),
-            'score_func': 'f_classif' # read from dependencies ! need add an exception in preprocess_args
-            }
-    },
-
-    'TPOTVarianceThreshold': {
-        'source': 'sklearn.feature_selection.VarianceThreshold',
-        'dependencies': None,
-        'params':{
-            'threshold': np.arange(0, 0.05, 0.001)
-            }
-    }
-
-}
+"""
