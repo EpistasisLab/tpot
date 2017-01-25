@@ -20,6 +20,9 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 import numpy as np
 from types import FunctionType
+
+from sklearn.base import ClassifierMixin
+from sklearn.base import RegressorMixin
 #from config_classifier import classifier_config_dict
 #from config_regressor import regressor_config_dict
 from config_selector import selector_config_dict
@@ -164,7 +167,7 @@ class TPOTOperator(Operator):
 
     """
 
-    root = False  # Whether this operator type can be the root of the tree
+    root = True  # Whether this operator type can be the root of the tree
     regression = False  # Whether this operator can be used in a regression problem
     classification = False  # Whether the operator can be used for classification
     import_hash = None
@@ -216,26 +219,21 @@ def source_decode(sourcecode):
     op_obj = eval(op_str)
     return import_str, op_str, op_obj
 
-def ARGTypeClassFactory(opname, params_dict, BaseClass=ARGType):
+def ARGTypeClassFactory(opname, pname, prange, BaseClass=ARGType):
     """
     Dynamically create parameter type class
     """
-    arg_class_dict = {}
-    for key, val in params_dict.items():
-        if not isinstance(val, str):
-            classname = '{}_{}'.format(opname, key)
-            arg_class_dict[classname] = type(classname, (BaseClass,), {'values':val})
-            print(arg_class_dict[classname].values)
-    return arg_class_dict
+    classname = '{}_{}'.format(opname, pname)
+    return type(classname, (BaseClass,), {'values':prange})
 
-def TPOTOperatorClassFactory(opname, opdict, optype, root, regression, classification, BaseClass=TPOTOperator):
+def TPOTOperatorClassFactory(opsourse, opdict, root, regression, classification, BaseClass=TPOTOperator):
     """Dynamically create operator class
     Parameters
     ----------
-    opname: string
-        operator name in config dictionary (key)
+    opsourse: string
+        operator source in config dictionary (key)
     opdict: dictionary
-        operator profile in config dictionary (value)
+        operator params in config dictionary (value)
     BaseClass: Class
         inherited BaseClass
     Other params: operator profile
@@ -247,51 +245,55 @@ def TPOTOperatorClassFactory(opname, opdict, optype, root, regression, classific
     """
     def __init__(self):
         pass
+
+    class_profile = {}
+    class_profile['__init__'] = __init__
+    class_profile['regression'] = regression
+    class_profile['classification'] = classification
+    import_str, op_str, op_obj = source_decode(opsourse)
+    if not issubclass(op_obj, ClassifierMixin):
+        class_profile['root'] = False
+        optype = "Preprocessor or Selector"
     @property
     def op_type(self):
         """Returns the type of the operator, e.g:
         ("Classifier", "Regressor", "Selector", "Preprocessor")
         """
         return optype
-    class_profile = {}
-    class_profile['__init__'] = __init__
     class_profile['type'] = op_type
-    class_profile['root'] = root
-    class_profile['regression'] = regression
-    class_profile['classification'] = classification
-    opsourse = opdict['source']
-    import_str, op_str, op_obj = source_decode(opsourse)
+
     sklearn_class = op_obj
     import_hash = {}
     import_hash[import_str] = [op_str]
-    arg_type_list = ARGTypeClassFactory(opname, opdict['params'])
-
-    if opdict['dependencies']:
-        for key, val in opdict['dependencies'].items():
-            if key.count('.'): # depended module class:
-                dep_import_str, dep_op_str, dep_op_obj = source_decode(key)
+    arg_type_dict = {}
+    for pname, prange in opdict.items():
+        if not isinstance(prange, dict):
+            classname = '{}_{}'.format(op_str, pname)
+            arg_type_dict[classname] = ARGTypeClassFactory(op_str, pname, prange)
+        else:
+            for dkey, dval in prange.items():
+                dep_import_str, dep_op_str, dep_op_obj = source_decode(dkey)
                 if dep_import_str in import_hash:
                     import_hash[import_str].append(dep_op_str)
                 else:
                     import_hash[dep_import_str] = [dep_op_str]
-                if val:
-                    dep_opname = '{}_{}'.format(opname, dep_op_str)
-                    dep_arg_type_list = ARGTypeClassFactory(dep_opname, val)
-                    arg_type_list.update(dep_arg_type_list)
-            else: # exception info for regression or classification
-                class_profile[key] = val
-    class_profile['arg_types'] = tuple(arg_type_list)
+                if dval:
+                    for dpname, dprange in dval.items():
+                        classname = '{}_{}'.format(dep_op_str, dpname)
+                        arg_type_dict[classname] = ARGTypeClassFactory(dep_op_str, dpname, dprange)
+
+    class_profile['arg_types'] = tuple(arg_type_dict.values())
     class_profile['import_hash'] = import_hash
 
-    return type(opname, (BaseClass,),class_profile)
+    return type(op_str, (BaseClass,),class_profile)
 
 op_class_dict={}
 
 for key, val in selector_config_dict.items():
     print('Config: {}'.format(key))
-    op_class_dict[key]=TPOTOperatorClassFactory(key, val, optype="Selector",
-                            root=False, regression=True, classification=True)
+    op_class_dict[key]=TPOTOperatorClassFactory(key, val, root=False,
+                                        regression=True, classification=True)
     print(op_class_dict[key].regression)
-    print(op_class_dict[key].classification)
+    print(op_class_dict[key].root)
     print(op_class_dict[key].import_hash)
     print(op_class_dict[key].arg_types)
