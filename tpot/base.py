@@ -32,8 +32,6 @@ from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
 
 from sklearn.base import BaseEstimator
-"""from sklearn.base import ClassifierMixin
-from sklearn.base import RegressorMixin"""
 from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
@@ -50,8 +48,7 @@ from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 from .gp_deap import eaSimple
-"""from .config_classifier import classifier_config_dict
-from .config_regressor import regressor_config_dict"""
+
 
 
 #Create another param for init method: string or dict
