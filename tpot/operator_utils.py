@@ -23,10 +23,8 @@ from types import FunctionType
 
 from sklearn.base import ClassifierMixin
 from sklearn.base import RegressorMixin
-#from config_classifier import classifier_config_dict
+from config_classifier import classifier_config_dict
 #from config_regressor import regressor_config_dict
-from config_selector import selector_config_dict
-#from config_preprocessor import preprocessor_config_dict
 
 try:
     from inspect import signature  # Python 3
@@ -167,7 +165,7 @@ class TPOTOperator(Operator):
 
     """
 
-    root = True  # Whether this operator type can be the root of the tree
+    root = False  # Whether this operator type can be the root of the tree
     regression = False  # Whether this operator can be used in a regression problem
     classification = False  # Whether the operator can be used for classification
     import_hash = None
@@ -188,7 +186,7 @@ class ARGType(object):
          operators: list
             List of all discovered operators that inherit from the base class
         """
-        return [True, False].__subclasses__()
+        return cls.__subclasses__()
 
 
 def source_decode(sourcecode):
@@ -226,7 +224,7 @@ def ARGTypeClassFactory(opname, pname, prange, BaseClass=ARGType):
     classname = '{}_{}'.format(opname, pname)
     return type(classname, (BaseClass,), {'values':prange})
 
-def TPOTOperatorClassFactory(opsourse, opdict, root, regression, classification, BaseClass=TPOTOperator):
+def TPOTOperatorClassFactory(opsourse, opdict, root, regression=True, classification=True, BaseClass=TPOTOperator):
     """Dynamically create operator class
     Parameters
     ----------
@@ -234,9 +232,13 @@ def TPOTOperatorClassFactory(opsourse, opdict, root, regression, classification,
         operator source in config dictionary (key)
     opdict: dictionary
         operator params in config dictionary (value)
+    regression: bool
+        True if it can be used in TPOTRegressor
+    classification: bool
+        True if it can be used in TPOTClassifier
     BaseClass: Class
         inherited BaseClass
-    Other params: operator profile
+
 
     Returns
     -------
@@ -251,8 +253,11 @@ def TPOTOperatorClassFactory(opsourse, opdict, root, regression, classification,
     class_profile['regression'] = regression
     class_profile['classification'] = classification
     import_str, op_str, op_obj = source_decode(opsourse)
-    if not issubclass(op_obj, ClassifierMixin):
-        class_profile['root'] = False
+    # define if the operator can be the root of a pipeline
+    if issubclass(op_obj, ClassifierMixin) or issubclass(op_obj, RegressorMixin)
+        class_profile['root'] = True
+        optype = "Classifier or Regressor"
+    else:
         optype = "Preprocessor or Selector"
     @property
     def op_type(self):
@@ -262,7 +267,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, root, regression, classification,
         return optype
     class_profile['type'] = op_type
 
-    sklearn_class = op_obj
+    class_profile['sklearn_class'] = op_obj
     import_hash = {}
     import_hash[import_str] = [op_str]
     arg_type_dict = {}
@@ -291,9 +296,13 @@ op_class_dict={}
 
 for key, val in selector_config_dict.items():
     print('Config: {}'.format(key))
-    op_class_dict[key]=TPOTOperatorClassFactory(key, val, root=False,
-                                        regression=True, classification=True)
-    print(op_class_dict[key].regression)
+    op_class_dict[key]=TPOTOperatorClassFactory(key, val, regression=True, classification=True)
+    print(op_class_dict[key].sklearn_class.__name__)
     print(op_class_dict[key].root)
     print(op_class_dict[key].import_hash)
     print(op_class_dict[key].arg_types)
+for op in Operator.inheritors():
+    print(op.sklearn_class.__name__)
+
+for arg in ARGType.inheritors():
+    print(arg.__name__, arg.values)

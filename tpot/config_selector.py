@@ -62,7 +62,7 @@ selector_config_dict = {
     },
 
     'sklearn.feature_selection.VarianceThreshold': {
-        'threshold': np.arange(0, 0.05, 0.001)
+        'threshold': np.arange(0, 1.01, 0.05)
     }
 
 }
