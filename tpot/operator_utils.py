@@ -26,11 +26,6 @@ from sklearn.base import RegressorMixin
 from config_classifier import classifier_config_dict
 #from config_regressor import regressor_config_dict
 
-try:
-    from inspect import signature  # Python 3
-except ImportError:
-    from inspect import getargspec  # Python 2
-
 class CombineDFs(object):
     """Operator to combine two DataFrames"""
 
@@ -280,13 +275,14 @@ def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=
                         dep_op_arguments[aname_split[1]] = []
                     dep_op_arguments[aname_split[1]].append("{}={}".format(aname_split[-1], arg_value))
         if dep_op_list:
+            tmp_op_args = [] # to make sure the inital operators is the first parameter just for better persentation
             for dep_op_pname, dep_op_str in dep_op_list.items():
                 if dep_op_str == 'f_classif':
                     arg_value = dep_op_str
                 else:
                     arg_value = "{}({})".format(dep_op_str, ", ".join(dep_op_arguments[dep_op_str]))
-                op_arguments.append("{}={}".format(dep_op_pname, arg_value))
-
+                tmp_op_args.append("{}={}".format(dep_op_pname, arg_value))
+        op_arguments = tmp_op_args + op_arguments
         return "{}({})".format(op_obj.__name__, ", ".join(op_arguments))
 
     class_profile['export'] = export
@@ -313,6 +309,8 @@ for key, val in classifier_config_dict.items():
     print(op_class_dict[key].import_hash)
     print(op_class_dict[key].arg_types)
 a = op_class_dict['sklearn.naive_bayes.MultinomialNB']
+c = op_class_dict['sklearn.feature_selection.SelectFromModel']
+d = op_class_dict['sklearn.feature_selection.SelectFwe']
 
 
 
