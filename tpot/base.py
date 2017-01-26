@@ -721,7 +721,6 @@ class TPOTBase(BaseEstimator):
                 except TypeError:
                     raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
 
-
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
