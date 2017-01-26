@@ -43,8 +43,8 @@ from update_checker import update_check
 from ._version import __version__
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _gp_new_generation, _timeout
-from . import operators
-from .operators import CombineDFs
+from .operator_utils import operators, argument_types
+from .build_in_operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 from .gp_deap import eaSimple
@@ -145,9 +145,6 @@ class TPOTBase(BaseEstimator):
             Flag indicating whether TPOT will reuse models from previous calls to
             fit() for faster operation
 
-        config: dictionary or string (default: classifier_config_dict)
-            Sci-kit learn classifiers or regressors, and respective params to include in pipelines
-
         Returns
         -------
         None
@@ -217,14 +214,6 @@ class TPOTBase(BaseEstimator):
             self.n_jobs = 1
         else:
             self.n_jobs = n_jobs
-
-        if type(config) is dict:
-            self.operators = config
-        else:
-            with open(config, 'r') as f:
-                data = f.read().replace('\n', ' ')
-
-            self.operators = eval(data)
 
         self._setup_pset()
         self._setup_toolbox()

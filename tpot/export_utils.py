@@ -19,7 +19,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 import deap
-from . import operators
+from .operator_utils import operators
 
 
 def export_pipeline(exported_pipeline):

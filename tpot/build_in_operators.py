@@ -64,3 +64,10 @@ class ZeroCount(BaseEstimator):
         X_transformed = np.insert(X_transformed, n_features + 1, zero_col, axis=1)
 
         return X_transformed
+
+class CombineDFs(object):
+    """Operator to combine two DataFrames"""
+
+    @property
+    def __name__(self):
+        return self.__class__.__name__
