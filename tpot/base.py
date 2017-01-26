@@ -686,7 +686,6 @@ class TPOTBase(BaseEstimator):
             # Count the number of pipeline operators as a measure of pipeline complexity
             operator_count = 0
 
-<<<<<<< HEAD
             # check if the individual are evaluated before
             if individual_str in self.eval_ind:
                 # get fitness score from previous evaluation
@@ -712,24 +711,6 @@ class TPOTBase(BaseEstimator):
                     resulting_score = np.mean(cv_scores)
                 except TypeError:
                     raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
-=======
-            # add time limit for evaluation of pipeline
-            for i in range(len(individual)):
-                node = individual[i]
-                if ((type(node) is deap.gp.Terminal) or
-                     type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
-                    continue
-                operator_count += 1
-
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
-                    cv=self.num_cv_folds, scoring=self.scoring_function)
-            try:
-                resulting_score = np.mean(cv_scores)
-            except TypeError:
-                raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
->>>>>>> 3b3cec2... config class made
 
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
