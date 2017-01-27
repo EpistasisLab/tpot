@@ -18,7 +18,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-
+from threading import Thread, current_thread
 from functools import wraps
 import sys
 
@@ -71,6 +71,25 @@ def _gp_new_generation(func):
     return wrapped_func
 
 
+def convert_mins_to_secs(time_minute):
+    """Convert time from minutes to seconds"""
+    second = int(time_minute * 60)
+    # time limit should be at least 1 second
+    return max(second, 1)
+
+
+class TimedOutExc(RuntimeError):
+    """
+    Raised when a timeout happens
+    """
+
+def timeout_signal_handler(signum, frame):
+    """
+    signal handler for _timeout function
+    rasie TIMEOUT exception
+    """
+    raise TimedOutExc("Time Out!")
+
 def _timeout(func):
     """Runs a function with time limit
 
@@ -90,61 +109,28 @@ def _timeout(func):
     limitedTime: function
         Wrapped function that raises a timeout exception if the time limit is exceeded
     """
-    def convert_mins_to_secs(time_minute):
-        """Convert time from minutes to seconds"""
-        second = int(time_minute * 60)
-        # time limit should be at least 1 second
-        return max(second, 1)
-    class TIMEOUT(RuntimeError):
-            """
-            Inhertis from RuntimeError
-            """
-            pass
-
-    def timeout_signal_handler(signum, frame):
-        """
-        signal handler for _timeout function
-        rasie TIMEOUT exception
-        """
-        raise TIMEOUT("Time Out!")
-    if sys.platform.startswith('linux'):
-        from signal import SIGXCPU, signal, getsignal
-        from resource import getrlimit, setrlimit, RLIMIT_CPU, getrusage, RUSAGE_SELF
-        # timeout uses the CPU time
+    if not sys.platform.startswith('win'):
+        import signal
         @wraps(func)
-        def limitedTime(self,*args, **kw):
-            # don't show traceback
-            sys.tracebacklimit=0
-            # save old signal
-            old_signal_hander = getsignal(SIGXCPU)
-            # change signal
-            signal(SIGXCPU, timeout_signal_handler)
-            max_time_second = convert_mins_to_secs(self.max_eval_time_mins)
-            r = getrusage(RUSAGE_SELF)
-            cpu_time = r.ru_utime + r.ru_stime
-            current = getrlimit(RLIMIT_CPU)
+        def limitedTime(self, *args, **kw):
+            old_signal_hander = signal.signal(signal.SIGALRM, timeout_signal_handler)
+            max_time_seconds = convert_mins_to_secs(self.max_eval_time_mins)
+            signal.alarm(max_time_seconds)
             try:
-                setrlimit(RLIMIT_CPU, (cpu_time+max_time_second, current[1]))
                 ret = func(*args, **kw)
-            except RuntimeError:
-                if self.verbosity > 1:
-                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
-                ret = None
+            except:
+                raise TimedOutExc("Time Out!")
             finally:
-                # reset cpu time limit and trackback
-                setrlimit(RLIMIT_CPU, current)
-                sys.tracebacklimit=1000
-                # reset signal
-                signal(SIGXCPU, old_signal_hander)
+                signal.signal(signal.SIGALRM, old_signal_hander)  # Old signal handler is restored
+                signal.alarm(0)  # Alarm removed
             return ret
     else:
-        from threading import Thread, current_thread
         class InterruptableThread(Thread):
             def __init__(self, args, kwargs):
                 Thread.__init__(self)
                 self.args = args
                 self.kwargs = kwargs
-                self.result = None
+                self.result = -float('inf')
                 self.daemon = True
             def stop(self):
                 self._stop()
@@ -166,10 +152,9 @@ def _timeout(func):
             #timer = Timer(max_time_seconds, interrupt_main)
             tmp_it.join(max_time_seconds)
             if tmp_it.isAlive():
-                if self.verbosity > 1:
-                    self._pbar.write('Timeout during evaluation of pipeline #{0}. Skipping to the next pipeline.'.format(self._pbar.n + 1))
+                raise TimedOutExc("Time Out!")
             sys.tracebacklimit=1000
             return tmp_it.result
             tmp_it.stop()
-    # return func
+        # return func
     return limitedTime
