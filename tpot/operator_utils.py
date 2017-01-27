@@ -19,23 +19,14 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 import numpy as np
-from types import FunctionType
-
 from sklearn.base import ClassifierMixin
 from sklearn.base import RegressorMixin
-from config_classifier import classifier_config_dict
-#from config_regressor import regressor_config_dict
-
-class CombineDFs(object):
-    """Operator to combine two DataFrames"""
-
-    @property
-    def __name__(self):
-        return self.__class__.__name__
 
 
 class Operator(object):
     """Base class for operators in TPOT"""
+    def __init__(self):
+        pass
 
     @property
     def __name__(self):
@@ -43,59 +34,6 @@ class Operator(object):
         each opeartor.
         """
         return self.__class__.sklearn_class.__name__
-
-
-    @classmethod
-    def inheritors(cls):
-        """Returns set of all operators defined
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        operators: set
-            Set of all discovered operators that inherit from the base class
-
-        """
-        operators = set()
-
-        # Search two levels deep and report leaves in inheritance tree
-        for operator_type in cls.__subclasses__():
-            for operator in operator_type.__subclasses__():
-                operators.add(operator())  # Instantiate class and append
-
-        return operators
-
-    @classmethod
-    def get_by_name(cls, name):
-        """Returns operator class instance by name
-
-        Parameters
-        ----------
-        name: str
-            Name of the sklearn class that belongs to a TPOT operator
-
-        Returns
-        -------
-        grandchild
-            An instance of the TPOT operator with a matching sklearn class name
-
-        """
-        for operator_type in cls.__subclasses__():
-            for operator in operator_type.__subclasses__():
-                if operator.sklearn_class.__name__ == name:
-                    return operator()
-
-class TPOTOperator(Operator):
-    """
-    A template of TPOT Operator Class
-
-    """
-    def __init__(self):
-        pass
-
     root = False  # Whether this operator type can be the root of the tree
     regression = False  # Whether this operator can be used in a regression problem
     classification = False  # Whether the operator can be used for classification
@@ -105,18 +43,11 @@ class TPOTOperator(Operator):
     dep_op_list = {} # the estimator or score_func as params in this operators
 
 
+
 class ARGType(object):
      """Base class for parameter specifications"""
-     @classmethod
-     def inheritors(cls):
-        """Returns set of all parameter types defined
-
-         Returns
-         -------
-         operators: list
-            List of all discovered operators that inherit from the base class
-        """
-        return cls.__subclasses__()
+     def __init__(self):
+         pass
 
 
 def source_decode(sourcecode):
@@ -141,7 +72,7 @@ def source_decode(sourcecode):
     op_str = tmp_path.pop()
     import_str = '.'.join(tmp_path)
     if sourcecode.startswith('tpot.'):
-        exec('from {} import {}'.format(import_str[5:], op_str)) # need update to 4:
+        exec('from {} import {}'.format(import_str[4:], op_str))
     else:
         exec('from {} import {}'.format(import_str, op_str))
     op_obj = eval(op_str)
@@ -153,7 +84,7 @@ def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
     """
     return type(classname, (BaseClass,), {'values':prange})
 
-def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=False, BaseClass=TPOTOperator):
+def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=False, BaseClass=Operator):
     """Dynamically create operator class
     Parameters
     ----------
@@ -170,8 +101,11 @@ def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=
 
     Returns
     -------
-    newclass: Class
-        newclass for operators
+    op_class: Class
+        a new class for a operator
+    arg_types: list
+        a list of parameter class
+
     """
 
 
@@ -200,7 +134,8 @@ def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=
     import_hash = {}
     import_hash[import_str] = [op_str]
     arg_types = []
-    for pname, prange in opdict.items():
+    for pname in sorted(opdict.keys()):
+        prange = opdict[pname]
         if not isinstance(prange, dict):
             classname = '{}__{}'.format(op_str, pname)
             arg_types.append(ARGTypeClassFactory(classname, prange))
@@ -213,7 +148,8 @@ def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=
                     import_hash[dep_import_str] = [dep_op_str]
                 dep_op_list[pname]=dep_op_str
                 if dval:
-                    for dpname, dprange in dval.items():
+                    for dpname in sorted(dval.keys()):
+                        dprange = dval[dpname]
                         classname = '{}__{}__{}'.format(op_str, dep_op_str, dpname)
                         arg_types.append(ARGTypeClassFactory(classname, dprange))
     class_profile['arg_types'] = tuple(arg_types)
@@ -267,15 +203,16 @@ def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=
                 arg_value = '\"{}\"'.format(arg_value)
             if len(aname_split) == 2: # simple parameter
                 op_arguments.append("{}={}".format(aname_split[-1], arg_value))
-            else:
+            else: # parameter of internal operator as a parameter in the operator, usually in Selector
                 if not list(dep_op_list.values()).count(aname_split[1]):
                     raise TypeError('Warning: the {} is not in right format!'.format(self.sklearn_class.__name__))
                 else:
                     if aname_split[1] not in dep_op_arguments:
                         dep_op_arguments[aname_split[1]] = []
                     dep_op_arguments[aname_split[1]].append("{}={}".format(aname_split[-1], arg_value))
+        tmp_op_args = []
         if dep_op_list:
-            tmp_op_args = [] # to make sure the inital operators is the first parameter just for better persentation
+            # to make sure the inital operators is the first parameter just for better persentation
             for dep_op_pname, dep_op_str in dep_op_list.items():
                 if dep_op_str == 'f_classif':
                     arg_value = dep_op_str
@@ -287,15 +224,12 @@ def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=
 
     class_profile['export'] = export
 
-
-
     op_classname = '{}__{}'.format('TPOT',op_str)
-    return type(op_classname, (BaseClass,), class_profile)
+    op_class = type(op_classname, (BaseClass,), class_profile)
+    return op_class, arg_types
 
 
-# for tpot
-operators = Operator.inheritors()
-argument_types = ARGType.inheritors()
+
 
 
 """
