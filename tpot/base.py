@@ -42,6 +42,7 @@ from sklearn.metrics.scorer import make_scorer
 from update_checker import update_check
 
 from ._version import __version__
+from .operator_utils import TPOTOperatorClassFactory
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _timeout
 from .operator_utils import operators, argument_types
@@ -51,11 +52,6 @@ from .metrics import SCORERS
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement
 
 
-
-#Create another param for init method: string or dict
-#If string: import lite vs actual
-#Lite will use a subset of TPOT normal - models that are simple to learn; nothing expensive
-#If actual dictionary - means user wants to specify their own models/params etc.
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -82,7 +78,7 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
-                 disable_update_check=False, warm_start=False):
+                 disable_update_check=False, warm_start=False, operator_dict_file=None):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -147,6 +143,11 @@ class TPOTBase(BaseEstimator):
         warm_start: bool (default: False)
             Flag indicating whether TPOT will reuse models from previous calls to
             fit() for faster operation
+        operator_dict_file: a file including a python dictionary (default: None
+            The python dictionary need to be named as classifier_config_dict for TPOTClassifier
+            but regressor_config_dic for TPOTOperator
+            The customized python dictionary to specify the list of operators and
+            their arguments. Format examples: config_regressor.py and config_classifier.py
 
         Returns
         -------
@@ -171,11 +172,28 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
+
         # set offspring_size equal to  population_size by default
         if offspring_size:
             self.offspring_size = offspring_size
         else:
             self.offspring_size = population_size
+        # define operator dictionary
+        if operator_dict_file:
+            try:
+                exec(open(operator_dict_file, 'r').read())
+            except:
+                raise TypeError('The operator dictionary file is in bad format or not available! '
+                                'Please check the dictionary file')
+        self.operators = []
+        self.arguments = []
+
+        for key in sorted(self.operator_dict.keys()):
+            print('Creating: {}'.format(key))
+            op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key], classification=True)
+            self.operators.append(op_class)
+            self.arguments += arg_types
+        print(self.operators)
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -205,6 +223,7 @@ class TPOTBase(BaseEstimator):
 
         self.random_state = random_state
 
+
         # If the user passed a custom scoring function, store it in the sklearn SCORERS dictionary
         if scoring:
             if hasattr(scoring, '__call__'):
@@ -233,50 +252,18 @@ class TPOTBase(BaseEstimator):
         self._setup_toolbox()
 
     def _setup_pset(self):
+
+        # creating dynamically create operator class
+
+
         self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_DF)
 
         # Rename pipeline input to "input_df"
         self._pset.renameArguments(ARG0='input_matrix')
 
-        # Add all specified operator to primitive set
-        # Add from imported dictionary
-        for key, value in self.operators.items():
-            l = key.split('.')
-            op_str = l.pop()
-            op = eval(op_str)
-            import_hash = l.join('.')
-
-            if key.startswith('tpot.'):
-                exec('from {} import {}'.format(import_hash[4:], op_str))
-            else:
-                exec('from {} import {}'.format(import_hash, op_str))
-
-            input_arg_types = []
-
-            for arg_name, arg_vals in value.items():
-
-                input_arg_types = input_arg_types + [type(arg_vals[0])]
-                # First argument is always a DataFrame
-                input_arg_types = [np.ndarray] + input_arg_types
-
-                # Add Terminals
-                for val in arg_vals:
-                    self._pset.addTerminal(val, type(val))
-
-            if issubclass(op, ClassifierMixin) or issubclass(op, RegressorMixin):
-                # We need to add rooted primitives twice so that they can
-                # return both an Output_DF (and thus be the root of the tree),
-                # and return a np.ndarray so they can exist elsewhere in the tree.
-                self._pset.addPrimitive(op, input_arg_types, Output_DF)
-
-            return_type = np.ndarray
-            self._pset.addPrimitive(op, input_arg_types, return_type)
-
-        self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
-
 
         # Add all operators to the primitive set
-        for op in operators.Operator.inheritors():
+        for op in self.operators:
             if self._ignore_operator(op):
                 continue
 
@@ -284,6 +271,7 @@ class TPOTBase(BaseEstimator):
                 # We need to add rooted primitives twice so that they can
                 # return both an Output_DF (and thus be the root of the tree),
                 # and return a np.ndarray so they can exist elsewhere in the tree.
+                print(op.__name__)
                 p_types = (op.parameter_types()[0], Output_DF)
                 self._pset.addPrimitive(op, *p_types)
 
@@ -305,26 +293,9 @@ class TPOTBase(BaseEstimator):
         self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
 
         # Terminals
-        int_terminals = np.concatenate((
-            np.arange(0, 51, 1),
-            np.arange(60, 110, 10))
-        )
-
-        for val in int_terminals:
-            self._pset.addTerminal(val, int)
-
-        float_terminals = np.concatenate((
-            [1e-6, 1e-5, 1e-4, 1e-3],
-            np.arange(0., 1.01, 0.01),
-            np.arange(2., 51., 1.),
-            np.arange(60., 101., 10.))
-        )
-
-        for val in float_terminals:
-            self._pset.addTerminal(val, float)
-
-        self._pset.addTerminal(True, Bool)
-        self._pset.addTerminal(False, Bool)
+        for _type in self.arguments:
+            for val in _type.values:
+                self._pset.addTerminal(val, _type)
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
@@ -585,7 +556,7 @@ class TPOTBase(BaseEstimator):
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
         with open(output_file_name, 'w') as output_file:
-            output_file.write(export_pipeline(self._optimized_pipeline))
+            output_file.write(export_pipeline(self._optimized_pipeline, self.operators))
 
     def _compile_to_sklearn(self, expr):
         """Compiles a DEAP pipeline into a sklearn pipeline
@@ -599,7 +570,7 @@ class TPOTBase(BaseEstimator):
         -------
         sklearn_pipeline: sklearn.pipeline.Pipeline
         """
-        sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr))
+        sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr), self.operators)
 
         return eval(sklearn_pipeline, self.operators_context)
 
@@ -673,6 +644,7 @@ class TPOTBase(BaseEstimator):
             individual_str = str(individual)
             if (individual_str.count('PolynomialFeatures') > 1):
                 raise ValueError('Invalid pipeline -- skipping its evaluation')
+            print(individual_str)
 
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
@@ -712,8 +684,8 @@ class TPOTBase(BaseEstimator):
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
-            # import traceback
-            # traceback.print_exc()
+            import traceback
+            traceback.print_exc()
             return 5000., -float('inf')
         finally:
             if not self._pbar.disable:

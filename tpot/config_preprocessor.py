@@ -121,7 +121,7 @@ preprocessor_config_dict = {
         'source': 'sklearn.preprocessing',
         'dependencies': None,
         'params': None
-    }
+    },
 
     'ZeroCount': {
         'source': 'tpot.build_in_operators',
