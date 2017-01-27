@@ -189,7 +189,8 @@ class TPOTBase(BaseEstimator):
         self.arguments = []
 
         for key in sorted(self.operator_dict.keys()):
-            op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key], classification=True)
+            op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key],
+                                classification = self.classification, regression = self.regression)
             self.operators.append(op_class)
             self.arguments += arg_types
 
