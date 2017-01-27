@@ -11,8 +11,8 @@ from tpot.export_utils import export_pipeline, generate_import_code, _indent, ge
 from tpot.decorators import _gp_new_generation
 from tpot.gp_types import Output_DF
 
-from tpot.operators import Operator
-from tpot.operators.selectors import TPOTSelectKBest
+from tpot.operator_utils import Operator,
+#from tpot.operators.selectors import TPOTSelectKBest
 
 import numpy as np
 import inspect
@@ -232,7 +232,7 @@ def test_predict_proba():
 
     assert result.shape == (testing_features.shape[0], num_labels)
 
-    
+
 def test_predict_proba2():
     """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)"""
 

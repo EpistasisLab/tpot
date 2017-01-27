@@ -36,12 +36,13 @@ def get_by_name(opname, operators):
         An operator class
 
     """
-    ret_op_class = [op for op in operators if op.__name__ == opname]
-    if len(ret_op_class) == 0:
+    ret_op_classes = [op for op in operators if op.__name__ == opname]
+    if len(ret_op_classes) == 0:
         raise TypeError('Cannot found operator {} in operator dictionary'.format(opname))
-    elif len(ret_op_class) > 1:
+    elif len(ret_op_classes) > 1:
         print('Found multiple operator {} in operator dictionary'.format(opname),
-        'Please check your dictionary file')
+        'Please check your dictionary file.')
+    ret_op_class = ret_op_classes[0]
     return ret_op_class
 
 def export_pipeline(exported_pipeline, operators):
@@ -67,7 +68,7 @@ def export_pipeline(exported_pipeline, operators):
     pipeline_text = generate_import_code(exported_pipeline, operators)
 
     # Replace the function calls with their corresponding Python code
-    pipeline_text += pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree))
+    pipeline_text += pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators))
 
     return pipeline_text
 
@@ -263,12 +264,11 @@ def generate_export_pipeline_code(pipeline_tree, operators):
         pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
     else: # only one operator (root = True)
         pipeline_text =  "{STEPS}".format(STEPS=_indent(",\n".join(steps), 0))
-        print(pipeline_text)
 
     return pipeline_text
 
 
-def process_operator(operator, depth=0, operators):
+def process_operator(operator, operators, depth=0):
     steps = []
     op_name = operator[0]
 
@@ -281,7 +281,7 @@ def process_operator(operator, depth=0, operators):
         tpot_op = get_by_name(op_name, operators)
 
         if input_name != 'input_matrix':
-            steps.extend(process_operator(input_name, depth + 1, operators))
+            steps.extend(process_operator(input_name, operators, depth + 1))
 
         # If the step is an estimator and is not the last step then we must
         # add its guess as a synthetic feature
@@ -292,7 +292,6 @@ def process_operator(operator, depth=0, operators):
             )
         else:
             steps.append(tpot_op.export(*args))
-    print(steps)
     return steps
 
 

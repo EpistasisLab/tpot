@@ -224,36 +224,6 @@ def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=
 
     class_profile['export'] = export
 
-    op_classname = '{}__{}'.format('TPOT',op_str)
+    op_classname = '{}_{}'.format('TPOT',op_str)
     op_class = type(op_classname, (BaseClass,), class_profile)
     return op_class, arg_types
-
-
-
-
-
-"""
-Test
-op_class_dict={}
-
-for key, val in classifier_config_dict.items():
-    print('Config: {}'.format(key))
-    op_class_dict[key]=TPOTOperatorClassFactory(key, val, classification=True)
-    print(op_class_dict[key].sklearn_class.__name__)
-    print(op_class_dict[key].import_hash)
-    print(op_class_dict[key].arg_types)
-a = op_class_dict['sklearn.naive_bayes.MultinomialNB']
-c = op_class_dict['sklearn.feature_selection.SelectFromModel']
-d = op_class_dict['sklearn.feature_selection.SelectFwe']
-
-
-
-
-
-for op in Operator.inheritors():
-    print(op.sklearn_class.__name__)
-
-for arg in ARGType.inheritors():
-    print(arg.__name__, arg.values)
-
-"""
