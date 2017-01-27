@@ -35,8 +35,6 @@ class Operator(object):
         """
         return self.__class__.sklearn_class.__name__
     root = False  # Whether this operator type can be the root of the tree
-    regression = False  # Whether this operator can be used in a regression problem
-    classification = False  # Whether the operator can be used for classification
     import_hash = None
     sklearn_class = None
     arg_types = None
@@ -84,7 +82,7 @@ def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
     """
     return type(classname, (BaseClass,), {'values':prange})
 
-def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=False, BaseClass=Operator):
+def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator):
     """Dynamically create operator class
     Parameters
     ----------
@@ -110,8 +108,6 @@ def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=
 
 
     class_profile = {}
-    class_profile['regression'] = regression
-    class_profile['classification'] = classification
 
     dep_op_list = {}
     import_str, op_str, op_obj = source_decode(opsourse)

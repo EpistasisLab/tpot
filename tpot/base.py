@@ -177,10 +177,8 @@ class TPOTBase(BaseEstimator):
                                 'Please check the dictionary file')
         self.operators = []
         self.arguments = []
-
         for key in sorted(self.operator_dict.keys()):
-            op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key],
-                                classification = self.classification, regression = self.regression)
+            op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key])
             self.operators.append(op_class)
             self.arguments += arg_types
 
@@ -252,8 +250,6 @@ class TPOTBase(BaseEstimator):
 
         # Add all operators to the primitive set
         for op in self.operators:
-            if self._ignore_operator(op):
-                continue
 
             if op.root:
                 # We need to add rooted primitives twice so that they can

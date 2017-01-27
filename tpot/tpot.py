@@ -28,18 +28,6 @@ class TPOTClassifier(TPOTBase):
 
     scoring_function = 'balanced_accuracy'  # Classification scoring
     operator_dict = classifier_config_dict # Classification dictionary
-    classification = True
-    regression = False
-
-    def _ignore_operator(self, op):
-        """Filter that describes which operators are not used
-
-        Parameters
-        ----------
-        op: Operator
-            TPOT Pipeline operator being tested
-        """
-        return not op.classification
 
 
 class TPOTRegressor(TPOTBase):
@@ -47,15 +35,3 @@ class TPOTRegressor(TPOTBase):
 
     scoring_function = 'neg_mean_squared_error'  # Regression scoring
     operator_dict = regressor_config_dict # Regression dictionary
-    classification = False
-    regression = True
-
-    def _ignore_operator(self, op):
-        """Filter that describes which operators are not used
-
-        Parameters
-        ----------
-        op: Operator
-            TPOT Pipeline operator being tested
-        """
-        return not op.regression
