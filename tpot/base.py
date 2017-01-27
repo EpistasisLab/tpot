@@ -44,7 +44,7 @@ from update_checker import update_check
 from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
-from .decorators import _timeout
+from .decorators import _timeout, _pre_test
 from .operator_utils import operators, argument_types
 from .build_in_operators import CombineDFs
 from .gp_types import Bool, Output_DF
@@ -189,11 +189,10 @@ class TPOTBase(BaseEstimator):
         self.arguments = []
 
         for key in sorted(self.operator_dict.keys()):
-            print('Creating: {}'.format(key))
             op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key], classification=True)
             self.operators.append(op_class)
             self.arguments += arg_types
-        print(self.operators)
+
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -215,6 +214,9 @@ class TPOTBase(BaseEstimator):
             'VotingClassifier': VotingClassifier,
             'FunctionTransformer': FunctionTransformer
         }
+
+        if self.verbosity > 1:
+            print('{} operators are imported.'.format(len(self.operators)))
 
         self._pbar = None
 
@@ -271,7 +273,6 @@ class TPOTBase(BaseEstimator):
                 # We need to add rooted primitives twice so that they can
                 # return both an Output_DF (and thus be the root of the tree),
                 # and return a np.ndarray so they can exist elsewhere in the tree.
-                print(op.__name__)
                 p_types = (op.parameter_types()[0], Output_DF)
                 self._pset.addPrimitive(op, *p_types)
 
@@ -307,9 +308,9 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', self._compile_to_sklearn)
         self._toolbox.register('select', tools.selNSGA2)
-        self._toolbox.register('mate', gp.cxOnePoint)
+        self._toolbox.register('mate', _pre_test(gp.cxOnePoint))
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
-        self._toolbox.register('mutate', self._random_mutation_operator)
+        self._toolbox.register('mutate', _pre_test(self._random_mutation_operator))
 
     def fit(self, features, classes, sample_weight=None):
         """Fits a machine learning pipeline that maximizes classification score
@@ -571,7 +572,6 @@ class TPOTBase(BaseEstimator):
         sklearn_pipeline: sklearn.pipeline.Pipeline
         """
         sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr), self.operators)
-
         return eval(sklearn_pipeline, self.operators_context)
 
     def _set_param_recursive(self, pipeline_steps, parameter, value, sample_weight = None):
@@ -644,11 +644,9 @@ class TPOTBase(BaseEstimator):
             individual_str = str(individual)
             if (individual_str.count('PolynomialFeatures') > 1):
                 raise ValueError('Invalid pipeline -- skipping its evaluation')
-            print(individual_str)
 
             # Transform the tree expression into an sklearn pipeline
             sklearn_pipeline = self._toolbox.compile(expr=individual)
-
             # Fix random state when the operator allows and build sample weight dictionary
             sample_weight_dict = self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42, sample_weight)
 
@@ -676,16 +674,13 @@ class TPOTBase(BaseEstimator):
                     cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
                         cv=self.cv, scoring=self.scoring_function,
                         n_jobs=self.n_jobs, fit_params=sample_weight_dict)
-                try:
                     resulting_score = np.mean(cv_scores)
-                except TypeError:
-                    raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
 
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
-            import traceback
-            traceback.print_exc()
+            #import traceback
+            #traceback.print_exc()
             return 5000., -float('inf')
         finally:
             if not self._pbar.disable:
@@ -755,6 +750,7 @@ class TPOTBase(BaseEstimator):
         return self._generate(pset, min_, max_, condition, type_)
 
     # Generate function stolen straight from deap.gp.generate
+    @_pre_test
     def _generate(self, pset, min_, max_, condition, type_=None):
         """Generate a Tree as a list of list. The tree is build from the root to
         the leaves, and it stop growing when the condition is fulfilled.

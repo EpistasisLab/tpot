@@ -11,8 +11,8 @@ from tpot.export_utils import export_pipeline, generate_import_code, _indent, ge
 from tpot.gp_types import Output_DF
 from tpot.gp_deap import mutNodeReplacement
 
-from tpot.operators import Operator
-from tpot.operators.selectors import TPOTSelectKBest
+from tpot.operator_utils import Operator,
+#from tpot.operators.selectors import TPOTSelectKBest
 
 import numpy as np
 import inspect
