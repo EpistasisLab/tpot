@@ -53,6 +53,7 @@ fi
 
 pip install update_checker
 pip install tqdm
+pip install pathos
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
