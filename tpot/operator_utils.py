@@ -224,6 +224,6 @@ def TPOTOperatorClassFactory(opsourse, opdict, regression=False, classification=
 
     class_profile['export'] = export
 
-    op_classname = '{}_{}'.format('TPOT',op_str)
+    op_classname = '_{}'.format(op_str)
     op_class = type(op_classname, (BaseClass,), class_profile)
     return op_class, arg_types

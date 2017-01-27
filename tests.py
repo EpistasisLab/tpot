@@ -11,8 +11,9 @@ from tpot.export_utils import export_pipeline, generate_import_code, _indent, ge
 from tpot.decorators import _gp_new_generation
 from tpot.gp_types import Output_DF
 
-from tpot.operator_utils import Operator,
-#from tpot.operators.selectors import TPOTSelectKBest
+from tpot.operator_utils import Operator, TPOTOperatorClassFactory
+from tpot.config_classifier import classifier_config_dict
+
 
 import numpy as np
 import inspect
@@ -21,6 +22,7 @@ from datetime import datetime
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
 
 from deap import creator
 from tqdm import tqdm
@@ -37,6 +39,10 @@ training_features_r, testing_features_r, training_classes_r, testing_classes_r =
 
 np.random.seed(42)
 random.seed(42)
+
+test_operator_key = 'sklearn.feature_selection.SelectKBest'
+TPOTSelectKBest = TPOTOperatorClassFactory(test_operator_key,
+                                            classifier_config_dict[test_operator_key])
 
 
 def test_init_custom_parameters():
@@ -128,23 +134,23 @@ def test_score():
 def test_score_2():
     """Assert that the TPOTClassifier score function outputs a known score for a fixed pipeline"""
 
-    tpot_obj = TPOTClassifier()
-    tpot_obj._pbar = tqdm(total=1, disable=True)
-    known_score = 0.986318199045  # Assumes use of the TPOT balanced_accuracy function
+tpot_obj = TPOTClassifier()
+tpot_obj._pbar = tqdm(total=1, disable=True)
+known_score = 0.986318199045  # Assumes use of the TPOT balanced_accuracy function
 
-    # Reify pipeline with known score
-    tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('RandomForestClassifier(input_matrix)', tpot_obj._pset)
-    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
-    tpot_obj._fitted_pipeline.fit(training_features, training_classes)
+# Reify pipeline with known score
+tpot_obj._optimized_pipeline = creator.Individual.\
+    from_string("RandomForestClassifier(True, \'gini\', \'auto\', 1, 2, input_matrix)", tpot_obj._pset)
+tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
-    # Get score from TPOT
-    score = tpot_obj.score(testing_features, testing_classes)
-    # http://stackoverflow.com/questions/5595425/
-    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+# Get score from TPOT
+score = tpot_obj.score(testing_features, testing_classes)
+# http://stackoverflow.com/questions/5595425/
+def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+    return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
-    assert isclose(known_score, score)
+assert isclose(known_score, score)
 
 
 def test_score_3():

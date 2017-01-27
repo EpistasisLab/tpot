@@ -20,14 +20,16 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 from .base import TPOTBase
 from .config_classifier import classifier_config_dict
-#from config_regressor import regressor_config_dic
+from .config_regressor import regressor_config_dict
 
 
 class TPOTClassifier(TPOTBase):
     """TPOT estimator for classification problems"""
 
     scoring_function = 'balanced_accuracy'  # Classification scoring
-    operator_dict = classifier_config_dict
+    operator_dict = classifier_config_dict # Classification dictionary
+    classification = True
+    regression = False
 
     def _ignore_operator(self, op):
         """Filter that describes which operators are not used
@@ -44,6 +46,9 @@ class TPOTRegressor(TPOTBase):
     """TPOT estimator for regression problems"""
 
     scoring_function = 'neg_mean_squared_error'  # Regression scoring
+    operator_dict = regressor_config_dict # Regression dictionary
+    classification = False
+    regression = True
 
     def _ignore_operator(self, op):
         """Filter that describes which operators are not used
