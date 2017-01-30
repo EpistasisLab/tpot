@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 Copyright 2016 Randal S. Olson
 
@@ -23,78 +25,79 @@ key:
 value:
     source: module source (e.g sklearn.tree)
     dependencies: depended module (e.g. SVC in selectors RFE); None for no dependency
-    params: a dictionary of parameter names (keys) and parameter ranges (values); None for no params
+    params: a dictionary of parameter names (keys) and parameter ranges (values); None for no dependency
 """
 import numpy as np
 
-regressor_config_dict = {
+classifier_config_dict = {
 
-
-    'sklearn.linear_model.ElasticNetCV': {
-        'l1_ratio': np.arange(0.0, 1.01, 0.05),
-        'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
+    # Classifiers
+    'sklearn.naive_bayes.GaussianNB': {
     },
 
-    'sklearn.ensemble.ExtraTreesRegressor': {
-        'max_features': np.arange(0, 1.01, 0.05),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'bootstrap': [True, False]
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
     },
 
-    'sklearn.ensemble.GradientBoostingRegressor': {
-        'loss': ["ls", "lad", "huber", "quantile"],
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'max_depth': range(1, 11),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'subsample': np.arange(0.05, 1.01, 0.05),
-        'max_features': np.arange(0, 1.01, 0.05),
-        'alpha': [0.75, 0.8, 0.85, 0.9, 0.95, 0.99]
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
     },
 
-    'sklearn.ensemble.AdaBoostRegressor': {
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'loss': ["linear", "square", "exponential"],
-        'max_depth': range(1, 11)
-    },
-
-    'sklearn.tree.DecisionTreeRegressor': {
+    'sklearn.tree.DecisionTreeClassifier': {
+        'criterion': ["gini", "entropy"],
         'max_depth': range(1, 11),
         'min_samples_split': range(2, 21),
         'min_samples_leaf': range(1, 21)
     },
 
-    'sklearn.neighbors.KNeighborsRegressor': {
-        'n_neighbors': range(1, 101),
-        'weights': ["uniform", "distance"],
-        'p': [1, 2]
-    },
-
-    'sklearn.linear_model.LassoLarsCV': {
-        'normalize': [True, False]
-    },
-
-    'sklearn.svm.LinearSVR': {
-        'loss': ["epsilon_insensitive", "squared_epsilon_insensitive"],
-        'dual': [True, False],
-        'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-        'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.],
-        'epsilon': [1e-4, 1e-3, 1e-2, 1e-1, 1.]
-    },
-
-    'sklearn.ensemble.RandomForestRegressor': {
+    'sklearn.ensemble.ExtraTreesClassifier': {
+        'criterion': ["gini", "entropy"],
         'max_features': np.arange(0, 1.01, 0.05),
         'min_samples_split': range(2, 21),
         'min_samples_leaf': range(1, 21),
         'bootstrap': [True, False]
     },
 
-    'sklearn.linear_model.RidgeCV': {
+    'sklearn.ensemble.RandomForestClassifier': {
+        'criterion': ["gini", "entropy"],
+        'max_features': np.arange(0, 1.01, 0.05),
+        'min_samples_split': range(2, 21),
+        'min_samples_leaf':  range(1, 21),
+        'bootstrap': [True, False]
     },
 
+    'sklearn.ensemble.GradientBoostingClassifier': {
+        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+        'max_depth': range(1, 11),
+        'min_samples_split': range(2, 21),
+        'min_samples_leaf': range(1, 21),
+        'subsample': np.arange(0.05, 1.01, 0.05),
+        'max_features': np.arange(0, 1.01, 0.05)
+    },
 
-    'xgboost.XGBRegressor': {
+    'sklearn.neighbors.KNeighborsClassifier': {
+        'n_neighbors': range(1, 101),
+        'weights': ["uniform", "distance"],
+        'p': [1, 2]
+    },
+
+    'sklearn.svm.LinearSVC': {
+        'penalty': ["l1", "l2"],
+        'loss': ["hinge", "squared_hinge"],
+        'dual': [True, False],
+        'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+        'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.]
+    },
+
+    'sklearn.linear_model.LogisticRegression': {
+        'penalty': ["l1", "l2"],
+        'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.],
+        'dual': [True, False]
+    },
+
+    'xgboost.XGBClassifier': {
         'max_depth': range(1, 11),
         'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
         'subsample': np.arange(0.05, 1.01, 0.05),
@@ -180,16 +183,6 @@ regressor_config_dict = {
 
     'sklearn.feature_selection.VarianceThreshold': {
         'threshold': np.arange(0.05, 1.01, 0.05)
-    },
-
-    'sklearn.feature_selection.SelectFromModel': {
-        'threshold': np.arange(0, 1.01, 0.05),
-        'estimator': {
-                'sklearn.ensemble.ExtraTreesRegressor': {
-                    'max_features': np.arange(0, 1.01, 0.05)
-                    }
-                }
-
     }
 
 }
