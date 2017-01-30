@@ -7,7 +7,7 @@ TPOT Unit Tests
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import positive_integer, float_range
-from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
+from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.decorators import _gp_new_generation
 from tpot.gp_types import Output_DF
 
@@ -157,7 +157,7 @@ def test_score_2():
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline"""
 
-    tpot_obj = TPOTRegressor(scoring='mean_squared_error')
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
     tpot_obj._pbar = tqdm(total=1, disable=True)
     known_score = 22.1748763753  # Assumes use of mse
     # Reify pipeline with known score
@@ -305,6 +305,40 @@ def test_gp_new_generation():
 
     assert tpot_obj._gp_generation == 1
 
+def testTPOTOperatorClassFactory():
+    """Assert that the TPOT operators class factory"""
+    test_operator_dict = {
+        'sklearn.svm.LinearSVC': {
+            'penalty': ["l1", "l2"],
+            'loss': ["hinge", "squared_hinge"],
+            'dual': [True, False],
+            'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+            'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.]
+        },
+
+        'sklearn.linear_model.LogisticRegression': {
+            'penalty': ["l1", "l2"],
+            'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.],
+            'dual': [True, False]
+        },
+
+        'sklearn.preprocessing.Binarizer': {
+            'threshold': np.arange(0.0, 1.01, 0.05)
+        }
+    }
+    tpot_operator_list = []
+    tpot_argument_list = []
+    for key in sorted(test_operator_dict.keys()):
+        op,args = TPOTOperatorClassFactory(key,test_operator_dict[key])
+        tpot_operator_list.append(op)
+        tpot_argument_list += args
+    assert len(tpot_operator_list) == 3
+    assert len(tpot_argument_list) == 9
+    assert tpot_operator_list[0].root == True
+    assert tpot_operator_list[1].root == False
+    assert tpot_operator_list[2].type() == "Classifier or Regressor"
+    assert tpot_argument_list[1].values == [True, False]
+
 
 def check_export(op, tpot_obj):
     """Assert that a TPOT operator exports as expected"""
@@ -364,7 +398,7 @@ def test_generate_pipeline_code():
     expected_code = """make_pipeline(
     make_union(
         make_union(VotingClassifier([('branch',
-            GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=0.05, min_samples_leaf=5, min_samples_split=5, n_estimators=500, subsample=0.5)
+            GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, subsample=0.5)
         )]), FunctionTransformer(lambda X: X)),
         make_union(VotingClassifier([('branch',
             make_pipeline(
@@ -373,9 +407,8 @@ def test_generate_pipeline_code():
             )
         )]), FunctionTransformer(lambda X: X))
     ),
-    KNeighborsClassifier(n_neighbors=18, p=2, weights="uniform")
+    KNeighborsClassifier(n_neighbors=18, p="uniform", weights=2)
 )"""
-    print(generate_pipeline_code(pipeline, tpot_obj.operators))
     assert expected_code == generate_pipeline_code(pipeline, tpot_obj.operators)
 
 
@@ -383,14 +416,14 @@ def test_generate_import_code():
     """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline"""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(SelectKBest(input_matrix, 7))', tpot_obj._pset)
+        from_string('GaussianNB(RobustScaler(input_matrix))', tpot_obj._pset)
 
     expected_code = """import numpy as np
 
-from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import make_pipeline
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import RobustScaler
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -398,8 +431,6 @@ features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpo
 training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 """
-    print(generate_import_code(pipeline, tpot_obj.operators))
-
     assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
 
 
@@ -407,16 +438,16 @@ def test_export_pipeline():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed complex pipeline"""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.\
-        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87), SelectKBest(input_matrix, 5)), 18, 33)", tpot_obj._pset)
+        from_string("GaussianNB(CombineDFs(ZeroCount(input_matrix), RobustScaler(input_matrix)))", tpot_obj._pset)
 
     expected_code = """import numpy as np
 
-from sklearn.ensemble import GradientBoostingClassifier, VotingClassifier
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.ensemble import VotingClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import make_pipeline, make_union
-from sklearn.preprocessing import FunctionTransformer
+from sklearn.preprocessing import FunctionTransformer, RobustScaler
+from tpot.build_in_operators import ZeroCount
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -426,30 +457,27 @@ training_features, testing_features, training_classes, testing_classes = \\
 
 exported_pipeline = make_pipeline(
     make_union(
-        make_union(VotingClassifier([('branch',
-            GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, n_estimators=500)
-        )]), FunctionTransformer(lambda X: X)),
-        SelectKBest(k=5, score_func=f_classif)
+        ZeroCount(),
+        RobustScaler()
     ),
-    KNeighborsClassifier(n_neighbors=5, weights="distance")
+    GaussianNB()
 )
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-
-    assert expected_code == export_pipeline(pipeline)
+    assert expected_code == export_pipeline(pipeline,tpot_obj.operators)
 
 
 def test_export_pipeline_2():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline (only one classifier)"""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.\
-        from_string("KNeighborsClassifier(input_matrix, 18, 33)", tpot_obj._pset)
+        from_string("GaussianNB(input_matrix)", tpot_obj._pset)
     expected_code = """import numpy as np
 
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -457,26 +485,25 @@ features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpo
 training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
-exported_pipeline = KNeighborsClassifier(n_neighbors=5, weights="distance")
+exported_pipeline = GaussianNB()
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-
-    assert expected_code == export_pipeline(pipeline)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators)
 
 def test_export_pipeline_3():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with a preprocessor"""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.\
-        from_string("DecisionTreeClassifier(SelectKBest(input_matrix, 5))", tpot_obj._pset)
+        from_string("GaussianNB(MaxAbsScaler(input_matrix))", tpot_obj._pset)
 
     expected_code = """import numpy as np
 
-from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import make_pipeline
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import MaxAbsScaler
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -485,14 +512,14 @@ training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    SelectKBest(k=5, score_func=f_classif),
-    DecisionTreeClassifier()
+    MaxAbsScaler(),
+    GaussianNB()
 )
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators)
 
 
 def test_operator_export():
@@ -524,7 +551,8 @@ def test_operator_type():
 
 def test_get_by_name():
     """Assert that the Operator class returns operators by name appropriately"""
-    assert Operator.get_by_name("SelectKBest").__class__ == TPOTSelectKBest
+    tpot_obj = TPOTClassifier()
+    assert get_by_name("SelectKBest", tpot_obj.operators).__class__ == TPOTSelectKBest.__class__
 
 
 def test_gen():
