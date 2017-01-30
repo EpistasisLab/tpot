@@ -27,13 +27,6 @@ class Operator(object):
     """Base class for operators in TPOT"""
     def __init__(self):
         pass
-
-    @property
-    def __name__(self):
-        """Necessary for deap so that it can generate a string identifier for
-        each opeartor.
-        """
-        return self.__class__.sklearn_class.__name__
     root = False  # Whether this operator type can be the root of the tree
     import_hash = None
     sklearn_class = None
@@ -127,6 +120,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator):
     class_profile['type'] = op_type
 
     class_profile['sklearn_class'] = op_obj
+
     import_hash = {}
     import_hash[import_str] = [op_str]
     arg_types = []
@@ -220,6 +214,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator):
 
     class_profile['export'] = export
 
-    op_classname = '_{}'.format(op_str)
+    op_classname = 'TPOT_{}'.format(op_str)
     op_class = type(op_classname, (BaseClass,), class_profile)
+    op_class.__name__ = op_str
     return op_class, arg_types
