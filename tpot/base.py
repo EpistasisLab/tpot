@@ -144,8 +144,6 @@ class TPOTBase(BaseEstimator):
             Flag indicating whether TPOT will reuse models from previous calls to
             fit() for faster operation
         operator_dict_file: a file including a python dictionary (default: None)
-            The python dictionary need to be named as classifier_config_dict for TPOTClassifier
-            but regressor_config_dic for TPOTOperator
             The customized python dictionary to specify the list of operators and
             their arguments. Format examples: config_regressor.py and config_classifier.py
 

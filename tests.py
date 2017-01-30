@@ -22,10 +22,10 @@ from datetime import datetime
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
 
 from deap import creator
 from tqdm import tqdm
+import deap
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -41,7 +41,7 @@ np.random.seed(42)
 random.seed(42)
 
 test_operator_key = 'sklearn.feature_selection.SelectKBest'
-TPOTSelectKBest = TPOTOperatorClassFactory(test_operator_key,
+TPOTSelectKBest,TPOTSelectKBest_args = TPOTOperatorClassFactory(test_operator_key,
                                             classifier_config_dict[test_operator_key])
 
 
@@ -136,40 +136,40 @@ def test_score():
 def test_score_2():
     """Assert that the TPOTClassifier score function outputs a known score for a fixed pipeline"""
 
-tpot_obj = TPOTClassifier()
-tpot_obj._pbar = tqdm(total=1, disable=True)
-known_score = 0.986318199045  # Assumes use of the TPOT balanced_accuracy function
+    tpot_obj = TPOTClassifier()
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    known_score = 0.91748994287679708  # Assumes use of the TPOT balanced_accuracy function
 
-# Reify pipeline with known score
-tpot_obj._optimized_pipeline = creator.Individual.\
-    from_string("RandomForestClassifier(True, \'gini\', \'auto\', 1, 2, input_matrix)", tpot_obj._pset)
-tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
-tpot_obj._fitted_pipeline.fit(training_features, training_classes)
+    # Reify pipeline with known score
+    tpot_obj._optimized_pipeline = creator.Individual.\
+        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
-# Get score from TPOT
-score = tpot_obj.score(testing_features, testing_classes)
-# http://stackoverflow.com/questions/5595425/
-def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-    return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+    # Get score from TPOT
+    score = tpot_obj.score(testing_features, testing_classes)
 
-assert isclose(known_score, score)
+    # http://stackoverflow.com/questions/5595425/
+    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+    assert isclose(known_score, score)
 
 
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline"""
 
-    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
+    tpot_obj = TPOTRegressor(scoring='mean_squared_error')
     tpot_obj._pbar = tqdm(total=1, disable=True)
-    known_score = 8.9673743407873712  # Assumes use of mse
+    known_score = 22.1748763753  # Assumes use of mse
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('ExtraTreesRegressor(GradientBoostingRegressor(input_matrix, 100.0, 0.11), 0.17999999999999999)', tpot_obj._pset)
+        from_string('RidgeCV(input_matrix)', tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features_r, testing_classes_r)
-
     # http://stackoverflow.com/questions/5595425/
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
@@ -181,10 +181,10 @@ def test_sample_weight_func():
 
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
     tpot_obj._pbar = tqdm(total=1, disable=True)
-    known_score = 9.61954007496  # Assumes use of mse
+    known_score = 21.9145695521  # Assumes use of mse
     # Reify pipeline with known score
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('ExtraTreesRegressor(GradientBoostingRegressor(input_matrix, 100.0, 0.11), 0.17999999999999999)', tpot_obj._pset)
+        from_string('RidgeCV(input_matrix)', tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     # make up a sample weight
     training_classes_r_weight = range(1, len(training_classes_r)+1)
@@ -217,7 +217,7 @@ def test_predict_2():
 
     tpot_obj = TPOTClassifier()
     tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
+        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
@@ -231,7 +231,7 @@ def test_predict_proba():
 
     tpot_obj = TPOTClassifier()
     tpot_obj._optimized_pipeline = creator.Individual. \
-        from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
+        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
@@ -246,7 +246,7 @@ def test_predict_proba2():
 
     tpot_obj = TPOTClassifier()
     tpot_obj._optimized_pipeline = creator.Individual. \
-        from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
+        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
@@ -290,9 +290,8 @@ def test_fit():
 
 
 
-def check_export(op):
+def check_export(op, tpot_obj):
     """Assert that a TPOT operator exports as expected"""
-    tpot_obj = TPOTClassifier(random_state=42)
 
     prng = np.random.RandomState(42)
     np.random.seed(42)
@@ -300,7 +299,6 @@ def check_export(op):
     args = []
     for type_ in op.parameter_types()[0][1:]:
         args.append(prng.choice(tpot_obj._pset.terminals[type_]).value)
-
     export_string = op.export(*args)
 
     assert export_string.startswith(op.__name__ + "(") and export_string.endswith(")")
@@ -308,10 +306,11 @@ def check_export(op):
 
 def test_operators():
     """Assert that the TPOT operators match the output of their sklearn counterparts"""
-    for op in Operator.inheritors():
+    tpot_obj = TPOTClassifier(random_state=42)
+    for op in tpot_obj.operators:
         check_export.description = ("Assert that the TPOT {} operator exports "
                                     "as expected".format(op.__name__))
-        yield check_export, op
+        yield check_export, op, tpot_obj
 
 
 def test_export():
@@ -326,23 +325,30 @@ def test_export():
 
 
 def test_generate_pipeline_code():
+
+    tpot_obj = TPOTClassifier()
     """Assert that generate_pipeline_code() returns the correct code given a specific pipeline"""
     pipeline = ['KNeighborsClassifier',
         ['CombineDFs',
             ['GradientBoostingClassifier',
                 'input_matrix',
                 38.0,
-                0.87],
+                5,
+                5,
+                5,
+                0.05,
+                0.5],
             ['GaussianNB',
                 ['ZeroCount',
                     'input_matrix']]],
         18,
-        33]
+        'uniform',
+        2]
 
     expected_code = """make_pipeline(
     make_union(
         make_union(VotingClassifier([('branch',
-            GradientBoostingClassifier(learning_rate=1.0, max_features=1.0, n_estimators=500)
+            GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=0.05, min_samples_leaf=5, min_samples_split=5, n_estimators=500, subsample=0.5)
         )]), FunctionTransformer(lambda X: X)),
         make_union(VotingClassifier([('branch',
             make_pipeline(
@@ -351,10 +357,10 @@ def test_generate_pipeline_code():
             )
         )]), FunctionTransformer(lambda X: X))
     ),
-    KNeighborsClassifier(n_neighbors=5, weights="distance")
+    KNeighborsClassifier(n_neighbors=18, p=2, weights="uniform")
 )"""
-
-    assert expected_code == generate_pipeline_code(pipeline)
+    print(generate_pipeline_code(pipeline, tpot_obj.operators))
+    assert expected_code == generate_pipeline_code(pipeline, tpot_obj.operators)
 
 
 def test_generate_import_code():
@@ -376,8 +382,9 @@ features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpo
 training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 """
+    print(generate_import_code(pipeline, tpot_obj.operators))
 
-    assert expected_code == generate_import_code(pipeline)
+    assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
 
 def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline"""
@@ -493,8 +500,8 @@ results = exported_pipeline.predict(testing_features)
 
 def test_operator_export():
     """Assert that a TPOT operator can export properly with a function as a parameter to a classifier"""
-    export_string = TPOTSelectKBest().export(5)
-    assert export_string == "SelectKBest(k=5, score_func=f_classif)"
+    export_string = TPOTSelectKBest.export(5)
+    assert export_string == "SelectKBest(score_func=f_classif, k=5)"
 
 
 def test_indent():
@@ -515,7 +522,7 @@ test3"""
 
 def test_operator_type():
     """Assert that TPOT operators return their type, e.g. "Classifier", "Preprocessor" """
-    assert TPOTSelectKBest().type == "Selector"
+    assert TPOTSelectKBest.type() == "Preprocessor or Selector"
 
 
 def test_get_by_name():
