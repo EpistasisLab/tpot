@@ -22,11 +22,12 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 from functools import wraps
 import sys
 import warnings
-from sklearn.datasets import make_classification
+from sklearn.datasets import make_classification, make_regression
 from .export_utils import expr_to_tree, generate_pipeline_code
 # generate a small data set for a new pipeline, in order to check if the pipeline
 # has unsuppported combinations in params
 pretest_X, pretest_y = make_classification(n_samples=50, n_features=10, random_state=42)
+pretest_X_reg, pretest_y_reg = make_regression(n_samples=50, n_features=10, random_state=42)
 
 def _gp_new_generation(func):
     """Decorator that wraps functions that indicate the beginning of a new GP generation.
@@ -206,7 +207,10 @@ def _pre_test(func):
                     expr = func(self, *args, **kwargs)
                     #print(num_test, generate_pipeline_code(expr_to_tree(expr), self.operators)) # debug
                     sklearn_pipeline = eval(generate_pipeline_code(expr_to_tree(expr), self.operators), self.operators_context)
-                    sklearn_pipeline.fit(pretest_X, pretest_y)
+                    if self.classification:
+                        sklearn_pipeline.fit(pretest_X, pretest_y)
+                    else:
+                        sklearn_pipeline.fit(pretest_X_reg, pretest_y_reg)
                     bad_pipeline = False
             except:
                 pass
