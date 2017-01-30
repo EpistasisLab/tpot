@@ -1,9 +1,9 @@
 import numpy as np
 
-from sklearn.decomposition import PCA
+from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import RobustScaler
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -12,8 +12,8 @@ training_features, testing_features, training_classes, testing_classes = \
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    PCA(iterated_power=7, svd_solver="randomized"),
-    KNeighborsClassifier(n_neighbors=7, p=1, weights="distance")
+    RobustScaler(),
+    ExtraTreesClassifier(bootstrap=False, criterion="entropy", max_features=0.9500000000000001, min_samples_leaf=3, min_samples_split=20)
 )
 
 exported_pipeline.fit(training_features, training_classes)

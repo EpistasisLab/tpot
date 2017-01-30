@@ -203,7 +203,6 @@ classifier_config_dict = {
                 'max_features': np.arange(0, 1.01, 0.05)
                 }
         }
-    },
-
+    }
 
 }
