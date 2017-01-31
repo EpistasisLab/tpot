@@ -34,11 +34,10 @@ class Operator(object):
     dep_op_list = {} # the estimator or score_func as params in this operators
 
 
-
 class ARGType(object):
-     """Base class for parameter specifications"""
-     def __init__(self):
-         pass
+    """Base class for parameter specifications"""
+    def __init__(self):
+     pass
 
 
 def source_decode(sourcecode):
