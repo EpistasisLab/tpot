@@ -34,11 +34,10 @@ class Operator(object):
     dep_op_list = {} # the estimator or score_func as params in this operators
 
 
-
 class ARGType(object):
-     """Base class for parameter specifications"""
-     def __init__(self):
-         pass
+    """Base class for parameter specifications"""
+    def __init__(self):
+     pass
 
 
 def source_decode(sourcecode):
@@ -110,8 +109,8 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator):
         optype = "Classifier or Regressor"
     else:
         optype = "Preprocessor or Selector"
-
-    def op_type():
+    @classmethod
+    def op_type(cls):
         """Returns the type of the operator, e.g:
         ("Classifier", "Regressor", "Selector", "Preprocessor")
         """
@@ -145,8 +144,8 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator):
     class_profile['arg_types'] = tuple(arg_types)
     class_profile['import_hash'] = import_hash
     class_profile['dep_op_list'] = dep_op_list
-
-    def parameter_types():
+    @classmethod
+    def parameter_types(cls):
         """Return tuple of argument types for calling of the operator and the
         return type of the operator
 
@@ -165,8 +164,8 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator):
 
 
     class_profile['parameter_types'] = parameter_types
-
-    def export(*args):
+    @classmethod
+    def export(cls, *args):
         """Represent the operator as a string so that it can be exported to a
         file
 
