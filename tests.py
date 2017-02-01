@@ -118,6 +118,48 @@ def test_set_params_2():
 
     assert tpot_obj.generations == 3
 
+def test_random_ind():
+    """Assert that the TPOTClassifier can generate the same pipeline with same random seed"""
+
+    tpot_obj = TPOTClassifier()
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+
+    np.random.seed(43)
+    pipeline1 = tpot_obj._toolbox.individual()
+    np.random.seed(43)
+    pipeline2 = tpot_obj._toolbox.individual()
+
+    assert pipeline1 == pipeline2
+
+def test_random_ind_2():
+    """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 45"""
+
+    tpot_obj = TPOTClassifier()
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    np.random.seed(45)
+    pipeline = tpot_obj._toolbox.individual()
+    expected_code = """import numpy as np
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from tpot.build_in_operators import ZeroCount
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
+
+exported_pipeline = make_pipeline(
+    ZeroCount(),
+    LogisticRegression(C=0.0001, dual=False, penalty="l2")
+)
+
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
+"""
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators)
 
 def test_score():
     """Assert that the TPOT score function raises a ValueError when no optimized pipeline exists"""
@@ -377,9 +419,8 @@ def test_export():
 
 
 def test_generate_pipeline_code():
-
-    tpot_obj = TPOTClassifier()
     """Assert that generate_pipeline_code() returns the correct code given a specific pipeline"""
+    tpot_obj = TPOTClassifier()
     pipeline = ['KNeighborsClassifier',
         ['CombineDFs',
             ['GradientBoostingClassifier',
