@@ -132,21 +132,66 @@ def test_score():
 
 
 def test_score_2():
-    """Assert that the TPOTClassifier score function outputs a known score for a fixed pipeline"""
+    """Assert that the TPOTClassifier score function outputs a known score for a ramdom pipeline"""
 
     tpot_obj = TPOTClassifier()
     tpot_obj._pbar = tqdm(total=1, disable=True)
-    known_score = 0.91748994287679708  # Assumes use of the TPOT balanced_accuracy function
+    known_score = 0.96710588996037627  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
-    tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
+    np.random.seed(43)
+    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
 
+    # http://stackoverflow.com/questions/5595425/
+    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+    assert isclose(known_score, score)
+
+def test_score_3():
+    """Assert that the TPOTRegressor score function outputs a known score for a random pipeline"""
+
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    known_score = 14.375172822194937 # Assumes use of mse
+
+    # Reify pipeline with known score
+    np.random.seed(45)
+    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
+
+    # Get score from TPOT
+    score = tpot_obj.score(testing_features_r, testing_classes_r)
+
+    # http://stackoverflow.com/questions/5595425/
+    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+    assert isclose(known_score, score)
+
+def test_sample_weight_func():
+    """Assert that the TPOTRegressor score function outputs a known score for a random pipeline with sample weights"""
+
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    known_score = 13.672380235317991  # Assumes use of mse
+    # Reify pipeline with known score
+    np.random.seed(45)
+    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    # make up a sample weight
+    training_classes_r_weight = range(1, len(training_classes_r)+1)
+    training_classes_r_weight_dict = tpot_obj._set_param_recursive(tpot_obj._fitted_pipeline .steps, 'random_state', 42, training_classes_r_weight)
+    tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r, **training_classes_r_weight_dict)
+
+    # Get score from TPOT
+    score = tpot_obj.score(testing_features_r, testing_classes_r)
     # http://stackoverflow.com/questions/5595425/
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
@@ -171,8 +216,8 @@ def test_predict_2():
     """Assert that the TPOT predict function returns a numpy matrix of shape (num_testing_rows,)"""
 
     tpot_obj = TPOTClassifier()
-    tpot_obj._optimized_pipeline = creator.Individual.\
-        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
+    np.random.seed(49)
+    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
@@ -185,8 +230,8 @@ def test_predict_proba():
     """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)"""
 
     tpot_obj = TPOTClassifier()
-    tpot_obj._optimized_pipeline = creator.Individual. \
-        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
+    np.random.seed(51)
+    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
@@ -200,8 +245,8 @@ def test_predict_proba2():
     """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)"""
 
     tpot_obj = TPOTClassifier()
-    tpot_obj._optimized_pipeline = creator.Individual. \
-        from_string('GaussianNB(input_matrix)', tpot_obj._pset)
+    np.random.seed(53)
+    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 

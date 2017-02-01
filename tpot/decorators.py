@@ -198,8 +198,6 @@ def _pre_test(func):
     def check_pipeline(self, *args, **kwargs):
         bad_pipeline = True
         num_test = 0 # number of tests
-        """with warnings.catch_warnings():
-            warnings.simplefilter('ignore')"""
         while bad_pipeline and num_test < 10: # a pool for workable pipeline
             try:
                 with warnings.catch_warnings():
