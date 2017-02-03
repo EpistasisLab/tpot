@@ -243,6 +243,10 @@ class TPOTBase(BaseEstimator):
 
         # creating dynamically create operator class
 
+        if self.random_state is not None:
+            random.seed(self.random_state)
+            np.random.seed(self.random_state)
+
 
         self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_DF)
 
