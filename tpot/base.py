@@ -199,8 +199,6 @@ class TPOTBase(BaseEstimator):
             'FunctionTransformer': FunctionTransformer
         }
 
-        if self.verbosity > 1:
-            print('{} operators are imported.'.format(len(self.operators)))
 
         self._pbar = None
         self._gp_generation = 0
@@ -283,6 +281,11 @@ class TPOTBase(BaseEstimator):
         for _type in self.arguments:
             for val in _type.values:
                 self._pset.addTerminal(val, _type)
+
+        if self.verbosity > 2:
+            print('{} operators are imported.'.format(len(self.operators)))
+
+
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
