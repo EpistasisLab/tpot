@@ -176,15 +176,14 @@ class TPOTBase(BaseEstimator):
             self.offspring_size = offspring_size
         else:
             self.offspring_size = population_size
-        # define operator dictionary
+
+        # define operator dictionary based on files
         if operator_dict_file:
             try:
                 with open(operator_dict_file,'r') as inf:
                     file_string =  inf.read()
-                    operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}')+1)])
-                self.operator_dict = operator_dict
-            except Exception as e:
-                print(e)
+                self.operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}')+1)])
+            except:
                 raise TypeError('The operator dictionary file is in bad format or not available! '
                                 'Please check the dictionary file')
         self.operators = []
