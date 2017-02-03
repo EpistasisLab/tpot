@@ -25,7 +25,6 @@ from sklearn.model_selection import train_test_split
 
 from deap import creator
 from tqdm import tqdm
-import deap
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -122,23 +121,17 @@ def test_set_params_2():
 
 def test_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline with same random seed"""
-
-    tpot_obj = TPOTClassifier()
-    tpot_obj._pbar = tqdm(total=1, disable=True)
-
-    np.random.seed(43)
-    pipeline1 = tpot_obj._toolbox.individual()
-    np.random.seed(43)
-    pipeline2 = tpot_obj._toolbox.individual()
-
+    tpot_obj = TPOTClassifier(random_state=43)
+    pipeline1 = str(tpot_obj._toolbox.individual())
+    tpot_obj = TPOTClassifier(random_state=43)
+    pipeline2 = str(tpot_obj._toolbox.individual())
     assert pipeline1 == pipeline2
 
 def test_random_ind_2():
     """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 45"""
 
-    tpot_obj = TPOTClassifier()
+    tpot_obj = TPOTClassifier(random_state=45)
     tpot_obj._pbar = tqdm(total=1, disable=True)
-    np.random.seed(45)
     pipeline = tpot_obj._toolbox.individual()
     expected_code = """import numpy as np
 
@@ -178,12 +171,11 @@ def test_score():
 def test_score_2():
     """Assert that the TPOTClassifier score function outputs a known score for a ramdom pipeline"""
 
-    tpot_obj = TPOTClassifier()
+    tpot_obj = TPOTClassifier(random_state=43)
     tpot_obj._pbar = tqdm(total=1, disable=True)
     known_score = 0.96710588996037627  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
-    np.random.seed(43)
     tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
@@ -200,12 +192,11 @@ def test_score_2():
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a random pipeline"""
 
-    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=53)
     tpot_obj._pbar = tqdm(total=1, disable=True)
     known_score = 15.724128278216726 # Assumes use of mse
 
     # Reify pipeline with known score
-    np.random.seed(53)
     tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
@@ -236,8 +227,7 @@ def test_predict():
 def test_predict_2():
     """Assert that the TPOT predict function returns a numpy matrix of shape (num_testing_rows,)"""
 
-    tpot_obj = TPOTClassifier()
-    np.random.seed(49)
+    tpot_obj = TPOTClassifier(random_state=49)
     tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
@@ -250,8 +240,7 @@ def test_predict_2():
 def test_predict_proba():
     """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)"""
 
-    tpot_obj = TPOTClassifier()
-    np.random.seed(51)
+    tpot_obj = TPOTClassifier(random_state=51)
     tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
@@ -265,8 +254,7 @@ def test_predict_proba():
 def test_predict_proba2():
     """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)"""
 
-    tpot_obj = TPOTClassifier()
-    np.random.seed(53)
+    tpot_obj = TPOTClassifier(random_state=53)
     tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
