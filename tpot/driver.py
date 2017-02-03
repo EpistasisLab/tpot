@@ -156,6 +156,10 @@ def main():
         choices=[0, 1, 2, 3], type=int, help='How much information TPOT '
         'communicates while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all.')
 
+    parser.add_argument('--operator_dict', dest='OPERATOR', default='',
+        type=str, help='File including a customized python dictionary to specify '
+        'operators and their arguments')
+
     parser.add_argument('--no-update-check', action='store_true',
         dest='DISABLE_UPDATE_CHECK', default=False,
         help='Flag indicating whether the TPOT version checker should be disabled.')
@@ -163,6 +167,9 @@ def main():
     parser.add_argument('--version', action='version',
         version='TPOT {version}'.format(version=__version__),
         help='Show TPOT\'s version number and exit.')
+
+
+
 
     args = parser.parse_args()
 
@@ -202,7 +209,7 @@ def main():
                 scoring=args.SCORING_FN,
                 max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
-                disable_update_check=args.DISABLE_UPDATE_CHECK)
+                disable_update_check=args.DISABLE_UPDATE_CHECK, operator_dict_file=args.OPERATOR)
 
     tpot.fit(training_features, training_classes)
 
