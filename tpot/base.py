@@ -388,36 +388,36 @@ class TPOTBase(BaseEstimator):
 
                 # It won't raise error for a small test like in a unit test becasue a few pipeline sometimes
                 # may fail due to the training data does not fit the operator's requirement.
-                if self.generations*self.population_size > 5 and not self._optimized_pipeline:
-                    raise ValueError('There was an error in the TPOT optimization '
+                if not self._optimized_pipeline:
+                    print('There was an error in the TPOT optimization '
                                      'process. This could be because the data was '
                                      'not formatted properly, or because data for '
                                      'a regression problem was provided to the '
                                      'TPOTClassifier object. Please make sure you '
                                      'passed the data to TPOT correctly.')
-
-                self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
-
-                with warnings.catch_warnings():
-                    warnings.simplefilter('ignore')
-                    self._fitted_pipeline.fit(features, classes)
-
-            if self.verbosity in [1, 2] and self._optimized_pipeline:
-                # Add an extra line of spacing if the progress bar was used
-                if self.verbosity >= 2:
-                    print('')
-                print('Best pipeline: {}'.format(self._optimized_pipeline))
-
-            # Store and fit the entire Pareto front if sciencing
-            elif self.verbosity >= 3 and self._pareto_front:
-                self._pareto_front_fitted_pipelines = {}
-
-                for pipeline in self._pareto_front.items:
-                    self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                else:
+                    self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
-                        self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
+                        self._fitted_pipeline.fit(features, classes)
+
+                    if self.verbosity in [1, 2]:
+                        # Add an extra line of spacing if the progress bar was used
+                        if self.verbosity >= 2:
+                            print('')
+                        print('Best pipeline: {}'.format(self._optimized_pipeline))
+
+                    # Store and fit the entire Pareto front if sciencing
+                    elif self.verbosity >= 3 and self._pareto_front:
+                        self._pareto_front_fitted_pipelines = {}
+
+                        for pipeline in self._pareto_front.items:
+                            self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+
+                            with warnings.catch_warnings():
+                                warnings.simplefilter('ignore')
+                                self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
 
     def predict(self, features):
         """Uses the optimized pipeline to predict the classes for a feature set
