@@ -273,7 +273,7 @@ def test_warm_start():
 
 def test_fit():
     """Assert that the TPOT fit function provides an optimized pipeline"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=1, generations=1, verbosity=0)
+    tpot_obj = TPOTClassifier(random_state=42, population_size=5, generations=1, verbosity=0)
     tpot_obj.fit(training_features, training_classes)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
