@@ -75,7 +75,7 @@ def varAnd(population, toolbox, cxpb, mutpb):
     return offspring
 
 
-def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
+def eaSimple(self, population, toolbox, cxpb, mutpb, ngen, stats=None,
              halloffame=None, verbose=__debug__):
     """This algorithm reproduce the simplest evolutionary algorithm as
     presented in chapter 7 of [Back2000]_.
@@ -148,6 +148,32 @@ def eaSimple(population, toolbox, cxpb, mutpb, ngen, stats=None,
     for gen in range(1, ngen + 1):
         # Select the next generation individuals
         offspring = toolbox.select(population, len(population))
+        # pbar process
+        self._gp_generation += 1
+        if not self._pbar.disable:
+            # Print only the best individual fitness
+            if self.verbosity == 2:
+                high_score = abs(max([self._pareto_front.keys[x].wvalues[1] for x in range(len(self._pareto_front.keys))]))
+                self._pbar.write('Generation {0} - Current best internal CV score: {1}'.format(self._gp_generation, high_score))
+
+            # Print the entire Pareto front
+            elif self.verbosity == 3:
+                self._pbar.write('Generation {} - Current Pareto front scores:'.format(self._gp_generation))
+                for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                    self._pbar.write('{}\t{}\t{}'.format(int(abs(pipeline_scores.wvalues[0])),
+                                                         abs(pipeline_scores.wvalues[1]),
+                                                         pipeline))
+                self._pbar.write('')
+
+            # Sometimes the actual evaluated pipeline count does not match the
+            # supposed count because DEAP can cache pipelines. Here any missed
+            # evaluations are added back to the progress bar.
+            if self._pbar.n < self._gp_generation * self.population_size:
+                missing_pipelines = (self._gp_generation * self.population_size) - self._pbar.n
+                self._pbar.update(missing_pipelines)
+
+            if not (self.max_time_mins is None) and self._pbar.n >= self._pbar.total:
+                self._pbar.total += self.population_size
 
         # Vary the pool of individuals
         offspring = varAnd(offspring, toolbox, cxpb, mutpb)

@@ -8,7 +8,6 @@ from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
-from tpot.decorators import _gp_new_generation
 from tpot.gp_types import Output_DF
 
 from tpot.operators import Operator
@@ -232,7 +231,7 @@ def test_predict_proba():
 
     assert result.shape == (testing_features.shape[0], num_labels)
 
-    
+
 def test_predict_proba2():
     """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)"""
 
@@ -281,23 +280,6 @@ def test_fit():
     assert tpot_obj._gp_generation == 0
     assert not (tpot_obj._start_datetime is None)
 
-
-def test_gp_new_generation():
-    """Assert that the gp_generation count gets incremented when _gp_new_generation is called"""
-    tpot_obj = TPOTClassifier()
-    tpot_obj._pbar = tqdm(total=1, disable=True)
-
-    assert tpot_obj._gp_generation == 0
-
-    # Since _gp_new_generation is a decorator, and we dont want to run a full
-    # fit(), decorate a dummy function and then call the dummy function.
-    @_gp_new_generation
-    def dummy_function(self, foo):
-        pass
-
-    dummy_function(tpot_obj, None)
-
-    assert tpot_obj._gp_generation == 1
 
 
 def check_export(op):

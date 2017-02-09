@@ -42,7 +42,7 @@ from update_checker import update_check
 
 from ._version import __version__
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
-from .decorators import _gp_new_generation, _timeout
+from .decorators import _timeout
 from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
@@ -356,10 +356,9 @@ class TPOTBase(BaseEstimator):
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         try:
-            pop, _ = eaSimple(
-                population=pop, toolbox=self._toolbox, cxpb=self.crossover_rate,
-                mutpb=self.mutation_rate, ngen=self.generations,
-                halloffame=self._pareto_front, verbose=False)
+            pop, _ = eaSimple(self, population=pop, toolbox=self._toolbox,
+                cxpb=self.crossover_rate, mutpb=self.mutation_rate,
+                ngen=self.generations,halloffame=self._pareto_front, verbose=False)
 
             # store population for the next call
             if self.warm_start:
@@ -388,7 +387,7 @@ class TPOTBase(BaseEstimator):
                         top_score = pipeline_scores.wvalues[1]
 
                 # It won't raise error for a small test like in a unit test becasue a few pipeline sometimes
-                # may fail due to the training data does not fit the operator's requirement. 
+                # may fail due to the training data does not fit the operator's requirement.
                 if self.generations*self.population_size > 5 and not self._optimized_pipeline:
                     raise ValueError('There was an error in the TPOT optimization '
                                      'process. This could be because the data was '
@@ -671,7 +670,6 @@ class TPOTBase(BaseEstimator):
         else:
             raise ValueError('Scoring function does not return a float')
 
-    @_gp_new_generation
     def _combined_selection_operator(self, individuals, k):
         """Perform NSGA2 selection on the population according to their Pareto fitness
 
