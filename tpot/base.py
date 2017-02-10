@@ -47,7 +47,7 @@ from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
-from .gp_deap import eaSimple
+from .gp_deap import eaMuPlusLambda
 
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
@@ -70,9 +70,9 @@ cross_val_score = _timeout(cross_val_score)
 class TPOTBase(BaseEstimator):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
 
-    def __init__(self, population_size=100, generations=100,
+    def __init__(self, population_size=100, lamda=200, generations=100,
                  mutation_rate=0.9, crossover_rate=0.05,
-                 scoring=None, num_cv_folds=5, n_jobs=1,
+                 scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
                  disable_update_check=False, warm_start=False):
@@ -84,6 +84,8 @@ class TPOTBase(BaseEstimator):
             The number of pipelines in the genetic algorithm population. Must
             be > 0.The more pipelines in the population, the slower TPOT will
             run, but it's also more likely to find better pipelines.
+        lamda: int (default: twice of population_size)
+            The number of children to produce at each generation.
         generations: int (default: 100)
             The number of generations to run pipeline optimization for. Must
             be > 0. The more generations you give TPOT to run, the longer it
@@ -113,7 +115,7 @@ class TPOTBase(BaseEstimator):
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
             'recall_samples', 'recall_weighted', 'roc_auc']
-        num_cv_folds: int (default: 5)
+        cv: int (default: 5)
             The number of folds to evaluate each pipeline over in k-fold
             cross-validation during the TPOT pipeline optimization process
         n_jobs: int (default: 1)
@@ -162,6 +164,8 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
+        # set lamda equal to twice of population_size by default
+        self.lamda = population_size*2
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -170,6 +174,12 @@ class TPOTBase(BaseEstimator):
 
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
+
+        # check if mutation_rate + crossover_rate > 1
+        if self.mutation_rate + self.crossover_rate > 1:
+            raise TypeError("The sum of the crossover and mutation probabilities must be smaller "
+        "or equal to 1.0.")
+
         self.verbosity = verbosity
         self.operators_context = {
             'make_pipeline': make_pipeline,
@@ -179,7 +189,7 @@ class TPOTBase(BaseEstimator):
         }
 
         self._pbar = None
-        self._gp_generation = 0
+        #self._gp_generation = 0
         # a dictionary of individual which has already evaluated in previous generation.
         self.eval_ind = {}
 
@@ -200,7 +210,7 @@ class TPOTBase(BaseEstimator):
             else:
                 self.scoring_function = scoring
 
-        self.num_cv_folds = num_cv_folds
+        self.cv = cv
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
         if sys.platform.startswith('win') and n_jobs > 1:
             print('Warning: Parallelizing cross validation is not supported in Windows OS.',
@@ -356,9 +366,11 @@ class TPOTBase(BaseEstimator):
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         try:
-            pop, _ = eaSimple(self, population=pop, toolbox=self._toolbox,
+            pop, _ = eaMuPlusLambda(population=pop, toolbox=self._toolbox,
+                mu = self.population_size, lambda_=self.lamda,
                 cxpb=self.crossover_rate, mutpb=self.mutation_rate,
-                ngen=self.generations,halloffame=self._pareto_front, verbose=False)
+                ngen=self.generations,pbar = self._pbar, halloffame=self._pareto_front,
+                verbose=self.verbosity, max_time_mins = self.max_time_mins)
 
             # store population for the next call
             if self.warm_start:
@@ -376,7 +388,7 @@ class TPOTBase(BaseEstimator):
                 self._pbar.close()
 
             # Reset gp_generation counter to restore initial state
-            self._gp_generation = 0
+            #self._gp_generation = 0
 
             # Store the pipeline with the highest internal testing score
             if self._pareto_front:
@@ -647,7 +659,7 @@ class TPOTBase(BaseEstimator):
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
                     cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
-                        cv=self.num_cv_folds, scoring=self.scoring_function,
+                        cv=self.cv, scoring=self.scoring_function,
                         n_jobs=self.n_jobs, fit_params=sample_weight_dict)
                 try:
                     resulting_score = np.mean(cv_scores)
