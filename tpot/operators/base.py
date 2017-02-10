@@ -131,7 +131,8 @@ class Operator(object):
         for operator_type in cls.__subclasses__():
             for operator in operator_type.__subclasses__():
                 operators.append(operator())  # Instantiate class and append
-
+        
+        operators = sorted(operators, lambda op: op.__name__)
         return operators
 
     @classmethod
