@@ -132,7 +132,7 @@ class Operator(object):
             for operator in operator_type.__subclasses__():
                 operators.append(operator())  # Instantiate class and append
         
-        operators = sorted(operators, lambda op: op.__name__)
+        operators = sorted(operators, key=lambda op: op.__name__)
         return operators
 
     @classmethod
