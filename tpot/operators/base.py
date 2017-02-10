@@ -122,15 +122,15 @@ class Operator(object):
         Returns
         -------
         operators: set
-            Set of all discovered operators that inherit from the base class
+            List of all discovered operators that inherit from the base class
 
         """
-        operators = set()
+        operators = list()
 
         # Search two levels deep and report leaves in inheritance tree
         for operator_type in cls.__subclasses__():
             for operator in operator_type.__subclasses__():
-                operators.add(operator())  # Instantiate class and append
+                operators.append(operator())  # Instantiate class and append
 
         return operators
 
