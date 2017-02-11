@@ -70,7 +70,7 @@ cross_val_score = _timeout(cross_val_score)
 class TPOTBase(BaseEstimator):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
 
-    def __init__(self, population_size=100, generations=100, lamda=200,
+    def __init__(self, population_size=100, generations=100, lamda=None,
                  mutation_rate=0.9, crossover_rate=0.05,
                  scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
@@ -84,7 +84,7 @@ class TPOTBase(BaseEstimator):
             The number of pipelines in the genetic algorithm population. Must
             be > 0.The more pipelines in the population, the slower TPOT will
             run, but it's also more likely to find better pipelines.
-        lamda: int (default: twice of population_size)
+        lamda: int (default: None)
             The number of children to produce at each generation.
         generations: int (default: 100)
             The number of generations to run pipeline optimization for. Must
@@ -165,7 +165,10 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
         # set lamda equal to twice of population_size by default
-        self.lamda = lamda
+        if lamda:
+            self.lamda = lamda
+        else:
+            self.lamda = population_size
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
