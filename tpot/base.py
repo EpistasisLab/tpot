@@ -70,7 +70,7 @@ cross_val_score = _timeout(cross_val_score)
 class TPOTBase(BaseEstimator):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
 
-    def __init__(self, population_size=100, lamda=200, generations=100,
+    def __init__(self, population_size=100, generations=100, lamda=200,
                  mutation_rate=0.9, crossover_rate=0.05,
                  scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
@@ -165,7 +165,7 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
         # set lamda equal to twice of population_size by default
-        self.lamda = population_size*2
+        self.lamda = lamda
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -177,8 +177,8 @@ class TPOTBase(BaseEstimator):
 
         # check if mutation_rate + crossover_rate > 1
         if self.mutation_rate + self.crossover_rate > 1:
-            raise TypeError("The sum of the crossover and mutation probabilities must be smaller "
-        "or equal to 1.0.")
+            raise TypeError('The sum of the crossover and mutation probabilities must be smaller '
+        'or equal to 1.0.')
 
         self.verbosity = verbosity
         self.operators_context = {
@@ -189,7 +189,7 @@ class TPOTBase(BaseEstimator):
         }
 
         self._pbar = None
-        #self._gp_generation = 0
+
         # a dictionary of individual which has already evaluated in previous generation.
         self.eval_ind = {}
 
@@ -387,8 +387,6 @@ class TPOTBase(BaseEstimator):
             if not isinstance(self._pbar, type(None)):
                 self._pbar.close()
 
-            # Reset gp_generation counter to restore initial state
-            #self._gp_generation = 0
 
             # Store the pipeline with the highest internal testing score
             if self._pareto_front:
