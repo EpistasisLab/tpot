@@ -48,7 +48,6 @@ from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
-from .gp_deap import eaSimple
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement
 
 
