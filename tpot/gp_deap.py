@@ -151,8 +151,6 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
         # Select the next generation population
         population[:] = toolbox.select(population + offspring, mu)
-        print(len(population))
-        print(len(population+offspring))
 
         # pbar process
         if not pbar.disable:

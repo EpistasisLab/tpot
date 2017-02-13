@@ -164,7 +164,7 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
-        # set lamda equal to twice of population_size by default
+        # set lamda equal to  population_size by default
         if lamda:
             self.lamda = lamda
         else:
