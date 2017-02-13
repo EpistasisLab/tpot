@@ -4,8 +4,9 @@ site_author: Randal S. Olson
 site_description: TPOT is a Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.
 
 repo_url: https://github.com/rhiever/tpot
-
-docs_dir: sources
+edit_uri: edit/master/docs_sources/
+docs_dir: docs_sources/
+site_dir: docs/
 theme: readthedocs
 
 markdown_extensions:

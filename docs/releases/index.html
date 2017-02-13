@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Randal S. Olson">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Release Notes - TPOT</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Release Notes";
+    var mkdocs_page_input_path = "releases.md";
+    var mkdocs_page_url = "/releases/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> TPOT</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Home</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../installing/">Installation</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../using/">Using TPOT</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Examples</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../examples/MNIST_Example/">MNIST Example</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../examples/IRIS_Example/">IRIS Example</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../examples/Boston_Example/">Boston Example</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../examples/Titanic_Kaggle_Example/">Titanic Kaggle Example</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../contributing/">Contributing</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Release Notes</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#version-06">Version 0.6</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#version-05">Version 0.5</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#version-04">Version 0.4</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#version-03">Version 0.3</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#version-02">Version 0.2</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#version-01">Version 0.1</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../citing/">Citing</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../support/">Support</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">TPOT</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Release Notes</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/rhiever/tpot/edit/master/docs_sources/releases.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="version-06">Version 0.6</h1>
+<ul>
+<li>
+<p><strong>TPOT now supports regression problems!</strong> We have created two separate <code>TPOTClassifier</code> and <code>TPOTRegressor</code> classes to support classification and regression problems, respectively. The <a href="../using/#tpot-on-the-command-line">command-line interface</a> also supports this feature through the <code>-mode</code> parameter.</p>
+</li>
+<li>
+<p>TPOT now allows you to <strong>specify a time limit</strong> for the optimization process with the <code>max_time_mins</code> parameter, so you don't need to guess how long TPOT will take any more to recommend a pipeline to you.</p>
+</li>
+<li>
+<p>Added a new operator that performs feature selection using <a href="http://scikit-learn.org/stable/modules/ensemble.html#extremely-randomized-trees">ExtraTrees</a> feature importance scores.</p>
+</li>
+<li>
+<p><strong><a href="https://github.com/dmlc/xgboost">XGBoost</a> has been added as an optional dependency to TPOT.</strong> If you have XGBoost installed, TPOT will automatically detect your installation and use the <code>XGBoostClassifier</code> and <code>XGBoostRegressor</code> in its pipelines.</p>
+</li>
+<li>
+<p>TPOT now offers a verbosity level of 3 ("science mode"), which outputs the entire Pareto front instead of only the current best score. This feature may be useful for users looking to make a trade-off between pipeline complexity and score.</p>
+</li>
+</ul>
+<h1 id="version-05">Version 0.5</h1>
+<ul>
+<li>Major refactor: Each operator is defined in a separate class file. Hooray for easier-to-maintain code!</li>
+<li>TPOT now <strong>exports directly to scikit-learn Pipelines</strong> instead of hacky code.</li>
+<li>Internal representation of individuals now uses scikit-learn pipelines.</li>
+<li>Parameters for each operator have been optimized so TPOT spends less time exploring useless parameters.</li>
+<li>We have removed pandas as a dependency and instead use numpy matrices to store the data.</li>
+<li>TPOT now uses <strong>k-fold cross-validation</strong> when evaluating pipelines, with a default k = 3. This k parameter can be tuned when creating a new TPOT instance.</li>
+<li>Improved <strong>scoring function support</strong>: Even though TPOT uses balanced accuracy by default, you can now have TPOT use <a href="http://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values">any of the scoring functions</a> that <code>cross_val_score</code> supports.</li>
+<li>Added the scikit-learn <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Normalizer.html">Normalizer</a> preprocessor.</li>
+<li><a href="http://knowyourmeme.com/memes/pokemon-go-updates-controversy">Minor text fixes.</a></li>
+</ul>
+<h1 id="version-04">Version 0.4</h1>
+<p>In TPOT 0.4, we've made some major changes to the internals of TPOT and added some convenience functions. We've summarized the changes below.</p>
+<ul>
+<li>Added new sklearn models and preprocessors
+
+<ul>
+<li>AdaBoostClassifier</li>
+<li>BernoulliNB</li>
+<li>ExtraTreesClassifier</li>
+<li>GaussianNB</li>
+<li>MultinomialNB</li>
+<li>LinearSVC</li>
+<li>PassiveAggressiveClassifier</li>
+<li>GradientBoostingClassifier</li>
+<li>RBFSampler</li>
+<li>FastICA</li>
+<li>FeatureAgglomeration</li>
+<li>Nystroem</li>
+</ul></li>
+<li>Added operator that inserts virtual features for the count of features with values of zero</li>
+<li>Reworked parameterization of TPOT operators
+<ul>
+<li>Reduced parameter search space with information from a scikit-learn benchmark</li>
+<li>TPOT no longer generates arbitrary parameter values, but uses a fixed parameter set instead</li>
+</ul></li>
+<li>Removed XGBoost as a dependency
+<ul>
+<li>Too many users were having install issues with XGBoost</li>
+<li>Replaced with scikit-learn's GradientBoostingClassifier</li>
+</ul></li>
+<li>Improved descriptiveness of TPOT command line parameter documentation</li>
+<li>Removed min/max/avg details during fit() when verbosity &gt; 1
+
+<ul>
+<li>Replaced with tqdm progress bar</li>
+<li>Added tqdm as a dependency</li>
+</ul></li>
+<li>Added <code>fit_predict()</code> convenience function</li>
+<li>Added <code>get_params()</code> function so TPOT can operate in scikit-learn's <code>cross_val_score</code> & related functions</li>
+</ul>
+
+<h1 id="version-03">Version 0.3</h1>
+<ul>
+<li>We revised the internal optimization process of TPOT to make it more efficient, in particular in regards to the model parameters that TPOT optimizes over.</li>
+</ul>
+<h1 id="version-02">Version 0.2</h1>
+<ul>
+<li>
+<p>TPOT now has the ability to export the optimized pipelines to sklearn code.</p>
+</li>
+<li>
+<p>Logistic regression, SVM, and k-nearest neighbors classifiers were added as pipeline operators. Previously, TPOT only included decision tree and random forest classifiers.</p>
+</li>
+<li>
+<p>TPOT can now use arbitrary scoring functions for the optimization process.</p>
+</li>
+<li>
+<p>TPOT now performs multi-objective Pareto optimization to balance model complexity (i.e., # of pipeline operators) and the score of the pipeline.</p>
+</li>
+</ul>
+<h1 id="version-01">Version 0.1</h1>
+<ul>
+<li>
+<p>First public release of TPOT.</p>
+</li>
+<li>
+<p>Optimizes pipelines with decision trees and random forest classifiers as the model, and uses a handful of feature preprocessors.</p>
+</li>
+</ul>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../citing/" class="btn btn-neutral float-right" title="Citing">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../contributing/" class="btn btn-neutral" title="Contributing"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2016-Present <a href="http://www.randalolson.com">Randal S. Olson</a></p>
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+    
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/rhiever/tpot" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../contributing/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../citing/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script src="../js/theme.js"></script>
+
+</body>
+</html>

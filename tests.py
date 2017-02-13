@@ -8,7 +8,6 @@ from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
-from tpot.decorators import _gp_new_generation
 from tpot.gp_types import Output_DF
 from tpot.gp_deap import mutNodeReplacement
 
@@ -43,18 +42,19 @@ random.seed(42)
 def test_init_custom_parameters():
     """Assert that the TPOT instantiator stores the TPOT variables properly"""
 
-    tpot_obj = TPOTClassifier(population_size=500, generations=1000,
+    tpot_obj = TPOTClassifier(population_size=500, generations=1000, offspring_size=2000,
                     mutation_rate=0.05, crossover_rate=0.9,
-                    scoring='accuracy', num_cv_folds=10,
+                    scoring='accuracy', cv=10,
                     verbosity=1, random_state=42,
                     disable_update_check=True, warm_start=True)
 
     assert tpot_obj.population_size == 500
     assert tpot_obj.generations == 1000
+    assert tpot_obj.offspring_size == 2000
     assert tpot_obj.mutation_rate == 0.05
     assert tpot_obj.crossover_rate == 0.9
     assert tpot_obj.scoring_function == 'accuracy'
-    assert tpot_obj.num_cv_folds == 10
+    assert tpot_obj.cv == 10
     assert tpot_obj.max_time_mins is None
     assert tpot_obj.warm_start is True
     assert tpot_obj.verbosity == 1
@@ -86,6 +86,7 @@ def test_get_params():
     kwargs = {
         'population_size': 500,
         'generations': 1000,
+        'offspring_size': 2000,
         'verbosity': 1
     }
 
@@ -219,9 +220,46 @@ def test_predict_2():
     assert result.shape == (testing_features.shape[0],)
 
 
+def test_predict_proba():
+    """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)"""
+
+    tpot_obj = TPOTClassifier()
+    tpot_obj._optimized_pipeline = creator.Individual. \
+        from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features, training_classes)
+
+    result = tpot_obj.predict_proba(testing_features)
+    num_labels = np.amax(testing_classes) + 1
+
+    assert result.shape == (testing_features.shape[0], num_labels)
+
+
+def test_predict_proba2():
+    """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)"""
+
+    tpot_obj = TPOTClassifier()
+    tpot_obj._optimized_pipeline = creator.Individual. \
+        from_string('DecisionTreeClassifier(input_matrix)', tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features, training_classes)
+
+    result = tpot_obj.predict_proba(testing_features)
+
+    rows = result.shape[0]
+    columns = result.shape[1]
+
+    try:
+        for i in range(rows):
+            for j in range(columns):
+                float_range(result[i][j])
+        assert True
+    except Exception:
+        assert False
+
 def test_warm_start():
     """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=1, generations=1, verbosity=0, warm_start=True)
+    tpot_obj = TPOTClassifier(random_state=42, population_size=2, offspring_size=4, generations=1, verbosity=0, warm_start=True)
     tpot_obj.fit(training_features, training_classes)
 
     assert tpot_obj._pop != None
@@ -234,35 +272,16 @@ def test_warm_start():
     tpot_obj.fit(training_features, training_classes)
 
     assert tpot_obj._pop == first_pop
-    assert tpot_obj._pareto_front == first_pareto_front
 
 
 def test_fit():
     """Assert that the TPOT fit function provides an optimized pipeline"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=1, generations=1, verbosity=0)
+    tpot_obj = TPOTClassifier(random_state=42, population_size=2, offspring_size=4, generations=1, verbosity=0)
     tpot_obj.fit(training_features, training_classes)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
-    assert tpot_obj._gp_generation == 0
     assert not (tpot_obj._start_datetime is None)
 
-
-def test_gp_new_generation():
-    """Assert that the gp_generation count gets incremented when _gp_new_generation is called"""
-    tpot_obj = TPOTClassifier()
-    tpot_obj._pbar = tqdm(total=1, disable=True)
-
-    assert tpot_obj._gp_generation == 0
-
-    # Since _gp_new_generation is a decorator, and we dont want to run a full
-    # fit(), decorate a dummy function and then call the dummy function.
-    @_gp_new_generation
-    def dummy_function(self, foo):
-        pass
-
-    dummy_function(tpot_obj, None)
-
-    assert tpot_obj._gp_generation == 1
 
 
 def check_export(op):
