@@ -516,6 +516,16 @@ def test_get_by_name():
     """Assert that the Operator class returns operators by name appropriately"""
     assert Operator.get_by_name("SelectKBest").__class__ == TPOTSelectKBest
 
+def test_operator_inheritors_order():
+    """Assert that the Operations.inheritors() always return the same order."""
+    same_order = []
+    for _ in range(10):
+        operators1 = map(lambda op: op.__name__, Operator.inheritors())
+        operators2 = map(lambda op: op.__name__, Operator.inheritors())
+        ordered = all([op1 == op2 for (op1, op2) in zip(operators1, operators2)])
+        same_order.append(ordered)
+
+    assert all(same_order)
 
 def test_gen():
     """Assert that TPOT's gen_grow_safe function returns a pipeline of expected structure"""
