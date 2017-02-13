@@ -25,6 +25,7 @@ import warnings
 import sys
 from functools import partial
 from datetime import datetime
+from inspect import isclass
 
 import numpy as np
 import deap
@@ -47,7 +48,8 @@ from . import operators
 from .operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
-from .gp_deap import eaMuPlusLambda
+from .gp_deap import eaSimple
+from .gp_deap import eaMuPlusLambda, mutNodeReplacement
 
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
@@ -296,7 +298,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
-    def fit(self, features, classes, sample_weight = None):
+    def fit(self, features, classes, sample_weight=None):
         """Fits a machine learning pipeline that maximizes classification score
         on the provided data
 
@@ -370,10 +372,10 @@ class TPOTBase(BaseEstimator):
 
         try:
             pop, _ = eaMuPlusLambda(population=pop, toolbox=self._toolbox,
-                mu = self.population_size, lambda_=self.offspring_size,
+                mu=self.population_size, lambda_=self.offspring_size,
                 cxpb=self.crossover_rate, mutpb=self.mutation_rate,
-                ngen=self.generations,pbar = self._pbar, halloffame=self._pareto_front,
-                verbose=self.verbosity, max_time_mins = self.max_time_mins)
+                ngen=self.generations, pbar=self._pbar, halloffame=self._pareto_front,
+                verbose=self.verbosity, max_time_mins=self.max_time_mins)
 
             # store population for the next call
             if self.warm_start:
@@ -399,7 +401,7 @@ class TPOTBase(BaseEstimator):
                         self._optimized_pipeline = pipeline
                         top_score = pipeline_scores.wvalues[1]
 
-                # It won't raise error for a small test like in a unit test becasue a few pipeline sometimes
+                # It won't raise error for a small test like in a unit test because a few pipeline sometimes
                 # may fail due to the training data does not fit the operator's requirement.
                 if not self._optimized_pipeline:
                     print('There was an error in the TPOT optimization '
@@ -410,7 +412,6 @@ class TPOTBase(BaseEstimator):
                                      'passed the data to TPOT correctly.')
                 else:
                     self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
-
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
                         self._fitted_pipeline.fit(features, classes)
@@ -667,6 +668,7 @@ class TPOTBase(BaseEstimator):
                 except TypeError:
                     raise TypeError('Warning: cv_scores is None due to timeout during evaluation of pipeline')
 
+
         except Exception:
             # Catch-all: Do not allow one pipeline that crashes to cause TPOT
             # to crash. Instead, assign the crashing pipeline a poor fitness
@@ -695,16 +697,24 @@ class TPOTBase(BaseEstimator):
 
         Returns
         -------
-        fitness: list
+        mut_ind: DEAP individual
             Returns the individual with one of the mutations applied to it
 
         """
+        # debug usage
+        #print(str(individual))
+        old_ind = str(individual)
+        mut_ind = (str(individual),)
         mutation_techniques = [
-            partial(gp.mutUniform, expr=self._toolbox.expr_mut, pset=self._pset),
             partial(gp.mutInsert, pset=self._pset),
+            partial(mutNodeReplacement, pset=self._pset),
             partial(gp.mutShrink)
         ]
-        return np.random.choice(mutation_techniques)(individual)
+        while str(mut_ind[0]) == old_ind: # infinite loop to make sure mutation happen
+            mut_ind = np.random.choice(mutation_techniques)(individual)
+        # debug usage
+        #print(str(mut_ind[0]),'\n')
+        return mut_ind
 
     def _gen_grow_safe(self, pset, min_, max_, type_=None):
         """Generate an expression where each leaf might have a different depth
