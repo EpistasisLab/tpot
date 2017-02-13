@@ -291,7 +291,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', self._compile_to_sklearn)
-        self._toolbox.register('select', self._combined_selection_operator)
+        self._toolbox.register('select', tools.selNSGA2)
         self._toolbox.register('mate', gp.cxOnePoint)
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
@@ -682,24 +682,6 @@ class TPOTBase(BaseEstimator):
             return max(1, operator_count), resulting_score
         else:
             raise ValueError('Scoring function does not return a float')
-
-    def _combined_selection_operator(self, individuals, k):
-        """Perform NSGA2 selection on the population according to their Pareto fitness
-
-        Parameters
-        ----------
-        individuals: list
-            A list of individuals to perform selection on
-        k: int
-            The number of individuals to return from the selection phase
-
-        Returns
-        -------
-        fitness: list
-            Returns a list of individuals that were selected
-
-        """
-        return tools.selNSGA2(individuals, int(k / 5.)) * 5
 
 
     def _random_mutation_operator(self, individual):
