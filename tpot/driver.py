@@ -106,6 +106,10 @@ def main():
         '(and therefore time) to optimize over. TPOT will evaluate '
         'GENERATIONS x POPULATION_SIZE number of pipelines in total.')
 
+    parser.add_argument('-os', action='store', dest='OFFSPRING_SIZE', default=100,
+        type=positive_integer, help='The number of children to produce '
+        'at each generation.')
+
     parser.add_argument('-mr', action='store', dest='MUTATION_RATE', default=0.9,
         type=float_range, help='GP mutation rate in the range [0.0, 1.0]. We '
         'recommend using the default parameter unless you '
@@ -197,8 +201,8 @@ def main():
         tpot_type = TPOTRegressor
 
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
-                mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                num_cv_folds=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS,
+                offspring_size=args.OFFSPRING_SIZE, mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
+                cv=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS,
                 scoring=args.SCORING_FN,
                 max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
                 random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
