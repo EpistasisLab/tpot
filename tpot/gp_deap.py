@@ -76,7 +76,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
     return offspring
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
-                   stats=None, halloffame=None, verbose=__debug__, max_time_mins = None):
+                   stats=None, halloffame=None, verbose=0, max_time_mins = None):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution

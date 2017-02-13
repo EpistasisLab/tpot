@@ -41,7 +41,7 @@ random.seed(42)
 def test_init_custom_parameters():
     """Assert that the TPOT instantiator stores the TPOT variables properly"""
 
-    tpot_obj = TPOTClassifier(population_size=500, generations=1000, lamda=2000,
+    tpot_obj = TPOTClassifier(population_size=500, generations=1000, offspring_size=2000,
                     mutation_rate=0.05, crossover_rate=0.9,
                     scoring='accuracy', cv=10,
                     verbosity=1, random_state=42,
@@ -49,7 +49,7 @@ def test_init_custom_parameters():
 
     assert tpot_obj.population_size == 500
     assert tpot_obj.generations == 1000
-    assert tpot_obj.lamda == 2000
+    assert tpot_obj.offspring_size == 2000
     assert tpot_obj.mutation_rate == 0.05
     assert tpot_obj.crossover_rate == 0.9
     assert tpot_obj.scoring_function == 'accuracy'
@@ -85,7 +85,7 @@ def test_get_params():
     kwargs = {
         'population_size': 500,
         'generations': 1000,
-        'lamda': 2000,
+        'offspring_size': 2000,
         'verbosity': 1
     }
 
@@ -258,7 +258,7 @@ def test_predict_proba2():
 
 def test_warm_start():
     """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=2, lamda=4, generations=1, verbosity=0, warm_start=True)
+    tpot_obj = TPOTClassifier(random_state=42, population_size=2, offspring_size=4, generations=1, verbosity=0, warm_start=True)
     tpot_obj.fit(training_features, training_classes)
 
     assert tpot_obj._pop != None
@@ -275,7 +275,7 @@ def test_warm_start():
 
 def test_fit():
     """Assert that the TPOT fit function provides an optimized pipeline"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=2, lamda=4, generations=1, verbosity=0)
+    tpot_obj = TPOTClassifier(random_state=42, population_size=2, offspring_size=4, generations=1, verbosity=0)
     tpot_obj.fit(training_features, training_classes)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
