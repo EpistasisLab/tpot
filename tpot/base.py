@@ -178,7 +178,7 @@ class TPOTBase(BaseEstimator):
             self.offspring_size = population_size
 
         # define operator dictionary based on files
-        if operator_dict_file:
+        if operator_dict_file: #### put to driver !!!
             try:
                 with open(operator_dict_file,'r') as inf:
                     file_string =  inf.read()
