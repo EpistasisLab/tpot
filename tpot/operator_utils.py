@@ -74,7 +74,7 @@ def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
     """
     return type(classname, (BaseClass,), {'values':prange})
 
-def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator):
+def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=ARGType):
     """Dynamically create operator class
     Parameters
     ----------
@@ -127,7 +127,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator):
         prange = opdict[pname]
         if not isinstance(prange, dict):
             classname = '{}__{}'.format(op_str, pname)
-            arg_types.append(ARGTypeClassFactory(classname, prange))
+            arg_types.append(ARGTypeClassFactory(classname, prange, ArgBaseClass))
         else:
             for dkey, dval in prange.items():
                 dep_import_str, dep_op_str, dep_op_obj = source_decode(dkey)
@@ -140,7 +140,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator):
                     for dpname in sorted(dval.keys()):
                         dprange = dval[dpname]
                         classname = '{}__{}__{}'.format(op_str, dep_op_str, dpname)
-                        arg_types.append(ARGTypeClassFactory(classname, dprange))
+                        arg_types.append(ARGTypeClassFactory(classname, dprange, ArgBaseClass))
     class_profile['arg_types'] = tuple(arg_types)
     class_profile['import_hash'] = import_hash
     class_profile['dep_op_list'] = dep_op_list

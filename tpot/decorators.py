@@ -70,9 +70,9 @@ def _timeout(func):
     if not sys.platform.startswith('win'):
         import signal
         @wraps(func)
-        def limitedTime(self, *args, **kw):
+        def limitedTime(max_eval_time_mins, *args, **kw):
             old_signal_hander = signal.signal(signal.SIGALRM, timeout_signal_handler)
-            max_time_seconds = convert_mins_to_secs(self.max_eval_time_mins)
+            max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
             signal.alarm(max_time_seconds)
             try:
                 ret = func(*args, **kw)
@@ -101,9 +101,9 @@ def _timeout(func):
                 except Exception:
                     pass
         @wraps(func)
-        def limitedTime(self, *args, **kw):
+        def limitedTime(max_eval_time_mins, *args, **kw):
             sys.tracebacklimit = 0
-            max_time_seconds = convert_mins_to_secs(self.max_eval_time_mins)
+            max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
             # start thread
             tmp_it = InterruptableThread(args, kw)
             tmp_it.start()

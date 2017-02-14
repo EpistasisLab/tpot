@@ -27,13 +27,14 @@ from functools import partial
 from datetime import datetime
 from pathos.multiprocessing import Pool
 
+from sklearn.externals.joblib import Parallel, delayed
 
 import numpy as np
 import deap
 from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
 
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, clone
 from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
@@ -43,7 +44,7 @@ from sklearn.metrics.scorer import make_scorer
 from update_checker import update_check
 
 from ._version import __version__
-from .operator_utils import TPOTOperatorClassFactory
+from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _timeout, _pre_test, TimedOutExc
 from .build_in_operators import CombineDFs
@@ -188,12 +189,10 @@ class TPOTBase(BaseEstimator):
         self.operators = []
         self.arguments = []
         for key in sorted(self.operator_dict.keys()):
-            op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key])
+            op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key],
+            BaseClass=Operator, ArgBaseClass=ARGType)
             self.operators.append(op_class)
             self.arguments += arg_types
-
-        global max_e_time_mins
-        max_e_time_mins = max_eval_time_mins
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -687,12 +686,18 @@ class TPOTBase(BaseEstimator):
                 operator_count_list.append(operator_count)
                 sklearn_pipeline_list.append(sklearn_pipeline)
                 test_idx_list.append(indidx)
-        partial_cross_val_score = partial(self._wrapped_cross_val_score, self, features=features, classes=classes,
-            num_cv_folds=self.num_cv_folds, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict)
+        #partial_cross_val_score = partial(self._wrapped_cross_val_score, max_eval_time_mins = self.max_eval_time_mins, features=features, classes=classes,
+            #cv=self.cv, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict, pbar=self._pbar, verbosity=self.verbosity)
         # parallel computing in evaluation of pipeline
         if not sys.platform.startswith('win'):
+            parallel = Parallel(n_jobs=self.n_jobs)
+            resulting_score_list = parallel(delayed(self._wrapped_cross_val_score)(self.max_eval_time_mins, clone(sklearn_pipeline),
+            features=features, classes=classes, cv=self.cv, scoring_function=self.scoring_function,
+            sample_weight_dict=sample_weight_dict, pbar=self._pbar, verbosity=self.verbosity)
+            for sklearn_pipeline in sklearn_pipeline_list)
+            """
             pool = Pool(processes=self.n_jobs)
-            resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)
+            resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)"""
         else:
             resulting_score_list = map(partial_cross_val_score, sklearn_pipeline_list)
 
@@ -850,20 +855,21 @@ class TPOTBase(BaseEstimator):
         return np.all(ind1.fitness.values == ind2.fitness.values)
 
     @_timeout
-    def _wrapped_cross_val_score(self, sklearn_pipeline, features, classes, num_cv_folds, scoring_function, sample_weight_dict):
+    def _wrapped_cross_val_score(sklearn_pipeline, features, classes, cv,
+    scoring_function, sample_weight_dict, pbar, verbosity):
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 cv_scores = cross_val_score(sklearn_pipeline, features, classes,
-                    cv=num_cv_folds, scoring=scoring_function,
+                    cv=cv, scoring=scoring_function,
                     n_jobs=1, fit_params=sample_weight_dict)
             resulting_score = np.mean(cv_scores)
         except TimedOutExc:
-            if self.verbosity > 1:
-                self._pbar.write('Timeout during evaluation of a pipeline. Skipping to the next pipeline.')
+            if verbosity > 1:
+                pbar.write('Timeout during evaluation of a pipeline. Skipping to the next pipeline.')
             resulting_score = -float('inf')
         except:
             resulting_score = -float('inf')
-        if not self._pbar.disable:
-            self._pbar.update(1)
+        if not pbar.disable:
+            pbar.update(1)
         return resulting_score
