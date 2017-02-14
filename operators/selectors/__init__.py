@@ -23,5 +23,5 @@ from .select_kbest import *
 #from .relieff import *
 #from .surf import *
 #from .surfstar import *
+#from .multisurf import *
 from .ekf_source import *
-from .ek_filter import *
