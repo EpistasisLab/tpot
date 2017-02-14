@@ -92,8 +92,9 @@ def test_get_params():
         'population_size': 500,
         'generations': 1000,
         'offspring_size': 2000,
-        'verbosity': 1,
-        'operator_dict': classifier_config_dict
+        'operator_dict': classifier_config_dict,
+        'verbosity': 1
+
     }
 
     tpot_obj = TPOTClassifier(**kwargs)

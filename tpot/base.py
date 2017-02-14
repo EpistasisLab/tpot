@@ -76,8 +76,8 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.05,
                  scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, verbosity=0,
-                 disable_update_check=False, warm_start=False, operator_dict=None):
+                 random_state=None, operator_dict=None, verbosity=0,
+                 disable_update_check=False, warm_start=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -134,6 +134,9 @@ class TPOTBase(BaseEstimator):
             The random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
+        operator_dict: a customized python dictionary (default: None)
+            The customized python dictionary to specify the list of operators and
+            their arguments. Format examples: config_regressor.py and config_classifier.py
         verbosity: int (default: 0)
             How much information TPOT communicates while it's running.
             0 = none, 1 = minimal, 2 = all
@@ -142,9 +145,6 @@ class TPOTBase(BaseEstimator):
         warm_start: bool (default: False)
             Flag indicating whether TPOT will reuse models from previous calls to
             fit() for faster operation
-        operator_dict: a customized python dictionary (default: None)
-            The customized python dictionary to specify the list of operators and
-            their arguments. Format examples: config_regressor.py and config_classifier.py
 
         Returns
         -------
