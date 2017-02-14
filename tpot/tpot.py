@@ -27,7 +27,7 @@ class TPOTClassifier(TPOTBase):
     """TPOT estimator for classification problems"""
 
     scoring_function = 'balanced_accuracy'  # Classification scoring
-    operator_dict = classifier_config_dict # Classification dictionary
+    default_operator_dict = classifier_config_dict # Classification dictionary
     classification = True
     regression = False
 
@@ -36,6 +36,6 @@ class TPOTRegressor(TPOTBase):
     """TPOT estimator for regression problems"""
 
     scoring_function = 'neg_mean_squared_error'  # Regression scoring
-    operator_dict = regressor_config_dict # Regression dictionary
+    default_operator_dict = regressor_config_dict # Regression dictionary
     classification = False
     regression = True

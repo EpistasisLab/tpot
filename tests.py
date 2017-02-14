@@ -11,7 +11,7 @@ from tpot.export_utils import export_pipeline, generate_import_code, _indent, ge
 from tpot.gp_types import Output_DF
 from tpot.gp_deap import mutNodeReplacement
 
-from tpot.operator_utils import Operator, TPOTOperatorClassFactory
+from tpot.operator_utils import TPOTOperatorClassFactory
 from tpot.config_classifier import classifier_config_dict
 
 
@@ -92,7 +92,8 @@ def test_get_params():
         'population_size': 500,
         'generations': 1000,
         'offspring_size': 2000,
-        'verbosity': 1
+        'verbosity': 1,
+        'operator_dict': classifier_config_dict
     }
 
     tpot_obj = TPOTClassifier(**kwargs)
@@ -427,11 +428,8 @@ training_features, testing_features, training_classes, testing_classes = \\
 
 def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline"""
-    tpot_obj = TPOTClassifier()
-    pipeline = creator.Individual.\
-        from_string("KNeighborsClassifier(CombineDFs(GradientBoostingClassifier(input_matrix, 38.0, 0.87), SelectKBest(input_matrix, 5)), 18, 33)", tpot_obj._pset)
-    # change the last operato's type to Output_DF as op.root = True
-    pipeline[0].ret = Output_DF
+    tpot_obj = TPOTClassifier(random_state=42)
+    pipeline = tpot_obj._toolbox.individual()
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
     mut_ind = mutNodeReplacement(pipeline, pset = tpot_obj._pset)

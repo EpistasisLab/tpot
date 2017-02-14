@@ -16,8 +16,6 @@ FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details. You should have received a copy of the GNU General Public License along
 with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
-
-import random
 import numpy as np
 from deap import tools, gp
 from inspect import isclass
@@ -57,23 +55,23 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
     offspring = []
     for _ in range(lambda_):
-        op_choice = random.random()
+        op_choice = np.random.random()
         if op_choice < cxpb:            # Apply crossover
-            ind1, ind2 = map(toolbox.clone, random.sample(population, 2))
+            ind1, ind2 = map(toolbox.clone, list(np.random.choice(population, 2)))
             ind_str = str(ind1)
             ind1, ind2 = toolbox.mate(ind1, ind2)
             if ind_str != str(ind1): # check if crossover generated a new pipeline
                 del ind1.fitness.values
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
-            ind = toolbox.clone(random.choice(population))
+            ind = toolbox.clone(np.random.choice(population))
             ind_str = str(ind)
             ind, = toolbox.mutate(ind)
             if ind_str != str(ind): # check if mutation happend
                 del ind.fitness.values
             offspring.append(ind)
         else:                           # Apply reproduction
-            offspring.append(random.choice(population))
+            offspring.append(np.random.choice(population))
 
     return offspring
 
@@ -204,7 +202,7 @@ def mutNodeReplacement(individual, pset):
 
     """
 
-    index = random.randrange(len(individual))
+    index = np.random.randint(0, len(individual))
     node = individual[index]
     slice_ = individual.searchSubtree(index)
 

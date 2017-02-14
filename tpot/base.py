@@ -45,7 +45,6 @@ from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _timeout, _pre_test
-from .operator_utils import operators, argument_types
 from .build_in_operators import CombineDFs
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
@@ -78,7 +77,7 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, verbosity=0,
-                 disable_update_check=False, warm_start=False, operator_dict_file=None):
+                 disable_update_check=False, warm_start=False, operator_dict=None):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -143,7 +142,7 @@ class TPOTBase(BaseEstimator):
         warm_start: bool (default: False)
             Flag indicating whether TPOT will reuse models from previous calls to
             fit() for faster operation
-        operator_dict_file: a file including a python dictionary (default: None)
+        operator_dict: a customized python dictionary (default: None)
             The customized python dictionary to specify the list of operators and
             their arguments. Format examples: config_regressor.py and config_classifier.py
 
@@ -178,21 +177,17 @@ class TPOTBase(BaseEstimator):
             self.offspring_size = population_size
 
         # define operator dictionary based on files
-        if operator_dict_file: #### put to driver !!!
-            try:
-                with open(operator_dict_file,'r') as inf:
-                    file_string =  inf.read()
-                self.operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}')+1)])
-            except:
-                raise TypeError('The operator dictionary file is in bad format or not available! '
-                                'Please check the dictionary file')
+        if operator_dict:
+            self.operator_dict = operator_dict
+        else:
+            self.operator_dict = self.default_operator_dict
+
         self.operators = []
         self.arguments = []
         for key in sorted(self.operator_dict.keys()):
             op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key])
             self.operators.append(op_class)
             self.arguments += arg_types
-
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -344,7 +339,7 @@ class TPOTBase(BaseEstimator):
 
         # Set the seed for the GP run
         if self.random_state is not None:
-            random.seed(self.random_state)
+            random.seed(self.random_state) # deap use random
             np.random.seed(self.random_state)
 
         self._start_datetime = datetime.now()
@@ -382,9 +377,9 @@ class TPOTBase(BaseEstimator):
 
         # Start the progress bar
         if self.max_time_mins:
-            total_evals = self.population_size
+            total_evals = self.offspring_size
         else:
-            total_evals = self.population_size * (self.generations + 1)
+            total_evals = self.offspring_size * (self.generations + 1)
 
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
