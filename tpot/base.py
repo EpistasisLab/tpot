@@ -377,9 +377,9 @@ class TPOTBase(BaseEstimator):
 
         # Start the progress bar
         if self.max_time_mins:
-            total_evals = self.offspring_size
+            total_evals = self.population_size
         else:
-            total_evals = self.offspring_size * (self.generations + 1)
+            total_evals = self.offspring_size * self.generations + self.population_size
 
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
