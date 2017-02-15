@@ -696,30 +696,32 @@ class TPOTBase(BaseEstimator):
                 operator_count_list.append(operator_count)
                 sklearn_pipeline_list.append(sklearn_pipeline)
                 test_idx_list.append(indidx)
-<<<<<<< HEAD
-        #partial_cross_val_score = partial(self._wrapped_cross_val_score, max_eval_time_mins = self.max_eval_time_mins, features=features, classes=classes,
-            #cv=self.cv, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict, pbar=self._pbar, verbosity=self.verbosity)
-        # parallel computing in evaluation of pipeline
+
+        @_timeout(max_eval_time_mins=self.max_eval_time_mins)
+        def _wrapped_cross_val_score(sklearn_pipeline, features=features, classes=classes,
+        cv=self.cv, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict,
+        verbosity=self.verbosity):
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    cv_scores = cross_val_score(sklearn_pipeline, features, classes,
+                        cv=cv, scoring=scoring_function,
+                        n_jobs=1, fit_params=sample_weight_dict)
+                resulting_score = np.mean(cv_scores)
+            except:
+                resulting_score = -float('inf')
+            return resulting_score
+
         if not sys.platform.startswith('win'):
-            parallel = Parallel(n_jobs=self.n_jobs)
-            resulting_score_list = parallel(delayed(self._wrapped_cross_val_score)(self.max_eval_time_mins, clone(sklearn_pipeline),
-            features=features, classes=classes, cv=self.cv, scoring_function=self.scoring_function,
-            sample_weight_dict=sample_weight_dict, pbar=self._pbar, verbosity=self.verbosity)
-            for sklearn_pipeline in sklearn_pipeline_list)
-            """
+            self.sklearn_pipeline_list = sklearn_pipeline_list
             pool = Pool(processes=self.n_jobs)
-            resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)"""
+            resulting_score_list = pool.map(_wrapped_cross_val_score, sklearn_pipeline_list)
         else:
-            resulting_score_list = map(partial_cross_val_score, sklearn_pipeline_list)
-=======
-        partial_cross_val_score = partial(self._wrapped_cross_val_score, self, features=features, classes=classes,
-            num_cv_folds=self.num_cv_folds, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict)
-        # parallel computing in evaluation of pipeline
-        if not sys.platform.startswith('win'):
-            pool = Pool(processes=self.n_jobs)
-            resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)
-        else:
-            resulting_score_list = map(partial_cross_val_score, sklearn_pipeline_list)
+            resulting_score_list = map(_wrapped_cross_val_score, sklearn_pipeline_list)
+
+        self._pbar.update(len(sklearn_pipeline_list))
+
+        #resulting_score_list = map(partial_cross_val_score, sklearn_pipeline_list)
 
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
             if type(resulting_score) in [float, np.float64, np.float32]:
@@ -875,23 +877,3 @@ class TPOTBase(BaseEstimator):
 
         """
         return np.all(ind1.fitness.values == ind2.fitness.values)
-
-    @_timeout
-    def _wrapped_cross_val_score(sklearn_pipeline, features, classes, cv,
-    scoring_function, sample_weight_dict, pbar, verbosity):
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                cv_scores = cross_val_score(sklearn_pipeline, features, classes,
-                    cv=cv, scoring=scoring_function,
-                    n_jobs=1, fit_params=sample_weight_dict)
-            resulting_score = np.mean(cv_scores)
-        except TimedOutExc:
-            if verbosity > 1:
-                pbar.write('Timeout during evaluation of a pipeline. Skipping to the next pipeline.')
-            resulting_score = -float('inf')
-        except:
-            resulting_score = -float('inf')
-        if not pbar.disable:
-            pbar.update(1)
-        return resulting_score

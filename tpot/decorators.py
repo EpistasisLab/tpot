@@ -67,7 +67,7 @@ def timeout_signal_handler(signum, frame):
     """
     raise TimedOutExc("Time Out!")
 
-def _timeout(func):
+def _timeout(max_eval_time_mins=5):
     """Runs a function with time limit
 
     Parameters
@@ -86,55 +86,56 @@ def _timeout(func):
     limitedTime: function
         Wrapped function that raises a timeout exception if the time limit is exceeded
     """
-    if not sys.platform.startswith('win'):
-        import signal
-        @wraps(func)
-        def limitedTime(max_eval_time_mins, *args, **kw):
-            old_signal_hander = signal.signal(signal.SIGALRM, timeout_signal_handler)
-            max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
-            signal.alarm(max_time_seconds)
-            try:
-                ret = func(*args, **kw)
-            except:
-                raise TimedOutExc("Time Out!")
-            finally:
-                signal.signal(signal.SIGALRM, old_signal_hander)  # Old signal handler is restored
-                signal.alarm(0)  # Alarm removed
-            return ret
-    else:
-        class InterruptableThread(Thread):
-            def __init__(self, args, kwargs):
-                Thread.__init__(self)
-                self.args = args
-                self.kwargs = kwargs
-                self.result = -float('inf')
-                self.daemon = True
-            def stop(self):
-                self._stop()
-            def run(self):
+    def wrap_func(func):
+        if not sys.platform.startswith('win'):
+            import signal
+            @wraps(func)
+            def limitedTime(*args, **kw):
+                old_signal_hander = signal.signal(signal.SIGALRM, timeout_signal_handler)
+                max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
+                signal.alarm(max_time_seconds)
                 try:
-                    # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
-                    # Note: Need attention if using parallel execution model of scikit-learn
-                    current_thread().name = 'MainThread'
-                    self.result = func(*self.args, **self.kwargs)
-                except Exception:
-                    pass
-        @wraps(func)
-        def limitedTime(max_eval_time_mins, *args, **kw):
-            sys.tracebacklimit = 0
-            max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
-            # start thread
-            tmp_it = InterruptableThread(args, kw)
-            tmp_it.start()
-            #timer = Timer(max_time_seconds, interrupt_main)
-            tmp_it.join(max_time_seconds)
-            if tmp_it.isAlive():
-                raise TimedOutExc("Time Out!")
-            sys.tracebacklimit=1000
-            return tmp_it.result
-            tmp_it.stop()
-        # return func
-    return limitedTime
+                    ret = func(*args, **kw)
+                except:
+                    raise TimedOutExc("Time Out!")
+                finally:
+                    signal.signal(signal.SIGALRM, old_signal_hander)  # Old signal handler is restored
+                    signal.alarm(0)  # Alarm removed
+                return ret
+        else:
+            class InterruptableThread(Thread):
+                def __init__(self, args, kwargs):
+                    Thread.__init__(self)
+                    self.args = args
+                    self.kwargs = kwargs
+                    self.result = -float('inf')
+                    self.daemon = True
+                def stop(self):
+                    self._stop()
+                def run(self):
+                    try:
+                        # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
+                        # Note: Need attention if using parallel execution model of scikit-learn
+                        current_thread().name = 'MainThread'
+                        self.result = func(*self.args, **self.kwargs)
+                    except Exception:
+                        pass
+            @wraps(func)
+            def limitedTime(*args, **kw):
+                sys.tracebacklimit = 0
+                max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
+                # start thread
+                tmp_it = InterruptableThread(args, kw)
+                tmp_it.start()
+                #timer = Timer(max_time_seconds, interrupt_main)
+                tmp_it.join(max_time_seconds)
+                if tmp_it.isAlive():
+                    raise TimedOutExc("Time Out!")
+                sys.tracebacklimit=1000
+                return tmp_it.result
+                tmp_it.stop()
+        return limitedTime
+    return wrap_func
 
 
 
