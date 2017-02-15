@@ -723,15 +723,19 @@ class TPOTBase(BaseEstimator):
                 resulting_score = -float('inf')
             return resulting_score
 
+        # split sklearn_pipeline_list to small chunks for pbar update
         resulting_score_list = []
         for i in range(0, len(sklearn_pipeline_list), self.n_jobs*2):
             sk_chunk_list = sklearn_pipeline_list[i:i+self.n_jobs*2]
             if not sys.platform.startswith('win'):
                 pool = Pool(processes=self.n_jobs)
-                resulting_score_list += pool.map(_wrapped_cross_val_score, sk_chunk_list)
+                chunk_res = pool.map(_wrapped_cross_val_score, sk_chunk_list)
             else:
-                resulting_score_list += map(_wrapped_cross_val_score, sk_chunk_list)
-            self._pbar.update(self.n_jobs*2)
+                chunk_res += map(_wrapped_cross_val_score, sk_chunk_list)
+            for res in chunk_res:
+                self._pbar.update(1)
+            resulting_score_list += chunk_res
+
 
 
 
