@@ -156,6 +156,10 @@ def main():
         'this seed if you want your TPOT run to be reproducible with the same '
         'seed and data set in the future.')
 
+    parser.add_argument('-operator', action='store', dest='OPERATOR', default='',
+        type=str, help='File including a customized python dictionary to specify '
+        'operators and their arguments')
+
     parser.add_argument('-v', action='store', dest='VERBOSITY', default=1,
         choices=[0, 1, 2, 3], type=int, help='How much information TPOT '
         'communicates while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all.')
@@ -167,6 +171,9 @@ def main():
     parser.add_argument('--version', action='version',
         version='TPOT {version}'.format(version=__version__),
         help='Show TPOT\'s version number and exit.')
+
+
+
 
     args = parser.parse_args()
 
@@ -200,12 +207,23 @@ def main():
     else:
         tpot_type = TPOTRegressor
 
+    if args.OPERATOR:
+        try:
+            with open(args.OPERATOR,'r') as inf:
+                file_string =  inf.read()
+            operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}')+1)])
+        except:
+            raise TypeError('The operator dictionary file is in bad format or not available! '
+                            'Please check the dictionary file')
+    else:
+        operator_dict = None
+
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                 offspring_size=args.OFFSPRING_SIZE, mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
                 cv=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS,
                 scoring=args.SCORING_FN,
                 max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
-                random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
+                random_state=args.RANDOM_STATE, operator_dict=operator_dict, verbosity=args.VERBOSITY,
                 disable_update_check=args.DISABLE_UPDATE_CHECK)
 
     tpot.fit(training_features, training_classes)

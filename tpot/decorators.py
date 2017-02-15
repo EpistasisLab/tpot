@@ -21,6 +21,13 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 from functools import wraps
 import sys
+import warnings
+from sklearn.datasets import make_classification, make_regression
+from .export_utils import expr_to_tree, generate_pipeline_code
+# generate a small data set for a new pipeline, in order to check if the pipeline
+# has unsuppported combinations in params
+pretest_X, pretest_y = make_classification(n_samples=50, n_features=10, random_state=42)
+pretest_X_reg, pretest_y_reg = make_regression(n_samples=50, n_features=10, random_state=42)
 
 def _timeout(func):
     """Runs a function with time limit
@@ -124,3 +131,40 @@ def _timeout(func):
             tmp_it.stop()
     # return func
     return limitedTime
+
+def _pre_test(func):
+    """Decorator that wraps functions to check if the pipeline works with a pretest data set
+    If not, then rerun the func until it generates a good pipeline
+
+    Parameters
+    ----------
+    func: function
+        The function being decorated
+
+    Returns
+    -------
+    wrapped_func: function
+        A wrapper function around the func parameter
+    """
+    @wraps(func)
+    def check_pipeline(self, *args, **kwargs):
+        bad_pipeline = True
+        num_test = 0 # number of tests
+        while bad_pipeline and num_test < 10: # a pool for workable pipeline
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    expr = func(self, *args, **kwargs)
+                    #print(num_test, generate_pipeline_code(expr_to_tree(expr), self.operators)) # debug
+                    sklearn_pipeline = eval(generate_pipeline_code(expr_to_tree(expr), self.operators), self.operators_context)
+                    if self.classification:
+                        sklearn_pipeline.fit(pretest_X, pretest_y)
+                    else:
+                        sklearn_pipeline.fit(pretest_X_reg, pretest_y_reg)
+                    bad_pipeline = False
+            except:
+                pass
+            finally:
+                num_test += 1
+        return expr
+    return check_pipeline

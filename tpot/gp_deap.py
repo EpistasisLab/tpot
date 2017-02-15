@@ -16,8 +16,6 @@ FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details. You should have received a copy of the GNU General Public License along
 with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
-
-import random
 import numpy as np
 from deap import tools, gp
 from inspect import isclass
@@ -57,23 +55,26 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
     offspring = []
     for _ in range(lambda_):
-        op_choice = random.random()
+        op_choice = np.random.random()
         if op_choice < cxpb:            # Apply crossover
-            ind1, ind2 = map(toolbox.clone, random.sample(population, 2))
+            idxs = np.random.randint(0, len(population),size=2)
+            ind1, ind2 = population[idxs[0]],population[idxs[1]]
             ind_str = str(ind1)
             ind1, ind2 = toolbox.mate(ind1, ind2)
             if ind_str != str(ind1): # check if crossover generated a new pipeline
                 del ind1.fitness.values
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
-            ind = toolbox.clone(random.choice(population))
+            idx = np.random.randint(0, len(population))
+            ind = population[idx]
             ind_str = str(ind)
             ind, = toolbox.mutate(ind)
             if ind_str != str(ind): # check if mutation happend
                 del ind.fitness.values
             offspring.append(ind)
-        else:                           # Apply reproduction
-            offspring.append(random.choice(population))
+        else: # Apply reproduction
+            idx = np.random.randint(0, len(population))
+            offspring.append(population[idx])
 
     return offspring
 
@@ -143,6 +144,13 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+
+        # update pbar for valid_ind
+        if not pbar.disable:
+            pbar.update(len(offspring)-len(invalid_ind))
+            if not (max_time_mins is None) and pbar.n >= pbar.total:
+                pbar.total += lambda_
+
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
@@ -169,15 +177,6 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                                                          abs(pipeline_scores.wvalues[1]),
                                                          pipeline))
                 pbar.write('')
-            # Sometimes the actual evaluated pipeline count does not match the
-            # supposed count because DEAP can cache pipelines. Here any missed
-            # evaluations are added back to the progress bar.
-            if pbar.n < gen * mu:
-                missing_pipelines = (gen * mu) - pbar.n
-                pbar.update(missing_pipelines)
-
-            if not (max_time_mins is None) and pbar.n >= pbar.total:
-                pbar.total += mu
 
         # Update the statistics with the new population
         record = stats.compile(population) if stats is not None else {}
@@ -204,7 +203,7 @@ def mutNodeReplacement(individual, pset):
 
     """
 
-    index = random.randrange(len(individual))
+    index = np.random.randint(0, len(individual))
     node = individual[index]
     slice_ = individual.searchSubtree(index)
 

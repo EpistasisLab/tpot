@@ -100,6 +100,27 @@ TPOT offers several arguments that can be provided at the command line:
 <td>Random number generator seed for reproducibility. Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
 </tr>
 <tr>
+<td>-operator</td>
+<td>OPERATOR</td>
+<td>String path to a file</td>
+<td>File including a customized python dictionary to specify operators and their arguments. For example, the file's format could be like:
+<pre lang="nemerle">
+classifier_config_dict = {
+    'sklearn.naive_bayes.GaussianNB': {
+    },
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    },
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    }
+}
+</pre>
+</td>
+</tr>
+<tr>
 <td>-v</td>
 <td>VERBOSITY</td>
 <td>{0, 1, 2, 3}</td>
@@ -205,6 +226,26 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>random_state</td>
 <td>Any positive integer</td>
 <td>The random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.</td>
+</tr>
+<tr>
+<td>operator_dict</td>
+<td>Python dictionary</td>
+<td>A customized python dictionary to specify operators and their arguments. For example:
+<pre lang="nemerle">
+classifier_config_dict = {
+    'sklearn.naive_bayes.GaussianNB': {
+    },
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    },
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    }
+}
+</pre>
+</td>
 </tr>
 <tr>
 <td>verbosity</td>
