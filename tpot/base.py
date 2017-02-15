@@ -573,7 +573,7 @@ class TPOTBase(BaseEstimator):
         sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr), self.operators)
         return eval(sklearn_pipeline, self.operators_context)
 
-    def _set_param_recursive(self, pipeline_steps, parameter, value, sample_weight = None):
+    def _set_param_recursive(self, pipeline_steps, parameter, value):
         """Recursively iterates through all objects in the pipeline and sets the given parameter to the specified value
 
         Parameters
@@ -584,18 +584,12 @@ class TPOTBase(BaseEstimator):
             The parameter to assign a value for in each pipeline object
         value: any
             The value to assign the parameter to in each pipeline object
-
         Returns
         -------
-        sample_weight_dict:
-            A dictionary of sample_weight
+        None
 
         """
-        sample_weight_dict = {}
         for (pname, obj) in pipeline_steps:
-            if inspect.getargspec(obj.fit).args.count('sample_weight') and sample_weight:
-                step_sw = pname + '__sample_weight'
-                sample_weight_dict[step_sw] = sample_weight
             recursive_attrs = ['steps', 'transformer_list', 'estimators']
             for attr in recursive_attrs:
                 if hasattr(obj, attr):
@@ -604,10 +598,6 @@ class TPOTBase(BaseEstimator):
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
-        if sample_weight_dict:
-            return sample_weight_dict
-        else:
-            return None
 
 
     def _evaluate_individuals(self, individuals, features, classes, sample_weight = None):
@@ -672,7 +662,7 @@ class TPOTBase(BaseEstimator):
                     sklearn_pipeline = self._toolbox.compile(expr=individual)
 
                     # Fix random state when the operator allows and build sample weight dictionary
-                    sample_weight_dict = self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42, sample_weight)
+                    self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
                     operator_count = 0
@@ -693,9 +683,35 @@ class TPOTBase(BaseEstimator):
                 sklearn_pipeline_list.append(sklearn_pipeline)
                 test_idx_list.append(indidx)
 
+        def _set_sample_weight(pipeline_steps, sample_weight):
+            """Recursively iterates through all objects in the pipeline and sets the given parameter to the specified value
+
+            Parameters
+            ----------
+            pipeline_steps: array-like
+                List of (str, obj) tuples from a scikit-learn pipeline or related object
+            sample_weight: array-like
+                List of sample weight
+            Returns
+            -------
+            sample_weight_dict:
+                A dictionary of sample_weight
+
+            """
+            sample_weight_dict = {}
+            for (pname, obj) in pipeline_steps:
+                if inspect.getargspec(obj.fit).args.count('sample_weight') and sample_weight:
+                    step_sw = pname + '__sample_weight'
+                    sample_weight_dict[step_sw] = sample_weight
+            if sample_weight_dict:
+                return sample_weight_dict
+            else:
+                return None
+
         @_timeout(max_eval_time_mins=self.max_eval_time_mins)
         def _wrapped_cross_val_score(sklearn_pipeline, features=features, classes=classes,
-        cv=self.cv, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict):
+        cv=self.cv, scoring_function=self.scoring_function,sample_weight=sample_weight):
+            sample_weight_dict = _set_sample_weight(sklearn_pipeline.steps, sample_weight)
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
