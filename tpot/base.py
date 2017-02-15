@@ -27,7 +27,9 @@ from functools import partial
 from datetime import datetime
 from pathos.multiprocessing import Pool
 
+
 from sklearn.externals.joblib import Parallel, delayed
+
 
 import numpy as np
 import deap
@@ -46,11 +48,16 @@ from update_checker import update_check
 from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
+
 from .decorators import _timeout, _pre_test, TimedOutExc
 from .build_in_operators import CombineDFs
+
+
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement
+
+
 
 
 
@@ -174,6 +181,7 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
 
+
         # set offspring_size equal to  population_size by default
         if offspring_size:
             self.offspring_size = offspring_size
@@ -193,6 +201,7 @@ class TPOTBase(BaseEstimator):
             BaseClass=Operator, ArgBaseClass=ARGType)
             self.operators.append(op_class)
             self.arguments += arg_types
+
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -400,6 +409,7 @@ class TPOTBase(BaseEstimator):
                 for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
+
                         top_score = pipeline_scores.wvalues[1]
                 # It won't raise error for a small test like in a unit test because a few pipeline sometimes
                 # may fail due to the training data does not fit the operator's requirement.
@@ -429,7 +439,6 @@ class TPOTBase(BaseEstimator):
 
                         for pipeline in self._pareto_front.items:
                             self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
-
                             with warnings.catch_warnings():
                                 warnings.simplefilter('ignore')
                                 self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
@@ -598,6 +607,7 @@ class TPOTBase(BaseEstimator):
         else:
             return None
 
+
     def _evaluate_individuals(self, individuals, features, classes, sample_weight = None):
         """Determines the `individual`'s fitness
 
@@ -686,6 +696,7 @@ class TPOTBase(BaseEstimator):
                 operator_count_list.append(operator_count)
                 sklearn_pipeline_list.append(sklearn_pipeline)
                 test_idx_list.append(indidx)
+<<<<<<< HEAD
         #partial_cross_val_score = partial(self._wrapped_cross_val_score, max_eval_time_mins = self.max_eval_time_mins, features=features, classes=classes,
             #cv=self.cv, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict, pbar=self._pbar, verbosity=self.verbosity)
         # parallel computing in evaluation of pipeline
@@ -700,6 +711,15 @@ class TPOTBase(BaseEstimator):
             resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)"""
         else:
             resulting_score_list = map(partial_cross_val_score, sklearn_pipeline_list)
+=======
+        partial_cross_val_score = partial(self._wrapped_cross_val_score, self, features=features, classes=classes,
+            num_cv_folds=self.num_cv_folds, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict)
+        # parallel computing in evaluation of pipeline
+        if not sys.platform.startswith('win'):
+            pool = Pool(processes=self.n_jobs)
+            resulting_score_list = pool.map(partial_cross_val_score, sklearn_pipeline_list)
+        else:
+            resulting_score_list = map(partial_cross_val_score, sklearn_pipeline_list)
 
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
             if type(resulting_score) in [float, np.float64, np.float32]:
@@ -712,6 +732,8 @@ class TPOTBase(BaseEstimator):
         for idx, fit in zip(orderlist, fitnesses):
             fitnesses_ordered[idx] = fit
         return fitnesses_ordered
+
+
 
 
     def _random_mutation_operator(self, individual):

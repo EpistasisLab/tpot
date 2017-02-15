@@ -52,7 +52,6 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
     shall be in :math:`[0, 1]`, the reproduction probability is
     1 - *cxpb* - *mutpb*.
     """
-
     offspring = []
     for _ in range(lambda_):
         op_choice = np.random.random()

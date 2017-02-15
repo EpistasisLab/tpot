@@ -48,6 +48,25 @@ def timeout_signal_handler(signum, frame):
     """
     raise TimedOutExc("Time Out!")
 
+def convert_mins_to_secs(time_minute):
+    """Convert time from minutes to seconds"""
+    second = int(time_minute * 60)
+    # time limit should be at least 1 second
+    return max(second, 1)
+
+
+class TimedOutExc(RuntimeError):
+    """
+    Raised when a timeout happens
+    """
+
+def timeout_signal_handler(signum, frame):
+    """
+    signal handler for _timeout function
+    rasie TIMEOUT exception
+    """
+    raise TimedOutExc("Time Out!")
+
 def _timeout(func):
     """Runs a function with time limit
 
