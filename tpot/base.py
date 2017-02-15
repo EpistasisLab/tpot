@@ -381,11 +381,13 @@ class TPOTBase(BaseEstimator):
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         try:
-            pop, _ = eaMuPlusLambda(population=pop, toolbox=self._toolbox,
-                mu=self.population_size, lambda_=self.offspring_size,
-                cxpb=self.crossover_rate, mutpb=self.mutation_rate,
-                ngen=self.generations, pbar=self._pbar, halloffame=self._pareto_front,
-                verbose=self.verbosity, max_time_mins=self.max_time_mins)
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                pop, _ = eaMuPlusLambda(population=pop, toolbox=self._toolbox,
+                    mu=self.population_size, lambda_=self.offspring_size,
+                    cxpb=self.crossover_rate, mutpb=self.mutation_rate,
+                    ngen=self.generations, pbar=self._pbar, halloffame=self._pareto_front,
+                    verbose=self.verbosity, max_time_mins=self.max_time_mins)
 
             # store population for the next call
             if self.warm_start:
@@ -638,31 +640,27 @@ class TPOTBase(BaseEstimator):
             sample_weight_dict = None
 
         # return fitness scores
-        fitnesses = []
-        orderlist = []
+        fitnesses_dict = {}
         # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
         eval_individuals_str = []
         sklearn_pipeline_list = []
         operator_count_list = []
         test_idx_list = []
-        for indidx in range(len(individuals)):
+        for indidx, individual in enumerate(individuals):
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual = individuals[indidx]
             individual_str = str(individual)
             if (individual_str.count('PolynomialFeatures') > 1):
                 print('Invalid pipeline -- skipping its evaluation')
-                fitness = (5000., -float('inf')) ## need reorder !!!
-                fitnesses.append(fitness)
-                orderlist.append(indidx)
+                fitnesses_dict[indidx] = (5000., -float('inf'))
                 if not self._pbar.disable:
                     self._pbar.update(1)
 
             # check if the individual are evaluated before
             elif individual_str in self.eval_ind:
                 # get fitness score from previous evaluation
-                fitnesses.append(self.eval_ind[individual_str])
-                orderlist.append(indidx)
+                fitnesses_dict[indidx] = self.eval_ind[individual_str]
                 if self.verbosity == 3:
                     self._pbar.write("Pipeline #{0} has been evaluated previously. "
                     "Continuing to the next pipeline.".format(self._pbar.n + 1))
@@ -686,9 +684,7 @@ class TPOTBase(BaseEstimator):
                             continue
                         operator_count += 1
                 except:
-                    fitness = (5000., -float('inf')) ## need reorder !!!
-                    fitnesses.append(fitness)
-                    orderlist.append(indidx)
+                    fitnesses_dict[indidx] = (5000., -float('inf'))
                     if not self._pbar.disable:
                         self._pbar.update(1)
                     continue
@@ -699,8 +695,7 @@ class TPOTBase(BaseEstimator):
 
         @_timeout(max_eval_time_mins=self.max_eval_time_mins)
         def _wrapped_cross_val_score(sklearn_pipeline, features=features, classes=classes,
-        cv=self.cv, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict,
-        verbosity=self.verbosity):
+        cv=self.cv, scoring_function=self.scoring_function,sample_weight_dict=sample_weight_dict):
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
@@ -721,21 +716,17 @@ class TPOTBase(BaseEstimator):
 
         self._pbar.update(len(sklearn_pipeline_list))
 
-        #resulting_score_list = map(partial_cross_val_score, sklearn_pipeline_list)
-
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
             if type(resulting_score) in [float, np.float64, np.float32]:
                 self.eval_ind[individual_str] = (max(1, operator_count), resulting_score)
-                fitnesses.append(self.eval_ind[individual_str])
-                orderlist.append(test_idx)
+                fitnesses_dict[test_idx] = self.eval_ind[individual_str]
             else:
                 raise ValueError('Scoring function does not return a float')
-        fitnesses_ordered = [None] * len(individuals)
-        for idx, fit in zip(orderlist, fitnesses):
-            fitnesses_ordered[idx] = fit
+
+        fitnesses_ordered = []
+        for key in sorted(fitnesses_dict.keys()):
+            fitnesses_ordered.append(fitnesses_dict[key])
         return fitnesses_ordered
-
-
 
 
     def _random_mutation_operator(self, individual):
