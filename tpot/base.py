@@ -708,7 +708,6 @@ class TPOTBase(BaseEstimator):
             return resulting_score
 
         if not sys.platform.startswith('win'):
-            self.sklearn_pipeline_list = sklearn_pipeline_list
             pool = Pool(processes=self.n_jobs)
             resulting_score_list = pool.map(_wrapped_cross_val_score, sklearn_pipeline_list)
         else:
