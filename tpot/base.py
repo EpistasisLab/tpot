@@ -23,6 +23,7 @@ import random
 import inspect
 import warnings
 import sys
+import time
 from functools import partial
 from datetime import datetime
 from pathos.multiprocessing import ProcessPool
@@ -741,6 +742,8 @@ class TPOTBase(BaseEstimator):
                     self._pbar.update(ini_pbar_n + num_job_done - self._pbar.n)
                 if num_job_done >= len(sklearn_pipeline_list):
                     break
+                else:
+                    time.sleep(0.2)
             resulting_score_list = list(res_imap)
         else:
             resulting_score_list = []
