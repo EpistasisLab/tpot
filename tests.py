@@ -276,7 +276,7 @@ def test_predict_proba2():
 
 def test_warm_start():
     """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=2, offspring_size=4, generations=1, verbosity=0, warm_start=True)
+    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, warm_start=True)
     tpot_obj.fit(training_features, training_classes)
 
     assert tpot_obj._pop != None
@@ -293,7 +293,7 @@ def test_warm_start():
 
 def test_fit():
     """Assert that the TPOT fit function provides an optimized pipeline"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=2, offspring_size=4, generations=1, verbosity=0)
+    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0)
     tpot_obj.fit(training_features, training_classes)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
