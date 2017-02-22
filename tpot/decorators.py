@@ -95,7 +95,9 @@ def _timeout(max_eval_time_mins=5):
                 max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
                 signal.alarm(max_time_seconds)
                 try:
-                    ret = func(*args, **kw)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore')
+                        ret = func(*args, **kw)
                 except:
                     raise TimedOutExc("Time Out!")
                 finally:
@@ -117,15 +119,17 @@ def _timeout(max_eval_time_mins=5):
                         # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
                         # Note: Need attention if using parallel execution model of scikit-learn
                         current_thread().name = 'MainThread'
-                        self.result = func(*self.args, **self.kwargs)
+                        with warnings.catch_warnings():
+                            warnings.simplefilter('ignore')
+                            self.result = func(*self.args, **self.kwargs)
                     except Exception:
-                        pass
+                        self.result = -float('inf')
             @wraps(func)
-            def limitedTime(*args, **kw):
+            def limitedTime(*args, **kwargs):
                 sys.tracebacklimit = 0
                 max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
                 # start thread
-                tmp_it = InterruptableThread(args, kw)
+                tmp_it = InterruptableThread(args, kwargs)
                 tmp_it.start()
                 #timer = Timer(max_time_seconds, interrupt_main)
                 tmp_it.join(max_time_seconds)

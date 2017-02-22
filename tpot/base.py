@@ -49,7 +49,7 @@ from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 
-from .decorators import _timeout, _pre_test, TimedOutExc
+from .decorators import _timeout, _pre_test
 from .build_in_operators import CombineDFs
 
 
@@ -651,9 +651,6 @@ class TPOTBase(BaseEstimator):
             elif individual_str in self.eval_ind:
                 # get fitness score from previous evaluation
                 fitnesses_dict[indidx] = self.eval_ind[individual_str]
-                if self.verbosity == 3:
-                    self._pbar.write("Pipeline #{0} has been evaluated previously. "
-                    "Continuing to the next pipeline.".format(self._pbar.n + 1))
                 if not self._pbar.disable:
                     self._pbar.update(1)
             else:
@@ -712,6 +709,7 @@ class TPOTBase(BaseEstimator):
         def _wrapped_cross_val_score(sklearn_pipeline, features=features, classes=classes,
         cv=self.cv, scoring_function=self.scoring_function,sample_weight=sample_weight):
             sample_weight_dict = _set_sample_weight(sklearn_pipeline.steps, sample_weight)
+            from .decorators import TimedOutExc
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
@@ -719,6 +717,8 @@ class TPOTBase(BaseEstimator):
                         cv=cv, scoring=scoring_function,
                         n_jobs=1, fit_params=sample_weight_dict)
                 resulting_score = np.mean(cv_scores)
+            except TimedOutExc:
+                resulting_score = -500000000.
             except:
                 resulting_score = -float('inf')
             return resulting_score
@@ -729,16 +729,27 @@ class TPOTBase(BaseEstimator):
             ini_pbar_n = self._pbar.n
             # hacky way for pbar update by using imap in pathos.multiprocessing.ProcessPool
             while True:
-                num_job_done = len(res_imap._items)
-                if not self._pbar.disable:
+                tmp_fitness = np.array(res_imap._items)
+                num_job_done = len(tmp_fitness)
+                if not self._pbar.disable and num_job_done:
+                    timeout_index = list(np.where(tmp_fitness[:,1] == -500000000.)[0])
+                    for idx in timeout_index:
+                        if self._pbar.n - ini_pbar_n <= idx:
+                            self._pbar.write("Skip pipeline #{0} due to time out. "
+                            "Continuing to the next pipeline.".format(ini_pbar_n + idx + 1))
                     self._pbar.update(ini_pbar_n + num_job_done - self._pbar.n)
-                if  num_job_done >= len(sklearn_pipeline_list):
+                if num_job_done >= len(sklearn_pipeline_list):
                     break
             resulting_score_list = list(res_imap)
         else:
             resulting_score_list = []
             for sklearn_pipeline in sklearn_pipeline_list:
-                resulting_score_list.append(_wrapped_cross_val_score(sklearn_pipeline))
+                resulting_score = _wrapped_cross_val_score(sklearn_pipeline)
+                if resulting_score == -500000000.:
+                    if not self._pbar.disable:
+                        self._pbar.write("Skip pipeline #{0} due to time out. "
+                        "Continuing to the next pipeline.".format(self._pbar.n + 1))
+                resulting_score_list.append(resulting_score)
                 if not self._pbar.disable:
                     self._pbar.update(1)
 
