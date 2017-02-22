@@ -726,7 +726,8 @@ class TPOTBase(BaseEstimator):
         if not sys.platform.startswith('win'):
             pool = ProcessPool(processes=self.n_jobs)
             res_imap = pool.imap(_wrapped_cross_val_score, sklearn_pipeline_list)
-            ini_pbar_n = self._pbar.n
+            if not self._pbar.disable:
+                ini_pbar_n = self._pbar.n
             # hacky way for pbar update by using imap in pathos.multiprocessing.ProcessPool
             while True:
                 tmp_fitness = np.array(res_imap._items)
