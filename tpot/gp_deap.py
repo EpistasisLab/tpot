@@ -151,7 +151,8 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
             pbar.update(len(offspring)-len(invalid_ind))
             if not (max_time_mins is None) and pbar.n >= pbar.total:
                 pbar.total += lambda_
-
+        print(pbar.total)
+        print(pbar.n)
         fitnesses = toolbox.evaluate(invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit

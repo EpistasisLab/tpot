@@ -25,7 +25,7 @@ import warnings
 import sys
 from functools import partial
 from datetime import datetime
-from pathos.multiprocessing import Pool
+from pathos.multiprocessing import ProcessPool
 
 
 from sklearn.externals.joblib import Parallel, delayed
@@ -723,21 +723,24 @@ class TPOTBase(BaseEstimator):
                 resulting_score = -float('inf')
             return resulting_score
 
-        # split sklearn_pipeline_list to small chunks for pbar update
-        resulting_score_list = []
-        for i in range(0, len(sklearn_pipeline_list), self.n_jobs*2):
-            sk_chunk_list = sklearn_pipeline_list[i:i+self.n_jobs*2]
-            if not sys.platform.startswith('win'):
-                pool = Pool(processes=self.n_jobs)
-                chunk_res = pool.map(_wrapped_cross_val_score, sk_chunk_list)
-            else:
-                chunk_res += map(_wrapped_cross_val_score, sk_chunk_list)
-            for res in chunk_res:
-                self._pbar.update(1)
-            resulting_score_list += chunk_res
-
-
-
+        if not sys.platform.startswith('win'):
+            pool = ProcessPool(processes=self.n_jobs)
+            res_imap = pool.imap(_wrapped_cross_val_score, sklearn_pipeline_list)
+            ini_pbar_n = self._pbar.n
+            # hacky way for pbar update by using imap in pathos.multiprocessing.ProcessPool
+            while True:
+                num_job_done = len(res_imap._items)
+                if not self._pbar.disable:
+                    self._pbar.update(ini_pbar_n + num_job_done - self._pbar.n)
+                if  num_job_done >= len(sklearn_pipeline_list):
+                    break
+            resulting_score_list = list(res_imap)
+        else:
+            resulting_score_list = []
+            for sklearn_pipeline in sklearn_pipeline_list:
+                resulting_score_list.append(_wrapped_cross_val_score(sklearn_pipeline))
+                if not self._pbar.disable:
+                    self._pbar.update(1)
 
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
             if type(resulting_score) in [float, np.float64, np.float32]:
