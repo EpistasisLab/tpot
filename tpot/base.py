@@ -28,10 +28,6 @@ from functools import partial
 from datetime import datetime
 from pathos.multiprocessing import ProcessPool
 
-
-from sklearn.externals.joblib import Parallel, delayed
-
-
 import numpy as np
 import deap
 from deap import algorithms, base, creator, tools, gp
@@ -730,7 +726,7 @@ class TPOTBase(BaseEstimator):
             if not self._pbar.disable:
                 ini_pbar_n = self._pbar.n
             # hacky way for pbar update by using imap in pathos.multiprocessing.ProcessPool
-            while True:
+            while not self._pbar.disable:
                 tmp_fitness = np.array(res_imap._items)
                 num_job_done = len(tmp_fitness)
                 if not self._pbar.disable and num_job_done:
