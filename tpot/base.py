@@ -186,8 +186,9 @@ class TPOTBase(BaseEstimator):
         self.arguments = []
         for key in sorted(self.operator_dict.keys()):
             op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key])
-            self.operators.append(op_class)
-            self.arguments += arg_types
+            if op_class:
+                self.operators.append(op_class)
+                self.arguments += arg_types
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
