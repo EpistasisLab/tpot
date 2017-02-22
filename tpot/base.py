@@ -33,7 +33,7 @@ import deap
 from deap import algorithms, base, creator, tools, gp
 from tqdm import tqdm
 
-from sklearn.base import BaseEstimator, clone
+from sklearn.base import BaseEstimator
 from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
