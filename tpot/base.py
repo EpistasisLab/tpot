@@ -370,7 +370,7 @@ class TPOTBase(BaseEstimator):
                 the Pareto front
 
             """
-            return np.all(ind1.fitness.values == ind2.fitness.values)
+            return np.allclose(ind1.fitness.values, ind2.fitness.values)
 
         # generate new pareto front if it doesn't already exist for warm start
         if not self.warm_start or not self._pareto_front:
