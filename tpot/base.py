@@ -739,7 +739,10 @@ class TPOTBase(BaseEstimator):
             return resulting_score
 
         if not sys.platform.startswith('win'):
-            pool = ProcessPool(nodes=self.n_jobs)
+            if self.n_jobs == -1:
+                pool = ProcessPool()
+            else:
+                pool = ProcessPool(nodes=self.n_jobs)
             res_imap = pool.imap(_wrapped_cross_val_score, sklearn_pipeline_list)
             if not self._pbar.disable:
                 ini_pbar_n = self._pbar.n
