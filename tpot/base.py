@@ -46,7 +46,7 @@ from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 
-from .decorators import _timeout, _pre_test
+from .decorators import _timeout, _pre_test, TimedOutExc
 from .build_in_operators import CombineDFs
 
 
@@ -744,8 +744,9 @@ class TPOTBase(BaseEstimator):
         else:
             resulting_score_list = []
             for sklearn_pipeline in sklearn_pipeline_list:
-                resulting_score = _wrapped_cross_val_score(sklearn_pipeline)
-                if resulting_score == "Timeout":
+                try:
+                    resulting_score = _wrapped_cross_val_score(sklearn_pipeline)
+                except TimedOutExc:
                     resulting_score = -float('inf')
                     if not self._pbar.disable:
                         self._pbar.write("Skip pipeline #{0} due to time out. "

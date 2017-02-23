@@ -115,15 +115,12 @@ def _timeout(max_eval_time_mins=5):
                 def stop(self):
                     self._stop()
                 def run(self):
-                    try:
-                        # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
-                        # Note: Need attention if using parallel execution model of scikit-learn
-                        current_thread().name = 'MainThread'
-                        with warnings.catch_warnings():
-                            warnings.simplefilter('ignore')
-                            self.result = func(*self.args, **self.kwargs)
-                    except Exception:
-                        self.result = -float('inf')
+                    # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
+                    # Note: Need attention if using parallel execution model of scikit-learn
+                    current_thread().name = 'MainThread'
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore')
+                        self.result = func(*self.args, **self.kwargs)
             @wraps(func)
             def limitedTime(*args, **kwargs):
                 sys.tracebacklimit = 0
