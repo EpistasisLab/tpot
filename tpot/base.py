@@ -196,8 +196,9 @@ class TPOTBase(BaseEstimator):
         for key in sorted(self.operator_dict.keys()):
             op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key],
             BaseClass=Operator, ArgBaseClass=ARGType)
-            self.operators.append(op_class)
-            self.arguments += arg_types
+            if op_class:
+                self.operators.append(op_class)
+                self.arguments += arg_types
 
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
@@ -363,7 +364,24 @@ class TPOTBase(BaseEstimator):
         else:
             pop = self._toolbox.population(n=self.population_size)
 
+        def pareto_eq(ind1, ind2):
+            """Determines whether two individuals are equal on the Pareto front
 
+            Parameters
+            ----------
+            ind1: DEAP individual from the GP population
+                First individual to compare
+            ind2: DEAP individual from the GP population
+                Second individual to compare
+
+            Returns
+            ----------
+            individuals_equal: bool
+                Boolean indicating whether the two individuals are equal on
+                the Pareto front
+
+            """
+            return np.allclose(ind1.fitness.values, ind2.fitness.values)
         # generate new pareto front if it doesn't already exist for warm start
         if not self.warm_start or not self._pareto_front:
             self._pareto_front = tools.ParetoFront(similar=self._pareto_eq)
@@ -887,23 +905,3 @@ class TPOTBase(BaseEstimator):
                     stack.append((depth+1, arg))
 
         return expr
-
-    # make the function pickleable
-    def _pareto_eq(self, ind1, ind2):
-        """Determines whether two individuals are equal on the Pareto front
-
-        Parameters
-        ----------
-        ind1: DEAP individual from the GP population
-            First individual to compare
-        ind2: DEAP individual from the GP population
-            Second individual to compare
-
-        Returns
-        ----------
-        individuals_equal: bool
-            Boolean indicating whether the two individuals are equal on
-            the Pareto front
-
-        """
-        return np.all(ind1.fitness.values == ind2.fitness.values)
