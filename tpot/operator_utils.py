@@ -78,7 +78,7 @@ def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
     """
     return type(classname, (BaseClass,), {'values':prange})
 
-def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator):
+def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=ARGType):
     """Dynamically create operator class
     Parameters
     ----------

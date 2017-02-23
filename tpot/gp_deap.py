@@ -52,7 +52,6 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
     shall be in :math:`[0, 1]`, the reproduction probability is
     1 - *cxpb* - *mutpb*.
     """
-
     offspring = []
     for _ in range(lambda_):
         op_choice = np.random.random()
@@ -127,7 +126,8 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
-    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+
+    fitnesses = toolbox.evaluate(invalid_ind)
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit
 
@@ -139,6 +139,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
     # Begin the generational process
     for gen in range(1, ngen + 1):
+
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
 
@@ -150,10 +151,11 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
             pbar.update(len(offspring)-len(invalid_ind))
             if not (max_time_mins is None) and pbar.n >= pbar.total:
                 pbar.total += lambda_
-
-        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+        
+        fitnesses = toolbox.evaluate(invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
+
 
         # Update the hall of fame with the generated individuals
         if halloffame is not None:

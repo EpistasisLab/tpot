@@ -23,9 +23,10 @@ import random
 import inspect
 import warnings
 import sys
+import time
 from functools import partial
 from datetime import datetime
-from inspect import isclass
+from pathos.multiprocessing import ProcessPool
 
 import numpy as np
 import deap
@@ -42,13 +43,20 @@ from sklearn.metrics.scorer import make_scorer
 from update_checker import update_check
 
 from ._version import __version__
-from .operator_utils import TPOTOperatorClassFactory
+from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
-from .decorators import _timeout, _pre_test
+
+from .decorators import _timeout, _pre_test, TimedOutExc
 from .build_in_operators import CombineDFs
+
+
 from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement
+
+
+
+
 
 
 
@@ -66,7 +74,7 @@ if sys.platform.startswith('win'):
         return 0
     win32api.SetConsoleCtrlHandler(handler, 1)
 # add time limit for imported function
-cross_val_score = _timeout(cross_val_score)
+#cross_val_score = _timeout(cross_val_score)
 
 
 class TPOTBase(BaseEstimator):
@@ -170,6 +178,7 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
 
+
         # set offspring_size equal to  population_size by default
         if offspring_size:
             self.offspring_size = offspring_size
@@ -185,10 +194,12 @@ class TPOTBase(BaseEstimator):
         self.operators = []
         self.arguments = []
         for key in sorted(self.operator_dict.keys()):
-            op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key])
+            op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key],
+            BaseClass=Operator, ArgBaseClass=ARGType)
             if op_class:
                 self.operators.append(op_class)
                 self.arguments += arg_types
+
 
         # Schedule TPOT to run for a very long time if the user specifies a run-time
         # limit TPOT will automatically interrupt itself when the timer runs out
@@ -345,7 +356,7 @@ class TPOTBase(BaseEstimator):
 
         self._start_datetime = datetime.now()
 
-        self._toolbox.register('evaluate', self._evaluate_individual, features=features, classes=classes, sample_weight=sample_weight)
+        self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight)
 
         # assign population, self._pop can only be not None if warm_start is enabled
         if self._pop:
@@ -371,7 +382,6 @@ class TPOTBase(BaseEstimator):
 
             """
             return np.allclose(ind1.fitness.values, ind2.fitness.values)
-
         # generate new pareto front if it doesn't already exist for warm start
         if not self.warm_start or not self._pareto_front:
             self._pareto_front = tools.ParetoFront(similar=pareto_eq)
@@ -386,11 +396,13 @@ class TPOTBase(BaseEstimator):
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         try:
-            pop, _ = eaMuPlusLambda(population=pop, toolbox=self._toolbox,
-                mu=self.population_size, lambda_=self.offspring_size,
-                cxpb=self.crossover_rate, mutpb=self.mutation_rate,
-                ngen=self.generations, pbar=self._pbar, halloffame=self._pareto_front,
-                verbose=self.verbosity, max_time_mins=self.max_time_mins)
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                pop, _ = eaMuPlusLambda(population=pop, toolbox=self._toolbox,
+                    mu=self.population_size, lambda_=self.offspring_size,
+                    cxpb=self.crossover_rate, mutpb=self.mutation_rate,
+                    ngen=self.generations, pbar=self._pbar, halloffame=self._pareto_front,
+                    verbose=self.verbosity, max_time_mins=self.max_time_mins)
 
             # store population for the next call
             if self.warm_start:
@@ -414,6 +426,7 @@ class TPOTBase(BaseEstimator):
                 for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
+
                         top_score = pipeline_scores.wvalues[1]
                 # It won't raise error for a small test like in a unit test because a few pipeline sometimes
                 # may fail due to the training data does not fit the operator's requirement.
@@ -426,6 +439,7 @@ class TPOTBase(BaseEstimator):
                          'passed the data to TPOT correctly.')
                 else:
                     self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
                         self._fitted_pipeline.fit(features, classes)
@@ -442,7 +456,6 @@ class TPOTBase(BaseEstimator):
 
                         for pipeline in self._pareto_front.items:
                             self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
-
                             with warnings.catch_warnings():
                                 warnings.simplefilter('ignore')
                                 self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
@@ -575,7 +588,7 @@ class TPOTBase(BaseEstimator):
         sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr), self.operators)
         return eval(sklearn_pipeline, self.operators_context)
 
-    def _set_param_recursive(self, pipeline_steps, parameter, value, sample_weight = None):
+    def _set_param_recursive(self, pipeline_steps, parameter, value):
         """Recursively iterates through all objects in the pipeline and sets the given parameter to the specified value
 
         Parameters
@@ -586,18 +599,12 @@ class TPOTBase(BaseEstimator):
             The parameter to assign a value for in each pipeline object
         value: any
             The value to assign the parameter to in each pipeline object
-
         Returns
         -------
-        sample_weight_dict:
-            A dictionary of sample_weight
+        None
 
         """
-        sample_weight_dict = {}
         for (pname, obj) in pipeline_steps:
-            if inspect.getargspec(obj.fit).args.count('sample_weight') and sample_weight:
-                step_sw = pname + '__sample_weight'
-                sample_weight_dict[step_sw] = sample_weight
             recursive_attrs = ['steps', 'transformer_list', 'estimators']
             for attr in recursive_attrs:
                 if hasattr(obj, attr):
@@ -606,19 +613,15 @@ class TPOTBase(BaseEstimator):
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
-        if sample_weight_dict:
-            return sample_weight_dict
-        else:
-            return None
 
 
-    def _evaluate_individual(self, individual, features, classes, sample_weight = None):
+    def _evaluate_individuals(self, individuals, features, classes, sample_weight = None):
         """Determines the `individual`'s fitness
 
         Parameters
         ----------
-        individual: DEAP individual
-            A list of pipeline operators and model parameters that can be
+        individuals: a list of DEAP individual
+            One individual is a list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
         features: numpy.ndarray {n_samples, n_features}
             A numpy matrix containing the training and testing features for the
@@ -629,69 +632,158 @@ class TPOTBase(BaseEstimator):
 
         Returns
         -------
-        fitness: float
-            Returns a float value indicating the `individual`'s fitness
+        fitnesses_ordered: float
+            Returns a list of tuple value indicating the `individual`'s fitness
             according to its performance on the provided data
 
         """
-        try:
-            if self.max_time_mins:
-                total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
-                if total_mins_elapsed >= self.max_time_mins:
-                    raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
+        if self.max_time_mins:
+            total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
+            if total_mins_elapsed >= self.max_time_mins:
+                raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
+        if not sample_weight:
+            sample_weight_dict = None
 
+        # return fitness scores
+        fitnesses_dict = {}
+        # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
+        eval_individuals_str = []
+        sklearn_pipeline_list = []
+        operator_count_list = []
+        test_idx_list = []
+        for indidx, individual in enumerate(individuals):
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
+            individual = individuals[indidx]
             individual_str = str(individual)
             if (individual_str.count('PolynomialFeatures') > 1):
-                raise ValueError('Invalid pipeline -- skipping its evaluation')
-
-            # Transform the tree expression into an sklearn pipeline
-            sklearn_pipeline = self._toolbox.compile(expr=individual)
-            # Fix random state when the operator allows and build sample weight dictionary
-            sample_weight_dict = self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42, sample_weight)
-
-            # Count the number of pipeline operators as a measure of pipeline complexity
-            operator_count = 0
+                print('Invalid pipeline -- skipping its evaluation')
+                fitnesses_dict[indidx] = (5000., -float('inf'))
+                if not self._pbar.disable:
+                    self._pbar.update(1)
 
             # check if the individual are evaluated before
-            if individual_str in self.eval_ind:
+            elif individual_str in self.eval_ind:
                 # get fitness score from previous evaluation
-                operator_count, resulting_score = self.eval_ind[individual_str]
-                if self.verbosity == 3:
-                    self._pbar.write("Pipeline #{0} has been evaluated previously. "
-                    "Continuing to the next pipeline.".format(self._pbar.n + 1))
+                fitnesses_dict[indidx] = self.eval_ind[individual_str]
+                if not self._pbar.disable:
+                    self._pbar.update(1)
             else:
-                # add time limit for evaluation of pipeline
-                for i in range(len(individual)):
-                    node = individual[i]
-                    if ((type(node) is deap.gp.Terminal) or
-                         type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
-                        continue
-                    operator_count += 1
+                try:
+                    # Transform the tree expression into an sklearn pipeline
+                    sklearn_pipeline = self._toolbox.compile(expr=individual)
 
+                    # Fix random state when the operator allows and build sample weight dictionary
+                    self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+
+                    # Count the number of pipeline operators as a measure of pipeline complexity
+                    operator_count = 0
+                    # add time limit for evaluation of pipeline
+                    for i in range(len(individual)):
+                        node = individual[i]
+                        if ((type(node) is deap.gp.Terminal) or
+                             type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
+                            continue
+                        operator_count += 1
+                except:
+                    fitnesses_dict[indidx] = (5000., -float('inf'))
+                    if not self._pbar.disable:
+                        self._pbar.update(1)
+                    continue
+                eval_individuals_str.append(individual_str)
+                operator_count_list.append(operator_count)
+                sklearn_pipeline_list.append(sklearn_pipeline)
+                test_idx_list.append(indidx)
+
+        def _set_sample_weight(pipeline_steps, sample_weight):
+            """Recursively iterates through all objects in the pipeline and sets the given parameter to the specified value
+
+            Parameters
+            ----------
+            pipeline_steps: array-like
+                List of (str, obj) tuples from a scikit-learn pipeline or related object
+            sample_weight: array-like
+                List of sample weight
+            Returns
+            -------
+            sample_weight_dict:
+                A dictionary of sample_weight
+
+            """
+            sample_weight_dict = {}
+            for (pname, obj) in pipeline_steps:
+                if inspect.getargspec(obj.fit).args.count('sample_weight') and sample_weight:
+                    step_sw = pname + '__sample_weight'
+                    sample_weight_dict[step_sw] = sample_weight
+            if sample_weight_dict:
+                return sample_weight_dict
+            else:
+                return None
+
+        @_timeout(max_eval_time_mins=self.max_eval_time_mins)
+        def _wrapped_cross_val_score(sklearn_pipeline, features=features, classes=classes,
+        cv=self.cv, scoring_function=self.scoring_function,sample_weight=sample_weight):
+            sample_weight_dict = _set_sample_weight(sklearn_pipeline.steps, sample_weight)
+            from .decorators import TimedOutExc
+            try:
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-                    cv_scores = cross_val_score(self, sklearn_pipeline, features, classes,
-                        cv=self.cv, scoring=self.scoring_function,
-                        n_jobs=self.n_jobs, fit_params=sample_weight_dict)
-                    resulting_score = np.mean(cv_scores)
+                    cv_scores = cross_val_score(sklearn_pipeline, features, classes,
+                        cv=cv, scoring=scoring_function,
+                        n_jobs=1, fit_params=sample_weight_dict)
+                resulting_score = np.mean(cv_scores)
+            except TimedOutExc:
+                resulting_score = "Timeout"
+            except:
+                resulting_score = -float('inf')
+            return resulting_score
 
-        except Exception:
-            # Catch-all: Do not allow one pipeline that crashes to cause TPOT
-            # to crash. Instead, assign the crashing pipeline a poor fitness
-            #import traceback
-            #traceback.print_exc()
-            return 5000., -float('inf')
-        finally:
+        if not sys.platform.startswith('win'):
+            pool = ProcessPool(nodes=self.n_jobs)
+            res_imap = pool.imap(_wrapped_cross_val_score, sklearn_pipeline_list)
             if not self._pbar.disable:
-                self._pbar.update(1)  # One more pipeline evaluated
-
-        if type(resulting_score) in [float, np.float64, np.float32]:
-            self.eval_ind[individual_str] = (max(1, operator_count), resulting_score)
-            return max(1, operator_count), resulting_score
+                ini_pbar_n = self._pbar.n
+            # hacky way for pbar update by using imap in pathos.multiprocessing.ProcessPool
+            while not self._pbar.disable:
+                tmp_fitness = np.array(res_imap._items)
+                num_job_done = len(tmp_fitness)
+                if not self._pbar.disable and num_job_done:
+                    timeout_index = list(np.where(tmp_fitness[:,1] == "Timeout")[0])
+                    for idx in timeout_index:
+                        if self._pbar.n - ini_pbar_n <= idx:
+                            self._pbar.write("Skip pipeline #{0} due to time out. "
+                            "Continuing to the next pipeline.".format(ini_pbar_n + idx + 1))
+                    self._pbar.update(ini_pbar_n + num_job_done - self._pbar.n)
+                if num_job_done >= len(sklearn_pipeline_list):
+                    break
+                else:
+                    time.sleep(0.2)
+            resulting_score_list = [-float('inf') if x=="Timeout" else x for x in list(res_imap)]
         else:
-            raise ValueError('Scoring function does not return a float')
+            resulting_score_list = []
+            for sklearn_pipeline in sklearn_pipeline_list:
+                try:
+                    resulting_score = _wrapped_cross_val_score(sklearn_pipeline)
+                except TimedOutExc:
+                    resulting_score = -float('inf')
+                    if not self._pbar.disable:
+                        self._pbar.write("Skip pipeline #{0} due to time out. "
+                        "Continuing to the next pipeline.".format(self._pbar.n + 1))
+                resulting_score_list.append(resulting_score)
+                if not self._pbar.disable:
+                    self._pbar.update(1)
+
+        for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
+            if type(resulting_score) in [float, np.float64, np.float32]:
+                self.eval_ind[individual_str] = (max(1, operator_count), resulting_score)
+                fitnesses_dict[test_idx] = self.eval_ind[individual_str]
+            else:
+                raise ValueError('Scoring function does not return a float')
+
+        fitnesses_ordered = []
+        for key in sorted(fitnesses_dict.keys()):
+            fitnesses_ordered.append(fitnesses_dict[key])
+        return fitnesses_ordered
 
 
     def _random_mutation_operator(self, individual):
