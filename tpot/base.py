@@ -384,7 +384,7 @@ class TPOTBase(BaseEstimator):
             return np.allclose(ind1.fitness.values, ind2.fitness.values)
         # generate new pareto front if it doesn't already exist for warm start
         if not self.warm_start or not self._pareto_front:
-            self._pareto_front = tools.ParetoFront(similar=self._pareto_eq)
+            self._pareto_front = tools.ParetoFront(similar=pareto_eq)
 
         # Start the progress bar
         if self.max_time_mins:
