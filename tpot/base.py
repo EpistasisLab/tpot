@@ -715,7 +715,7 @@ class TPOTBase(BaseEstimator):
                         n_jobs=1, fit_params=sample_weight_dict)
                 resulting_score = np.mean(cv_scores)
             except TimedOutExc:
-                resulting_score = -500000000.
+                resulting_score = "Timeout"
             except:
                 resulting_score = -float('inf')
             return resulting_score
@@ -730,7 +730,7 @@ class TPOTBase(BaseEstimator):
                 tmp_fitness = np.array(res_imap._items)
                 num_job_done = len(tmp_fitness)
                 if not self._pbar.disable and num_job_done:
-                    timeout_index = list(np.where(tmp_fitness[:,1] == -500000000.)[0])
+                    timeout_index = list(np.where(tmp_fitness[:,1] == "Timeout")[0])
                     for idx in timeout_index:
                         if self._pbar.n - ini_pbar_n <= idx:
                             self._pbar.write("Skip pipeline #{0} due to time out. "
@@ -740,12 +740,13 @@ class TPOTBase(BaseEstimator):
                     break
                 else:
                     time.sleep(0.2)
-            resulting_score_list = list(res_imap)
+            resulting_score_list = [-float('inf') if x=="Timeout" else x for x in list(res_imap)]
         else:
             resulting_score_list = []
             for sklearn_pipeline in sklearn_pipeline_list:
                 resulting_score = _wrapped_cross_val_score(sklearn_pipeline)
-                if resulting_score == -500000000.:
+                if resulting_score == "Timeout":
+                    resulting_score = -float('inf')
                     if not self._pbar.disable:
                         self._pbar.write("Skip pipeline #{0} due to time out. "
                         "Continuing to the next pipeline.".format(self._pbar.n + 1))
