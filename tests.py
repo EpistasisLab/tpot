@@ -85,9 +85,6 @@ def test_timeout():
     ret_timeout = int(test_timeout_func())
     assert ret_timeout == 1
 
-#def test_command_line():
-
-
 
 def test_init_default_scoring():
     """Assert that TPOT intitializes with the correct default scoring function"""
