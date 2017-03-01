@@ -43,6 +43,7 @@ random.seed(42)
 test_operator_key = 'sklearn.feature_selection.SelectKBest'
 TPOTSelectKBest,TPOTSelectKBest_args = TPOTOperatorClassFactory(test_operator_key,
                                             classifier_config_dict[test_operator_key])
+
 def test_driver():
     """Assert that the TPOT driver output normal result"""
     batcmd = "python -m tpot.driver tests.csv -is , -target class -g 2 -p 2 -os 4 -cv 5 -s 45 -v 1"
