@@ -19,6 +19,7 @@ import numpy as np
 import inspect
 import random
 from datetime import datetime
+import subprocess
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split
@@ -42,6 +43,15 @@ random.seed(42)
 test_operator_key = 'sklearn.feature_selection.SelectKBest'
 TPOTSelectKBest,TPOTSelectKBest_args = TPOTOperatorClassFactory(test_operator_key,
                                             classifier_config_dict[test_operator_key])
+def test_driver():
+    """Assert that the TPOT driver output normal result"""
+    batcmd = "python -m tpot.driver tests.csv -is , -target class -g 2 -p 2 -os 4 -cv 5 -s 45 -v 1"
+    ret_stdout = subprocess.check_output(batcmd, shell=True)
+    try:
+        ret_val = float(ret_stdout.decode("utf-8").split('\n')[-2].split(': ')[-1])
+    except:
+        ret_val = -float('inf')
+    assert ret_val > 0.0
 
 
 def test_init_custom_parameters():
