@@ -10,6 +10,7 @@ from tpot.driver import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_DF
 from tpot.gp_deap import mutNodeReplacement
+from tpot.decorators import _timeout, TimedOutExc
 
 from tpot.operator_utils import TPOTOperatorClassFactory
 from tpot.config_classifier import classifier_config_dict
@@ -18,6 +19,8 @@ from tpot.config_classifier import classifier_config_dict
 import numpy as np
 import inspect
 import random
+import time
+import os
 from datetime import datetime
 
 from sklearn.datasets import load_digits, load_boston
@@ -67,6 +70,23 @@ def test_init_custom_parameters():
     assert tpot_obj._fitted_pipeline is None
     assert not (tpot_obj._pset is None)
     assert not (tpot_obj._toolbox is None)
+
+
+def test_timeout():
+    """Assert that timeout decorator controls the currect running time of wrapped function"""
+    @_timeout(max_eval_time_mins=0.02) # just 1 second
+    def test_timeout_func():
+        start_time = time.time()
+        try:
+            time.sleep(100)
+            return 100
+        except TimedOutExc:
+            return time.time() - start_time
+    ret_timeout = int(test_timeout_func())
+    assert ret_timeout == 1
+
+#def test_command_line():
+
 
 
 def test_init_default_scoring():
