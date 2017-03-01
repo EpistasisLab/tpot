@@ -20,7 +20,6 @@ import numpy as np
 import inspect
 import random
 import time
-import os
 from datetime import datetime
 
 from sklearn.datasets import load_digits, load_boston
