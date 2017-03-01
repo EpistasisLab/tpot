@@ -29,30 +29,11 @@ from .export_utils import expr_to_tree, generate_pipeline_code
 pretest_X, pretest_y = make_classification(n_samples=50, n_features=10, random_state=42)
 pretest_X_reg, pretest_y_reg = make_regression(n_samples=50, n_features=10, random_state=42)
 
-def convert_mins_to_secs(time_minute):
-    """Convert time from minutes to seconds"""
-    second = int(time_minute * 60)
-    # time limit should be at least 1 second
-    return max(second, 1)
-
-
-class TimedOutExc(RuntimeError):
-    """
-    Raised when a timeout happens
-    """
-
-def timeout_signal_handler(signum, frame):
-    """
-    signal handler for _timeout function
-    rasie TIMEOUT exception
-    """
-    raise TimedOutExc("Time Out!")
 
 def convert_mins_to_secs(time_minute):
     """Convert time from minutes to seconds"""
-    second = int(time_minute * 60)
     # time limit should be at least 1 second
-    return max(second, 1)
+    return max(int(time_minute * 60), 1)
 
 
 class TimedOutExc(RuntimeError):
@@ -72,7 +53,7 @@ def _timeout(max_eval_time_mins=5):
 
     Parameters
     ----------
-    time_minute: int
+    max_eval_time_mins: int (default = 5)
         Time limit in minutes
     func: Python function
         Function to run
