@@ -57,7 +57,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
         op_choice = np.random.random()
         if op_choice < cxpb:            # Apply crossover
             idxs = np.random.randint(0, len(population),size=2)
-            ind1, ind2 = population[idxs[0]],population[idxs[1]]
+            ind1, ind2 = toolbox.clone(population[idxs[0]]), toolbox.clone(population[idxs[1]])
             ind_str = str(ind1)
             ind1, ind2 = toolbox.mate(ind1, ind2)
             if ind_str != str(ind1): # check if crossover generated a new pipeline
@@ -65,7 +65,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
             idx = np.random.randint(0, len(population))
-            ind = population[idx]
+            ind = toolbox.clone(population[idx])
             ind_str = str(ind)
             ind, = toolbox.mutate(ind)
             if ind_str != str(ind): # check if mutation happend
@@ -73,7 +73,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
             offspring.append(ind)
         else: # Apply reproduction
             idx = np.random.randint(0, len(population))
-            offspring.append(population[idx])
+            offspring.append(toolbox.clone(population[idx]))
 
     return offspring
 
@@ -151,7 +151,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
             pbar.update(len(offspring)-len(invalid_ind))
             if not (max_time_mins is None) and pbar.n >= pbar.total:
                 pbar.total += lambda_
-        
+
         fitnesses = toolbox.evaluate(invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
