@@ -806,15 +806,12 @@ class TPOTBase(BaseEstimator):
         """
         # debug usage
         #print(str(individual))
-        old_ind = str(individual)
-        mut_ind = (str(individual),)
         mutation_techniques = [
             partial(gp.mutInsert, pset=self._pset),
             partial(mutNodeReplacement, pset=self._pset),
             partial(gp.mutShrink)
         ]
-        mut_ind = np.random.choice(mutation_techniques)(individual)
-        return mut_ind
+        return np.random.choice(mutation_techniques)(individual)
 
 
     def _gen_grow_safe(self, pset, min_, max_, type_=None):

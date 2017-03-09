@@ -59,16 +59,22 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
             idxs = np.random.randint(0, len(population),size=2)
             ind1, ind2 = toolbox.clone(population[idxs[0]]), toolbox.clone(population[idxs[1]])
             ind_str = str(ind1)
-            ind1, ind2 = toolbox.mate(ind1, ind2)
-            if ind_str != str(ind1): # check if crossover generated a new pipeline
+            num_loop = 0
+            while ind_str == str(ind1) and num_loop < 50 : # 50 loops at most to generate a different individual by crossover
+                ind1, ind2 = toolbox.mate(ind1, ind2)
+                num_loop += 1
+            if ind_str != str(ind1): # check if crossover happened
                 del ind1.fitness.values
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
             idx = np.random.randint(0, len(population))
             ind = toolbox.clone(population[idx])
             ind_str = str(ind)
-            ind, = toolbox.mutate(ind)
-            if ind_str != str(ind): # check if mutation happend
+            num_loop = 0
+            while ind_str == str(ind) and num_loop < 50 : # 50 loops at most to generate a different individual by mutation
+                ind, = toolbox.mutate(ind)
+                num_loop += 1
+            if ind_str != str(ind): # check if mutation happened
                 del ind.fitness.values
             offspring.append(ind)
         else: # Apply reproduction
