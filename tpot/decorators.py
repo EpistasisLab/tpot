@@ -155,7 +155,9 @@ def _pre_test(func):
                         else:
                             sklearn_pipeline.fit(pretest_X_reg, pretest_y_reg)
                         bad_pipeline = False
-            except:
+            except BaseException as e:
+                if self.verbosity == 3:
+                    print('_pre_test decorator: {fname}: num_test={n} {e}'.format(n=num_test, fname=func.__name__, e=e))
                 pass
             finally:
                 num_test += 1
