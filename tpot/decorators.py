@@ -24,6 +24,7 @@ import sys
 import warnings
 from sklearn.datasets import make_classification, make_regression
 from .export_utils import expr_to_tree, generate_pipeline_code
+from deap import creator
 # generate a small data set for a new pipeline, in order to check if the pipeline
 # has unsuppported combinations in params
 pretest_X, pretest_y = make_classification(n_samples=50, n_features=10, random_state=42)
@@ -141,6 +142,8 @@ def _pre_test(func):
         bad_pipeline = True
         num_test = 0 # number of tests
         while bad_pipeline and num_test < 10: # a pool for workable pipeline
+            # clone individual before each func call so it is not altered for the possible next cycle loop
+            args = [self._toolbox.clone(arg) if isinstance(arg, creator.Individual) else arg for arg in args]
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
