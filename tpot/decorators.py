@@ -164,5 +164,7 @@ def _pre_test(func):
                 pass
             finally:
                 num_test += 1
+
         return expr
+
     return check_pipeline

@@ -302,8 +302,10 @@ class TPOTBase(BaseEstimator):
 
         # Terminals
         for _type in self.arguments:
-            for val in _type.values:
-                self._pset.addTerminal(val, _type)
+            type_values = list(_type.values) + ['MISSING']
+            for val in type_values:
+                terminal_name = _type.__name__ + "=" + str(val)
+                self._pset.addTerminal(val, _type, name=terminal_name)
 
         if self.verbosity > 2:
             print('{} operators are imported.'.format(len(self.operators)))
@@ -571,7 +573,7 @@ class TPOTBase(BaseEstimator):
             raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
 
         with open(output_file_name, 'w') as output_file:
-            output_file.write(export_pipeline(self._optimized_pipeline, self.operators))
+            output_file.write(export_pipeline(self._optimized_pipeline, self.operators, self._pset))
 
     def _compile_to_sklearn(self, expr):
         """Compiles a DEAP pipeline into a sklearn pipeline
@@ -585,7 +587,7 @@ class TPOTBase(BaseEstimator):
         -------
         sklearn_pipeline: sklearn.pipeline.Pipeline
         """
-        sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr), self.operators)
+        sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr, self._pset), self.operators)
         return eval(sklearn_pipeline, self.operators_context)
 
     def _set_param_recursive(self, pipeline_steps, parameter, value):
@@ -791,6 +793,7 @@ class TPOTBase(BaseEstimator):
     @_pre_test
     def _mate_operator(self, ind1, ind2):
         return gp.cxOnePoint(ind1, ind2)
+
 
     @_pre_test
     def _random_mutation_operator(self, individual):
