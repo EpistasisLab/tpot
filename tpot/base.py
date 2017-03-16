@@ -303,7 +303,8 @@ class TPOTBase(BaseEstimator):
         # Terminals
         for _type in self.arguments:
             for val in _type.values:
-                self._pset.addTerminal(val, _type)
+                terminal_name = _type.__name__ + "=" + str(val)
+                self._pset.addTerminal(val, _type, name=terminal_name)
 
         if self.verbosity > 2:
             print('{} operators are imported.'.format(len(self.operators)))
@@ -320,9 +321,9 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', self._compile_to_sklearn)
         self._toolbox.register('select', tools.selNSGA2)
-        self._toolbox.register('mate', _pre_test(gp.cxOnePoint))
+        self._toolbox.register('mate', self._gpCxOnePoint)
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
-        self._toolbox.register('mutate', _pre_test(self._random_mutation_operator))
+        self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes, sample_weight=None):
         """Fits a machine learning pipeline that maximizes classification score
@@ -788,7 +789,11 @@ class TPOTBase(BaseEstimator):
             fitnesses_ordered.append(fitnesses_dict[key])
         return fitnesses_ordered
 
+    @_pre_test
+    def _gpCxOnePoint(self, *args):
+        return gp.cxOnePoint(*args)
 
+    @_pre_test
     def _random_mutation_operator(self, individual):
         """Perform a replacement, insert, or shrink mutation on an individual
 
