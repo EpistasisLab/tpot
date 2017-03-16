@@ -145,16 +145,25 @@ def _pre_test(func):
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
                     expr = func(self, *args, **kwargs)
-                    #print(num_test, generate_pipeline_code(expr_to_tree(expr), self.operators)) # debug
-                    sklearn_pipeline = eval(generate_pipeline_code(expr_to_tree(expr), self.operators), self.operators_context)
-                    if self.classification:
-                        sklearn_pipeline.fit(pretest_X, pretest_y)
+                    # unify output of gen, mutate and mate -> always a tuple
+                    if type(expr) == list:
+                        exprs = (expr,)
                     else:
-                        sklearn_pipeline.fit(pretest_X_reg, pretest_y_reg)
+                        exprs = expr
+                        
+                    for ind in exprs:
+                        #print(num_test, generate_pipeline_code(expr_to_tree(expr), self.operators)) # debug
+                        sklearn_pipeline = eval(generate_pipeline_code(expr_to_tree(ind), self.operators), self.operators_context)
+                        if self.classification:
+                            sklearn_pipeline.fit(pretest_X, pretest_y)
+                        else:
+                            sklearn_pipeline.fit(pretest_X_reg, pretest_y_reg)
                     bad_pipeline = False
-            except:
-                pass
+            except Exception as e:
+                print(e)
             finally:
                 num_test += 1
+
         return expr
+
     return check_pipeline
