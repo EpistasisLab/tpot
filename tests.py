@@ -201,7 +201,7 @@ def test_score_2():
     """Assert that the TPOTClassifier score function outputs a known score for a fix pipeline"""
 
     tpot_obj = TPOTClassifier()
-    known_score = 0.987691257357  # Assumes use of the TPOT balanced_accuracy function
+    known_score = 0.977777777778  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
     pipeline_string= ('KNeighborsClassifier(input_matrix, KNeighborsClassifier__n_neighbors=10, '
@@ -215,7 +215,7 @@ def test_score_2():
     # http://stackoverflow.com/questions/5595425/
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-
+    
     assert isclose(known_score, score)
 
 def test_score_3():
