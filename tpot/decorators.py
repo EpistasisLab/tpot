@@ -150,10 +150,10 @@ def _pre_test(func):
                         exprs = (expr,)
                     else:
                         exprs = expr
-                        
+
                     for ind in exprs:
                         #print(num_test, generate_pipeline_code(expr_to_tree(expr), self.operators)) # debug
-                        sklearn_pipeline = eval(generate_pipeline_code(expr_to_tree(ind), self.operators), self.operators_context)
+                        sklearn_pipeline = eval(generate_pipeline_code(expr_to_tree(ind, self._pset), self.operators), self.operators_context)
                         if self.classification:
                             sklearn_pipeline.fit(pretest_X, pretest_y)
                         else:

@@ -45,7 +45,7 @@ def get_by_name(opname, operators):
     ret_op_class = ret_op_classes[0]
     return ret_op_class
 
-def export_pipeline(exported_pipeline, operators):
+def export_pipeline(exported_pipeline, operators, pset):
     """Generates the source code of a TPOT Pipeline
 
     Parameters
@@ -62,7 +62,7 @@ def export_pipeline(exported_pipeline, operators):
 
     """
     # Unroll the nested function calls into serial code
-    pipeline_tree = expr_to_tree(exported_pipeline)
+    pipeline_tree = expr_to_tree(exported_pipeline, pset)
 
     # Have the exported code import all of the necessary modules and functions
     pipeline_text = generate_import_code(exported_pipeline, operators)
@@ -73,7 +73,7 @@ def export_pipeline(exported_pipeline, operators):
     return pipeline_text
 
 
-def expr_to_tree(ind):
+def expr_to_tree(ind, pset):
     """Convert the unstructured DEAP pipeline into a tree data-structure
 
     Parameters
@@ -95,7 +95,10 @@ def expr_to_tree(ind):
     """
     def prim_to_list(prim, args):
         if isinstance(prim, deap.gp.Terminal):
-            return prim.value
+            if prim.name in pset.context:
+                 return pset.context[prim.name]
+            else:
+                 return prim.value
 
         return [prim.name] + args
 
