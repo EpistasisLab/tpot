@@ -183,7 +183,7 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 def test_score():
     """Assert that the TPOT score function raises a ValueError when no optimized pipeline exists"""
@@ -503,7 +503,7 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline,tpot_obj.operators)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 
 def test_export_pipeline_2():
@@ -527,7 +527,7 @@ exported_pipeline = GaussianNB()
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 def test_export_pipeline_3():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with a preprocessor"""
@@ -556,7 +556,7 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 
 def test_operator_export():
