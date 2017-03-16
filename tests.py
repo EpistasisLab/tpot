@@ -183,7 +183,7 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 def test_score():
     """Assert that the TPOT score function raises a ValueError when no optimized pipeline exists"""
@@ -198,17 +198,17 @@ def test_score():
 
 
 def test_score_2():
-    """Assert that the TPOTClassifier score function outputs a known score for a ramdom pipeline"""
+    """Assert that the TPOTClassifier score function outputs a known score for a fix pipeline"""
 
-    tpot_obj = TPOTClassifier(random_state=43)
-    tpot_obj._pbar = tqdm(total=1, disable=True)
-    known_score = 0.96710588996037627  # Assumes use of the TPOT balanced_accuracy function
+    tpot_obj = TPOTClassifier()
+    known_score = 0.987691257357  # Assumes use of the TPOT balanced_accuracy function
 
     # Reify pipeline with known score
-    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
+    pipeline_string= ('KNeighborsClassifier(input_matrix, KNeighborsClassifier__n_neighbors=10, '
+    'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform)')
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
-
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
 
@@ -219,14 +219,22 @@ def test_score_2():
     assert isclose(known_score, score)
 
 def test_score_3():
-    """Assert that the TPOTRegressor score function outputs a known score for a random pipeline"""
+    """Assert that the TPOTRegressor score function outputs a known score for a fix pipeline"""
 
-    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=53)
-    tpot_obj._pbar = tqdm(total=1, disable=True)
-    known_score = 15.724128278216726 # Assumes use of mse
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
+    known_score = 11.2010824752 # Assumes use of mse
 
     # Reify pipeline with known score
-    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
+
+    pipeline_string = ("ExtraTreesRegressor("
+        "GradientBoostingRegressor(input_matrix, GradientBoostingRegressor__alpha=0.8,"
+        "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
+        "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
+        "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
+        "GradientBoostingRegressor__subsample=0.25),"
+        "ExtraTreesRegressor__bootstrap=True,ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5,ExtraTreesRegressor__min_samples_split=5)")
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
 
@@ -256,8 +264,11 @@ def test_predict():
 def test_predict_2():
     """Assert that the TPOT predict function returns a numpy matrix of shape (num_testing_rows,)"""
 
-    tpot_obj = TPOTClassifier(random_state=49)
-    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
+    tpot_obj = TPOTClassifier()
+    pipeline_string= ('DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
+    ', DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+    'DecisionTreeClassifier__min_samples_split=5)')
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
@@ -269,8 +280,11 @@ def test_predict_2():
 def test_predict_proba():
     """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)"""
 
-    tpot_obj = TPOTClassifier(random_state=51)
-    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
+    tpot_obj = TPOTClassifier()
+    pipeline_string= ('DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
+    ', DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+    'DecisionTreeClassifier__min_samples_split=5)')
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
@@ -283,8 +297,11 @@ def test_predict_proba():
 def test_predict_proba2():
     """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)"""
 
-    tpot_obj = TPOTClassifier(random_state=53)
-    tpot_obj._optimized_pipeline = tpot_obj._toolbox.individual()
+    tpot_obj = TPOTClassifier()
+    pipeline_string= ('DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
+    ', DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+    'DecisionTreeClassifier__min_samples_split=5)')
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
@@ -456,8 +473,15 @@ training_features, testing_features, training_classes, testing_classes = \\
 
 def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline"""
-    tpot_obj = TPOTClassifier(random_state=42)
-    pipeline = tpot_obj._toolbox.individual()
+    tpot_obj = TPOTClassifier()
+    pipeline_string= ('KNeighborsClassifier(CombineDFs('
+    'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
+    ', DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+    'DecisionTreeClassifier__min_samples_split=5),SelectKBest(input_matrix, SelectKBest__k=20)'
+    'KNeighborsClassifier__n_neighbors=10, '
+    'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform')
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    pipeline[0].ret = Output_DF
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
     mut_ind = mutNodeReplacement(pipeline, pset = tpot_obj._pset)
@@ -474,17 +498,23 @@ def test_mutNodeReplacement():
 def test_export_pipeline():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed complex pipeline"""
     tpot_obj = TPOTClassifier()
-    pipeline = creator.Individual.\
-        from_string("GaussianNB(CombineDFs(ZeroCount(input_matrix), RobustScaler(input_matrix)))", tpot_obj._pset)
+    pipeline_string= ('KNeighborsClassifier(CombineDFs('
+    'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
+    ', DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+    'DecisionTreeClassifier__min_samples_split=5),SelectKBest(input_matrix, SelectKBest__k=20)'
+    'KNeighborsClassifier__n_neighbors=10, '
+    'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform')
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
 
     expected_code = """import numpy as np
 
 from sklearn.ensemble import VotingClassifier
+from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
-from sklearn.preprocessing import FunctionTransformer, RobustScaler
-from tpot.build_in_operators import ZeroCount
+from sklearn.preprocessing import FunctionTransformer
+from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -494,27 +524,30 @@ training_features, testing_features, training_classes, testing_classes = \\
 
 exported_pipeline = make_pipeline(
     make_union(
-        ZeroCount(),
-        RobustScaler()
+        make_union(VotingClassifier([('branch',
+            DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
+        )]), FunctionTransformer(lambda X: X)),
+        SelectKBest(score_func=f_classif, k=20)
     ),
-    GaussianNB()
+    KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 )
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline,tpot_obj.operators)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 
 def test_export_pipeline_2():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline (only one classifier)"""
     tpot_obj = TPOTClassifier()
-    pipeline = creator.Individual.\
-        from_string("GaussianNB(input_matrix)", tpot_obj._pset)
+    pipeline_string= ('KNeighborsClassifier(input_matrix, KNeighborsClassifier__n_neighbors=10, '
+    'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform)')
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
 
 from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -522,25 +555,27 @@ features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpo
 training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
-exported_pipeline = GaussianNB()
+exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 def test_export_pipeline_3():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with a preprocessor"""
     tpot_obj = TPOTClassifier()
-    pipeline = creator.Individual.\
-        from_string("GaussianNB(MaxAbsScaler(input_matrix))", tpot_obj._pset)
+    pipeline_string= ('DecisionTreeClassifier(SelectKBest(input_matrix, SelectKBest__k=20),'
+    'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8,'
+    'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)')
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
 
     expected_code = """import numpy as np
 
+from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import MaxAbsScaler
+from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -549,14 +584,14 @@ training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    MaxAbsScaler(),
-    GaussianNB()
+    SelectKBest(score_func=f_classif, k=20),
+    DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
 )
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 
 def test_operator_export():

@@ -152,7 +152,7 @@ def _pre_test(func):
                     expr_tuple = expr if isinstance(expr, tuple) else (expr,)
                     for expr_test in expr_tuple:
                         #print(num_test, generate_pipeline_code(expr_to_tree(expr), self.operators)) # debug
-                        sklearn_pipeline = eval(generate_pipeline_code(expr_to_tree(expr_test), self.operators), self.operators_context)
+                        sklearn_pipeline = eval(generate_pipeline_code(expr_to_tree(expr_test, self._pset), self.operators), self.operators_context)
                         if self.classification:
                             sklearn_pipeline.fit(pretest_X, pretest_y)
                         else:
@@ -164,5 +164,7 @@ def _pre_test(func):
                 pass
             finally:
                 num_test += 1
+
         return expr
+
     return check_pipeline
