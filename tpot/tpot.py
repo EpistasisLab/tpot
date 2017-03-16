@@ -26,7 +26,7 @@ from .config_regressor import regressor_config_dict
 class TPOTClassifier(TPOTBase):
     """TPOT estimator for classification problems"""
 
-    scoring_function = 'balanced_accuracy'  # Classification scoring
+    scoring_function = 'accuracy'  # Classification scoring
     default_operator_dict = classifier_config_dict # Classification dictionary
     classification = True
     regression = False
