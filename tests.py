@@ -291,8 +291,6 @@ def test_sample_weight_func():
     assert isclose(known_score, score)
 
 
-
-
 def test_predict():
     """Assert that the TPOT predict function raises a ValueError when no optimized pipeline exists"""
 
