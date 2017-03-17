@@ -2,7 +2,7 @@
 
 * **TPOT now supports parallel computing for pipeline optimization (Linux and MacOS only)** TPOT allows you to use multiple processes for accelerating pipeline optimization in TPOT with the `n_jobs` parameter in both TPOTClassifier and TPOTRegressor. The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-njobs` parameter.
 
-* **TPOT now support customized dictionary of operators and parameters** TPOT allows you to customize the list of preferred operators and parameters in optimization process of TPOT with the `operator_dict` parameter. The format of this customized dictionary can be found in [online manual](/using/#tpot-with-code). The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-operator` parameter but take a file including the dictionary instead.
+* **TPOT now support customized dictionary of operators and parameters** TPOT allows you to customize the list of preferred operators and parameters in optimization process of TPOT with the `operator_dict` parameter. The format of this customized dictionary can be found in [online manual](/using/#tpot-with-code). The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-operator` parameter but only takes a file including the dictionary instead.
 
 * TPOT now allows you to **specify a time limit (default time limit is 5 minutes)** for evaluating a single pipeline in optimization process with the `max_eval_time_mins` parameter, so TPOT can skip these time-consuming pipelines.
 
