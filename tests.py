@@ -12,7 +12,7 @@ from tpot.gp_types import Output_DF
 from tpot.gp_deap import mutNodeReplacement
 from tpot.decorators import _timeout, TimedOutExc
 
-from tpot.operator_utils import TPOTOperatorClassFactory
+from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.config_classifier import classifier_config_dict
 
 
@@ -24,8 +24,7 @@ from datetime import datetime
 import subprocess
 
 from sklearn.datasets import load_digits, load_boston
-from sklearn.model_selection import train_test_split
-
+from sklearn.model_selection import train_test_split, cross_val_score
 from deap import creator
 from tqdm import tqdm
 
@@ -48,7 +47,7 @@ TPOTSelectKBest,TPOTSelectKBest_args = TPOTOperatorClassFactory(test_operator_ke
 
 def test_driver():
     """Assert that the TPOT driver output normal result"""
-    batcmd = "python -m tpot.driver tests.csv -is , -target class -g 2 -p 2 -os 4 -cv 5 -s 45 -v 1"
+    batcmd = "python -m tpot.driver tests.csv -is , -target class -g 2 -p 2 -c 4 -cv 5 -s 45 -v 1"
     ret_stdout = subprocess.check_output(batcmd, shell=True)
     try:
         ret_val = float(ret_stdout.decode("utf-8").split('\n')[-2].split(': ')[-1])
@@ -215,7 +214,7 @@ def test_score_2():
     # http://stackoverflow.com/questions/5595425/
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-    
+
     assert isclose(known_score, score)
 
 def test_score_3():
@@ -246,6 +245,51 @@ def test_score_3():
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
     assert isclose(known_score, score)
+
+def test_sample_weight_func():
+    """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline with sample weights"""
+
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
+
+    # Reify pipeline with known scor
+
+    pipeline_string = ("ExtraTreesRegressor("
+        "GradientBoostingRegressor(input_matrix, GradientBoostingRegressor__alpha=0.8,"
+        "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
+        "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
+        "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
+        "GradientBoostingRegressor__subsample=0.25),"
+        "ExtraTreesRegressor__bootstrap=True,ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5,ExtraTreesRegressor__min_samples_split=5)")
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+
+    # make up a sample weight
+    training_classes_r_weight = np.array(range(1, len(training_classes_r)+1))
+    training_classes_r_weight_dict = set_sample_weight(tpot_obj._fitted_pipeline.steps, training_classes_r_weight)
+
+    np.random.seed(42)
+    cv_score1 = cross_val_score(tpot_obj._fitted_pipeline, training_features_r, training_classes_r, cv=3, scoring='neg_mean_squared_error')
+
+    np.random.seed(42)
+    cv_score2 = cross_val_score(tpot_obj._fitted_pipeline, training_features_r, training_classes_r, cv=3, scoring='neg_mean_squared_error')
+
+    np.random.seed(42)
+    cv_score_weight = cross_val_score(tpot_obj._fitted_pipeline, training_features_r, training_classes_r, cv=3, scoring='neg_mean_squared_error', fit_params=training_classes_r_weight_dict)
+
+    np.random.seed(42)
+    tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r, **training_classes_r_weight_dict)
+    # Get score from TPOT
+    known_score = 14.1377471426 # Assumes use of mse
+    score = tpot_obj.score(testing_features_r, testing_classes_r)
+
+    # http://stackoverflow.com/questions/5595425/
+    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+    assert np.allclose(cv_score1, cv_score2)
+    assert not np.allclose(cv_score1, cv_score_weight)
+    assert isclose(known_score, score)
+
 
 
 

@@ -1,3 +1,22 @@
+# Version 0.7
+
+* **TPOT now supports parallel computing for pipeline optimization (Linux and MacOS only)** TPOT allows you to use multiple processes for pipeline optimization in TPOT with the `n_jobs` parameter in both TPOTClassifier and TPOTRegressor. The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-njobs` parameter.
+
+* **TPOT now support customized dictionary of operators and parameters** TPOT allows you to customize the list of preferred operators and parameters in optimization process of TPOT with the `operator_dict` parameter. The format of this customized dictionary can be found in [online manual](/using/#tpot-with-code). The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-operator` parameter but take a file including the dictionary instead.
+
+* TPOT now allows you to **specify a time limit (default time limit is 5 minutes)** for evaluating a single pipeline in optimization process with the `max_eval_time_mins` parameter, so TPOT can skip these time-consuming pipelines.
+
+* The [evolutionary algorithm] is replaced by the (mu + lambda) evolutionary algorithm. TPOT allows you to set offspring size (lambda) for pipeline optimization in TPOT with a new `offspring_size` parameter. The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-c` parameter.
+
+* Fixed issue about reproducing results with same random seed
+
+* Default operators and their parameters in TPOT were refined.
+
+* The TPOT point mutation operator was refined
+
+* The default scoring metric in TPOT change from balanced accuracy to accuracy, the same default metric in scikit-learn.
+
+
 # Version 0.6
 
 * **TPOT now supports regression problems!** We have created two separate `TPOTClassifier` and `TPOTRegressor` classes to support classification and regression problems, respectively. The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-mode` parameter.

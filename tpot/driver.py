@@ -106,9 +106,9 @@ def main():
         '(and therefore time) to optimize over. TPOT will evaluate '
         'GENERATIONS x POPULATION_SIZE number of pipelines in total.')
 
-    parser.add_argument('-os', action='store', dest='OFFSPRING_SIZE', default=100,
+    parser.add_argument('-c', action='store', dest='OFFSPRING_SIZE', default=100,
         type=positive_integer, help='The number of children to produce '
-        'at each generation.')
+        'in each generation.')
 
     parser.add_argument('-mr', action='store', dest='MUTATION_RATE', default=0.9,
         type=float_range, help='GP mutation rate in the range [0.0, 1.0]. We '

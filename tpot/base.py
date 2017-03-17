@@ -43,7 +43,7 @@ from sklearn.metrics.scorer import make_scorer
 from update_checker import update_check
 
 from ._version import __version__
-from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
+from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType, set_sample_weight
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 
 from .decorators import _timeout, _pre_test, TimedOutExc
@@ -643,8 +643,6 @@ class TPOTBase(BaseEstimator):
             total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
             if total_mins_elapsed >= self.max_time_mins:
                 raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
-        if not sample_weight:
-            sample_weight_dict = None
 
         # return fitness scores
         fitnesses_dict = {}
@@ -697,35 +695,10 @@ class TPOTBase(BaseEstimator):
                 sklearn_pipeline_list.append(sklearn_pipeline)
                 test_idx_list.append(indidx)
 
-        def _set_sample_weight(pipeline_steps, sample_weight):
-            """Recursively iterates through all objects in the pipeline and sets the given parameter to the specified value
-
-            Parameters
-            ----------
-            pipeline_steps: array-like
-                List of (str, obj) tuples from a scikit-learn pipeline or related object
-            sample_weight: array-like
-                List of sample weight
-            Returns
-            -------
-            sample_weight_dict:
-                A dictionary of sample_weight
-
-            """
-            sample_weight_dict = {}
-            for (pname, obj) in pipeline_steps:
-                if inspect.getargspec(obj.fit).args.count('sample_weight') and sample_weight:
-                    step_sw = pname + '__sample_weight'
-                    sample_weight_dict[step_sw] = sample_weight
-            if sample_weight_dict:
-                return sample_weight_dict
-            else:
-                return None
-
         @_timeout(max_eval_time_mins=self.max_eval_time_mins)
         def _wrapped_cross_val_score(sklearn_pipeline, features=features, classes=classes,
         cv=self.cv, scoring_function=self.scoring_function,sample_weight=sample_weight):
-            sample_weight_dict = _set_sample_weight(sklearn_pipeline.steps, sample_weight)
+            sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
             from .decorators import TimedOutExc
             try:
                 with warnings.catch_warnings():
