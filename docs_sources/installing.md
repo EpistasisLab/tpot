@@ -26,6 +26,12 @@ DEAP, update_checker, and tqdm (used for verbose TPOT runs) can be installed wit
 pip install deap update_checker tqdm
 ```
 
+**For Windows OS,**, the pywin32 module is required if the Python is NOT installed via [Anaconda Python distribution](https://www.continuum.io/downloads) and can be installed with `pip` via the command:
+
+```Shell
+pip install pywin32
+```
+
 Optionally, install XGBoost if you would like TPOT to use XGBoost. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.
 
 ```Shell
