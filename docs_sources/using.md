@@ -52,6 +52,12 @@ TPOT offers several arguments that can be provided at the command line:
 <td>Number of individuals in the GP population. Generally, TPOT will work better when you give it more individuals (and therefore time) to optimize over. TPOT will evaluate GENERATIONS x POPULATION_SIZE number of pipelines in total.</td>
 </tr>
 <tr>
+<td>-c</td>
+<td>OFFSPRING_SIZE</td>
+<td>Any positive integer</td>
+<td>The number of children to produce in each generation.</td>
+</tr>
+<tr>
 <td>-mr</td>
 <td>MUTATION_RATE</td>
 <td>[0.0, 1.0]</td>
@@ -186,6 +192,11 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <td>population_size</td>
 <td>Any positive integer</td>
 <td>The number of individuals in the GP population. Generally, TPOT will work better when you give it more individuals (and therefore time) to optimize over. TPOT will evaluate generations x population_size number of pipelines in total.</td>
+</tr>
+<tr>
+<td>offspring_size</td>
+<td>Any positive integer</td>
+<td>The number of children to produce in each generation.</td>
 </tr>
 <tr>
 <td>mutation_rate</td>
