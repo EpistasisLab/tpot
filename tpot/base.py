@@ -366,7 +366,8 @@ class TPOTBase(BaseEstimator):
 
             """
             return np.allclose(ind1.fitness.values, ind2.fitness.values)
-        # generate new pareto front if it doesn't already exist for warm start
+
+        # Generate new pareto front if it doesn't already exist for warm start
         if not self.warm_start or not self._pareto_front:
             self._pareto_front = tools.ParetoFront(similar=pareto_eq)
 
@@ -396,7 +397,7 @@ class TPOTBase(BaseEstimator):
         except (KeyboardInterrupt, SystemExit):
             if self.verbosity > 0:
                 self._pbar.write('') # just for better interface
-                self._pbar.write('GP closed prematurely - will use current best pipeline')
+                self._pbar.write('TPOT closed prematurely. Will use the current best pipeline.')
         finally:
             # Close the progress bar
             # Standard truthiness checks won't work for tqdm
@@ -415,11 +416,11 @@ class TPOTBase(BaseEstimator):
                 # may fail due to the training data does not fit the operator's requirement.
                 if not self._optimized_pipeline:
                     print('There was an error in the TPOT optimization '
-                         'process. This could be because the data was '
-                         'not formatted properly, or because data for '
-                         'a regression problem was provided to the '
-                         'TPOTClassifier object. Please make sure you '
-                         'passed the data to TPOT correctly.')
+                          'process. This could be because the data was '
+                          'not formatted properly, or because data for '
+                          'a regression problem was provided to the '
+                          'TPOTClassifier object. Please make sure you '
+                          'passed the data to TPOT correctly.')
                 else:
                     self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 

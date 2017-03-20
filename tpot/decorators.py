@@ -113,8 +113,8 @@ def _timeout(max_eval_time_mins=5):
                 #timer = Timer(max_time_seconds, interrupt_main)
                 tmp_it.join(max_time_seconds)
                 if tmp_it.isAlive():
-                    raise TimedOutExc("Time Out!")
-                sys.tracebacklimit=1000
+                    raise TimedOutExc('Time Out!')
+                sys.tracebacklimit = 1000
                 return tmp_it.result
                 tmp_it.stop()
         return limitedTime
