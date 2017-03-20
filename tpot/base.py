@@ -47,18 +47,11 @@ from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType, set_sam
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 
 from .decorators import _timeout, _pre_test, TimedOutExc
-from .build_in_operators import CombineDFs
+from .built_in_operators import CombineDFs
 
-
-from .gp_types import Bool, Output_DF
 from .metrics import SCORERS
+from .gp_types import Bool, Output_DF
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement
-
-
-
-
-
-
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -73,48 +66,47 @@ if sys.platform.startswith('win'):
             return 1 # don't chain to the next handler
         return 0
     win32api.SetConsoleCtrlHandler(handler, 1)
-# add time limit for imported function
-#cross_val_score = _timeout(cross_val_score)
-
 
 class TPOTBase(BaseEstimator):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
 
-    def __init__(self, population_size=100, generations=100, offspring_size=None,
-                 mutation_rate=0.9, crossover_rate=0.05,
+    def __init__(self, generations=100, population_size=100, offspring_size=None,
+                 mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, operator_dict=None, verbosity=0,
-                 disable_update_check=False, warm_start=False):
+                 random_state=None, config_dict=None, warm_start=False,
+                 verbosity=0, disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
         ----------
-        population_size: int (default: 100)
-            The number of pipelines in the genetic algorithm population. Must
-            be > 0.The more pipelines in the population, the slower TPOT will
-            run, but it's also more likely to find better pipelines.
-        offspring_size: int (default: None)
-            The number of children to produce at each generation.
         generations: int (default: 100)
-            The number of generations to run pipeline optimization for. Must
-            be > 0. The more generations you give TPOT to run, the longer it
-            takes, but it's also more likely to find better pipelines.
+            Number of iterations to the run pipeline optimization process.
+            Generally, TPOT will work better when you give it more generations (and
+            therefore time) to optimize the pipeline. TPOT will evaluate
+            POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.
+        population_size: int (default: 100)
+            Number of individuals to retain in the GP population every generation.
+            Generally, TPOT will work better when you give it more individuals
+            (and therefore time) to optimize the pipeline. TPOT will evaluate
+            POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.
+        offspring_size: int (default: None)
+            Number of offspring to produce in each GP generation.
+            By default, offspring_size = population_size.
         mutation_rate: float (default: 0.9)
-            The mutation rate for the genetic programming algorithm in the range
-            [0.0, 1.0]. This tells the genetic programming algorithm how many
-            pipelines to apply random changes to every generation. We don't
-            recommend that you tweak this parameter unless you know what you're
-            doing.
-        crossover_rate: float (default: 0.05)
-            The crossover rate for the genetic programming algorithm in the
-            range [0.0, 1.0]. This tells the genetic programming algorithm how
-            many pipelines to "breed" every generation. We don't recommend that
-            you tweak this parameter unless you know what you're doing.
+            Mutation rate for the genetic programming algorithm in the range [0.0, 1.0].
+            This parameter tells the GP algorithm how many pipelines to apply random
+            changes to every generation. We recommend using the default parameter unless
+            you understand how the mutation rate affects GP algorithms
+        crossover_rate: float (default: 0.1)
+            Crossover rate for the genetic programming algorithm in the range [0.0, 1.0].
+            This parameter tells the genetic programming algorithm how many pipelines to
+            "breed" every generation. We recommend using the default parameter unless you
+            understand how the mutation rate affects GP algorithms.
         scoring: function or str
             Function used to evaluate the quality of a given pipeline for the
-            problem. By default, balanced class accuracy is used for
-            classification problems, mean squared error for regression problems.
+            problem. By default, accuracy is used for classification problems and
+            mean squared error (mse) for regression problems.
             TPOT assumes that this scoring function should be maximized, i.e.,
             higher is better.
 
@@ -126,33 +118,35 @@ class TPOTBase(BaseEstimator):
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
             'recall_samples', 'recall_weighted', 'roc_auc']
         cv: int (default: 5)
-            The number of folds to evaluate each pipeline over in k-fold
-            cross-validation during the TPOT pipeline optimization process
+            Number of folds to evaluate each pipeline over in k-fold cross-validation
+            during the TPOT optimization process.
         n_jobs: int (default: 1)
-            The number of CPUs for evaluating each pipeline over
-            cross-validation during the TPOT pipeline optimization process
+            Number of CPUs for evaluating pipelines in parallel during the TPOT
+            optimization process.
         max_time_mins: int (default: None)
-            How many minutes TPOT has to optimize the pipeline. If not None,
-            this setting will override the `generations` parameter.
+            How many minutes TPOT has to optimize the pipeline.
+            If not None, this setting will override the "generations" parameter and allow
+            TPOT to run until it runs out of time.
         max_eval_time_mins: int (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
-            Setting this parameter to higher values will allow TPOT to explore more complex
-            pipelines but will also allow TPOT to run longer.
+            Setting this parameter to higher values will allow TPOT to explore more
+            complex pipelines, but will also allow TPOT to run longer.
         random_state: int (default: None)
-            The random number generator seed for TPOT. Use this to make sure
+            Random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
-        operator_dict: a customized python dictionary (default: None)
-            The customized python dictionary to specify the list of operators and
-            their arguments. Format examples: config_regressor.py and config_classifier.py
+        config_dict: dictionary (default: None)
+            Configuration dictionary for customizing the operators and parameters that
+            TPOT uses in the optimization process.
+            For examples, see config_regressor.py and config_classifier.py
+        warm_start: bool (default: False)
+            Flag indicating whether the TPOT instance will reuse the population from
+            previous calls to fit().
         verbosity: int (default: 0)
             How much information TPOT communicates while it's running.
-            0 = none, 1 = minimal, 2 = all
+            0 = none, 1 = minimal, 2 = high, 3 = all.
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
-        warm_start: bool (default: False)
-            Flag indicating whether TPOT will reuse models from previous calls to
-            fit() for faster operation
 
         Returns
         -------
@@ -160,8 +154,7 @@ class TPOTBase(BaseEstimator):
 
         """
         if self.__class__.__name__ == 'TPOTBase':
-            raise RuntimeError('Do not instantiate the TPOTBase class directly; '
-                               'use TPOTRegressor or TPOTClassifier instead.')
+            raise RuntimeError('Do not instantiate the TPOTBase class directly; use TPOTRegressor or TPOTClassifier instead.')
 
         # Prompt the user if their version is out of date
         self.disable_update_check = disable_update_check
@@ -178,41 +171,37 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
 
-
-        # set offspring_size equal to  population_size by default
+        # Set offspring_size equal to population_size by default
         if offspring_size:
             self.offspring_size = offspring_size
         else:
             self.offspring_size = population_size
 
-        # define operator dictionary based on files
-        if operator_dict:
-            self.operator_dict = operator_dict
+        # Define the configuration dictionary based on files
+        if config_dict:
+            self.config_dict = config_dict
         else:
-            self.operator_dict = self.default_operator_dict
+            self.config_dict = self.default_config_dict
 
         self.operators = []
         self.arguments = []
-        for key in sorted(self.operator_dict.keys()):
-            op_class, arg_types = TPOTOperatorClassFactory(key, self.operator_dict[key],
+        for key in sorted(self.config_dict.keys()):
+            op_class, arg_types = TPOTOperatorClassFactory(key, self.config_dict[key],
             BaseClass=Operator, ArgBaseClass=ARGType)
             if op_class:
                 self.operators.append(op_class)
                 self.arguments += arg_types
 
-
-        # Schedule TPOT to run for a very long time if the user specifies a run-time
-        # limit TPOT will automatically interrupt itself when the timer runs out
+        # Schedule TPOT to run for many generations if the user specifies a run-time limit
+        # TPOT will automatically interrupt itself when the timer runs out
         if not (max_time_mins is None):
             self.generations = 1000000
 
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
 
-        # check if mutation_rate + crossover_rate > 1
         if self.mutation_rate + self.crossover_rate > 1:
-            raise TypeError('The sum of the crossover and mutation probabilities must be smaller '
-        'or equal to 1.0.')
+            raise TypeError('The sum of the crossover and mutation probabilities must be <= 1.0.')
 
         self.verbosity = verbosity
         self.operators_context = {
@@ -222,14 +211,12 @@ class TPOTBase(BaseEstimator):
             'FunctionTransformer': FunctionTransformer
         }
 
-
         self._pbar = None
 
-        # a dictionary of individual which has already evaluated in previous generation.
-        self.eval_ind = {}
+        # Dictionary of individuals that have already been evaluated in previous generations
+        self._evaluated_individuals = {}
 
         self.random_state = random_state
-
 
         # If the user passed a custom scoring function, store it in the sklearn SCORERS dictionary
         if scoring:
@@ -249,8 +236,8 @@ class TPOTBase(BaseEstimator):
         self.cv = cv
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
         if sys.platform.startswith('win') and n_jobs > 1:
-            print('Warning: Parallelizing cross validation is not supported in Windows OS.',
-                'Reset number of cpu to 1 during TPOT pipeline optimization process')
+            print('Warning: Parallelization is not currently supported in TPOT for Windows.',
+                  'Setting n_jobs to 1 during the TPOT optimization process.')
             self.n_jobs = 1
         else:
             self.n_jobs = n_jobs
@@ -259,13 +246,9 @@ class TPOTBase(BaseEstimator):
         self._setup_toolbox()
 
     def _setup_pset(self):
-
-        # creating dynamically create operator class
-
         if self.random_state is not None:
             random.seed(self.random_state)
             np.random.seed(self.random_state)
-
 
         self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_DF)
 
@@ -308,8 +291,7 @@ class TPOTBase(BaseEstimator):
                 self._pset.addTerminal(val, _type, name=terminal_name)
 
         if self.verbosity > 2:
-            print('{} operators are imported.'.format(len(self.operators)))
-
+            print('{} operators have been imported by TPOT.'.format(len(self.operators)))
 
 
     def _setup_toolbox(self):
@@ -413,14 +395,13 @@ class TPOTBase(BaseEstimator):
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
             if self.verbosity > 0:
-                print('') # just for better interface
-                print('GP closed prematurely - will use current best pipeline')
+                self._pbar.write('') # just for better interface
+                self._pbar.write('GP closed prematurely - will use current best pipeline')
         finally:
             # Close the progress bar
             # Standard truthiness checks won't work for tqdm
             if not isinstance(self._pbar, type(None)):
                 self._pbar.close()
-
 
             # Store the pipeline with the highest internal testing score
             if self._pareto_front:
@@ -428,8 +409,8 @@ class TPOTBase(BaseEstimator):
                 for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
                     if pipeline_scores.wvalues[1] > top_score:
                         self._optimized_pipeline = pipeline
-
                         top_score = pipeline_scores.wvalues[1]
+
                 # It won't raise error for a small test like in a unit test because a few pipeline sometimes
                 # may fail due to the training data does not fit the operator's requirement.
                 if not self._optimized_pipeline:
@@ -657,15 +638,19 @@ class TPOTBase(BaseEstimator):
             individual = individuals[indidx]
             individual_str = str(individual)
             if (individual_str.count('PolynomialFeatures') > 1):
-                print('Invalid pipeline -- skipping its evaluation')
+                if self.verbosity > 2:
+                    self._pbar.write('Invalid pipeline encountered. Skipping its evaluation.')
                 fitnesses_dict[indidx] = (5000., -float('inf'))
                 if not self._pbar.disable:
                     self._pbar.update(1)
 
-            # check if the individual are evaluated before
-            elif individual_str in self.eval_ind:
-                # get fitness score from previous evaluation
-                fitnesses_dict[indidx] = self.eval_ind[individual_str]
+            # Check if the individual was evaluated before
+            elif individual_str in self._evaluated_individuals:
+                # Get fitness score from previous evaluation
+                fitnesses_dict[indidx] = self._evaluated_individuals[individual_str]
+                if self.verbosity > 2:
+                    self._pbar.write('Pipeline encountered that has previously been evaluated during the '
+                                     'optimization process. Using the score from the previous evaluation.')
                 if not self._pbar.disable:
                     self._pbar.update(1)
             else:
@@ -678,7 +663,6 @@ class TPOTBase(BaseEstimator):
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
                     operator_count = 0
-                    # add time limit for evaluation of pipeline
                     for i in range(len(individual)):
                         node = individual[i]
                         if ((type(node) is deap.gp.Terminal) or
@@ -697,7 +681,8 @@ class TPOTBase(BaseEstimator):
 
         @_timeout(max_eval_time_mins=self.max_eval_time_mins)
         def _wrapped_cross_val_score(sklearn_pipeline, features=features, classes=classes,
-        cv=self.cv, scoring_function=self.scoring_function,sample_weight=sample_weight):
+                                     cv=self.cv, scoring_function=self.scoring_function,
+                                     sample_weight=sample_weight):
             sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
             from .decorators import TimedOutExc
             try:
@@ -708,7 +693,7 @@ class TPOTBase(BaseEstimator):
                         n_jobs=1, fit_params=sample_weight_dict)
                 resulting_score = np.mean(cv_scores)
             except TimedOutExc:
-                resulting_score = "Timeout"
+                resulting_score = 'Timeout'
             except:
                 resulting_score = -float('inf')
             return resulting_score
@@ -721,22 +706,22 @@ class TPOTBase(BaseEstimator):
             res_imap = pool.imap(_wrapped_cross_val_score, sklearn_pipeline_list)
             if not self._pbar.disable:
                 ini_pbar_n = self._pbar.n
-            # hacky way for pbar update by using imap in pathos.multiprocessing.ProcessPool
+            # Hacky way for pbar update by using imap in pathos.multiprocessing.ProcessPool
             while not self._pbar.disable:
                 tmp_fitness = np.array(res_imap._items)
                 num_job_done = len(tmp_fitness)
                 if not self._pbar.disable and num_job_done:
-                    timeout_index = list(np.where(tmp_fitness[:,1] == "Timeout")[0])
+                    timeout_index = list(np.where(tmp_fitness[:, 1] == 'Timeout')[0])
                     for idx in timeout_index:
-                        if self._pbar.n - ini_pbar_n <= idx:
-                            self._pbar.write("Skip pipeline #{0} due to time out. "
-                            "Continuing to the next pipeline.".format(ini_pbar_n + idx + 1))
+                        if self.verbosity > 2 and self._pbar.n - ini_pbar_n <= idx:
+                            self._pbar.write('Skipped pipeline #{0} due to time out. '
+                                             'Continuing to the next pipeline.'.format(ini_pbar_n + idx + 1))
                     self._pbar.update(ini_pbar_n + num_job_done - self._pbar.n)
                 if num_job_done >= len(sklearn_pipeline_list):
                     break
                 else:
                     time.sleep(0.2)
-            resulting_score_list = [-float('inf') if x=="Timeout" else x for x in list(res_imap)]
+            resulting_score_list = [-float('inf') if x == 'Timeout' else x for x in list(res_imap)]
         else:
             resulting_score_list = []
             for sklearn_pipeline in sklearn_pipeline_list:
@@ -744,19 +729,19 @@ class TPOTBase(BaseEstimator):
                     resulting_score = _wrapped_cross_val_score(sklearn_pipeline)
                 except TimedOutExc:
                     resulting_score = -float('inf')
-                    if not self._pbar.disable:
-                        self._pbar.write("Skip pipeline #{0} due to time out. "
-                        "Continuing to the next pipeline.".format(self._pbar.n + 1))
+                    if self.verbosity > 2 and not self._pbar.disable:
+                        self._pbar.write('Skipped pipeline #{0} due to time out. '
+                                         'Continuing to the next pipeline.'.format(self._pbar.n + 1))
                 resulting_score_list.append(resulting_score)
                 if not self._pbar.disable:
                     self._pbar.update(1)
 
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
             if type(resulting_score) in [float, np.float64, np.float32]:
-                self.eval_ind[individual_str] = (max(1, operator_count), resulting_score)
-                fitnesses_dict[test_idx] = self.eval_ind[individual_str]
+                self._evaluated_individuals[individual_str] = (max(1, operator_count), resulting_score)
+                fitnesses_dict[test_idx] = self._evaluated_individuals[individual_str]
             else:
-                raise ValueError('Scoring function does not return a float')
+                raise ValueError('Scoring function does not return a float.')
 
         fitnesses_ordered = []
         for key in sorted(fitnesses_dict.keys()):
@@ -770,7 +755,7 @@ class TPOTBase(BaseEstimator):
 
     @_pre_test
     def _random_mutation_operator(self, individual):
-        """Perform a replacement, insert, or shrink mutation on an individual
+        """Perform a replacement, insertion, or shrink mutation on an individual
 
         Parameters
         ----------
@@ -796,7 +781,7 @@ class TPOTBase(BaseEstimator):
 
     def _gen_grow_safe(self, pset, min_, max_, type_=None):
         """Generate an expression where each leaf might have a different depth
-        between *min* and *max*.
+        between min_ and max_.
 
         Parameters
         ----------

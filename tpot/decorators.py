@@ -81,7 +81,7 @@ def _timeout(max_eval_time_mins=5):
                         warnings.simplefilter('ignore')
                         ret = func(*args, **kw)
                 except:
-                    raise TimedOutExc("Time Out!")
+                    raise TimedOutExc('Time Out!')
                 finally:
                     signal.signal(signal.SIGALRM, old_signal_hander)  # Old signal handler is restored
                     signal.alarm(0)  # Alarm removed
@@ -159,9 +159,12 @@ def _pre_test(func):
                             sklearn_pipeline.fit(pretest_X_reg, pretest_y_reg)
                         bad_pipeline = False
             except BaseException as e:
-                if self.verbosity == 3:
-                    print('_pre_test decorator: {fname}: num_test={n} {e}'.format(n=num_test, fname=func.__name__, e=e))
-                pass
+                if self.verbosity > 2:
+                    print_function = print
+                    # Use the pbar output stream if it's active
+                    if not isinstance(self._pbar, type(None)):
+                        print_function = self._pbar.write
+                    print_function('_pre_test decorator: {fname}: num_test={n} {e}'.format(n=num_test, fname=func.__name__, e=e))
             finally:
                 num_test += 1
 

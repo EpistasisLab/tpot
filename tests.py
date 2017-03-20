@@ -47,10 +47,10 @@ TPOTSelectKBest,TPOTSelectKBest_args = TPOTOperatorClassFactory(test_operator_ke
 
 def test_driver():
     """Assert that the TPOT driver output normal result"""
-    batcmd = "python -m tpot.driver tests.csv -is , -target class -g 2 -p 2 -c 4 -cv 5 -s 45 -v 1"
+    batcmd = "python -m tpot.driver tests.csv -is , -target class -g 2 -p 2 -os 4 -cv 5 -s 45 -v 1"
     ret_stdout = subprocess.check_output(batcmd, shell=True)
     try:
-        ret_val = float(ret_stdout.decode("utf-8").split('\n')[-2].split(': ')[-1])
+        ret_val = float(ret_stdout.decode('UTF-8').split('\n')[-2].split(': ')[-1])
     except:
         ret_val = -float('inf')
     assert ret_val > 0.0
@@ -118,7 +118,7 @@ def test_get_params():
         'population_size': 500,
         'generations': 1000,
         'offspring_size': 2000,
-        'operator_dict': classifier_config_dict,
+        'config_dict': classifier_config_dict,
         'verbosity': 1
 
     }
@@ -166,7 +166,7 @@ def test_random_ind_2():
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
-from tpot.build_in_operators import ZeroCount
+from tpot.built_in_operators import ZeroCount
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -388,7 +388,7 @@ def test_fit():
 
 def testTPOTOperatorClassFactory():
     """Assert that the TPOT operators class factory"""
-    test_operator_dict = {
+    test_config_dict = {
         'sklearn.svm.LinearSVC': {
             'penalty': ["l1", "l2"],
             'loss': ["hinge", "squared_hinge"],
@@ -409,8 +409,8 @@ def testTPOTOperatorClassFactory():
     }
     tpot_operator_list = []
     tpot_argument_list = []
-    for key in sorted(test_operator_dict.keys()):
-        op,args = TPOTOperatorClassFactory(key,test_operator_dict[key])
+    for key in sorted(test_config_dict.keys()):
+        op,args = TPOTOperatorClassFactory(key, test_config_dict[key])
         tpot_operator_list.append(op)
         tpot_argument_list += args
     assert len(tpot_operator_list) == 3

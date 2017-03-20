@@ -69,7 +69,7 @@ def source_decode(sourcecode):
             exec('from {} import {}'.format(import_str, op_str))
         op_obj = eval(op_str)
     except ImportError:
-        print("Operator {} is not available".format(sourcecode))
+        print('Warning: {} is not available and will not be used by TPOT.'.format(sourcecode))
         op_obj = None
     return import_str, op_str, op_obj
 
