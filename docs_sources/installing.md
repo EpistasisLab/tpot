@@ -26,7 +26,7 @@ DEAP, update_checker, and tqdm (used for verbose TPOT runs) can be installed wit
 pip install deap update_checker tqdm
 ```
 
-**For Windows OS,**, the pywin32 module is required if the Python is NOT installed via [Anaconda Python distribution](https://www.continuum.io/downloads) and can be installed with `pip` via the command:
+**For the Windows OS**, the pywin32 module is required if the Python is NOT installed via [Anaconda Python distribution](https://www.continuum.io/downloads) and can be installed with `pip` via the command:
 
 ```Shell
 pip install pywin32

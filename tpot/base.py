@@ -97,7 +97,7 @@ class TPOTBase(BaseEstimator):
             Mutation rate for the genetic programming algorithm in the range [0.0, 1.0].
             This parameter tells the GP algorithm how many pipelines to apply random
             changes to every generation. We recommend using the default parameter unless
-            you understand how the mutation rate affects GP algorithms
+            you understand how the mutation rate affects GP algorithms.
         crossover_rate: float (default: 0.1)
             Crossover rate for the genetic programming algorithm in the range [0.0, 1.0].
             This parameter tells the genetic programming algorithm how many pipelines to
@@ -122,10 +122,11 @@ class TPOTBase(BaseEstimator):
             during the TPOT optimization process.
         n_jobs: int (default: 1)
             Number of CPUs for evaluating pipelines in parallel during the TPOT
-            optimization process.
+            optimization process. Assigning this to -1 will use as many cores as available
+            on the computer.
         max_time_mins: int (default: None)
             How many minutes TPOT has to optimize the pipeline.
-            If not None, this setting will override the "generations" parameter and allow
+            If provided, this setting will override the "generations" parameter and allow
             TPOT to run until it runs out of time.
         max_eval_time_mins: int (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
@@ -145,6 +146,7 @@ class TPOTBase(BaseEstimator):
         verbosity: int (default: 0)
             How much information TPOT communicates while it's running.
             0 = none, 1 = minimal, 2 = high, 3 = all.
+            A setting of 2 or higher will add a progress bar during the optimization procedure.
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 

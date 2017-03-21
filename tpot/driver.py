@@ -93,7 +93,7 @@ def main():
         help='Whether TPOT is being used for a supervised classification or regression problem.')
 
     parser.add_argument('-o', action='store', dest='OUTPUT_FILE', default='',
-        type=str, help='File to export the final optimized pipeline.')
+        type=str, help='File to export the code for the final optimized pipeline.')
 
     parser.add_argument('-g', action='store', dest='GENERATIONS', default=100,
         type=positive_integer, help='Number of iterations to run the pipeline optimization process.\n'
@@ -140,7 +140,8 @@ def main():
 
     parser.add_argument('-njobs', action='store', dest='NUM_JOBS', default=1,
         type=int, help='Number of CPUs for evaluating pipelines in parallel '
-        ' during the TPOT optimization process.')
+        ' during the TPOT optimization process. Assigning this to -1 will use as many '
+        'cores as available on the computer.')
 
     parser.add_argument('-maxtime', action='store', dest='MAX_TIME_MINS', default=None,
         type=int, help='How many minutes TPOT has to optimize the pipeline. This '
@@ -162,8 +163,9 @@ def main():
         'that TPOT uses in the optimization process.')
 
     parser.add_argument('-v', action='store', dest='VERBOSITY', default=1,
-        choices=[0, 1, 2, 3], type=int, help='How much information TPOT  communicates '
-        'while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all.')
+        choices=[0, 1, 2, 3], type=int, help='How much information TPOT communicates '
+        'while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all. '
+        'A setting of 2 or higher will add a progress bar during the optimization procedure.')
 
     parser.add_argument('--no-update-check', action='store_true',
         dest='DISABLE_UPDATE_CHECK', default=False,
