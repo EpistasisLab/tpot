@@ -221,7 +221,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
             if dep_op_list:
                 dep_op_arguments = {}
             for arg_class, arg_value in zip(arg_types, args):
-                if arg_value == "MISSING":
+                if arg_value == "DEFAULT":
                     continue
                 aname_split = arg_class.__name__.split('__')
                 if isinstance(arg_value, str):
