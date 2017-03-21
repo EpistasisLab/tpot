@@ -18,6 +18,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
+from __future__ import print_function
 from threading import Thread, current_thread
 from functools import wraps
 import sys
