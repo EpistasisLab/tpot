@@ -1,24 +1,20 @@
 # Version 0.7
 
-* **TPOT now supports parallel computing for pipeline optimization (Linux and MacOS only)** TPOT allows you to use multiple processes for accelerating pipeline optimization in TPOT with the `n_jobs` parameter in both TPOTClassifier and TPOTRegressor. The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-njobs` parameter.
+* **TPOT now has multiprocessing support (Linux and macOS only).** TPOT allows you to use multiple processes for accelerating pipeline optimization in TPOT with the `n_jobs` parameter in both TPOTClassifier and TPOTRegressor.
 
-* **TPOT now support customized dictionary of operators and parameters** TPOT allows you to customize the list of preferred operators and parameters in optimization process of TPOT with the `operator_dict` parameter. The format of this customized dictionary can be found in [online manual](/using/#tpot-with-code). The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-operator` parameter but only takes a file including the dictionary instead.
+* TPOT now allows you to **customize the operators and parameters explored during the optimization process.** TPOT allows you to customize the list of operators and parameters in optimization process of TPOT with the `config_dict` parameter. The format of this customized dictionary can be found in the [online documentation](/using/#tpot-with-code).
 
-* TPOT now allows you to **specify a time limit (default time limit is 5 minutes)** for evaluating a single pipeline in optimization process with the `max_eval_time_mins` parameter, so TPOT can skip these time-consuming pipelines.
+* TPOT now allows you to **specify a time limit for evaluating a single pipeline**  (default limit is 5 minutes) in optimization process with the `max_eval_time_mins` parameter, so TPOT won't spend hours evaluating overly-complex pipelines.
 
-* The [evolutionary algorithm] is replaced by the (mu + lambda) evolutionary algorithm. TPOT allows you to set offspring size (lambda) for pipeline optimization in TPOT with a new `offspring_size` parameter. The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-c` parameter.
+* We tweaked TPOT's underlying evolutionary optimization algorithm to work even better, including using the [mu+lambda algorithm](http://deap.readthedocs.io/en/master/api/algo.html#deap.algorithms.eaMuPlusLambda). This algorithm gives you more control of how many pipelines are generated every iteration with the `offspring_size` parameter.
 
-* Fixed issue about reproducing results with same random seed
+* Fixed a reproducibility issue where setting `random_seed` didn't necessarily result in the same results every time. This bug was present since version 0.6.
 
-* Default operators and their parameters in TPOT were refined.
+* Refined the default operators and parameters in TPOT, so TPOT 0.7 should work even better than 0.6.
 
-* The TPOT point mutation operator was refined
+* TPOT now supports sample weights in the fitness function if some if your samples are more important to classify correctly than others. The sample weights option works the same as in scikit-learn, e.g., `tpot.fit(x_train, y_train, sample_weights=sample_weights)`.
 
-* TPOT now supports sample weights to be used like `TPOTRegressor.fit(x_train, y_train, sample_weights=sample_weights)`
-
-* TPOT now checks duplicated pipeline to accelerate optimization process.
-
-* The default scoring metric in TPOT change from balanced accuracy to accuracy, the same default metric in scikit-learn.
+* The default scoring metric in TPOT has been changed from balanced accuracy to accuracy, the same default metric for classification algorithms in scikit-learn. Balanced accuracy can still be used by setting `scoring='balanced_accuracy'` when creating a TPOT instance.
 
 
 # Version 0.6

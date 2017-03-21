@@ -194,34 +194,28 @@
                 <h1 id="version-07">Version 0.7</h1>
 <ul>
 <li>
-<p><strong>TPOT now supports parallel computing for pipeline optimization (Linux and MacOS only)</strong> TPOT allows you to use multiple processes for accelerating pipeline optimization in TPOT with the <code>n_jobs</code> parameter in both TPOTClassifier and TPOTRegressor. The <a href="../using/#tpot-on-the-command-line">command-line interface</a> also supports this feature through the <code>-njobs</code> parameter.</p>
+<p><strong>TPOT now has multiprocessing support (Linux and macOS only).</strong> TPOT allows you to use multiple processes for accelerating pipeline optimization in TPOT with the <code>n_jobs</code> parameter in both TPOTClassifier and TPOTRegressor.</p>
 </li>
 <li>
-<p><strong>TPOT now support customized dictionary of operators and parameters</strong> TPOT allows you to customize the list of preferred operators and parameters in optimization process of TPOT with the <code>operator_dict</code> parameter. The format of this customized dictionary can be found in <a href="../using/#tpot-with-code">online manual</a>. The <a href="../using/#tpot-on-the-command-line">command-line interface</a> also supports this feature through the <code>-operator</code> parameter but only takes a file including the dictionary instead.</p>
+<p>TPOT now allows you to <strong>customize the operators and parameters explored during the optimization process.</strong> TPOT allows you to customize the list of operators and parameters in optimization process of TPOT with the <code>config_dict</code> parameter. The format of this customized dictionary can be found in the <a href="../using/#tpot-with-code">online documentation</a>.</p>
 </li>
 <li>
-<p>TPOT now allows you to <strong>specify a time limit (default time limit is 5 minutes)</strong> for evaluating a single pipeline in optimization process with the <code>max_eval_time_mins</code> parameter, so TPOT can skip these time-consuming pipelines.</p>
+<p>TPOT now allows you to <strong>specify a time limit for evaluating a single pipeline</strong>  (default limit is 5 minutes) in optimization process with the <code>max_eval_time_mins</code> parameter, so TPOT won't spend hours evaluating overly-complex pipelines.</p>
 </li>
 <li>
-<p>The [evolutionary algorithm] is replaced by the (mu + lambda) evolutionary algorithm. TPOT allows you to set offspring size (lambda) for pipeline optimization in TPOT with a new <code>offspring_size</code> parameter. The <a href="../using/#tpot-on-the-command-line">command-line interface</a> also supports this feature through the <code>-c</code> parameter.</p>
+<p>We tweaked TPOT's underlying evolutionary optimization algorithm to work even better, including using the <a href="http://deap.readthedocs.io/en/master/api/algo.html#deap.algorithms.eaMuPlusLambda">mu+lambda algorithm</a>. This algorithm gives you more control of how many pipelines are generated every iteration with the <code>offspring_size</code> parameter.</p>
 </li>
 <li>
-<p>Fixed issue about reproducing results with same random seed</p>
+<p>Fixed a reproducibility issue where setting <code>random_seed</code> didn't necessarily result in the same results every time. This bug was present since version 0.6.</p>
 </li>
 <li>
-<p>Default operators and their parameters in TPOT were refined.</p>
+<p>Refined the default operators and parameters in TPOT, so TPOT 0.7 should work even better than 0.6.</p>
 </li>
 <li>
-<p>The TPOT point mutation operator was refined</p>
+<p>TPOT now supports sample weights in the fitness function if some if your samples are more important to classify correctly than others. The sample weights option works the same as in scikit-learn, e.g., <code>tpot.fit(x_train, y_train, sample_weights=sample_weights)</code>.</p>
 </li>
 <li>
-<p>TPOT now supports sample weights to be used like <code>TPOTRegressor.fit(x_train, y_train, sample_weights=sample_weights)</code></p>
-</li>
-<li>
-<p>TPOT now checks duplicated pipeline to accelerate optimization process.</p>
-</li>
-<li>
-<p>The default scoring metric in TPOT change from balanced accuracy to accuracy, the same default metric in scikit-learn.</p>
+<p>The default scoring metric in TPOT has been changed from balanced accuracy to accuracy, the same default metric for classification algorithms in scikit-learn. Balanced accuracy can still be used by setting <code>scoring='balanced_accuracy'</code> when creating a TPOT instance.</p>
 </li>
 </ul>
 <h1 id="version-06">Version 0.6</h1>

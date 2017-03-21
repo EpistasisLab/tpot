@@ -15,7 +15,7 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_boston_pipeline.py')
 ```
 
-Running this code should discover a pipeline that achieves about 12.77 mean squared error (MSE).
+Running this code should discover a pipeline that achieves at least 12.77 mean squared error (MSE).
 
 For details on how the `fit()`, `score()` and `export()` functions work, see the [usage documentation](/using/).
 
