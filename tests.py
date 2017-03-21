@@ -8,7 +8,7 @@ from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
-from tpot.gp_types import Output_DF
+from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
 from tpot.decorators import _timeout, TimedOutExc
 
@@ -523,7 +523,7 @@ def test_mutNodeReplacement():
     'KNeighborsClassifier__n_neighbors=10, '
     'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform')
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
-    pipeline[0].ret = Output_DF
+    pipeline[0].ret = Output_Array
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
     mut_ind = mutNodeReplacement(pipeline, pset = tpot_obj._pset)
@@ -534,7 +534,7 @@ def test_mutNodeReplacement():
     else: # Primitive mutated
         diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
         assert diff_prims[0].ret == diff_prims[1].ret
-    assert mut_ind[0][0].ret == Output_DF
+    assert mut_ind[0][0].ret == Output_Array
 
 
 def test_export_pipeline():
@@ -676,7 +676,7 @@ def test_gen():
     pipeline = tpot_obj._gen_grow_safe(tpot_obj._pset, 1, 3)
 
     assert len(pipeline) > 1
-    assert pipeline[0].ret == Output_DF
+    assert pipeline[0].ret == Output_Array
 
 
 def test_positive_integer():

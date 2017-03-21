@@ -30,7 +30,7 @@ from pathos.multiprocessing import ProcessPool
 
 import numpy as np
 import deap
-from deap import algorithms, base, creator, tools, gp
+from deap import base, creator, tools, gp
 from tqdm import tqdm
 
 from sklearn.base import BaseEstimator
@@ -50,7 +50,7 @@ from .decorators import _timeout, _pre_test, TimedOutExc
 from .built_in_operators import CombineDFs
 
 from .metrics import SCORERS
-from .gp_types import Bool, Output_DF
+from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
@@ -252,7 +252,7 @@ class TPOTBase(BaseEstimator):
             random.seed(self.random_state)
             np.random.seed(self.random_state)
 
-        self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_DF)
+        self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_Array)
 
         # Rename pipeline input to "input_df"
         self._pset.renameArguments(ARG0='input_matrix')
@@ -263,9 +263,9 @@ class TPOTBase(BaseEstimator):
 
             if op.root:
                 # We need to add rooted primitives twice so that they can
-                # return both an Output_DF (and thus be the root of the tree),
+                # return both an Output_Array (and thus be the root of the tree),
                 # and return a np.ndarray so they can exist elsewhere in the tree.
-                p_types = (op.parameter_types()[0], Output_DF)
+                p_types = (op.parameter_types()[0], Output_Array)
                 self._pset.addPrimitive(op, *p_types)
 
             self._pset.addPrimitive(op, *op.parameter_types())
@@ -590,7 +590,7 @@ class TPOTBase(BaseEstimator):
         None
 
         """
-        for (pname, obj) in pipeline_steps:
+        for (_, obj) in pipeline_steps:
             recursive_attrs = ['steps', 'transformer_list', 'estimators']
             for attr in recursive_attrs:
                 if hasattr(obj, attr):
@@ -672,7 +672,7 @@ class TPOTBase(BaseEstimator):
                              type(node) is deap.gp.Primitive and node.name == 'CombineDFs'):
                             continue
                         operator_count += 1
-                except:
+                except Exception:
                     fitnesses_dict[indidx] = (5000., -float('inf'))
                     if not self._pbar.disable:
                         self._pbar.update(1)
@@ -697,7 +697,7 @@ class TPOTBase(BaseEstimator):
                 resulting_score = np.mean(cv_scores)
             except TimedOutExc:
                 resulting_score = 'Timeout'
-            except:
+            except Exception:
                 resulting_score = -float('inf')
             return resulting_score
 
@@ -806,7 +806,7 @@ class TPOTBase(BaseEstimator):
         def condition(height, depth, type_):
             """Expression generation stops when the depth is equal to height or
             when it is randomly determined that a a node should be a terminal"""
-            return type_ not in [np.ndarray, Output_DF] or depth == height
+            return type_ not in [np.ndarray, Output_Array] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
 
