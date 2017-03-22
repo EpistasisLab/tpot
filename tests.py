@@ -314,7 +314,6 @@ def test_sample_weight_func():
     assert not np.allclose(cv_score1, cv_score_weight)
     assert isclose(known_score, score)
 
-
 def test_predict():
     """Assert that the TPOT predict function raises a RuntimeError when no optimized pipeline exists"""
 
@@ -341,7 +340,6 @@ def test_predict_2():
     result = tpot_obj.predict(testing_features)
 
     assert result.shape == (testing_features.shape[0],)
-
 
 def test_predict_proba():
     """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)"""
@@ -399,7 +397,6 @@ def test_warm_start():
     tpot_obj.fit(training_features, training_classes)
 
     assert tpot_obj._pop == first_pop
-
 
 def test_fit():
     """Assert that the TPOT fit function provides an optimized pipeline"""
@@ -519,8 +516,7 @@ def test_generate_pipeline_code():
 def test_generate_import_code():
     """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline"""
     tpot_obj = TPOTClassifier()
-    pipeline = creator.Individual.\
-        from_string('GaussianNB(RobustScaler(input_matrix))', tpot_obj._pset)
+    pipeline = creator.Individual.from_string('GaussianNB(RobustScaler(input_matrix))', tpot_obj._pset)
 
     expected_code = """import numpy as np
 
@@ -562,7 +558,7 @@ def test_mutNodeReplacement():
 
 
 def test_export_pipeline():
-    """Assert that exported_pipeline() generated a compile source file as expected given a fixed complex pipeline"""
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline"""
     tpot_obj = TPOTClassifier()
     pipeline_string= ('KNeighborsClassifier(CombineDFs('
     'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
@@ -602,7 +598,6 @@ exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
-
 
 def test_export_pipeline_2():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline (only one classifier)"""
@@ -658,7 +653,6 @@ exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
-
 
 def test_operator_export():
     """Assert that a TPOT operator can export properly with a function as a parameter to a classifier"""

@@ -47,7 +47,6 @@ from update_checker import update_check
 from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType, set_sample_weight
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
-
 from .decorators import _timeout, _pre_test, TimedOutExc
 from .built_in_operators import CombineDFs
 
@@ -68,6 +67,7 @@ if sys.platform.startswith('win'):
             return 1 # don't chain to the next handler
         return 0
     win32api.SetConsoleCtrlHandler(handler, 1)
+
 
 class TPOTBase(BaseEstimator):
     """TPOT automatically creates and optimizes machine learning pipelines using genetic programming"""
@@ -612,6 +612,7 @@ class TPOTBase(BaseEstimator):
         """
         for (_, obj) in pipeline_steps:
             recursive_attrs = ['steps', 'transformer_list', 'estimators']
+
             for attr in recursive_attrs:
                 if hasattr(obj, attr):
                     self._set_param_recursive(getattr(obj, attr), parameter, value)
@@ -619,7 +620,6 @@ class TPOTBase(BaseEstimator):
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
-
 
     def _evaluate_individuals(self, individuals, features, classes, sample_weight = None):
         """Determines the `individual`'s fitness
@@ -660,7 +660,7 @@ class TPOTBase(BaseEstimator):
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual = individuals[indidx]
             individual_str = str(individual)
-            if (individual_str.count('PolynomialFeatures') > 1):
+            if individual_str.count('PolynomialFeatures') > 1:
                 if self.verbosity > 2:
                     self._pbar.write('Invalid pipeline encountered. Skipping its evaluation.')
                 fitnesses_dict[indidx] = (5000., -float('inf'))
@@ -745,6 +745,7 @@ class TPOTBase(BaseEstimator):
                 else:
                     time.sleep(0.2)
             resulting_score_list = [-float('inf') if x == 'Timeout' else x for x in list(res_imap)]
+
         else:
             resulting_score_list = []
             for sklearn_pipeline in sklearn_pipeline_list:
@@ -775,7 +776,6 @@ class TPOTBase(BaseEstimator):
     def _mate_operator(self, ind1, ind2):
         return gp.cxOnePoint(ind1, ind2)
 
-
     @_pre_test
     def _random_mutation_operator(self, individual):
         """Perform a replacement, insertion, or shrink mutation on an individual
@@ -800,7 +800,6 @@ class TPOTBase(BaseEstimator):
             partial(gp.mutShrink)
         ]
         return np.random.choice(mutation_techniques)(individual)
-
 
     def _gen_grow_safe(self, pset, min_, max_, type_=None):
         """Generate an expression where each leaf might have a different depth

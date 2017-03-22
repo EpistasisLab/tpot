@@ -141,8 +141,6 @@ def generate_import_code(pipeline, operators):
     # number of operators
     num_op = len(operators_used)
 
-
-
     # Build dict of import requirments from list of operators
     import_relations = {}
     for op in operators:
@@ -269,7 +267,6 @@ def generate_export_pipeline_code(pipeline_tree, operators):
         pipeline_text =  "{STEPS}".format(STEPS=_indent(",\n".join(steps), 0))
 
     return pipeline_text
-
 
 def process_operator(operator, operators, depth=0):
     steps = []
