@@ -28,6 +28,7 @@ from functools import partial
 from datetime import datetime
 from pathos.multiprocessing import ProcessPool
 
+
 import numpy as np
 import deap
 from deap import base, creator, tools, gp
@@ -39,6 +40,7 @@ from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics.scorer import make_scorer
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 
 from update_checker import update_check
 
@@ -110,7 +112,8 @@ class TPOTBase(BaseEstimator):
             TPOT assumes that this scoring function should be maximized, i.e.,
             higher is better.
 
-            Offers the same options as sklearn.model_selection.cross_val_score:
+            Offers the same options as sklearn.model_selection.cross_val_score as well as
+            a built-in score "balanced_accuracy":
 
             ['accuracy', 'adjusted_rand_score', 'average_precision', 'f1',
             'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted',
@@ -233,6 +236,9 @@ class TPOTBase(BaseEstimator):
                 SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
                 self.scoring_function = scoring_name
             else:
+                if scoring not in SCORERS:
+                    raise TypeError('The scoring function {} is not available. '
+                    'Please choose scoring function on TPOT manual'.format(scoring))
                 self.scoring_function = scoring
 
         self.cv = cv
@@ -334,6 +340,18 @@ class TPOTBase(BaseEstimator):
 
         """
         features = features.astype(np.float64)
+
+        # check input data format
+        if self.classification:
+            clf = DecisionTreeClassifier(max_depth=5)
+        else:
+            clf = DecisionTreeRegressor(max_depth=5)
+
+        try:
+            clf = clf.fit(features, classes)
+        except:
+            raise TypeError('Warning: TypeError in input dataset. Please check your data format! \n'
+            'Tips: features need to a 2-D array but classes should be a 1-D array.')
 
         # Set the seed for the GP run
         if self.random_state is not None:
