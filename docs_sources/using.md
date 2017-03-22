@@ -346,7 +346,7 @@ pipeline_optimizer.export('tpot_exported_pipeline.py')
 
 Once this code finishes running, `tpot_exported_pipeline.py` will contain the Python code for the optimized pipeline.
 
-Check our [examples](examples/MNIST_Example/) to see TPOT applied to some specific data sets.
+Check our [examples](examples/) to see TPOT applied to some specific data sets.
 
 <a name="scoringfunctions"></a>
 ## Scoring functions

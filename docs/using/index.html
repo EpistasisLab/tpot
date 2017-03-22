@@ -45,105 +45,64 @@
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
 	<ul class="current">
+	  
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="..">Home</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Home</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../installing/">Installation</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../installing/">Installation</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Using TPOT</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#tpot-on-the-command-line">TPOT on the command line</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#tpot-with-code">TPOT with code</a></li>
-                
-                    <li><a class="toctree-l4" href="#scoring-functions">Scoring functions</a></li>
-                
-                    <li><a class="toctree-l4" href="#customizing-tpots-operators-and-parameters">Customizing TPOT's operators and parameters</a></li>
-                
-            
-            </ul>
-        
-    </li>
-<li>
-          
-            <li>
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Using TPOT</a>
     <ul class="subnav">
-    <li><span>Examples</span></li>
-
-        
             
-    <li class="toctree-l1 ">
-        <a class="" href="../examples/MNIST_Example/">MNIST Example</a>
-        
-    </li>
+    <li class="toctree-l2"><a href="#tpot-on-the-command-line">TPOT on the command line</a></li>
+    
 
+    <li class="toctree-l2"><a href="#tpot-with-code">TPOT with code</a></li>
+    
+        <ul>
         
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../examples/IRIS_Example/">IRIS Example</a>
+            <li><a class="toctree-l3" href="#scoring-functions">Scoring functions</a></li>
         
-    </li>
+            <li><a class="toctree-l3" href="#customizing-tpots-operators-and-parameters">Customizing TPOT's operators and parameters</a></li>
+        
+        </ul>
+    
 
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../examples/Boston_Example/">Boston Example</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../examples/Titanic_Kaggle_Example/">Titanic Kaggle Example</a>
-        
-    </li>
-
-        
     </ul>
-<li>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../contributing/">Contributing</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../examples/">Examples</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../releases/">Release Notes</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../contributing/">Contributing</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../citing/">Citing</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../releases/">Release Notes</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../support/">Support</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../citing/">Citing</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../support/">Support</a>
+	    </li>
           
         </ul>
       </div>
@@ -504,7 +463,7 @@ pipeline_optimizer.export('tpot_exported_pipeline.py')
 </code></pre>
 
 <p>Once this code finishes running, <code>tpot_exported_pipeline.py</code> will contain the Python code for the optimized pipeline.</p>
-<p>Check our <a href="../examples/MNIST_Example/">examples</a> to see TPOT applied to some specific data sets.</p>
+<p>Check our <a href="../examples/">examples</a> to see TPOT applied to some specific data sets.</p>
 <p><a name="scoringfunctions"></a></p>
 <h2 id="scoring-functions">Scoring functions</h2>
 <p>TPOT makes use of <code>sklearn.model_selection.cross_val_score</code> for evaluating pipelines, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:</p>
@@ -595,7 +554,7 @@ tpot.export('tpot_mnist_pipeline.py')
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../examples/MNIST_Example/" class="btn btn-neutral float-right" title="MNIST Example">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../examples/" class="btn btn-neutral float-right" title="Examples">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../installing/" class="btn btn-neutral" title="Installation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -625,13 +584,13 @@ tpot.export('tpot_mnist_pipeline.py')
   <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/rhiever/tpot" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/rhiever/tpot" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../installing/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../examples/MNIST_Example/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../examples/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

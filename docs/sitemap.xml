@@ -26,31 +26,11 @@
     
 
     
-        
     <url>
-     <loc>http://rhiever.github.io/tpot/examples/MNIST_Example/</loc>
+     <loc>http://rhiever.github.io/tpot/examples/</loc>
      <lastmod>2017-03-22</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
-    <url>
-     <loc>http://rhiever.github.io/tpot/examples/IRIS_Example/</loc>
-     <lastmod>2017-03-22</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://rhiever.github.io/tpot/examples/Boston_Example/</loc>
-     <lastmod>2017-03-22</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://rhiever.github.io/tpot/examples/Titanic_Kaggle_Example/</loc>
-     <lastmod>2017-03-22</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
     
 
     
