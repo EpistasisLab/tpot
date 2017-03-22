@@ -221,37 +221,51 @@
 <td>-g</td>
 <td>GENERATIONS</td>
 <td>Any positive integer</td>
-<td>Number of iterations to run the pipeline optimization process. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline. TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
+<td>Number of iterations to run the pipeline optimization process. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
+<br /><br />
+TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
 </tr>
 <tr>
 <td>-p</td>
 <td>POPULATION_SIZE</td>
 <td>Any positive integer</td>
-<td>Number of individuals to retain in the GP population every generation. Generally, TPOT will work better when you give it more individuals (and therefore time) to optimize the pipeline. TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
+<td>Number of individuals to retain in the GP population every generation. Generally, TPOT will work better when you give it more individuals (and therefore time) to optimize the pipeline.
+<br /><br />
+TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
 </tr>
 <tr>
 <td>-os</td>
 <td>OFFSPRING_SIZE</td>
 <td>Any positive integer</td>
-<td>Number of offspring to produce in each GP generation. By default, OFFSPRING_SIZE = POPULATION_SIZE.</td>
+<td>Number of offspring to produce in each GP generation.
+<br /><br />
+By default, OFFSPRING_SIZE = POPULATION_SIZE.</td>
 </tr>
 <tr>
 <td>-mr</td>
 <td>MUTATION_RATE</td>
 <td>[0.0, 1.0]</td>
-<td>GP mutation rate in the range [0.0, 1.0]. This tells the GP algorithm how many pipelines to apply random changes to every generation.  We recommend using the default parameter unless you understand how the mutation rate affects GP algorithms.</td>
+<td>GP mutation rate in the range [0.0, 1.0]. This tells the GP algorithm how many pipelines to apply random changes to every generation.
+<br /><br />
+We recommend using the default parameter unless you understand how the mutation rate affects GP algorithms.</td>
 </tr>
 <tr>
 <td>-xr</td>
 <td>CROSSOVER_RATE</td>
 <td>[0.0, 1.0]</td>
-<td>GP crossover rate in the range [0.0, 1.0]. This tells the GP algorithm how many pipelines to "breed" every generation. We recommend using the default parameter unless you understand how the crossover rate affects GP algorithms.</td>
+<td>GP crossover rate in the range [0.0, 1.0]. This tells the GP algorithm how many pipelines to "breed" every generation.
+<br /><br />
+We recommend using the default parameter unless you understand how the crossover rate affects GP algorithms.</td>
 </tr>
 <tr>
 <td>-scoring</td>
 <td>SCORING_FN</td>
-<td>'accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc'</td>
-<td>Function used to evaluate the quality of a given pipeline for the problem. By default, balanced accuracy is used for classification and mean squared error is used for regression. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
+<td>'accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy',<br />'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc'</td>
+<td>Function used to evaluate the quality of a given pipeline for the problem. By default, accuracy is used for classification and mean squared error (MSE) is used for regression.
+<br /><br />
+TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized.
+<br /><br />
+See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
 </tr>
 <tr>
 <td>-cv</td>
@@ -263,51 +277,62 @@
 <td>-njobs</td>
 <td>NUM_JOBS</td>
 <td>Any positive integer or -1</td>
-<td>Number of CPUs for evaluating pipelines in parallel during the TPOT optimization process. Assigning this to -1 will use as many cores as available on the computer.</td>
+<td>Number of CPUs for evaluating pipelines in parallel during the TPOT optimization process.
+<br /><br />
+Assigning this to -1 will use as many cores as available on the computer.</td>
 </tr>
 <tr>
 <td>-maxtime</td>
 <td>MAX_TIME_MINS</td>
 <td>Any positive integer</td>
-<td>How many minutes TPOT has to optimize the pipeline. If provided, this setting will override the "generations" parameter and allow TPOT to run until it runs out of time.</td>
+<td>How many minutes TPOT has to optimize the pipeline.
+<br /><br />
+If provided, this setting will override the "generations" parameter and allow TPOT to run until it runs out of time.</td>
 </tr>
 <tr>
 <td>-maxeval</td>
 <td>MAX_EVAL_MINS</td>
 <td>Any positive integer</td>
-<td>How many minutes TPOT has to evaluate a single pipeline. Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
+<td>How many minutes TPOT has to evaluate a single pipeline.
+<br /><br />
+Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
 </tr>
 <tr>
 <td>-s</td>
 <td>RANDOM_STATE</td>
 <td>Any positive integer</td>
-<td>Random number generator seed for reproducibility. Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
+<td>Random number generator seed for reproducibility.
+<br /><br />
+Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
 </tr>
 <tr>
 <td>-config</td>
 <td>CONFIG_FILE</td>
 <td>String path to a file</td>
-<td>Configuration file for customizing the operators and parameters that TPOT uses in the optimization process. See the <a href="#customconfig">custom configuration</a> section for more information and examples.</td>
+<td>Configuration file for customizing the operators and parameters that TPOT uses in the optimization process.
+<br /><br />
+See the <a href="#customconfig">custom configuration</a> section for more information and examples.</td>
 </tr>
 <tr>
 <td>-v</td>
 <td>VERBOSITY</td>
 <td>{0, 1, 2, 3}</td>
-<td>How much information TPOT communicates while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all. A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
+<td>How much information TPOT communicates while it is running.
+<br /><br />
+0 = none, 1 = minimal, 2 = high, 3 = all.
+<br /><br />
+A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
 </tr>
 <tr>
-<td colspan=2>--no-update-check</td>
-<td>N/A</td>
+<td colspan=3>--no-update-check</td>
 <td>Flag indicating whether the TPOT version checker should be disabled.</td>
 </tr>
 <tr>
-<td colspan=2>--version</td>
-<td>N/A</td>
+<td colspan=3>--version</td>
 <td>Show TPOT's version number and exit.</td>
 </tr>
 <tr>
-<td colspan=2>--help</td>
-<td>N/A</td>
+<td colspan=3>--help</td>
 <td>Show TPOT's help documentation and exit.</td>
 </tr>
 </table>
@@ -339,32 +364,46 @@ pipeline_optimizer = TPOTClassifier()
 <tr>
 <td>generations</td>
 <td>Any positive integer</td>
-<td>Number of iterations to the run pipeline optimization process. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline. TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
+<td>Number of iterations to the run pipeline optimization process. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
+<br /><br />
+TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
 </tr>
 <tr>
 <td>population_size</td>
 <td>Any positive integer</td>
-<td>Number of individuals to retain in the GP population every generation. Generally, TPOT will work better when you give it more individuals (and therefore time) to optimize the pipeline. TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
+<td>Number of individuals to retain in the GP population every generation. Generally, TPOT will work better when you give it more individuals (and therefore time) to optimize the pipeline.
+<br /><br />
+TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
 </tr>
 <tr>
 <td>offspring_size</td>
 <td>Any positive integer</td>
-<td>Number of offspring to produce in each GP generation. By default, offspring_size = population_size.</td>
+<td>Number of offspring to produce in each GP generation.
+<br /><br />
+By default, offspring_size = population_size.</td>
 </tr>
 <tr>
 <td>mutation_rate</td>
 <td>[0.0, 1.0]</td>
-<td>Mutation rate for the genetic programming algorithm in the range [0.0, 1.0]. This parameter tells the GP algorithm how many pipelines to apply random changes to every generation. We recommend using the default parameter unless you understand how the mutation rate affects GP algorithms.</td>
+<td>Mutation rate for the genetic programming algorithm in the range [0.0, 1.0]. This parameter tells the GP algorithm how many pipelines to apply random changes to every generation.
+<br /><br />
+We recommend using the default parameter unless you understand how the mutation rate affects GP algorithms.</td>
 </tr>
 <tr>
 <td>crossover_rate</td>
 <td>[0.0, 1.0]</td>
-<td>Crossover rate for the genetic programming algorithm in the range [0.0, 1.0]. This parameter tells the genetic programming algorithm how many pipelines to "breed" every generation. We recommend using the default parameter unless you understand how the mutation rate affects GP algorithms.</td>
+<td>Crossover rate for the genetic programming algorithm in the range [0.0, 1.0]. This parameter tells the genetic programming algorithm how many pipelines to "breed" every generation.
+<br /><br />
+We recommend using the default parameter unless you understand how the mutation rate affects GP algorithms.</td>
 </tr>
 <tr>
 <td>scoring</td>
-<td>'accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc' or a callable function with signature <b>scorer(y_true, y_pred)</b></td>
-<td>Function used to evaluate the quality of a given pipeline for the problem. By default, balanced accuracy is used for classification and mean squared error is used for regression. TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized. See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
+<td>'accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy',<br />'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc' or a callable function with signature <b>scorer(y_true, y_pred)</b></td>
+<td>Function used to evaluate the quality of a given pipeline for the problem. By default, accuracy is used for classification and mean squared error (MSE) is used for regression.
+<br /><br />
+TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized.
+<br /><br />
+See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
 </tr>
 <tr>
 <td>cv</td>
@@ -374,27 +413,37 @@ pipeline_optimizer = TPOTClassifier()
 <tr>
 <td>n_jobs</td>
 <td>Any positive integer or -1</td>
-<td>Number of CPUs for evaluating pipelines in parallel during the TPOT optimization process. Assigning this to -1 will use as many cores as available on the computer.</td>
+<td>Number of CPUs for evaluating pipelines in parallel during the TPOT optimization process.
+<br /><br />
+Assigning this to -1 will use as many cores as available on the computer.</td>
 </tr>
 <tr>
 <td>max_time_mins</td>
 <td>Any positive integer</td>
-<td>How many minutes TPOT has to optimize the pipeline. If provided, this setting will override the "generations" parameter and allow TPOT to run until it runs out of time.</td>
+<td>How many minutes TPOT has to optimize the pipeline.
+<br /><br />
+If provided, this setting will override the "generations" parameter and allow TPOT to run until it runs out of time.</td>
 </tr>
 <tr>
 <td>max_eval_time_mins</td>
 <td>Any positive integer</td>
-<td>How many minutes TPOT has to optimize a single pipeline. Setting this parameter to higher values will allow TPOT to explore more complex pipelines, but will also allow TPOT to run longer.</td>
+<td>How many minutes TPOT has to optimize a single pipeline.
+<br /><br />
+Setting this parameter to higher values will allow TPOT to explore more complex pipelines, but will also allow TPOT to run longer.</td>
 </tr>
 <tr>
 <td>random_state</td>
 <td>Any positive integer</td>
-<td>Random number generator seed for TPOT. Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.</td>
+<td>Random number generator seed for TPOT.
+<br /><br />
+Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.</td>
 </tr>
 <tr>
 <td>config_dict</td>
 <td>Python dictionary</td>
-<td>Configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process. See the <a href="#customconfig">custom configuration</a> section for more information and examples.
+<td>Configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process.
+<br /><br />
+See the <a href="#customconfig">custom configuration</a> section for more information and examples.
 </pre>
 </td>
 </tr>
@@ -406,7 +455,11 @@ pipeline_optimizer = TPOTClassifier()
 <tr>
 <td>verbosity</td>
 <td>{0, 1, 2, 3}</td>
-<td>How much information TPOT communicates while it's running. 0 = none, 1 = minimal, 2 = high, 3 = all. A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
+<td>How much information TPOT communicates while it's running.
+<br /><br />
+0 = none, 1 = minimal, 2 = high, 3 = all.
+<br /><br />
+A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
 </tr>
 <tr>
 <td>disable_update_check</td>
