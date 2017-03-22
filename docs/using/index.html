@@ -73,6 +73,8 @@
                 
                     <li><a class="toctree-l4" href="#scoring-functions">Scoring functions</a></li>
                 
+                    <li><a class="toctree-l4" href="#customizing-tpots-operators-and-parameters">Customizing TPOT's operators and parameters</a></li>
+                
             
             </ul>
         
@@ -285,22 +287,7 @@
 <td>-config</td>
 <td>CONFIG_FILE</td>
 <td>String path to a file</td>
-<td>Configuration file for customizing the operators and parameters that TPOT uses in the optimization process. For example, the configuration file's format could be like:
-<pre lang="nemerle">
-classifier_config_dict = {
-    'sklearn.naive_bayes.GaussianNB': {
-    },
-    'sklearn.naive_bayes.BernoulliNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    },
-    'sklearn.naive_bayes.MultinomialNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    }
-}
-</pre>
-</td>
+<td>Configuration file for customizing the operators and parameters that TPOT uses in the optimization process. See the <a href="#customconfig">custom configuration</a> section for more information and examples.</td>
 </tr>
 <tr>
 <td>-v</td>
@@ -407,20 +394,7 @@ pipeline_optimizer = TPOTClassifier()
 <tr>
 <td>config_dict</td>
 <td>Python dictionary</td>
-<td>Configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process. For example:
-<pre lang="nemerle">
-classifier_config_dict = {
-    'sklearn.naive_bayes.GaussianNB': {
-    },
-    'sklearn.naive_bayes.BernoulliNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    },
-    'sklearn.naive_bayes.MultinomialNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    }
-}
+<td>Configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process. See the <a href="#customconfig">custom configuration</a> section for more information and examples.
 </pre>
 </td>
 </tr>
@@ -488,6 +462,61 @@ pipeline_optimizer.export('tpot_exported_pipeline.py')
 <pre><code class="Python">def accuracy(y_true, y_pred):
     return float(sum(y_pred == y_true)) / len(y_true)
 </code></pre>
+
+<p><a name="customconfig"></a></p>
+<h2 id="customizing-tpots-operators-and-parameters">Customizing TPOT's operators and parameters</h2>
+<p>TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. However, in some cases it is useful to limit the algorithms and parameters that TPOT explores. For that reason, we allow users to provide TPOT with a custom configuration for its operators and parameters.</p>
+<p>The custom TPOT configuration must be in nested dictionary format, where the first level key is the path and name of the operator (e.g., <code>sklearn.naive_bayes.MultinomialNB</code>) and the second level key is the corresponding parameter name for that operator (e.g., <code>fit_prior</code>). The second level key should point to a list of parameter values for that parameter, e.g., <code>'fit_prior': [True, False]</code>.</p>
+<p>For a simple example, the configuration could be:</p>
+<pre><code>classifier_config_dict = {
+    'sklearn.naive_bayes.GaussianNB': {
+    },
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    },
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    }
+}
+</code></pre>
+
+<p>in which case TPOT would only explore pipelines containing <code>GaussianNB</code>, <code>BernoulliNB</code>, <code>MultinomialNB</code>, and tune those algorithm's parameters in the ranges provided. This dictionary can be passed directly within the code to the <code>TPOTClassifier</code>/<code>TPOTRegressor</code> <code>config_dict</code> parameter, described above. For example:</p>
+<pre><code>from tpot import TPOTClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25)
+
+classifier_config_dict = {
+    'sklearn.naive_bayes.GaussianNB': {
+    },
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    },
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    }
+}
+
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
+                      config_dict=classifier_config_dict)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_mnist_pipeline.py')
+</code></pre>
+
+<p>Command-line users must create a separate <code>.py</code> file with the custom configuration and provide the path to the file to the <code>tpot</code> call. For example, if the simple example configuration above is saved in <code>tpot_classifier_config.py</code>, that configuration could be used on the command line with the command:</p>
+<pre><code>tpot data/mnist.csv -is , -target class -config tpot_classifier_config.py -g 5 -p 20 -v 2 -o tpot_exported_pipeline.py
+</code></pre>
+
+<p>For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for <a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py">classification</a> and <a href="https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py">regression</a> in TPOT's source code.</p>
+<p>Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it explores.</p>
               
             </div>
           </div>
