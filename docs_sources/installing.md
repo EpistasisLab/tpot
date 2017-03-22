@@ -22,7 +22,7 @@ NumPy, SciPy, and scikit-learn can be installed in Anaconda via the command:
 conda install numpy scipy scikit-learn
 ```
 
-DEAP, update_checker, and tqdm (used for verbose TPOT runs) can be installed with `pip` via the command:
+DEAP, update_checker, tqdm (used for verbose TPOT runs), and Pathos can be installed with `pip` via the command:
 
 ```Shell
 pip install deap update_checker tqdm pathos
