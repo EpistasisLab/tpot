@@ -81,19 +81,15 @@ import numpy as np
 
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.pipeline import make_pipeline
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
-
 training_features, testing_features, training_classes, testing_classes = \
     train_test_split(features, tpot_data['class'], random_state=42)
 
-exported_pipeline = make_pipeline(
-    KNeighborsClassifier(n_neighbors=3, weights="uniform")
-)
+exported_pipeline = KNeighborsClassifier(n_neighbors=6, weights="distance")
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
@@ -123,21 +119,19 @@ which should result in a pipeline that achieves about 12.77 mean squared error (
 ```python
 import numpy as np
 
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import ExtraTreesRegressor
-from sklearn.pipeline import make_pipeline
 
-# NOTE: Make sure that the target is labeled 'class' in the data file
+# NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
-
 training_features, testing_features, training_classes, testing_classes = \
     train_test_split(features, tpot_data['class'], random_state=42)
 
-exported_pipeline = make_pipeline(
-    ExtraTreesRegressor(max_features=0.76, n_estimators=500)
-)
+exported_pipeline = GradientBoostingRegressor(alpha=0.85, learning_rate=0.1, loss="ls",
+                                              max_features=0.9, min_samples_leaf=5,
+                                              min_samples_split=6)
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
