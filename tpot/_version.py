@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright 2016 Randal S. Olson
+Copyright 2015-Present Randal S. Olson
 
 This file is part of the TPOT library.
 
@@ -18,4 +18,4 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 
 """
 
-__version__ = '0.6.8'
+__version__ = '0.7.0'

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright 2016 Randal S. Olson
+Copyright 2015-Present Randal S. Olson
 
 This file is part of the TPOT library.
 
@@ -19,8 +19,6 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 import numpy as np
-
-from .base import Preprocessor
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
 
@@ -67,19 +65,9 @@ class ZeroCount(BaseEstimator):
 
         return X_transformed
 
+class CombineDFs(object):
+    """Operator to combine two DataFrames"""
 
-class TPOTZeroCount(Preprocessor):
-
-    """Uses TPOT's ZeroCount to transform the feature set"""
-
-    import_hash = {'tpot.operators.preprocessors': ['ZeroCount']}
-    sklearn_class = ZeroCount
-    arg_types = ()
-
-    def __init__(self):
-        """Creates a new TPOTZeroCount instance"""
-        pass
-
-    def preprocess_args(self):
-        """Preprocesses the arguments in case they need to be constrained in some way"""
-        return {}
+    @property
+    def __name__(self):
+        return self.__class__.__name__

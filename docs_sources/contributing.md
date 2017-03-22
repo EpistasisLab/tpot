@@ -7,7 +7,7 @@ The latest stable release of TPOT is on the [master branch](https://github.com/r
 In terms of directory structure:
 
 * All of TPOT's code sources are in the `tpot` directory
-* The documentation sources are in the `docs` directory
+* The documentation sources are in the `docs_sources` directory
 * Images in the documentation are in the `images` directory
 * Tutorials for TPOT are in the `tutorials` directory
 * Unit tests for TPOT are in the `tests.py` file
@@ -26,7 +26,7 @@ GitHub:
 
 2. Clone this copy to your local disk:
 
-          $ git clone git@github.com:YourLogin/tpot.git
+          $ git clone git@github.com:YourUsername/tpot.git
           $ cd tpot
 
 3. Create a branch to hold your changes:
@@ -89,19 +89,17 @@ If your contribution requires a new library dependency:
 
 * Add a line to pip install the library to [.travis_install.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L46)
 
-* Add a line to print the version of the library to [.travis_install.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L61)
+* Add a line to print the version of the library to [.travis_install.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L63)
 
 * Similarly add a line to print the version of the library to [.travis_test.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_test.sh#L13)
 
 ## Updating the documentation
 
-We use [mkdocs](http://www.mkdocs.org/) to manage our [documentation](http://rhiever.github.io/tpot/). This allows us to write the docs in Markdown and compile them to HTML as needed. Below are a few useful commands to know when updating the documentation. Make sure that you are running them in the base documentation directory, `docs`.
+We use [mkdocs](http://www.mkdocs.org/) to manage our [project documentation](http://rhiever.github.io/tpot/). This allows us to write the documentation in Markdown and compile them to HTML as needed. Below are a couple useful commands to know when updating the documentation. Make sure that you are running these commands in the base directory of the TPOT project.
 
 * `mkdocs serve`: Hosts of a local version of the documentation that you can access at the provided URL. The local version will update automatically as you save changes to the documentation.
 
-* `mkdocs build --clean`: Creates a fresh build of the documentation in HTML. Always run this before deploying the documentation to GitHub.
-
-* `mkdocs gh-deploy`: Deploys the documentation to GitHub. If you're deploying on your fork of TPOT, the online documentation should be accessible at `http://<YOUR GITHUB USERNAME>.github.io/tpot/`. Generally, you shouldn't need to run this command because you can view your changes with `mkdocs serve`.
+* `mkdocs build --clean`: Creates a fresh build of the documentation in HTML in the `docs` directory. Always run this before pushing the documentation to GitHub.
 
 ## After submitting your pull request
 
