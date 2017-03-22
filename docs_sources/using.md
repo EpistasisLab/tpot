@@ -252,7 +252,8 @@ Some example code with custom TPOT parameters might look like:
 ```Python
 from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
+                                    random_state=42, verbosity=2)
 ```
 
 Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize a pipeline based on a data set with the `fit` function:
@@ -260,7 +261,8 @@ Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize 
 ```Python
 from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
+                                    random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 ```
 
@@ -271,7 +273,8 @@ You can then proceed to evaluate the final pipeline on the testing set with the 
 ```Python
 from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
+                                    random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 print(pipeline_optimizer.score(testing_features, testing_classes))
 ```
@@ -281,7 +284,8 @@ Finally, you can tell TPOT to export the corresponding Python code for the optim
 ```Python
 from tpot import TPOTClassifier
 
-pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5, random_state=42, verbosity=2)
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
+                                    random_state=42, verbosity=2)
 pipeline_optimizer.fit(training_features, training_classes)
 print(pipeline_optimizer.score(testing_features, testing_classes))
 pipeline_optimizer.export('tpot_exported_pipeline.py')
@@ -294,25 +298,41 @@ Check our [examples](examples/MNIST_Example/) to see TPOT applied to some specif
 <a name="scoringfunctions"></a>
 ## Scoring functions
 
-TPOT makes use of `sklearn.model_selection.cross_val_score`, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
+TPOT makes use of `sklearn.model_selection.cross_val_score` for evaluating pipelines, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
 
-1. You can pass in a string from the list described in the table above. Any other strings will cause internal issues that may break your code down the line.
+1. You can pass in a string to the `scoring` parameter from the list above. Any other strings will cause TPOT to throw an exception.
 
-2. You can pass in a function with the signature `scorer(y_true, y_pred)`, where `y_true` are the true target values and `y_pred` are the predicted target values from an estimator. To do this, you should implement your own function. See the example below for further explanation.
+2. You can pass a function with the signature `scorer(y_true, y_pred)`, where `y_true` are the true target values and `y_pred` are the predicted target values from an estimator. To do this, you should implement your own function. See the example below for further explanation.
 
 ```Python
+from tpot import TPOTClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25)
+
 def accuracy(y_true, y_pred):
     return float(sum(y_pred == y_true)) / len(y_true)
+
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
+                      scoring=accuracy)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_mnist_pipeline.py')
 ```
 
 <a name="customconfig"></a>
 ## Customizing TPOT's operators and parameters
 
-TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. However, sometimes it's useful to limit the algorithms and parameters that TPOT explores
+TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. However, in some cases it is useful to limit the algorithms and parameters that TPOT explores. For that reason, we allow users to provide TPOT with a custom configuration for its operators and parameters.
 
-For example, the configuration file's format could be like:
+The custom TPOT configuration must be in nested dictionary format, where the first level key is the path and name of the operator (e.g., `sklearn.naive_bayes.MultinomialNB`) and the second level key is the corresponding parameter name for that operator (e.g., `fit_prior`). The second level key should point to a list of parameter values for that parameter, e.g., `'fit_prior': [True, False]`.
 
-<pre lang="nemerle">
+For a simple example, the configuration could be:
+
+```Python
 classifier_config_dict = {
     'sklearn.naive_bayes.GaussianNB': {
     },
@@ -325,6 +345,45 @@ classifier_config_dict = {
         'fit_prior': [True, False]
     }
 }
-</pre>
+```
 
+in which case TPOT would only explore pipelines containing `GaussianNB`, `BernoulliNB`, `MultinomialNB`, and tune those algorithm's parameters in the ranges provided. This dictionary can be passed directly within the code to the `TPOTClassifier`/`TPOTRegressor` `config_dict` parameter, described above. For example:
 
+```Python
+from tpot import TPOTClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25)
+
+classifier_config_dict = {
+    'sklearn.naive_bayes.GaussianNB': {
+    },
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    },
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    }
+}
+
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
+                      config_dict=classifier_config_dict)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_mnist_pipeline.py')
+```
+
+Command-line users must create a separate `.py` file with the custom configuration and provide the path to the file to the `tpot` call. For example, if the simple example configuration above is saved in `tpot_classifier_config.py`, that configuration could be used on the command line with the command:
+
+```
+tpot data/mnist.csv -is , -target class -config tpot_classifier_config.py -g 5 -p 20 -v 2 -o tpot_exported_pipeline.py
+```
+
+For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py) and [regression](https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py) in TPOT's source code.
+
+Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it explores.
