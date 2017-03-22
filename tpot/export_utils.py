@@ -196,7 +196,6 @@ def generate_pipeline_code(pipeline_tree):
 def process_operator(operator, depth=0):
     steps = []
     op_name = operator[0]
-
     if op_name == "CombineDFs":
         steps.append(
             _combine_dfs(operator[1], operator[2])
@@ -204,21 +203,28 @@ def process_operator(operator, depth=0):
     else:
         input_name, args = operator[1], operator[2:]
         tpot_op = operators.Operator.get_by_name(op_name)
-
         if input_name != 'input_matrix':
             steps.extend(process_operator(input_name, depth + 1))
-
         # If the step is an estimator and is not the last step then we must
-        # add its guess as a synthetic feature
-        if tpot_op.root and depth > 0:
-            steps.append(
-                "make_union(VotingClassifier([(\"est\", {})]), FunctionTransformer(lambda X: X))".
-                format(tpot_op.export(*args))
-            )
+        # add its class probabilities and class prodictions as synthetic features and only for classifier
+        if tpot_op.root  and depth > 0:
+            #  for classifier with predict_proba
+            if tpot_op.classification and hasattr(tpot_op.sklearn_class, 'predict_proba'):
+                step = ("make_union("
+                " make_pipeline("
+                " VotingClassifier([(\"est_prob\", {OP_CODE})], voting=\"soft\"),"
+                " FunctionTransformer(lambda X: X[0], validate=False)),"
+                " VotingClassifier([(\"est_class\", {OP_CODE})], voting=\"hard\"),"
+                " FunctionTransformer(lambda X: X)"
+                ")").format(OP_CODE=tpot_op.export(*args))
+            else:
+                step = "make_union(VotingClassifier([(\"est\", {})]), FunctionTransformer(lambda X: X))".format(tpot_op.export(*args))
+            steps.append(step)
         else:
             steps.append(tpot_op.export(*args))
-
     return steps
+
+
 
 
 def _indent(text, amount):
