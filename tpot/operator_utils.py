@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright 2016 Randal S. Olson
+Copyright 2015-Present Randal S. Olson
 
 This file is part of the TPOT library.
 

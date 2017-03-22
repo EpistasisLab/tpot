@@ -1,7 +1,9 @@
-"""
-Copyright 2016 Randal S. Olson
+# -*- coding: utf-8 -*-
 
-his file is modified based on codes for alogrithms.eaSimple module in DEAP.
+"""
+Copyright 2015-Present Randal S. Olson
+
+This file is modified based on codes for alogrithms.eaSimple module in DEAP.
 
 This file is part of the TPOT library.
 
