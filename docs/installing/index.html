@@ -145,6 +145,9 @@
 <li>
 <p>tqdm</p>
 </li>
+<li>
+<p>Pathos</p>
+</li>
 </ul>
 <p>Most of the necessary Python packages can be installed via the <a href="https://www.continuum.io/downloads">Anaconda Python distribution</a>, which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.</p>
 <p>NumPy, SciPy, and scikit-learn can be installed in Anaconda via the command:</p>
@@ -152,14 +155,14 @@
 </code></pre>
 
 <p>DEAP, update_checker, and tqdm (used for verbose TPOT runs) can be installed with <code>pip</code> via the command:</p>
-<pre><code class="Shell">pip install deap update_checker tqdm
+<pre><code class="Shell">pip install deap update_checker tqdm pathos
 </code></pre>
 
 <p><strong>For the Windows OS</strong>, the pywin32 module is required if the Python is NOT installed via <a href="https://www.continuum.io/downloads">Anaconda Python distribution</a> and can be installed with <code>pip</code> via the command:</p>
 <pre><code class="Shell">pip install pywin32
 </code></pre>
 
-<p>Optionally, install XGBoost if you would like TPOT to use XGBoost. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.</p>
+<p><strong>Optionally</strong>, install XGBoost if you would like TPOT to use XGBoost. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.</p>
 <pre><code class="Shell">pip install xgboost
 </code></pre>
 
