@@ -7,7 +7,7 @@ Development status: [![Development Build Status](https://travis-ci.org/rhiever/t
 [![Development Coverage Status](https://coveralls.io/repos/rhiever/tpot/badge.svg?branch=development&service=github)](https://coveralls.io/github/rhiever/tpot?branch=development)
 
 Package information: ![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)
-![Python 3.5](https://img.shields.io/badge/python-3.5-blue.svg)
+![Python 3.5](https://img.shields.io/badge/python-3.6-blue.svg)
 ![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
 [![PyPI version](https://badge.fury.io/py/TPOT.svg)](https://badge.fury.io/py/TPOT)
 
