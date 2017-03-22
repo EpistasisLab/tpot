@@ -115,8 +115,8 @@ class TPOTBase(BaseEstimator):
             Offers the same options as sklearn.model_selection.cross_val_score as well as
             a built-in score "balanced_accuracy":
 
-            ['accuracy', 'adjusted_rand_score', 'average_precision', 'f1',
-            'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted',
+            ['accuracy', 'adjusted_rand_score', 'average_precision', 'balanced accuracy',
+            'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted',
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
             'recall_samples', 'recall_weighted', 'roc_auc']
@@ -206,7 +206,7 @@ class TPOTBase(BaseEstimator):
         self.crossover_rate = crossover_rate
 
         if self.mutation_rate + self.crossover_rate > 1:
-            raise TypeError('The sum of the crossover and mutation probabilities must be <= 1.0.')
+            raise ValueError('The sum of the crossover and mutation probabilities must be <= 1.0.')
 
         self.verbosity = verbosity
         self.operators_context = {
@@ -237,14 +237,15 @@ class TPOTBase(BaseEstimator):
                 self.scoring_function = scoring_name
             else:
                 if scoring not in SCORERS:
-                    raise TypeError('The scoring function {} is not available. '
-                    'Please choose scoring function on TPOT manual'.format(scoring))
+                    raise ValueError('The scoring function {} is not available. '
+                                     'Please choose a valid scoring function from the TPOT '
+                                     'documentation.'.format(scoring))
                 self.scoring_function = scoring
 
         self.cv = cv
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
         if sys.platform.startswith('win') and n_jobs > 1:
-            print('Warning: Parallelization is not currently supported in TPOT for Windows.',
+            print('Warning: Parallelization is not currently supported in TPOT for Windows. ',
                   'Setting n_jobs to 1 during the TPOT optimization process.')
             self.n_jobs = 1
         else:
@@ -341,7 +342,7 @@ class TPOTBase(BaseEstimator):
         """
         features = features.astype(np.float64)
 
-        # check input data format
+        # Check that the input data is formatted correctly for scikit-learn
         if self.classification:
             clf = DecisionTreeClassifier(max_depth=5)
         else:
@@ -350,12 +351,14 @@ class TPOTBase(BaseEstimator):
         try:
             clf = clf.fit(features, classes)
         except:
-            raise TypeError('Warning: TypeError in input dataset. Please check your data format! \n'
-            'Tips: features need to a 2-D array but classes should be a 1-D array.')
+            raise ValueError('Error: Input data is not in a valid format. '
+                             'Please confirm that the input data is scikit-learn compatible. '
+                             'For example, the features must be a 2-D array and target labels '
+                             'must be a 1-D array.')
 
         # Set the seed for the GP run
         if self.random_state is not None:
-            random.seed(self.random_state) # deap use random
+            random.seed(self.random_state) # deap uses random
             np.random.seed(self.random_state)
 
         self._start_datetime = datetime.now()
@@ -479,7 +482,7 @@ class TPOTBase(BaseEstimator):
 
         """
         if not self._fitted_pipeline:
-            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
+            raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
         return self._fitted_pipeline.predict(features.astype(np.float64))
 
     def fit_predict(self, features, classes):
@@ -519,8 +522,7 @@ class TPOTBase(BaseEstimator):
 
         """
         if self._fitted_pipeline is None:
-            raise ValueError('A pipeline has not yet been optimized. '
-                             'Please call fit() first.')
+            raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
         # If the scoring function is a string, we must adjust to use the sklearn scoring interface
         return abs(SCORERS[self.scoring_function](self._fitted_pipeline,
@@ -541,10 +543,10 @@ class TPOTBase(BaseEstimator):
 
         """
         if not self._fitted_pipeline:
-            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
+            raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
         else:
             if not(hasattr(self._fitted_pipeline, 'predict_proba')):
-                raise ValueError('The fitted pipeline does not have probability prediction functionality')
+                raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
             return self._fitted_pipeline.predict_proba(features.astype(np.float64))
 
     def set_params(self, **params):
@@ -572,7 +574,7 @@ class TPOTBase(BaseEstimator):
 
         """
         if self._optimized_pipeline is None:
-            raise ValueError('A pipeline has not yet been optimized. Please call fit() first.')
+            raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(export_pipeline(self._optimized_pipeline, self.operators, self._pset))

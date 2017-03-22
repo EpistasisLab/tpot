@@ -109,22 +109,7 @@ TPOT offers several arguments that can be provided at the command line:
 <td>-config</td>
 <td>CONFIG_FILE</td>
 <td>String path to a file</td>
-<td>Configuration file for customizing the operators and parameters that TPOT uses in the optimization process. For example, the configuration file's format could be like:
-<pre lang="nemerle">
-classifier_config_dict = {
-    'sklearn.naive_bayes.GaussianNB': {
-    },
-    'sklearn.naive_bayes.BernoulliNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    },
-    'sklearn.naive_bayes.MultinomialNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    }
-}
-</pre>
-</td>
+<td>Configuration file for customizing the operators and parameters that TPOT uses in the optimization process. See the <a href="#customconfig">custom configuration</a> section for more information and examples.</td>
 </tr>
 <tr>
 <td>-v</td>
@@ -241,20 +226,7 @@ Note that you can pass several parameters to the TPOT instantiation call:
 <tr>
 <td>config_dict</td>
 <td>Python dictionary</td>
-<td>Configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process. For example:
-<pre lang="nemerle">
-classifier_config_dict = {
-    'sklearn.naive_bayes.GaussianNB': {
-    },
-    'sklearn.naive_bayes.BernoulliNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    },
-    'sklearn.naive_bayes.MultinomialNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    }
-}
+<td>Configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process. See the <a href="#customconfig">custom configuration</a> section for more information and examples.
 </pre>
 </td>
 </tr>
@@ -332,3 +304,27 @@ TPOT makes use of `sklearn.model_selection.cross_val_score`, and as such offers 
 def accuracy(y_true, y_pred):
     return float(sum(y_pred == y_true)) / len(y_true)
 ```
+
+<a name="customconfig"></a>
+## Customizing TPOT's operators and parameters
+
+TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. However, sometimes it's useful to limit the algorithms and parameters that TPOT explores
+
+For example, the configuration file's format could be like:
+
+<pre lang="nemerle">
+classifier_config_dict = {
+    'sklearn.naive_bayes.GaussianNB': {
+    },
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    },
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    }
+}
+</pre>
+
+
