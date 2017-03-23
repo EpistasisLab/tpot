@@ -480,50 +480,65 @@ class TPOTBase(BaseEstimator):
                 self._pbar.write('')
                 self._pbar.write('TPOT closed prematurely. Will use the current best pipeline.')
         finally:
-            # Close the progress bar
-            # Standard truthiness checks won't work for tqdm
-            if not isinstance(self._pbar, type(None)):
-                self._pbar.close()
+            # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
+            attempts = 10
+            for attempt in xrange(attempts):
+                try:
+                    # Close the progress bar
+                    # Standard truthiness checks won't work for tqdm
+                    if not isinstance(self._pbar, type(None)):
+                        self._pbar.close()
 
-            # Store the pipeline with the highest internal testing score
-            if self._pareto_front:
-                top_score = -float('inf')
-                for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
-                    if pipeline_scores.wvalues[1] > top_score:
-                        self._optimized_pipeline = pipeline
-                        top_score = pipeline_scores.wvalues[1]
+                    # Store the pipeline with the highest internal testing score
+                    if self._pareto_front:
+                        self._update_top_pipeline()
 
-                # It won't raise error for a small test like in a unit test because a few pipeline sometimes
-                # may fail due to the training data does not fit the operator's requirement.
-                if not self._optimized_pipeline:
-                    print('There was an error in the TPOT optimization '
-                          'process. This could be because the data was '
-                          'not formatted properly, or because data for '
-                          'a regression problem was provided to the '
-                          'TPOTClassifier object. Please make sure you '
-                          'passed the data to TPOT correctly.')
-                else:
-                    self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+                        # It won't raise error for a small test like in a unit test because a few pipeline sometimes
+                        # may fail due to the training data does not fit the operator's requirement.
+                        if not self._optimized_pipeline:
+                            print('There was an error in the TPOT optimization '
+                                  'process. This could be because the data was '
+                                  'not formatted properly, or because data for '
+                                  'a regression problem was provided to the '
+                                  'TPOTClassifier object. Please make sure you '
+                                  'passed the data to TPOT correctly.')
+                        else:
+                            self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 
-                    with warnings.catch_warnings():
-                        warnings.simplefilter('ignore')
-                        self._fitted_pipeline.fit(features, classes)
-
-                    if self.verbosity in [1, 2]:
-                        # Add an extra line of spacing if the progress bar was used
-                        if self.verbosity >= 2:
-                            print('')
-                        print('Best pipeline: {}'.format(self._optimized_pipeline))
-
-                    # Store and fit the entire Pareto front if sciencing
-                    elif self.verbosity >= 3 and self._pareto_front:
-                        self._pareto_front_fitted_pipelines = {}
-
-                        for pipeline in self._pareto_front.items:
-                            self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
                             with warnings.catch_warnings():
                                 warnings.simplefilter('ignore')
-                                self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
+                                self._fitted_pipeline.fit(features, classes)
+
+                            if self.verbosity in [1, 2]:
+                                # Add an extra line of spacing if the progress bar was used
+                                if self.verbosity >= 2:
+                                    print('')
+                                print('Best pipeline: {}'.format(self._optimized_pipeline))
+
+                            # Store and fit the entire Pareto front if sciencing
+                            elif self.verbosity >= 3 and self._pareto_front:
+                                self._pareto_front_fitted_pipelines = {}
+
+                                for pipeline in self._pareto_front.items:
+                                    self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                                    with warnings.catch_warnings():
+                                        warnings.simplefilter('ignore')
+                                        self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
+
+                    break
+                except:
+                    # raise the exception if it's our last attempt
+                    if attempt == attempts-1:
+                        raise
+
+    def _update_top_pipeline(self):
+        """small helper function to update the _optimized_pipeline field"""
+        if self._pareto_front:
+            top_score = -float('inf')
+            for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                if pipeline_scores.wvalues[1] > top_score:
+                    self._optimized_pipeline = pipeline
+                    top_score = pipeline_scores.wvalues[1]
 
     def predict(self, features):
         """Use the optimized pipeline to predict the classes for a feature set.
