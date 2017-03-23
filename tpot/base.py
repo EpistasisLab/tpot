@@ -215,8 +215,7 @@ class TPOTBase(BaseEstimator):
             'FunctionTransformer': FunctionTransformer
         }
 
-        if self.n_jobs == -1:
-            self.n_jobs = cpu_count()
+
 
         self._pbar = None
 
@@ -246,12 +245,15 @@ class TPOTBase(BaseEstimator):
 
         self.cv = cv
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
-        if sys.platform.startswith('win') and n_jobs > 1:
+        if sys.platform.startswith('win') and n_jobs != 1:
             print('Warning: Parallelization is not currently supported in TPOT for Windows. ',
                   'Setting n_jobs to 1 during the TPOT optimization process.')
             self.n_jobs = 1
+        elif n_jobs == -1:
+            self.n_jobs = cpu_count()
         else:
             self.n_jobs = n_jobs
+
 
         self._setup_pset()
         self._setup_toolbox()
