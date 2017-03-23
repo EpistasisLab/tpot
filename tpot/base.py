@@ -406,11 +406,11 @@ class TPOTBase(BaseEstimator):
 
         try:
             clf = clf.fit(features, classes)
-        except Exception:
+        except Exception as e:
             raise ValueError('Error: Input data is not in a valid format. '
                              'Please confirm that the input data is scikit-learn compatible. '
                              'For example, the features must be a 2-D array and target labels '
-                             'must be a 1-D array.')
+                             'must be a 1-D array.\nException was:{}'.format(str(e)))
 
         # Set the seed for the GP run
         if self.random_state is not None:
