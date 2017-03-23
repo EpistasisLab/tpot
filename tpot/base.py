@@ -26,8 +26,7 @@ import sys
 import time
 from functools import partial
 from datetime import datetime
-from pathos.multiprocessing import ProcessPool
-
+from pathos.multiprocessing import Pool, cpu_count
 
 import numpy as np
 import deap
@@ -723,29 +722,23 @@ class TPOTBase(BaseEstimator):
 
         if not sys.platform.startswith('win'):
             if self.n_jobs == -1:
-                pool = ProcessPool()
-            else:
-                pool = ProcessPool(nodes=self.n_jobs)
-            res_imap = pool.imap(_wrapped_cross_val_score, sklearn_pipeline_list)
-            if not self._pbar.disable:
-                ini_pbar_n = self._pbar.n
-            # Hacky way for pbar update by using imap in pathos.multiprocessing.ProcessPool
-            while not self._pbar.disable:
-                tmp_fitness = np.array(res_imap._items)
-                num_job_done = len(tmp_fitness)
-                if not self._pbar.disable and num_job_done:
-                    timeout_index = list(np.where(tmp_fitness[:, 1] == 'Timeout')[0])
-                    for idx in timeout_index:
-                        if self.verbosity > 2 and self._pbar.n - ini_pbar_n <= idx:
+                pool = Pool()
+                self.n_jobs = cpu_count()
+            pool = Pool(processes=self.n_jobs)
+            resulting_score_list = []
+            # chunk size for pbar update
+            for chunk_idx in range(0, len(sklearn_pipeline_list),self.n_jobs*2):
+                tmp_result_score = pool.map(_wrapped_cross_val_score, sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*2])
+                for val in tmp_result_score:
+                    if not self._pbar.disable:
+                        self._pbar.update(1)
+                    if val == 'Timeout':
+                        if self.verbosity > 2:
                             self._pbar.write('Skipped pipeline #{0} due to time out. '
-                                             'Continuing to the next pipeline.'.format(ini_pbar_n + idx + 1))
-                    self._pbar.update(ini_pbar_n + num_job_done - self._pbar.n)
-                if num_job_done >= len(sklearn_pipeline_list):
-                    break
-                else:
-                    time.sleep(0.2)
-            resulting_score_list = [-float('inf') if x == 'Timeout' else x for x in list(res_imap)]
-
+                                             'Continuing to the next pipeline.'.format(self._pbar.n))
+                        resulting_score_list.append(-float('inf'))
+                    else:
+                        resulting_score_list.append(val)
         else:
             resulting_score_list = []
             for sklearn_pipeline in sklearn_pipeline_list:
