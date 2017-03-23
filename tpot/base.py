@@ -215,6 +215,9 @@ class TPOTBase(BaseEstimator):
             'FunctionTransformer': FunctionTransformer
         }
 
+        if self.n_jobs == -1:
+            self.n_jobs = cpu_count()
+
         self._pbar = None
 
         # Dictionary of individuals that have already been evaluated in previous generations
@@ -721,9 +724,6 @@ class TPOTBase(BaseEstimator):
             return resulting_score
 
         if not sys.platform.startswith('win'):
-            if self.n_jobs == -1:
-                pool = Pool()
-                self.n_jobs = cpu_count()
             pool = Pool(processes=self.n_jobs)
             resulting_score_list = []
             # chunk size for pbar update
