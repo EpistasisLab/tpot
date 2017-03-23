@@ -254,7 +254,6 @@ class TPOTBase(BaseEstimator):
         else:
             self.n_jobs = n_jobs
 
-
         self._setup_pset()
         self._setup_toolbox()
 
