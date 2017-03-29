@@ -88,21 +88,21 @@ def _timeout(max_eval_time_mins=5):
                     signal.alarm(0)  # Alarm removed
                 return ret
         else:
-            class InterruptableThread(threading.Thread, name = 'MainThread'):
-                # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
-                # Note: Need attention if using parallel execution model of scikit-learn
+            class InterruptableThread(threading.Thread):
                 def __init__(self, args, kwargs):
-                    Thread.__init__(self)
+                    threading.Thread.__init__(self)
                     self.args = args
                     self.kwargs = kwargs
                     self.result = -float('inf')
                     self._stopevent = threading.Event()
                     self.daemon = True
-                    threading.Thread._ _init_ _(self, name=name)
                 def stop(self):
                     self._stopevent.set()
-                    threading.Thread.join()
+                    threading.Thread.join(self)
                 def run(self):
+                    # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
+                    # Note: Need attention if using parallel execution model of scikit-learn
+                    threading.current_thread().name = 'MainThread'
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
                         self.result = func(*self.args, **self.kwargs)
