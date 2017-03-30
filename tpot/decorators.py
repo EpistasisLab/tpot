@@ -74,6 +74,8 @@ def _timeout(max_eval_time_mins=5):
             import signal
             @wraps(func)
             def limitedTime(*args, **kw):
+                # don't show traceback
+                sys.tracebacklimit=0
                 old_signal_hander = signal.signal(signal.SIGALRM, timeout_signal_handler)
                 max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
                 signal.alarm(max_time_seconds)
@@ -81,11 +83,12 @@ def _timeout(max_eval_time_mins=5):
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
                         ret = func(*args, **kw)
-                except:
+                except TimedOutExc:
                     raise TimedOutExc('Time Out!')
                 finally:
                     signal.signal(signal.SIGALRM, old_signal_hander)  # Old signal handler is restored
                     signal.alarm(0)  # Alarm removed
+                    sys.tracebacklimit=1000
                 return ret
         else:
             class InterruptableThread(threading.Thread):
