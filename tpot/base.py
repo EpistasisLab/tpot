@@ -727,35 +727,30 @@ class TPOTBase(BaseEstimator):
                 resulting_score = -float('inf')
             return resulting_score
 
-        if not sys.platform.startswith('win'):
-            pool = Pool(processes=self.n_jobs)
-            resulting_score_list = []
-            # chunk size for pbar update
-            for chunk_idx in range(0, len(sklearn_pipeline_list),self.n_jobs*2):
+        # evalurate pipeline
+
+        resulting_score_list = []
+        # chunk size for pbar update
+        for chunk_idx in range(0, len(sklearn_pipeline_list),self.n_jobs*2):
+            if self.n_jobs != 1:
+                pool = Pool(processes=self.n_jobs)
                 tmp_result_score = pool.map(_wrapped_cross_val_score, sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*2])
-                for val in tmp_result_score:
-                    if not self._pbar.disable:
-                        self._pbar.update(1)
-                    if val == 'Timeout':
-                        if self.verbosity > 2:
-                            self._pbar.write('Skipped pipeline #{0} due to time out. '
-                                             'Continuing to the next pipeline.'.format(self._pbar.n))
-                        resulting_score_list.append(-float('inf'))
-                    else:
-                        resulting_score_list.append(val)
-        else:
-            resulting_score_list = []
-            for sklearn_pipeline in sklearn_pipeline_list:
-                try:
-                    resulting_score = _wrapped_cross_val_score(sklearn_pipeline)
-                except TimedOutExc:
-                    resulting_score = -float('inf')
-                    if self.verbosity > 2 and not self._pbar.disable:
-                        self._pbar.write('Skipped pipeline #{0} due to time out. '
-                                         'Continuing to the next pipeline.'.format(self._pbar.n + 1))
-                resulting_score_list.append(resulting_score)
+                pool.terminate() # garbage collection
+            else:
+                tmp_result_score = map(_wrapped_cross_val_score, sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*2])
+            # update pbar
+            for val in tmp_result_score:
                 if not self._pbar.disable:
                     self._pbar.update(1)
+                if val == 'Timeout':
+                    if self.verbosity > 2:
+                        self._pbar.write('Skipped pipeline #{0} due to time out. '
+                                         'Continuing to the next pipeline.'.format(self._pbar.n))
+                    resulting_score_list.append(-float('inf'))
+                else:
+                    resulting_score_list.append(val)
+
+
 
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
             if type(resulting_score) in [float, np.float64, np.float32]:
