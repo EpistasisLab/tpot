@@ -19,7 +19,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from __future__ import print_function
-from threading import Thread, current_thread
+import threading
 from functools import wraps
 import sys
 import warnings
@@ -88,19 +88,21 @@ def _timeout(max_eval_time_mins=5):
                     signal.alarm(0)  # Alarm removed
                 return ret
         else:
-            class InterruptableThread(Thread):
+            class InterruptableThread(threading.Thread):
                 def __init__(self, args, kwargs):
-                    Thread.__init__(self)
+                    threading.Thread.__init__(self)
                     self.args = args
                     self.kwargs = kwargs
                     self.result = -float('inf')
+                    self._stopevent = threading.Event()
                     self.daemon = True
                 def stop(self):
-                    self._stop()
+                    self._stopevent.set()
+                    threading.Thread.join(self)
                 def run(self):
                     # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
                     # Note: Need attention if using parallel execution model of scikit-learn
-                    current_thread().name = 'MainThread'
+                    threading.current_thread().name = 'MainThread'
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
                         self.result = func(*self.args, **self.kwargs)
