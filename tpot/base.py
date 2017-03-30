@@ -727,7 +727,7 @@ class TPOTBase(BaseEstimator):
                 resulting_score = -float('inf')
             return resulting_score
 
-        if not sys.platform.startswith('win'):
+        if self.n_jobs != 1:
             pool = Pool(processes=self.n_jobs)
             resulting_score_list = []
             # chunk size for pbar update
@@ -743,6 +743,7 @@ class TPOTBase(BaseEstimator):
                         resulting_score_list.append(-float('inf'))
                     else:
                         resulting_score_list.append(val)
+            pool.terminate() 
         else:
             resulting_score_list = []
             for sklearn_pipeline in sklearn_pipeline_list:

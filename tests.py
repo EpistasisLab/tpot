@@ -248,7 +248,7 @@ def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fix pipeline"""
 
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
-    known_score = 11.2010824752 # Assumes use of mse
+    known_score = 12.3727966005 # Assumes use of mse
 
     # Reify pipeline with known score
 
@@ -257,15 +257,16 @@ def test_score_3():
         "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
         "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
         "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
-        "GradientBoostingRegressor__subsample=0.25),"
-        "ExtraTreesRegressor__bootstrap=True,ExtraTreesRegressor__max_features=0.5,"
-        "ExtraTreesRegressor__min_samples_leaf=5,ExtraTreesRegressor__min_samples_split=5)")
+        "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)")
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
-
     # Get score from TPOT
     score = tpot_obj.score(testing_features_r, testing_classes_r)
+
 
     # http://stackoverflow.com/questions/5595425/
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
@@ -285,9 +286,14 @@ def test_sample_weight_func():
         "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
         "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
         "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
-        "GradientBoostingRegressor__subsample=0.25),"
-        "ExtraTreesRegressor__bootstrap=True,ExtraTreesRegressor__max_features=0.5,"
-        "ExtraTreesRegressor__min_samples_leaf=5,ExtraTreesRegressor__min_samples_split=5)")
+        "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)")
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
+
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
 
@@ -307,7 +313,7 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r, **training_classes_r_weight_dict)
     # Get score from TPOT
-    known_score = 14.1377471426 # Assumes use of mse
+    known_score = 12.643383517 # Assumes use of mse
     score = tpot_obj.score(testing_features_r, testing_classes_r)
 
     # http://stackoverflow.com/questions/5595425/
@@ -502,7 +508,7 @@ def test_generate_pipeline_code():
     expected_code = """make_pipeline(
     make_union(
         make_union(VotingClassifier([('branch',
-            GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, subsample=0.5)
+            GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, n_estimators=0.5)
         )]), FunctionTransformer(lambda X: X)),
         make_union(VotingClassifier([('branch',
             make_pipeline(
