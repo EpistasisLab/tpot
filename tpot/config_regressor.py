@@ -103,7 +103,8 @@ regressor_config_dict = {
         'max_depth': range(1, 11),
         'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
         'subsample': np.arange(0.05, 1.01, 0.05),
-        'min_child_weight': range(1, 21)
+        'min_child_weight': range(1, 21),
+        'nthread': [1]
     },
 
     # Preprocesssors

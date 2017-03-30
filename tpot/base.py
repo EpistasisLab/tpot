@@ -297,7 +297,10 @@ class TPOTBase(BaseEstimator):
 
         # Terminals
         for _type in self.arguments:
-            type_values = list(_type.values) + ['DEFAULT']
+            type_values = list(_type.values)
+            if 'nthread' not in _type.__name__:
+                type_values += ['DEFAULT']
+
             for val in type_values:
                 terminal_name = _type.__name__ + "=" + str(val)
                 self._pset.addTerminal(val, _type, name=terminal_name)
