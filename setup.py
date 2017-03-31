@@ -34,7 +34,7 @@ or Twitter: https://twitter.com/randal_olson
 This project is hosted at https://github.com/rhiever/tpot
 ''',
     zip_safe=True,
-    install_requires=['numpy', 'scipy', 'scikit-learn>=0.18.1', 'deap', 'update_checker', 'tqdm', 'pathos'],
+    install_requires=['numpy', 'scipy', 'scikit-learn>=0.18.1', 'deap', 'update_checker', 'tqdm'],
     extras_require={'xgboost': ['xgboost']},
     classifiers=[
         'Intended Audience :: Science/Research',

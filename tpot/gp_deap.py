@@ -263,12 +263,6 @@ def mutNodeReplacement(individual, pset):
     return individual,
 
 
-def convert_mins_to_secs(time_minute):
-    """Convert time from minutes to seconds"""
-    # time limit should be at least 1 second
-    return max(int(time_minute * 60), 1)
-
-
 class Interruptable_cross_val_score(threading.Thread):
     def __init__(self, *args, **kwargs):
         threading.Thread.__init__(self)
@@ -289,13 +283,13 @@ class Interruptable_cross_val_score(threading.Thread):
                 warnings.simplefilter('ignore')
                 self.result = cross_val_score(*self.args, **self.kwargs)
         except Exception as e:
-            print(e)
+            #print(e) # for debug use 
             pass
 
 def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
                              cv, scoring_function, sample_weight, max_eval_time_mins):
     #sys.tracebacklimit = 0
-    max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
+    max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
     # build a job for cross_val_score
     tmp_it = Interruptable_cross_val_score(clone(sklearn_pipeline), features, classes,
