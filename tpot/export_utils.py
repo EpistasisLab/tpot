@@ -162,7 +162,8 @@ def generate_import_code(pipeline, operators):
             'sklearn.model_selection':  ['train_test_split'],
             'sklearn.pipeline':         ['make_pipeline', 'make_union'],
             'sklearn.preprocessing':    ['FunctionTransformer'],
-            'sklearn.ensemble':         ['VotingClassifier']
+            'sklearn.ensemble':         ['VotingClassifier'],
+            'copy':                     ['copy']
         }
     elif num_op > 1:
         pipeline_imports = {
@@ -287,7 +288,7 @@ def process_operator(operator, operators, depth=0):
         # add its guess as a synthetic feature
         if tpot_op.root and depth > 0:
             steps.append(
-                "make_union(VotingClassifier([(\"est\", {})]), FunctionTransformer(lambda X: X))".
+                "make_union(VotingClassifier([(\"est\", {})]), FunctionTransformer(copy))".
                 format(tpot_op.export(*args))
             )
         else:
@@ -317,7 +318,7 @@ def _indent(text, amount):
 def _combine_dfs(left, right, operators):
     def _make_branch(branch):
         if branch == "input_matrix":
-            return "FunctionTransformer(lambda X: X)"
+            return "FunctionTransformer(copy)"
         elif branch[0] == "CombineDFs":
             return _combine_dfs(branch[1], branch[2], operators)
         elif branch[1] == "input_matrix":  # If depth of branch == 1
@@ -326,7 +327,7 @@ def _combine_dfs(left, right, operators):
             if tpot_op.root:
                 return """make_union(VotingClassifier([('branch',
 {}
-)]), FunctionTransformer(lambda X: X))""".format(_indent(process_operator(branch, operators)[0], 4))
+)]), FunctionTransformer(copy))""".format(_indent(process_operator(branch, operators)[0], 4))
             else:
                 return process_operator(branch, operators)[0]
         else:  # We're going to have to make a pipeline
@@ -335,7 +336,7 @@ def _combine_dfs(left, right, operators):
             if tpot_op.root:
                 return """make_union(VotingClassifier([('branch',
 {}
-)]), FunctionTransformer(lambda X: X))""".format(_indent(generate_pipeline_code(branch, operators), 4))
+)]), FunctionTransformer(copy))""".format(_indent(generate_pipeline_code(branch, operators), 4))
             else:
                 return generate_pipeline_code(branch, operators)
 
