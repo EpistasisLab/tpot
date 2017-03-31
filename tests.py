@@ -10,7 +10,6 @@ from tpot.driver import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
-from tpot.decorators import _timeout, TimedOutExc
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.config_classifier import classifier_config_dict
@@ -80,22 +79,6 @@ def test_init_custom_parameters():
     assert not (tpot_obj._pset is None)
     assert not (tpot_obj._toolbox is None)
 
-
-def test_timeout():
-    """Assert that timeout decorator controls the currect running time of wrapped function"""
-    @_timeout(max_eval_time_mins=0.02) # just 1 second
-    def test_timeout_func():
-        start_time = time.time()
-        try:
-            time.sleep(100)
-            return 100
-        except TimedOutExc:
-            return time.time() - start_time
-    try: # pass in Linux
-        ret_timeout = int(test_timeout_func())
-    except TimedOutExc: # windows exception
-        ret_timeout = 1
-    assert ret_timeout == 1
 
 def test_init_default_scoring():
     """Assert that TPOT intitializes with the correct default scoring function"""
@@ -509,17 +492,18 @@ def test_generate_pipeline_code():
     make_union(
         make_union(VotingClassifier([('branch',
             GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, n_estimators=0.5)
-        )]), FunctionTransformer(lambda X: X)),
+        )]), FunctionTransformer(copy)),
         make_union(VotingClassifier([('branch',
             make_pipeline(
                 ZeroCount(),
                 GaussianNB()
             )
-        )]), FunctionTransformer(lambda X: X))
+        )]), FunctionTransformer(copy))
     ),
     KNeighborsClassifier(n_neighbors=18, p="uniform", weights=2)
 )"""
     assert expected_code == generate_pipeline_code(pipeline, tpot_obj.operators)
+
 
 
 def test_generate_import_code():
@@ -579,6 +563,7 @@ def test_export_pipeline():
 
     expected_code = """import numpy as np
 
+from copy import copy
 from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.model_selection import train_test_split
@@ -597,7 +582,7 @@ exported_pipeline = make_pipeline(
     make_union(
         make_union(VotingClassifier([('branch',
             DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
-        )]), FunctionTransformer(lambda X: X)),
+        )]), FunctionTransformer(copy)),
         SelectKBest(score_func=f_classif, k=20)
     ),
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")

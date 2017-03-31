@@ -19,9 +19,7 @@ with the TPOT library. If not, see http://www.gnu.org/licenses/.
 """
 
 from __future__ import print_function
-import threading
 from functools import wraps
-import sys
 import warnings
 from sklearn.datasets import make_classification, make_regression
 from .export_utils import expr_to_tree, generate_pipeline_code
