@@ -249,10 +249,12 @@ class TPOTBase(BaseEstimator):
         self.cv = cv
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
         if sys.platform.startswith('win') and n_jobs != 1:
-            print('Warning: Parallelization is not currently supported in TPOT for Windows. ',
-                  'Setting n_jobs to 1 during the TPOT optimization process.')
-            self.n_jobs = 1
-        elif n_jobs == -1:
+            print('Warning: Although parallelization is currently supported in TPOT for Windows, '
+                  'pressing Ctrl+C will freeze the optimization process without saving the best pipeline!'
+                  'Thus, Please DO NOT press Ctrl+C during the optimization procss if n_jobs is not equal to 1.'
+                  'For quick test in Windows, please set n_jobs to 1 for saving the best pipeline '
+                  'in the middle of the optimization process via Ctrl+C.')
+        if n_jobs == -1:
             self.n_jobs = cpu_count()
         else:
             self.n_jobs = n_jobs
