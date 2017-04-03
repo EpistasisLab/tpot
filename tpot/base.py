@@ -26,15 +26,16 @@ import sys
 import time
 from functools import partial
 from datetime import datetime
-from pathos.multiprocessing import Pool, cpu_count
+from multiprocessing import cpu_count
 
 import numpy as np
 import deap
 from deap import base, creator, tools, gp
 from tqdm import tqdm
+from copy import copy
 
 from sklearn.base import BaseEstimator
-from sklearn.model_selection import cross_val_score
+from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
@@ -44,14 +45,15 @@ from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from update_checker import update_check
 
 from ._version import __version__
-from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType, set_sample_weight
+from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
-from .decorators import _timeout, _pre_test, TimedOutExc
+#from .decorators import _timeout, _pre_test, TimedOutExc
+from .decorators import _pre_test
 from .built_in_operators import CombineDFs
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
-from .gp_deap import eaMuPlusLambda, mutNodeReplacement
+from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -212,7 +214,8 @@ class TPOTBase(BaseEstimator):
             'make_pipeline': make_pipeline,
             'make_union': make_union,
             'VotingClassifier': VotingClassifier,
-            'FunctionTransformer': FunctionTransformer
+            'FunctionTransformer': FunctionTransformer,
+            'copy': copy
         }
 
 
@@ -246,10 +249,12 @@ class TPOTBase(BaseEstimator):
         self.cv = cv
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
         if sys.platform.startswith('win') and n_jobs != 1:
-            print('Warning: Parallelization is not currently supported in TPOT for Windows. ',
-                  'Setting n_jobs to 1 during the TPOT optimization process.')
-            self.n_jobs = 1
-        elif n_jobs == -1:
+            print('Warning: Although parallelization is currently supported in TPOT for Windows, '
+                  'pressing Ctrl+C will freeze the optimization process without saving the best pipeline!'
+                  'Thus, Please DO NOT press Ctrl+C during the optimization procss if n_jobs is not equal to 1.'
+                  'For quick test in Windows, please set n_jobs to 1 for saving the best pipeline '
+                  'in the middle of the optimization process via Ctrl+C.')
+        if n_jobs == -1:
             self.n_jobs = cpu_count()
         else:
             self.n_jobs = n_jobs
@@ -708,54 +713,25 @@ class TPOTBase(BaseEstimator):
                 sklearn_pipeline_list.append(sklearn_pipeline)
                 test_idx_list.append(indidx)
 
-        @_timeout(max_eval_time_mins=self.max_eval_time_mins)
-        def _wrapped_cross_val_score(sklearn_pipeline, features=features, classes=classes,
-                                     cv=self.cv, scoring_function=self.scoring_function,
-                                     sample_weight=sample_weight):
-            sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
-            from .decorators import TimedOutExc
-            try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter('ignore')
-                    cv_scores = cross_val_score(sklearn_pipeline, features, classes,
-                        cv=cv, scoring=scoring_function,
-                        n_jobs=1, fit_params=sample_weight_dict)
-                resulting_score = np.mean(cv_scores)
-            except TimedOutExc:
-                resulting_score = 'Timeout'
-            except Exception:
-                resulting_score = -float('inf')
-            return resulting_score
-
-        if not sys.platform.startswith('win'):
-            pool = Pool(processes=self.n_jobs)
-            resulting_score_list = []
-            # chunk size for pbar update
-            for chunk_idx in range(0, len(sklearn_pipeline_list),self.n_jobs*2):
-                tmp_result_score = pool.map(_wrapped_cross_val_score, sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*2])
-                for val in tmp_result_score:
-                    if not self._pbar.disable:
-                        self._pbar.update(1)
-                    if val == 'Timeout':
-                        if self.verbosity > 2:
-                            self._pbar.write('Skipped pipeline #{0} due to time out. '
-                                             'Continuing to the next pipeline.'.format(self._pbar.n))
-                        resulting_score_list.append(-float('inf'))
-                    else:
-                        resulting_score_list.append(val)
-        else:
-            resulting_score_list = []
-            for sklearn_pipeline in sklearn_pipeline_list:
-                try:
-                    resulting_score = _wrapped_cross_val_score(sklearn_pipeline)
-                except TimedOutExc:
-                    resulting_score = -float('inf')
-                    if self.verbosity > 2 and not self._pbar.disable:
-                        self._pbar.write('Skipped pipeline #{0} due to time out. '
-                                         'Continuing to the next pipeline.'.format(self._pbar.n + 1))
-                resulting_score_list.append(resulting_score)
+        # evalurate pipeline
+        resulting_score_list = []
+        # chunk size for pbar update
+        for chunk_idx in range(0, len(sklearn_pipeline_list),self.n_jobs*4):
+            parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+            tmp_result_score = parallel(delayed(_wrapped_cross_val_score)(sklearn_pipeline, features, classes,
+                                         self.cv, self.scoring_function, sample_weight, self.max_eval_time_mins)
+                      for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*4])
+            # update pbar
+            for val in tmp_result_score:
                 if not self._pbar.disable:
                     self._pbar.update(1)
+                if val == 'Timeout':
+                    if self.verbosity > 2:
+                        self._pbar.write('Skipped pipeline #{0} due to time out. '
+                                         'Continuing to the next pipeline.'.format(self._pbar.n))
+                    resulting_score_list.append(-float('inf'))
+                else:
+                    resulting_score_list.append(val)
 
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
             if type(resulting_score) in [float, np.float64, np.float32]:
