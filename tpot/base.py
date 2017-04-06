@@ -47,7 +47,6 @@ from update_checker import update_check
 from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
-#from .decorators import _timeout, _pre_test, TimedOutExc
 from .decorators import _pre_test
 from .built_in_operators import CombineDFs
 
@@ -747,9 +746,6 @@ class TPOTBase(BaseEstimator):
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
-        #return gp.cxOnePoint(ind1, ind2)
-        # disable gp.cxOnePoint(ind1, ind2) due to a bug related to random_state
-        # may reuse it if deap fix the bug
         return cxOnePoint(ind1, ind2)
 
     @_pre_test
@@ -768,8 +764,6 @@ class TPOTBase(BaseEstimator):
             Returns the individual with one of the mutations applied to it
 
         """
-        # debug usage
-        #print(str(individual))
         mutation_techniques = [
             partial(gp.mutInsert, pset=self._pset),
             partial(mutNodeReplacement, pset=self._pset),
