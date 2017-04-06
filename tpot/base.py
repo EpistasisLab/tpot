@@ -53,7 +53,7 @@ from .built_in_operators import CombineDFs
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
-from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score
+from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -747,7 +747,8 @@ class TPOTBase(BaseEstimator):
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
-        return gp.cxOnePoint(ind1, ind2)
+        #return gp.cxOnePoint(ind1, ind2)
+        return cxOnePoint(ind1, ind2)
 
     @_pre_test
     def _random_mutation_operator(self, individual):

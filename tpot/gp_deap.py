@@ -200,6 +200,52 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     return population, logbook
 
 
+####
+from collections import defaultdict
+
+def cxOnePoint(ind1, ind2):
+    """Randomly select in each individual and exchange each subtree with the
+    point as root between each individual.
+    :param ind1: First tree participating in the crossover.
+    :param ind2: Second tree participating in the crossover.
+    :returns: A tuple of two trees.
+    """
+    # Define the name of type for any types.
+    __type__ = object
+
+    if len(ind1) < 2 or len(ind2) < 2:
+        # No crossover on single node tree
+        return ind1, ind2
+
+    # List all available primitive types in each individual
+    types1 = defaultdict(list)
+    types2 = defaultdict(list)
+    if ind1.root.ret == __type__:
+        # Not STGP optimization
+        types1[__type__] = range(1, len(ind1))
+        types2[__type__] = range(1, len(ind2))
+        common_types = [__type__]
+    else:
+        for idx, node in enumerate(ind1[1:], 1):
+            types1[node.ret].append(idx)
+        for idx, node in enumerate(ind2[1:], 1):
+            types2[node.ret].append(idx)
+
+        common_types = [x for x in types1 if x in types2]
+
+    if len(common_types) > 0:
+        type_ = np.random.choice(list(common_types))
+
+        index1 = np.random.choice(types1[type_])
+        index2 = np.random.choice(types2[type_])
+
+        slice1 = ind1.searchSubtree(index1)
+        slice2 = ind2.searchSubtree(index2)
+        ind1[slice1], ind2[slice2] = ind2[slice2], ind1[slice1]
+
+    return ind1, ind2
+
+
 # point mutation function
 def mutNodeReplacement(individual, pset):
     """Replaces a randomly chosen primitive from *individual* by a randomly
@@ -283,7 +329,7 @@ class Interruptable_cross_val_score(threading.Thread):
                 warnings.simplefilter('ignore')
                 self.result = cross_val_score(*self.args, **self.kwargs)
         except Exception as e:
-            #print(e) # for debug use 
+            #print(e) # for debug use
             pass
 
 def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
