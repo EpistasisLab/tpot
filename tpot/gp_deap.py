@@ -327,7 +327,6 @@ class Interruptable_cross_val_score(threading.Thread):
                 warnings.simplefilter('ignore')
                 self.result = cross_val_score(*self.args, **self.kwargs)
         except Exception as e:
-            #print(e) # for debug use
             pass
 
 def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
