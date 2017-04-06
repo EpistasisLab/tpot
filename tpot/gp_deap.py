@@ -229,8 +229,8 @@ def cxOnePoint(ind1, ind2):
         for idx, node in enumerate(ind2[1:], 1):
             types2[node.ret].append(idx)
 
-        common_types = [x for x in types1 if x in types2]
-
+        common_types = [x for x in list(types1.keys()) if x in list(types2.keys())]
+        print('    >>>> check types', common_types)
     if len(common_types) > 0:
         type_ = np.random.choice(common_types)
 
