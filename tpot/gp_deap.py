@@ -232,7 +232,7 @@ def cxOnePoint(ind1, ind2):
         common_types = [x for x in types1 if x in types2]
 
     if len(common_types) > 0:
-        type_ = np.random.choice(list(common_types))
+        type_ = np.random.choice(common_types)
 
         index1 = np.random.choice(types1[type_])
         index2 = np.random.choice(types2[type_])
