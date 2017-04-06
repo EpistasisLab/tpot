@@ -24,6 +24,7 @@ from inspect import isclass
 from .operator_utils import set_sample_weight
 from sklearn.model_selection import cross_val_score
 from sklearn.base import clone
+from collections import defaultdict
 import warnings
 import threading
 
@@ -199,9 +200,6 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
     return population, logbook
 
-
-####
-from collections import defaultdict
 
 def cxOnePoint(ind1, ind2):
     """Randomly select in each individual and exchange each subtree with the
