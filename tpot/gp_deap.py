@@ -3,21 +3,28 @@
 """
 Copyright 2015-Present Randal S. Olson
 
-This file is modified based on codes for alogrithms.eaSimple module in DEAP.
-
 This file is part of the TPOT library.
 
-The TPOT library is free software: you can redistribute it and/or
-modify it under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License, or (at your option)
-any later version.
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
 
-The TPOT library is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-details. You should have received a copy of the GNU General Public License along
-with the TPOT library. If not, see http://www.gnu.org/licenses/.
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+Most of the code in this file was copied from the DEAP project, which
+can be found on GitHub at https://github.com/DEAP/deap. We copied these
+functions into TPOT to customize or fix portions of the code for our
+own purposes in TPOT.
+
 """
+
 import numpy as np
 from deap import tools, gp
 from inspect import isclass
