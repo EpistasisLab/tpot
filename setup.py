@@ -17,7 +17,7 @@ setup(
     author_email='rso@randalolson.com',
     packages=find_packages(),
     url='https://github.com/rhiever/tpot',
-    license='GNU/GPLv3',
+    license='GNU/LGPLv3',
     entry_points={'console_scripts': ['tpot=tpot:main', ]},
     description=('Tree-based Pipeline Optimization Tool'),
     long_description='''
@@ -38,7 +38,7 @@ This project is hosted at https://github.com/rhiever/tpot
     extras_require={'xgboost': ['xgboost']},
     classifiers=[
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
