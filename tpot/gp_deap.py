@@ -233,10 +233,11 @@ def cxOnePoint(ind1, ind2):
     else:
         for idx, node in enumerate(ind1[1:], 1):
             types1[node.ret].append(idx)
+        common_types = []
         for idx, node in enumerate(ind2[1:], 1):
+            if node.ret in types1 and not node.ret in types2:
+                common_types.append(node.ret)
             types2[node.ret].append(idx)
-
-        common_types = sorted([x for x in types1 if x in types2], key=lambda X: X.__name__)
 
     if len(common_types) > 0:
         type_ = np.random.choice(common_types)
