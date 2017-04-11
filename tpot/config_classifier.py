@@ -208,12 +208,6 @@ classifier_config_dict = {
                 }
         }
     }
-
-    'tpot.build_in_operators.selectors.ekf_filter.EKF_Source': {
-        'expert_source': None
-        'ekf_index': None
-        'k_best': 5
-    },
         
     'skrebate.ReliefF': {
         'n_features_to_select': max(1, n_features_to_select)
