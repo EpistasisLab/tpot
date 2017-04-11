@@ -104,7 +104,7 @@ classifier_config_dict = {
         'min_child_weight': range(1, 21)
     },
     
-    'mdr': {
+    'mdr.MDR': {
         'tie_break': tie_break % 2
         'default_label': default_label % 2
 
