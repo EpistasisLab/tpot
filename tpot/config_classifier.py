@@ -103,6 +103,10 @@ classifier_config_dict = {
         'subsample': np.arange(0.05, 1.01, 0.05),
         'min_child_weight': range(1, 21)
     },
+    
+    'mdr': {
+        'tie_break': tie_break % 2
+        'default_label': default_label % 2
 
     # Preprocesssors
     'sklearn.preprocessing.Binarizer': {
@@ -193,6 +197,12 @@ classifier_config_dict = {
                 'random_state': [42]
                 }
         }
+    },
+        
+    '.ekf_source': {
+        'expert_source': None
+        'ekf_index': None
+        'k_best': 5
     },
 
    'sklearn.feature_selection.SelectFromModel': {
