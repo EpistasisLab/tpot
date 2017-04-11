@@ -1,10 +1,15 @@
-[![Build Status](https://travis-ci.org/rhiever/tpot.svg?branch=master)](https://travis-ci.org/rhiever/tpot)
-[![Code Health](https://landscape.io/github/rhiever/tpot/master/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/master)
-[![Coverage Status](https://coveralls.io/repos/rhiever/tpot/badge.svg?branch=master&service=github)](https://coveralls.io/github/rhiever/tpot?branch=master)
-![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)
-![Python 3.5](https://img.shields.io/badge/python-3.5-blue.svg)
-![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
-[![PyPI version](https://badge.fury.io/py/tpot.svg)](https://badge.fury.io/py/tpot)
+Master status: [![Master Build Status](https://travis-ci.org/rhiever/tpot.svg?branch=master)](https://travis-ci.org/rhiever/tpot)
+[![Master Code Health](https://landscape.io/github/rhiever/tpot/master/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/master)
+[![Master Coverage Status](https://coveralls.io/repos/rhiever/tpot/badge.svg?branch=master&service=github)](https://coveralls.io/github/rhiever/tpot?branch=master)
+
+Development status: [![Development Build Status](https://travis-ci.org/rhiever/tpot.svg?branch=development)](https://travis-ci.org/rhiever/tpot/branches)
+[![Development Code Health](https://landscape.io/github/rhiever/tpot/development/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/development)
+[![Development Coverage Status](https://coveralls.io/repos/rhiever/tpot/badge.svg?branch=development&service=github)](https://coveralls.io/github/rhiever/tpot?branch=development)
+
+Package information: [![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)](https://www.python.org/download/releases/2.7/)
+[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![License: LGPL v3](https://img.shields.io/badge/license-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
+[![PyPI version](https://badge.fury.io/py/TPOT.svg)](https://badge.fury.io/py/TPOT)
 
 [![Join the chat at https://gitter.im/rhiever/tpot](https://badges.gitter.im/rhiever/tpot.svg)](https://gitter.im/rhiever/tpot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -76,19 +81,15 @@ import numpy as np
 
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.pipeline import make_pipeline
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
-
 training_features, testing_features, training_classes, testing_classes = \
     train_test_split(features, tpot_data['class'], random_state=42)
 
-exported_pipeline = make_pipeline(
-    KNeighborsClassifier(n_neighbors=3, weights="uniform")
-)
+exported_pipeline = KNeighborsClassifier(n_neighbors=6, weights="distance")
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
@@ -118,27 +119,25 @@ which should result in a pipeline that achieves about 12.77 mean squared error (
 ```python
 import numpy as np
 
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import ExtraTreesRegressor
-from sklearn.pipeline import make_pipeline
 
-# NOTE: Make sure that the target is labeled 'class' in the data file
+# NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
-
 training_features, testing_features, training_classes, testing_classes = \
     train_test_split(features, tpot_data['class'], random_state=42)
 
-exported_pipeline = make_pipeline(
-    ExtraTreesRegressor(max_features=0.76, n_estimators=500)
-)
+exported_pipeline = GradientBoostingRegressor(alpha=0.85, learning_rate=0.1, loss="ls",
+                                              max_features=0.9, min_samples_leaf=5,
+                                              min_samples_split=6)
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 ```
 
-Check the documentation for [more examples and tutorials](http://rhiever.github.io/tpot/examples/MNIST_Example/).
+Check the documentation for [more examples and tutorials](http://rhiever.github.io/tpot/examples/).
 
 ## Contributing to TPOT
 
@@ -204,6 +203,6 @@ Alternatively, you can cite the repository directly with the following DOI:
 
 ## Support for TPOT
 
-TPOT was developed in the [Computational Genetics Lab](http://epistasis.org) with funding from the [NIH](http://www.nih.gov). We're incredibly grateful for their support during the development of this project.
+TPOT was developed in the [Computational Genetics Lab](http://epistasis.org) with funding from the [NIH](http://www.nih.gov) under grant R01 AI117694. We're incredibly grateful for their support during the development of this project.
 
 The TPOT logo was designed by Todd Newmuis, who generously donated his time to the project.

@@ -13,17 +13,13 @@ markdown_extensions:
   - tables
   - fenced_code
 
-copyright: Copyright &copy; 2016-Present <a href="http://www.randalolson.com">Randal S. Olson</a>
+copyright: Copyright &copy; 2015-Present <a href="http://www.randalolson.com">Randal S. Olson</a>
 
 pages:
 - Home: index.md
 - Installation: installing.md
 - Using TPOT: using.md
-- Examples:
-  - examples/MNIST_Example.md
-  - examples/IRIS_Example.md
-  - examples/Boston_Example.md
-  - examples/Titanic_Kaggle_Example.md
+- Examples: examples.md
 - Contributing: contributing.md
 - Release Notes: releases.md
 - Citing: citing.md

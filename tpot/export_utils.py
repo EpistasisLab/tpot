@@ -1,34 +1,61 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright 2016 Randal S. Olson
+Copyright 2015-Present Randal S. Olson
 
 This file is part of the TPOT library.
 
-The TPOT library is free software: you can redistribute it and/or
-modify it under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License, or (at your option)
-any later version.
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
 
-The TPOT library is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-details. You should have received a copy of the GNU General Public License along
-with the TPOT library. If not, see http://www.gnu.org/licenses/.
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
 import deap
-from . import operators
 
+def get_by_name(opname, operators):
+    """Returns operator class instance by name
 
-def export_pipeline(exported_pipeline):
+    Parameters
+    ----------
+    opname: str
+        Name of the sklearn class that belongs to a TPOT operator
+    operators: list
+        List of operator classes from operator library
+
+    Returns
+    -------
+    ret_op_class: class
+        An operator class
+
+    """
+    ret_op_classes = [op for op in operators if op.__name__ == opname]
+    if len(ret_op_classes) == 0:
+        raise TypeError('Cannot found operator {} in operator dictionary'.format(opname))
+    elif len(ret_op_classes) > 1:
+        print('Found multiple operator {} in operator dictionary'.format(opname),
+        'Please check your dictionary file.')
+    ret_op_class = ret_op_classes[0]
+    return ret_op_class
+
+def export_pipeline(exported_pipeline, operators, pset):
     """Generates the source code of a TPOT Pipeline
 
     Parameters
     ----------
     exported_pipeline: deap.creator.Individual
         The pipeline that is being exported
+    operators:
+        List of operator classes from operator library
 
     Returns
     -------
@@ -37,18 +64,18 @@ def export_pipeline(exported_pipeline):
 
     """
     # Unroll the nested function calls into serial code
-    pipeline_tree = expr_to_tree(exported_pipeline)
+    pipeline_tree = expr_to_tree(exported_pipeline, pset)
 
     # Have the exported code import all of the necessary modules and functions
-    pipeline_text = generate_import_code(exported_pipeline)
+    pipeline_text = generate_import_code(exported_pipeline, operators)
 
     # Replace the function calls with their corresponding Python code
-    pipeline_text += pipeline_code_wrapper(generate_pipeline_code(pipeline_tree))
+    pipeline_text += pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators))
 
     return pipeline_text
 
 
-def expr_to_tree(ind):
+def expr_to_tree(ind, pset):
     """Convert the unstructured DEAP pipeline into a tree data-structure
 
     Parameters
@@ -70,7 +97,10 @@ def expr_to_tree(ind):
     """
     def prim_to_list(prim, args):
         if isinstance(prim, deap.gp.Terminal):
-            return prim.value
+            if prim.name in pset.context:
+                 return pset.context[prim.name]
+            else:
+                 return prim.value
 
         return [prim.name] + args
 
@@ -88,19 +118,21 @@ def expr_to_tree(ind):
     return tree
 
 
-def generate_import_code(pipeline):
+def generate_import_code(pipeline, operators):
     """Generate all library import calls for use in TPOT.export()
 
     Parameters
     ----------
     pipeline: List
-       List of operators in the current optimized pipeline
+        List of operators in the current optimized pipeline
+    operators:
+        List of operator class from operator library
 
     Returns
     -------
     pipeline_text: String
-       The Python code that imports all required library used in the current
-       optimized pipeline
+        The Python code that imports all required library used in the current
+        optimized pipeline
 
     """
     # operator[1] is the name of the operator
@@ -108,18 +140,41 @@ def generate_import_code(pipeline):
 
     pipeline_text = 'import numpy as np\n\n'
 
-    # Always start with these imports
-    pipeline_imports = {
-        'sklearn.model_selection':  ['train_test_split'],
-        'sklearn.pipeline':         ['make_pipeline', 'make_union'],
-        'sklearn.preprocessing':    ['FunctionTransformer'],
-        'sklearn.ensemble':         ['VotingClassifier']
-    }
+    # number of operators
+    num_op = len(operators_used)
 
     # Build dict of import requirments from list of operators
     import_relations = {}
-    for op in operators.Operator.inheritors():
+    for op in operators:
         import_relations[op.__name__] = op.import_hash
+
+    # number of classifier/regressor or CombineDFs
+    num_op_root = 0
+    for op in operators_used:
+        if op != 'CombineDFs':
+            tpot_op = get_by_name(op, operators)
+            if tpot_op.root:
+                num_op_root += 1
+        else:
+            num_op_root += 1
+
+    # Always start with these imports
+    if num_op_root > 1:
+        pipeline_imports = {
+            'sklearn.model_selection':  ['train_test_split'],
+            'sklearn.pipeline':         ['make_pipeline', 'make_union'],
+            'sklearn.preprocessing':    ['FunctionTransformer'],
+            'sklearn.ensemble':         ['VotingClassifier']
+        }
+    elif num_op > 1:
+        pipeline_imports = {
+            'sklearn.model_selection':  ['train_test_split'],
+            'sklearn.pipeline':         ['make_pipeline']
+        }
+    else: # if  operators # == 1 and classifier/regressor # == 1, this import statement is simpler
+        pipeline_imports = {
+            'sklearn.model_selection':  ['train_test_split']
+        }
 
     # Build import dict from operators used
     for op in operators_used:
@@ -175,7 +230,7 @@ results = exported_pipeline.predict(testing_features)
 """.format(pipeline_code)
 
 
-def generate_pipeline_code(pipeline_tree):
+def generate_pipeline_code(pipeline_tree, operators):
     """Generate code specific to the construction of the sklearn Pipeline
 
     Parameters
@@ -188,25 +243,47 @@ def generate_pipeline_code(pipeline_tree):
     Source code for the sklearn pipeline
 
     """
-    steps = process_operator(pipeline_tree)
+    steps = process_operator(pipeline_tree, operators)
     pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
     return pipeline_text
 
+def generate_export_pipeline_code(pipeline_tree, operators):
+    """Generate code specific to the construction of the sklearn Pipeline for export_pipeline
 
-def process_operator(operator, depth=0):
+    Parameters
+    ----------
+    pipeline_tree: list
+        List of operators in the current optimized pipeline
+
+    Returns
+    -------
+    Source code for the sklearn pipeline
+
+    """
+    steps = process_operator(pipeline_tree, operators)
+    # number of steps in a pipeline
+    num_step = len(steps)
+    if num_step > 1:
+        pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
+    else: # only one operator (root = True)
+        pipeline_text =  "{STEPS}".format(STEPS=_indent(",\n".join(steps), 0))
+
+    return pipeline_text
+
+def process_operator(operator, operators, depth=0):
     steps = []
     op_name = operator[0]
 
     if op_name == "CombineDFs":
         steps.append(
-            _combine_dfs(operator[1], operator[2])
+            _combine_dfs(operator[1], operator[2], operators)
         )
     else:
         input_name, args = operator[1], operator[2:]
-        tpot_op = operators.Operator.get_by_name(op_name)
+        tpot_op = get_by_name(op_name, operators)
 
         if input_name != 'input_matrix':
-            steps.extend(process_operator(input_name, depth + 1))
+            steps.extend(process_operator(input_name, operators, depth + 1))
 
         # If the step is an estimator and is not the last step then we must
         # add its guess as a synthetic feature
@@ -217,7 +294,6 @@ def process_operator(operator, depth=0):
             )
         else:
             steps.append(tpot_op.export(*args))
-
     return steps
 
 
@@ -240,30 +316,30 @@ def _indent(text, amount):
     return indentation + ('\n' + indentation).join(text.split('\n'))
 
 
-def _combine_dfs(left, right):
+def _combine_dfs(left, right, operators):
     def _make_branch(branch):
         if branch == "input_matrix":
             return "FunctionTransformer(lambda X: X)"
         elif branch[0] == "CombineDFs":
-            return _combine_dfs(branch[1], branch[2])
+            return _combine_dfs(branch[1], branch[2], operators)
         elif branch[1] == "input_matrix":  # If depth of branch == 1
-            tpot_op = operators.Operator.get_by_name(branch[0])
+            tpot_op = get_by_name(branch[0], operators)
 
             if tpot_op.root:
                 return """make_union(VotingClassifier([('branch',
 {}
-)]), FunctionTransformer(lambda X: X))""".format(_indent(process_operator(branch)[0], 4))
+)]), FunctionTransformer(lambda X: X))""".format(_indent(process_operator(branch, operators)[0], 4))
             else:
-                return process_operator(branch)[0]
+                return process_operator(branch, operators)[0]
         else:  # We're going to have to make a pipeline
-            tpot_op = operators.Operator.get_by_name(branch[0])
+            tpot_op = get_by_name(branch[0], operators)
 
             if tpot_op.root:
                 return """make_union(VotingClassifier([('branch',
 {}
-)]), FunctionTransformer(lambda X: X))""".format(_indent(generate_pipeline_code(branch), 4))
+)]), FunctionTransformer(lambda X: X))""".format(_indent(generate_pipeline_code(branch, operators), 4))
             else:
-                return generate_pipeline_code(branch)
+                return generate_pipeline_code(branch, operators)
 
     return "make_union(\n{},\n{}\n)".\
         format(_indent(_make_branch(left), 4), _indent(_make_branch(right), 4))

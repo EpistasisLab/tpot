@@ -12,6 +12,8 @@ TPOT is built on top of several existing Python libraries, including:
 
 * tqdm
 
+* Pathos
+
 Most of the necessary Python packages can be installed via the [Anaconda Python distribution](https://www.continuum.io/downloads), which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.
 
 NumPy, SciPy, and scikit-learn can be installed in Anaconda via the command:
@@ -20,13 +22,19 @@ NumPy, SciPy, and scikit-learn can be installed in Anaconda via the command:
 conda install numpy scipy scikit-learn
 ```
 
-DEAP, update_checker, and tqdm (used for verbose TPOT runs) can be installed with `pip` via the command:
+DEAP, update_checker, tqdm (used for verbose TPOT runs), and Pathos can be installed with `pip` via the command:
 
 ```Shell
-pip install deap update_checker tqdm
+pip install deap update_checker tqdm pathos
 ```
 
-Optionally, install XGBoost if you would like TPOT to use XGBoost. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.
+**For the Windows OS**, the pywin32 module is required if the Python is NOT installed via [Anaconda Python distribution](https://www.continuum.io/downloads) and can be installed with `pip` via the command:
+
+```Shell
+pip install pywin32
+```
+
+**Optionally**, install XGBoost if you would like TPOT to use XGBoost. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.
 
 ```Shell
 pip install xgboost

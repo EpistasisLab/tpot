@@ -17,7 +17,7 @@ setup(
     author_email='rso@randalolson.com',
     packages=find_packages(),
     url='https://github.com/rhiever/tpot',
-    license='GNU/GPLv3',
+    license='GNU/LGPLv3',
     entry_points={'console_scripts': ['tpot=tpot:main', ]},
     description=('Tree-based Pipeline Optimization Tool'),
     long_description='''
@@ -34,16 +34,17 @@ or Twitter: https://twitter.com/randal_olson
 This project is hosted at https://github.com/rhiever/tpot
 ''',
     zip_safe=True,
-    install_requires=['numpy', 'scipy', 'scikit-learn', 'deap', 'update_checker', 'tqdm'],
+    install_requires=['numpy', 'scipy', 'scikit-learn>=0.18.1', 'deap', 'update_checker', 'tqdm', 'pathos'],
     extras_require={'xgboost': ['xgboost']},
     classifiers=[
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering :: Artificial Intelligence'
     ],
     keywords=['pipeline optimization', 'hyperparameter optimization', 'data science', 'machine learning', 'genetic programming', 'evolutionary computation'],

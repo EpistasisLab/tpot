@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright 2016 Randal S. Olson
+Copyright 2015-Present Randal S. Olson
 
 This file is part of the TPOT library.
 
-The TPOT library is free software: you can redistribute it and/or
-modify it under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License, or (at your option)
-any later version.
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
 
-The TPOT library is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-details. You should have received a copy of the GNU General Public License along
-with the TPOT library. If not, see http://www.gnu.org/licenses/.
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
@@ -76,10 +78,11 @@ def main():
         'automatically creates and optimizes machine learning pipelines using '
         'genetic programming.', add_help=False)
 
-    parser.add_argument('INPUT_FILE', type=str, help='Data file to optimize the '
-        'pipeline on; ensure that the class label column is labeled as "class".')
+    parser.add_argument('INPUT_FILE', type=str, help='Data file to use in the TPOT '
+        'optimization process. Ensure that the class label column is labeled as "class".')
 
-    parser.add_argument('-h', '--help', action='help', help='Show this help message and exit.')
+    parser.add_argument('-h', '--help', action='help',
+        help='Show this help message and exit.')
 
     parser.add_argument('-is', action='store', dest='INPUT_SEPARATOR', default='\t',
         type=str, help='Character used to separate columns in the input file.')
@@ -89,41 +92,41 @@ def main():
 
     parser.add_argument('-mode', action='store', dest='TPOT_MODE',
         choices=['classification', 'regression'], default='classification', type=str,
-        help='Whether TPOT is being used for a classification or regression problem.')
+        help='Whether TPOT is being used for a supervised classification or regression problem.')
 
     parser.add_argument('-o', action='store', dest='OUTPUT_FILE', default='',
-        type=str, help='File to export the final optimized pipeline.')
+        type=str, help='File to export the code for the final optimized pipeline.')
 
     parser.add_argument('-g', action='store', dest='GENERATIONS', default=100,
-        type=positive_integer, help='Number of generations to run pipeline '
-        'optimization over.\nGenerally, TPOT will work better when '
-        'you give it more generations (and therefore time) to optimize over. '
-        'TPOT will evaluate GENERATIONS x POPULATION_SIZE number of pipelines in total.')
+        type=positive_integer, help='Number of iterations to run the pipeline optimization process.\n'
+        'Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline. '
+        'TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.')
 
     parser.add_argument('-p', action='store', dest='POPULATION_SIZE', default=100,
-        type=positive_integer, help='Number of individuals in the GP population.\n'
-        'Generally, TPOT will work better when you give it more individuals '
-        '(and therefore time) to optimize over. TPOT will evaluate '
-        'GENERATIONS x POPULATION_SIZE number of pipelines in total.')
+        type=positive_integer, help='Number of individuals to retain in the GP population every generation.\n'
+        'Generally, TPOT will work better when you give it more individuals (and therefore time) to optimize the pipeline. '
+        'TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.')
+
+    parser.add_argument('-os', action='store', dest='OFFSPRING_SIZE', default=None,
+        type=positive_integer, help='Number of offspring to produce in each GP generation. '
+        'By default, OFFSPRING_SIZE = POPULATION_SIZE.')
 
     parser.add_argument('-mr', action='store', dest='MUTATION_RATE', default=0.9,
-        type=float_range, help='GP mutation rate in the range [0.0, 1.0]. We '
-        'recommend using the default parameter unless you '
-        'understand how the mutation rate affects GP algorithms.')
+        type=float_range, help='GP mutation rate in the range [0.0, 1.0]. This tells the '
+        'GP algorithm how many pipelines to apply random changes to every generation. '
+        'We recommend using the default parameter unless you understand how the mutation '
+        'rate affects GP algorithms.')
 
-    parser.add_argument('-xr', action='store', dest='CROSSOVER_RATE', default=0.05,
-        type=float_range, help='GP crossover rate in the range [0.0, 1.0]. We '
-        'recommend using the default parameter unless you '
-        'understand how the crossover rate affects GP algorithms.')
-
-    parser.add_argument('-cv', action='store', dest='NUM_CV_FOLDS', default=3,
-        type=int, help='The number of folds to evaluate each pipeline over in '
-        'k-fold cross-validation during the TPOT pipeline optimization process.')
+    parser.add_argument('-xr', action='store', dest='CROSSOVER_RATE', default=0.1,
+        type=float_range, help='GP crossover rate in the range [0.0, 1.0]. This tells the '
+        'GP algorithm how many pipelines to "breed" every generation. '
+        'We recommend using the default parameter unless you understand how the crossover '
+        'rate affects GP algorithms.')
 
     parser.add_argument('-scoring', action='store', dest='SCORING_FN', default=None,
         type=str, help='Function used to evaluate the quality of a given pipeline for '
-        'the problem. By default, balanced accuracy is used for classification and mean '
-        'squared error is used for regression. '
+        'the problem. By default, accuracy is used for classification problems and mean '
+        'squared error (mse) is used for regression problems. '
         'TPOT assumes that any function with "error" or "loss" in the name is meant to '
         'be minimized, whereas any other functions will be maximized. '
         'Offers the same options as cross_val_score: '
@@ -132,6 +135,15 @@ def main():
         '"mean_squared_error", "median_absolute_error", "precision", "precision_macro", '
         '"precision_micro", "precision_samples", "precision_weighted", "r2", "recall", '
         '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"')
+
+    parser.add_argument('-cv', action='store', dest='NUM_CV_FOLDS', default=5,
+        type=int, help='Number of folds to evaluate each pipeline over in '
+        'k-fold cross-validation during the TPOT optimization process.')
+
+    parser.add_argument('-njobs', action='store', dest='NUM_JOBS', default=1,
+        type=int, help='Number of CPUs for evaluating pipelines in parallel '
+        ' during the TPOT optimization process. Assigning this to -1 will use as many '
+        'cores as available on the computer.')
 
     parser.add_argument('-maxtime', action='store', dest='MAX_TIME_MINS', default=None,
         type=int, help='How many minutes TPOT has to optimize the pipeline. This '
@@ -148,9 +160,14 @@ def main():
         'this seed if you want your TPOT run to be reproducible with the same '
         'seed and data set in the future.')
 
+    parser.add_argument('-config', action='store', dest='CONFIG_FILE', default='',
+        type=str, help='Configuration file for customizing the operators and parameters '
+        'that TPOT uses in the optimization process.')
+
     parser.add_argument('-v', action='store', dest='VERBOSITY', default=1,
-        choices=[0, 1, 2, 3], type=int, help='How much information TPOT '
-        'communicates while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all.')
+        choices=[0, 1, 2, 3], type=int, help='How much information TPOT communicates '
+        'while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all. '
+        'A setting of 2 or higher will add a progress bar during the optimization procedure.')
 
     parser.add_argument('--no-update-check', action='store_true',
         dest='DISABLE_UPDATE_CHECK', default=False,
@@ -158,7 +175,7 @@ def main():
 
     parser.add_argument('--version', action='version',
         version='TPOT {version}'.format(version=__version__),
-        help='Show TPOT\'s version number and exit.')
+        help='Show the TPOT version number and exit.')
 
     args = parser.parse_args()
 
@@ -168,11 +185,13 @@ def main():
             arg_val = args.__dict__[arg]
             if arg == 'DISABLE_UPDATE_CHECK':
                 continue
-            elif arg == 'SCORING_FN' and args.__dict__[arg] is None:
+            elif arg == 'SCORING_FN' and arg_val is None:
                 if args.TPOT_MODE == 'classification':
-                    arg_val = 'balanced_accuracy'
+                    arg_val = 'accuracy'
                 else:
                     arg_val = 'mean_squared_error'
+            elif arg == 'OFFSPRING_SIZE' and arg_val is None:
+                arg_val = args.__dict__['POPULATION_SIZE']
             print('{}\t=\t{}'.format(arg, arg_val))
         print('')
 
@@ -192,25 +211,38 @@ def main():
     else:
         tpot_type = TPOTRegressor
 
+    operator_dict = None
+    if args.CONFIG_FILE:
+        try:
+            with open(args.CONFIG_FILE, 'r') as input_file:
+                file_string =  input_file.read()
+            operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}') + 1)])
+        except:
+            raise TypeError('The operator configuration file is in a bad format or not available. '
+                            'Please check the configuration file before running TPOT.')
+
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
-                mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                num_cv_folds=args.NUM_CV_FOLDS, scoring=args.SCORING_FN,
-                max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
-                random_state=args.RANDOM_STATE, verbosity=args.VERBOSITY,
-                disable_update_check=args.DISABLE_UPDATE_CHECK)
+                     offspring_size=args.OFFSPRING_SIZE, mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
+                     cv=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS,
+                     scoring=args.SCORING_FN,
+                     max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
+                     random_state=args.RANDOM_STATE, config_dict=operator_dict,
+                     verbosity=args.VERBOSITY, disable_update_check=args.DISABLE_UPDATE_CHECK)
+
+    print('')
 
     tpot.fit(training_features, training_classes)
 
     if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
-        training_score = max([tpot._hof.keys[x].wvalues[1] for x in range(len(tpot._hof.keys))])
+        training_score = max([tpot._pareto_front.keys[x].wvalues[1] for x in range(len(tpot._pareto_front.keys))])
         print('\nTraining score: {}'.format(abs(training_score)))
         print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
 
-    elif args.VERBOSITY >= 3 and tpot._hof:
+    elif args.VERBOSITY >= 3 and tpot._pareto_front:
         print('Final Pareto front testing scores:')
 
-        for pipeline, pipeline_scores in zip(tpot._hof.items, reversed(tpot._hof.keys)):
-            tpot._fitted_pipeline = tpot._hof_fitted_pipelines[str(pipeline)]
+        for pipeline, pipeline_scores in zip(tpot._pareto_front.items, reversed(tpot._pareto_front.keys)):
+            tpot._fitted_pipeline = tpot._pareto_front_fitted_pipelines[str(pipeline)]
             print('{}\t{}\t{}'.format(int(abs(pipeline_scores.wvalues[0])),
                                       tpot.score(testing_features, testing_classes),
                                       pipeline))

@@ -45,95 +45,50 @@
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
 	<ul class="current">
+	  
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="..">Home</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Home</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Installation</a>
-        
-            <ul>
-            
-            </ul>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../using/">Using TPOT</a>
-        
-    </li>
-<li>
-          
-            <li>
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Installation</a>
     <ul class="subnav">
-    <li><span>Examples</span></li>
-
-        
             
-    <li class="toctree-l1 ">
-        <a class="" href="../examples/MNIST_Example/">MNIST Example</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../examples/IRIS_Example/">IRIS Example</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../examples/Boston_Example/">Boston Example</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../examples/Titanic_Kaggle_Example/">Titanic Kaggle Example</a>
-        
-    </li>
-
-        
     </ul>
-<li>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../contributing/">Contributing</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../using/">Using TPOT</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../releases/">Release Notes</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../examples/">Examples</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../citing/">Citing</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../contributing/">Contributing</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../support/">Support</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../releases/">Release Notes</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../citing/">Citing</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../support/">Support</a>
+	    </li>
           
         </ul>
       </div>
@@ -190,17 +145,24 @@
 <li>
 <p>tqdm</p>
 </li>
+<li>
+<p>Pathos</p>
+</li>
 </ul>
 <p>Most of the necessary Python packages can be installed via the <a href="https://www.continuum.io/downloads">Anaconda Python distribution</a>, which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.</p>
 <p>NumPy, SciPy, and scikit-learn can be installed in Anaconda via the command:</p>
 <pre><code class="Shell">conda install numpy scipy scikit-learn
 </code></pre>
 
-<p>DEAP, update_checker, and tqdm (used for verbose TPOT runs) can be installed with <code>pip</code> via the command:</p>
-<pre><code class="Shell">pip install deap update_checker tqdm
+<p>DEAP, update_checker, tqdm (used for verbose TPOT runs), and Pathos can be installed with <code>pip</code> via the command:</p>
+<pre><code class="Shell">pip install deap update_checker tqdm pathos
 </code></pre>
 
-<p>Optionally, install XGBoost if you would like TPOT to use XGBoost. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.</p>
+<p><strong>For the Windows OS</strong>, the pywin32 module is required if the Python is NOT installed via <a href="https://www.continuum.io/downloads">Anaconda Python distribution</a> and can be installed with <code>pip</code> via the command:</p>
+<pre><code class="Shell">pip install pywin32
+</code></pre>
+
+<p><strong>Optionally</strong>, install XGBoost if you would like TPOT to use XGBoost. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.</p>
 <pre><code class="Shell">pip install xgboost
 </code></pre>
 
@@ -230,7 +192,7 @@
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright &copy; 2016-Present <a href="http://www.randalolson.com">Randal S. Olson</a></p>
+      <p>Copyright &copy; 2015-Present <a href="http://www.randalolson.com">Randal S. Olson</a></p>
     
   </div>
 
@@ -247,7 +209,7 @@
   <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/rhiever/tpot" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/rhiever/tpot" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href=".." style="color: #fcfcfc;">&laquo; Previous</a></span>

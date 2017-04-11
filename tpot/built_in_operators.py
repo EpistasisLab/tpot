@@ -1,26 +1,26 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright 2016 Randal S. Olson
+Copyright 2015-Present Randal S. Olson
 
 This file is part of the TPOT library.
 
-The TPOT library is free software: you can redistribute it and/or
-modify it under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License, or (at your option)
-any later version.
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
 
-The TPOT library is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-details. You should have received a copy of the GNU General Public License along
-with the TPOT library. If not, see http://www.gnu.org/licenses/.
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
 import numpy as np
-
-from .base import Preprocessor
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
 
@@ -67,19 +67,9 @@ class ZeroCount(BaseEstimator):
 
         return X_transformed
 
+class CombineDFs(object):
+    """Operator to combine two DataFrames"""
 
-class TPOTZeroCount(Preprocessor):
-
-    """Uses TPOT's ZeroCount to transform the feature set"""
-
-    import_hash = {'tpot.operators.preprocessors': ['ZeroCount']}
-    sklearn_class = ZeroCount
-    arg_types = ()
-
-    def __init__(self):
-        """Creates a new TPOTZeroCount instance"""
-        pass
-
-    def preprocess_args(self):
-        """Preprocesses the arguments in case they need to be constrained in some way"""
-        return {}
+    @property
+    def __name__(self):
+        return self.__class__.__name__
