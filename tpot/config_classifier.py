@@ -198,12 +198,6 @@ classifier_config_dict = {
                 }
         }
     },
-        
-    '.ekf_source': {
-        'expert_source': None
-        'ekf_index': None
-        'k_best': 5
-    },
 
    'sklearn.feature_selection.SelectFromModel': {
         'threshold': np.arange(0, 1.01, 0.05),
@@ -214,5 +208,23 @@ classifier_config_dict = {
                 }
         }
     }
+
+    'tpot.build_in_operators.selectors.ekf_filter.EKF_Source': {
+        'expert_source': None
+        'ekf_index': None
+        'k_best': 5
+    },
+        
+    'skrebate.ReliefF': {
+        'n_features_to_select': max(1, n_features_to_select)
+    },
+        
+    'skrebate.SURF': {
+        'n_features_to_select': max(1, n_features_to_select)
+    },
+        
+    'skrebate.SURFstar': {
+        'n_features_to_select': max(1, n_features_to_select)
+    },
 
 }
