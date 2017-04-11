@@ -226,5 +226,9 @@ classifier_config_dict = {
     'skrebate.SURFstar': {
         'n_features_to_select': max(1, n_features_to_select)
     },
+        
+    'skrebate.MultiSURF': {
+        'n_features_to_select': max(1, n_features_to_select)
+    }
 
 }
