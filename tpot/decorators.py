@@ -21,9 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import print_function
-import threading
 from functools import wraps
-import sys
 import warnings
 from sklearn.datasets import make_classification, make_regression
 from .export_utils import expr_to_tree, generate_pipeline_code
@@ -32,100 +30,6 @@ from deap import creator
 # has unsuppported combinations in params
 pretest_X, pretest_y = make_classification(n_samples=50, n_features=10, random_state=42)
 pretest_X_reg, pretest_y_reg = make_regression(n_samples=50, n_features=10, random_state=42)
-
-
-def convert_mins_to_secs(time_minute):
-    """Convert time from minutes to seconds"""
-    # time limit should be at least 1 second
-    return max(int(time_minute * 60), 1)
-
-
-class TimedOutExc(RuntimeError):
-    """
-    Raised when a timeout happens
-    """
-
-def timeout_signal_handler(signum, frame):
-    """
-    signal handler for _timeout function
-    rasie TIMEOUT exception
-    """
-    raise TimedOutExc("Time Out!")
-
-def _timeout(max_eval_time_mins=5):
-    """Runs a function with time limit
-
-    Parameters
-    ----------
-    max_eval_time_mins: int (default = 5)
-        Time limit in minutes
-    func: Python function
-        Function to run
-    args: tuple
-        Function args
-    kw: dict
-        Function keywords
-
-    Returns
-    -------
-    limitedTime: function
-        Wrapped function that raises a timeout exception if the time limit is exceeded
-    """
-    def wrap_func(func):
-        if not sys.platform.startswith('win'):
-            import signal
-            @wraps(func)
-            def limitedTime(*args, **kw):
-                old_signal_hander = signal.signal(signal.SIGALRM, timeout_signal_handler)
-                max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
-                signal.alarm(max_time_seconds)
-                try:
-                    with warnings.catch_warnings():
-                        warnings.simplefilter('ignore')
-                        ret = func(*args, **kw)
-                except:
-                    raise TimedOutExc('Time Out!')
-                finally:
-                    signal.signal(signal.SIGALRM, old_signal_hander)  # Old signal handler is restored
-                    signal.alarm(0)  # Alarm removed
-                return ret
-        else:
-            class InterruptableThread(threading.Thread):
-                def __init__(self, args, kwargs):
-                    threading.Thread.__init__(self)
-                    self.args = args
-                    self.kwargs = kwargs
-                    self.result = -float('inf')
-                    self._stopevent = threading.Event()
-                    self.daemon = True
-                def stop(self):
-                    self._stopevent.set()
-                    threading.Thread.join(self)
-                def run(self):
-                    # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
-                    # Note: Need attention if using parallel execution model of scikit-learn
-                    threading.current_thread().name = 'MainThread'
-                    with warnings.catch_warnings():
-                        warnings.simplefilter('ignore')
-                        self.result = func(*self.args, **self.kwargs)
-            @wraps(func)
-            def limitedTime(*args, **kwargs):
-                sys.tracebacklimit = 0
-                max_time_seconds = convert_mins_to_secs(max_eval_time_mins)
-                # start thread
-                tmp_it = InterruptableThread(args, kwargs)
-                tmp_it.start()
-                #timer = Timer(max_time_seconds, interrupt_main)
-                tmp_it.join(max_time_seconds)
-                if tmp_it.isAlive():
-                    raise TimedOutExc('Time Out!')
-                sys.tracebacklimit = 1000
-                tmp_it.stop()
-                return tmp_it.result
-        return limitedTime
-    return wrap_func
-
-
 
 
 def _pre_test(func):
