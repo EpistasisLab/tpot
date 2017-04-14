@@ -160,10 +160,6 @@ def main():
         'this seed if you want your TPOT run to be reproducible with the same '
         'seed and data set in the future.')
 
-    parser.add_argument('-lite', action='store_true', dest='LITE', default=False,
-        help='Whether TPOT use a lite version of operator configuration dictionary '
-        'instead of the default one.')
-
     parser.add_argument('-config', action='store', dest='CONFIG_FILE', default='',
         type=str, help='Configuration file for customizing the operators and parameters '
         'that TPOT uses in the optimization process.')
@@ -172,6 +168,10 @@ def main():
         choices=[0, 1, 2, 3], type=int, help='How much information TPOT communicates '
         'while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all. '
         'A setting of 2 or higher will add a progress bar during the optimization procedure.')
+
+    parser.add_argument('--lite', action='store_true', dest='LITE', default=False,
+        help='Whether TPOT use a lite version of operator configuration dictionary '
+        'instead of the default one.')
 
     parser.add_argument('--no-update-check', action='store_true',
         dest='DISABLE_UPDATE_CHECK', default=False,

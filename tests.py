@@ -28,7 +28,8 @@ from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
-from tpot.config_classifier import classifier_config_dict
+from tpot.config_classifier import classifier_config_dict, classifier_config_dict_lite
+from tpot.config_regressor import regressor_config_dict_lite
 
 import numpy as np
 import inspect
@@ -104,6 +105,15 @@ def test_init_default_scoring():
     tpot_obj = TPOTClassifier()
     assert tpot_obj.scoring_function == 'accuracy'
 
+def test_invaild_dict_setting_warning():
+    """Assert that the TPOT function raises a ValueError when setting both dict_lite and config_dict"""
+    try:
+        tpot_obj = TPOTClassifier(dict_lite=True, config_dict=classifier_config_dict)
+        assert False
+    except ValueError:
+        pass
+
+
 def test_invaild_score_warning():
     """Assert that the TPOT fit function raises a ValueError when the scoring metrics is not available in SCORERS"""
     try:
@@ -148,15 +158,10 @@ def test_get_params():
     }
 
     tpot_obj = TPOTClassifier(**kwargs)
-
     # Get default parameters of TPOT and merge with our specified parameters
     initializer = inspect.getargspec(TPOTBase.__init__)
     default_kwargs = dict(zip(initializer.args[1:], initializer.defaults))
     default_kwargs.update(kwargs)
-    print('\t###')
-    print(tpot_obj.get_params()['dict_lite'])
-    print('#####')
-    print(default_kwargs['dict_lite'])
     assert tpot_obj.get_params()['config_dict'] == default_kwargs['config_dict']
     assert tpot_obj.get_params() == default_kwargs
 
@@ -174,6 +179,14 @@ def test_set_params_2():
     tpot_obj.set_params(generations=3)
 
     assert tpot_obj.generations == 3
+
+def test_lite_params():
+    """Assert that dict_lite updates TPOT's dictionary of operators"""
+    tpot_obj = TPOTClassifier(dict_lite=True)
+    assert tpot_obj.config_dict == classifier_config_dict_lite
+
+    tpot_obj = TPOTRegressor(dict_lite=True)
+    assert tpot_obj.config_dict == regressor_config_dict_lite
 
 def test_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline with same random seed"""
@@ -416,6 +429,13 @@ def test_fit():
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
 
+def test_fit2():
+    """Assert that the TPOT fit function provides an optimized pipeline with dict_lite=True"""
+    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, dict_lite=True)
+    tpot_obj.fit(training_features, training_classes)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
 
 def testTPOTOperatorClassFactory():
     """Assert that the TPOT operators class factory"""

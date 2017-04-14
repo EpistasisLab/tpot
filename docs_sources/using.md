@@ -146,6 +146,10 @@ See the <a href="#customconfig">custom configuration</a> section for more inform
 A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
 </tr>
 <tr>
+<td colspan=3>--lite</td>
+<td>Flag indicating whether TPOT use a lite version of operator configuration dictionary instead of the default one.</td>
+</tr>
+<tr>
 <td colspan=3>--no-update-check</td>
 <td>Flag indicating whether the TPOT version checker should be disabled.</td>
 </tr>
@@ -292,6 +296,11 @@ See the <a href="#customconfig">custom configuration</a> section for more inform
 0 = none, 1 = minimal, 2 = high, 3 = all.
 <br /><br />
 A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
+</tr>
+<tr>
+<td>dict_lite</td>
+<td>[True, False]</td>
+<td>Flag indicating whether TPOT use a lite version of operator configuration dictionary instead of the default one.</td>
 </tr>
 <tr>
 <td>disable_update_check</td>

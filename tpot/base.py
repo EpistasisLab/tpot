@@ -78,8 +78,8 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, dict_lite=False, config_dict=None,
-                 warm_start=False, verbosity=0, disable_update_check=False):
+                 random_state=None, config_dict=None, warm_start=False,
+                 verbosity=0, dict_lite=False, disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -141,9 +141,6 @@ class TPOTBase(BaseEstimator):
             Random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
-        dict_lite: bool (default: False)
-            Whether TPOT use a lite version of operator configuration dictionary instead of
-            the default one.
         config_dict: dictionary (default: None)
             Configuration dictionary for customizing the operators and parameters that
             TPOT uses in the optimization process.
@@ -155,6 +152,9 @@ class TPOTBase(BaseEstimator):
             How much information TPOT communicates while it's running.
             0 = none, 1 = minimal, 2 = high, 3 = all.
             A setting of 2 or higher will add a progress bar during the optimization procedure.
+        dict_lite: bool (default: False)
+            Whether TPOT use a lite version of operator configuration dictionary instead of
+            the default one.
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 
@@ -180,7 +180,7 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
-
+        self.dict_lite = dict_lite
         # Set offspring_size equal to population_size by default
         if offspring_size:
             self.offspring_size = offspring_size
@@ -188,11 +188,12 @@ class TPOTBase(BaseEstimator):
             self.offspring_size = population_size
 
         # Define the configuration dictionary based on files
-        if dict_lite and config_dict:
-            raise ValueError('Unsupported set of arguments: The combination '
-            'of dict_lite=True are not supported when config_dict is a dictionary object')
 
-        if dict_lite:
+        if self.dict_lite and config_dict:
+            raise ValueError('Unsupported set of arguments: The combination '
+            'of dict_lite=True are not supported when config_dict is not default value (None)')
+
+        if self.dict_lite:
             self.config_dict = self.lite_config_dict
         elif config_dict:
             self.config_dict = config_dict
