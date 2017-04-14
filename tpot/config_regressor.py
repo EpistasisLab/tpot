@@ -24,7 +24,7 @@ key:
     operator name
 value:
     source: module source (e.g sklearn.tree)
-    dependencies: depended module (e.g. SVC in selectors RFE); None for no dependency
+    dependencies: depended module (e.g. ExtraTreesClassifier in selectors RFE); None for no dependency
     params: a dictionary of parameter names (keys) and parameter ranges (values); None for no params
 """
 import numpy as np
