@@ -145,7 +145,6 @@ def test_get_params():
         'offspring_size': 2000,
         'config_dict': classifier_config_dict,
         'verbosity': 1
-
     }
 
     tpot_obj = TPOTClassifier(**kwargs)
@@ -154,7 +153,11 @@ def test_get_params():
     initializer = inspect.getargspec(TPOTBase.__init__)
     default_kwargs = dict(zip(initializer.args[1:], initializer.defaults))
     default_kwargs.update(kwargs)
-
+    print('\t###')
+    print(tpot_obj.get_params()['dict_lite'])
+    print('#####')
+    print(default_kwargs['dict_lite'])
+    assert tpot_obj.get_params()['config_dict'] == default_kwargs['config_dict']
     assert tpot_obj.get_params() == default_kwargs
 
 

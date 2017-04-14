@@ -202,3 +202,20 @@ regressor_config_dict = {
     }
 
 }
+
+
+# a list for excluding time-consuming operators from TPOT lite
+regressor_lite_exclude_list = [
+    'sklearn.ensemble.ExtraTreesRegressor',
+    'sklearn.feature_selection.SelectFromModel',
+    'sklearn.ensemble.ExtraTreesRegressor',
+    'sklearn.ensemble.GradientBoostingRegressor',
+    'sklearn.decomposition.FastICA',
+    'sklearn.ensemble.AdaBoostRegressor',
+    'xgboost.XGBRegressor',
+    'sklearn.preprocessing.PolynomialFeatures'
+]
+
+regressor_config_dict_lite = dict((k, regressor_config_dict[k])
+    for k in regressor_config_dict.keys()
+    if k not in regressor_lite_exclude_list)

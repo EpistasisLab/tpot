@@ -78,8 +78,8 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, config_dict=None, warm_start=False,
-                 verbosity=0, disable_update_check=False):
+                 random_state=None, dict_lite=False, config_dict=None,
+                 warm_start=False, verbosity=0, disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -141,6 +141,9 @@ class TPOTBase(BaseEstimator):
             Random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
+        dict_lite: bool (default: False)
+            Whether TPOT use a lite version of operator configuration dictionary instead of
+            the default one.
         config_dict: dictionary (default: None)
             Configuration dictionary for customizing the operators and parameters that
             TPOT uses in the optimization process.
@@ -185,7 +188,13 @@ class TPOTBase(BaseEstimator):
             self.offspring_size = population_size
 
         # Define the configuration dictionary based on files
-        if config_dict:
+        if dict_lite and config_dict:
+            raise ValueError('Unsupported set of arguments: The combination '
+            'of dict_lite=True are not supported when config_dict is a dictionary object')
+
+        if dict_lite:
+            self.config_dict = self.lite_config_dict
+        elif config_dict:
             self.config_dict = config_dict
         else:
             self.config_dict = self.default_config_dict

@@ -160,6 +160,10 @@ def main():
         'this seed if you want your TPOT run to be reproducible with the same '
         'seed and data set in the future.')
 
+    parser.add_argument('-lite', action='store_true', dest='LITE', default=False,
+        help='Whether TPOT use a lite version of operator configuration dictionary '
+        'instead of the default one.')
+
     parser.add_argument('-config', action='store', dest='CONFIG_FILE', default='',
         type=str, help='Configuration file for customizing the operators and parameters '
         'that TPOT uses in the optimization process.')
@@ -223,10 +227,9 @@ def main():
 
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                      offspring_size=args.OFFSPRING_SIZE, mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                     cv=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS,
-                     scoring=args.SCORING_FN,
+                     cv=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS, scoring=args.SCORING_FN,
                      max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
-                     random_state=args.RANDOM_STATE, config_dict=operator_dict,
+                     random_state=args.RANDOM_STATE, dict_lite=args.LITE, config_dict=operator_dict,
                      verbosity=args.VERBOSITY, disable_update_check=args.DISABLE_UPDATE_CHECK)
 
     print('')

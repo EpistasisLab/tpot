@@ -24,7 +24,7 @@ key:
     operator name
 value:
     source: module source (e.g sklearn.tree)
-    dependencies: depended module (e.g. SVC in selectors RFE); None for no dependency
+    dependencies: depended module (e.g. ExtraTreesClassifier in selectors RFE); None for no dependency
     params: a dictionary of parameter names (keys) and parameter ranges (values); None for no dependency
 """
 import numpy as np
@@ -193,9 +193,10 @@ classifier_config_dict = {
     'sklearn.feature_selection.RFE': {
         'step': np.arange(0.05, 1.01, 0.05),
         'estimator': {
-            'sklearn.svm.SVC': {
-                'kernel': ['linear'],
-                'random_state': [42]
+            'sklearn.ensemble.ExtraTreesClassifier': {
+                'n_estimators': [100],
+                'criterion': ['gini', 'entropy'],
+                'max_features': np.arange(0.05, 1.01, 0.05)
                 }
         }
     },
@@ -212,3 +213,21 @@ classifier_config_dict = {
     }
 
 }
+
+# a list for excluding time-consuming operators from TPOT lite
+classifier_lite_exclude_list = [
+    'sklearn.ensemble.ExtraTreesClassifier',
+    'sklearn.ensemble.RandomForestClassifier',
+    'sklearn.ensemble.GradientBoostingClassifier',
+    'xgboost.XGBClassifier',
+    'sklearn.decomposition.FastICA',
+    'sklearn.kernel_approximation.Nystroem',
+    'sklearn.preprocessing.PolynomialFeatures',
+    'sklearn.feature_selection.RFE',
+    'sklearn.feature_selection.SelectFromModel',
+    'sklearn.svm.LinearSVC'
+]
+
+classifier_config_dict_lite = dict((k, classifier_config_dict[k])
+    for k in classifier_config_dict.keys()
+    if k not in classifier_lite_exclude_list)
