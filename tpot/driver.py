@@ -229,8 +229,8 @@ def main():
                      offspring_size=args.OFFSPRING_SIZE, mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
                      cv=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS, scoring=args.SCORING_FN,
                      max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
-                     random_state=args.RANDOM_STATE, dict_lite=args.LITE, config_dict=operator_dict,
-                     verbosity=args.VERBOSITY, disable_update_check=args.DISABLE_UPDATE_CHECK)
+                     random_state=args.RANDOM_STATE, config_dict=operator_dict,
+                     verbosity=args.VERBOSITY, dict_lite=args.LITE, disable_update_check=args.DISABLE_UPDATE_CHECK)
 
     print('')
 
