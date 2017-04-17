@@ -136,7 +136,7 @@ def main():
         '"precision_micro", "precision_samples", "precision_weighted", "r2", "recall", '
         '"recall_macro", "recall_micro", "recall_samples", "recall_weighted", "roc_auc"')
 
-    parser.add_argument('-cv', action='store', dest='NUM_CV_FOLDS', default=5,
+    parser.add_argument('-cv', action='store', dest='CV', default=5,
         type=int, help='Number of folds to evaluate each pipeline over in '
         'k-fold cross-validation during the TPOT optimization process.')
 
@@ -211,24 +211,11 @@ def main():
     else:
         tpot_type = TPOTRegressor
 
-    operator_dict = None
-    if args.CONFIG_FILE:
-        if args.CONFIG_FILE == 'TPOTlight':
-            operator_dict = args.CONFIG_FILE
-        else:
-            try:
-                with open(args.CONFIG_FILE, 'r') as input_file:
-                    file_string =  input_file.read()
-                operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}') + 1)])
-            except:
-                raise TypeError('The operator configuration file is in a bad format or not available. '
-                                'Please check the configuration file before running TPOT.')
-
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                      offspring_size=args.OFFSPRING_SIZE, mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
-                     cv=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS, scoring=args.SCORING_FN,
+                     cv=args.CV, n_jobs=args.NUM_JOBS, scoring=args.SCORING_FN,
                      max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
-                     random_state=args.RANDOM_STATE, config_dict=operator_dict,
+                     random_state=args.RANDOM_STATE, config_dict=args.CONFIG_FILE,
                      verbosity=args.VERBOSITY, disable_update_check=args.DISABLE_UPDATE_CHECK)
 
     print('')

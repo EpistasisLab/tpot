@@ -25,51 +25,51 @@ key:
 value:
     source: module source (e.g sklearn.tree)
     dependencies: depended module (e.g. ExtraTreesClassifier in selectors RFE); None for no dependency
-    params: a dictionary of parameter names (keys) and parameter ranges (values); None for no dependency
+    params: a dictionary of parameter names (keys) and parameter ranges (values); None for no params
 """
 import numpy as np
 
-classifier_config_dict_lite = {
+regressor_config_dict_light = {
 
-    # Classifiers
-    'sklearn.naive_bayes.GaussianNB': {
+
+    'sklearn.linear_model.ElasticNetCV': {
+        'l1_ratio': np.arange(0.0, 1.01, 0.05),
+        'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
     },
 
-    'sklearn.naive_bayes.BernoulliNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    },
-
-    'sklearn.naive_bayes.MultinomialNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    },
-
-    'sklearn.tree.DecisionTreeClassifier': {
-        'criterion': ["gini", "entropy"],
+    'sklearn.tree.DecisionTreeRegressor': {
         'max_depth': range(1, 11),
         'min_samples_split': range(2, 21),
         'min_samples_leaf': range(1, 21)
     },
 
-
-    'sklearn.neighbors.KNeighborsClassifier': {
+    'sklearn.neighbors.KNeighborsRegressor': {
         'n_neighbors': range(1, 101),
         'weights': ["uniform", "distance"],
         'p': [1, 2]
     },
 
-
-    'sklearn.linear_model.LogisticRegression': {
-        'penalty': ["l1", "l2"],
-        'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.],
-        'dual': [True, False]
+    'sklearn.linear_model.LassoLarsCV': {
+        'normalize': [True, False]
     },
+
+    'sklearn.svm.LinearSVR': {
+        'loss': ["epsilon_insensitive", "squared_epsilon_insensitive"],
+        'dual': [True, False],
+        'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+        'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.],
+        'epsilon': [1e-4, 1e-3, 1e-2, 1e-1, 1.]
+    },
+
+    'sklearn.linear_model.RidgeCV': {
+    },
+
 
     # Preprocesssors
     'sklearn.preprocessing.Binarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
     },
+
 
     'sklearn.cluster.FeatureAgglomeration': {
         'linkage': ['ward', 'complete', 'average'],
@@ -84,6 +84,12 @@ classifier_config_dict_lite = {
 
     'sklearn.preprocessing.Normalizer': {
         'norm': ['l1', 'l2', 'max']
+    },
+
+    'sklearn.kernel_approximation.Nystroem': {
+        'kernel': ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid'],
+        'gamma': np.arange(0.0, 1.01, 0.05),
+        'n_components': range(1, 11)
     },
 
     'sklearn.decomposition.PCA': {

@@ -51,6 +51,8 @@ from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _pre_test
 from .built_in_operators import CombineDFs
+from .config_classifier_light import classifier_config_dict_light
+from .config_regressor_light import regressor_config_dict_light
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -79,7 +81,7 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None, warm_start=False,
-                 verbosity=0, dict_lite=False, disable_update_check=False):
+                 verbosity=0, disable_update_check=False):
         """Sets up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -141,13 +143,13 @@ class TPOTBase(BaseEstimator):
             Random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
-        config_dict: dictionary or string (default: None)
-            Dictionary:
-                Configuration dictionary for customizing the operators and parameters that
+        config_dict: string (default: None)
+            Path of Dictionary:
+                A path to a configuration file for customizing the operators and parameters that
                 TPOT uses in the optimization process.
                 For examples, see config_regressor.py and config_classifier.py
-            String named 'TPOTlight':
-                TPOT uses a lite version of operator configuration dictionary instead of
+            String named 'TPOT light':
+                TPOT uses a light version of operator configuration dictionary instead of
                 the default one.
         warm_start: bool (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
@@ -181,7 +183,7 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
-        self.dict_lite = dict_lite
+
         # Set offspring_size equal to population_size by default
         if offspring_size:
             self.offspring_size = offspring_size
@@ -189,10 +191,19 @@ class TPOTBase(BaseEstimator):
             self.offspring_size = population_size
 
         if config_dict:
-            if config_dict == 'TPOTlight':
-                self.config_dict = self.lite_config_dict
+            if config_dict == 'TPOT light':
+                if self.classification:
+                    self.config_dict = classifier_config_dict_light
+                else:
+                    self.config_dict = regressor_config_dict_light
             else:
-                self.config_dict = config_dict
+                try:
+                    with open(config_dict, 'r') as input_file:
+                        file_string =  input_file.read()
+                    operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}') + 1)])
+                except:
+                    raise TypeError('The operator configuration file is in a bad format or not available. '
+                                    'Please check the configuration file before running TPOT.')
         else:
             self.config_dict = self.default_config_dict
 

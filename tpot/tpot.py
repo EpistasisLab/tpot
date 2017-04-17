@@ -23,8 +23,6 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 from .base import TPOTBase
 from .config_classifier import classifier_config_dict
 from .config_regressor import regressor_config_dict
-from .config_classifier_lite import classifier_config_dict_lite
-from .config_regressor_lite import regressor_config_dict_lite
 
 
 class TPOTClassifier(TPOTBase):
@@ -32,7 +30,6 @@ class TPOTClassifier(TPOTBase):
 
     scoring_function = 'accuracy'  # Classification scoring
     default_config_dict = classifier_config_dict # Classification dictionary
-    lite_config_dict = classifier_config_dict_lite # Classification dictionary for TPOT lite
     classification = True
     regression = False
 
@@ -42,6 +39,5 @@ class TPOTRegressor(TPOTBase):
 
     scoring_function = 'neg_mean_squared_error'  # Regression scoring
     default_config_dict = regressor_config_dict # Regression dictionary
-    lite_config_dict = regressor_config_dict_lite # Regression dictionary for TPOT lite
     classification = False
     regression = True
