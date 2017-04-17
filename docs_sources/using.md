@@ -131,7 +131,7 @@ Set this seed if you want your TPOT run to be reproducible with the same seed an
 <td>-config</td>
 <td>CONFIG_FILE</td>
 <td>String path to a file</td>
-<td>Configuration file for customizing the operators and parameters that TPOT uses in the optimization process.
+<td>A configuration file for customizing the operators and parameters that TPOT uses in the optimization process. Or a string named 'TPOTlight' for using a lite version of operator configuration dictionary instead of the default one.
 <br /><br />
 See the <a href="#customconfig">custom configuration</a> section for more information and examples.</td>
 </tr>
@@ -144,10 +144,6 @@ See the <a href="#customconfig">custom configuration</a> section for more inform
 0 = none, 1 = minimal, 2 = high, 3 = all.
 <br /><br />
 A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
-</tr>
-<tr>
-<td colspan=3>--lite</td>
-<td>Flag indicating whether TPOT use a lite version of operator configuration dictionary instead of the default one.</td>
 </tr>
 <tr>
 <td colspan=3>--no-update-check</td>
@@ -276,8 +272,8 @@ Use this to make sure that TPOT will give you the same results each time you run
 </tr>
 <tr>
 <td>config_dict</td>
-<td>Python dictionary</td>
-<td>Configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process.
+<td>Python dictionary or string</td>
+<td>A configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process. Or a string named 'TPOTlight' for using a lite version of operator configuration dictionary instead of the default one.
 <br /><br />
 See the <a href="#customconfig">custom configuration</a> section for more information and examples.
 </pre>
@@ -296,11 +292,6 @@ See the <a href="#customconfig">custom configuration</a> section for more inform
 0 = none, 1 = minimal, 2 = high, 3 = all.
 <br /><br />
 A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
-</tr>
-<tr>
-<td>dict_lite</td>
-<td>[True, False]</td>
-<td>Flag indicating whether TPOT use a lite version of operator configuration dictionary instead of the default one.</td>
 </tr>
 <tr>
 <td>disable_update_check</td>

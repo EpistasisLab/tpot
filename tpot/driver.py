@@ -169,10 +169,6 @@ def main():
         'while it is running: 0 = none, 1 = minimal, 2 = high, 3 = all. '
         'A setting of 2 or higher will add a progress bar during the optimization procedure.')
 
-    parser.add_argument('--lite', action='store_true', dest='LITE', default=False,
-        help='Whether TPOT use a lite version of operator configuration dictionary '
-        'instead of the default one.')
-
     parser.add_argument('--no-update-check', action='store_true',
         dest='DISABLE_UPDATE_CHECK', default=False,
         help='Flag indicating whether the TPOT version checker should be disabled.')
@@ -217,20 +213,23 @@ def main():
 
     operator_dict = None
     if args.CONFIG_FILE:
-        try:
-            with open(args.CONFIG_FILE, 'r') as input_file:
-                file_string =  input_file.read()
-            operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}') + 1)])
-        except:
-            raise TypeError('The operator configuration file is in a bad format or not available. '
-                            'Please check the configuration file before running TPOT.')
+        if args.CONFIG_FILE == 'TPOTlight':
+            operator_dict = args.CONFIG_FILE
+        else:
+            try:
+                with open(args.CONFIG_FILE, 'r') as input_file:
+                    file_string =  input_file.read()
+                operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}') + 1)])
+            except:
+                raise TypeError('The operator configuration file is in a bad format or not available. '
+                                'Please check the configuration file before running TPOT.')
 
     tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
                      offspring_size=args.OFFSPRING_SIZE, mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
                      cv=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS, scoring=args.SCORING_FN,
                      max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
                      random_state=args.RANDOM_STATE, config_dict=operator_dict,
-                     verbosity=args.VERBOSITY, dict_lite=args.LITE, disable_update_check=args.DISABLE_UPDATE_CHECK)
+                     verbosity=args.VERBOSITY, disable_update_check=args.DISABLE_UPDATE_CHECK)
 
     print('')
 

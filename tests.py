@@ -28,8 +28,9 @@ from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
-from tpot.config_classifier import classifier_config_dict, classifier_config_dict_lite
-from tpot.config_regressor import regressor_config_dict_lite
+from tpot.config_classifier import classifier_config_dict
+from tpot.config_regressor_lite import regressor_config_dict_lite
+from tpot.config_classifier_lite import classifier_config_dict_lite
 
 import numpy as np
 import inspect
@@ -105,15 +106,6 @@ def test_init_default_scoring():
     tpot_obj = TPOTClassifier()
     assert tpot_obj.scoring_function == 'accuracy'
 
-def test_invaild_dict_setting_warning():
-    """Assert that the TPOT function raises a ValueError when setting both dict_lite and config_dict"""
-    try:
-        tpot_obj = TPOTClassifier(dict_lite=True, config_dict=classifier_config_dict)
-        assert False
-    except ValueError:
-        pass
-
-
 def test_invaild_score_warning():
     """Assert that the TPOT fit function raises a ValueError when the scoring metrics is not available in SCORERS"""
     try:
@@ -181,11 +173,11 @@ def test_set_params_2():
     assert tpot_obj.generations == 3
 
 def test_lite_params():
-    """Assert that dict_lite updates TPOT's dictionary of operators"""
-    tpot_obj = TPOTClassifier(dict_lite=True)
+    """Assert that TPOT uses TPOT's lite dictionary of operators when config_dict is \'TPOTlight\'"""
+    tpot_obj = TPOTClassifier(config_dict='TPOTlight')
     assert tpot_obj.config_dict == classifier_config_dict_lite
 
-    tpot_obj = TPOTRegressor(dict_lite=True)
+    tpot_obj = TPOTRegressor(config_dict='TPOTlight')
     assert tpot_obj.config_dict == regressor_config_dict_lite
 
 def test_random_ind():
@@ -430,8 +422,8 @@ def test_fit():
     assert not (tpot_obj._start_datetime is None)
 
 def test_fit2():
-    """Assert that the TPOT fit function provides an optimized pipeline with dict_lite=True"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, dict_lite=True)
+    """Assert that the TPOT fit function provides an optimized pipeline when config_dict is \'TPOTlight\'"""
+    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, config_dict='TPOTlight')
     tpot_obj.fit(training_features, training_classes)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)

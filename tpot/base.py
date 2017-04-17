@@ -141,10 +141,14 @@ class TPOTBase(BaseEstimator):
             Random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
-        config_dict: dictionary (default: None)
-            Configuration dictionary for customizing the operators and parameters that
-            TPOT uses in the optimization process.
-            For examples, see config_regressor.py and config_classifier.py
+        config_dict: dictionary or string (default: None)
+            Dictionary:
+                Configuration dictionary for customizing the operators and parameters that
+                TPOT uses in the optimization process.
+                For examples, see config_regressor.py and config_classifier.py
+            String named 'TPOTlight':
+                TPOT uses a lite version of operator configuration dictionary instead of
+                the default one.
         warm_start: bool (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -152,9 +156,6 @@ class TPOTBase(BaseEstimator):
             How much information TPOT communicates while it's running.
             0 = none, 1 = minimal, 2 = high, 3 = all.
             A setting of 2 or higher will add a progress bar during the optimization procedure.
-        dict_lite: bool (default: False)
-            Whether TPOT use a lite version of operator configuration dictionary instead of
-            the default one.
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 
@@ -187,16 +188,11 @@ class TPOTBase(BaseEstimator):
         else:
             self.offspring_size = population_size
 
-        # Define the configuration dictionary based on files
-
-        if self.dict_lite and config_dict:
-            raise ValueError('Unsupported set of arguments: The combination '
-            'of dict_lite=True are not supported when config_dict is not default value (None)')
-
-        if self.dict_lite:
-            self.config_dict = self.lite_config_dict
-        elif config_dict:
-            self.config_dict = config_dict
+        if config_dict:
+            if config_dict == 'TPOTlight':
+                self.config_dict = self.lite_config_dict
+            else:
+                self.config_dict = config_dict
         else:
             self.config_dict = self.default_config_dict
 
