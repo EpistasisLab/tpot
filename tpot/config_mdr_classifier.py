@@ -1,6 +1,4 @@
-
 # -*- coding: utf-8 -*-
-
 """
 Copyright 2015-Present Randal S. Olson
 This file is part of the TPOT library.
@@ -22,6 +20,7 @@ value:
     dependencies: depended module (e.g. SVC in selectors RFE); None for no dependency
     params: a dictionary of parameter names (keys) and parameter ranges (values); None for no dependency
 """
+
 tpot_mdr_classifier_config_dict = {
 
     # Classifiers
