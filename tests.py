@@ -26,7 +26,6 @@ from tpot.driver import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
-from tpot.decorators import _timeout, TimedOutExc
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.config_classifier import classifier_config_dict
@@ -95,22 +94,6 @@ def test_init_custom_parameters():
     assert not (tpot_obj._pset is None)
     assert not (tpot_obj._toolbox is None)
 
-
-def test_timeout():
-    """Assert that timeout decorator controls the currect running time of wrapped function"""
-    @_timeout(max_eval_time_mins=0.02) # just 1 second
-    def test_timeout_func():
-        start_time = time.time()
-        try:
-            time.sleep(100)
-            return 100
-        except TimedOutExc:
-            return time.time() - start_time
-    try: # pass in Linux
-        ret_timeout = int(test_timeout_func())
-    except TimedOutExc: # windows exception
-        ret_timeout = 1
-    assert ret_timeout == 1
 
 def test_init_default_scoring():
     """Assert that TPOT intitializes with the correct default scoring function"""
@@ -263,7 +246,7 @@ def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fix pipeline"""
 
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
-    known_score = 11.2010824752 # Assumes use of mse
+    known_score = 12.3727966005 # Assumes use of mse
 
     # Reify pipeline with known score
 
@@ -272,15 +255,16 @@ def test_score_3():
         "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
         "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
         "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
-        "GradientBoostingRegressor__subsample=0.25),"
-        "ExtraTreesRegressor__bootstrap=True,ExtraTreesRegressor__max_features=0.5,"
-        "ExtraTreesRegressor__min_samples_leaf=5,ExtraTreesRegressor__min_samples_split=5)")
+        "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)")
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
-
     # Get score from TPOT
     score = tpot_obj.score(testing_features_r, testing_classes_r)
+
 
     # http://stackoverflow.com/questions/5595425/
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
@@ -300,9 +284,14 @@ def test_sample_weight_func():
         "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
         "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
         "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
-        "GradientBoostingRegressor__subsample=0.25),"
-        "ExtraTreesRegressor__bootstrap=True,ExtraTreesRegressor__max_features=0.5,"
-        "ExtraTreesRegressor__min_samples_leaf=5,ExtraTreesRegressor__min_samples_split=5)")
+        "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)")
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
+
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
 
@@ -322,7 +311,7 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r, **training_classes_r_weight_dict)
     # Get score from TPOT
-    known_score = 14.1377471426 # Assumes use of mse
+    known_score = 12.643383517 # Assumes use of mse
     score = tpot_obj.score(testing_features_r, testing_classes_r)
 
     # http://stackoverflow.com/questions/5595425/
@@ -517,18 +506,19 @@ def test_generate_pipeline_code():
     expected_code = """make_pipeline(
     make_union(
         make_union(VotingClassifier([('branch',
-            GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, subsample=0.5)
-        )]), FunctionTransformer(lambda X: X)),
+            GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, n_estimators=0.5)
+        )]), FunctionTransformer(copy)),
         make_union(VotingClassifier([('branch',
             make_pipeline(
                 ZeroCount(),
                 GaussianNB()
             )
-        )]), FunctionTransformer(lambda X: X))
+        )]), FunctionTransformer(copy))
     ),
     KNeighborsClassifier(n_neighbors=18, p="uniform", weights=2)
 )"""
     assert expected_code == generate_pipeline_code(pipeline, tpot_obj.operators)
+
 
 
 def test_generate_import_code():
@@ -588,6 +578,7 @@ def test_export_pipeline():
 
     expected_code = """import numpy as np
 
+from copy import copy
 from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.model_selection import train_test_split
@@ -606,7 +597,7 @@ exported_pipeline = make_pipeline(
     make_union(
         make_union(VotingClassifier([('branch',
             DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
-        )]), FunctionTransformer(lambda X: X)),
+        )]), FunctionTransformer(copy)),
         SelectKBest(score_func=f_classif, k=20)
     ),
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")

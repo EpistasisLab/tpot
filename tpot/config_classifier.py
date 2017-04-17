@@ -53,28 +53,31 @@ classifier_config_dict = {
     },
 
     'sklearn.ensemble.ExtraTreesClassifier': {
+        'n_estimators': [100],
         'criterion': ["gini", "entropy"],
-        'max_features': np.arange(0, 1.01, 0.05),
+        'max_features': np.arange(0.05, 1.01, 0.05),
         'min_samples_split': range(2, 21),
         'min_samples_leaf': range(1, 21),
         'bootstrap': [True, False]
     },
 
     'sklearn.ensemble.RandomForestClassifier': {
+        'n_estimators': [100],
         'criterion': ["gini", "entropy"],
-        'max_features': np.arange(0, 1.01, 0.05),
+        'max_features': np.arange(0.05, 1.01, 0.05),
         'min_samples_split': range(2, 21),
         'min_samples_leaf':  range(1, 21),
         'bootstrap': [True, False]
     },
 
     'sklearn.ensemble.GradientBoostingClassifier': {
+        'n_estimators': [100],
         'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
         'max_depth': range(1, 11),
         'min_samples_split': range(2, 21),
         'min_samples_leaf': range(1, 21),
         'subsample': np.arange(0.05, 1.01, 0.05),
-        'max_features': np.arange(0, 1.01, 0.05)
+        'max_features': np.arange(0.05, 1.01, 0.05)
     },
 
     'sklearn.neighbors.KNeighborsClassifier': {
@@ -98,10 +101,12 @@ classifier_config_dict = {
     },
 
     'xgboost.XGBClassifier': {
+        'n_estimators': [100],
         'max_depth': range(1, 11),
         'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
         'subsample': np.arange(0.05, 1.01, 0.05),
-        'min_child_weight': range(1, 21)
+        'min_child_weight': range(1, 21),
+        'nthread': [1]
     },
 
     # Preprocesssors
@@ -199,8 +204,9 @@ classifier_config_dict = {
         'threshold': np.arange(0, 1.01, 0.05),
         'estimator': {
             'sklearn.ensemble.ExtraTreesClassifier': {
+                'n_estimators': [100],
                 'criterion': ['gini', 'entropy'],
-                'max_features': np.arange(0, 1.01, 0.05)
+                'max_features': np.arange(0.05, 1.01, 0.05)
                 }
         }
     }

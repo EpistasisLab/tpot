@@ -28,6 +28,12 @@ own purposes in TPOT.
 import numpy as np
 from deap import tools, gp
 from inspect import isclass
+from .operator_utils import set_sample_weight
+from sklearn.model_selection import cross_val_score
+from sklearn.base import clone
+from collections import defaultdict
+import warnings
+import threading
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
@@ -202,6 +208,50 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     return population, logbook
 
 
+def cxOnePoint(ind1, ind2):
+    """Randomly select in each individual and exchange each subtree with the
+    point as root between each individual.
+    :param ind1: First tree participating in the crossover.
+    :param ind2: Second tree participating in the crossover.
+    :returns: A tuple of two trees.
+    """
+    # Define the name of type for any types.
+    __type__ = object
+
+    if len(ind1) < 2 or len(ind2) < 2:
+        # No crossover on single node tree
+        return ind1, ind2
+
+    # List all available primitive types in each individual
+    types1 = defaultdict(list)
+    types2 = defaultdict(list)
+    if ind1.root.ret == __type__:
+        # Not STGP optimization
+        types1[__type__] = range(1, len(ind1))
+        types2[__type__] = range(1, len(ind2))
+        common_types = [__type__]
+    else:
+        for idx, node in enumerate(ind1[1:], 1):
+            types1[node.ret].append(idx)
+        common_types = []
+        for idx, node in enumerate(ind2[1:], 1):
+            if node.ret in types1 and not node.ret in types2:
+                common_types.append(node.ret)
+            types2[node.ret].append(idx)
+
+    if len(common_types) > 0:
+        type_ = np.random.choice(common_types)
+
+        index1 = np.random.choice(types1[type_])
+        index2 = np.random.choice(types2[type_])
+
+        slice1 = ind1.searchSubtree(index1)
+        slice2 = ind2.searchSubtree(index2)
+        ind1[slice1], ind2[slice2] = ind2[slice2], ind1[slice1]
+
+    return ind1, ind2
+
+
 # point mutation function
 def mutNodeReplacement(individual, pset):
     """Replaces a randomly chosen primitive from *individual* by a randomly
@@ -263,3 +313,44 @@ def mutNodeReplacement(individual, pset):
             new_subtree.insert(0, new_node)
             individual[slice_] = new_subtree
     return individual,
+
+
+class Interruptable_cross_val_score(threading.Thread):
+    def __init__(self, *args, **kwargs):
+        threading.Thread.__init__(self)
+        self.args = args
+        self.kwargs = kwargs
+        self.result = -float('inf')
+        self._stopevent = threading.Event()
+        self.daemon = True
+    def stop(self):
+        self._stopevent.set()
+        threading.Thread.join(self)
+    def run(self):
+        # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
+        # Note: Need attention if using parallel execution model of scikit-learn
+        threading.current_thread().name = 'MainThread'
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                self.result = cross_val_score(*self.args, **self.kwargs)
+        except Exception as e:
+            pass
+
+def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
+                             cv, scoring_function, sample_weight, max_eval_time_mins):
+    #sys.tracebacklimit = 0
+    max_time_seconds = max(int(max_eval_time_mins * 60), 1)
+    sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
+    # build a job for cross_val_score
+    tmp_it = Interruptable_cross_val_score(clone(sklearn_pipeline), features, classes,
+        scoring=scoring_function,  cv=cv, n_jobs=1, verbose=0, fit_params=sample_weight_dict)
+    tmp_it.start()
+    tmp_it.join(max_time_seconds)
+    if tmp_it.isAlive():
+        resulting_score = 'Timeout'
+    else:
+        resulting_score = np.mean(tmp_it.result)
+    #sys.tracebacklimit = 1000
+    tmp_it.stop()
+    return resulting_score
