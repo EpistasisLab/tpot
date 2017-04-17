@@ -31,8 +31,8 @@ tpot_mdr_classifier_config_dict = {
     # Classifiers
     
     'mdr.MDR': {
-    'tie_break': [0, 1]
-    'default_label': [0, 1]
+        'tie_break': [0, 1]
+        'default_label': [0, 1]
     },
     
     # Feature Selectors
