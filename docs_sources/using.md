@@ -130,7 +130,7 @@ Set this seed if you want your TPOT run to be reproducible with the same seed an
 <tr>
 <td>-config</td>
 <td>CONFIG_FILE</td>
-<td>String</td>
+<td>File path or string</td>
 <td>A path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process. Providing the string 'TPOT light' will tell TPOT to use the light operator configuration dictionary, which uses simpler and faster models and preprocessors, instead of the default one.
 <br /><br />
 See the <a href="#customconfig">custom configuration</a> section for more information and examples.</td>
