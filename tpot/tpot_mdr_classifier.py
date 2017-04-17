@@ -1,6 +1,6 @@
 import numpy as np
 
-classifier_config_dict = {
+tpot_mdr_classifier_config_dict = {
 
     # Classifiers
     
