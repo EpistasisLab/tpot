@@ -29,27 +29,27 @@ value:
 tpot_mdr_classifier_config_dict = {
 
     # Classifiers
-    
+
     'mdr.MDR': {
-        'tie_break': [0, 1]
+        'tie_break': [0, 1],
         'default_label': [0, 1]
     },
-    
+
     # Feature Selectors
-    
+
     'skrebate.ReliefF': {
         'n_features_to_select': range(1, 6),
         'n_neighbors': [2, 10, 50, 100, 250, 500]
     },
-        
+
     'skrebate.SURF': {
         'n_features_to_select': range(1, 6)
     },
-        
+
     'skrebate.SURFstar': {
         'n_features_to_select': range(1, 6)
     },
-        
+
     'skrebate.MultiSURF': {
         'n_features_to_select': range(1, 6)
     }

@@ -31,6 +31,7 @@ from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.config_classifier import classifier_config_dict
 from tpot.config_classifier_light import classifier_config_dict_light
 from tpot.config_regressor_light import regressor_config_dict_light
+from tpot.config_mdr_classifier import tpot_mdr_classifier_config_dict
 
 import numpy as np
 import inspect
@@ -175,12 +176,22 @@ def test_set_params_2():
     assert tpot_obj.generations == 3
 
 def test_lite_params():
-    """Assert that TPOT uses TPOT's lite dictionary of operators when config_dict is \'TPOT light\'"""
+    """Assert that TPOT uses TPOT's lite dictionary of operators when config_dict is \'TPOT light\' or \'TPOT MDR\'"""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
     assert tpot_obj.config_dict == classifier_config_dict_light
 
+    tpot_obj = TPOTClassifier(config_dict='TPOT MDR')
+    assert tpot_obj.config_dict == tpot_mdr_classifier_config_dict
+
     tpot_obj = TPOTRegressor(config_dict='TPOT light')
     assert tpot_obj.config_dict == regressor_config_dict_light
+
+    try:
+        tpot_obj = TPOTRegressor(config_dict='TPOT MDR')
+        assert False
+    except TypeError:
+        assert True
+
 
 def test_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline with same random seed"""
