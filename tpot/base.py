@@ -204,8 +204,8 @@ class TPOTBase(BaseEstimator):
                 if self.classification:
                     self.config_dict = tpot_mdr_classifier_config_dict
                 else:
-                    raise TypeError('The TPOT MDR operator configuration file DOES NOT '
-                    'work with TPOTRegressor! Please use TPOTClassifier instead.')
+                    raise TypeError('The TPOT MDR operator configuration file does not currently '
+                    'work with TPOTRegressor. Please use TPOTClassifier instead.')
             else:
                 try:
                     with open(config_dict, 'r') as input_file:
