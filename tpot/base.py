@@ -145,14 +145,14 @@ class TPOTBase(BaseEstimator):
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
         config_dict: string (default: None)
-            Path of Dictionary:
+            Path for configuration file:
                 A path to a configuration file for customizing the operators and parameters that
                 TPOT uses in the optimization process.
                 For examples, see config_regressor.py and config_classifier.py
-            String named 'TPOT light':
+            String 'TPOT light':
                 TPOT uses a light version of operator configuration dictionary instead of
                 the default one.
-            String named 'TPOT MDR':
+            String 'TPOT MDR':
                 TPOT uses a list of TPOT-MDR operator configuration dictionary instead of
                 the default one.
         warm_start: bool (default: False)
