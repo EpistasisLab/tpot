@@ -131,7 +131,7 @@ Set this seed if you want your TPOT run to be reproducible with the same seed an
 <td>-config</td>
 <td>CONFIG_FILE</td>
 <td>File path or string</td>
-<td>A path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process. Providing the string 'TPOT light' will tell TPOT to use the light operator configuration dictionary, which uses simpler and faster models and preprocessors, instead of the default one. Providing the string 'TPOT MDR' will tell TPOT to use the TPOT MDR operator configuration dictionary, which uses models from scikit-mdr and skrebate.
+<td>A path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process. Providing the string 'TPOT light' will tell TPOT to use the light operator configuration dictionary, which uses simpler and faster models and preprocessors, instead of the default one. Providing the string 'TPOT MDR' will tell TPOT to use the TPOT MDR operator configuration dictionary, which is focused on genetics problems.
 <br /><br />
 See the <a href="#customconfig">custom configuration</a> section for more information and examples.</td>
 </tr>
@@ -273,7 +273,7 @@ Use this to make sure that TPOT will give you the same results each time you run
 <tr>
 <td>config_dict</td>
 <td>Python dictionary or string</td>
-<td>A configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process. Passing the string 'TPOT light' will tell TPOT to use the light operator configuration dictionary, which uses simpler and faster models and preprocessors, instead of the default one. Providing the string 'TPOT MDR' will tell TPOT to use the TPOT MDR operator configuration dictionary, which uses models from scikit-mdr and skrebate.
+<td>A configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process. Passing the string 'TPOT light' will tell TPOT to use the light operator configuration dictionary, which uses simpler and faster models and preprocessors, instead of the default one. Providing the string 'TPOT MDR' will tell TPOT to use the TPOT MDR operator configuration dictionary, which is focused on genetics problems.
 <br /><br />
 See the <a href="#customconfig">custom configuration</a> section for more information and examples.
 </td>
