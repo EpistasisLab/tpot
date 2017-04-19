@@ -31,7 +31,7 @@ from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.config_classifier import classifier_config_dict
 from tpot.config_classifier_light import classifier_config_dict_light
 from tpot.config_regressor_light import regressor_config_dict_light
-from tpot.config_mdr_classifier import tpot_mdr_classifier_config_dict
+from tpot.config_classifier_mdr import tpot_mdr_classifier_config_dict
 
 import numpy as np
 import inspect

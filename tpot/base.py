@@ -53,7 +53,7 @@ from .decorators import _pre_test
 from .built_in_operators import CombineDFs
 from .config_classifier_light import classifier_config_dict_light
 from .config_regressor_light import regressor_config_dict_light
-from .config_mdr_classifier import tpot_mdr_classifier_config_dict
+from .config_classifier_mdr import tpot_mdr_classifier_config_dict
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
