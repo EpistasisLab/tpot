@@ -149,10 +149,10 @@
                 <h1 id="version-07">Version 0.7</h1>
 <ul>
 <li>
-<p><strong>TPOT now has multiprocessing support (Linux and macOS only).</strong> TPOT allows you to use multiple processes for accelerating pipeline optimization in TPOT with the <code>n_jobs</code> parameter in both TPOTClassifier and TPOTRegressor.</p>
+<p><strong>TPOT now has multiprocessing support.</strong> TPOT allows you to use multiple processes in parallel to accelerate the pipeline optimization process in TPOT with the <code>n_jobs</code> parameter.</p>
 </li>
 <li>
-<p>TPOT now allows you to <strong>customize the operators and parameters explored during the optimization process.</strong> TPOT allows you to customize the list of operators and parameters in optimization process of TPOT with the <code>config_dict</code> parameter. The format of this customized dictionary can be found in the <a href="../using/#tpot-with-code">online documentation</a>.</p>
+<p>TPOT now allows you to <strong>customize the operators and parameters considered during the optimization process</strong>, which can be done with the new <code>config_dict</code> parameter. The format of this customized dictionary can be found in the <a href="../using/#customizing-tpots-operators-and-parameters">online documentation</a>.</p>
 </li>
 <li>
 <p>TPOT now allows you to <strong>specify a time limit for evaluating a single pipeline</strong>  (default limit is 5 minutes) in optimization process with the <code>max_eval_time_mins</code> parameter, so TPOT won't spend hours evaluating overly-complex pipelines.</p>
@@ -161,7 +161,7 @@
 <p>We tweaked TPOT's underlying evolutionary optimization algorithm to work even better, including using the <a href="http://deap.readthedocs.io/en/master/api/algo.html#deap.algorithms.eaMuPlusLambda">mu+lambda algorithm</a>. This algorithm gives you more control of how many pipelines are generated every iteration with the <code>offspring_size</code> parameter.</p>
 </li>
 <li>
-<p>Fixed a reproducibility issue where setting <code>random_seed</code> didn't necessarily result in the same results every time. This bug was present since version 0.6.</p>
+<p>Fixed a reproducibility issue where setting <code>random_seed</code> didn't necessarily result in the same results every time. This bug was present since TPOT v0.6.</p>
 </li>
 <li>
 <p>Refined the default operators and parameters in TPOT, so TPOT 0.7 should work even better than 0.6.</p>

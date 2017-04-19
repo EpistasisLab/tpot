@@ -1,14 +1,14 @@
 # Version 0.7
 
-* **TPOT now has multiprocessing support (Linux and macOS only).** TPOT allows you to use multiple processes for accelerating pipeline optimization in TPOT with the `n_jobs` parameter in both TPOTClassifier and TPOTRegressor.
+* **TPOT now has multiprocessing support.** TPOT allows you to use multiple processes in parallel to accelerate the pipeline optimization process in TPOT with the `n_jobs` parameter.
 
-* TPOT now allows you to **customize the operators and parameters explored during the optimization process.** TPOT allows you to customize the list of operators and parameters in optimization process of TPOT with the `config_dict` parameter. The format of this customized dictionary can be found in the [online documentation](/using/#tpot-with-code).
+* TPOT now allows you to **customize the operators and parameters considered during the optimization process**, which can be done with the new `config_dict` parameter. The format of this customized dictionary can be found in the [online documentation](/using/#customizing-tpots-operators-and-parameters).
 
 * TPOT now allows you to **specify a time limit for evaluating a single pipeline**  (default limit is 5 minutes) in optimization process with the `max_eval_time_mins` parameter, so TPOT won't spend hours evaluating overly-complex pipelines.
 
 * We tweaked TPOT's underlying evolutionary optimization algorithm to work even better, including using the [mu+lambda algorithm](http://deap.readthedocs.io/en/master/api/algo.html#deap.algorithms.eaMuPlusLambda). This algorithm gives you more control of how many pipelines are generated every iteration with the `offspring_size` parameter.
 
-* Fixed a reproducibility issue where setting `random_seed` didn't necessarily result in the same results every time. This bug was present since version 0.6.
+* Fixed a reproducibility issue where setting `random_seed` didn't necessarily result in the same results every time. This bug was present since TPOT v0.6.
 
 * Refined the default operators and parameters in TPOT, so TPOT 0.7 should work even better than 0.6.
 
