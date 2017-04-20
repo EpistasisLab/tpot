@@ -91,9 +91,9 @@ See the section on <a href="#scoringfunctions">scoring functions</a> for more de
 </tr>
 <tr>
 <td>-cv</td>
-<td>NUM_CV_FOLDS</td>
+<td>CV</td>
 <td>Any integer >1</td>
-<td>Number of folds to evaluate each pipeline over in 'k-fold cross-validation during the TPOT optimization process.</td>
+<td>Number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process.</td>
 </tr>
 <tr>
 <td>-njobs</td>
@@ -117,7 +117,7 @@ If provided, this setting will override the "generations" parameter and allow TP
 <td>Any positive integer</td>
 <td>How many minutes TPOT has to evaluate a single pipeline.
 <br /><br />
-Setting this parameter to higher values will allow TPOT to explore more complex pipelines but will also allow TPOT to run longer.</td>
+Setting this parameter to higher values will allow TPOT to consider more complex pipelines but will also allow TPOT to run longer.</td>
 </tr>
 <tr>
 <td>-s</td>
@@ -130,10 +130,10 @@ Set this seed if you want your TPOT run to be reproducible with the same seed an
 <tr>
 <td>-config</td>
 <td>CONFIG_FILE</td>
-<td>String path to a file</td>
-<td>Configuration file for customizing the operators and parameters that TPOT uses in the optimization process.
+<td>File path or string</td>
+<td>A path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process.
 <br /><br />
-See the <a href="#customconfig">custom configuration</a> section for more information and examples.</td>
+See the <a href="#builtinconfig">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customconfig">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.</td>
 </tr>
 <tr>
 <td>-v</td>
@@ -261,7 +261,7 @@ If provided, this setting will override the "generations" parameter and allow TP
 <td>Any positive integer</td>
 <td>How many minutes TPOT has to optimize a single pipeline.
 <br /><br />
-Setting this parameter to higher values will allow TPOT to explore more complex pipelines, but will also allow TPOT to run longer.</td>
+Setting this parameter to higher values will allow TPOT to consider more complex pipelines, but will also allow TPOT to run longer.</td>
 </tr>
 <tr>
 <td>random_state</td>
@@ -272,11 +272,10 @@ Use this to make sure that TPOT will give you the same results each time you run
 </tr>
 <tr>
 <td>config_dict</td>
-<td>Python dictionary</td>
-<td>Configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process.
+<td>Python dictionary or string</td>
+<td>A configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process.
 <br /><br />
-See the <a href="#customconfig">custom configuration</a> section for more information and examples.
-</pre>
+See the <a href="#builtinconfig">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customconfig">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
 </td>
 </tr>
 <tr>
@@ -376,10 +375,72 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 ```
 
+<a name="builtinconfig"></a>
+## Built-in TPOT configurations
+
+TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. Below is a list of the current built-in configurations that come with TPOT.
+
+<table>
+<tr>
+<th align="left">Configuration Name</th>
+<th align="left">Description</th>
+<th align="left">Operators</th>
+</tr>
+
+<tr>
+<td>Default TPOT</td>
+<td>TPOT will search over a broad range of preprocessors, feature constructors, feature selectors, models, and parameters to find a series of operators that minimize the error of the model predictions. Some of these operators are complex and may take a long time to run, especially on larger datasets.
+<br /><br />
+<strong>Note: This is the default configuration for TPOT.</strong> To use this configuration, use the default value for the config_dict parameter.</td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py">Classification</a>
+<br /><br />
+<a href="https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py">Regression</a></td>
+</tr>
+
+<tr>
+<td>TPOT light</td>
+<td>TPOT will search over a restricted range of preprocessors, feature constructors, feature selectors, models, and parameters to find a series of operators that minimize the error of the model predictions. Only simpler and fast-running operators will be used in these pipelines, so TPOT light is useful for finding quick and simple pipelines for a classification or regression problem.
+<br /><br />
+This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier_light.py">Classification</a>
+<br /><br />
+<a href="https://github.com/rhiever/tpot/blob/master/tpot/config_regressor_light.py">Regression</a></td>
+</tr>
+
+<tr>
+<td>TPOT MDR</td>
+<td>TPOT will search over a series of feature selectors and <a href="https://en.wikipedia.org/wiki/Multifactor_dimensionality_reduction">Multifactor Dimensionality Reduction</a> models to find a series of operators that maximize classification accuracy. The TPOT MDR configuration is specialized for <a href="https://en.wikipedia.org/wiki/Genome-wide_association_study">genome-wide association studies (GWAS)</a>, and is described in detail online <a href="https://arxiv.org/abs/1702.01780">here</a>.
+<br /><br />
+Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets.
+<br /><br />
+This configuration currently works only for the TPOTClassifier.</td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier_mdr.py">Classification</a></td>
+</tr>
+</table>
+
+To use any of these configurations, simply pass the string name of the configuration to the `config_dict` parameter (or `-config` on the command line). For example, to use the "TPOT light" configuration:
+
+```Python
+from tpot import TPOTClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25)
+
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
+                      config_dict='TPOT light')
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_mnist_pipeline.py')
+
+```
+
 <a name="customconfig"></a>
 ## Customizing TPOT's operators and parameters
 
-TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. However, in some cases it is useful to limit the algorithms and parameters that TPOT explores. For that reason, we allow users to provide TPOT with a custom configuration for its operators and parameters.
+Beyond the default configurations that come with TPOT, in some cases it is useful to limit the algorithms and parameters that TPOT considers. For that reason, we allow users to provide TPOT with a custom configuration for its operators and parameters.
 
 The custom TPOT configuration must be in nested dictionary format, where the first level key is the path and name of the operator (e.g., `sklearn.naive_bayes.MultinomialNB`) and the second level key is the corresponding parameter name for that operator (e.g., `fit_prior`). The second level key should point to a list of parameter values for that parameter, e.g., `'fit_prior': [True, False]`.
 
@@ -389,10 +450,12 @@ For a simple example, the configuration could be:
 classifier_config_dict = {
     'sklearn.naive_bayes.GaussianNB': {
     },
+
     'sklearn.naive_bayes.BernoulliNB': {
         'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
         'fit_prior': [True, False]
     },
+
     'sklearn.naive_bayes.MultinomialNB': {
         'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
         'fit_prior': [True, False]
@@ -400,7 +463,7 @@ classifier_config_dict = {
 }
 ```
 
-in which case TPOT would only explore pipelines containing `GaussianNB`, `BernoulliNB`, `MultinomialNB`, and tune those algorithm's parameters in the ranges provided. This dictionary can be passed directly within the code to the `TPOTClassifier`/`TPOTRegressor` `config_dict` parameter, described above. For example:
+in which case TPOT would only consider pipelines containing `GaussianNB`, `BernoulliNB`, `MultinomialNB`, and tune those algorithm's parameters in the ranges provided. This dictionary can be passed directly within the code to the `TPOTClassifier`/`TPOTRegressor` `config_dict` parameter, described above. For example:
 
 ```Python
 from tpot import TPOTClassifier
@@ -414,10 +477,12 @@ X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
 classifier_config_dict = {
     'sklearn.naive_bayes.GaussianNB': {
     },
+
     'sklearn.naive_bayes.BernoulliNB': {
         'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
         'fit_prior': [True, False]
     },
+
     'sklearn.naive_bayes.MultinomialNB': {
         'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
         'fit_prior': [True, False]
@@ -439,4 +504,4 @@ tpot data/mnist.csv -is , -target class -config tpot_classifier_config.py -g 5 -
 
 For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py) and [regression](https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py) in TPOT's source code.
 
-Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it explores.
+Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.

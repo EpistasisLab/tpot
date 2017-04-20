@@ -34,8 +34,10 @@ or Twitter: https://twitter.com/randal_olson
 This project is hosted at https://github.com/rhiever/tpot
 ''',
     zip_safe=True,
-    install_requires=['numpy', 'scipy', 'scikit-learn>=0.18.1', 'deap', 'update_checker', 'tqdm'],
-    extras_require={'xgboost': ['xgboost']},
+    install_requires=['numpy>=1.12.1', 'scipy>=0.19.0', 'scikit-learn>=0.18.1', 'deap>=1.0', 'update_checker>=0.16', 'tqdm>=4.11.2'],
+    extras_require={'xgboost': ['xgboost>=0.6'],
+                   'skrebate': ['skrebate>=0.3.4'],
+                   'mdr': ['scikit-mdr>=0.4.2']},
     classifiers=[
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',

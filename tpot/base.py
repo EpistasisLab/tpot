@@ -51,6 +51,9 @@ from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _pre_test
 from .built_in_operators import CombineDFs
+from .config_classifier_light import classifier_config_dict_light
+from .config_regressor_light import regressor_config_dict_light
+from .config_classifier_mdr import tpot_mdr_classifier_config_dict
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -141,10 +144,17 @@ class TPOTBase(BaseEstimator):
             Random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
-        config_dict: dictionary (default: None)
-            Configuration dictionary for customizing the operators and parameters that
-            TPOT uses in the optimization process.
-            For examples, see config_regressor.py and config_classifier.py
+        config_dict: string (default: None)
+            Path for configuration file:
+                A path to a configuration file for customizing the operators and parameters that
+                TPOT uses in the optimization process.
+                For examples, see config_regressor.py and config_classifier.py
+            String 'TPOT light':
+                TPOT uses a light version of operator configuration dictionary instead of
+                the default one.
+            String 'TPOT MDR':
+                TPOT uses a list of TPOT-MDR operator configuration dictionary instead of
+                the default one.
         warm_start: bool (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -184,9 +194,26 @@ class TPOTBase(BaseEstimator):
         else:
             self.offspring_size = population_size
 
-        # Define the configuration dictionary based on files
         if config_dict:
-            self.config_dict = config_dict
+            if config_dict == 'TPOT light':
+                if self.classification:
+                    self.config_dict = classifier_config_dict_light
+                else:
+                    self.config_dict = regressor_config_dict_light
+            elif config_dict == 'TPOT MDR':
+                if self.classification:
+                    self.config_dict = tpot_mdr_classifier_config_dict
+                else:
+                    raise TypeError('The TPOT MDR operator configuration file does not currently '
+                    'work with TPOTRegressor. Please use TPOTClassifier instead.')
+            else:
+                try:
+                    with open(config_dict, 'r') as input_file:
+                        file_string =  input_file.read()
+                    operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}') + 1)])
+                except:
+                    raise TypeError('The operator configuration file is in a bad format or not available. '
+                                    'Please check the configuration file before running TPOT.')
         else:
             self.config_dict = self.default_config_dict
 

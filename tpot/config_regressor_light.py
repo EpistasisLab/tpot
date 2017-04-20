@@ -29,39 +29,12 @@ value:
 """
 import numpy as np
 
-regressor_config_dict = {
+regressor_config_dict_light = {
 
 
     'sklearn.linear_model.ElasticNetCV': {
         'l1_ratio': np.arange(0.0, 1.01, 0.05),
         'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
-    },
-
-    'sklearn.ensemble.ExtraTreesRegressor': {
-        'n_estimators': [100],
-        'max_features': np.arange(0.05, 1.01, 0.05),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'bootstrap': [True, False]
-    },
-
-    'sklearn.ensemble.GradientBoostingRegressor': {
-        'n_estimators': [100],
-        'loss': ["ls", "lad", "huber", "quantile"],
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'max_depth': range(1, 11),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'subsample': np.arange(0.05, 1.01, 0.05),
-        'max_features': np.arange(0.05, 1.01, 0.05),
-        'alpha': [0.75, 0.8, 0.85, 0.9, 0.95, 0.99]
-    },
-
-    'sklearn.ensemble.AdaBoostRegressor': {
-        'n_estimators': [100],
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'loss': ["linear", "square", "exponential"],
-        'max_depth': range(1, 11)
     },
 
     'sklearn.tree.DecisionTreeRegressor': {
@@ -88,35 +61,15 @@ regressor_config_dict = {
         'epsilon': [1e-4, 1e-3, 1e-2, 1e-1, 1.]
     },
 
-    'sklearn.ensemble.RandomForestRegressor': {
-        'n_estimators': [100],
-        'max_features': np.arange(0.05, 1.01, 0.05),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'bootstrap': [True, False]
-    },
-
     'sklearn.linear_model.RidgeCV': {
     },
 
-
-    'xgboost.XGBRegressor': {
-        'n_estimators': [100],
-        'max_depth': range(1, 11),
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'subsample': np.arange(0.05, 1.01, 0.05),
-        'min_child_weight': range(1, 21),
-        'nthread': [1]
-    },
 
     # Preprocesssors
     'sklearn.preprocessing.Binarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
     },
 
-    'sklearn.decomposition.FastICA': {
-        'tol': np.arange(0.0, 1.01, 0.05)
-    },
 
     'sklearn.cluster.FeatureAgglomeration': {
         'linkage': ['ward', 'complete', 'average'],
@@ -142,12 +95,6 @@ regressor_config_dict = {
     'sklearn.decomposition.PCA': {
         'svd_solver': ['randomized'],
         'iterated_power': range(1, 11)
-    },
-
-    'sklearn.preprocessing.PolynomialFeatures': {
-        'degree': [2],
-        'include_bias': [False],
-        'interaction_only': [False]
     },
 
     'sklearn.kernel_approximation.RBFSampler': {
@@ -188,17 +135,6 @@ regressor_config_dict = {
 
     'sklearn.feature_selection.VarianceThreshold': {
         'threshold': np.arange(0.05, 1.01, 0.05)
-    },
-
-    'sklearn.feature_selection.SelectFromModel': {
-        'threshold': np.arange(0, 1.01, 0.05),
-        'estimator': {
-                'sklearn.ensemble.ExtraTreesRegressor': {
-                    'n_estimators': [100],
-                    'max_features': np.arange(0.05, 1.01, 0.05)
-                    }
-                }
-
     }
 
 }

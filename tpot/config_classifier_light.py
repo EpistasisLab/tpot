@@ -29,7 +29,7 @@ value:
 """
 import numpy as np
 
-classifier_config_dict = {
+classifier_config_dict_light = {
 
     # Classifiers
     'sklearn.naive_bayes.GaussianNB': {
@@ -52,33 +52,6 @@ classifier_config_dict = {
         'min_samples_leaf': range(1, 21)
     },
 
-    'sklearn.ensemble.ExtraTreesClassifier': {
-        'n_estimators': [100],
-        'criterion': ["gini", "entropy"],
-        'max_features': np.arange(0.05, 1.01, 0.05),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'bootstrap': [True, False]
-    },
-
-    'sklearn.ensemble.RandomForestClassifier': {
-        'n_estimators': [100],
-        'criterion': ["gini", "entropy"],
-        'max_features': np.arange(0.05, 1.01, 0.05),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf':  range(1, 21),
-        'bootstrap': [True, False]
-    },
-
-    'sklearn.ensemble.GradientBoostingClassifier': {
-        'n_estimators': [100],
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'max_depth': range(1, 11),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'subsample': np.arange(0.05, 1.01, 0.05),
-        'max_features': np.arange(0.05, 1.01, 0.05)
-    },
 
     'sklearn.neighbors.KNeighborsClassifier': {
         'n_neighbors': range(1, 101),
@@ -86,13 +59,6 @@ classifier_config_dict = {
         'p': [1, 2]
     },
 
-    'sklearn.svm.LinearSVC': {
-        'penalty': ["l1", "l2"],
-        'loss': ["hinge", "squared_hinge"],
-        'dual': [True, False],
-        'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-        'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.]
-    },
 
     'sklearn.linear_model.LogisticRegression': {
         'penalty': ["l1", "l2"],
@@ -100,22 +66,9 @@ classifier_config_dict = {
         'dual': [True, False]
     },
 
-    'xgboost.XGBClassifier': {
-        'n_estimators': [100],
-        'max_depth': range(1, 11),
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'subsample': np.arange(0.05, 1.01, 0.05),
-        'min_child_weight': range(1, 21),
-        'nthread': [1]
-    },
-
     # Preprocesssors
     'sklearn.preprocessing.Binarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
-    },
-
-    'sklearn.decomposition.FastICA': {
-        'tol': np.arange(0.0, 1.01, 0.05)
     },
 
     'sklearn.cluster.FeatureAgglomeration': {
@@ -133,21 +86,9 @@ classifier_config_dict = {
         'norm': ['l1', 'l2', 'max']
     },
 
-    'sklearn.kernel_approximation.Nystroem': {
-        'kernel': ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid'],
-        'gamma': np.arange(0.0, 1.01, 0.05),
-        'n_components': range(1, 11)
-    },
-
     'sklearn.decomposition.PCA': {
         'svd_solver': ['randomized'],
         'iterated_power': range(1, 11)
-    },
-
-    'sklearn.preprocessing.PolynomialFeatures': {
-        'degree': [2],
-        'include_bias': [False],
-        'interaction_only': [False]
     },
 
     'sklearn.kernel_approximation.RBFSampler': {
@@ -188,28 +129,6 @@ classifier_config_dict = {
 
     'sklearn.feature_selection.VarianceThreshold': {
         'threshold': np.arange(0.05, 1.01, 0.05)
-    },
-
-    'sklearn.feature_selection.RFE': {
-        'step': np.arange(0.05, 1.01, 0.05),
-        'estimator': {
-            'sklearn.ensemble.ExtraTreesClassifier': {
-                'n_estimators': [100],
-                'criterion': ['gini', 'entropy'],
-                'max_features': np.arange(0.05, 1.01, 0.05)
-                }
-        }
-    },
-
-   'sklearn.feature_selection.SelectFromModel': {
-        'threshold': np.arange(0, 1.01, 0.05),
-        'estimator': {
-            'sklearn.ensemble.ExtraTreesClassifier': {
-                'n_estimators': [100],
-                'criterion': ['gini', 'entropy'],
-                'max_features': np.arange(0.05, 1.01, 0.05)
-                }
-        }
     }
 
 }
