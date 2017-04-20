@@ -2,7 +2,7 @@
 
 * **TPOT now has multiprocessing support.** TPOT allows you to use multiple processes in parallel to accelerate the pipeline optimization process in TPOT with the `n_jobs` parameter.
 
-* TPOT now allows you to **customize the operators and parameters considered during the optimization process**, which can be done with the new `config_dict` parameter. The format of this customized dictionary can be found in the [online documentation](/using/#customizing-tpots-operators-and-parameters).
+* TPOT now allows you to **customize the operators and parameters considered during the optimization process**, which can be accomplished with the new `config_dict` parameter. The format of this customized dictionary can be found in the [online documentation](/using/#customizing-tpots-operators-and-parameters), along with a list of [built-in configurations](/using/#built-in-tpot-configurations).
 
 * TPOT now allows you to **specify a time limit for evaluating a single pipeline**  (default limit is 5 minutes) in optimization process with the `max_eval_time_mins` parameter, so TPOT won't spend hours evaluating overly-complex pipelines.
 
