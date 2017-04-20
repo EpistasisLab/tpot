@@ -528,6 +528,8 @@ This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
 <td>TPOT MDR</td>
 <td>TPOT will search over a series of feature selectors and <a href="https://en.wikipedia.org/wiki/Multifactor_dimensionality_reduction">Multifactor Dimensionality Reduction</a> models to find a series of operators that maximize classification accuracy. The TPOT MDR configuration is specialized for <a href="https://en.wikipedia.org/wiki/Genome-wide_association_study">genome-wide association studies (GWAS)</a>, and is described in detail online <a href="https://arxiv.org/abs/1702.01780">here</a>.
 <br /><br />
+Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets.
+<br /><br />
 This configuration currently works only for the TPOTClassifier.</td>
 <td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier_mdr.py">Classification</a></td>
 </tr>
