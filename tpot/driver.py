@@ -22,7 +22,6 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 import argparse
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import Imputer
 
 from .tpot import TPOTClassifier, TPOTRegressor
 from ._version import __version__
@@ -326,17 +325,6 @@ def _get_arg_parser():
     )
 
     parser.add_argument(
-        '-impute',
-        action='store',
-        dest='IMPUTE',
-        default=None,
-        help=(
-            'If set, TPOT will take the provided missing value string and '
-            'impute the value of all data points with that value.'
-        )
-    )
-
-    parser.add_argument(
         '-v',
         action='store',
         dest='VERBOSITY',
@@ -403,11 +391,6 @@ def _read_data_file(args):
     return input_data
 
 
-def _impute_missing_values(features, missing_value):
-    imputer = Imputer(missing_values=missing_value)
-    return imputer.fit_transform(features)
-
-
 def main():
     """Perform a TPOT run."""
     args = _get_arg_parser().parse_args()
@@ -421,9 +404,6 @@ def main():
         input_data.dtype.names.index(args.TARGET_NAME),
         axis=1
     )
-
-    if args.IMPUTE:
-        features = _impute_missing_values(features, args.IMPUTE)
 
     training_features, testing_features, training_classes, testing_classes = \
         train_test_split(features, input_data[args.TARGET_NAME], random_state=args.RANDOM_STATE)
@@ -449,7 +429,7 @@ def main():
 
     tpot.fit(training_features, training_classes)
 
-    if args.VERBOSITY < 3 and tpot._optimized_pipeline:
+    if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
         training_score = max([x.wvalues[1] for x in tpot._pareto_front.keys])
         print('\nTraining score: {}'.format(abs(training_score)))
         print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))

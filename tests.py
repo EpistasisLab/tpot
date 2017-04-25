@@ -63,12 +63,6 @@ TPOTSelectKBest, TPOTSelectKBest_args = TPOTOperatorClassFactory(
 )
 
 
-# http://stackoverflow.com/questions/5595425/
-def is_close(a, b, rel_tol=1e-09, abs_tol=0.0):
-    """Determine if two floats are close in value, but not necessarily equal."""
-    return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-
-
 def test_driver():
     """Assert that the TPOT driver output normal result."""
     batcmd = "python -m tpot.driver tests.csv -is , -target class -g 2 -p 2 -os 4 -cv 5 -s 45 -v 1"
@@ -250,7 +244,7 @@ def test_score():
 def test_score_2():
     """Assert that the TPOTClassifier score function outputs a known score for a fix pipeline."""
     tpot_obj = TPOTClassifier()
-    known_score = 0.977777777778  # Assumes use of the TPOT balanced_accuracy function
+    known_score = 0.977777777778  # Assumes use of the TPOT accuracy function
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -267,7 +261,7 @@ def test_score_2():
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
 
-    assert is_close(known_score, score)
+    assert np.allclose(known_score, score)
 
 
 def test_score_3():
@@ -294,7 +288,7 @@ def test_score_3():
     # Get score from TPOT
     score = tpot_obj.score(testing_features_r, testing_classes_r)
 
-    assert is_close(known_score, score)
+    assert np.allclose(known_score, score)
 
 
 def test_sample_weight_func():
@@ -341,7 +335,7 @@ def test_sample_weight_func():
 
     assert np.allclose(cv_score1, cv_score2)
     assert not np.allclose(cv_score1, cv_score_weight)
-    assert is_close(known_score, score)
+    assert np.allclose(known_score, score)
 
 
 def test_predict():

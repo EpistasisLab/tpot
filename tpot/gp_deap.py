@@ -34,6 +34,9 @@ from collections import defaultdict
 import warnings
 import threading
 
+# Limit loops to generate a different individual by crossover/mutation
+MAX_MUT_LOOPS = 50
+
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
@@ -70,12 +73,12 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
     offspring = []
     for _ in range(lambda_):
         op_choice = np.random.random()
-        if op_choice < cxpb:            # Apply crossover
+        if op_choice < cxpb:  # Apply crossover
             idxs = np.random.randint(0, len(population), size=2)
             ind1, ind2 = toolbox.clone(population[idxs[0]]), toolbox.clone(population[idxs[1]])
             ind_str = str(ind1)
             num_loop = 0
-            while ind_str == str(ind1) and num_loop < 50:  # 50 loops at most to generate a different individual by crossover
+            while ind_str == str(ind1) and num_loop < MAX_MUT_LOOPS:
                 ind1, ind2 = toolbox.mate(ind1, ind2)
                 num_loop += 1
             if ind_str != str(ind1):  # check if crossover happened
@@ -86,7 +89,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
             ind = toolbox.clone(population[idx])
             ind_str = str(ind)
             num_loop = 0
-            while ind_str == str(ind) and num_loop < 50:  # 50 loops at most to generate a different individual by mutation
+            while ind_str == str(ind) and num_loop < MAX_MUT_LOOPS:
                 ind, = toolbox.mutate(ind)
                 num_loop += 1
             if ind_str != str(ind):  # check if mutation happened

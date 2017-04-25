@@ -74,5 +74,5 @@ class CombineDFs(object):
 
     @property
     def __name__(self):
-        """Instance ame is the same as the class name."""
+        """Instance name is the same as the class name."""
         return self.__class__.__name__
