@@ -52,6 +52,7 @@ from .built_in_operators import CombineDFs
 from .config_classifier_light import classifier_config_dict_light
 from .config_regressor_light import regressor_config_dict_light
 from .config_classifier_mdr import tpot_mdr_classifier_config_dict
+from .config_regressor_mdr import tpot_mdr_regressor_config_dict
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -286,11 +287,7 @@ class TPOTBase(BaseEstimator):
                 if self.classification:
                     self.config_dict = tpot_mdr_classifier_config_dict
                 else:
-                    raise TypeError(
-                        'The TPOT MDR operator configuration file does not '
-                        'currently work with TPOTRegressor. Please use '
-                        'TPOTClassifier instead.'
-                    )
+                    self.config_dict = tpot_mdr_regressor_config_dict
             else:
                 try:
                     with open(config_dict, 'r') as input_file:
