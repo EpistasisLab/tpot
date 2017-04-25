@@ -160,14 +160,6 @@ classifier_config_dict = {
         'alpha': np.arange(0, 0.05, 0.001),
         'score_func': {
             'sklearn.feature_selection.f_classif': None
-        }  # read from dependencies ! need add an exception in preprocess_args
-
-    },
-
-    'sklearn.feature_selection.SelectKBest': {
-        'k': range(1, 100),  # TODO: Check range
-        'score_func': {
-            'sklearn.feature_selection.f_classif': None
         }
     },
 
