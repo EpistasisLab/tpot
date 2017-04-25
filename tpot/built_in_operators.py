@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-Copyright 2015-Present Randal S. Olson
+"""Copyright 2015-Present Randal S. Olson.
 
 This file is part of the TPOT library.
 
@@ -26,18 +25,14 @@ from sklearn.utils import check_array
 
 
 class ZeroCount(BaseEstimator):
-
-    """Preprocessor that adds two virtual features to the dataset, one for the count of zero values in the feature set, and one for the count of non-zeros in the feature set"""
-
-    def __init__(self):
-        pass
+    """Adds the count of zeros and count of non-zeros per sample as features."""
 
     def fit(self, X, y=None):
-        """Dummy function to fit in with the sklearn API"""
+        """Dummy function to fit in with the sklearn API."""
         return self
 
     def transform(self, X, y=None):
-        """Transform data by adding two virtual features
+        """Transform data by adding two virtual features.
 
         Parameters
         ----------
@@ -57,19 +52,27 @@ class ZeroCount(BaseEstimator):
 
         X_transformed = np.copy(X)
 
-        non_zero = np.apply_along_axis(lambda row: np.count_nonzero(row),
-                                        axis=1, arr=X_transformed)
-        zero_col = np.apply_along_axis(lambda row: (n_features - np.count_nonzero(row)),
-                                        axis=1, arr=X_transformed)
+        non_zero = np.apply_along_axis(
+            lambda row: np.count_nonzero(row),
+            axis=1,
+            arr=X_transformed
+        )
+        zero_col = np.apply_along_axis(
+            lambda row: (n_features - np.count_nonzero(row)),
+            axis=1,
+            arr=X_transformed
+        )
 
         X_transformed = np.insert(X_transformed, n_features, non_zero, axis=1)
         X_transformed = np.insert(X_transformed, n_features + 1, zero_col, axis=1)
 
         return X_transformed
 
+
 class CombineDFs(object):
-    """Operator to combine two DataFrames"""
+    """Combine two DataFrames."""
 
     @property
     def __name__(self):
+        """Instance name is the same as the class name."""
         return self.__class__.__name__

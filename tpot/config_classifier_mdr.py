@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Copyright 2015-Present Randal S. Olson
+"""Copyright 2015-Present Randal S. Olson.
 
 This file is part of the TPOT library.
 
@@ -16,15 +15,9 @@ GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
-
-dictionary format (json-like format):
-key:
-    operator name
-value:
-    source: module source (e.g sklearn.tree)
-    dependencies: depended module (e.g. SVC in selectors RFE); None for no dependency
-    params: a dictionary of parameter names (keys) and parameter ranges (values); None for no dependency
 """
+
+# Check the TPOT documentation for information on the structure of config dicts
 
 tpot_mdr_classifier_config_dict = {
 
