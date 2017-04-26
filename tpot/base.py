@@ -35,12 +35,12 @@ from tqdm import tqdm
 from copy import copy
 
 from sklearn.base import BaseEstimator
+from sklearn.utils import check_array
 from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
-from sklearn.preprocessing import FunctionTransformer
+from sklearn.preprocessing import FunctionTransformer, Imputer
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics.scorer import make_scorer
-from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 
 from update_checker import update_check
 
@@ -369,7 +369,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes, sample_weight=None):
-        """Fit an optimitzed machine learning pipeline.
+        """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
         maximizes classification score on the provided features and classes.
@@ -392,19 +392,10 @@ class TPOTBase(BaseEstimator):
         """
         features = features.astype(np.float64)
 
-        # Check that the input data is formatted correctly for scikit-learn
-        if self.classification:
-            clf = DecisionTreeClassifier(max_depth=5)
-        else:
-            clf = DecisionTreeRegressor(max_depth=5)
+        if self._contains_nan(features):
+            features = Imputer(strategy='most_frequent').fit_transform(features)
 
-        try:
-            clf = clf.fit(features, classes)
-        except Exception:
-            raise ValueError('Error: Input data is not in a valid format. '
-                             'Please confirm that the input data is scikit-learn compatible. '
-                             'For example, the features must be a 2-D array and target labels '
-                             'must be a 1-D array.')
+        self._check_dataset(features, classes)
 
         # Set the seed for the GP run
         if self.random_state is not None:
@@ -412,7 +403,6 @@ class TPOTBase(BaseEstimator):
             np.random.seed(self.random_state)
 
         self._start_datetime = datetime.now()
-
         self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight)
 
         # assign population, self._pop can only be not None if warm_start is enabled
@@ -541,7 +531,13 @@ class TPOTBase(BaseEstimator):
         """
         if not self._fitted_pipeline:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
-        return self._fitted_pipeline.predict(features.astype(np.float64))
+
+        features = features.astype(np.float64)
+
+        if self._contains_nan(features):
+            features = Imputer(strategy='most_frequent').fit_transform(features)
+
+        return self._fitted_pipeline.predict(features)
 
     def fit_predict(self, features, classes):
         """Call fit and predict in sequence.
@@ -640,6 +636,47 @@ class TPOTBase(BaseEstimator):
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(export_pipeline(self._optimized_pipeline, self.operators, self._pset))
+
+    def _contains_nan(self, features):
+        """Determine if a feature set contains any missing values.
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+
+        Returns
+        -------
+        bool, True if NaN is present, False otherwise.
+        """
+        return np.isnan(np.sum(features))
+
+    def _check_dataset(self, features, classes):
+        """Check if a dataset has a valid feature set and labels.
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix
+        classes: array-like {n_samples}
+            List of class labels for prediction
+
+        Returns
+        -------
+        None
+        """
+        try:
+            check_array(features, dtype=np.float64, accept_sparse='csc')
+            check_array(classes, ensure_2d=False, dtype=None)
+
+            assert len(classes.shape) == 1
+            assert classes.shape[0] == features.shape[0]
+        except Exception:
+            raise ValueError(
+                'Error: Input data is not in a valid format. Please confirm '
+                'that the input data is scikit-learn compatible. For example, '
+                'the features must be a 2-D array and target labels must be a '
+                '1-D array.'
+            )
 
     def _compile_to_sklearn(self, expr):
         """Compile a DEAP pipeline into a sklearn pipeline.

@@ -454,6 +454,39 @@ def test_fit2():
     assert not (tpot_obj._start_datetime is None)
 
 
+def test_imputer():
+    """Assert that the TPOT fit function will run without error in a dataset where NaNs are present."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    features_with_nan = np.copy(training_features)
+    features_with_nan[0][0] = float('nan')
+
+    tpot_obj.fit(features_with_nan, training_classes)
+
+
+def test_imputer2():
+    """Assert that the TPOT predict function will run without error in a dataset where NaNs are present."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    features_with_nan = np.copy(training_features)
+    features_with_nan[0][0] = float('nan')
+
+    tpot_obj.fit(features_with_nan, training_classes)
+    tpot_obj.predict(features_with_nan)
+
+
 def testTPOTOperatorClassFactory():
     """Assert that the TPOT operators class factory."""
     test_config_dict = {
