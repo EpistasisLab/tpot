@@ -358,8 +358,7 @@ def _get_arg_parser():
 
 def _print_args(args):
     print('\nTPOT settings:')
-    args.__dict__
-    for arg, arg_val in list(enumerate(args.__dict__)):
+    for arg, arg_val in args.__dict__.items():
         if arg == 'DISABLE_UPDATE_CHECK':
             continue
         elif arg == 'SCORING_FN' and arg_val is None:
