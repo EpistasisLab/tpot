@@ -498,7 +498,7 @@ class TPOTBase(BaseEstimator):
         finally:
             # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
             attempts = 10
-            for attempt in xrange(attempts):
+            for attempt in range(attempts):
                 try:
                     # Close the progress bar
                     # Standard truthiness checks won't work for tqdm
