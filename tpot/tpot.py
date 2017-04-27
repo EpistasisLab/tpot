@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-Copyright 2015-Present Randal S. Olson
+"""Copyright 2015-Present Randal S. Olson.
 
 This file is part of the TPOT library.
 
@@ -26,18 +25,18 @@ from .config_regressor import regressor_config_dict
 
 
 class TPOTClassifier(TPOTBase):
-    """TPOT estimator for classification problems"""
+    """TPOT estimator for classification problems."""
 
     scoring_function = 'accuracy'  # Classification scoring
-    default_config_dict = classifier_config_dict # Classification dictionary
+    default_config_dict = classifier_config_dict  # Classification dictionary
     classification = True
     regression = False
 
 
 class TPOTRegressor(TPOTBase):
-    """TPOT estimator for regression problems"""
+    """TPOT estimator for regression problems."""
 
     scoring_function = 'neg_mean_squared_error'  # Regression scoring
-    default_config_dict = regressor_config_dict # Regression dictionary
+    default_config_dict = regressor_config_dict  # Regression dictionary
     classification = False
     regression = True
