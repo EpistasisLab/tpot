@@ -219,7 +219,12 @@ def _get_arg_parser():
             'and mean squared error (mse) is used for regression problems. '
             'TPOT assumes that any function with "error" or "loss" in the name '
             'is meant to be minimized, whereas any other functions will be '
-            'maximized. Offers the same options as cross_val_score: '
+            'maximized.'
+            'Note: If you wrote your own function, set this argument to mymodule.myfunction'
+            'and TPOT will import your module and take the function from there.'
+            'TPOT will assume the module can be imported from the current workdir.'
+
+            'Offers the same built-in scorers as cross_val_score: '
             'accuracy, '
             'adjusted_rand_score, '
             'average_precision, '
@@ -421,6 +426,38 @@ def main():
         axis=1
     )
 
+    # looks complex but actually just dynamically imports user supplied module
+    # and takes scoring function from there if possible
+    if (args.SCORING_FN is not None) and ("." in args.SCORING_FN):
+        try:
+            # All but the last part is a path to our module
+            # Example: modA.modB.func will be split to modA.modB and func
+            module_name, func_name = args.SCORING_FN.rsplit('.', 1)
+
+            import sys
+            import os
+            from importlib import import_module
+
+            # We work from current working directory
+            module_path = os.getcwd()
+
+            # Just for this moment add it to pythons import paths
+            sys.path.insert(0, module_path)
+            
+            # Import the module and get the function from it
+            scoring_func = getattr(import_module(module_name), func_name)
+
+            # Remove it afterwards to prevent any confusion
+            sys.path.pop(0)
+            
+            print('manual scoring function: {}'.format(scoring_func))
+            print('taken from module: {}'.format(module_name))
+        except Exception as e:
+            print('failed importing custom scoring function, error: {}'.format(str(e)))
+            raise
+    else:
+        scoring_func = args.SCORING_FN
+
     training_features, testing_features, training_classes, testing_classes = \
         train_test_split(features, input_data[args.TARGET_NAME], random_state=args.RANDOM_STATE)
     tpot_type = TPOTClassifier if args.TPOT_MODE == 'classification' else TPOTRegressor
@@ -432,7 +469,7 @@ def main():
         crossover_rate=args.CROSSOVER_RATE,
         cv=args.NUM_CV_FOLDS,
         n_jobs=args.NUM_JOBS,
-        scoring=args.SCORING_FN,
+        scoring=scoring_func,
         max_time_mins=args.MAX_TIME_MINS,
         max_eval_time_mins=args.MAX_EVAL_MINS,
         random_state=args.RANDOM_STATE,
