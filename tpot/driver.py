@@ -260,6 +260,22 @@ def _get_arg_parser():
     )
 
     parser.add_argument(
+        '-psp',
+        action='store',
+        dest='PERIODIC_SAVE_PATH',
+        default=None,
+        type=str,
+        help=(
+        'If supplied, a folder in which tpot will periodically '
+        'save the best pipeline so far while optimizing. '
+        'This is useful in multiple cases: '
+        'sudden death before tpot could save an optimized pipeline, '
+        'progress tracking, '
+        'grabbing a pipeline while TPOT is optimizing etc.'
+        )
+    )
+
+    parser.add_argument(
         '-njobs',
         action='store',
         dest='NUM_JOBS',
