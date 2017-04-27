@@ -41,7 +41,7 @@ from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score
 from deap import creator
 from tqdm import tqdm
-from nose.tools import assert_raises
+from nose.tools import assert_raises, assert_equal
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -92,16 +92,16 @@ def test_init_custom_parameters():
         warm_start=True
     )
 
-    assert tpot_obj.population_size == 500
-    assert tpot_obj.generations == 1000
-    assert tpot_obj.offspring_size == 2000
-    assert tpot_obj.mutation_rate == 0.05
-    assert tpot_obj.crossover_rate == 0.9
-    assert tpot_obj.scoring_function == 'accuracy'
-    assert tpot_obj.cv == 10
+    assert_equal(tpot_obj.population_size, 500)
+    assert_equal(tpot_obj.generations, 1000)
+    assert_equal(tpot_obj.offspring_size, 2000)
+    assert_equal(tpot_obj.mutation_rate, 0.05)
+    assert_equal(tpot_obj.crossover_rate, 0.9)
+    assert_equal(tpot_obj.scoring_function, 'accuracy')
+    assert_equal(tpot_obj.cv, 10)
     assert tpot_obj.max_time_mins is None
     assert tpot_obj.warm_start is True
-    assert tpot_obj.verbosity == 1
+    assert_equal(tpot_obj.verbosity, 1)
     assert tpot_obj._optimized_pipeline is None
     assert tpot_obj._fitted_pipeline is None
     assert not (tpot_obj._pset is None)
@@ -111,10 +111,10 @@ def test_init_custom_parameters():
 def test_init_default_scoring():
     """Assert that TPOT intitializes with the correct default scoring function."""
     tpot_obj = TPOTRegressor()
-    assert tpot_obj.scoring_function == 'neg_mean_squared_error'
+    assert_equal(tpot_obj.scoring_function, 'neg_mean_squared_error')
 
     tpot_obj = TPOTClassifier()
-    assert tpot_obj.scoring_function == 'accuracy'
+    assert_equal(tpot_obj.scoring_function, 'accuracy')
 
 
 def test_invaild_score_warning():
@@ -143,8 +143,8 @@ def test_init_max_time_mins():
     """Assert that the TPOT init stores max run time and sets generations to 1000000."""
     tpot_obj = TPOTClassifier(max_time_mins=30, generations=1000)
 
-    assert tpot_obj.generations == 1000000
-    assert tpot_obj.max_time_mins == 30
+    assert_equal(tpot_obj.generations, 1000000)
+    assert_equal(tpot_obj.max_time_mins, 30)
 
 
 def test_get_params():
@@ -164,8 +164,8 @@ def test_get_params():
     default_kwargs.update(kwargs)
     # update to dictionary instead of input string
     default_kwargs.update({'config_dict': classifier_config_dict_light})
-    assert tpot_obj.get_params()['config_dict'] == default_kwargs['config_dict']
-    assert tpot_obj.get_params() == default_kwargs
+    assert_equal(tpot_obj.get_params()['config_dict'], default_kwargs['config_dict'])
+    assert_equal(tpot_obj.get_params(), default_kwargs)
 
 
 def test_set_params():
@@ -179,19 +179,19 @@ def test_set_params_2():
     tpot_obj = TPOTClassifier(generations=2)
     tpot_obj.set_params(generations=3)
 
-    assert tpot_obj.generations == 3
+    assert_equal(tpot_obj.generations, 3)
 
 
 def test_lite_params():
     """Assert that TPOT uses TPOT's lite dictionary of operators when config_dict is 'TPOT light' or 'TPOT MDR'."""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
-    assert tpot_obj.config_dict == classifier_config_dict_light
+    assert_equal(tpot_obj.config_dict, classifier_config_dict_light)
 
     tpot_obj = TPOTClassifier(config_dict='TPOT MDR')
-    assert tpot_obj.config_dict == tpot_mdr_classifier_config_dict
+    assert_equal(tpot_obj.config_dict, tpot_mdr_classifier_config_dict)
 
     tpot_obj = TPOTRegressor(config_dict='TPOT light')
-    assert tpot_obj.config_dict == regressor_config_dict_light
+    assert_equal(tpot_obj.config_dict, regressor_config_dict_light)
 
     assert_raises(TypeError, TPOTRegressor, config_dict='TPOT MDR')
 
@@ -202,7 +202,7 @@ def test_random_ind():
     pipeline1 = str(tpot_obj._toolbox.individual())
     tpot_obj = TPOTClassifier(random_state=43)
     pipeline2 = str(tpot_obj._toolbox.individual())
-    assert pipeline1 == pipeline2
+    assert_equal(pipeline1, pipeline2)
 
 
 def test_random_ind_2():
@@ -232,7 +232,7 @@ exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
 
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
+    assert_equal(expected_code, export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset))
 
 
 def test_score():
@@ -361,7 +361,7 @@ def test_predict_2():
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
     result = tpot_obj.predict(testing_features)
 
-    assert result.shape == (testing_features.shape[0],)
+    assert_equal(result.shape, (testing_features.shape[0],))
 
 
 def test_predict_proba():
@@ -382,7 +382,7 @@ def test_predict_proba():
     result = tpot_obj.predict_proba(testing_features)
     num_labels = np.amax(testing_classes) + 1
 
-    assert result.shape == (testing_features.shape[0], num_labels)
+    assert_equal(result.shape, (testing_features.shape[0], num_labels))
 
 
 def test_predict_proba2():
@@ -420,7 +420,7 @@ def test_warm_start():
     tpot_obj.random_state = 21
     tpot_obj.fit(training_features, training_classes)
 
-    assert tpot_obj._pop == first_pop
+    assert_equal(tpot_obj._pop, first_pop)
 
 
 def test_fit():
@@ -484,12 +484,12 @@ def testTPOTOperatorClassFactory():
         tpot_operator_list.append(op)
         tpot_argument_list += args
 
-    assert len(tpot_operator_list) == 3
-    assert len(tpot_argument_list) == 9
+    assert_equal(len(tpot_operator_list), 3)
+    assert_equal(len(tpot_argument_list), 9)
     assert tpot_operator_list[0].root is True
     assert tpot_operator_list[1].root is False
-    assert tpot_operator_list[2].type() == "Classifier or Regressor"
-    assert tpot_argument_list[1].values == [True, False]
+    assert_equal(tpot_operator_list[2].type(), "Classifier or Regressor")
+    assert_equal(tpot_argument_list[1].values, [True, False])
 
 
 def check_export(op, tpot_obj):
@@ -563,7 +563,7 @@ def test_generate_pipeline_code():
     ),
     KNeighborsClassifier(n_neighbors=18, p="uniform", weights=2)
 )"""
-    assert expected_code == generate_pipeline_code(pipeline, tpot_obj.operators)
+    assert_equal(expected_code, generate_pipeline_code(pipeline, tpot_obj.operators))
 
 
 def test_generate_import_code():
@@ -584,7 +584,7 @@ features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpo
 training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 """
-    assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
+    assert_equal(expected_code, generate_import_code(pipeline, tpot_obj.operators))
 
 
 def test_mutNodeReplacement():
@@ -617,12 +617,12 @@ def test_mutNodeReplacement():
     new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
 
     if new_prims_list == old_prims_list:  # Terminal mutated
-        assert new_ret_type_list == old_ret_type_list
+        assert_equal(new_ret_type_list, old_ret_type_list)
     else:  # Primitive mutated
         diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
-        assert diff_prims[0].ret == diff_prims[1].ret
+        assert_equal(diff_prims[0].ret, diff_prims[1].ret)
 
-    assert mut_ind[0][0].ret == Output_Array
+    assert_equal(mut_ind[0][0].ret, Output_Array)
 
 
 def test_export_pipeline():
@@ -668,7 +668,7 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
+    assert_equal(expected_code, export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset))
 
 
 def test_export_pipeline_2():
@@ -699,7 +699,7 @@ exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
+    assert_equal(expected_code, export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset))
 
 
 def test_export_pipeline_3():
@@ -733,13 +733,13 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
+    assert_equal(expected_code, export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset))
 
 
 def test_operator_export():
     """Assert that a TPOT operator can export properly with a function as a parameter to a classifier."""
     export_string = TPOTSelectPercentile.export(5)
-    assert export_string == "SelectPercentile(score_func=f_classif, percentile=5)"
+    assert_equal(export_string, "SelectPercentile(score_func=f_classif, percentile=5)")
 
 
 def test_indent():
@@ -754,18 +754,18 @@ test3"""
     test2
     test3"""
 
-    assert indented_multiline_string == _indent(multiline_string, 4)
+    assert_equal(indented_multiline_string, _indent(multiline_string, 4))
 
 
 def test_operator_type():
     """Assert that TPOT operators return their type, e.g. 'Classifier', 'Preprocessor'."""
-    assert TPOTSelectPercentile.type() == "Preprocessor or Selector"
+    assert_equal(TPOTSelectPercentile.type(), "Preprocessor or Selector")
 
 
 def test_get_by_name():
     """Assert that the Operator class returns operators by name appropriately."""
     tpot_obj = TPOTClassifier()
-    assert get_by_name("SelectPercentile", tpot_obj.operators).__class__ == TPOTSelectPercentile.__class__
+    assert_equal(get_by_name("SelectPercentile", tpot_obj.operators).__class__, TPOTSelectPercentile.__class__)
 
 
 def test_gen():
@@ -775,7 +775,7 @@ def test_gen():
     pipeline = tpot_obj._gen_grow_safe(tpot_obj._pset, 1, 3)
 
     assert len(pipeline) > 1
-    assert pipeline[0].ret == Output_Array
+    assert_equal(pipeline[0].ret, Output_Array)
 
 
 def test_positive_integer():
@@ -785,7 +785,7 @@ def test_positive_integer():
 
 def test_positive_integer_2():
     """Assert that the TPOT CLI interface's integer parsing returns the integer value of a string encoded integer when n > 0."""
-    assert 1 == positive_integer('1')
+    assert_equal(1, positive_integer('1'))
 
 
 def test_positive_integer_3():
@@ -795,7 +795,7 @@ def test_positive_integer_3():
 
 def test_float_range():
     """Assert that the TPOT CLI interface's float range returns a float with input is in 0. - 1.0."""
-    assert 0.5 == float_range('0.5')
+    assert_equal(0.5, float_range('0.5'))
 
 
 def test_float_range_2():
