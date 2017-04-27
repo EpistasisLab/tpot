@@ -393,6 +393,8 @@ class TPOTBase(BaseEstimator):
         features = features.astype(np.float64)
 
         if self._contains_nan(features):
+            if self.verbosity > 1:
+                print('Imputing missing values in feature set')
             features = Imputer(strategy='most_frequent').fit_transform(features)
 
         self._check_dataset(features, classes)
@@ -535,6 +537,8 @@ class TPOTBase(BaseEstimator):
         features = features.astype(np.float64)
 
         if self._contains_nan(features):
+            if self.verbosity > 1:
+                print('Imputing missing values in feature set')
             features = Imputer(strategy='most_frequent').fit_transform(features)
 
         return self._fitted_pipeline.predict(features)
