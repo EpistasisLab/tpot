@@ -144,7 +144,11 @@ class TPOTBase(BaseEstimator):
             Random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
-        config_dict: string (default: None)
+        config_dict: a python dictionary or string (default: None)
+            Python dictionary:
+                A dictionary customizing the operators and parameters that
+                TPOT uses in the optimization process.
+                For examples, see config_regressor.py and config_classifier.py
             Path for configuration file:
                 A path to a configuration file for customizing the operators and parameters that
                 TPOT uses in the optimization process.
@@ -277,7 +281,9 @@ class TPOTBase(BaseEstimator):
 
     def _setup_config(self, config_dict):
         if config_dict:
-            if config_dict == 'TPOT light':
+            if isinstance(config_dict, dict):
+                self.config_dict = config_dict
+            elif config_dict == 'TPOT light':
                 if self.classification:
                     self.config_dict = classifier_config_dict_light
                 else:
