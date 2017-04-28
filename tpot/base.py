@@ -144,7 +144,7 @@ class TPOTBase(BaseEstimator):
             Random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
-        config_dict: a python dictionary or string (default: None)
+        config_dict: Python dictionary or string (default: None)
             Python dictionary:
                 A dictionary customizing the operators and parameters that
                 TPOT uses in the optimization process.
