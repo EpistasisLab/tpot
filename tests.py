@@ -195,10 +195,12 @@ def test_conf_dict():
 
     assert_raises(TypeError, TPOTRegressor, config_dict='TPOT MDR')
 
+
 def test_conf_dict_2():
     """Assert that TPOT uses a customized dictionary of operators when config_dict is python dictionary."""
     tpot_obj = TPOTClassifier(config_dict=tpot_mdr_classifier_config_dict)
     assert tpot_obj.config_dict == tpot_mdr_classifier_config_dict
+
 
 def test_conf_dict_3():
     """Assert that TPOT uses a customized dictionary of operators when config_dict is the path of python dictionary."""
