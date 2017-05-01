@@ -36,7 +36,7 @@ from tqdm import tqdm
 from copy import copy
 
 from sklearn.base import BaseEstimator
-from sklearn.externals.joblib import Parallel, delayed
+#from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
