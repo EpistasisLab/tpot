@@ -32,7 +32,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.base import clone
 from collections import defaultdict
 import warnings
-import threading
+from stopit import threading_timeoutable
 
 # Limit loops to generate a different individual by crossover/mutation
 MAX_MUT_LOOPS = 50
@@ -322,7 +322,7 @@ def mutNodeReplacement(individual, pset):
     return individual,
 
 
-class Interruptable_cross_val_score(threading.Thread):
+"""class Interruptable_cross_val_score(threading.Thread):
     def __init__(self, *args, **kwargs):
         threading.Thread.__init__(self)
         self.args = args
@@ -344,15 +344,15 @@ class Interruptable_cross_val_score(threading.Thread):
                 warnings.simplefilter('ignore')
                 self.result = cross_val_score(*self.args, **self.kwargs)
         except Exception as e:
-            pass
+            pass"""
 
-
+@threading_timeoutable(default= "Timeout", imeout_param='max_eval_time_seconds')
 def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
-                             cv, scoring_function, sample_weight, max_eval_time_mins):
+                             cv, scoring_function, sample_weight):#, max_eval_time_mins):
     max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
     # build a job for cross_val_score
-    tmp_it = Interruptable_cross_val_score(
+    CV_score = cross_val_score(
         clone(sklearn_pipeline),
         features,
         classes,
@@ -362,13 +362,5 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
         verbose=0,
         fit_params=sample_weight_dict
     )
-    tmp_it.start()
-    tmp_it.join(max_time_seconds)
 
-    if tmp_it.isAlive():
-        resulting_score = 'Timeout'
-    else:
-        resulting_score = np.mean(tmp_it.result)
-
-    tmp_it.stop()
-    return resulting_score
+    return np.mean(CV_score)

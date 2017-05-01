@@ -191,6 +191,7 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
+        self.max_eval_time_seconds = max(int(self.max_eval_time_mins * 60), 1)
 
         # Set offspring_size equal to population_size by default
         if offspring_size:
@@ -771,7 +772,6 @@ class TPOTBase(BaseEstimator):
 
         # evalurate pipeline
         resulting_score_list = []
-        # chunk size for pbar update
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
             jobs = []
             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
@@ -782,7 +782,7 @@ class TPOTBase(BaseEstimator):
                     self.cv,
                     self.scoring_function,
                     sample_weight,
-                    self.max_eval_time_mins
+                    self.max_eval_time_seconds
                 )
                 jobs.append(job)
             parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
