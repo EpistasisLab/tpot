@@ -774,7 +774,7 @@ class TPOTBase(BaseEstimator):
         # evalurate pipeline
         resulting_score_list = []
 
-        _multiprocessing_get = partial(multiprocessing.get, num_workers=self.n_jobs)
+        #_multiprocessing_get = partial(multiprocessing.get, num_workers=self.n_jobs)
         #parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
             #for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
@@ -794,7 +794,7 @@ class TPOTBase(BaseEstimator):
                                                                     sample_weight,
                                                                     timeout=self.max_eval_time_seconds)
                       for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*4]]
-            tmp_scores = compute(*pre_tmp_scores, get=_multiprocessing_get)
+            tmp_scores = compute(*pre_tmp_scores, get=multiprocessing.get, num_workers=self.n_jobs)
             for val in tmp_scores:
                 if not self._pbar.disable:
                     self._pbar.update(1)
