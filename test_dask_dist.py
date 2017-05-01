@@ -19,7 +19,7 @@ X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
 training_classes_r_weight = np.array(range(1, len(y_train)+1))
 
 
-tpot = TPOTClassifier(generations=5, population_size=20, offspring_size=40, verbosity=2, max_eval_time_mins=0.02, n_jobs = 3, random_state = 44)#, max_time_mins=1)
+tpot = TPOTClassifier(generations=5, population_size=20, offspring_size=40, verbosity=3, max_eval_time_mins=0.02, n_jobs = 3, random_state = 44)#, max_time_mins=1)
 time_start = time.time()
 tpot.fit(X_train, y_train, sample_weight=training_classes_r_weight)
 print(tpot.score(X_test, y_test))
