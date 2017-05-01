@@ -24,7 +24,7 @@ from tpot.base import TPOTBase
 from tpot.driver import positive_integer, float_range
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
-from tpot.gp_deap import mutNodeReplacement
+from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.config_classifier import classifier_config_dict
@@ -145,6 +145,34 @@ def test_init_max_time_mins():
 
     assert tpot_obj.generations == 1000000
     assert tpot_obj.max_time_mins == 30
+
+
+def test_timeout():
+    """Assert that _wrapped_cross_val_score return Timeout in a time limit"""
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
+    # a complex pipeline for the test
+    pipeline_string = (
+        "ExtraTreesRegressor("
+        "GradientBoostingRegressor(input_matrix, GradientBoostingRegressor__alpha=0.8,"
+        "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
+        "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
+        "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
+        "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)"
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    # test _wrapped_cross_val_score with cv=10 so that it is impssible to finish in 1 second
+    return_value = _wrapped_cross_val_score(tpot_obj._fitted_pipeline,
+                                            training_features_r,
+                                            training_classes_r,
+                                            cv=10,
+                                            scoring_function='neg_mean_squared_error',
+                                            sample_weight=None,
+                                            timeout=1)
+    assert return_value == "Timeout"
 
 
 def test_get_params():
