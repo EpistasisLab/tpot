@@ -909,9 +909,10 @@ class TPOTBase(BaseEstimator):
                 except IndexError:
                     _, _, traceback = sys.exc_info()
                     raise IndexError(
-                        'The gp.generate function tried to add a terminal of '
-                        'type \'%s\', but there is none available.' % (type_,)
-                    ).with_traceback(traceback)
+                        'The gp.generate function tried to add '
+                        'a terminal of type {}, but there is'
+                        'none available. {}'.format(type_, traceback)
+                        )
                 if inspect.isclass(term):
                     term = term()
                 expr.append(term)
@@ -921,11 +922,11 @@ class TPOTBase(BaseEstimator):
                 except IndexError:
                     _, _, traceback = sys.exc_info()
                     raise IndexError(
-                        'The gp.generate function tried to add a terminal of '
-                        'type \'%s\', but there is none available.' % (type_,)
-                    ).with_traceback(traceback)
+                        'The gp.generate function tried to add '
+                        'a primitive of type {}, but there is'
+                        'none available. {}'.format(type_, traceback)
+                        )
                 expr.append(prim)
                 for arg in reversed(prim.args):
                     stack.append((depth+1, arg))
-
         return expr
