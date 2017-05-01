@@ -22,6 +22,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 import argparse
 from sklearn.model_selection import train_test_split
+from multiprocessing import freeze_support
 
 from .tpot import TPOTClassifier, TPOTRegressor
 from ._version import __version__
@@ -451,4 +452,5 @@ def main():
 
 
 if __name__ == '__main__':
+    freeze_support()
     main()

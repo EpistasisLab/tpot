@@ -28,6 +28,7 @@ from functools import partial
 from datetime import datetime
 from multiprocessing import cpu_count
 from dask import compute, delayed, multiprocessing
+from dask.distributed import Client
 
 import numpy as np
 import deap
@@ -794,7 +795,9 @@ class TPOTBase(BaseEstimator):
                                                                     sample_weight,
                                                                     timeout=self.max_eval_time_seconds)
                       for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*4]]
-            tmp_scores = compute(*pre_tmp_scores, get=multiprocessing.get, num_workers=self.n_jobs)
+
+            client = Client()
+            tmp_scores = compute(*pre_tmp_scores, get=client.get, num_workers=self.n_jobs)
             for val in tmp_scores:
                 if not self._pbar.disable:
                     self._pbar.update(1)
