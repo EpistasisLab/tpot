@@ -182,7 +182,7 @@ def test_set_params_2():
     assert tpot_obj.generations == 3
 
 
-def test_lite_params():
+def test_conf_dict():
     """Assert that TPOT uses TPOT's lite dictionary of operators when config_dict is 'TPOT light' or 'TPOT MDR'."""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
     assert tpot_obj.config_dict == classifier_config_dict_light
@@ -194,6 +194,31 @@ def test_lite_params():
     assert tpot_obj.config_dict == regressor_config_dict_light
 
     assert_raises(TypeError, TPOTRegressor, config_dict='TPOT MDR')
+
+def test_conf_dict_2():
+    """Assert that TPOT uses a customized dictionary of operators when config_dict is python dictionary."""
+    tpot_obj = TPOTClassifier(config_dict=tpot_mdr_classifier_config_dict)
+    assert tpot_obj.config_dict == tpot_mdr_classifier_config_dict
+
+def test_conf_dict_3():
+    """Assert that TPOT uses a customized dictionary of operators when config_dict is the path of python dictionary."""
+    tpot_obj = TPOTRegressor(config_dict="tests.conf")
+    tested_config_dict = {
+        'sklearn.naive_bayes.GaussianNB': {
+        },
+
+        'sklearn.naive_bayes.BernoulliNB': {
+            'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+            'fit_prior': [True, False]
+        },
+
+        'sklearn.naive_bayes.MultinomialNB': {
+            'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+            'fit_prior': [True, False]
+        }
+    }
+    assert isinstance(tpot_obj.config_dict, dict)
+    assert tpot_obj.config_dict == tested_config_dict
 
 
 def test_random_ind():
