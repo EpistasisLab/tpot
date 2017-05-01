@@ -32,7 +32,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.base import clone
 from collections import defaultdict
 import warnings
-from stopit import threading_timeoutable
+from stopit import threading_timeoutable, TimeoutException
 
 # Limit loops to generate a different individual by crossover/mutation
 MAX_MUT_LOOPS = 50
@@ -321,46 +321,25 @@ def mutNodeReplacement(individual, pset):
             individual[slice_] = new_subtree
     return individual,
 
-
-"""class Interruptable_cross_val_score(threading.Thread):
-    def __init__(self, *args, **kwargs):
-        threading.Thread.__init__(self)
-        self.args = args
-        self.kwargs = kwargs
-        self.result = -float('inf')
-        self._stopevent = threading.Event()
-        self.daemon = True
-
-    def stop(self):
-        self._stopevent.set()
-        threading.Thread.join(self)
-
-    def run(self):
-        # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
-        # Note: Need attention if using parallel execution model of scikit-learn
-        threading.current_thread().name = 'MainThread'
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                self.result = cross_val_score(*self.args, **self.kwargs)
-        except Exception as e:
-            pass"""
-
-@threading_timeoutable(default= "Timeout", imeout_param='max_eval_time_seconds')
+@threading_timeoutable(default= "Timeout")
 def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
-                             cv, scoring_function, sample_weight):#, max_eval_time_mins):
-    max_time_seconds = max(int(max_eval_time_mins * 60), 1)
+                             cv, scoring_function, sample_weight):
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
-    # build a job for cross_val_score
-    CV_score = cross_val_score(
-        clone(sklearn_pipeline),
-        features,
-        classes,
-        scoring=scoring_function,
-        cv=cv,
-        n_jobs=1,
-        verbose=0,
-        fit_params=sample_weight_dict
-    )
-
-    return np.mean(CV_score)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            CV_score = cross_val_score(
+                clone(sklearn_pipeline),
+                features,
+                classes,
+                scoring=scoring_function,
+                cv=cv,
+                n_jobs=1,
+                verbose=0,
+                fit_params=sample_weight_dict
+            )
+        return np.mean(CV_score)
+    except TimeoutException:
+        return "Timeout"
+    except Exception:
+        return -float('inf')
