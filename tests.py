@@ -183,7 +183,7 @@ def test_set_params_2():
 
 
 def test_conf_dict():
-    """Assert that TPOT uses TPOT's lite dictionary of operators when config_dict is 'TPOT light' or 'TPOT MDR'."""
+    """Assert that TPOT uses the pre-configured dictionary of operators when config_dict is 'TPOT light' or 'TPOT MDR'."""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
     assert tpot_obj.config_dict == classifier_config_dict_light
 
@@ -197,14 +197,14 @@ def test_conf_dict():
 
 
 def test_conf_dict_2():
-    """Assert that TPOT uses a customized dictionary of operators when config_dict is python dictionary."""
+    """Assert that TPOT uses a custom dictionary of operators when config_dict is Python dictionary."""
     tpot_obj = TPOTClassifier(config_dict=tpot_mdr_classifier_config_dict)
     assert tpot_obj.config_dict == tpot_mdr_classifier_config_dict
 
 
 def test_conf_dict_3():
-    """Assert that TPOT uses a customized dictionary of operators when config_dict is the path of python dictionary."""
-    tpot_obj = TPOTRegressor(config_dict="tests.conf")
+    """Assert that TPOT uses a custom dictionary of operators when config_dict is the path of Python dictionary."""
+    tpot_obj = TPOTRegressor(config_dict='tests.conf')
     tested_config_dict = {
         'sklearn.naive_bayes.GaussianNB': {
         },
