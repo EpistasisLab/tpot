@@ -772,7 +772,7 @@ class TPOTBase(BaseEstimator):
 
         # evalurate pipeline
         resulting_score_list = []
-        parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+        parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs', backend="threading")
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
                 tmp_score = parallel(delayed(_wrapped_cross_val_score)(sklearn_pipeline,
