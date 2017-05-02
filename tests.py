@@ -164,11 +164,11 @@ def test_timeout():
     )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
-    # test _wrapped_cross_val_score with cv=10 so that it is impssible to finish in 1 second
+    # test _wrapped_cross_val_score with cv=20 so that it is impossible to finish in 1 second
     return_value = _wrapped_cross_val_score(tpot_obj._fitted_pipeline,
                                             training_features_r,
                                             training_classes_r,
-                                            cv=10,
+                                            cv=20,
                                             scoring_function='neg_mean_squared_error',
                                             sample_weight=None,
                                             timeout=1)
