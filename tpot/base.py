@@ -27,7 +27,7 @@ import sys
 from functools import partial
 from datetime import datetime
 from multiprocessing import cpu_count
-from dask import compute, delayed, multiprocessing
+#from dask import compute, delayed, multiprocessing
 
 import numpy as np
 import deap
@@ -36,7 +36,7 @@ from tqdm import tqdm
 from copy import copy
 
 from sklearn.base import BaseEstimator
-#from sklearn.externals.joblib import Parallel, delayed
+from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
@@ -775,6 +775,7 @@ class TPOTBase(BaseEstimator):
         resulting_score_list = []
 
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
+            """
             pre_tmp_scores = [delayed(_wrapped_cross_val_score)(sklearn_pipeline,
                                                                     features,
                                                                     classes,
@@ -784,7 +785,23 @@ class TPOTBase(BaseEstimator):
                                                                     timeout=self.max_eval_time_seconds)
                       for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*4]]
             tmp_scores = compute(*pre_tmp_scores, get=multiprocessing.get, num_workers=self.n_jobs)
-            for val in tmp_scores:
+            for val in tmp_scores:"""
+            jobs = []
+            for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
+                job = delayed(_wrapped_cross_val_score)(
+                    sklearn_pipeline,
+                    features,
+                    classes,
+                    self.cv,
+                    self.scoring_function,
+                    sample_weight,
+                    self.max_eval_time_mins
+                )
+                jobs.append(job)
+            parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs', max_nbytes=None)
+            tmp_result_score = parallel(jobs)
+            # update pbar
+            for val in tmp_result_score:
                 if not self._pbar.disable:
                     self._pbar.update(1)
                 if val == 'Timeout':
