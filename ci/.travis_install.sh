@@ -54,7 +54,7 @@ fi
 pip install update_checker
 pip install tqdm
 pip install toolz
-pip install dask
+pip install dask[complete]
 pip install stopit
 
 if [[ "$COVERAGE" == "true" ]]; then
