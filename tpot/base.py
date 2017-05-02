@@ -696,7 +696,7 @@ class TPOTBase(BaseEstimator):
 
             assert len(classes.shape) == 1
             assert classes.shape[0] == features.shape[0]
-        except Exception:
+        except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
                 'that the input data is scikit-learn compatible. For example, '
