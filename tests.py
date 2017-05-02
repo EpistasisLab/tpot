@@ -56,8 +56,8 @@ training_features_r, testing_features_r, training_classes_r, testing_classes_r =
 np.random.seed(42)
 random.seed(42)
 
-test_operator_key = 'sklearn.feature_selection.SelectKBest'
-TPOTSelectKBest, TPOTSelectKBest_args = TPOTOperatorClassFactory(
+test_operator_key = 'sklearn.feature_selection.SelectPercentile'
+TPOTSelectPercentile, TPOTSelectPercentile_args = TPOTOperatorClassFactory(
     test_operator_key,
     classifier_config_dict[test_operator_key]
 )
@@ -182,8 +182,8 @@ def test_set_params_2():
     assert tpot_obj.generations == 3
 
 
-def test_lite_params():
-    """Assert that TPOT uses TPOT's lite dictionary of operators when config_dict is 'TPOT light' or 'TPOT MDR'."""
+def test_conf_dict():
+    """Assert that TPOT uses the pre-configured dictionary of operators when config_dict is 'TPOT light' or 'TPOT MDR'."""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
     assert tpot_obj.config_dict == classifier_config_dict_light
 
@@ -196,6 +196,33 @@ def test_lite_params():
     assert_raises(TypeError, TPOTRegressor, config_dict='TPOT MDR')
 
 
+def test_conf_dict_2():
+    """Assert that TPOT uses a custom dictionary of operators when config_dict is Python dictionary."""
+    tpot_obj = TPOTClassifier(config_dict=tpot_mdr_classifier_config_dict)
+    assert tpot_obj.config_dict == tpot_mdr_classifier_config_dict
+
+
+def test_conf_dict_3():
+    """Assert that TPOT uses a custom dictionary of operators when config_dict is the path of Python dictionary."""
+    tpot_obj = TPOTRegressor(config_dict='tests.conf')
+    tested_config_dict = {
+        'sklearn.naive_bayes.GaussianNB': {
+        },
+
+        'sklearn.naive_bayes.BernoulliNB': {
+            'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+            'fit_prior': [True, False]
+        },
+
+        'sklearn.naive_bayes.MultinomialNB': {
+            'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+            'fit_prior': [True, False]
+        }
+    }
+    assert isinstance(tpot_obj.config_dict, dict)
+    assert tpot_obj.config_dict == tested_config_dict
+
+
 def test_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline with same random seed."""
     tpot_obj = TPOTClassifier(random_state=43)
@@ -206,16 +233,16 @@ def test_random_ind():
 
 
 def test_random_ind_2():
-    """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 45."""
-    tpot_obj = TPOTClassifier(random_state=45)
+    """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 39."""
+    tpot_obj = TPOTClassifier(random_state=39)
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pipeline = tpot_obj._toolbox.individual()
     expected_code = """import numpy as np
 
-from sklearn.linear_model import LogisticRegression
+from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
-from tpot.built_in_operators import ZeroCount
+from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -224,8 +251,8 @@ training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    ZeroCount(),
-    LogisticRegression(C=0.0001, dual=False, penalty="l2")
+    SelectPercentile(score_func=f_classif, percentile=65),
+    DecisionTreeClassifier(criterion="gini", max_depth=7, min_samples_leaf=4, min_samples_split=18)
 )
 
 exported_pipeline.fit(training_features, training_classes)
@@ -242,11 +269,11 @@ def test_score():
 
 
 def test_score_2():
-    """Assert that the TPOTClassifier score function outputs a known score for a fix pipeline."""
-    tpot_obj = TPOTClassifier()
+    """Assert that the TPOTClassifier score function outputs a known score for a fixed pipeline."""
+    tpot_obj = TPOTClassifier(random_state=34)
     known_score = 0.977777777778  # Assumes use of the TPOT accuracy function
 
-    # Reify pipeline with known score
+    # Create a pipeline with a known score
     pipeline_string = (
         'KNeighborsClassifier('
         'input_matrix, '
@@ -266,8 +293,8 @@ def test_score_2():
 
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
-    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
-    known_score = 12.3727966005  # Assumes use of mse
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
+    known_score = 11.594597099  # Assumes use of mse
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -598,9 +625,9 @@ def test_mutNodeReplacement():
         'DecisionTreeClassifier__min_samples_leaf=5, '
         'DecisionTreeClassifier__min_samples_split=5'
         '), '
-        'SelectKBest('
+        'SelectPercentile('
         'input_matrix, '
-        'SelectKBest__k=20'
+        'SelectPercentile__percentile=20'
         ')'
         'KNeighborsClassifier__n_neighbors=10, '
         'KNeighborsClassifier__p=1, '
@@ -632,7 +659,7 @@ def test_export_pipeline():
         'KNeighborsClassifier(CombineDFs('
         'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
         'DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
-        'DecisionTreeClassifier__min_samples_split=5),SelectKBest(input_matrix, SelectKBest__k=20)'
+        'DecisionTreeClassifier__min_samples_split=5),SelectPercentile(input_matrix, SelectPercentile__percentile=20)'
         'KNeighborsClassifier__n_neighbors=10, '
         'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform'
     )
@@ -642,7 +669,7 @@ def test_export_pipeline():
 
 from copy import copy
 from sklearn.ensemble import VotingClassifier
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
@@ -660,7 +687,7 @@ exported_pipeline = make_pipeline(
         make_union(VotingClassifier([('branch',
             DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
         )]), FunctionTransformer(copy)),
-        SelectKBest(score_func=f_classif, k=20)
+        SelectPercentile(score_func=f_classif, percentile=20)
     ),
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 )
@@ -706,7 +733,7 @@ def test_export_pipeline_3():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with a preprocessor."""
     tpot_obj = TPOTClassifier()
     pipeline_string = (
-        'DecisionTreeClassifier(SelectKBest(input_matrix, SelectKBest__k=20),'
+        'DecisionTreeClassifier(SelectPercentile(input_matrix, SelectPercentile__percentile=20),'
         'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8,'
         'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
     )
@@ -714,7 +741,7 @@ def test_export_pipeline_3():
 
     expected_code = """import numpy as np
 
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.tree import DecisionTreeClassifier
@@ -726,7 +753,7 @@ training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    SelectKBest(score_func=f_classif, k=20),
+    SelectPercentile(score_func=f_classif, percentile=20),
     DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
 )
 
@@ -738,8 +765,8 @@ results = exported_pipeline.predict(testing_features)
 
 def test_operator_export():
     """Assert that a TPOT operator can export properly with a function as a parameter to a classifier."""
-    export_string = TPOTSelectKBest.export(5)
-    assert export_string == "SelectKBest(score_func=f_classif, k=5)"
+    export_string = TPOTSelectPercentile.export(5)
+    assert export_string == "SelectPercentile(score_func=f_classif, percentile=5)"
 
 
 def test_indent():
@@ -759,13 +786,13 @@ test3"""
 
 def test_operator_type():
     """Assert that TPOT operators return their type, e.g. 'Classifier', 'Preprocessor'."""
-    assert TPOTSelectKBest.type() == "Preprocessor or Selector"
+    assert TPOTSelectPercentile.type() == "Preprocessor or Selector"
 
 
 def test_get_by_name():
     """Assert that the Operator class returns operators by name appropriately."""
     tpot_obj = TPOTClassifier()
-    assert get_by_name("SelectKBest", tpot_obj.operators).__class__ == TPOTSelectKBest.__class__
+    assert get_by_name("SelectPercentile", tpot_obj.operators).__class__ == TPOTSelectPercentile.__class__
 
 
 def test_gen():
