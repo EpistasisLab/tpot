@@ -795,7 +795,7 @@ class TPOTBase(BaseEstimator):
                     self.cv,
                     self.scoring_function,
                     sample_weight,
-                    self.max_eval_time_mins
+                    timeout=self.max_eval_time_mins
                 )
                 jobs.append(job)
             parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs', max_nbytes=None)
