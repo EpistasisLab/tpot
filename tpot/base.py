@@ -397,7 +397,16 @@ class TPOTBase(BaseEstimator):
         None
 
         """
-        features = features.astype(np.float64)
+        #features = features.astype(np.float64)
+        import tempfile
+        import os
+        from sklearn.externals.joblib import load, dump
+
+        temp_folder = tempfile.mkdtemp()
+        filename = os.path.join(temp_folder, 'joblib_test.mmap')
+        if os.path.exists(filename): os.unlink(filename)
+         _ = dump(features.astype(np.float64), filename)
+        features = load(filename, mmap_mode='r+')
 
         # Check that the input data is formatted correctly for scikit-learn
         if self.classification:
