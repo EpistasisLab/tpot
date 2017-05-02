@@ -27,6 +27,7 @@ import sys
 from functools import partial
 from datetime import datetime
 from multiprocessing import cpu_count
+import os
 
 import numpy as np
 import deap
@@ -77,12 +78,15 @@ if sys.platform.startswith('win'):
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
 
+    # dont save periodic pipelines more often than this
+    OUTPUT_BEST_PIPELINE_PERIOD_SECONDS = 30
+
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None, warm_start=False,
-                 verbosity=0, disable_update_check=False):
+                 verbosity=0, disable_update_check=False, periodic_save_path=None):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -168,6 +172,13 @@ class TPOTBase(BaseEstimator):
             A setting of 2 or higher will add a progress bar during the optimization procedure.
         disable_update_check: bool (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
+        periodic_save_path: path string (default: None)
+            If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.
+            Currently once per generation but not more often than once per 30 seconds.
+            Useful in multiple cases:
+                Sudden death before tpot could save optimized pipeline
+                Track its progress
+                Grab pipelines while it's still optimizing
 
         Returns
         -------
@@ -184,6 +195,8 @@ class TPOTBase(BaseEstimator):
 
         self._pareto_front = None
         self._optimized_pipeline = None
+        self._optimized_pipeline_score = None
+        self._exported_pipeline_text = "" # used to prevent duplicate saves
         self._fitted_pipeline = None
         self._pop = None
         self.warm_start = warm_start
@@ -191,6 +204,7 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
+        self.periodic_save_path = periodic_save_path
 
         # Set offspring_size equal to population_size by default
         if offspring_size:
@@ -406,11 +420,11 @@ class TPOTBase(BaseEstimator):
 
         try:
             clf = clf.fit(features, classes)
-        except Exception:
+        except Exception as e:
             raise ValueError('Error: Input data is not in a valid format. '
                              'Please confirm that the input data is scikit-learn compatible. '
                              'For example, the features must be a 2-D array and target labels '
-                             'must be a 1-D array.')
+                             'must be a 1-D array.\nException was:{}'.format(str(e)))
 
         # Set the seed for the GP run
         if self.random_state is not None:
@@ -418,6 +432,7 @@ class TPOTBase(BaseEstimator):
             np.random.seed(self.random_state)
 
         self._start_datetime = datetime.now()
+        self._last_pipeline_write = self._start_datetime
 
         self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight)
 
@@ -473,7 +488,8 @@ class TPOTBase(BaseEstimator):
                     pbar=self._pbar,
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
-                    max_time_mins=self.max_time_mins
+                    max_time_mins=self.max_time_mins,
+                    periodic_pipeline_saver=self.save_pipeline_if_period
                 )
 
             # store population for the next call
@@ -486,50 +502,66 @@ class TPOTBase(BaseEstimator):
                 self._pbar.write('')
                 self._pbar.write('TPOT closed prematurely. Will use the current best pipeline.')
         finally:
-            # Close the progress bar
-            # Standard truthiness checks won't work for tqdm
-            if not isinstance(self._pbar, type(None)):
-                self._pbar.close()
+            # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
+            attempts = 10
+            for attempt in range(attempts):
+                try:
+                    # Close the progress bar
+                    # Standard truthiness checks won't work for tqdm
+                    if not isinstance(self._pbar, type(None)):
+                        self._pbar.close()
 
-            # Store the pipeline with the highest internal testing score
-            if self._pareto_front:
-                top_score = -float('inf')
-                for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
-                    if pipeline_scores.wvalues[1] > top_score:
-                        self._optimized_pipeline = pipeline
-                        top_score = pipeline_scores.wvalues[1]
+                    # Store the pipeline with the highest internal testing score
+                    if self._pareto_front:
+                        self._update_top_pipeline()
 
-                # It won't raise error for a small test like in a unit test because a few pipeline sometimes
-                # may fail due to the training data does not fit the operator's requirement.
-                if not self._optimized_pipeline:
-                    print('There was an error in the TPOT optimization '
-                          'process. This could be because the data was '
-                          'not formatted properly, or because data for '
-                          'a regression problem was provided to the '
-                          'TPOTClassifier object. Please make sure you '
-                          'passed the data to TPOT correctly.')
-                else:
-                    self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+                        # It won't raise error for a small test like in a unit test because a few pipeline sometimes
+                        # may fail due to the training data does not fit the operator's requirement.
+                        if not self._optimized_pipeline:
+                            print('There was an error in the TPOT optimization '
+                                  'process. This could be because the data was '
+                                  'not formatted properly, or because data for '
+                                  'a regression problem was provided to the '
+                                  'TPOTClassifier object. Please make sure you '
+                                  'passed the data to TPOT correctly.')
+                        else:
+                            self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 
-                    with warnings.catch_warnings():
-                        warnings.simplefilter('ignore')
-                        self._fitted_pipeline.fit(features, classes)
-
-                    if self.verbosity in [1, 2]:
-                        # Add an extra line of spacing if the progress bar was used
-                        if self.verbosity >= 2:
-                            print('')
-                        print('Best pipeline: {}'.format(self._optimized_pipeline))
-
-                    # Store and fit the entire Pareto front if sciencing
-                    elif self.verbosity >= 3 and self._pareto_front:
-                        self._pareto_front_fitted_pipelines = {}
-
-                        for pipeline in self._pareto_front.items:
-                            self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
                             with warnings.catch_warnings():
                                 warnings.simplefilter('ignore')
-                                self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
+                                self._fitted_pipeline.fit(features, classes)
+
+                            if self.verbosity in [1, 2]:
+                                # Add an extra line of spacing if the progress bar was used
+                                if self.verbosity >= 2:
+                                    print('')
+                                print('Best pipeline: {}'.format(self._optimized_pipeline))
+
+                            # Store and fit the entire Pareto front if sciencing
+                            elif self.verbosity >= 3 and self._pareto_front:
+                                self._pareto_front_fitted_pipelines = {}
+
+                                for pipeline in self._pareto_front.items:
+                                    self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                                    with warnings.catch_warnings():
+                                        warnings.simplefilter('ignore')
+                                        self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
+
+                    break
+                except:
+                    # raise the exception if it's our last attempt
+                    if attempt == attempts-1:
+                        raise
+
+    def _update_top_pipeline(self):
+        """small helper function to update the _optimized_pipeline field"""
+        if self._pareto_front:
+            top_score = -float('inf')
+            for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                if pipeline_scores.wvalues[1] > top_score:
+                    self._optimized_pipeline = pipeline
+                    top_score = pipeline_scores.wvalues[1]
+                    self._optimized_pipeline_score = top_score
 
     def predict(self, features):
         """Use the optimized pipeline to predict the classes for a feature set.
@@ -628,13 +660,44 @@ class TPOTBase(BaseEstimator):
 
         return self
 
-    def export(self, output_file_name):
-        """Export the current optimized pipeline as Python code.
+    def save_pipeline_if_period(self):
+        """Save a periodic pipeline if enough time has passed
+        """
+        total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
+        if total_since_last_pipeline_save > self.OUTPUT_BEST_PIPELINE_PERIOD_SECONDS:
+            self._last_pipeline_write = datetime.now()
+            self._save_periodic_pipeline()
+
+    def _save_periodic_pipeline(self):
+        """Saves a periodic best-right-now pipeline if a folder was supplied.
+        Skips if it's the an exact duplicate of the last one saved.
+        """
+        if self.periodic_save_path is not None:
+            try:
+                write = self._pbar.write if not self._pbar.disable else print
+
+                self._update_top_pipeline()
+
+                filename = os.path.join(self.periodic_save_path, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
+                write('saving best periodic pipeline to {}'.format(filename))
+                did_export = self.export(filename, skip_if_repeated=True)
+
+                if not did_export:
+                    write('periodic pipeline was not saved, probably saved before...')
+            except Exception as e:
+                write('failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
+
+    def export(self, output_file_name, skip_if_repeated=False):
+        """Export the current optimized pipeline as Python code
 
         Parameters
         ----------
         output_file_name: str
             String containing the path and file name of the desired output file
+
+        skip_if_repeated: bool
+            if given, a Boolean that tells whether to skip based on identical text to previously output pipeline.
+            Defaults to False, used mostly in periodic pipeline saving to prevent duplicates.
 
         Returns
         -------
@@ -644,8 +707,16 @@ class TPOTBase(BaseEstimator):
         if self._optimized_pipeline is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
+        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._optimized_pipeline_score)
+
+        # dont export a pipeline you just had
+        if skip_if_repeated and (self._exported_pipeline_text == to_write):
+            return False
+        
         with open(output_file_name, 'w') as output_file:
-            output_file.write(export_pipeline(self._optimized_pipeline, self.operators, self._pset))
+            output_file.write(to_write)
+            self._exported_pipeline_text = to_write
+            return True
 
     def _compile_to_sklearn(self, expr):
         """Compile a DEAP pipeline into a sklearn pipeline.
@@ -769,7 +840,7 @@ class TPOTBase(BaseEstimator):
                 sklearn_pipeline_list.append(sklearn_pipeline)
                 test_idx_list.append(indidx)
 
-        # evalurate pipeline
+        # evaluate pipeline
         resulting_score_list = []
         # chunk size for pbar update
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
