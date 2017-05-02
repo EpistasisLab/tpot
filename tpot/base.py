@@ -392,10 +392,8 @@ class TPOTBase(BaseEstimator):
         """
         features = features.astype(np.float64)
 
-        if self._contains_nan(features):
-            if self.verbosity > 1:
-                print('Imputing missing values in feature set')
-            features = Imputer(strategy='most_frequent').fit_transform(features)
+        if np.any(np.isnan(features)):
+            features = self._impute_values(features)
 
         self._check_dataset(features, classes)
 
@@ -536,10 +534,8 @@ class TPOTBase(BaseEstimator):
 
         features = features.astype(np.float64)
 
-        if self._contains_nan(features):
-            if self.verbosity > 1:
-                print('Imputing missing values in feature set')
-            features = Imputer(strategy='most_frequent').fit_transform(features)
+        if np.any(np.isnan(features)):
+            features = self._impute_values(features)
 
         return self._fitted_pipeline.predict(features)
 
@@ -641,18 +637,34 @@ class TPOTBase(BaseEstimator):
         with open(output_file_name, 'w') as output_file:
             output_file.write(export_pipeline(self._optimized_pipeline, self.operators, self._pset))
 
-    def _contains_nan(self, features):
-        """Determine if a feature set contains any missing values.
+    def _impute_values(self, features):
+        """Impute missing values in a feature set.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
-
-        Returns
-        -------
-        bool, True if NaN is present, False otherwise.
         """
-        return np.isnan(np.sum(features))
+        if self.verbosity > 1:
+            print('Imputing missing values in feature set')
+
+        def impute_feature(feature):
+            """Impute the missing values in just one feature.
+
+            Parameters
+            ----------
+            feature: array-like {n_samples}
+            """
+            # Use median for continuous features and mode for discrete features.
+            # Assume the feature is continuous if it contains more than the
+            # square root of the number of samples.
+            if (np.unique(feature).shape[0] ** 2) > feature.shape[0]:
+                method = 'median'
+            else:
+                method = 'most_frequent'
+
+            return Imputer(strategy=method, axis=1).fit_transform(feature)[0]
+
+        return np.apply_along_axis(impute_feature, axis=0, arr=features)
 
     def _check_dataset(self, features, classes):
         """Check if a dataset has a valid feature set and labels.
@@ -669,7 +681,7 @@ class TPOTBase(BaseEstimator):
         None
         """
         try:
-            check_array(features, dtype=np.float64, accept_sparse='csc')
+            check_array(features, dtype=np.float64, accept_sparse=None)
             check_array(classes, ensure_2d=False, dtype=None)
 
             assert len(classes.shape) == 1

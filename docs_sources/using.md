@@ -509,4 +509,4 @@ Note that you must have all of the corresponding packages for the operators inst
 <a name="usagenotes"></a>
 ## Usage Notes
 
-When feature matrices are passed into TPOT, any "NaN" values will automatically be imputed. The imputation process uses the most frequent value from each feature as its best guess for each missing value.
+When feature matrices are passed into TPOT, any missing values will automatically be imputed. The imputation process uses the most frequent value from each feature as its best guess for each missing value.

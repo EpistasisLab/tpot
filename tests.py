@@ -455,7 +455,7 @@ def test_fit2():
 
 
 def test_imputer():
-    """Assert that the TPOT fit function will run without error in a dataset where NaNs are present."""
+    """Assert that the TPOT fit function will will not raise a ValueError in a dataset where NaNs are present."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -471,7 +471,7 @@ def test_imputer():
 
 
 def test_imputer2():
-    """Assert that the TPOT predict function will run without error in a dataset where NaNs are present."""
+    """Assert that the TPOT predict function will not raise a ValueError in a dataset where NaNs are present."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
