@@ -447,7 +447,7 @@ The custom TPOT configuration must be in nested dictionary format, where the fir
 For a simple example, the configuration could be:
 
 ```Python
-classifier_config_dict = {
+tpot_config = {
     'sklearn.naive_bayes.GaussianNB': {
     },
 
@@ -474,7 +474,7 @@ digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
                                                     train_size=0.75, test_size=0.25)
 
-classifier_config_dict = {
+tpot_config = {
     'sklearn.naive_bayes.GaussianNB': {
     },
 
@@ -490,7 +490,7 @@ classifier_config_dict = {
 }
 
 tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                      config_dict=classifier_config_dict)
+                      config_dict=tpot_config)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
@@ -501,6 +501,8 @@ Command-line users must create a separate `.py` file with the custom configurati
 ```
 tpot data/mnist.csv -is , -target class -config tpot_classifier_config.py -g 5 -p 20 -v 2 -o tpot_exported_pipeline.py
 ```
+
+When using the command-line interface, the configuration file specified in the `-config` parameter *must* name its custom TPOT config `tpot_config`. Otherwise, TPOT will not be able to locate the dictionary.
 
 For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py) and [regression](https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py) in TPOT's source code.
 
