@@ -27,7 +27,6 @@ import sys
 from functools import partial
 from datetime import datetime
 from multiprocessing import cpu_count
-#from dask import compute, delayed, multiprocessing
 
 import numpy as np
 import deap
@@ -773,19 +772,7 @@ class TPOTBase(BaseEstimator):
 
         # evalurate pipeline
         resulting_score_list = []
-
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
-            """
-            pre_tmp_scores = [delayed(_wrapped_cross_val_score)(sklearn_pipeline,
-                                                                    features,
-                                                                    classes,
-                                                                    self.cv,
-                                                                    self.scoring_function,
-                                                                    sample_weight,
-                                                                    timeout=self.max_eval_time_seconds)
-                      for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*4]]
-            tmp_scores = compute(*pre_tmp_scores, get=multiprocessing.get, num_workers=self.n_jobs)
-            for val in tmp_scores:"""
             jobs = []
             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
                 job = delayed(_wrapped_cross_val_score)(
