@@ -53,8 +53,8 @@ fi
 
 pip install update_checker
 pip install tqdm
+conda install dask -c conda-forge
 pip install stopit
-pip install dask
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls

@@ -398,14 +398,15 @@ class TPOTBase(BaseEstimator):
                              'For example, the features must be a 2-D array and target labels '
                              'must be a 1-D array.')
 
-        if features.shape[0] > 10000 or features.shape[1] > 100:
-            print('Warning: Although parallelization is currently supported in TPOT'
-                    ', a known freezing issue in joblib has been reported with large dataset. '
-                    'Parallelization with large dataset may freeze or crash the optimization '
-                    'process without time controls by max_eval_time_mins!'
-                    'Please set n_jobs to 1 if freezing or crash happened. '
-                    'However, scikit-learn also use joblib in multiple estimators '
-                    'so that freezing may also happen with n_jobs=1')
+        if (features.shape[0] > 10000 or features.shape[1] > 100) and self.n_jobs !=1:
+            print(
+                'Warning: Although parallelization is currently supported in TPOT, '
+                'a known freezing issue in joblib has been reported with large dataset.'
+                'Parallelization with large dataset may freeze or crash the optimization '
+                'process without time controls by max_eval_time_mins! Please set n_jobs to 1 '
+                'if freezing or crash happened. However, scikit-learn also use joblib in '
+                'multiple estimators so that freezing may also happen with n_jobs=1'
+                )
 
         # Set the seed for the GP run
         if self.random_state is not None:
