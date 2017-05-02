@@ -36,12 +36,11 @@ from tqdm import tqdm
 from copy import copy
 
 from sklearn.base import BaseEstimator
-#from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics.scorer import make_scorer
-from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
+from sklearn.utils import check_X_y
 
 from update_checker import update_check
 
@@ -262,17 +261,7 @@ class TPOTBase(BaseEstimator):
                 self.scoring_function = scoring
 
         self.cv = cv
-        # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
-        if sys.platform.startswith('win') and n_jobs != 1:
-            print(
-                'Warning: Although parallelization is currently supported in '
-                'TPOT for Windows, pressing Ctrl+C will freeze the optimization '
-                'process without saving the best pipeline! Thus, Please DO NOT '
-                'press Ctrl+C during the optimization procss if n_jobs is not '
-                'equal to 1. For quick test in Windows, please set n_jobs to 1 '
-                'for saving the best pipeline in the middle of the optimization '
-                'process via Ctrl+C.'
-            )
+
         if n_jobs == -1:
             self.n_jobs = cpu_count()
         else:
@@ -401,18 +390,22 @@ class TPOTBase(BaseEstimator):
         features = features.astype(np.float64)
 
         # Check that the input data is formatted correctly for scikit-learn
-        if self.classification:
-            clf = DecisionTreeClassifier(max_depth=5)
-        else:
-            clf = DecisionTreeRegressor(max_depth=5)
-
         try:
-            clf = clf.fit(features, classes)
+            features, classes = check_X_y(features, classes)
         except Exception:
             raise ValueError('Error: Input data is not in a valid format. '
                              'Please confirm that the input data is scikit-learn compatible. '
                              'For example, the features must be a 2-D array and target labels '
                              'must be a 1-D array.')
+
+        if features.shape[0] > 10000 or features.shape[1] > 100:
+            print('Warning: Although parallelization is currently supported in TPOT'
+                    ', a known freezing issue in joblib has been reported with large dataset. '
+                    'Parallelization with large dataset may freeze or crash the optimization '
+                    'process without time controls by max_eval_time_mins!'
+                    'Please set n_jobs to 1 if freezing or crash happened. '
+                    'However, scikit-learn also use joblib in multiple estimators '
+                    'so that freezing may also happen with n_jobs=1')
 
         # Set the seed for the GP run
         if self.random_state is not None:
@@ -774,19 +767,30 @@ class TPOTBase(BaseEstimator):
         # evalurate pipeline
         resulting_score_list = []
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
-            jobs = []
-            for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
-                job = delayed(_wrapped_cross_val_score)(
-                    sklearn_pipeline,
-                    features,
-                    classes,
-                    self.cv,
-                    self.scoring_function,
-                    sample_weight,
-                    timeout=self.max_eval_time_seconds
-                )
-                jobs.append(job)
-            tmp_scores = compute(*jobs, get=multiprocessing.get, num_workers=self.n_jobs)
+            if self.n_jobs == 1:
+                tmp_scores = [_wrapped_cross_val_score(
+                            sklearn_pipeline,
+                            features,
+                            classes,
+                            self.cv,
+                            self.scoring_function,
+                            sample_weight,
+                            timeout=self.max_eval_time_seconds
+                            ) for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]]
+            else:
+                jobs = []
+                for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
+                    job = delayed(_wrapped_cross_val_score)(
+                        sklearn_pipeline,
+                        features,
+                        classes,
+                        self.cv,
+                        self.scoring_function,
+                        sample_weight,
+                        timeout=self.max_eval_time_seconds
+                    )
+                    jobs.append(job)
+                tmp_scores = compute(*jobs, get=multiprocessing.get, num_workers=self.n_jobs)
             for val in tmp_scores:
                 if not self._pbar.disable:
                     self._pbar.update(1)
