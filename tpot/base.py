@@ -643,6 +643,11 @@ class TPOTBase(BaseEstimator):
         Parameters
         ----------
         features: array-like {n_samples, n_features}
+            A feature matrix
+
+        Returns
+        -------
+        array-like {n_samples, n_features}
         """
         if self.verbosity > 1:
             print('Imputing missing values in feature set')
@@ -653,11 +658,16 @@ class TPOTBase(BaseEstimator):
             Parameters
             ----------
             feature: array-like {n_samples}
+                An individual feature from a feature matrix.
+
+            Returns
+            -------
+            array-like {n_samples}
             """
             # Use median for continuous features and mode for discrete features.
             # Assume the feature is continuous if it contains more than the
             # square root of the number of samples.
-            if (np.unique(feature).shape[0] ** 2) > feature.shape[0]:
+            if np.unique(feature).shape[0] > (feature.shape[0] ** 0.5):
                 method = 'median'
             else:
                 method = 'most_frequent'

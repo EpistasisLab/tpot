@@ -41,7 +41,7 @@ from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score
 from deap import creator
 from tqdm import tqdm
-from nose.tools import assert_raises
+from nose.tools import assert_raises, assert_not_equal
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -455,7 +455,7 @@ def test_fit2():
 
 
 def test_imputer():
-    """Assert that the TPOT fit function will will not raise a ValueError in a dataset where NaNs are present."""
+    """Assert that the TPOT fit function will not raise a ValueError in a dataset where NaNs are present."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -485,6 +485,23 @@ def test_imputer2():
 
     tpot_obj.fit(features_with_nan, training_classes)
     tpot_obj.predict(features_with_nan)
+
+
+def test_imputer3():
+    """Assert that the TPOT _impute_values function returns a feature matrix with imputed NaN values."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    features_with_nan = np.copy(training_features)
+    features_with_nan[0][0] = float('nan')
+
+    imputed_features = tpot_obj._impute_values(features_with_nan)
+    assert_not_equal(imputed_features[0][0], float('nan'))
 
 
 def testTPOTOperatorClassFactory():
