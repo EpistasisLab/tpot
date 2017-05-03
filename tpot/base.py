@@ -131,7 +131,7 @@ class TPOTBase(BaseEstimator):
             during the TPOT optimization process.
         subsample: float (default: 1.0)
             Subsample ratio of the training instance. Setting it to 0.5 means that TPOT
-            randomly collected half of training samples for pipeline optimization process.
+            randomly collects half of training samples for pipeline optimization process.
         n_jobs: int (default: 1)
             Number of CPUs for evaluating pipelines in parallel during the TPOT
             optimization process. Assigning this to -1 will use as many cores as available

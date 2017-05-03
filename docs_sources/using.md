@@ -98,7 +98,7 @@ See the section on <a href="#scoringfunctions">scoring functions</a> for more de
 <td>-sub</td>
 <td>SUBSAMPLE</td>
 <td>(0.0, 1.0]</td>
-<td>Subsample ratio of the training instance. Setting it to 0.5 means that TPOT randomly collected half of training samples for pipeline optimization process.</td>
+<td>Subsample ratio of the training instance. Setting it to 0.5 means that TPOT randomly collects half of training samples for pipeline optimization process.</td>
 </tr>
 <tr>
 <td>-njobs</td>
@@ -250,7 +250,7 @@ See the section on <a href="#scoringfunctions">scoring functions</a> for more de
 <tr>
 <td>subsample</td>
 <td>(0.0, 1.0]</td>
-<td>Subsample ratio of the training instance. Setting it to 0.5 means that TPOT randomly collected half of training samples for pipeline optimization process.</td>
+<td>Subsample ratio of the training instance. Setting it to 0.5 means that TPOT randomly collects half of training samples for pipeline optimization process.</td>
 </tr>
 <tr>
 <td>n_jobs</td>
