@@ -387,9 +387,7 @@ class TPOTBase(BaseEstimator):
         None
 
         """
-        features = features.astype(np.float64)
-
-        # Check that the input data is formatted correctly for scikit-learn
+        # Check that the input data is formatted correctly for scikit-learn and convert classes to np.float64
         try:
             features, classes = check_X_y(features, classes)
         except Exception:
