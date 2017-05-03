@@ -299,7 +299,7 @@ class TPOTBase(BaseEstimator):
                         'TPOTClassifier instead.'
                     )
             else:
-                self._read_config_file(config_dict)
+                self.config_dict = self._read_config_file(config_dict)
         else:
             self.config_dict = self.default_config_dict
 
@@ -311,7 +311,7 @@ class TPOTBase(BaseEstimator):
                 file_string = config_file.read()
                 exec(file_string, custom_config.__dict__)
 
-            self.config_dict = custom_config.tpot_config
+            return custom_config.tpot_config
         except FileNotFoundError as e:
             raise FileNotFoundError(
                 'Could not open specified TPOT operator config file: '
