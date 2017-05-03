@@ -267,7 +267,7 @@ class TPOTBase(BaseEstimator):
         self.subsample = subsample
         if self.subsample <= 0.0 or self.subsample > 1.0:
             raise ValueError(
-                'The subsample ratio of the training instance must be in range (0,1].'
+                'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
             )
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
         if sys.platform.startswith('win') and n_jobs != 1:
@@ -405,16 +405,6 @@ class TPOTBase(BaseEstimator):
         None
 
         """
-        if self.subsample < 1.0:
-            features, classes, = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
-            # Raise a warning message if the training size is less than 1500 when subsample is not default value
-            if features.shape[0] < 1500:
-                print(
-                    'Warning: Although subsample can accelerate pipeline optimization process, '
-                    'too small traning sample size may cause unpredictable effect on maximizing '
-                    'score in pipeline optimization process. Increasing subsample ratio may get '
-                    'a more reasonable outcome from optimization process in TPOT.'
-                    )
         features = features.astype(np.float64)
 
         # Check that the input data is formatted correctly for scikit-learn
@@ -432,6 +422,18 @@ class TPOTBase(BaseEstimator):
                             'For example, the features must be a 2-D array and target labels '
                             'must be a 1-D array.'
                             )
+
+        # Randomly collect a subsample of training samples for pipeline optimization process.
+        if self.subsample < 1.0:
+            features, _, classes, _ = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
+            # Raise a warning message if the training size is less than 1500 when subsample is not default value
+            if features.shape[0] < 1500:
+                print(
+                    'Warning: Although subsample can accelerate pipeline optimization process, '
+                    'too small traning sample size may cause unpredictable effect on maximizing '
+                    'score in pipeline optimization process. Increasing subsample ratio may get '
+                    'a more reasonable outcome from optimization process in TPOT.'
+                    )
 
         # Set the seed for the GP run
         if self.random_state is not None:
