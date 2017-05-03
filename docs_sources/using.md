@@ -95,6 +95,11 @@ See the section on <a href="#scoringfunctions">scoring functions</a> for more de
 <td>Any integer >1</td>
 <td>Number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process.</td>
 </tr>
+<td>-sub</td>
+<td>SUBSAMPLE</td>
+<td>(0.0, 1.0]</td>
+<td>Subsample ratio of the training instance. Setting it to 0.5 means that TPOT randomly collected half of training samples for pipeline optimization process.</td>
+</tr>
 <tr>
 <td>-njobs</td>
 <td>NUM_JOBS</td>
@@ -241,6 +246,11 @@ See the section on <a href="#scoringfunctions">scoring functions</a> for more de
 <td>cv</td>
 <td>Any integer >1</td>
 <td>Number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process.</td>
+</tr>
+<tr>
+<td>subsample</td>
+<td>(0.0, 1.0]</td>
+<td>Subsample ratio of the training instance. Setting it to 0.5 means that TPOT randomly collected half of training samples for pipeline optimization process.</td>
 </tr>
 <tr>
 <td>n_jobs</td>
