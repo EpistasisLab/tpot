@@ -430,7 +430,7 @@ class TPOTBase(BaseEstimator):
             if features.shape[0] < 1500:
                 print(
                     'Warning: Although subsample can accelerate pipeline optimization process, '
-                    'too small traning sample size may cause unpredictable effect on maximizing '
+                    'too small training sample size may cause unpredictable effect on maximizing '
                     'score in pipeline optimization process. Increasing subsample ratio may get '
                     'a more reasonable outcome from optimization process in TPOT.'
                     )
