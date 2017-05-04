@@ -771,7 +771,7 @@ class TPOTBase(BaseEstimator):
             elif 'get' in context._globals:
                 get = context._globals['get']
             else:
-                get=multiprocessing.get
+                get = multiprocessing.get
             jobs = []
             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
                 job = delayed(_wrapped_cross_val_score)(
