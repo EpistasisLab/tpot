@@ -20,6 +20,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
+
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
 
