@@ -35,7 +35,7 @@ from tqdm import tqdm
 from copy import copy
 
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_array
+from sklearn.utils import check_X_y
 from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
@@ -691,11 +691,7 @@ class TPOTBase(BaseEstimator):
         None
         """
         try:
-            check_array(features, dtype=np.float64, accept_sparse=None)
-            check_array(classes, ensure_2d=False, dtype=None)
-
-            assert len(classes.shape) == 1
-            assert classes.shape[0] == features.shape[0]
+            check_X_y(features, classes, accept_sparse=False)
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
