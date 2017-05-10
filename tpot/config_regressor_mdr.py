@@ -17,11 +17,20 @@ You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
+import numpy as np
+
 # Check the TPOT documentation for information on the structure of config dicts
 
 tpot_mdr_regressor_config_dict = {
 
     # Regressors
+
+    'sklearn.linear_model.ElasticNetCV': {
+        'l1_ratio': np.arange(0.0, 1.01, 0.05),
+        'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
+    },
+
+    # Feature Constructors
 
     'mdr.ContinuousMDR': {
         'tie_break': [0, 1],
