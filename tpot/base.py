@@ -49,9 +49,12 @@ from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _pre_test
 from .built_in_operators import CombineDFs
+
 from .config_classifier_light import classifier_config_dict_light
 from .config_regressor_light import regressor_config_dict_light
 from .config_classifier_mdr import tpot_mdr_classifier_config_dict
+from .config_classifier_sparse import classifier_config_sparse
+from .config_regressor_sparse import regressor_config_sparse
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -159,6 +162,9 @@ class TPOTBase(BaseEstimator):
             String 'TPOT MDR':
                 TPOT uses a list of TPOT-MDR operator configuration dictionary instead of
                 the default one.
+            String 'TPOT sparse':
+                TPOT uses a configuration dictionary with a one-hot-encoder and the
+                operators normally included in TPOT that also support sparse matrices.
         warm_start: bool (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -297,6 +303,11 @@ class TPOTBase(BaseEstimator):
                         'currently work with TPOTRegressor. Please use '
                         'TPOTClassifier instead.'
                     )
+            elif config_dict == 'TPOT sparse':
+                if self.classification:
+                    self.config_dict = classifier_config_sparse
+                else:
+                    self.config_dict = regressor_config_sparse
             else:
                 try:
                     with open(config_dict, 'r') as input_file:
