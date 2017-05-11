@@ -485,8 +485,8 @@ def test_evaluated_individuals():
     """Assert that _evaluated_individuals stores corrent pipelines and their CV scores"""
     tpot_obj = TPOTClassifier(
         random_state=42,
-        population_size=1,
-        offspring_size=2,
+        population_size=2,
+        offspring_size=4,
         generations=1,
         verbosity=0,
         config_dict='TPOT light'
@@ -497,12 +497,38 @@ def test_evaluated_individuals():
         deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
         tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+        operator_count = tpot_obj._operator_count(deap_pipeline)
         try:
             cv_scores = cross_val_score(sklearn_pipeline, training_features, training_classes, cv=5, scoring='accuracy', verbose=0)
             mean_cv_scores = np.mean(cv_scores)
         except:
             mean_cv_scores = -float('inf')
         assert np.allclose(tpot_obj._evaluated_individuals[pipeline_string][1], mean_cv_scores)
+        assert np.allclose(tpot_obj._evaluated_individuals[pipeline_string][0], operator_count)
+
+
+def test_evaluate_individuals():
+    """Assert that _evaluate_individuals return operator_counts and CV scores in correct order"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=10)
+    fitness_scores = tpot_obj._evaluate_individuals(pop, training_features, training_classes)
+    for deap_pipeline, fitness_score in zip(pop, fitness_scores):
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+        try:
+            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_classes, cv=5, scoring='accuracy', verbose=0)
+            mean_cv_scores = np.mean(cv_scores)
+        except:
+            mean_cv_scores = -float('inf')
+        assert isinstance(deap_pipeline, creator.Individual)
+        assert np.allclose(fitness_score[0], operator_count)
+        assert np.allclose(fitness_score[1], mean_cv_scores)
 
 
 def testTPOTOperatorClassFactory():

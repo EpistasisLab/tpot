@@ -753,12 +753,8 @@ class TPOTBase(BaseEstimator):
                     self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
-                    operator_count = 0
-                    for i in range(len(individual)):
-                        node = individual[i]
-                        if ((type(node) is deap.gp.Terminal) or (type(node) is deap.gp.Primitive and node.name == 'CombineDFs')):
-                            continue
-                        operator_count += 1
+                    operator_count = self._operator_count(individual)
+
                 except Exception:
                     fitnesses_dict[indidx] = (5000., -float('inf'))
                     if not self._pbar.disable:
@@ -863,6 +859,16 @@ class TPOTBase(BaseEstimator):
             return type_ not in [np.ndarray, Output_Array] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
+
+    # Count the number of pipeline operators as a measure of pipeline complexity
+    def _operator_count(self, individual):
+        operator_count = 0
+        for i in range(len(individual)):
+            node = individual[i]
+            if ((type(node) is deap.gp.Terminal) or (type(node) is deap.gp.Primitive and node.name == 'CombineDFs')):
+                continue
+            operator_count += 1
+        return operator_count
 
     # Generate function stolen straight from deap.gp.generate
     @_pre_test
