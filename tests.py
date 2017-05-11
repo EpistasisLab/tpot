@@ -481,6 +481,30 @@ def test_fit2():
     assert not (tpot_obj._start_datetime is None)
 
 
+def test_evaluated_individuals():
+    """Assert that _evaluated_individuals stores corrent pipelines and their CV scores"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_classes)
+    assert isinstance(tpot_obj._evaluated_individuals, dict)
+    for pipeline_string in sorted(tpot_obj._evaluated_individuals.keys()):
+        deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+        try:
+            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_classes, cv=5, scoring='accuracy', verbose=0)
+            mean_cv_scores = np.mean(cv_scores)
+        except:
+            mean_cv_scores = -float('inf')
+        assert np.allclose(tpot_obj._evaluated_individuals[pipeline_string][1], mean_cv_scores)
+
+
 def testTPOTOperatorClassFactory():
     """Assert that the TPOT operators class factory."""
     test_config_dict = {
