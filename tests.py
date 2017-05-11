@@ -117,6 +117,7 @@ class ParserTest(TestCase):
         self.assertEqual(args.TPOT_MODE, 'classification')
         self.assertEqual(args.VERBOSITY, 1)
 
+
     def test_print_args(self):
         """Assert that _print_args prints correct values for all parameters"""
         args = self.parser.parse_args(['tests.csv'])
