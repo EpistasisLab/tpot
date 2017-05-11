@@ -21,7 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
-from tpot.driver import positive_integer, float_range
+from tpot.driver import positive_integer, float_range, _get_arg_parser
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
@@ -42,6 +42,7 @@ from sklearn.model_selection import train_test_split, cross_val_score
 from deap import creator
 from tqdm import tqdm
 from nose.tools import assert_raises
+from unittest import TestCase
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -74,6 +75,32 @@ def test_driver():
         ret_val = -float('inf')
 
     assert ret_val > 0.0
+
+
+class ParserTest(TestCase):
+    def setUp(self):
+        self.parser = _get_arg_parser()
+
+    def test_default_param(self):
+        """Assert that the TPOT driver stores correct default values for all parameters"""
+        parsed = self.parser.parse_args(['tests.csv'])
+        self.assertEqual(parsed.CROSSOVER_RATE, 0.1)
+        self.assertEqual(parsed.DISABLE_UPDATE_CHECK, False)
+        self.assertEqual(parsed.GENERATIONS, 100)
+        self.assertEqual(parsed.INPUT_FILE, 'tests.csv')
+        self.assertEqual(parsed.INPUT_SEPARATOR, '\t')
+        self.assertEqual(parsed.MAX_EVAL_MINS, 5)
+        self.assertEqual(parsed.MUTATION_RATE, 0.9)
+        self.assertEqual(parsed.NUM_CV_FOLDS, 5)
+        self.assertEqual(parsed.NUM_JOBS, 1)
+        self.assertEqual(parsed.OFFSPRING_SIZE, None)
+        self.assertEqual(parsed.OUTPUT_FILE, '')
+        self.assertEqual(parsed.POPULATION_SIZE, 100)
+        self.assertEqual(parsed.RANDOM_STATE, None)
+        self.assertEqual(parsed.SCORING_FN, None)
+        self.assertEqual(parsed.TARGET_NAME, 'class')
+        self.assertEqual(parsed.TPOT_MODE, 'classification')
+        self.assertEqual(parsed.VERBOSITY, 1)
 
 
 def test_init_custom_parameters():
