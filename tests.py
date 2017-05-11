@@ -482,7 +482,7 @@ def test_fit2():
 
 
 def test_evaluated_individuals():
-    """Assert that _evaluated_individuals stores corrent pipelines and their CV scores"""
+    """Assert that _evaluated_individuals stores corrent pipelines and their CV scores."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=2,
@@ -508,7 +508,7 @@ def test_evaluated_individuals():
 
 
 def test_evaluate_individuals():
-    """Assert that _evaluate_individuals return operator_counts and CV scores in correct order"""
+    """Assert that _evaluate_individuals returns operator_counts and CV scores in correct order."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         verbosity=0,
