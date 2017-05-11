@@ -865,9 +865,8 @@ class TPOTBase(BaseEstimator):
         operator_count = 0
         for i in range(len(individual)):
             node = individual[i]
-            if ((type(node) is deap.gp.Terminal) or (type(node) is deap.gp.Primitive and node.name == 'CombineDFs')):
-                continue
-            operator_count += 1
+            if type(node) is deap.gp.Primitive and node.name != 'CombineDFs':
+                operator_count += 1
         return operator_count
 
     # Generate function stolen straight from deap.gp.generate
