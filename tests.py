@@ -21,7 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
-from tpot.driver import positive_integer, float_range, _get_arg_parser
+from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
@@ -36,6 +36,7 @@ import numpy as np
 import inspect
 import random
 import subprocess
+import sys
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score
@@ -43,6 +44,11 @@ from deap import creator
 from tqdm import tqdm
 from nose.tools import assert_raises
 from unittest import TestCase
+from contextlib import contextmanager
+try:
+    from StringIO import StringIO
+except:
+    from io import StringIO
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -64,16 +70,25 @@ TPOTSelectPercentile, TPOTSelectPercentile_args = TPOTOperatorClassFactory(
 )
 
 
+@contextmanager
+def captured_output():
+    new_out, new_err = StringIO(), StringIO()
+    old_out, old_err = sys.stdout, sys.stderr
+    try:
+        sys.stdout, sys.stderr = new_out, new_err
+        yield sys.stdout, sys.stderr
+    finally:
+        sys.stdout, sys.stderr = old_out, old_err
+
+
 def test_driver():
     """Assert that the TPOT driver output normal result."""
     batcmd = "python -m tpot.driver tests.csv -is , -target class -g 2 -p 2 -os 4 -cv 5 -s 45 -v 1"
     ret_stdout = subprocess.check_output(batcmd, shell=True)
-
     try:
         ret_val = float(ret_stdout.decode('UTF-8').split('\n')[-2].split(': ')[-1])
     except Exception:
         ret_val = -float('inf')
-
     assert ret_val > 0.0
 
 
@@ -83,24 +98,54 @@ class ParserTest(TestCase):
 
     def test_default_param(self):
         """Assert that the TPOT driver stores correct default values for all parameters"""
-        parsed = self.parser.parse_args(['tests.csv'])
-        self.assertEqual(parsed.CROSSOVER_RATE, 0.1)
-        self.assertEqual(parsed.DISABLE_UPDATE_CHECK, False)
-        self.assertEqual(parsed.GENERATIONS, 100)
-        self.assertEqual(parsed.INPUT_FILE, 'tests.csv')
-        self.assertEqual(parsed.INPUT_SEPARATOR, '\t')
-        self.assertEqual(parsed.MAX_EVAL_MINS, 5)
-        self.assertEqual(parsed.MUTATION_RATE, 0.9)
-        self.assertEqual(parsed.NUM_CV_FOLDS, 5)
-        self.assertEqual(parsed.NUM_JOBS, 1)
-        self.assertEqual(parsed.OFFSPRING_SIZE, None)
-        self.assertEqual(parsed.OUTPUT_FILE, '')
-        self.assertEqual(parsed.POPULATION_SIZE, 100)
-        self.assertEqual(parsed.RANDOM_STATE, None)
-        self.assertEqual(parsed.SCORING_FN, None)
-        self.assertEqual(parsed.TARGET_NAME, 'class')
-        self.assertEqual(parsed.TPOT_MODE, 'classification')
-        self.assertEqual(parsed.VERBOSITY, 1)
+        args = self.parser.parse_args(['tests.csv'])
+        self.assertEqual(args.CROSSOVER_RATE, 0.1)
+        self.assertEqual(args.DISABLE_UPDATE_CHECK, False)
+        self.assertEqual(args.GENERATIONS, 100)
+        self.assertEqual(args.INPUT_FILE, 'tests.csv')
+        self.assertEqual(args.INPUT_SEPARATOR, '\t')
+        self.assertEqual(args.MAX_EVAL_MINS, 5)
+        self.assertEqual(args.MUTATION_RATE, 0.9)
+        self.assertEqual(args.NUM_CV_FOLDS, 5)
+        self.assertEqual(args.NUM_JOBS, 1)
+        self.assertEqual(args.OFFSPRING_SIZE, None)
+        self.assertEqual(args.OUTPUT_FILE, '')
+        self.assertEqual(args.POPULATION_SIZE, 100)
+        self.assertEqual(args.RANDOM_STATE, None)
+        self.assertEqual(args.SCORING_FN, None)
+        self.assertEqual(args.TARGET_NAME, 'class')
+        self.assertEqual(args.TPOT_MODE, 'classification')
+        self.assertEqual(args.VERBOSITY, 1)
+
+    def test_print_args(self):
+        """Assert that _print_args prints correct values for all parameters"""
+        args = self.parser.parse_args(['tests.csv'])
+        with captured_output() as (out, err):
+            _print_args(args)
+        output = out.getvalue()
+        expected_output = """
+TPOT settings:
+CONFIG_FILE\t=\t
+CROSSOVER_RATE\t=\t0.1
+GENERATIONS\t=\t100
+INPUT_FILE\t=\ttests.csv
+INPUT_SEPARATOR\t=\t\t
+MAX_EVAL_MINS\t=\t5
+MAX_TIME_MINS\t=\tNone
+MUTATION_RATE\t=\t0.9
+NUM_CV_FOLDS\t=\t5
+NUM_JOBS\t=\t1
+OFFSPRING_SIZE\t=\tNone
+OUTPUT_FILE\t=\t
+POPULATION_SIZE\t=\t100
+RANDOM_STATE\t=\tNone
+SCORING_FN\t=\taccuracy
+TARGET_NAME\t=\tclass
+TPOT_MODE\t=\tclassification
+VERBOSITY\t=\t1
+
+"""
+        self.assertEqual(expected_output, output)
 
 
 def test_init_custom_parameters():
