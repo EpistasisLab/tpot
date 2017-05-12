@@ -83,7 +83,7 @@ def captured_output():
 
 
 def test_driver():
-    """Assert that the TPOT driver outputs normal result in mode mode"""
+    """Assert that the TPOT driver outputs normal result in mode mode."""
     batcmd = "python -m tpot.driver tests.csv -is , -target class -g 2 -p 2 -os 4 -cv 5 -s 45 -v 1"
     ret_stdout = subprocess.check_output(batcmd, shell=True)
     try:
