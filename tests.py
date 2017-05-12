@@ -159,6 +159,7 @@ class ParserTest(TestCase):
         self.assertEqual(args.OUTPUT_FILE, '')
         self.assertEqual(args.POPULATION_SIZE, 100)
         self.assertEqual(args.RANDOM_STATE, None)
+        self.assertEqual(args.SUBSAMPLE, 1.0)
         self.assertEqual(args.SCORING_FN, None)
         self.assertEqual(args.TARGET_NAME, 'class')
         self.assertEqual(args.TPOT_MODE, 'classification')
@@ -188,6 +189,7 @@ OUTPUT_FILE\t=\t
 POPULATION_SIZE\t=\t100
 RANDOM_STATE\t=\tNone
 SCORING_FN\t=\taccuracy
+SUBSAMPLE\t=\t1.0
 TARGET_NAME\t=\tclass
 TPOT_MODE\t=\tclassification
 VERBOSITY\t=\t1
