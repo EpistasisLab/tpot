@@ -432,27 +432,28 @@ class TPOTBase(BaseEstimator):
                             'must be a 1-D array.'
                             )
 
-        # Randomly collect a subsample of training samples for pipeline optimization process.
-        if self.subsample < 1.0:
-            features, _, classes, _ = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
-            # Raise a warning message if the training size is less than 1500 when subsample is not default value
-            if features.shape[0] < 1500:
-                print(
-                    'Warning: Although subsample can accelerate pipeline optimization process, '
-                    'too small training sample size may cause unpredictable effect on maximizing '
-                    'score in pipeline optimization process. Increasing subsample ratio may get '
-                    'a more reasonable outcome from optimization process in TPOT.'
-                    )
+        if self.verbosity > 2:
+            # Randomly collect a subsample of training samples for pipeline optimization process.
+            if self.subsample < 1.0:
+                features, _, classes, _ = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
+                # Raise a warning message if the training size is less than 1500 when subsample is not default value
+                if features.shape[0] < 1500:
+                    print(
+                        'Warning: Although subsample can accelerate pipeline optimization process, '
+                        'too small training sample size may cause unpredictable effect on maximizing '
+                        'score in pipeline optimization process. Increasing subsample ratio may get '
+                        'a more reasonable outcome from optimization process in TPOT.'
+                        )
 
-        if (features.shape[0] > 10000 or features.shape[1] > 100) and self.n_jobs !=1:
-            print(
-                'Warning: Although parallelization is currently supported in TPOT, '
-                'a known freezing issue in joblib has been reported with large dataset.'
-                'Parallelization with large dataset may freeze or crash the optimization '
-                'process without time controls by max_eval_time_mins! Please set n_jobs to 1 '
-                'if freezing or crash happened. However, scikit-learn also use joblib in '
-                'multiple estimators so that freezing may also happen with n_jobs=1'
-                )
+            if (features.shape[0] > 10000 or features.shape[1] > 100) and self.n_jobs !=1:
+                print(
+                    'Warning: Although parallelization is currently supported in TPOT, '
+                    'a known freezing issue in joblib has been reported with large dataset.'
+                    'Parallelization with large dataset may freeze or crash the optimization '
+                    'process without time controls by max_eval_time_mins! Please set n_jobs to 1 '
+                    'if freezing or crash happened. However, scikit-learn also use joblib in '
+                    'multiple estimators so that freezing may also happen with n_jobs=1'
+                    )
 
         # Set the seed for the GP run
         if self.random_state is not None:
