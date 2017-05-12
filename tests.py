@@ -25,6 +25,7 @@ from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_a
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
+from tpot.metrics import balanced_accuracy
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.config_classifier import classifier_config_dict
@@ -264,6 +265,17 @@ def test_init_max_time_mins():
 
     assert tpot_obj.generations == 1000000
     assert tpot_obj.max_time_mins == 30
+
+
+def test_balanced_accuracy():
+    """Assert that the balanced_accuracy in TPOT returns correct accuracy."""
+    y_true = np.array([1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4])
+    y_pred1 = np.array([1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4])
+    y_pred2 = np.array([3,3,3,3,3,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4])
+    accuracy_score1 = balanced_accuracy(y_true, y_pred1)
+    accuracy_score2 = balanced_accuracy(y_true, y_pred2)
+    assert np.allclose(accuracy_score1, 1.0)
+    assert np.allclose(accuracy_score2, 0.833333333333333)
 
 
 def test_get_params():
