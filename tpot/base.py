@@ -40,7 +40,6 @@ from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
-from sklearn.model_selection import train_test_split
 from sklearn.metrics.scorer import make_scorer
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 
@@ -82,7 +81,7 @@ class TPOTBase(BaseEstimator):
 
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
-                 scoring=None, cv=5, subsample=1.0, n_jobs=1,
+                 scoring=None, cv=5, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None, warm_start=False,
                  verbosity=0, disable_update_check=False):
@@ -123,7 +122,7 @@ class TPOTBase(BaseEstimator):
             Offers the same options as sklearn.model_selection.cross_val_score as well as
             a built-in score "balanced_accuracy":
 
-            ['accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy',
+            ['accuracy', 'adjusted_rand_score', 'average_precision', 'balanced accuracy',
             'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted',
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
@@ -131,9 +130,6 @@ class TPOTBase(BaseEstimator):
         cv: int (default: 5)
             Number of folds to evaluate each pipeline over in k-fold cross-validation
             during the TPOT optimization process.
-        subsample: float (default: 1.0)
-            Subsample ratio of the training instance. Setting it to 0.5 means that TPOT
-            randomly collects half of training samples for pipeline optimization process.
         n_jobs: int (default: 1)
             Number of CPUs for evaluating pipelines in parallel during the TPOT
             optimization process. Assigning this to -1 will use as many cores as available
@@ -266,11 +262,6 @@ class TPOTBase(BaseEstimator):
                 self.scoring_function = scoring
 
         self.cv = cv
-        self.subsample = subsample
-        if self.subsample <= 0.0 or self.subsample > 1.0:
-            raise ValueError(
-                'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
-            )
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
         if sys.platform.startswith('win') and n_jobs != 1:
             print(
@@ -401,9 +392,9 @@ class TPOTBase(BaseEstimator):
         """Fit an optimitzed machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
-        maximizes score on the provided features and classes. Performs an internal
-        stratified training/testing cross-validaton split to avoid overfitting
-        on the provided data.
+        maximizes classification score on the provided features and classes.
+        Performs an internal stratified training/testing cross-validaton split
+        to avoid overfitting on the provided data.
 
         Parameters
         ----------
@@ -430,24 +421,10 @@ class TPOTBase(BaseEstimator):
         try:
             clf = clf.fit(features, classes)
         except Exception:
-            raise ValueError(
-                            'Error: Input data is not in a valid format. '
-                            'Please confirm that the input data is scikit-learn compatible. '
-                            'For example, the features must be a 2-D array and target labels '
-                            'must be a 1-D array.'
-                            )
-
-        # Randomly collect a subsample of training samples for pipeline optimization process.
-        if self.subsample < 1.0:
-            features, _, classes, _ = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
-            # Raise a warning message if the training size is less than 1500 when subsample is not default value
-            if features.shape[0] < 1500:
-                print(
-                    'Warning: Although subsample can accelerate pipeline optimization process, '
-                    'too small training sample size may cause unpredictable effect on maximizing '
-                    'score in pipeline optimization process. Increasing subsample ratio may get '
-                    'a more reasonable outcome from optimization process in TPOT.'
-                    )
+            raise ValueError('Error: Input data is not in a valid format. '
+                             'Please confirm that the input data is scikit-learn compatible. '
+                             'For example, the features must be a 2-D array and target labels '
+                             'must be a 1-D array.')
 
         # Set the seed for the GP run
         if self.random_state is not None:
