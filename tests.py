@@ -32,6 +32,7 @@ from tpot.config_classifier import classifier_config_dict
 from tpot.config_classifier_light import classifier_config_dict_light
 from tpot.config_regressor_light import regressor_config_dict_light
 from tpot.config_classifier_mdr import tpot_mdr_classifier_config_dict
+from tpot.config_regressor_mdr import tpot_mdr_regressor_config_dict
 
 import numpy as np
 import inspect
@@ -332,7 +333,8 @@ def test_conf_dict():
     tpot_obj = TPOTRegressor(config_dict='TPOT light')
     assert tpot_obj.config_dict == regressor_config_dict_light
 
-    assert_raises(TypeError, TPOTRegressor, config_dict='TPOT MDR')
+    tpot_obj = TPOTRegressor(config_dict='TPOT MDR')
+    assert tpot_obj.config_dict == tpot_mdr_regressor_config_dict
 
 
 def test_conf_dict_2():

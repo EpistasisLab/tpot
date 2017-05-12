@@ -39,7 +39,7 @@ This project is hosted at https://github.com/rhiever/tpot
     extras_require={
         'xgboost': ['xgboost>=0.6'],
         'skrebate': ['skrebate>=0.3.4'],
-        'mdr': ['scikit-mdr>=0.4.3']
+        'mdr': ['scikit-mdr>=0.4.4']
     },
     classifiers=[
         'Intended Audience :: Science/Research',
