@@ -370,8 +370,7 @@ def _get_arg_parser():
 
 def _print_args(args):
     print('\nTPOT settings:')
-    args.__dict__
-    for arg, arg_val in list(enumerate(args.__dict__)):
+    for arg in sorted(args.__dict__.keys()):
         if arg == 'DISABLE_UPDATE_CHECK':
             continue
         elif arg == 'SCORING_FN' and arg_val is None:
@@ -381,6 +380,8 @@ def _print_args(args):
                 arg_val = 'mean_squared_error'
         elif arg == 'OFFSPRING_SIZE' and arg_val is None:
             arg_val = args.__dict__['POPULATION_SIZE']
+        else:
+            arg_val = args.__dict__[arg]
         print('{}\t=\t{}'.format(arg, arg_val))
     print('')
 
@@ -403,10 +404,8 @@ def _read_data_file(args):
     return input_data
 
 
-def main():
+def main(args):
     """Perform a TPOT run."""
-    args = _get_arg_parser().parse_args()
-
     if args.VERBOSITY >= 2:
         _print_args(args)
 
@@ -464,4 +463,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    args = _get_arg_parser().parse_args()
+    main(args)

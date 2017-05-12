@@ -24,6 +24,7 @@ import random
 import inspect
 import warnings
 import sys
+import imp
 from functools import partial
 from datetime import datetime
 from multiprocessing import cpu_count
@@ -307,18 +308,34 @@ class TPOTBase(BaseEstimator):
                         'TPOTClassifier instead.'
                     )
             else:
-                try:
-                    with open(config_dict, 'r') as input_file:
-                        file_string = input_file.read()
-                    self.config_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}') + 1)])
-                except Exception:
-                    raise TypeError(
-                        'The operator configuration file is in a bad format or '
-                        'not available. Please check the configuration file '
-                        'before running TPOT.'
-                    )
+                self.config_dict = self._read_config_file(config_dict)
         else:
             self.config_dict = self.default_config_dict
+
+    def _read_config_file(self, config_path):
+        try:
+            custom_config = imp.new_module('custom_config')
+
+            with open(config_path, 'r') as config_file:
+                file_string = config_file.read()
+                exec(file_string, custom_config.__dict__)
+
+            return custom_config.tpot_config
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                'Could not open specified TPOT operator config file: '
+                '{}'.format(e.filename)
+            )
+        except AttributeError:
+            raise AttributeError(
+                'The supplied TPOT operator config file does not contain '
+                'a dictionary named "tpot_config".'
+            )
+        except Exception as e:
+            raise type(e)(
+                'An error occured while attempting to read the specified '
+                'custom TPOT operator configuration file.'
+            )
 
     def _setup_pset(self):
         if self.random_state is not None:
@@ -776,12 +793,8 @@ class TPOTBase(BaseEstimator):
                     self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
-                    operator_count = 0
-                    for i in range(len(individual)):
-                        node = individual[i]
-                        if ((type(node) is deap.gp.Terminal) or (type(node) is deap.gp.Primitive and node.name == 'CombineDFs')):
-                            continue
-                        operator_count += 1
+                    operator_count = self._operator_count(individual)
+
                 except Exception:
                     fitnesses_dict[indidx] = (5000., -float('inf'))
                     if not self._pbar.disable:
@@ -886,6 +899,15 @@ class TPOTBase(BaseEstimator):
             return type_ not in [np.ndarray, Output_Array] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
+
+    # Count the number of pipeline operators as a measure of pipeline complexity
+    def _operator_count(self, individual):
+        operator_count = 0
+        for i in range(len(individual)):
+            node = individual[i]
+            if type(node) is deap.gp.Primitive and node.name != 'CombineDFs':
+                operator_count += 1
+        return operator_count
 
     # Generate function stolen straight from deap.gp.generate
     @_pre_test
