@@ -394,8 +394,6 @@ def _read_data_file(args):
 
 def main(args):
     """Perform a TPOT run."""
-    #args = _get_arg_parser().parse_args()
-
     if args.VERBOSITY >= 2:
         _print_args(args)
 
