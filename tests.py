@@ -335,7 +335,7 @@ def test_conf_dict_2():
 
 def test_conf_dict_3():
     """Assert that TPOT uses a custom dictionary of operators when config_dict is the path of Python dictionary."""
-    tpot_obj = TPOTRegressor(config_dict='tests.conf')
+    tpot_obj = TPOTRegressor(config_dict='test_config.py')
     tested_config_dict = {
         'sklearn.naive_bayes.GaussianNB': {
         },

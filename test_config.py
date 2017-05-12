@@ -1,4 +1,4 @@
-classifier_config_dict = {
+tpot_config = {
     'sklearn.naive_bayes.GaussianNB': {
     },
 
@@ -12,4 +12,3 @@ classifier_config_dict = {
         'fit_prior': [True, False]
     }
 }
-
