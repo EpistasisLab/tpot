@@ -238,7 +238,7 @@ def test_init_default_scoring():
 
 
 def test_invaild_score_warning():
-    """Assert that the TPOT fit function raises a ValueError when the scoring metrics is not available in SCORERS."""
+    """Assert that the TPOT intitializes raises a ValueError when the scoring metrics is not available in SCORERS."""
     # Mis-spelled scorer
     assert_raises(ValueError, TPOTClassifier, scoring='balanced_accuray')
     # Correctly spelled
@@ -257,6 +257,14 @@ def test_invaild_dataset_warning():
     # common mistake in classes
     bad_training_classes = training_classes.reshape((1, len(training_classes)))
     assert_raises(ValueError, tpot_obj.fit, training_features, bad_training_classes)
+
+
+def test_invaild_subsample_ratio_warning():
+    """Assert that the TPOT intitializes raises a ValueError when subsample ratio is not in the range (0.0, 1.0]."""
+    # Invalid ratio
+    assert_raises(ValueError, TPOTClassifier, subsample=0.0)
+    # Valid ratio
+    TPOTClassifier(subsample=0.1)
 
 
 def test_init_max_time_mins():
@@ -605,6 +613,22 @@ def test_fit2():
         generations=1,
         verbosity=0,
         config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_classes)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+
+def test_fit3():
+    """Assert that the TPOT fit function provides an optimized pipeline with subsample is 0.8"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        subsample=0.8,
+        verbosity=0
     )
     tpot_obj.fit(training_features, training_classes)
 
