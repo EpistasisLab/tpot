@@ -260,18 +260,6 @@ def _get_arg_parser():
     )
 
     parser.add_argument(
-        '-sub',
-        action='store',
-        dest='SUBSAMPLE',
-        default=1.0,
-        type=float,
-        help=(
-            'Subsample ratio of the training instance. Setting it to 0.5 means that TPOT'
-            'randomly collects half of training samples for pipeline optimization process.'
-        )
-    )
-
-    parser.add_argument(
         '-njobs',
         action='store',
         dest='NUM_JOBS',
@@ -426,7 +414,6 @@ def main(args):
         mutation_rate=args.MUTATION_RATE,
         crossover_rate=args.CROSSOVER_RATE,
         cv=args.NUM_CV_FOLDS,
-        subsample=args.SUBSAMPLE,
         n_jobs=args.NUM_JOBS,
         scoring=args.SCORING_FN,
         max_time_mins=args.MAX_TIME_MINS,
