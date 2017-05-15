@@ -705,15 +705,7 @@ class TPOTBase(BaseEstimator):
             -------
             array-like {n_samples}
             """
-            # Use median for continuous features and mode for discrete features.
-            # Assume the feature is continuous if it contains more than the
-            # square root of the number of samples.
-            if np.unique(feature).shape[0] > (feature.shape[0] ** 0.5):
-                method = 'median'
-            else:
-                method = 'most_frequent'
-
-            return Imputer(strategy=method, axis=1).fit_transform(feature)[0]
+            return Imputer(strategy="median", axis=1).fit_transform(feature)[0]
 
         return np.apply_along_axis(impute_feature, axis=0, arr=features)
 
