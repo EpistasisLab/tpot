@@ -693,21 +693,7 @@ class TPOTBase(BaseEstimator):
         if self.verbosity > 1:
             print('Imputing missing values in feature set')
 
-        def impute_feature(feature):
-            """Impute the missing values in just one feature.
-
-            Parameters
-            ----------
-            feature: array-like {n_samples}
-                An individual feature from a feature matrix.
-
-            Returns
-            -------
-            array-like {n_samples}
-            """
-            return Imputer(strategy="median", axis=1).fit_transform(feature)[0]
-
-        return np.apply_along_axis(impute_feature, axis=0, arr=features)
+        return Imputer(strategy="median", axis=1).fit_transform(features)
 
     def _check_dataset(self, features, classes):
         """Check if a dataset has a valid feature set and labels.
