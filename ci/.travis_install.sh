@@ -53,6 +53,8 @@ fi
 
 pip install update_checker
 pip install tqdm
+pip install scikit-mdr
+pip install skrebate
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
