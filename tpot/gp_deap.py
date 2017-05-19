@@ -361,7 +361,7 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
         n_jobs=1,
         verbose=0,
         fit_params=sample_weight_dict,
-      , groups=groups
+        groups=groups
     )
     tmp_it.start()
     tmp_it.join(max_time_seconds)
