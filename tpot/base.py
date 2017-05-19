@@ -500,8 +500,7 @@ class TPOTBase(BaseEstimator):
         # disable stdout during optimization process
         if self.verbosity < 3:
             org_sysout = sys.stdout
-            f = open(os.devnull, 'w')
-            sys.stdout = f
+            sys.stdout = open(os.devnull, 'w')
 
         try:
             with warnings.catch_warnings():
@@ -534,7 +533,7 @@ class TPOTBase(BaseEstimator):
             # Standard truthiness checks won't work for tqdm
             if not isinstance(self._pbar, type(None)):
                 self._pbar.close()
-            # restore stdout
+            # restore sys.stdout
             if self.verbosity < 3:
                 sys.stdout = org_sysout
             # Store the pipeline with the highest internal testing score
