@@ -40,7 +40,7 @@ import time
 from datetime import datetime
 import subprocess
 
-from sklearn.datasets import load_digits, load_boston, make_classification
+from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score
 from deap import creator
 from tqdm import tqdm
@@ -175,7 +175,7 @@ def test_set_params_2():
 
     assert tpot_obj.generations == 3
 
-def test_config_dict_params():
+def test_lite_params():
     """Assert that TPOT uses TPOT's lite dictionary of operators when config_dict is \'TPOT light\' or \'TPOT MDR\'"""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
     assert tpot_obj.config_dict == classifier_config_dict_light
@@ -440,16 +440,6 @@ def test_fit2():
     """Assert that the TPOT fit function provides an optimized pipeline when config_dict is \'TPOT light\'"""
     tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, config_dict='TPOT light')
     tpot_obj.fit(training_features, training_classes)
-
-    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
-    assert not (tpot_obj._start_datetime is None)
-
-
-def test_fit3():
-    """Assert that the TPOT fit function provides an optimized pipeline when config_dict is \'TPOT MDR\'"""
-    X, y = make_classification(n_samples=50, n_features=10, random_state=42, n_classes=2) # binary classification problem
-    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, config_dict='TPOT MDR')
-    tpot_obj.fit(X, y)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
