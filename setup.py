@@ -8,6 +8,7 @@ def calculate_version():
     version = list(filter(lambda x: '__version__' in x, initpy))[0].split('\'')[1]
     return version
 
+
 package_version = calculate_version()
 
 setup(
@@ -35,9 +36,11 @@ This project is hosted at https://github.com/rhiever/tpot
 ''',
     zip_safe=True,
     install_requires=['numpy>=1.12.1', 'scipy>=0.19.0', 'scikit-learn>=0.18.1', 'deap>=1.0', 'update_checker>=0.16', 'tqdm>=4.11.2'],
-    extras_require={'xgboost': ['xgboost>=0.6'],
-                   'skrebate': ['skrebate>=0.3.4'],
-                   'mdr': ['scikit-mdr>=0.4.2']},
+    extras_require={
+        'xgboost': ['xgboost>=0.6'],
+        'skrebate': ['skrebate>=0.3.4'],
+        'mdr': ['scikit-mdr>=0.4.4']
+    },
     classifiers=[
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',

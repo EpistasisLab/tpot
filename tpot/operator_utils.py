@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-Copyright 2015-Present Randal S. Olson
+"""Copyright 2015-Present Randal S. Olson.
 
 This file is part of the TPOT library.
 
@@ -27,24 +26,24 @@ import inspect
 
 
 class Operator(object):
-    """Base class for operators in TPOT"""
-    def __init__(self):
-        pass
+    """Base class for operators in TPOT."""
+
     root = False  # Whether this operator type can be the root of the tree
     import_hash = None
     sklearn_class = None
     arg_types = None
-    dep_op_list = {} # the estimator or score_func as params in this operators
+    dep_op_list = {}  # the estimator or score_func as params in this operators
 
 
 class ARGType(object):
-    """Base class for parameter specifications"""
-    def __init__(self):
-     pass
+    """Base class for parameter specifications."""
+
+    pass
 
 
 def source_decode(sourcecode):
-    """ Decode operator source and import operator class
+    """Decode operator source and import operator class.
+
     Parameters
     ----------
     sourcecode: string
@@ -73,10 +72,12 @@ def source_decode(sourcecode):
     except ImportError:
         print('Warning: {} is not available and will not be used by TPOT.'.format(sourcecode))
         op_obj = None
+
     return import_str, op_str, op_obj
 
+
 def set_sample_weight(pipeline_steps, sample_weight=None):
-    """Recursively iterates through all objects in the pipeline and sets sample weight
+    """Recursively iterates through all objects in the pipeline and sets sample weight.
 
     Parameters
     ----------
@@ -96,19 +97,21 @@ def set_sample_weight(pipeline_steps, sample_weight=None):
             if inspect.getargspec(obj.fit).args.count('sample_weight'):
                 step_sw = pname + '__sample_weight'
                 sample_weight_dict[step_sw] = sample_weight
+
     if sample_weight_dict:
         return sample_weight_dict
     else:
         return None
 
+
 def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
-    """
-    Dynamically create parameter type class
-    """
-    return type(classname, (BaseClass,), {'values':prange})
+    """Dynamically create parameter type class."""
+    return type(classname, (BaseClass,), {'values': prange})
+
 
 def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=ARGType):
-    """Dynamically create operator class
+    """Dynamically create operator class.
+
     Parameters
     ----------
     opsourse: string
@@ -130,14 +133,12 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
         a list of parameter class
 
     """
-
-
     class_profile = {}
-
     dep_op_list = {}
     import_str, op_str, op_obj = source_decode(opsourse)
+
     if not op_obj:
-        return None, None # nothing return
+        return None, None
     else:
         # define if the operator can be the root of a pipeline
         if issubclass(op_obj, ClassifierMixin) or issubclass(op_obj, RegressorMixin):
@@ -145,20 +146,22 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
             optype = "Classifier or Regressor"
         else:
             optype = "Preprocessor or Selector"
+
         @classmethod
         def op_type(cls):
-            """Returns the type of the operator, e.g:
-            ("Classifier", "Regressor", "Selector", "Preprocessor")
+            """Return the operator type.
+
+            Possible values:
+                "Classifier", "Regressor", "Selector", "Preprocessor"
             """
             return optype
 
         class_profile['type'] = op_type
-
         class_profile['sklearn_class'] = op_obj
-
         import_hash = {}
         import_hash[import_str] = [op_str]
         arg_types = []
+
         for pname in sorted(opdict.keys()):
             prange = opdict[pname]
             if not isinstance(prange, dict):
@@ -171,7 +174,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                         import_hash[import_str].append(dep_op_str)
                     else:
                         import_hash[dep_import_str] = [dep_op_str]
-                    dep_op_list[pname]=dep_op_str
+                    dep_op_list[pname] = dep_op_str
                     if dval:
                         for dpname in sorted(dval.keys()):
                             dprange = dval[dpname]
@@ -180,10 +183,10 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
         class_profile['arg_types'] = tuple(arg_types)
         class_profile['import_hash'] = import_hash
         class_profile['dep_op_list'] = dep_op_list
+
         @classmethod
         def parameter_types(cls):
-            """Return tuple of argument types for calling of the operator and the
-            return type of the operator
+            """Return the argument and return types of an operator.
 
             Parameters
             ----------
@@ -198,12 +201,11 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
             """
             return ([np.ndarray] + arg_types, np.ndarray)
 
-
         class_profile['parameter_types'] = parameter_types
+
         @classmethod
         def export(cls, *args):
-            """Represent the operator as a string so that it can be exported to a
-            file
+            """Represent the operator as a string so that it can be exported to a file.
 
             Parameters
             ----------
@@ -218,28 +220,33 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 SklearnClassName(param1="val1", param2=val2)
 
             """
-
             op_arguments = []
+
             if dep_op_list:
                 dep_op_arguments = {}
+
             for arg_class, arg_value in zip(arg_types, args):
                 if arg_value == "DEFAULT":
                     continue
                 aname_split = arg_class.__name__.split('__')
                 if isinstance(arg_value, str):
                     arg_value = '\"{}\"'.format(arg_value)
-                if len(aname_split) == 2: # simple parameter
+                if len(aname_split) == 2:  # simple parameter
                     op_arguments.append("{}={}".format(aname_split[-1], arg_value))
-                else: # parameter of internal operator as a parameter in the operator, usually in Selector
+                # Parameter of internal operator as a parameter in the
+                # operator, usually in Selector
+                else:
                     if not list(dep_op_list.values()).count(aname_split[1]):
                         raise TypeError('Warning: the operator {} is not in right format in the operator dictionary'.format(aname_split[0]))
                     else:
                         if aname_split[1] not in dep_op_arguments:
                             dep_op_arguments[aname_split[1]] = []
                         dep_op_arguments[aname_split[1]].append("{}={}".format(aname_split[-1], arg_value))
+
             tmp_op_args = []
             if dep_op_list:
-                # to make sure the inital operators is the first parameter just for better persentation
+                # To make sure the inital operators is the first parameter just
+                # for better persentation
                 for dep_op_pname, dep_op_str in dep_op_list.items():
                     if dep_op_str == 'f_classif':
                         arg_value = dep_op_str

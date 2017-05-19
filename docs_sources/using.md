@@ -95,6 +95,11 @@ See the section on <a href="#scoringfunctions">scoring functions</a> for more de
 <td>Any integer >1 or cross-validation generator</td>
 <td>If CV is a number, then it is the number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process. If it is an object then it is an object to be used as a cross-validation generator.</td>
 </tr>
+<td>-sub</td>
+<td>SUBSAMPLE</td>
+<td>(0.0, 1.0]</td>
+<td>Subsample ratio of the training instance. Setting it to 0.5 means that TPOT randomly collects half of training samples for pipeline optimization process.</td>
+</tr>
 <tr>
 <td>-njobs</td>
 <td>NUM_JOBS</td>
@@ -241,6 +246,11 @@ See the section on <a href="#scoringfunctions">scoring functions</a> for more de
 <td>cv</td>
 <td>Any integer >1</td>
 <td>Number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process.</td>
+</tr>
+<tr>
+<td>subsample</td>
+<td>(0.0, 1.0]</td>
+<td>Subsample ratio of the training instance. Setting it to 0.5 means that TPOT randomly collects half of training samples for pipeline optimization process.</td>
 </tr>
 <tr>
 <td>n_jobs</td>
@@ -447,7 +457,7 @@ The custom TPOT configuration must be in nested dictionary format, where the fir
 For a simple example, the configuration could be:
 
 ```Python
-classifier_config_dict = {
+tpot_config = {
     'sklearn.naive_bayes.GaussianNB': {
     },
 
@@ -474,7 +484,7 @@ digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
                                                     train_size=0.75, test_size=0.25)
 
-classifier_config_dict = {
+tpot_config = {
     'sklearn.naive_bayes.GaussianNB': {
     },
 
@@ -490,7 +500,7 @@ classifier_config_dict = {
 }
 
 tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                      config_dict=classifier_config_dict)
+                      config_dict=tpot_config)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
@@ -501,6 +511,8 @@ Command-line users must create a separate `.py` file with the custom configurati
 ```
 tpot data/mnist.csv -is , -target class -config tpot_classifier_config.py -g 5 -p 20 -v 2 -o tpot_exported_pipeline.py
 ```
+
+When using the command-line interface, the configuration file specified in the `-config` parameter *must* name its custom TPOT config `tpot_config`. Otherwise, TPOT will not be able to locate the dictionary.
 
 For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py) and [regression](https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py) in TPOT's source code.
 

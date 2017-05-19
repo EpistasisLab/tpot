@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-Copyright 2015-Present Randal S. Olson
+"""Copyright 2015-Present Randal S. Olson.
 
 This file is part of the TPOT library.
 
@@ -22,28 +21,36 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
-from tpot.driver import positive_integer, float_range
+from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, main, _read_data_file
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
+from tpot.metrics import balanced_accuracy
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.config_classifier import classifier_config_dict
 from tpot.config_classifier_light import classifier_config_dict_light
 from tpot.config_regressor_light import regressor_config_dict_light
 from tpot.config_classifier_mdr import tpot_mdr_classifier_config_dict
+from tpot.config_regressor_mdr import tpot_mdr_regressor_config_dict
 
 import numpy as np
 import inspect
 import random
-import time
-from datetime import datetime
 import subprocess
+import sys
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score
 from deap import creator
 from tqdm import tqdm
+from nose.tools import assert_raises
+from unittest import TestCase
+from contextlib import contextmanager
+try:
+    from StringIO import StringIO
+except:
+    from io import StringIO
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -58,29 +65,155 @@ training_features_r, testing_features_r, training_classes_r, testing_classes_r =
 np.random.seed(42)
 random.seed(42)
 
-test_operator_key = 'sklearn.feature_selection.SelectKBest'
-TPOTSelectKBest,TPOTSelectKBest_args = TPOTOperatorClassFactory(test_operator_key,
-                                            classifier_config_dict[test_operator_key])
+test_operator_key = 'sklearn.feature_selection.SelectPercentile'
+TPOTSelectPercentile, TPOTSelectPercentile_args = TPOTOperatorClassFactory(
+    test_operator_key,
+    classifier_config_dict[test_operator_key]
+)
+
+
+@contextmanager
+def captured_output():
+    new_out, new_err = StringIO(), StringIO()
+    old_out, old_err = sys.stdout, sys.stderr
+    try:
+        sys.stdout, sys.stderr = new_out, new_err
+        yield sys.stdout, sys.stderr
+    finally:
+        sys.stdout, sys.stderr = old_out, old_err
+
 
 def test_driver():
-    """Assert that the TPOT driver output normal result"""
+    """Assert that the TPOT driver outputs normal result in mode mode."""
     batcmd = "python -m tpot.driver tests.csv -is , -target class -g 2 -p 2 -os 4 -cv 5 -s 45 -v 1"
     ret_stdout = subprocess.check_output(batcmd, shell=True)
     try:
         ret_val = float(ret_stdout.decode('UTF-8').split('\n')[-2].split(': ')[-1])
-    except:
+    except Exception:
         ret_val = -float('inf')
     assert ret_val > 0.0
 
 
-def test_init_custom_parameters():
-    """Assert that the TPOT instantiator stores the TPOT variables properly"""
+def test_driver_2():
+    """Assert that the main() in TPOT driver outputs normal result."""
+    args_list = [
+                'tests.csv',
+                '-is', ',',
+                '-target', 'class',
+                '-g', '2',
+                '-p', '2',
+                '-os', '4',
+                '-cv', '5',
+                '-s',' 45',
+                '-config', 'TPOT light',
+                '-v', '1'
+                ]
+    args = _get_arg_parser().parse_args(args_list)
+    with captured_output() as (out, err):
+        main(args)
+    ret_stdout = out.getvalue()
+    try:
+        ret_val = float(ret_stdout.split('\n')[-2].split(': ')[-1])
+    except Exception:
+        ret_val = -float('inf')
+    assert ret_val > 0.0
 
-    tpot_obj = TPOTClassifier(population_size=500, generations=1000, offspring_size=2000,
-                    mutation_rate=0.05, crossover_rate=0.9,
-                    scoring='accuracy', cv=10,
-                    verbosity=1, random_state=42,
-                    disable_update_check=True, warm_start=True)
+
+def test_read_data_file():
+    """Assert that _read_data_file raises ValueError when the targe column is missing."""
+    # Mis-spelled target
+    args_list = [
+                'tests.csv',
+                '-is', ',',
+                '-target', 'clas' # typo for right target 'class'
+                ]
+    args = _get_arg_parser().parse_args(args_list)
+    assert_raises(ValueError, _read_data_file, args=args)
+    # Correctly spelled
+    args_list = [
+                'tests.csv',
+                '-is', ',',
+                '-target', 'class'
+                ]
+    args = _get_arg_parser().parse_args(args_list)
+    input_data = _read_data_file(args)
+    assert isinstance(input_data, np.recarray)
+
+
+class ParserTest(TestCase):
+    def setUp(self):
+        self.parser = _get_arg_parser()
+
+    def test_default_param(self):
+        """Assert that the TPOT driver stores correct default values for all parameters."""
+        args = self.parser.parse_args(['tests.csv'])
+        self.assertEqual(args.CROSSOVER_RATE, 0.1)
+        self.assertEqual(args.DISABLE_UPDATE_CHECK, False)
+        self.assertEqual(args.GENERATIONS, 100)
+        self.assertEqual(args.INPUT_FILE, 'tests.csv')
+        self.assertEqual(args.INPUT_SEPARATOR, '\t')
+        self.assertEqual(args.MAX_EVAL_MINS, 5)
+        self.assertEqual(args.MUTATION_RATE, 0.9)
+        self.assertEqual(args.NUM_CV_FOLDS, 5)
+        self.assertEqual(args.NUM_JOBS, 1)
+        self.assertEqual(args.OFFSPRING_SIZE, None)
+        self.assertEqual(args.OUTPUT_FILE, '')
+        self.assertEqual(args.POPULATION_SIZE, 100)
+        self.assertEqual(args.RANDOM_STATE, None)
+        self.assertEqual(args.SUBSAMPLE, 1.0)
+        self.assertEqual(args.SCORING_FN, None)
+        self.assertEqual(args.TARGET_NAME, 'class')
+        self.assertEqual(args.TPOT_MODE, 'classification')
+        self.assertEqual(args.VERBOSITY, 1)
+
+
+    def test_print_args(self):
+        """Assert that _print_args prints correct values for all parameters."""
+        args = self.parser.parse_args(['tests.csv'])
+        with captured_output() as (out, err):
+            _print_args(args)
+        output = out.getvalue()
+        expected_output = """
+TPOT settings:
+CONFIG_FILE\t=\t
+CROSSOVER_RATE\t=\t0.1
+GENERATIONS\t=\t100
+INPUT_FILE\t=\ttests.csv
+INPUT_SEPARATOR\t=\t\t
+MAX_EVAL_MINS\t=\t5
+MAX_TIME_MINS\t=\tNone
+MUTATION_RATE\t=\t0.9
+NUM_CV_FOLDS\t=\t5
+NUM_JOBS\t=\t1
+OFFSPRING_SIZE\t=\tNone
+OUTPUT_FILE\t=\t
+POPULATION_SIZE\t=\t100
+RANDOM_STATE\t=\tNone
+SCORING_FN\t=\taccuracy
+SUBSAMPLE\t=\t1.0
+TARGET_NAME\t=\tclass
+TPOT_MODE\t=\tclassification
+VERBOSITY\t=\t1
+
+"""
+        self.assertEqual(expected_output, output)
+
+
+def test_init_custom_parameters():
+    """Assert that the TPOT instantiator stores the TPOT variables properly."""
+    tpot_obj = TPOTClassifier(
+        population_size=500,
+        generations=1000,
+        offspring_size=2000,
+        mutation_rate=0.05,
+        crossover_rate=0.9,
+        scoring='accuracy',
+        cv=10,
+        verbosity=1,
+        random_state=42,
+        disable_update_check=True,
+        warm_start=True
+    )
 
     assert tpot_obj.population_size == 500
     assert tpot_obj.generations == 1000
@@ -99,49 +232,65 @@ def test_init_custom_parameters():
 
 
 def test_init_default_scoring():
-    """Assert that TPOT intitializes with the correct default scoring function"""
-
+    """Assert that TPOT intitializes with the correct default scoring function."""
     tpot_obj = TPOTRegressor()
     assert tpot_obj.scoring_function == 'neg_mean_squared_error'
 
     tpot_obj = TPOTClassifier()
     assert tpot_obj.scoring_function == 'accuracy'
 
+
 def test_invaild_score_warning():
-    """Assert that the TPOT fit function raises a ValueError when the scoring metrics is not available in SCORERS"""
-    try:
-        tpot_obj = TPOTClassifier(scoring='balanced_accuray') # typo for balanced_accuracy
-        assert False
-    except ValueError:
-        pass
-    try:
-        tpot_obj = TPOTClassifier(scoring='balanced_accuracy') # correct one
-        assert True
-    except:
-        assert False
+    """Assert that the TPOT intitializes raises a ValueError when the scoring metrics is not available in SCORERS."""
+    # Mis-spelled scorer
+    assert_raises(ValueError, TPOTClassifier, scoring='balanced_accuray')
+    # Correctly spelled
+    TPOTClassifier(scoring='balanced_accuracy')
+
 
 def test_invaild_dataset_warning():
-    """Assert that the TPOT fit function raises a ValueError when dataset is not in right format"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0)
-    bad_training_classes = training_classes.reshape((1, len(training_classes)))# common mistake in classes
-    try:
-        tpot_obj.fit(training_features ,bad_training_classes) # typo for balanced_accuracy
-        assert False
-    except ValueError:
-        pass
+    """Assert that the TPOT fit function raises a ValueError when dataset is not in right format."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0
+    )
+    # common mistake in classes
+    bad_training_classes = training_classes.reshape((1, len(training_classes)))
+    assert_raises(ValueError, tpot_obj.fit, training_features, bad_training_classes)
+
+
+def test_invaild_subsample_ratio_warning():
+    """Assert that the TPOT intitializes raises a ValueError when subsample ratio is not in the range (0.0, 1.0]."""
+    # Invalid ratio
+    assert_raises(ValueError, TPOTClassifier, subsample=0.0)
+    # Valid ratio
+    TPOTClassifier(subsample=0.1)
+
 
 def test_init_max_time_mins():
-    """Assert that the TPOT init stores max run time and sets generations to 1000000"""
-
+    """Assert that the TPOT init stores max run time and sets generations to 1000000."""
     tpot_obj = TPOTClassifier(max_time_mins=30, generations=1000)
 
     assert tpot_obj.generations == 1000000
     assert tpot_obj.max_time_mins == 30
 
 
-def test_get_params():
-    """Assert that get_params returns the exact dictionary of parameters used by TPOT"""
+def test_balanced_accuracy():
+    """Assert that the balanced_accuracy in TPOT returns correct accuracy."""
+    y_true = np.array([1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4])
+    y_pred1 = np.array([1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4])
+    y_pred2 = np.array([3,3,3,3,3,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4])
+    accuracy_score1 = balanced_accuracy(y_true, y_pred1)
+    accuracy_score2 = balanced_accuracy(y_true, y_pred2)
+    assert np.allclose(accuracy_score1, 1.0)
+    assert np.allclose(accuracy_score2, 0.833333333333333)
 
+
+def test_get_params():
+    """Assert that get_params returns the exact dictionary of parameters used by TPOT."""
     kwargs = {
         'population_size': 500,
         'generations': 1000,
@@ -162,21 +311,21 @@ def test_get_params():
 
 
 def test_set_params():
-    """Assert that set_params returns a reference to the TPOT instance"""
-
+    """Assert that set_params returns a reference to the TPOT instance."""
     tpot_obj = TPOTClassifier()
     assert tpot_obj.set_params() is tpot_obj
 
 
 def test_set_params_2():
-    """Assert that set_params updates TPOT's instance variables"""
+    """Assert that set_params updates TPOT's instance variables."""
     tpot_obj = TPOTClassifier(generations=2)
     tpot_obj.set_params(generations=3)
 
     assert tpot_obj.generations == 3
 
-def test_lite_params():
-    """Assert that TPOT uses TPOT's lite dictionary of operators when config_dict is \'TPOT light\' or \'TPOT MDR\'"""
+
+def test_conf_dict():
+    """Assert that TPOT uses the pre-configured dictionary of operators when config_dict is 'TPOT light' or 'TPOT MDR'."""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
     assert tpot_obj.config_dict == classifier_config_dict_light
 
@@ -186,33 +335,57 @@ def test_lite_params():
     tpot_obj = TPOTRegressor(config_dict='TPOT light')
     assert tpot_obj.config_dict == regressor_config_dict_light
 
-    try:
-        tpot_obj = TPOTRegressor(config_dict='TPOT MDR')
-        assert False
-    except TypeError:
-        assert True
+    tpot_obj = TPOTRegressor(config_dict='TPOT MDR')
+    assert tpot_obj.config_dict == tpot_mdr_regressor_config_dict
+
+
+def test_conf_dict_2():
+    """Assert that TPOT uses a custom dictionary of operators when config_dict is Python dictionary."""
+    tpot_obj = TPOTClassifier(config_dict=tpot_mdr_classifier_config_dict)
+    assert tpot_obj.config_dict == tpot_mdr_classifier_config_dict
+
+
+def test_conf_dict_3():
+    """Assert that TPOT uses a custom dictionary of operators when config_dict is the path of Python dictionary."""
+    tpot_obj = TPOTRegressor(config_dict='test_config.py')
+    tested_config_dict = {
+        'sklearn.naive_bayes.GaussianNB': {
+        },
+
+        'sklearn.naive_bayes.BernoulliNB': {
+            'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+            'fit_prior': [True, False]
+        },
+
+        'sklearn.naive_bayes.MultinomialNB': {
+            'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+            'fit_prior': [True, False]
+        }
+    }
+    assert isinstance(tpot_obj.config_dict, dict)
+    assert tpot_obj.config_dict == tested_config_dict
 
 
 def test_random_ind():
-    """Assert that the TPOTClassifier can generate the same pipeline with same random seed"""
+    """Assert that the TPOTClassifier can generate the same pipeline with same random seed."""
     tpot_obj = TPOTClassifier(random_state=43)
     pipeline1 = str(tpot_obj._toolbox.individual())
     tpot_obj = TPOTClassifier(random_state=43)
     pipeline2 = str(tpot_obj._toolbox.individual())
     assert pipeline1 == pipeline2
 
-def test_random_ind_2():
-    """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 45"""
 
-    tpot_obj = TPOTClassifier(random_state=45)
+def test_random_ind_2():
+    """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 39."""
+    tpot_obj = TPOTClassifier(random_state=39)
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pipeline = tpot_obj._toolbox.individual()
     expected_code = """import numpy as np
 
-from sklearn.linear_model import LogisticRegression
+from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
-from tpot.built_in_operators import ZeroCount
+from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -221,57 +394,54 @@ training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    ZeroCount(),
-    LogisticRegression(C=0.0001, dual=False, penalty="l2")
+    SelectPercentile(score_func=f_classif, percentile=65),
+    DecisionTreeClassifier(criterion="gini", max_depth=7, min_samples_leaf=4, min_samples_split=18)
 )
 
 exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
+
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
+
 def test_score():
-    """Assert that the TPOT score function raises a RuntimeError when no optimized pipeline exists"""
-
+    """Assert that the TPOT score function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
-
-    try:
-        tpot_obj.score(testing_features, testing_classes)
-        assert False  # Should be unreachable
-    except RuntimeError:
-        pass
+    assert_raises(RuntimeError, tpot_obj.score, testing_features, testing_classes)
 
 
 def test_score_2():
-    """Assert that the TPOTClassifier score function outputs a known score for a fix pipeline"""
+    """Assert that the TPOTClassifier score function outputs a known score for a fixed pipeline."""
+    tpot_obj = TPOTClassifier(random_state=34)
+    known_score = 0.977777777778  # Assumes use of the TPOT accuracy function
 
-    tpot_obj = TPOTClassifier()
-    known_score = 0.977777777778  # Assumes use of the TPOT balanced_accuracy function
-
-    # Reify pipeline with known score
-    pipeline_string= ('KNeighborsClassifier(input_matrix, KNeighborsClassifier__n_neighbors=10, '
-    'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform)')
+    # Create a pipeline with a known score
+    pipeline_string = (
+        'KNeighborsClassifier('
+        'input_matrix, '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_classes)
 
-    # http://stackoverflow.com/questions/5595425/
-    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+    assert np.allclose(known_score, score)
 
-    assert isclose(known_score, score)
 
 def test_score_3():
-    """Assert that the TPOTRegressor score function outputs a known score for a fix pipeline"""
-
-    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
-    known_score = 12.3727966005 # Assumes use of mse
+    """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
+    known_score = 11.594597099  # Assumes use of mse
 
     # Reify pipeline with known score
-
-    pipeline_string = ("ExtraTreesRegressor("
+    pipeline_string = (
+        "ExtraTreesRegressor("
         "GradientBoostingRegressor(input_matrix, GradientBoostingRegressor__alpha=0.8,"
         "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
         "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
@@ -279,28 +449,25 @@ def test_score_3():
         "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
         "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
         "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
-        "ExtraTreesRegressor__n_estimators=100)")
+        "ExtraTreesRegressor__n_estimators=100)"
+    )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
+
     # Get score from TPOT
     score = tpot_obj.score(testing_features_r, testing_classes_r)
 
+    assert np.allclose(known_score, score)
 
-    # http://stackoverflow.com/questions/5595425/
-    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-
-    assert isclose(known_score, score)
 
 def test_sample_weight_func():
-    """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline with sample weights"""
-
+    """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline with sample weights."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
 
     # Reify pipeline with known scor
-
-    pipeline_string = ("ExtraTreesRegressor("
+    pipeline_string = (
+        "ExtraTreesRegressor("
         "GradientBoostingRegressor(input_matrix, GradientBoostingRegressor__alpha=0.8,"
         "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
         "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
@@ -308,7 +475,8 @@ def test_sample_weight_func():
         "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
         "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
         "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
-        "ExtraTreesRegressor__n_estimators=100)")
+        "ExtraTreesRegressor__n_estimators=100)"
+    )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r)
@@ -332,50 +500,51 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r, **training_classes_r_weight_dict)
     # Get score from TPOT
-    known_score = 12.643383517 # Assumes use of mse
+    known_score = 12.643383517  # Assumes use of mse
     score = tpot_obj.score(testing_features_r, testing_classes_r)
 
-    # http://stackoverflow.com/questions/5595425/
-    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
     assert np.allclose(cv_score1, cv_score2)
     assert not np.allclose(cv_score1, cv_score_weight)
-    assert isclose(known_score, score)
+    assert np.allclose(known_score, score)
+
 
 def test_predict():
-    """Assert that the TPOT predict function raises a RuntimeError when no optimized pipeline exists"""
-
+    """Assert that the TPOT predict function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
-
-    try:
-        tpot_obj.predict(testing_features)
-        assert False  # Should be unreachable
-    except RuntimeError:
-        pass
+    assert_raises(RuntimeError, tpot_obj.predict, testing_features)
 
 
 def test_predict_2():
-    """Assert that the TPOT predict function returns a numpy matrix of shape (num_testing_rows,)"""
-
+    """Assert that the TPOT predict function returns a numpy matrix of shape (num_testing_rows,)."""
     tpot_obj = TPOTClassifier()
-    pipeline_string= ('DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
-    ', DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
-    'DecisionTreeClassifier__min_samples_split=5)')
+    pipeline_string = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5'
+        ')'
+    )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
-
     result = tpot_obj.predict(testing_features)
 
     assert result.shape == (testing_features.shape[0],)
 
-def test_predict_proba():
-    """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)"""
 
+def test_predict_proba():
+    """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)."""
     tpot_obj = TPOTClassifier()
-    pipeline_string= ('DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
-    ', DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
-    'DecisionTreeClassifier__min_samples_split=5)')
+    pipeline_string = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5)'
+    )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
@@ -387,40 +556,37 @@ def test_predict_proba():
 
 
 def test_predict_proba2():
-    """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)"""
-
+    """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)."""
     tpot_obj = TPOTClassifier()
-    pipeline_string= ('DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
-    ', DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
-    'DecisionTreeClassifier__min_samples_split=5)')
+    pipeline_string = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5)'
+    )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj._fitted_pipeline.fit(training_features, training_classes)
 
     result = tpot_obj.predict_proba(testing_features)
+    rows, columns = result.shape
 
-    rows = result.shape[0]
-    columns = result.shape[1]
+    for i in range(rows):
+        for j in range(columns):
+            float_range(result[i][j])
 
-    try:
-        for i in range(rows):
-            for j in range(columns):
-                float_range(result[i][j])
-        assert True
-    except Exception:
-        assert False
 
 def test_warm_start():
-    """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run"""
+    """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run."""
     tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, warm_start=True)
     tpot_obj.fit(training_features, training_classes)
 
-    assert tpot_obj._pop != None
-    assert tpot_obj._pareto_front != None
+    assert tpot_obj._pop is not None
+    assert tpot_obj._pareto_front is not None
 
     first_pop = tpot_obj._pop
-    first_pareto_front = tpot_obj._pareto_front
-
     tpot_obj.random_state = 21
     tpot_obj.fit(training_features, training_classes)
 
@@ -428,8 +594,14 @@ def test_warm_start():
 
 
 def test_fit():
-    """Assert that the TPOT fit function provides an optimized pipeline"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0)
+    """Assert that the TPOT fit function provides an optimized pipeline."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0
+    )
     tpot_obj.fit(training_features, training_classes)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
@@ -437,16 +609,89 @@ def test_fit():
 
 
 def test_fit2():
-    """Assert that the TPOT fit function provides an optimized pipeline when config_dict is \'TPOT light\'"""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, config_dict='TPOT light')
+    """Assert that the TPOT fit function provides an optimized pipeline when config_dict is 'TPOT light'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
     tpot_obj.fit(training_features, training_classes)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
 
 
+def test_fit3():
+    """Assert that the TPOT fit function provides an optimized pipeline with subsample is 0.8"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        subsample=0.8,
+        verbosity=0
+    )
+    tpot_obj.fit(training_features, training_classes)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+
+def test_evaluated_individuals():
+    """Assert that _evaluated_individuals stores corrent pipelines and their CV scores."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=2,
+        offspring_size=4,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_classes)
+    assert isinstance(tpot_obj._evaluated_individuals, dict)
+    for pipeline_string in sorted(tpot_obj._evaluated_individuals.keys()):
+        deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        try:
+            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_classes, cv=5, scoring='accuracy', verbose=0)
+            mean_cv_scores = np.mean(cv_scores)
+        except:
+            mean_cv_scores = -float('inf')
+        assert np.allclose(tpot_obj._evaluated_individuals[pipeline_string][1], mean_cv_scores)
+        assert np.allclose(tpot_obj._evaluated_individuals[pipeline_string][0], operator_count)
+
+
+def test_evaluate_individuals():
+    """Assert that _evaluate_individuals returns operator_counts and CV scores in correct order."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=10)
+    fitness_scores = tpot_obj._evaluate_individuals(pop, training_features, training_classes)
+    for deap_pipeline, fitness_score in zip(pop, fitness_scores):
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+        try:
+            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_classes, cv=5, scoring='accuracy', verbose=0)
+            mean_cv_scores = np.mean(cv_scores)
+        except:
+            mean_cv_scores = -float('inf')
+        assert isinstance(deap_pipeline, creator.Individual)
+        assert np.allclose(fitness_score[0], operator_count)
+        assert np.allclose(fitness_score[1], mean_cv_scores)
+
+
 def testTPOTOperatorClassFactory():
-    """Assert that the TPOT operators class factory"""
+    """Assert that the TPOT operators class factory."""
     test_config_dict = {
         'sklearn.svm.LinearSVC': {
             'penalty': ["l1", "l2"],
@@ -466,23 +711,25 @@ def testTPOTOperatorClassFactory():
             'threshold': np.arange(0.0, 1.01, 0.05)
         }
     }
+
     tpot_operator_list = []
     tpot_argument_list = []
+
     for key in sorted(test_config_dict.keys()):
-        op,args = TPOTOperatorClassFactory(key, test_config_dict[key])
+        op, args = TPOTOperatorClassFactory(key, test_config_dict[key])
         tpot_operator_list.append(op)
         tpot_argument_list += args
+
     assert len(tpot_operator_list) == 3
     assert len(tpot_argument_list) == 9
-    assert tpot_operator_list[0].root == True
-    assert tpot_operator_list[1].root == False
+    assert tpot_operator_list[0].root is True
+    assert tpot_operator_list[1].root is False
     assert tpot_operator_list[2].type() == "Classifier or Regressor"
     assert tpot_argument_list[1].values == [True, False]
 
 
 def check_export(op, tpot_obj):
-    """Assert that a TPOT operator exports as expected"""
-
+    """Assert that a TPOT operator exports as expected."""
     prng = np.random.RandomState(42)
     np.random.seed(42)
 
@@ -495,7 +742,7 @@ def check_export(op, tpot_obj):
 
 
 def test_operators():
-    """Assert that the TPOT operators match the output of their sklearn counterparts"""
+    """Assert that the TPOT operators match the output of their sklearn counterparts."""
     tpot_obj = TPOTClassifier(random_state=42)
     for op in tpot_obj.operators:
         check_export.description = ("Assert that the TPOT {} operator exports "
@@ -504,22 +751,20 @@ def test_operators():
 
 
 def test_export():
-    """Assert that TPOT's export function throws a RuntimeError when no optimized pipeline exists"""
+    """Assert that TPOT's export function throws a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
-
-    try:
-        tpot_obj.export("test_export.py")
-        assert False  # Should be unreachable
-    except RuntimeError:
-        pass
+    assert_raises(RuntimeError, tpot_obj.export, "test_export.py")
 
 
 def test_generate_pipeline_code():
-    """Assert that generate_pipeline_code() returns the correct code given a specific pipeline"""
+    """Assert that generate_pipeline_code() returns the correct code given a specific pipeline."""
     tpot_obj = TPOTClassifier()
-    pipeline = ['KNeighborsClassifier',
-        ['CombineDFs',
-            ['GradientBoostingClassifier',
+    pipeline = [
+        'KNeighborsClassifier',
+        [
+            'CombineDFs',
+            [
+                'GradientBoostingClassifier',
                 'input_matrix',
                 38.0,
                 5,
@@ -527,12 +772,18 @@ def test_generate_pipeline_code():
                 5,
                 0.05,
                 0.5],
-            ['GaussianNB',
-                ['ZeroCount',
-                    'input_matrix']]],
+            [
+                'GaussianNB',
+                [
+                    'ZeroCount',
+                    'input_matrix'
+                ]
+            ]
+        ],
         18,
         'uniform',
-        2]
+        2
+    ]
 
     expected_code = """make_pipeline(
     make_union(
@@ -551,9 +802,8 @@ def test_generate_pipeline_code():
     assert expected_code == generate_pipeline_code(pipeline, tpot_obj.operators)
 
 
-
 def test_generate_import_code():
-    """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline"""
+    """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline."""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.from_string('GaussianNB(RobustScaler(input_matrix))', tpot_obj._pset)
 
@@ -572,46 +822,63 @@ training_features, testing_features, training_classes, testing_classes = \\
 """
     assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
 
+
 def test_mutNodeReplacement():
-    """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline"""
+    """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
     tpot_obj = TPOTClassifier()
-    pipeline_string= ('KNeighborsClassifier(CombineDFs('
-    'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
-    ', DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
-    'DecisionTreeClassifier__min_samples_split=5),SelectKBest(input_matrix, SelectKBest__k=20)'
-    'KNeighborsClassifier__n_neighbors=10, '
-    'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform')
+    pipeline_string = (
+        'KNeighborsClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5'
+        '), '
+        'SelectPercentile('
+        'input_matrix, '
+        'SelectPercentile__percentile=20'
+        ')'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
+
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     pipeline[0].ret = Output_Array
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
-    mut_ind = mutNodeReplacement(pipeline, pset = tpot_obj._pset)
+    mut_ind = mutNodeReplacement(pipeline, pset=tpot_obj._pset)
     new_ret_type_list = [node.ret for node in mut_ind[0]]
     new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
-    if new_prims_list == old_prims_list: # Terminal mutated
+
+    if new_prims_list == old_prims_list:  # Terminal mutated
         assert new_ret_type_list == old_ret_type_list
-    else: # Primitive mutated
+    else:  # Primitive mutated
         diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
         assert diff_prims[0].ret == diff_prims[1].ret
+
     assert mut_ind[0][0].ret == Output_Array
 
 
 def test_export_pipeline():
-    """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline"""
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed pipeline."""
     tpot_obj = TPOTClassifier()
-    pipeline_string= ('KNeighborsClassifier(CombineDFs('
-    'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini'
-    ', DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
-    'DecisionTreeClassifier__min_samples_split=5),SelectKBest(input_matrix, SelectKBest__k=20)'
-    'KNeighborsClassifier__n_neighbors=10, '
-    'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform')
-    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    pipeline_string = (
+        'KNeighborsClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+        'DecisionTreeClassifier__min_samples_split=5),SelectPercentile(input_matrix, SelectPercentile__percentile=20)'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform'
+    )
 
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
 
 from copy import copy
 from sklearn.ensemble import VotingClassifier
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
@@ -629,7 +896,7 @@ exported_pipeline = make_pipeline(
         make_union(VotingClassifier([('branch',
             DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
         )]), FunctionTransformer(copy)),
-        SelectKBest(score_func=f_classif, k=20)
+        SelectPercentile(score_func=f_classif, percentile=20)
     ),
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 )
@@ -639,11 +906,18 @@ results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
+
 def test_export_pipeline_2():
-    """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline (only one classifier)"""
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline (only one classifier)."""
     tpot_obj = TPOTClassifier()
-    pipeline_string= ('KNeighborsClassifier(input_matrix, KNeighborsClassifier__n_neighbors=10, '
-    'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform)')
+    pipeline_string = (
+        'KNeighborsClassifier('
+        'input_matrix, '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
 
@@ -663,17 +937,20 @@ results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
+
 def test_export_pipeline_3():
-    """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with a preprocessor"""
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with a preprocessor."""
     tpot_obj = TPOTClassifier()
-    pipeline_string= ('DecisionTreeClassifier(SelectKBest(input_matrix, SelectKBest__k=20),'
-    'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8,'
-    'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)')
+    pipeline_string = (
+        'DecisionTreeClassifier(SelectPercentile(input_matrix, SelectPercentile__percentile=20),'
+        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8,'
+        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
+    )
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
 
     expected_code = """import numpy as np
 
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.tree import DecisionTreeClassifier
@@ -685,7 +962,7 @@ training_features, testing_features, training_classes, testing_classes = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    SelectKBest(score_func=f_classif, k=20),
+    SelectPercentile(score_func=f_classif, percentile=20),
     DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
 )
 
@@ -694,15 +971,15 @@ results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
+
 def test_operator_export():
-    """Assert that a TPOT operator can export properly with a function as a parameter to a classifier"""
-    export_string = TPOTSelectKBest.export(5)
-    assert export_string == "SelectKBest(score_func=f_classif, k=5)"
+    """Assert that a TPOT operator can export properly with a function as a parameter to a classifier."""
+    export_string = TPOTSelectPercentile.export(5)
+    assert export_string == "SelectPercentile(score_func=f_classif, percentile=5)"
 
 
 def test_indent():
-    """Assert that indenting a multiline string by 4 spaces prepends 4 spaces before each new line"""
-
+    """Assert that indenting a multiline string by 4 spaces prepends 4 spaces before each new line."""
     multiline_string = """test
 test1
 test2
@@ -717,18 +994,18 @@ test3"""
 
 
 def test_operator_type():
-    """Assert that TPOT operators return their type, e.g. "Classifier", "Preprocessor" """
-    assert TPOTSelectKBest.type() == "Preprocessor or Selector"
+    """Assert that TPOT operators return their type, e.g. 'Classifier', 'Preprocessor'."""
+    assert TPOTSelectPercentile.type() == "Preprocessor or Selector"
 
 
 def test_get_by_name():
-    """Assert that the Operator class returns operators by name appropriately"""
+    """Assert that the Operator class returns operators by name appropriately."""
     tpot_obj = TPOTClassifier()
-    assert get_by_name("SelectKBest", tpot_obj.operators).__class__ == TPOTSelectKBest.__class__
+    assert get_by_name("SelectPercentile", tpot_obj.operators).__class__ == TPOTSelectPercentile.__class__
 
 
 def test_gen():
-    """Assert that TPOT's gen_grow_safe function returns a pipeline of expected structure"""
+    """Assert that TPOT's gen_grow_safe function returns a pipeline of expected structure."""
     tpot_obj = TPOTClassifier()
 
     pipeline = tpot_obj._gen_grow_safe(tpot_obj._pset, 1, 3)
@@ -738,46 +1015,30 @@ def test_gen():
 
 
 def test_positive_integer():
-    """Assert that the TPOT CLI interface's integer parsing throws an exception when n < 0"""
-    try:
-        positive_integer('-1')
-        assert False  # Should be unreachable
-    except Exception:
-        pass
+    """Assert that the TPOT CLI interface's integer parsing throws an exception when n < 0."""
+    assert_raises(Exception, positive_integer, '-1')
 
 
 def test_positive_integer_2():
-    """Assert that the TPOT CLI interface's integer parsing returns the integer value of a string encoded integer when n > 0"""
+    """Assert that the TPOT CLI interface's integer parsing returns the integer value of a string encoded integer when n > 0."""
     assert 1 == positive_integer('1')
 
 
 def test_positive_integer_3():
-    """Assert that the TPOT CLI interface's integer parsing throws an exception when n is not an integer"""
-    try:
-        positive_integer('foobar')
-        assert False  # Should be unreachable
-    except Exception:
-        pass
+    """Assert that the TPOT CLI interface's integer parsing throws an exception when n is not an integer."""
+    assert_raises(Exception, positive_integer, 'foobar')
 
 
 def test_float_range():
-    """Assert that the TPOT CLI interface's float range returns a float with input is in 0. - 1.0"""
+    """Assert that the TPOT CLI interface's float range returns a float with input is in 0. - 1.0."""
     assert 0.5 == float_range('0.5')
 
 
 def test_float_range_2():
-    """Assert that the TPOT CLI interface's float range throws an exception when input it out of range"""
-    try:
-        float_range('2.0')
-        assert False  # Should be unreachable
-    except Exception:
-        pass
+    """Assert that the TPOT CLI interface's float range throws an exception when input it out of range."""
+    assert_raises(Exception, float_range, '2.0')
 
 
 def test_float_range_3():
-    """Assert that the TPOT CLI interface's float range throws an exception when input is not a float"""
-    try:
-        float_range('foobar')
-        assert False  # Should be unreachable
-    except Exception:
-        pass
+    """Assert that the TPOT CLI interface's float range throws an exception when input is not a float."""
+    assert_raises(Exception, float_range, 'foobar')
