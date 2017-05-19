@@ -362,7 +362,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
-    def fit(self, features, classes, sample_weight=None):
+    def fit(self, features, classes, sample_weight=None, groups=None):
         """Fits a machine learning pipeline that maximizes classification score
         on the provided data
 
@@ -379,6 +379,8 @@ class TPOTBase(BaseEstimator):
             List of class labels for prediction
         sample_weight: array-like {n_samples}
             List of sample weights
+        groups: array-like, with shape (n_samples,), optional
+            Group labels for the samples used while splitting the dataset into train/test set.
 
         Returns
         -------
@@ -408,7 +410,7 @@ class TPOTBase(BaseEstimator):
 
         self._start_datetime = datetime.now()
 
-        self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight)
+        self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight, groups=groups)
 
         # assign population, self._pop can only be not None if warm_start is enabled
         if self._pop:
@@ -666,7 +668,7 @@ class TPOTBase(BaseEstimator):
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
 
-    def _evaluate_individuals(self, individuals, features, classes, sample_weight = None):
+    def _evaluate_individuals(self, individuals, features, classes, sample_weight = None, groups=None):
         """Determines the `individual`'s fitness
 
         Parameters
@@ -680,6 +682,8 @@ class TPOTBase(BaseEstimator):
         classes: numpy.ndarray {n_samples, }
             A numpy matrix containing the training and testing classes for the
             `individual`'s evaluation
+        groups: array-like, with shape (n_samples,), optional
+            Group labels for the samples used while splitting the dataset into train/test set.
 
         Returns
         -------
@@ -753,7 +757,7 @@ class TPOTBase(BaseEstimator):
         for chunk_idx in range(0, len(sklearn_pipeline_list),self.n_jobs*4):
             parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
             tmp_result_score = parallel(delayed(_wrapped_cross_val_score)(sklearn_pipeline, features, classes,
-                                         self.cv, self.scoring_function, sample_weight, self.max_eval_time_mins)
+                                         self.cv, self.scoring_function, sample_weight, self.max_eval_time_mins, groups)
                       for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*4])
             # update pbar
             for val in tmp_result_score:

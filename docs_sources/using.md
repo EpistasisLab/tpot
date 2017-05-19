@@ -92,8 +92,8 @@ See the section on <a href="#scoringfunctions">scoring functions</a> for more de
 <tr>
 <td>-cv</td>
 <td>CV</td>
-<td>Any integer >1</td>
-<td>Number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process.</td>
+<td>Any integer >1 or cross-validation generator</td>
+<td>If CV is a number, then it is the number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process. If it is an object then it is an object to be used as a cross-validation generator.</td>
 </tr>
 <tr>
 <td>-njobs</td>
