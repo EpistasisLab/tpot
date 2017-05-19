@@ -705,8 +705,7 @@ class TPOTBase(BaseEstimator):
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual = individuals[indidx]
             individual_str = str(individual)
-            sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(expr=individual, self._pset), self.operators)
-
+            sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
             if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
                 if self.verbosity > 2:
                     self._pbar.write('Invalid pipeline encountered. Skipping its evaluation.')

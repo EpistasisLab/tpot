@@ -263,6 +263,7 @@ def test_score_2():
 
     assert isclose(known_score, score)
 
+
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fix pipeline"""
 
@@ -292,6 +293,7 @@ def test_score_3():
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
     assert isclose(known_score, score)
+
 
 def test_sample_weight_func():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline with sample weights"""
@@ -342,6 +344,7 @@ def test_sample_weight_func():
     assert not np.allclose(cv_score1, cv_score_weight)
     assert isclose(known_score, score)
 
+
 def test_predict():
     """Assert that the TPOT predict function raises a RuntimeError when no optimized pipeline exists"""
 
@@ -368,6 +371,7 @@ def test_predict_2():
     result = tpot_obj.predict(testing_features)
 
     assert result.shape == (testing_features.shape[0],)
+
 
 def test_predict_proba():
     """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)"""
@@ -409,6 +413,7 @@ def test_predict_proba2():
         assert True
     except Exception:
         assert False
+
 
 def test_warm_start():
     """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run"""
@@ -582,6 +587,34 @@ training_features, testing_features, training_classes, testing_classes = \\
 """
     assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
 
+
+def test_PolynomialFeatures_exception():
+    """Assert"""
+    tpot_obj = TPOTClassifier()
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    # pipeline with one PolynomialFeatures operator
+    pipeline_string_1 = ('LogisticRegression(PolynomialFeatures'
+    '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=DEFAULT, '
+    'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+    'LogisticRegression__dual=DEFAULT, LogisticRegression__penalty=DEFAULT)')
+
+    # pipeline with two PolynomialFeatures operator
+    pipeline_string_2 = ('LogisticRegression(PolynomialFeatures'
+    '(PolynomialFeatures(input_matrix, PolynomialFeatures__degree=2, '
+    'PolynomialFeatures__include_bias=DEFAULT, PolynomialFeatures__interaction_only=False), '
+    'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=DEFAULT, '
+    'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+    'LogisticRegression__dual=DEFAULT, LogisticRegression__penalty=DEFAULT)')
+
+    # make a list for _evaluate_individuals
+    pipelines = []
+    pipelines.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
+    pipelines.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
+    fitness_scores = tpot_obj._evaluate_individuals(pipelines, training_features, training_classes)
+    known_scores = [(2, 0.98068077235290885), (5000.0, -float('inf'))]
+    assert np.allclose(known_scores, fitness_scores)
+
+
 def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline"""
     tpot_obj = TPOTClassifier()
@@ -649,6 +682,7 @@ results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
+
 def test_export_pipeline_2():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline (only one classifier)"""
     tpot_obj = TPOTClassifier()
@@ -672,6 +706,7 @@ exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
+
 
 def test_export_pipeline_3():
     """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with a preprocessor"""
@@ -703,6 +738,7 @@ exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
+
 
 def test_operator_export():
     """Assert that a TPOT operator can export properly with a function as a parameter to a classifier"""
