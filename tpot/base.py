@@ -24,6 +24,7 @@ import random
 import inspect
 import warnings
 import sys
+import os
 import imp
 from functools import partial
 from datetime import datetime
@@ -496,6 +497,12 @@ class TPOTBase(BaseEstimator):
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
+        # disable stdout during optimization process
+        if self.verbosity < 3:
+            org_sysout = sys.stdout
+            f = open(os.devnull, 'w')
+            sys.stdout = f
+
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
@@ -527,7 +534,9 @@ class TPOTBase(BaseEstimator):
             # Standard truthiness checks won't work for tqdm
             if not isinstance(self._pbar, type(None)):
                 self._pbar.close()
-
+            # restore stdout
+            if self.verbosity < 3:
+                sys.stdout = org_sysout
             # Store the pipeline with the highest internal testing score
             if self._pareto_front:
                 top_score = -float('inf')
