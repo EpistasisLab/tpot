@@ -589,7 +589,7 @@ training_features, testing_features, training_classes, testing_classes = \\
 
 
 def test_PolynomialFeatures_exception():
-    """Assert"""
+    """Assert that TPOT allows only one PolynomialFeatures operator in a pipeline"""
     tpot_obj = TPOTClassifier()
     tpot_obj._pbar = tqdm(total=1, disable=True)
     # pipeline with one PolynomialFeatures operator
