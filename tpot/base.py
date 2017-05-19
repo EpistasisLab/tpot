@@ -705,13 +705,13 @@ class TPOTBase(BaseEstimator):
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual = individuals[indidx]
             individual_str = str(individual)
-            if individual_str.count('PolynomialFeatures') > 1:
+            sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
+            if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
                 if self.verbosity > 2:
                     self._pbar.write('Invalid pipeline encountered. Skipping its evaluation.')
                 fitnesses_dict[indidx] = (5000., -float('inf'))
                 if not self._pbar.disable:
                     self._pbar.update(1)
-
             # Check if the individual was evaluated before
             elif individual_str in self._evaluated_individuals:
                 # Get fitness score from previous evaluation
@@ -725,6 +725,7 @@ class TPOTBase(BaseEstimator):
                 try:
                     # Transform the tree expression into an sklearn pipeline
                     sklearn_pipeline = self._toolbox.compile(expr=individual)
+
 
                     # Fix random state when the operator allows and build sample weight dictionary
                     self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
