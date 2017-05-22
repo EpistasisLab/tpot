@@ -191,6 +191,7 @@ class TPOTBase(BaseEstimator):
         self._pareto_front = None
         self._optimized_pipeline = None
         self._fitted_pipeline = None
+        self._fitted_imputer = None
         self._pop = None
         self.warm_start = warm_start
         self.population_size = population_size
@@ -420,6 +421,9 @@ class TPOTBase(BaseEstimator):
 
         """
         features = features.astype(np.float64)
+
+        # Resets the imputer to be fit for the new dataset
+        self._fitted_imputer = None
 
         if np.any(np.isnan(features)):
             features = self._impute_values(features)
@@ -693,7 +697,11 @@ class TPOTBase(BaseEstimator):
         if self.verbosity > 1:
             print('Imputing missing values in feature set')
 
-        return Imputer(strategy="median", axis=1).fit_transform(features)
+        if self._fitted_imputer is None:
+            self._fitted_imputer = Imputer(strategy="median", axis=1)
+            self._fitted_imputer.fit(features)
+
+        return self._fitted_imputer.transform(features)
 
     def _check_dataset(self, features, classes):
         """Check if a dataset has a valid feature set and labels.
