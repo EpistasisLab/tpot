@@ -1047,11 +1047,11 @@ def test_float_range_3():
 
 def test_ZeroCount():
     """Assert that ZeroCount operator returns correct transformed X."""
-    X = np.array([[0,1,7,0,0],[3,0,0,2,19],[0,1,3,4,5],[5,0,0,0,0]])
+    X = np.array([[0, 1, 7, 0, 0], [3, 0, 0, 2, 19], [0, 1, 3, 4, 5], [5, 0, 0, 0, 0]])
     op = ZeroCount()
     X_transformed = op.transform(X)
-    zero_col = np.array([3,2,1,4])
-    non_zero = np.array([2,3,4,1])
+    zero_col = np.array([3, 2, 1, 4])
+    non_zero = np.array([2, 3, 4, 1])
     
-    assert np.allclose(zero_col, X_transformed[:,0])
-    assert np.allclose(non_zero, X_transformed[:,1])
+    assert np.allclose(zero_col, X_transformed[:, 0])
+    assert np.allclose(non_zero, X_transformed[:, 1])
