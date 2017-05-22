@@ -410,7 +410,7 @@ class TPOTBase(BaseEstimator):
             raise ValueError('Error: Input data is not in a valid format. '
                              'Please confirm that the input data is scikit-learn compatible. '
                              'For example, the features must be a 2-D array and target labels '
-                             'must be a 1-D array.\nException was:{}'.format(str(e)))
+                             'must be a 1-D array.\nException was: {}'.format(e))
 
         # Set the seed for the GP run
         if self.random_state is not None:
@@ -532,9 +532,9 @@ class TPOTBase(BaseEstimator):
                                         self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
 
                     break
-                except:
+                except (KeyboardInterrupt, SystemExit, Exception) as e:
                     # raise the exception if it's our last attempt
-                    if attempt == attempts-1:
+                    if attempt == attempts - 1:
                         raise
 
     def _update_top_pipeline(self):
