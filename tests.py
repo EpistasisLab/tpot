@@ -813,13 +813,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
-
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
 """
+    print(generate_import_code(pipeline, tpot_obj.operators))
     assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
 
 
@@ -868,7 +863,7 @@ def test_export_pipeline():
         'KNeighborsClassifier(CombineDFs('
         'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
         'DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
-        'DecisionTreeClassifier__min_samples_split=5),SelectPercentile(input_matrix, SelectPercentile__percentile=20)'
+        'DecisionTreeClassifier__min_samples_split=5),SelectPercentile(input_matrix, SelectPercentile__percentile=20))'
         'KNeighborsClassifier__n_neighbors=10, '
         'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform'
     )
@@ -880,7 +875,6 @@ from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
-from sklearn.preprocessing import FunctionTransformer
 from sklearn.tree import DecisionTreeClassifier
 from tpot.built_in_operators import StackingEstimator
 
@@ -961,6 +955,49 @@ training_features, testing_features, training_classes, testing_classes = \\
 exported_pipeline = make_pipeline(
     SelectPercentile(score_func=f_classif, percentile=20),
     DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
+)
+
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
+"""
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
+
+
+def test_export_pipeline_4():
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with input_matrix in CombineDFs."""
+    tpot_obj = TPOTClassifier()
+    pipeline_string = (
+        'KNeighborsClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+        'DecisionTreeClassifier__min_samples_split=5),input_matrix)'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform'
+    )
+
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    expected_code = """import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.tree import DecisionTreeClassifier
+from tpot.built_in_operators import StackingEstimator
+from sklearn.preprocessing import FunctionTransformer
+from copy import copy
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
+
+exported_pipeline = make_pipeline(
+    make_union(
+        StackingEstimator(estimator=DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)),
+        FunctionTransformer(copy)
+    ),
+    KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 )
 
 exported_pipeline.fit(training_features, training_classes)

@@ -73,8 +73,23 @@ def export_pipeline(exported_pipeline, operators, pset):
     # Have the exported code import all of the necessary modules and functions
     pipeline_text = generate_import_code(exported_pipeline, operators)
 
+    pipeline_code = pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators))
+
+    if pipeline_code.count("FunctionTransformer(copy)"):
+        pipeline_text += """from sklearn.preprocessing import FunctionTransformer
+from copy import copy
+"""
+
+    pipeline_text += """
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
+"""
+
     # Replace the function calls with their corresponding Python code
-    pipeline_text += pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators))
+    pipeline_text += pipeline_code
 
     return pipeline_text
 
@@ -150,7 +165,7 @@ def generate_import_code(pipeline, operators):
 
     operators_used = [x.name for x in pipeline if isinstance(x, deap.gp.Primitive)]
     pipeline_text = 'import numpy as np\n\n'
-    pipeline_imports = _starting_imports(pipeline, operators, operators_used)
+    pipeline_imports = _starting_imports(operators, operators_used)
 
     # Build dict of import requirments from list of operators
     import_relations = {op.__name__: op.import_hash for op in operators}
@@ -168,18 +183,10 @@ def generate_import_code(pipeline, operators):
         module_list = ', '.join(sorted(pipeline_imports[key]))
         pipeline_text += 'from {} import {}\n'.format(key, module_list)
 
-    pipeline_text += """
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
-"""
-
     return pipeline_text
 
 
-def _starting_imports(pipeline, operators, operators_used):
+def _starting_imports(operators, operators_used):
     # number of operators
     num_op = len(operators_used)
 
@@ -193,12 +200,12 @@ def _starting_imports(pipeline, operators, operators_used):
         else:
             num_op_root += 1
 
+
     if num_op_root > 1:
         return {
             'sklearn.model_selection':  ['train_test_split'],
             'sklearn.pipeline':         ['make_pipeline', 'make_union'],
-            'sklearn.preprocessing':    ['FunctionTransformer'],
-            'tpot.built_in_operators':  ['StackingEstimator']
+            'tpot.built_in_operators':  ['StackingEstimator'],
         }
     elif num_op > 1:
         return {
