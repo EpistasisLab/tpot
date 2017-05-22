@@ -122,7 +122,8 @@ class StackingEstimator(BaseEstimator, TransformerMixin):
             or (n_samples, n_features + 1 + n_classes) for classifier with predict_proba attribute
             The transformed feature set.
         """
-        X_transformed = X
+        X = check_array(X)
+        X_transformed = np.copy(X)
         # add class probabilities as a synthetic feature
         if issubclass(self.estimator.__class__, ClassifierMixin) and hasattr(self.estimator, 'predict_proba'):
             X_transformed = np.hstack((self.estimator.predict_proba(X), X))
