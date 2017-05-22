@@ -26,6 +26,7 @@ from tpot.export_utils import export_pipeline, generate_import_code, _indent, ge
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
 from tpot.metrics import balanced_accuracy
+from tpot.built_in_operators import StackingEstimator
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.config_classifier import classifier_config_dict
@@ -42,6 +43,9 @@ import sys
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import LogisticRegression
 from deap import creator
 from tqdm import tqdm
 from nose.tools import assert_raises
@@ -787,15 +791,11 @@ def test_generate_pipeline_code():
 
     expected_code = """make_pipeline(
     make_union(
-        make_union(VotingClassifier([('branch',
-            GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, n_estimators=0.5)
-        )]), FunctionTransformer(copy)),
-        make_union(VotingClassifier([('branch',
-            make_pipeline(
-                ZeroCount(),
-                GaussianNB()
-            )
-        )]), FunctionTransformer(copy))
+        StackingEstimator(estimator=GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, n_estimators=0.5)),
+        StackingEstimator(estimator=make_pipeline(
+            ZeroCount(),
+            GaussianNB()
+        ))
     ),
     KNeighborsClassifier(n_neighbors=18, p="uniform", weights=2)
 )"""
@@ -1042,3 +1042,46 @@ def test_float_range_2():
 def test_float_range_3():
     """Assert that the TPOT CLI interface's float range throws an exception when input is not a float."""
     assert_raises(Exception, float_range, 'foobar')
+
+
+def test_StackingEstimator_1():
+    """Assert that the StackingEstimator returns transformed X with synthetic features in classification."""
+    clf = RandomForestClassifier(random_state=42)
+    stack_clf = StackingEstimator(estimator=RandomForestClassifier(random_state=42))
+    # fit
+    clf.fit(training_features, training_classes)
+    stack_clf.fit(training_features, training_classes)
+    # get transformd X
+    X_clf_transformed = stack_clf.transform(training_features)
+
+    assert np.allclose(clf.predict(training_features), X_clf_transformed[:,0])
+    assert np.allclose(clf.predict_proba(training_features), X_clf_transformed[:,1:1+len(np.unique(training_classes))])
+
+
+def test_StackingEstimator_2():
+    """Assert that the StackingEstimator returns transformed X with a synthetic feature in regression."""
+    reg = RandomForestRegressor(random_state=42)
+    stack_reg = StackingEstimator(estimator=RandomForestRegressor(random_state=42))
+    # fit
+    reg.fit(training_features_r, training_classes_r)
+    stack_reg.fit(training_features_r, training_classes_r)
+    # get transformd X
+    X_reg_transformed = stack_reg.transform(training_features_r)
+
+    assert np.allclose(reg.predict(training_features_r), X_reg_transformed[:,0])
+
+
+def test_StackingEstimator_3():
+    """Assert that the StackingEstimator worked as expected in scikit-learn pipeline."""
+    stack_clf = StackingEstimator(estimator=RandomForestClassifier(random_state=42))
+    meta_clf = LogisticRegression()
+    sklearn_pipeline = make_pipeline(stack_clf, meta_clf)
+
+    cv_score1 = np.mean(cross_val_score(sklearn_pipeline, training_features, training_classes, cv=3, scoring='accuracy'))
+    cv_score2 = np.mean(cross_val_score(meta_clf, training_features, training_classes, cv=3, scoring='accuracy'))
+
+    known_score1 = 0.947282375315
+    known_score2 = 0.948023167514
+
+    assert np.allclose(known_score1, cv_score1)
+    assert np.allclose(known_score2, cv_score2)

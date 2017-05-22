@@ -20,11 +20,11 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin, clone
+from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin, clone
 from sklearn.utils import check_array
 
 
-class ZeroCount(BaseEstimator, TransformerMixin):
+class ZeroCount(BaseEstimator):
     """Adds the count of zeros and count of non-zeros per sample as features."""
 
     def fit(self, X, y=None):
@@ -107,26 +107,27 @@ class StackingEstimator(BaseEstimator, TransformerMixin):
         self.estimator.fit(X, y, **fit_params)
         return self
 
-    def transform(self, X, y=None):
-        """Transform data by adding two virtual features.
+    def transform(self, X):
+        """Transform data by adding two synthetic feature(s)s
 
         Parameters
         ----------
         X: numpy ndarray, {n_samples, n_components}
             New data, where n_samples is the number of samples and n_components
             is the number of components.
-        y: None
-            Unused
 
         Returns
         -------
         X_transformed: array-like, shape (n_samples, n_features + 1)
-            or (n_samples, n_features + 2) for classifier with predict_proba attribute
+            or (n_samples, n_features + 1 + n_classes) for classifier with predict_proba attribute
             The transformed feature set.
         """
+        X_transformed = X
         # add class probabilities as a synthetic feature
-        if issubclass(self.estimator, ClassifierMixin) and hasattr(self.estimator, 'predict_proba'):
-            X = np.hstack(np.reshape(self.estimator.predict_proba(X), (-1,1)), X)
+        if issubclass(self.estimator.__class__, ClassifierMixin) and hasattr(self.estimator, 'predict_proba'):
+            X_transformed = np.hstack((self.estimator.predict_proba(X), X))
+
         # add class prodiction as a synthetic feature
-        X_transformed = np.hstack(np.reshape(self.estimator.predict(X), (-1,1)), X)
+        X_transformed = np.hstack((np.reshape(self.estimator.predict(X), (-1,1)), X_transformed))
+
         return X_transformed
