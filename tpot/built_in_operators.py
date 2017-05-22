@@ -52,8 +52,8 @@ class ZeroCount(BaseEstimator, TransformerMixin):
 
         X_transformed = np.copy(X)
 
-        non_zero = np.reshape(np.count_nonzero(X_transformed, axis=1), (-1,1))
-        zero_col = np.reshape(n_features - np.count_nonzero(X_transformed, axis=1), (-1,1))
+        non_zero = np.reshape(np.count_nonzero(X_transformed, axis=1), (-1,1 ))
+        zero_col = np.reshape(n_features - np.count_nonzero(X_transformed, axis=1), (-1, 1))
 
         X_transformed = np.hstack((non_zero, X_transformed))
         X_transformed = np.hstack((zero_col, X_transformed))
