@@ -1051,7 +1051,7 @@ def test_ZeroCount():
     op = ZeroCount()
     X_transformed = op.transform(X)
     zero_col = np.array([3,2,1,4])
-    non_zero = np.array([2,3,4,1
+    non_zero = np.array([2,3,4,1])
     
     assert np.allclose(zero_col, X_transformed[:,0])
     assert np.allclose(non_zero, X_transformed[:,1])
