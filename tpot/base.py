@@ -24,6 +24,7 @@ import random
 import inspect
 import warnings
 import sys
+import imp
 from functools import partial
 from datetime import datetime
 from multiprocessing import cpu_count
@@ -39,6 +40,7 @@ from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.ensemble import VotingClassifier
+from sklearn.model_selection import train_test_split
 from sklearn.metrics.scorer import make_scorer
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 
@@ -52,6 +54,7 @@ from .built_in_operators import CombineDFs
 from .config_classifier_light import classifier_config_dict_light
 from .config_regressor_light import regressor_config_dict_light
 from .config_classifier_mdr import tpot_mdr_classifier_config_dict
+from .config_regressor_mdr import tpot_mdr_regressor_config_dict
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -79,7 +82,7 @@ class TPOTBase(BaseEstimator):
 
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
-                 scoring=None, cv=5, n_jobs=1,
+                 scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None, warm_start=False,
                  verbosity=0, disable_update_check=False):
@@ -120,7 +123,7 @@ class TPOTBase(BaseEstimator):
             Offers the same options as sklearn.model_selection.cross_val_score as well as
             a built-in score "balanced_accuracy":
 
-            ['accuracy', 'adjusted_rand_score', 'average_precision', 'balanced accuracy',
+            ['accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy',
             'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted',
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
@@ -128,6 +131,9 @@ class TPOTBase(BaseEstimator):
         cv: int (default: 5)
             Number of folds to evaluate each pipeline over in k-fold cross-validation
             during the TPOT optimization process.
+        subsample: float (default: 1.0)
+            Subsample ratio of the training instance. Setting it to 0.5 means that TPOT
+            randomly collects half of training samples for pipeline optimization process.
         n_jobs: int (default: 1)
             Number of CPUs for evaluating pipelines in parallel during the TPOT
             optimization process. Assigning this to -1 will use as many cores as available
@@ -260,6 +266,11 @@ class TPOTBase(BaseEstimator):
                 self.scoring_function = scoring
 
         self.cv = cv
+        self.subsample = subsample
+        if self.subsample <= 0.0 or self.subsample > 1.0:
+            raise ValueError(
+                'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
+            )
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
         if sys.platform.startswith('win') and n_jobs != 1:
             print(
@@ -292,24 +303,36 @@ class TPOTBase(BaseEstimator):
                 if self.classification:
                     self.config_dict = tpot_mdr_classifier_config_dict
                 else:
-                    raise TypeError(
-                        'The TPOT MDR operator configuration file does not '
-                        'currently work with TPOTRegressor. Please use '
-                        'TPOTClassifier instead.'
-                    )
+                    self.config_dict = tpot_mdr_regressor_config_dict
             else:
-                try:
-                    with open(config_dict, 'r') as input_file:
-                        file_string = input_file.read()
-                    self.config_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}') + 1)])
-                except Exception:
-                    raise TypeError(
-                        'The operator configuration file is in a bad format or '
-                        'not available. Please check the configuration file '
-                        'before running TPOT.'
-                    )
+                self.config_dict = self._read_config_file(config_dict)
         else:
             self.config_dict = self.default_config_dict
+
+    def _read_config_file(self, config_path):
+        try:
+            custom_config = imp.new_module('custom_config')
+
+            with open(config_path, 'r') as config_file:
+                file_string = config_file.read()
+                exec(file_string, custom_config.__dict__)
+
+            return custom_config.tpot_config
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                'Could not open specified TPOT operator config file: '
+                '{}'.format(e.filename)
+            )
+        except AttributeError:
+            raise AttributeError(
+                'The supplied TPOT operator config file does not contain '
+                'a dictionary named "tpot_config".'
+            )
+        except Exception as e:
+            raise type(e)(
+                'An error occured while attempting to read the specified '
+                'custom TPOT operator configuration file.'
+            )
 
     def _setup_pset(self):
         if self.random_state is not None:
@@ -378,9 +401,9 @@ class TPOTBase(BaseEstimator):
         """Fit an optimitzed machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
-        maximizes classification score on the provided features and classes.
-        Performs an internal stratified training/testing cross-validaton split
-        to avoid overfitting on the provided data.
+        maximizes score on the provided features and classes. Performs an internal
+        stratified training/testing cross-validaton split to avoid overfitting
+        on the provided data.
 
         Parameters
         ----------
@@ -411,6 +434,18 @@ class TPOTBase(BaseEstimator):
                              'Please confirm that the input data is scikit-learn compatible. '
                              'For example, the features must be a 2-D array and target labels '
                              'must be a 1-D array.\nException was: {}'.format(e))
+
+        # Randomly collect a subsample of training samples for pipeline optimization process.
+        if self.subsample < 1.0:
+            features, _, classes, _ = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
+            # Raise a warning message if the training size is less than 1500 when subsample is not default value
+            if features.shape[0] < 1500:
+                print(
+                    'Warning: Although subsample can accelerate pipeline optimization process, '
+                    'too small training sample size may cause unpredictable effect on maximizing '
+                    'score in pipeline optimization process. Increasing subsample ratio may get '
+                    'a more reasonable outcome from optimization process in TPOT.'
+                    )
 
         # Set the seed for the GP run
         if self.random_state is not None:
@@ -768,12 +803,8 @@ class TPOTBase(BaseEstimator):
                     self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
-                    operator_count = 0
-                    for i in range(len(individual)):
-                        node = individual[i]
-                        if ((type(node) is deap.gp.Terminal) or (type(node) is deap.gp.Primitive and node.name == 'CombineDFs')):
-                            continue
-                        operator_count += 1
+                    operator_count = self._operator_count(individual)
+
                 except Exception:
                     fitnesses_dict[indidx] = (5000., -float('inf'))
                     if not self._pbar.disable:
@@ -879,6 +910,15 @@ class TPOTBase(BaseEstimator):
 
         return self._generate(pset, min_, max_, condition, type_)
 
+    # Count the number of pipeline operators as a measure of pipeline complexity
+    def _operator_count(self, individual):
+        operator_count = 0
+        for i in range(len(individual)):
+            node = individual[i]
+            if type(node) is deap.gp.Primitive and node.name != 'CombineDFs':
+                operator_count += 1
+        return operator_count
+
     # Generate function stolen straight from deap.gp.generate
     @_pre_test
     def _generate(self, pset, min_, max_, condition, type_=None):
@@ -924,9 +964,10 @@ class TPOTBase(BaseEstimator):
                 except IndexError:
                     _, _, traceback = sys.exc_info()
                     raise IndexError(
-                        'The gp.generate function tried to add a terminal of '
-                        'type \'%s\', but there is none available.' % (type_,)
-                    ).with_traceback(traceback)
+                        'The gp.generate function tried to add '
+                        'a terminal of type {}, but there is'
+                        'none available. {}'.format(type_, traceback)
+                        )
                 if inspect.isclass(term):
                     term = term()
                 expr.append(term)
@@ -936,11 +977,11 @@ class TPOTBase(BaseEstimator):
                 except IndexError:
                     _, _, traceback = sys.exc_info()
                     raise IndexError(
-                        'The gp.generate function tried to add a terminal of '
-                        'type \'%s\', but there is none available.' % (type_,)
-                    ).with_traceback(traceback)
+                        'The gp.generate function tried to add '
+                        'a primitive of type {}, but there is'
+                        'none available. {}'.format(type_, traceback)
+                        )
                 expr.append(prim)
                 for arg in reversed(prim.args):
                     stack.append((depth+1, arg))
-
         return expr
