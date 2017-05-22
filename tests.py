@@ -814,7 +814,6 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
 """
-    print(generate_import_code(pipeline, tpot_obj.operators))
     assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
 
 
