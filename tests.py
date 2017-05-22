@@ -185,7 +185,7 @@ MAX_TIME_MINS\t=\tNone
 MUTATION_RATE\t=\t0.9
 NUM_CV_FOLDS\t=\t5
 NUM_JOBS\t=\t1
-OFFSPRING_SIZE\t=\tNone
+OFFSPRING_SIZE\t=\t100
 OUTPUT_FILE\t=\t
 POPULATION_SIZE\t=\t100
 RANDOM_STATE\t=\tNone
@@ -196,8 +196,11 @@ TPOT_MODE\t=\tclassification
 VERBOSITY\t=\t1
 
 """
-        self.assertEqual(expected_output, output)
 
+        self.assertEqual(_sort_lines(expected_output), _sort_lines(output))
+
+def _sort_lines(text):
+    return '\n'.join(sorted(text.split('\n')))
 
 def test_init_custom_parameters():
     """Assert that the TPOT instantiator stores the TPOT variables properly."""
