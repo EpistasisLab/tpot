@@ -43,9 +43,9 @@ import sys
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.linear_model import LogisticRegression, Lasso
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.pipeline import make_pipeline
-from sklearn.linear_model import LogisticRegression
 from deap import creator
 from tqdm import tqdm
 from nose.tools import assert_raises
@@ -441,7 +441,7 @@ def test_score_2():
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
-    known_score = 11.594597099  # Assumes use of mse
+    known_score = 12.1791953611
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -504,7 +504,7 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r, **training_classes_r_weight_dict)
     # Get score from TPOT
-    known_score = 12.643383517  # Assumes use of mse
+    known_score = 11.5790430757
     score = tpot_obj.score(testing_features_r, testing_classes_r)
 
     assert np.allclose(cv_score1, cv_score2)
@@ -876,14 +876,13 @@ def test_export_pipeline():
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
 
-from copy import copy
-from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.tree import DecisionTreeClassifier
+from tpot.built_in_operators import StackingEstimator
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -893,9 +892,7 @@ training_features, testing_features, training_classes, testing_classes = \\
 
 exported_pipeline = make_pipeline(
     make_union(
-        make_union(VotingClassifier([('branch',
-            DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
-        )]), FunctionTransformer(copy)),
+        StackingEstimator(estimator=DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)),
         SelectPercentile(score_func=f_classif, percentile=20)
     ),
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
@@ -1072,16 +1069,46 @@ def test_StackingEstimator_2():
 
 
 def test_StackingEstimator_3():
-    """Assert that the StackingEstimator worked as expected in scikit-learn pipeline."""
+    """Assert that the StackingEstimator worked as expected in scikit-learn pipeline in classification"""
     stack_clf = StackingEstimator(estimator=RandomForestClassifier(random_state=42))
     meta_clf = LogisticRegression()
     sklearn_pipeline = make_pipeline(stack_clf, meta_clf)
+    # fit in pipeline
+    sklearn_pipeline.fit(training_features, training_classes)
+    # fit step by step
+    stack_clf.fit(training_features, training_classes)
+    X_clf_transformed = stack_clf.transform(training_features)
+    meta_clf.fit(X_clf_transformed, training_classes)
+    # scoring
+    score = meta_clf.score(X_clf_transformed, training_classes)
+    pipeline_score = sklearn_pipeline.score(training_features, training_classes)
+    assert np.allclose(score, pipeline_score)
 
-    cv_score1 = np.mean(cross_val_score(sklearn_pipeline, training_features, training_classes, cv=3, scoring='accuracy'))
-    cv_score2 = np.mean(cross_val_score(meta_clf, training_features, training_classes, cv=3, scoring='accuracy'))
+    # test cv score
+    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features, training_classes, cv=3, scoring='accuracy'))
 
-    known_score1 = 0.947282375315
-    known_score2 = 0.948023167514
+    known_cv_score = 0.947282375315
 
-    assert np.allclose(known_score1, cv_score1)
-    assert np.allclose(known_score2, cv_score2)
+    assert np.allclose(known_cv_score, cv_score)
+
+def test_StackingEstimator_4():
+    """Assert that the StackingEstimator worked as expected in scikit-learn pipeline in regression"""
+    stack_reg = StackingEstimator(estimator=RandomForestRegressor(random_state=42))
+    meta_reg = Lasso(random_state=42)
+    sklearn_pipeline = make_pipeline(stack_reg, meta_reg)
+    # fit in pipeline
+    sklearn_pipeline.fit(training_features_r, training_classes_r)
+    # fit step by step
+    stack_reg.fit(training_features_r, training_classes_r)
+    X_reg_transformed = stack_reg.transform(training_features_r)
+    meta_reg.fit(X_reg_transformed, training_classes_r)
+    # scoring
+    score = meta_reg.score(X_reg_transformed, training_classes_r)
+    pipeline_score = sklearn_pipeline.score(training_features_r, training_classes_r)
+    assert np.allclose(score, pipeline_score)
+
+    # test cv score
+    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features_r, training_classes_r, cv=3, scoring='r2'))
+    known_cv_score = 0.795877470354
+
+    assert np.allclose(known_cv_score, cv_score)
