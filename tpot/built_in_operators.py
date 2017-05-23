@@ -20,7 +20,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin, clone
+from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
 from sklearn.utils import check_array
 
 
@@ -81,7 +81,7 @@ class StackingEstimator(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, estimator):
-        self.estimator = clone(estimator)
+        self.estimator = estimator
 
     def fit(self, X, y=None, **fit_params):
         """Fit the StackingEstimator meta-transformer.
