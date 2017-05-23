@@ -79,13 +79,14 @@ class CombineDFs(object):
 
 
 class StackingEstimator(BaseEstimator, TransformerMixin):
-    """Meta-transformer for adding predictions and/or class probabilities
-    as synthetic feature(s)
+    """Meta-transformer for adding predictions and/or class probabilities as synthetic feature(s).
+
     Parameters
     ----------
     estimator : object
         The base estimator from which the transformer is built.
     """
+    
     def __init__(self, estimator):
         self.estimator = estimator
 
