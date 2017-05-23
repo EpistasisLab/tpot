@@ -517,3 +517,10 @@ When using the command-line interface, the configuration file specified in the `
 For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py) and [regression](https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py) in TPOT's source code.
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
+
+<a name="misssingvalues"></a>
+## Missing Values
+
+When feature matrices are passed into TPOT, any missing values will automatically be imputed. The imputation process uses the median value from each feature as its best guess for each missing value.
+
+If a different strategy for imputation than median computation is desired, then the feature set should be imputed before it is passed to TPOT.
