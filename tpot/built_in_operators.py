@@ -20,11 +20,11 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 
 
-class ZeroCount(BaseEstimator):
+class ZeroCount(BaseEstimator, TransformerMixin):
     """Adds the count of zeros and count of non-zeros per sample as features."""
 
     def fit(self, X, y=None):
@@ -52,19 +52,12 @@ class ZeroCount(BaseEstimator):
 
         X_transformed = np.copy(X)
 
-        non_zero = np.apply_along_axis(
-            lambda row: np.count_nonzero(row),
-            axis=1,
-            arr=X_transformed
-        )
-        zero_col = np.apply_along_axis(
-            lambda row: (n_features - np.count_nonzero(row)),
-            axis=1,
-            arr=X_transformed
-        )
+        non_zero_vector = np.count_nonzero(X_transformed, axis=1)
+        non_zero = np.reshape(non_zero_vector, (-1, 1))
+        zero_col = np.reshape(n_features - non_zero_vector, (-1, 1))
 
-        X_transformed = np.insert(X_transformed, n_features, non_zero, axis=1)
-        X_transformed = np.insert(X_transformed, n_features + 1, zero_col, axis=1)
+        X_transformed = np.hstack((non_zero, X_transformed))
+        X_transformed = np.hstack((zero_col, X_transformed))
 
         return X_transformed
 

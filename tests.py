@@ -21,6 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
+from tpot.built_in_operators import ZeroCount
 from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, main, _read_data_file
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
@@ -44,7 +45,7 @@ from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score
 from deap import creator
 from tqdm import tqdm
-from nose.tools import assert_raises, assert_not_equal
+from nose.tools import assert_raises, assert_equal, assert_not_equal
 from unittest import TestCase
 from contextlib import contextmanager
 try:
@@ -185,7 +186,7 @@ MAX_TIME_MINS\t=\tNone
 MUTATION_RATE\t=\t0.9
 NUM_CV_FOLDS\t=\t5
 NUM_JOBS\t=\t1
-OFFSPRING_SIZE\t=\tNone
+OFFSPRING_SIZE\t=\t100
 OUTPUT_FILE\t=\t
 POPULATION_SIZE\t=\t100
 RANDOM_STATE\t=\tNone
@@ -196,8 +197,11 @@ TPOT_MODE\t=\tclassification
 VERBOSITY\t=\t1
 
 """
-        self.assertEqual(expected_output, output)
 
+        self.assertEqual(_sort_lines(expected_output), _sort_lines(output))
+
+def _sort_lines(text):
+    return '\n'.join(sorted(text.split('\n')))
 
 def test_init_custom_parameters():
     """Assert that the TPOT instantiator stores the TPOT variables properly."""
@@ -1092,3 +1096,15 @@ def test_float_range_2():
 def test_float_range_3():
     """Assert that the TPOT CLI interface's float range throws an exception when input is not a float."""
     assert_raises(Exception, float_range, 'foobar')
+
+
+def test_ZeroCount():
+    """Assert that ZeroCount operator returns correct transformed X."""
+    X = np.array([[0, 1, 7, 0, 0], [3, 0, 0, 2, 19], [0, 1, 3, 4, 5], [5, 0, 0, 0, 0]])
+    op = ZeroCount()
+    X_transformed = op.transform(X)
+    zero_col = np.array([3, 2, 1, 4])
+    non_zero = np.array([2, 3, 4, 1])
+    
+    assert np.allclose(zero_col, X_transformed[:, 0])
+    assert np.allclose(non_zero, X_transformed[:, 1])
