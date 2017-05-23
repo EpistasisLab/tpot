@@ -37,12 +37,13 @@ from tqdm import tqdm
 from copy import copy
 
 from sklearn.base import BaseEstimator
+from sklearn.utils import check_X_y
+from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
-from sklearn.preprocessing import FunctionTransformer
+from sklearn.preprocessing import FunctionTransformer, Imputer
 from sklearn.ensemble import VotingClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.scorer import make_scorer
-from sklearn.utils import check_X_y
 
 from update_checker import update_check
 
@@ -191,6 +192,7 @@ class TPOTBase(BaseEstimator):
         self._pareto_front = None
         self._optimized_pipeline = None
         self._fitted_pipeline = None
+        self._fitted_imputer = None
         self._pop = None
         self.warm_start = warm_start
         self.population_size = population_size
@@ -400,7 +402,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes, sample_weight=None):
-        """Fit an optimitzed machine learning pipeline.
+        """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
         maximizes score on the provided features and classes. Performs an internal
@@ -421,16 +423,15 @@ class TPOTBase(BaseEstimator):
         None
 
         """
-        # Check that the input data is formatted correctly for scikit-learn and convert classes to np.float64
-        try:
-            features, classes = check_X_y(features, classes)
-        except Exception:
-            raise ValueError(
-                            'Error: Input data is not in a valid format. '
-                            'Please confirm that the input data is scikit-learn compatible. '
-                            'For example, the features must be a 2-D array and target labels '
-                            'must be a 1-D array.'
-                            )
+        features = features.astype(np.float64)
+
+        # Resets the imputer to be fit for the new dataset
+        self._fitted_imputer = None
+
+        if np.any(np.isnan(features)):
+            features = self._impute_values(features)
+
+        self._check_dataset(features, classes)
 
         if self.verbosity > 2:
             # Randomly collect a subsample of training samples for pipeline optimization process.
@@ -461,7 +462,6 @@ class TPOTBase(BaseEstimator):
             np.random.seed(self.random_state)
 
         self._start_datetime = datetime.now()
-
         self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight)
 
         # assign population, self._pop can only be not None if warm_start is enabled
@@ -529,50 +529,65 @@ class TPOTBase(BaseEstimator):
                 self._pbar.write('')
                 self._pbar.write('TPOT closed prematurely. Will use the current best pipeline.')
         finally:
-            # Close the progress bar
-            # Standard truthiness checks won't work for tqdm
-            if not isinstance(self._pbar, type(None)):
-                self._pbar.close()
+            # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
+            attempts = 10
+            for attempt in range(attempts):
+                try:
+                    # Close the progress bar
+                    # Standard truthiness checks won't work for tqdm
+                    if not isinstance(self._pbar, type(None)):
+                        self._pbar.close()
 
-            # Store the pipeline with the highest internal testing score
-            if self._pareto_front:
-                top_score = -float('inf')
-                for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
-                    if pipeline_scores.wvalues[1] > top_score:
-                        self._optimized_pipeline = pipeline
-                        top_score = pipeline_scores.wvalues[1]
+                    # Store the pipeline with the highest internal testing score
+                    if self._pareto_front:
+                        self._update_top_pipeline()
 
-                # It won't raise error for a small test like in a unit test because a few pipeline sometimes
-                # may fail due to the training data does not fit the operator's requirement.
-                if not self._optimized_pipeline:
-                    print('There was an error in the TPOT optimization '
-                          'process. This could be because the data was '
-                          'not formatted properly, or because data for '
-                          'a regression problem was provided to the '
-                          'TPOTClassifier object. Please make sure you '
-                          'passed the data to TPOT correctly.')
-                else:
-                    self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+                        # It won't raise error for a small test like in a unit test because a few pipeline sometimes
+                        # may fail due to the training data does not fit the operator's requirement.
+                        if not self._optimized_pipeline:
+                            print('There was an error in the TPOT optimization '
+                                  'process. This could be because the data was '
+                                  'not formatted properly, or because data for '
+                                  'a regression problem was provided to the '
+                                  'TPOTClassifier object. Please make sure you '
+                                  'passed the data to TPOT correctly.')
+                        else:
+                            self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 
-                    with warnings.catch_warnings():
-                        warnings.simplefilter('ignore')
-                        self._fitted_pipeline.fit(features, classes)
-
-                    if self.verbosity in [1, 2]:
-                        # Add an extra line of spacing if the progress bar was used
-                        if self.verbosity >= 2:
-                            print('')
-                        print('Best pipeline: {}'.format(self._optimized_pipeline))
-
-                    # Store and fit the entire Pareto front if sciencing
-                    elif self.verbosity >= 3 and self._pareto_front:
-                        self._pareto_front_fitted_pipelines = {}
-
-                        for pipeline in self._pareto_front.items:
-                            self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
                             with warnings.catch_warnings():
                                 warnings.simplefilter('ignore')
-                                self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
+                                self._fitted_pipeline.fit(features, classes)
+
+                            if self.verbosity in [1, 2]:
+                                # Add an extra line of spacing if the progress bar was used
+                                if self.verbosity >= 2:
+                                    print('')
+                                print('Best pipeline: {}'.format(self._optimized_pipeline))
+
+                            # Store and fit the entire Pareto front if sciencing
+                            elif self.verbosity >= 3 and self._pareto_front:
+                                self._pareto_front_fitted_pipelines = {}
+
+                                for pipeline in self._pareto_front.items:
+                                    self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                                    with warnings.catch_warnings():
+                                        warnings.simplefilter('ignore')
+                                        self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
+
+                    break
+                except (KeyboardInterrupt, SystemExit, Exception) as e:
+                    # raise the exception if it's our last attempt
+                    if attempt == attempts - 1:
+                        raise
+
+    def _update_top_pipeline(self):
+        """small helper function to update the _optimized_pipeline field"""
+        if self._pareto_front:
+            top_score = -float('inf')
+            for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                if pipeline_scores.wvalues[1] > top_score:
+                    self._optimized_pipeline = pipeline
+                    top_score = pipeline_scores.wvalues[1]
 
     def predict(self, features):
         """Use the optimized pipeline to predict the classes for a feature set.
@@ -590,7 +605,13 @@ class TPOTBase(BaseEstimator):
         """
         if not self._fitted_pipeline:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
-        return self._fitted_pipeline.predict(features.astype(np.float64))
+
+        features = features.astype(np.float64)
+
+        if np.any(np.isnan(features)):
+            features = self._impute_values(features)
+
+        return self._fitted_pipeline.predict(features)
 
     def fit_predict(self, features, classes):
         """Call fit and predict in sequence.
@@ -689,6 +710,51 @@ class TPOTBase(BaseEstimator):
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(export_pipeline(self._optimized_pipeline, self.operators, self._pset))
+
+    def _impute_values(self, features):
+        """Impute missing values in a feature set.
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            A feature matrix
+
+        Returns
+        -------
+        array-like {n_samples, n_features}
+        """
+        if self.verbosity > 1:
+            print('Imputing missing values in feature set')
+
+        if self._fitted_imputer is None:
+            self._fitted_imputer = Imputer(strategy="median", axis=1)
+            self._fitted_imputer.fit(features)
+
+        return self._fitted_imputer.transform(features)
+
+    def _check_dataset(self, features, classes):
+        """Check if a dataset has a valid feature set and labels.
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix
+        classes: array-like {n_samples}
+            List of class labels for prediction
+
+        Returns
+        -------
+        None
+        """
+        try:
+            check_X_y(features, classes, accept_sparse=False)
+        except (AssertionError, ValueError):
+            raise ValueError(
+                'Error: Input data is not in a valid format. Please confirm '
+                'that the input data is scikit-learn compatible. For example, '
+                'the features must be a 2-D array and target labels must be a '
+                '1-D array.'
+            )
 
     def _compile_to_sklearn(self, expr):
         """Compile a DEAP pipeline into a sklearn pipeline.
