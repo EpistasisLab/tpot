@@ -678,7 +678,6 @@ def test_fit3():
     assert not (tpot_obj._start_datetime is None)
 
 
-<<<<<<< HEAD
 def test_evaluated_individuals():
     """Assert that _evaluated_individuals stores corrent pipelines and their CV scores."""
     tpot_obj = TPOTClassifier(
