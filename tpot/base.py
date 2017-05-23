@@ -38,7 +38,6 @@ from copy import copy
 
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
-from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
 from sklearn.ensemble import VotingClassifier
@@ -885,7 +884,7 @@ class TPOTBase(BaseEstimator):
                 get = multiprocessing.get
             jobs = []
             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
-                job = delayed(_wrapped_cross_val_score)(
+                job = _wrapped_cross_val_score(
                     sklearn_pipeline,
                     features,
                     classes,
@@ -908,6 +907,7 @@ class TPOTBase(BaseEstimator):
                     resulting_score_list.append(val)
 
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
+
             if type(resulting_score) in [float, np.float64, np.float32]:
                 self._evaluated_individuals[individual_str] = (max(1, operator_count), resulting_score)
                 fitnesses_dict[test_idx] = self._evaluated_individuals[individual_str]
