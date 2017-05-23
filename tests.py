@@ -41,7 +41,7 @@ import random
 import subprocess
 import sys
 
-from sklearn.datasets import load_digits, load_boston
+from sklearn.datasets import load_digits, load_boston, make_classification
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LogisticRegression, Lasso
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -675,6 +675,7 @@ def test_fit3():
     assert not (tpot_obj._start_datetime is None)
 
 
+<<<<<<< HEAD
 def test_evaluated_individuals():
     """Assert that _evaluated_individuals stores corrent pipelines and their CV scores."""
     tpot_obj = TPOTClassifier(
@@ -775,8 +776,18 @@ def test_imputer3():
     assert_not_equal(imputed_features[0][0], float('nan'))
 
 
-def test_tpot_operator_factory_class():
-    """Assert that the TPOT operators class factory."""
+def test_fit3():
+    """Assert that the TPOT fit function provides an optimized pipeline when config_dict is \'TPOT MDR\'"""
+    X, y = make_classification(n_samples=50, n_features=10, random_state=42, n_classes=2) # binary classification problem
+    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, config_dict='TPOT MDR')
+    tpot_obj.fit(X, y)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+
+def testTPOTOperatorClassFactory():
+    """Assert that the TPOT operators class factory"""
     test_config_dict = {
         'sklearn.svm.LinearSVC': {
             'penalty': ["l1", "l2"],

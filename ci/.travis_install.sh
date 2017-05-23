@@ -56,6 +56,8 @@ pip install tqdm
 pip install toolz
 pip install dask[complete]
 pip install stopit
+pip install scikit-mdr
+pip install skrebate
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
