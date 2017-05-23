@@ -128,7 +128,7 @@ class TPOTBase(BaseEstimator):
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
             'recall_samples', 'recall_weighted', 'roc_auc']
-        cv: int or cross-validation generator(default: 5)
+        cv: int or cross-validation generator (default: 5)
             If CV is a number, then it is the number of folds to evaluate each
             pipeline over in k-fold cross-validation during the TPOT optimization
              process. If it is an object then it is an object to be used as a
