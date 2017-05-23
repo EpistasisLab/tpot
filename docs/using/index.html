@@ -623,7 +623,7 @@ tpot.export('tpot_mnist_pipeline.py')
 <p>When using the command-line interface, the configuration file specified in the <code>-config</code> parameter <em>must</em> name its custom TPOT config <code>tpot_config</code>. Otherwise, TPOT will not be able to locate the dictionary.</p>
 <p>For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for <a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py">classification</a> and <a href="https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py">regression</a> in TPOT's source code.</p>
 <p>Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.</p>
-<p><a name="misssingvalues"></a></p>
+<p><a name="missingvalues"></a></p>
 <h2 id="missing-values">Missing Values</h2>
 <p>When feature matrices are passed into TPOT, any missing values will automatically be imputed. The imputation process uses the median value from each feature as its best guess for each missing value.</p>
 <p>If a different strategy for imputation than median computation is desired, then the feature set should be imputed before it is passed to TPOT.</p>
