@@ -40,7 +40,6 @@ from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
-from sklearn.ensemble import VotingClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.scorer import make_scorer
 
@@ -50,7 +49,7 @@ from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _pre_test
-from .built_in_operators import CombineDFs
+from .built_in_operators import CombineDFs, StackingEstimator
 from .config_classifier_light import classifier_config_dict_light
 from .config_regressor_light import regressor_config_dict_light
 from .config_classifier_mdr import tpot_mdr_classifier_config_dict
@@ -239,7 +238,7 @@ class TPOTBase(BaseEstimator):
         self.operators_context = {
             'make_pipeline': make_pipeline,
             'make_union': make_union,
-            'VotingClassifier': VotingClassifier,
+            'StackingEstimator': StackingEstimator,
             'FunctionTransformer': FunctionTransformer,
             'copy': copy
         }

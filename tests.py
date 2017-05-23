@@ -21,7 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
-from tpot.built_in_operators import ZeroCount
+from tpot.built_in_operators import ZeroCount, StackingEstimator
 from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, main, _read_data_file
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
@@ -43,6 +43,9 @@ import sys
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.linear_model import LogisticRegression, Lasso
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.pipeline import make_pipeline
 from deap import creator
 from tqdm import tqdm
 from nose.tools import assert_raises, assert_equal, assert_not_equal
@@ -469,7 +472,7 @@ def test_score_2():
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
-    known_score = 11.594597099  # Assumes use of mse
+    known_score = 12.1791953611
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -532,7 +535,7 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r, **training_classes_r_weight_dict)
     # Get score from TPOT
-    known_score = 12.643383517  # Assumes use of mse
+    known_score = 11.5790430757
     score = tpot_obj.score(testing_features_r, testing_classes_r)
 
     assert np.allclose(cv_score1, cv_score2)
@@ -721,7 +724,7 @@ def test_evaluate_individuals():
         assert np.allclose(fitness_score[0], operator_count)
         assert np.allclose(fitness_score[1], mean_cv_scores)
 
-        
+
 def test_imputer():
     """Assert that the TPOT fit function will not raise a ValueError in a dataset where NaNs are present."""
     tpot_obj = TPOTClassifier(
@@ -769,7 +772,7 @@ def test_imputer3():
     features_with_nan[0][0] = float('nan')
 
     imputed_features = tpot_obj._impute_values(features_with_nan)
-    assert_not_equal(imputed_features[0][0], float('nan')) 
+    assert_not_equal(imputed_features[0][0], float('nan'))
 
 
 def test_tpot_operator_factory_class():
@@ -869,15 +872,11 @@ def test_generate_pipeline_code():
 
     expected_code = """make_pipeline(
     make_union(
-        make_union(VotingClassifier([('branch',
-            GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, n_estimators=0.5)
-        )]), FunctionTransformer(copy)),
-        make_union(VotingClassifier([('branch',
-            make_pipeline(
-                ZeroCount(),
-                GaussianNB()
-            )
-        )]), FunctionTransformer(copy))
+        StackingEstimator(estimator=GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, n_estimators=0.5)),
+        StackingEstimator(estimator=make_pipeline(
+            ZeroCount(),
+            GaussianNB()
+        ))
     ),
     KNeighborsClassifier(n_neighbors=18, p="uniform", weights=2)
 )"""
@@ -895,12 +894,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
-
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
 """
     assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
 
@@ -950,7 +943,7 @@ def test_export_pipeline():
         'KNeighborsClassifier(CombineDFs('
         'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
         'DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
-        'DecisionTreeClassifier__min_samples_split=5),SelectPercentile(input_matrix, SelectPercentile__percentile=20)'
+        'DecisionTreeClassifier__min_samples_split=5),SelectPercentile(input_matrix, SelectPercentile__percentile=20))'
         'KNeighborsClassifier__n_neighbors=10, '
         'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform'
     )
@@ -958,14 +951,12 @@ def test_export_pipeline():
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
 
-from copy import copy
-from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
-from sklearn.preprocessing import FunctionTransformer
 from sklearn.tree import DecisionTreeClassifier
+from tpot.built_in_operators import StackingEstimator
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -975,9 +966,7 @@ training_features, testing_features, training_classes, testing_classes = \\
 
 exported_pipeline = make_pipeline(
     make_union(
-        make_union(VotingClassifier([('branch',
-            DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
-        )]), FunctionTransformer(copy)),
+        StackingEstimator(estimator=DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)),
         SelectPercentile(score_func=f_classif, percentile=20)
     ),
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
@@ -1046,6 +1035,49 @@ training_features, testing_features, training_classes, testing_classes = \\
 exported_pipeline = make_pipeline(
     SelectPercentile(score_func=f_classif, percentile=20),
     DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
+)
+
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
+"""
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
+
+
+def test_export_pipeline_4():
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with input_matrix in CombineDFs."""
+    tpot_obj = TPOTClassifier()
+    pipeline_string = (
+        'KNeighborsClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+        'DecisionTreeClassifier__min_samples_split=5),input_matrix)'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform'
+    )
+
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    expected_code = """import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.tree import DecisionTreeClassifier
+from tpot.built_in_operators import StackingEstimator
+from sklearn.preprocessing import FunctionTransformer
+from copy import copy
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
+
+exported_pipeline = make_pipeline(
+    make_union(
+        StackingEstimator(estimator=DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)),
+        FunctionTransformer(copy)
+    ),
+    KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 )
 
 exported_pipeline.fit(training_features, training_classes)
@@ -1126,6 +1158,79 @@ def test_float_range_3():
     assert_raises(Exception, float_range, 'foobar')
 
 
+def test_StackingEstimator_1():
+    """Assert that the StackingEstimator returns transformed X with synthetic features in classification."""
+    clf = RandomForestClassifier(random_state=42)
+    stack_clf = StackingEstimator(estimator=RandomForestClassifier(random_state=42))
+    # fit
+    clf.fit(training_features, training_classes)
+    stack_clf.fit(training_features, training_classes)
+    # get transformd X
+    X_clf_transformed = stack_clf.transform(training_features)
+
+    assert np.allclose(clf.predict(training_features), X_clf_transformed[:,0])
+    assert np.allclose(clf.predict_proba(training_features), X_clf_transformed[:,1:1+len(np.unique(training_classes))])
+
+
+def test_StackingEstimator_2():
+    """Assert that the StackingEstimator returns transformed X with a synthetic feature in regression."""
+    reg = RandomForestRegressor(random_state=42)
+    stack_reg = StackingEstimator(estimator=RandomForestRegressor(random_state=42))
+    # fit
+    reg.fit(training_features_r, training_classes_r)
+    stack_reg.fit(training_features_r, training_classes_r)
+    # get transformd X
+    X_reg_transformed = stack_reg.transform(training_features_r)
+
+    assert np.allclose(reg.predict(training_features_r), X_reg_transformed[:,0])
+
+
+def test_StackingEstimator_3():
+    """Assert that the StackingEstimator worked as expected in scikit-learn pipeline in classification"""
+    stack_clf = StackingEstimator(estimator=RandomForestClassifier(random_state=42))
+    meta_clf = LogisticRegression()
+    sklearn_pipeline = make_pipeline(stack_clf, meta_clf)
+    # fit in pipeline
+    sklearn_pipeline.fit(training_features, training_classes)
+    # fit step by step
+    stack_clf.fit(training_features, training_classes)
+    X_clf_transformed = stack_clf.transform(training_features)
+    meta_clf.fit(X_clf_transformed, training_classes)
+    # scoring
+    score = meta_clf.score(X_clf_transformed, training_classes)
+    pipeline_score = sklearn_pipeline.score(training_features, training_classes)
+    assert np.allclose(score, pipeline_score)
+
+    # test cv score
+    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features, training_classes, cv=3, scoring='accuracy'))
+
+    known_cv_score = 0.947282375315
+
+    assert np.allclose(known_cv_score, cv_score)
+
+def test_StackingEstimator_4():
+    """Assert that the StackingEstimator worked as expected in scikit-learn pipeline in regression"""
+    stack_reg = StackingEstimator(estimator=RandomForestRegressor(random_state=42))
+    meta_reg = Lasso(random_state=42)
+    sklearn_pipeline = make_pipeline(stack_reg, meta_reg)
+    # fit in pipeline
+    sklearn_pipeline.fit(training_features_r, training_classes_r)
+    # fit step by step
+    stack_reg.fit(training_features_r, training_classes_r)
+    X_reg_transformed = stack_reg.transform(training_features_r)
+    meta_reg.fit(X_reg_transformed, training_classes_r)
+    # scoring
+    score = meta_reg.score(X_reg_transformed, training_classes_r)
+    pipeline_score = sklearn_pipeline.score(training_features_r, training_classes_r)
+    assert np.allclose(score, pipeline_score)
+
+    # test cv score
+    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features_r, training_classes_r, cv=3, scoring='r2'))
+    known_cv_score = 0.795877470354
+
+    assert np.allclose(known_cv_score, cv_score)
+
+
 def test_ZeroCount():
     """Assert that ZeroCount operator returns correct transformed X."""
     X = np.array([[0, 1, 7, 0, 0], [3, 0, 0, 2, 19], [0, 1, 3, 4, 5], [5, 0, 0, 0, 0]])
@@ -1133,6 +1238,6 @@ def test_ZeroCount():
     X_transformed = op.transform(X)
     zero_col = np.array([3, 2, 1, 4])
     non_zero = np.array([2, 3, 4, 1])
-    
+
     assert np.allclose(zero_col, X_transformed[:, 0])
     assert np.allclose(non_zero, X_transformed[:, 1])
