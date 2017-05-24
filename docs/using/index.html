@@ -75,6 +75,8 @@
         
             <li><a class="toctree-l3" href="#customizing-tpots-operators-and-parameters">Customizing TPOT's operators and parameters</a></li>
         
+            <li><a class="toctree-l3" href="#missing-values">Missing Values</a></li>
+        
         </ul>
     
 
@@ -234,6 +236,11 @@ See the section on <a href="#scoringfunctions">scoring functions</a> for more de
 <td>Any integer >1</td>
 <td>Number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process.</td>
 </tr>
+<td>-sub</td>
+<td>SUBSAMPLE</td>
+<td>(0.0, 1.0]</td>
+<td>Subsample ratio of the training instance. Setting it to 0.5 means that TPOT randomly collects half of training samples for pipeline optimization process.</td>
+</tr>
 <tr>
 <td>-njobs</td>
 <td>NUM_JOBS</td>
@@ -370,6 +377,11 @@ See the section on <a href="#scoringfunctions">scoring functions</a> for more de
 <td>cv</td>
 <td>Any integer >1</td>
 <td>Number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process.</td>
+</tr>
+<tr>
+<td>subsample</td>
+<td>(0.0, 1.0]</td>
+<td>Subsample ratio of the training instance. Setting it to 0.5 means that TPOT randomly collects half of training samples for pipeline optimization process.</td>
 </tr>
 <tr>
 <td>n_jobs</td>
@@ -557,7 +569,7 @@ tpot.export('tpot_mnist_pipeline.py')
 <p>Beyond the default configurations that come with TPOT, in some cases it is useful to limit the algorithms and parameters that TPOT considers. For that reason, we allow users to provide TPOT with a custom configuration for its operators and parameters.</p>
 <p>The custom TPOT configuration must be in nested dictionary format, where the first level key is the path and name of the operator (e.g., <code>sklearn.naive_bayes.MultinomialNB</code>) and the second level key is the corresponding parameter name for that operator (e.g., <code>fit_prior</code>). The second level key should point to a list of parameter values for that parameter, e.g., <code>'fit_prior': [True, False]</code>.</p>
 <p>For a simple example, the configuration could be:</p>
-<pre><code class="Python">classifier_config_dict = {
+<pre><code class="Python">tpot_config = {
     'sklearn.naive_bayes.GaussianNB': {
     },
 
@@ -582,7 +594,7 @@ digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
                                                     train_size=0.75, test_size=0.25)
 
-classifier_config_dict = {
+tpot_config = {
     'sklearn.naive_bayes.GaussianNB': {
     },
 
@@ -598,7 +610,7 @@ classifier_config_dict = {
 }
 
 tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                      config_dict=classifier_config_dict)
+                      config_dict=tpot_config)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
@@ -608,8 +620,13 @@ tpot.export('tpot_mnist_pipeline.py')
 <pre><code>tpot data/mnist.csv -is , -target class -config tpot_classifier_config.py -g 5 -p 20 -v 2 -o tpot_exported_pipeline.py
 </code></pre>
 
+<p>When using the command-line interface, the configuration file specified in the <code>-config</code> parameter <em>must</em> name its custom TPOT config <code>tpot_config</code>. Otherwise, TPOT will not be able to locate the dictionary.</p>
 <p>For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for <a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py">classification</a> and <a href="https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py">regression</a> in TPOT's source code.</p>
 <p>Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.</p>
+<p><a name="missingvalues"></a></p>
+<h2 id="missing-values">Missing Values</h2>
+<p>When feature matrices are passed into TPOT, any missing values will automatically be imputed. The imputation process uses the median value from each feature as its best guess for each missing value.</p>
+<p>If a different strategy for imputation than median computation is desired, then the feature set should be imputed before it is passed to TPOT.</p>
               
             </div>
           </div>

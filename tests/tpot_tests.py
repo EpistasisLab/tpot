@@ -24,12 +24,16 @@ from tpot.base import TPOTBase
 from tpot.export_utils import get_by_name
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement
-
+from tpot.metrics import balanced_accuracy
+from tpot.built_in_operators import StackingEstimator, ZeroCount
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.config_classifier import classifier_config_dict
 from tpot.config_classifier_light import classifier_config_dict_light
 from tpot.config_regressor_light import regressor_config_dict_light
 from tpot.config_classifier_mdr import tpot_mdr_classifier_config_dict
+from tpot.config_regressor_mdr import tpot_mdr_regressor_config_dict
+from tpot.config_classifier_sparse import classifier_config_sparse
+from tpot.config_regressor_sparse import regressor_config_sparse
 from tpot.driver import float_range
 
 import numpy as np
@@ -38,8 +42,13 @@ import random
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.linear_model import LogisticRegression, Lasso
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.pipeline import make_pipeline
 from deap import creator
-from nose.tools import assert_raises
+from nose.tools import assert_raises, assert_not_equal
+
+from tqdm import tqdm
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -103,7 +112,7 @@ def test_init_default_scoring():
 
 
 def test_invaild_score_warning():
-    """Assert that the TPOT fit function raises a ValueError when the scoring metrics is not available in SCORERS."""
+    """Assert that the TPOT intitializes raises a ValueError when the scoring metrics is not available in SCORERS."""
     # Mis-spelled scorer
     assert_raises(ValueError, TPOTClassifier, scoring='balanced_accuray')
     # Correctly spelled
@@ -124,12 +133,31 @@ def test_invaild_dataset_warning():
     assert_raises(ValueError, tpot_obj.fit, training_features, bad_training_classes)
 
 
+def test_invaild_subsample_ratio_warning():
+    """Assert that the TPOT intitializes raises a ValueError when subsample ratio is not in the range (0.0, 1.0]."""
+    # Invalid ratio
+    assert_raises(ValueError, TPOTClassifier, subsample=0.0)
+    # Valid ratio
+    TPOTClassifier(subsample=0.1)
+
+
 def test_init_max_time_mins():
     """Assert that the TPOT init stores max run time and sets generations to 1000000."""
     tpot_obj = TPOTClassifier(max_time_mins=30, generations=1000)
 
     assert tpot_obj.generations == 1000000
     assert tpot_obj.max_time_mins == 30
+
+
+def test_balanced_accuracy():
+    """Assert that the balanced_accuracy in TPOT returns correct accuracy."""
+    y_true = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4])
+    y_pred1 = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4])
+    y_pred2 = np.array([3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4])
+    accuracy_score1 = balanced_accuracy(y_true, y_pred1)
+    accuracy_score2 = balanced_accuracy(y_true, y_pred2)
+    assert np.allclose(accuracy_score1, 1.0)
+    assert np.allclose(accuracy_score2, 0.833333333333333)
 
 
 def test_get_params():
@@ -175,10 +203,17 @@ def test_conf_dict():
     tpot_obj = TPOTClassifier(config_dict='TPOT MDR')
     assert tpot_obj.config_dict == tpot_mdr_classifier_config_dict
 
+    tpot_obj = TPOTClassifier(config_dict='TPOT sparse')
+    assert tpot_obj.config_dict == classifier_config_sparse
+
     tpot_obj = TPOTRegressor(config_dict='TPOT light')
     assert tpot_obj.config_dict == regressor_config_dict_light
 
-    assert_raises(TypeError, TPOTRegressor, config_dict='TPOT MDR')
+    tpot_obj = TPOTRegressor(config_dict='TPOT MDR')
+    assert tpot_obj.config_dict == tpot_mdr_regressor_config_dict
+
+    tpot_obj = TPOTRegressor(config_dict='TPOT sparse')
+    assert tpot_obj.config_dict == regressor_config_sparse
 
 
 def test_conf_dict_2():
@@ -249,7 +284,7 @@ def test_score_2():
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
-    known_score = 11.594597099  # Assumes use of mse
+    known_score = 12.1791953611
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -312,7 +347,7 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj._fitted_pipeline.fit(training_features_r, training_classes_r, **training_classes_r_weight_dict)
     # Get score from TPOT
-    known_score = 12.643383517  # Assumes use of mse
+    known_score = 11.5790430757
     score = tpot_obj.score(testing_features_r, testing_classes_r)
 
     assert np.allclose(cv_score1, cv_score2)
@@ -436,7 +471,129 @@ def test_fit2():
     assert not (tpot_obj._start_datetime is None)
 
 
-def testTPOTOperatorClassFactory():
+def test_fit3():
+    """Assert that the TPOT fit function provides an optimized pipeline with subsample is 0.8"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        subsample=0.8,
+        verbosity=0
+    )
+    tpot_obj.fit(training_features, training_classes)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+
+def test_evaluated_individuals():
+    """Assert that _evaluated_individuals stores corrent pipelines and their CV scores."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=2,
+        offspring_size=4,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_classes)
+    assert isinstance(tpot_obj._evaluated_individuals, dict)
+    for pipeline_string in sorted(tpot_obj._evaluated_individuals.keys()):
+        deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+
+        try:
+            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_classes, cv=5, scoring='accuracy', verbose=0)
+            mean_cv_scores = np.mean(cv_scores)
+        except Exception as e:
+            mean_cv_scores = -float('inf')
+
+        assert np.allclose(tpot_obj._evaluated_individuals[pipeline_string][1], mean_cv_scores)
+        assert np.allclose(tpot_obj._evaluated_individuals[pipeline_string][0], operator_count)
+
+
+def test_evaluate_individuals():
+    """Assert that _evaluate_individuals returns operator_counts and CV scores in correct order."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=10)
+    fitness_scores = tpot_obj._evaluate_individuals(pop, training_features, training_classes)
+
+    for deap_pipeline, fitness_score in zip(pop, fitness_scores):
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+
+        try:
+            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_classes, cv=5, scoring='accuracy', verbose=0)
+            mean_cv_scores = np.mean(cv_scores)
+        except Exception as e:
+            mean_cv_scores = -float('inf')
+
+        assert isinstance(deap_pipeline, creator.Individual)
+        assert np.allclose(fitness_score[0], operator_count)
+        assert np.allclose(fitness_score[1], mean_cv_scores)
+
+
+def test_imputer():
+    """Assert that the TPOT fit function will not raise a ValueError in a dataset where NaNs are present."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    features_with_nan = np.copy(training_features)
+    features_with_nan[0][0] = float('nan')
+
+    tpot_obj.fit(features_with_nan, training_classes)
+
+
+def test_imputer2():
+    """Assert that the TPOT predict function will not raise a ValueError in a dataset where NaNs are present."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    features_with_nan = np.copy(training_features)
+    features_with_nan[0][0] = float('nan')
+
+    tpot_obj.fit(features_with_nan, training_classes)
+    tpot_obj.predict(features_with_nan)
+
+
+def test_imputer3():
+    """Assert that the TPOT _impute_values function returns a feature matrix with imputed NaN values."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    features_with_nan = np.copy(training_features)
+    features_with_nan[0][0] = float('nan')
+
+    imputed_features = tpot_obj._impute_values(features_with_nan)
+    assert_not_equal(imputed_features[0][0], float('nan'))
+
+
+def test_tpot_operator_factory_class():
     """Assert that the TPOT operators class factory."""
     test_config_dict = {
         'sklearn.svm.LinearSVC': {
@@ -531,3 +688,89 @@ def test_gen():
 
     assert len(pipeline) > 1
     assert pipeline[0].ret == Output_Array
+
+
+def test_StackingEstimator_1():
+    """Assert that the StackingEstimator returns transformed X with synthetic features in classification."""
+    clf = RandomForestClassifier(random_state=42)
+    stack_clf = StackingEstimator(estimator=RandomForestClassifier(random_state=42))
+    # fit
+    clf.fit(training_features, training_classes)
+    stack_clf.fit(training_features, training_classes)
+    # get transformd X
+    X_clf_transformed = stack_clf.transform(training_features)
+
+    assert np.allclose(clf.predict(training_features), X_clf_transformed[:, 0])
+    assert np.allclose(clf.predict_proba(training_features), X_clf_transformed[:, 1:1 + len(np.unique(training_classes))])
+
+
+def test_StackingEstimator_2():
+    """Assert that the StackingEstimator returns transformed X with a synthetic feature in regression."""
+    reg = RandomForestRegressor(random_state=42)
+    stack_reg = StackingEstimator(estimator=RandomForestRegressor(random_state=42))
+    # fit
+    reg.fit(training_features_r, training_classes_r)
+    stack_reg.fit(training_features_r, training_classes_r)
+    # get transformd X
+    X_reg_transformed = stack_reg.transform(training_features_r)
+
+    assert np.allclose(reg.predict(training_features_r), X_reg_transformed[:, 0])
+
+
+def test_StackingEstimator_3():
+    """Assert that the StackingEstimator worked as expected in scikit-learn pipeline in classification"""
+    stack_clf = StackingEstimator(estimator=RandomForestClassifier(random_state=42))
+    meta_clf = LogisticRegression()
+    sklearn_pipeline = make_pipeline(stack_clf, meta_clf)
+    # fit in pipeline
+    sklearn_pipeline.fit(training_features, training_classes)
+    # fit step by step
+    stack_clf.fit(training_features, training_classes)
+    X_clf_transformed = stack_clf.transform(training_features)
+    meta_clf.fit(X_clf_transformed, training_classes)
+    # scoring
+    score = meta_clf.score(X_clf_transformed, training_classes)
+    pipeline_score = sklearn_pipeline.score(training_features, training_classes)
+    assert np.allclose(score, pipeline_score)
+
+    # test cv score
+    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features, training_classes, cv=3, scoring='accuracy'))
+
+    known_cv_score = 0.947282375315
+
+    assert np.allclose(known_cv_score, cv_score)
+
+
+def test_StackingEstimator_4():
+    """Assert that the StackingEstimator worked as expected in scikit-learn pipeline in regression"""
+    stack_reg = StackingEstimator(estimator=RandomForestRegressor(random_state=42))
+    meta_reg = Lasso(random_state=42)
+    sklearn_pipeline = make_pipeline(stack_reg, meta_reg)
+    # fit in pipeline
+    sklearn_pipeline.fit(training_features_r, training_classes_r)
+    # fit step by step
+    stack_reg.fit(training_features_r, training_classes_r)
+    X_reg_transformed = stack_reg.transform(training_features_r)
+    meta_reg.fit(X_reg_transformed, training_classes_r)
+    # scoring
+    score = meta_reg.score(X_reg_transformed, training_classes_r)
+    pipeline_score = sklearn_pipeline.score(training_features_r, training_classes_r)
+    assert np.allclose(score, pipeline_score)
+
+    # test cv score
+    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features_r, training_classes_r, cv=3, scoring='r2'))
+    known_cv_score = 0.795877470354
+
+    assert np.allclose(known_cv_score, cv_score)
+
+
+def test_ZeroCount():
+    """Assert that ZeroCount operator returns correct transformed X."""
+    X = np.array([[0, 1, 7, 0, 0], [3, 0, 0, 2, 19], [0, 1, 3, 4, 5], [5, 0, 0, 0, 0]])
+    op = ZeroCount()
+    X_transformed = op.transform(X)
+    zero_col = np.array([3, 2, 1, 4])
+    non_zero = np.array([2, 3, 4, 1])
+
+    assert np.allclose(zero_col, X_transformed[:, 0])
+    assert np.allclose(non_zero, X_transformed[:, 1])

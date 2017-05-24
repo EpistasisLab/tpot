@@ -24,6 +24,7 @@ import random
 import inspect
 import warnings
 import sys
+import imp
 from functools import partial
 from datetime import datetime
 from multiprocessing import cpu_count
@@ -35,12 +36,12 @@ from tqdm import tqdm
 from copy import copy
 
 from sklearn.base import BaseEstimator
+from sklearn.utils import check_X_y
 from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
-from sklearn.preprocessing import FunctionTransformer
-from sklearn.ensemble import VotingClassifier
+from sklearn.preprocessing import FunctionTransformer, Imputer
+from sklearn.model_selection import train_test_split
 from sklearn.metrics.scorer import make_scorer
-from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 
 from update_checker import update_check
 
@@ -48,11 +49,12 @@ from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _pre_test
-from .built_in_operators import CombineDFs
+from .built_in_operators import CombineDFs, StackingEstimator
 
 from .config_classifier_light import classifier_config_dict_light
 from .config_regressor_light import regressor_config_dict_light
 from .config_classifier_mdr import tpot_mdr_classifier_config_dict
+from .config_regressor_mdr import tpot_mdr_regressor_config_dict
 from .config_classifier_sparse import classifier_config_sparse
 from .config_regressor_sparse import regressor_config_sparse
 
@@ -82,7 +84,7 @@ class TPOTBase(BaseEstimator):
 
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
-                 scoring=None, cv=5, n_jobs=1,
+                 scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None, warm_start=False,
                  verbosity=0, disable_update_check=False):
@@ -123,7 +125,7 @@ class TPOTBase(BaseEstimator):
             Offers the same options as sklearn.model_selection.cross_val_score as well as
             a built-in score "balanced_accuracy":
 
-            ['accuracy', 'adjusted_rand_score', 'average_precision', 'balanced accuracy',
+            ['accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy',
             'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted',
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
@@ -131,6 +133,9 @@ class TPOTBase(BaseEstimator):
         cv: int (default: 5)
             Number of folds to evaluate each pipeline over in k-fold cross-validation
             during the TPOT optimization process.
+        subsample: float (default: 1.0)
+            Subsample ratio of the training instance. Setting it to 0.5 means that TPOT
+            randomly collects half of training samples for pipeline optimization process.
         n_jobs: int (default: 1)
             Number of CPUs for evaluating pipelines in parallel during the TPOT
             optimization process. Assigning this to -1 will use as many cores as available
@@ -191,6 +196,7 @@ class TPOTBase(BaseEstimator):
         self._pareto_front = None
         self._optimized_pipeline = None
         self._fitted_pipeline = None
+        self._fitted_imputer = None
         self._pop = None
         self.warm_start = warm_start
         self.population_size = population_size
@@ -237,7 +243,7 @@ class TPOTBase(BaseEstimator):
         self.operators_context = {
             'make_pipeline': make_pipeline,
             'make_union': make_union,
-            'VotingClassifier': VotingClassifier,
+            'StackingEstimator': StackingEstimator,
             'FunctionTransformer': FunctionTransformer,
             'copy': copy
         }
@@ -266,6 +272,11 @@ class TPOTBase(BaseEstimator):
                 self.scoring_function = scoring
 
         self.cv = cv
+        self.subsample = subsample
+        if self.subsample <= 0.0 or self.subsample > 1.0:
+            raise ValueError(
+                'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
+            )
         # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
         if sys.platform.startswith('win') and n_jobs != 1:
             print(
@@ -298,29 +309,41 @@ class TPOTBase(BaseEstimator):
                 if self.classification:
                     self.config_dict = tpot_mdr_classifier_config_dict
                 else:
-                    raise TypeError(
-                        'The TPOT MDR operator configuration file does not '
-                        'currently work with TPOTRegressor. Please use '
-                        'TPOTClassifier instead.'
-                    )
+                    self.config_dict = tpot_mdr_regressor_config_dict
             elif config_dict == 'TPOT sparse':
                 if self.classification:
                     self.config_dict = classifier_config_sparse
                 else:
                     self.config_dict = regressor_config_sparse
             else:
-                try:
-                    with open(config_dict, 'r') as input_file:
-                        file_string = input_file.read()
-                    self.config_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}') + 1)])
-                except Exception:
-                    raise TypeError(
-                        'The operator configuration file is in a bad format or '
-                        'not available. Please check the configuration file '
-                        'before running TPOT.'
-                    )
+                self.config_dict = self._read_config_file(config_dict)
         else:
             self.config_dict = self.default_config_dict
+
+    def _read_config_file(self, config_path):
+        try:
+            custom_config = imp.new_module('custom_config')
+
+            with open(config_path, 'r') as config_file:
+                file_string = config_file.read()
+                exec(file_string, custom_config.__dict__)
+
+            return custom_config.tpot_config
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                'Could not open specified TPOT operator config file: '
+                '{}'.format(e.filename)
+            )
+        except AttributeError:
+            raise AttributeError(
+                'The supplied TPOT operator config file does not contain '
+                'a dictionary named "tpot_config".'
+            )
+        except Exception as e:
+            raise type(e)(
+                'An error occured while attempting to read the specified '
+                'custom TPOT operator configuration file.'
+            )
 
     def _setup_pset(self):
         if self.random_state is not None:
@@ -386,12 +409,12 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, classes, sample_weight=None):
-        """Fit an optimitzed machine learning pipeline.
+        """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
-        maximizes classification score on the provided features and classes.
-        Performs an internal stratified training/testing cross-validaton split
-        to avoid overfitting on the provided data.
+        maximizes score on the provided features and classes. Performs an internal
+        stratified training/testing cross-validaton split to avoid overfitting
+        on the provided data.
 
         Parameters
         ----------
@@ -409,19 +432,25 @@ class TPOTBase(BaseEstimator):
         """
         features = features.astype(np.float64)
 
-        # Check that the input data is formatted correctly for scikit-learn
-        if self.classification:
-            clf = DecisionTreeClassifier(max_depth=5)
-        else:
-            clf = DecisionTreeRegressor(max_depth=5)
+        # Resets the imputer to be fit for the new dataset
+        self._fitted_imputer = None
 
-        try:
-            clf = clf.fit(features, classes)
-        except Exception:
-            raise ValueError('Error: Input data is not in a valid format. '
-                             'Please confirm that the input data is scikit-learn compatible. '
-                             'For example, the features must be a 2-D array and target labels '
-                             'must be a 1-D array.')
+        if np.any(np.isnan(features)):
+            features = self._impute_values(features)
+
+        self._check_dataset(features, classes)
+
+        # Randomly collect a subsample of training samples for pipeline optimization process.
+        if self.subsample < 1.0:
+            features, _, classes, _ = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
+            # Raise a warning message if the training size is less than 1500 when subsample is not default value
+            if features.shape[0] < 1500:
+                print(
+                    'Warning: Although subsample can accelerate pipeline optimization process, '
+                    'too small training sample size may cause unpredictable effect on maximizing '
+                    'score in pipeline optimization process. Increasing subsample ratio may get '
+                    'a more reasonable outcome from optimization process in TPOT.'
+                    )
 
         # Set the seed for the GP run
         if self.random_state is not None:
@@ -429,7 +458,6 @@ class TPOTBase(BaseEstimator):
             np.random.seed(self.random_state)
 
         self._start_datetime = datetime.now()
-
         self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight)
 
         # assign population, self._pop can only be not None if warm_start is enabled
@@ -497,50 +525,65 @@ class TPOTBase(BaseEstimator):
                 self._pbar.write('')
                 self._pbar.write('TPOT closed prematurely. Will use the current best pipeline.')
         finally:
-            # Close the progress bar
-            # Standard truthiness checks won't work for tqdm
-            if not isinstance(self._pbar, type(None)):
-                self._pbar.close()
+            # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
+            attempts = 10
+            for attempt in range(attempts):
+                try:
+                    # Close the progress bar
+                    # Standard truthiness checks won't work for tqdm
+                    if not isinstance(self._pbar, type(None)):
+                        self._pbar.close()
 
-            # Store the pipeline with the highest internal testing score
-            if self._pareto_front:
-                top_score = -float('inf')
-                for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
-                    if pipeline_scores.wvalues[1] > top_score:
-                        self._optimized_pipeline = pipeline
-                        top_score = pipeline_scores.wvalues[1]
+                    # Store the pipeline with the highest internal testing score
+                    if self._pareto_front:
+                        self._update_top_pipeline()
 
-                # It won't raise error for a small test like in a unit test because a few pipeline sometimes
-                # may fail due to the training data does not fit the operator's requirement.
-                if not self._optimized_pipeline:
-                    print('There was an error in the TPOT optimization '
-                          'process. This could be because the data was '
-                          'not formatted properly, or because data for '
-                          'a regression problem was provided to the '
-                          'TPOTClassifier object. Please make sure you '
-                          'passed the data to TPOT correctly.')
-                else:
-                    self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+                        # It won't raise error for a small test like in a unit test because a few pipeline sometimes
+                        # may fail due to the training data does not fit the operator's requirement.
+                        if not self._optimized_pipeline:
+                            print('There was an error in the TPOT optimization '
+                                  'process. This could be because the data was '
+                                  'not formatted properly, or because data for '
+                                  'a regression problem was provided to the '
+                                  'TPOTClassifier object. Please make sure you '
+                                  'passed the data to TPOT correctly.')
+                        else:
+                            self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
 
-                    with warnings.catch_warnings():
-                        warnings.simplefilter('ignore')
-                        self._fitted_pipeline.fit(features, classes)
-
-                    if self.verbosity in [1, 2]:
-                        # Add an extra line of spacing if the progress bar was used
-                        if self.verbosity >= 2:
-                            print('')
-                        print('Best pipeline: {}'.format(self._optimized_pipeline))
-
-                    # Store and fit the entire Pareto front if sciencing
-                    elif self.verbosity >= 3 and self._pareto_front:
-                        self._pareto_front_fitted_pipelines = {}
-
-                        for pipeline in self._pareto_front.items:
-                            self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
                             with warnings.catch_warnings():
                                 warnings.simplefilter('ignore')
-                                self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
+                                self._fitted_pipeline.fit(features, classes)
+
+                            if self.verbosity in [1, 2]:
+                                # Add an extra line of spacing if the progress bar was used
+                                if self.verbosity >= 2:
+                                    print('')
+                                print('Best pipeline: {}'.format(self._optimized_pipeline))
+
+                            # Store and fit the entire Pareto front if sciencing
+                            elif self.verbosity >= 3 and self._pareto_front:
+                                self._pareto_front_fitted_pipelines = {}
+
+                                for pipeline in self._pareto_front.items:
+                                    self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                                    with warnings.catch_warnings():
+                                        warnings.simplefilter('ignore')
+                                        self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
+
+                    break
+                except (KeyboardInterrupt, SystemExit, Exception) as e:
+                    # raise the exception if it's our last attempt
+                    if attempt == attempts - 1:
+                        raise
+
+    def _update_top_pipeline(self):
+        """small helper function to update the _optimized_pipeline field"""
+        if self._pareto_front:
+            top_score = -float('inf')
+            for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                if pipeline_scores.wvalues[1] > top_score:
+                    self._optimized_pipeline = pipeline
+                    top_score = pipeline_scores.wvalues[1]
 
     def predict(self, features):
         """Use the optimized pipeline to predict the classes for a feature set.
@@ -558,7 +601,13 @@ class TPOTBase(BaseEstimator):
         """
         if not self._fitted_pipeline:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
-        return self._fitted_pipeline.predict(features.astype(np.float64))
+
+        features = features.astype(np.float64)
+
+        if np.any(np.isnan(features)):
+            features = self._impute_values(features)
+
+        return self._fitted_pipeline.predict(features)
 
     def fit_predict(self, features, classes):
         """Call fit and predict in sequence.
@@ -657,6 +706,51 @@ class TPOTBase(BaseEstimator):
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(export_pipeline(self._optimized_pipeline, self.operators, self._pset))
+
+    def _impute_values(self, features):
+        """Impute missing values in a feature set.
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            A feature matrix
+
+        Returns
+        -------
+        array-like {n_samples, n_features}
+        """
+        if self.verbosity > 1:
+            print('Imputing missing values in feature set')
+
+        if self._fitted_imputer is None:
+            self._fitted_imputer = Imputer(strategy="median", axis=1)
+            self._fitted_imputer.fit(features)
+
+        return self._fitted_imputer.transform(features)
+
+    def _check_dataset(self, features, classes):
+        """Check if a dataset has a valid feature set and labels.
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix
+        classes: array-like {n_samples}
+            List of class labels for prediction
+
+        Returns
+        -------
+        None
+        """
+        try:
+            check_X_y(features, classes, accept_sparse=False)
+        except (AssertionError, ValueError):
+            raise ValueError(
+                'Error: Input data is not in a valid format. Please confirm '
+                'that the input data is scikit-learn compatible. For example, '
+                'the features must be a 2-D array and target labels must be a '
+                '1-D array.'
+            )
 
     def _compile_to_sklearn(self, expr):
         """Compile a DEAP pipeline into a sklearn pipeline.
@@ -764,12 +858,8 @@ class TPOTBase(BaseEstimator):
                     self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
-                    operator_count = 0
-                    for i in range(len(individual)):
-                        node = individual[i]
-                        if ((type(node) is deap.gp.Terminal) or (type(node) is deap.gp.Primitive and node.name == 'CombineDFs')):
-                            continue
-                        operator_count += 1
+                    operator_count = self._operator_count(individual)
+
                 except Exception:
                     fitnesses_dict[indidx] = (5000., -float('inf'))
                     if not self._pbar.disable:
@@ -874,6 +964,15 @@ class TPOTBase(BaseEstimator):
             return type_ not in [np.ndarray, Output_Array] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
+
+    # Count the number of pipeline operators as a measure of pipeline complexity
+    def _operator_count(self, individual):
+        operator_count = 0
+        for i in range(len(individual)):
+            node = individual[i]
+            if type(node) is deap.gp.Primitive and node.name != 'CombineDFs':
+                operator_count += 1
+        return operator_count
 
     # Generate function stolen straight from deap.gp.generate
     @_pre_test
