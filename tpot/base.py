@@ -49,11 +49,11 @@ from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _pre_test
-from .built_in_operators import CombineDFs, StackingEstimator
-from .config_classifier_light import classifier_config_dict_light
-from .config_regressor_light import regressor_config_dict_light
-from .config_classifier_mdr import tpot_mdr_classifier_config_dict
-from .config_regressor_mdr import tpot_mdr_regressor_config_dict
+from .builtins import CombineDFs, StackingEstimator
+from .config.classifier_light import classifier_config_dict_light
+from .config.regressor_light import regressor_config_dict_light
+from .config.classifier_mdr import tpot_mdr_classifier_config_dict
+from .config.regressor_mdr import tpot_mdr_regressor_config_dict
 
 from .metrics import SCORERS
 from .gp_types import Output_Array

@@ -21,7 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
-from tpot.built_in_operators import ZeroCount, StackingEstimator
+from tpot.builtins import ZeroCount, StackingEstimator
 from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, main, _read_data_file
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
@@ -29,11 +29,11 @@ from tpot.gp_deap import mutNodeReplacement
 from tpot.metrics import balanced_accuracy
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
-from tpot.config_classifier import classifier_config_dict
-from tpot.config_classifier_light import classifier_config_dict_light
-from tpot.config_regressor_light import regressor_config_dict_light
-from tpot.config_classifier_mdr import tpot_mdr_classifier_config_dict
-from tpot.config_regressor_mdr import tpot_mdr_regressor_config_dict
+from tpot.config.classifier import classifier_config_dict
+from tpot.config.classifier_light import classifier_config_dict_light
+from tpot.config.regressor_light import regressor_config_dict_light
+from tpot.config.classifier_mdr import tpot_mdr_classifier_config_dict
+from tpot.config.regressor_mdr import tpot_mdr_regressor_config_dict
 
 import numpy as np
 import inspect
