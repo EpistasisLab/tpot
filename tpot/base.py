@@ -376,7 +376,8 @@ class TPOTBase(BaseEstimator):
     def _add_terminals(self):
         for _type in self.arguments:
             type_values = list(_type.values)
-            if 'nthread' not in _type.__name__:
+            pname = _type.__name__.split('__')[-1]
+            if pname not in ['nthread', 'seed']:
                 type_values += ['DEFAULT']
 
             for val in type_values:
