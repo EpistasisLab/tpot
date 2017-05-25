@@ -152,7 +152,7 @@ regressor_config_dict = {
     'sklearn.preprocessing.StandardScaler': {
     },
 
-    'tpot.built_in_operators.ZeroCount': {
+    'tpot.builtins.ZeroCount': {
     },
 
     # Selectors

@@ -19,24 +19,11 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from .base import TPOTBase
-from .config.classifier import classifier_config_dict
-from .config.regressor import regressor_config_dict
 
+class CombineDFs(object):
+    """Combine two DataFrames."""
 
-class TPOTClassifier(TPOTBase):
-    """TPOT estimator for classification problems."""
-
-    scoring_function = 'accuracy'  # Classification scoring
-    default_config_dict = classifier_config_dict  # Classification dictionary
-    classification = True
-    regression = False
-
-
-class TPOTRegressor(TPOTBase):
-    """TPOT estimator for regression problems."""
-
-    scoring_function = 'neg_mean_squared_error'  # Regression scoring
-    default_config_dict = regressor_config_dict  # Regression dictionary
-    classification = False
-    regression = True
+    @property
+    def __name__(self):
+        """Instance name is the same as the class name."""
+        return self.__class__.__name__
