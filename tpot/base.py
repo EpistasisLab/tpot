@@ -794,9 +794,11 @@ class TPOTBase(BaseEstimator):
         features: numpy.ndarray {n_samples, n_features}
             A numpy matrix containing the training and testing features for the
             `individual`'s evaluation
-        classes: numpy.ndarray {n_samples, }
+        classes: numpy.ndarray {n_samples}
             A numpy matrix containing the training and testing classes for the
             `individual`'s evaluation
+        sample_weight: array-like {n_samples}
+            List of sample weights
 
         Returns
         -------
