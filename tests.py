@@ -25,7 +25,7 @@ from tpot.builtins import ZeroCount, StackingEstimator
 from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, main, _read_data_file
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
-from tpot.gp_deap import mutNodeReplacement
+from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score
 from tpot.metrics import balanced_accuracy
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
@@ -40,8 +40,9 @@ import inspect
 import random
 import subprocess
 import sys
+from multiprocessing import cpu_count
 
-from sklearn.datasets import load_digits, load_boston
+from sklearn.datasets import load_digits, load_boston, make_classification
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LogisticRegression, Lasso
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -247,6 +248,13 @@ def test_init_default_scoring():
     assert tpot_obj.scoring_function == 'accuracy'
 
 
+def test_init_default_scoring_2():
+    """Assert that TPOT intitializes with the correct customized scoring function."""
+
+    tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
+    assert tpot_obj.scoring_function == 'balanced_accuracy'
+
+
 def test_invaild_score_warning():
     """Assert that the TPOT intitializes raises a ValueError when the scoring metrics is not available in SCORERS."""
     # Mis-spelled scorer
@@ -277,12 +285,57 @@ def test_invaild_subsample_ratio_warning():
     TPOTClassifier(subsample=0.1)
 
 
+def test_invaild_mut_rate_plus_xo_rate():
+    """Assert that the TPOT intitializes raises a ValueError when the sum of crossover and mutation probabilities is large than 1."""
+    # Invalid ratio
+    assert_raises(ValueError, TPOTClassifier, mutation_rate=0.8, crossover_rate=0.8)
+    # Valid ratio
+    TPOTClassifier(mutation_rate=0.8, crossover_rate=0.1)
+
+
 def test_init_max_time_mins():
     """Assert that the TPOT init stores max run time and sets generations to 1000000."""
     tpot_obj = TPOTClassifier(max_time_mins=30, generations=1000)
 
     assert tpot_obj.generations == 1000000
     assert tpot_obj.max_time_mins == 30
+
+
+def test_init_n_jobs():
+    """Assert that the TPOT init stores current number of processes"""
+    tpot_obj = TPOTClassifier(n_jobs=2)
+    assert tpot_obj.n_jobs == 2
+
+    tpot_obj = TPOTClassifier(n_jobs=-1)
+    assert tpot_obj.n_jobs == cpu_count()
+
+
+def test_timeout():
+    """Assert that _wrapped_cross_val_score return Timeout in a time limit"""
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
+    # a complex pipeline for the test
+    pipeline_string = (
+        "ExtraTreesRegressor("
+        "GradientBoostingRegressor(input_matrix, GradientBoostingRegressor__alpha=0.8,"
+        "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
+        "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
+        "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
+        "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)"
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    # test _wrapped_cross_val_score with cv=20 so that it is impossible to finish in 1 second
+    return_value = _wrapped_cross_val_score(tpot_obj._fitted_pipeline,
+                                            training_features_r,
+                                            training_classes_r,
+                                            cv=20,
+                                            scoring_function='neg_mean_squared_error',
+                                            sample_weight=None,
+                                            timeout=1)
+    assert return_value == "Timeout"
 
 
 def test_balanced_accuracy():
@@ -329,6 +382,11 @@ def test_set_params_2():
     tpot_obj.set_params(generations=3)
 
     assert tpot_obj.generations == 3
+
+
+def test_TPOTBase():
+    """Assert that TPOTBase class raises RuntimeError when using it directly."""
+    assert_raises(RuntimeError, TPOTBase)
 
 
 def test_conf_dict():
@@ -468,6 +526,7 @@ def test_score_3():
     assert np.allclose(known_score, score)
 
 
+
 def test_sample_weight_func():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline with sample weights."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
@@ -583,6 +642,7 @@ def test_predict_proba2():
     for i in range(rows):
         for j in range(columns):
             float_range(result[i][j])
+
 
 
 def test_warm_start():
@@ -747,8 +807,18 @@ def test_imputer3():
     assert_not_equal(imputed_features[0][0], float('nan'))
 
 
-def test_tpot_operator_factory_class():
-    """Assert that the TPOT operators class factory."""
+def test_fit3():
+    """Assert that the TPOT fit function provides an optimized pipeline when config_dict is \'TPOT MDR\'"""
+    X, y = make_classification(n_samples=50, n_features=10, random_state=42, n_classes=2) # binary classification problem
+    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, config_dict='TPOT MDR')
+    tpot_obj.fit(X, y)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+
+def testTPOTOperatorClassFactory():
+    """Assert that the TPOT operators class factory"""
     test_config_dict = {
         'sklearn.svm.LinearSVC': {
             'penalty': ["l1", "l2"],
@@ -868,6 +938,33 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
 """
     assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
+
+
+def test_PolynomialFeatures_exception():
+    """Assert that TPOT allows only one PolynomialFeatures operator in a pipeline"""
+    tpot_obj = TPOTClassifier()
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    # pipeline with one PolynomialFeatures operator
+    pipeline_string_1 = ('LogisticRegression(PolynomialFeatures'
+    '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=DEFAULT, '
+    'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+    'LogisticRegression__dual=DEFAULT, LogisticRegression__penalty=DEFAULT)')
+
+    # pipeline with two PolynomialFeatures operator
+    pipeline_string_2 = ('LogisticRegression(PolynomialFeatures'
+    '(PolynomialFeatures(input_matrix, PolynomialFeatures__degree=2, '
+    'PolynomialFeatures__include_bias=DEFAULT, PolynomialFeatures__interaction_only=False), '
+    'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=DEFAULT, '
+    'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+    'LogisticRegression__dual=DEFAULT, LogisticRegression__penalty=DEFAULT)')
+
+    # make a list for _evaluate_individuals
+    pipelines = []
+    pipelines.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
+    pipelines.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
+    fitness_scores = tpot_obj._evaluate_individuals(pipelines, training_features, training_classes)
+    known_scores = [(2, 0.98068077235290885), (5000.0, -float('inf'))]
+    assert np.allclose(known_scores, fitness_scores)
 
 
 def test_mutNodeReplacement():

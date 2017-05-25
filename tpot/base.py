@@ -28,6 +28,7 @@ import imp
 from functools import partial
 from datetime import datetime
 from multiprocessing import cpu_count
+from dask import compute, delayed, multiprocessing, async, context
 
 import numpy as np
 import deap
@@ -37,7 +38,6 @@ from copy import copy
 
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
-from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
 from sklearn.model_selection import train_test_split
@@ -149,7 +149,7 @@ class TPOTBase(BaseEstimator):
             Random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
-        config_dict: a Python dictionary or string (default: None)
+        config_dict: Python dictionary or string (default: None)
             Python dictionary:
                 A dictionary customizing the operators and parameters that
                 TPOT uses in the optimization process.
@@ -197,6 +197,7 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
+        self.max_eval_time_seconds = max(int(self.max_eval_time_mins * 60), 1)
 
         # Set offspring_size equal to population_size by default
         if offspring_size:
@@ -282,6 +283,7 @@ class TPOTBase(BaseEstimator):
                 'for saving the best pipeline in the middle of the optimization '
                 'process via Ctrl+C.'
             )
+
         if n_jobs == -1:
             self.n_jobs = cpu_count()
         else:
@@ -429,16 +431,27 @@ class TPOTBase(BaseEstimator):
 
         self._check_dataset(features, classes)
 
-        # Randomly collect a subsample of training samples for pipeline optimization process.
-        if self.subsample < 1.0:
-            features, _, classes, _ = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
-            # Raise a warning message if the training size is less than 1500 when subsample is not default value
-            if features.shape[0] < 1500:
+        if self.verbosity > 2:
+            # Randomly collect a subsample of training samples for pipeline optimization process.
+            if self.subsample < 1.0:
+                features, _, classes, _ = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
+                # Raise a warning message if the training size is less than 1500 when subsample is not default value
+                if features.shape[0] < 1500:
+                    print(
+                        'Warning: Although subsample can accelerate pipeline optimization process, '
+                        'too small training sample size may cause unpredictable effect on maximizing '
+                        'score in pipeline optimization process. Increasing subsample ratio may get '
+                        'a more reasonable outcome from optimization process in TPOT.'
+                        )
+
+            if (features.shape[0] > 10000 or features.shape[1] > 100) and self.n_jobs !=1:
                 print(
-                    'Warning: Although subsample can accelerate pipeline optimization process, '
-                    'too small training sample size may cause unpredictable effect on maximizing '
-                    'score in pipeline optimization process. Increasing subsample ratio may get '
-                    'a more reasonable outcome from optimization process in TPOT.'
+                    'Warning: Although parallelization is currently supported in TPOT, '
+                    'a known freezing issue in joblib has been reported with large dataset.'
+                    'Parallelization with large dataset may freeze or crash the optimization '
+                    'process without time controls by max_eval_time_mins! Please set n_jobs to 1 '
+                    'if freezing or crash happened. However, scikit-learn also use joblib in '
+                    'multiple estimators so that freezing may also happen with n_jobs=1'
                     )
 
         # Set the seed for the GP run
@@ -824,13 +837,13 @@ class TPOTBase(BaseEstimator):
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual = individuals[indidx]
             individual_str = str(individual)
-            if individual_str.count('PolynomialFeatures') > 1:
+            sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
+            if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
                 if self.verbosity > 2:
                     self._pbar.write('Invalid pipeline encountered. Skipping its evaluation.')
                 fitnesses_dict[indidx] = (5000., -float('inf'))
                 if not self._pbar.disable:
                     self._pbar.update(1)
-
             # Check if the individual was evaluated before
             elif individual_str in self._evaluated_individuals:
                 # Get fitness score from previous evaluation
@@ -844,6 +857,7 @@ class TPOTBase(BaseEstimator):
                 try:
                     # Transform the tree expression into an sklearn pipeline
                     sklearn_pipeline = self._toolbox.compile(expr=individual)
+
 
                     # Fix random state when the operator allows and build sample weight dictionary
                     self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
@@ -863,24 +877,27 @@ class TPOTBase(BaseEstimator):
 
         # evalurate pipeline
         resulting_score_list = []
-        # chunk size for pbar update
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
+            if self.n_jobs == 1:
+                get = async.get_sync
+            elif 'get' in context._globals:
+                get = context._globals['get']
+            else:
+                get = multiprocessing.get
             jobs = []
             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
-                job = delayed(_wrapped_cross_val_score)(
+                job = _wrapped_cross_val_score(
                     sklearn_pipeline,
                     features,
                     classes,
                     self.cv,
                     self.scoring_function,
                     sample_weight,
-                    self.max_eval_time_mins
+                    timeout=self.max_eval_time_seconds
                 )
                 jobs.append(job)
-            parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-            tmp_result_score = parallel(jobs)
-            # update pbar
-            for val in tmp_result_score:
+            tmp_scores = compute(*jobs, get=get, num_workers=self.n_jobs)
+            for val in tmp_scores:
                 if not self._pbar.disable:
                     self._pbar.update(1)
                 if val == 'Timeout':
@@ -892,6 +909,7 @@ class TPOTBase(BaseEstimator):
                     resulting_score_list.append(val)
 
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
+
             if type(resulting_score) in [float, np.float64, np.float32]:
                 self._evaluated_individuals[individual_str] = (max(1, operator_count), resulting_score)
                 fitnesses_dict[test_idx] = self._evaluated_individuals[individual_str]

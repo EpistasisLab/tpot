@@ -12,19 +12,24 @@ TPOT is built on top of several existing Python libraries, including:
 
 * [tqdm](https://github.com/tqdm/tqdm)
 
+* [stopit](https://github.com/glenfant/stopit)
+
+* [dask](https://github.com/dask/dask)
+
 
 Most of the necessary Python packages can be installed via the [Anaconda Python distribution](https://www.continuum.io/downloads), which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.
 
-NumPy, SciPy, and scikit-learn can be installed in Anaconda via the command:
+NumPy, SciPy, scikit-learn and dask can be installed in Anaconda via the command:
 
 ```Shell
 conda install numpy scipy scikit-learn
+conda install dask -c conda-forge
 ```
 
-DEAP, update_checker, and tqdm can be installed with `pip` via the command:
+DEAP, update_checker, tqdm and stopit can be installed with `pip` via the command:
 
 ```Shell
-pip install deap update_checker tqdm
+pip install deap update_checker tqdm stopit
 ```
 
 **For the Windows users**, the pywin32 module is required if Python is NOT installed via the [Anaconda Python distribution](https://www.continuum.io/downloads) and can be installed with `pip`:
