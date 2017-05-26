@@ -60,12 +60,3 @@ class ZeroCount(BaseEstimator, TransformerMixin):
         X_transformed = np.hstack((zero_col, X_transformed))
 
         return X_transformed
-
-
-class CombineDFs(object):
-    """Combine two DataFrames."""
-
-    @property
-    def __name__(self):
-        """Instance name is the same as the class name."""
-        return self.__class__.__name__

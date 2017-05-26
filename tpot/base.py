@@ -40,7 +40,6 @@ from sklearn.utils import check_X_y
 from sklearn.externals.joblib import Parallel, delayed
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
-from sklearn.ensemble import VotingClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.scorer import make_scorer
 
@@ -50,11 +49,11 @@ from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _pre_test
-from .built_in_operators import CombineDFs
-from .config_classifier_light import classifier_config_dict_light
-from .config_regressor_light import regressor_config_dict_light
-from .config_classifier_mdr import tpot_mdr_classifier_config_dict
-from .config_regressor_mdr import tpot_mdr_regressor_config_dict
+from .builtins import CombineDFs, StackingEstimator
+from .config.classifier_light import classifier_config_dict_light
+from .config.regressor_light import regressor_config_dict_light
+from .config.classifier_mdr import tpot_mdr_classifier_config_dict
+from .config.regressor_mdr import tpot_mdr_regressor_config_dict
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -240,7 +239,7 @@ class TPOTBase(BaseEstimator):
         self.operators_context = {
             'make_pipeline': make_pipeline,
             'make_union': make_union,
-            'VotingClassifier': VotingClassifier,
+            'StackingEstimator': StackingEstimator,
             'FunctionTransformer': FunctionTransformer,
             'copy': copy
         }
@@ -800,9 +799,11 @@ class TPOTBase(BaseEstimator):
         features: numpy.ndarray {n_samples, n_features}
             A numpy matrix containing the training and testing features for the
             individual's evaluation
-        classes: numpy.ndarray {n_samples, }
+        classes: numpy.ndarray {n_samples}
             A numpy matrix containing the training and testing classes for the
-            individual's evaluation
+            `individual`'s evaluation
+        sample_weight: array-like {n_samples}
+            List of sample weights
         groups: array-like {n_samples, }, optional
             Group labels for the samples used while splitting the dataset into train/test set.
 
