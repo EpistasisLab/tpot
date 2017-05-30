@@ -514,6 +514,23 @@ def test_sample_weight_func():
     assert not np.allclose(cv_score1, cv_score_weight)
     assert np.allclose(known_score, score)
 
+def test_fit_GroupKFold():
+    """Assert that TPOT properly handles the group parameter when using GroupKFold"""
+    # This check tests if the darker MNIST images would generalize to the lighter ones.
+    means = np.mean(training_features, axis=1)
+    groups = means >= np.median(means)
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=2,
+        offspring_size=4,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light',
+        cv = GroupKFold(n_splits=2),
+    )
+    tpot_obj.fit(training_features, training_classes, groups=groups)
+    assert tpot_obj.score(testing_features, testing_classes) >= 0.97
 
 def test_predict():
     """Assert that the TPOT predict function raises a RuntimeError when no optimized pipeline exists."""
@@ -1204,7 +1221,7 @@ def test_StackingEstimator_4():
 
 
 def test_ZeroCount():
-    """Assert that ZeroCount operator returns correct transformed X."""
+    """Assert that ZeroCount operator returns correct transformed X"""
     X = np.array([[0, 1, 7, 0, 0], [3, 0, 0, 2, 19], [0, 1, 3, 4, 5], [5, 0, 0, 0, 0]])
     op = ZeroCount()
     X_transformed = op.transform(X)
@@ -1213,20 +1230,3 @@ def test_ZeroCount():
 
     assert np.allclose(zero_col, X_transformed[:, 0])
     assert np.allclose(non_zero, X_transformed[:, 1])
-
-def test_CV_methods():
-
-    # This tests if the darker MNIST images would generalize to the lighter ones.
-    means = np.mean(training_features, axis=1)
-    groups = means >= np.median(means)
-
-    tpot_obj = TPOTClassifier(
-        random_state=42,
-        population_size=2,
-        offspring_size=4,
-        generations=1,
-        verbosity=0,
-        config_dict='TPOT light',
-        cv = GroupKFold(n_splits=2),
-    )
-    tpot_obj.fit(training_features, training_classes, groups=groups)

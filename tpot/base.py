@@ -415,8 +415,10 @@ class TPOTBase(BaseEstimator):
             List of class labels for prediction
         sample_weight: array-like {n_samples}
             List of sample weights
-        groups: array-like, with shape (n_samples,), optional
+        groups: array-like, with shape {n_samples, }, optional
             Group labels for the samples used while splitting the dataset into train/test set.
+            This parameter should only be used in conjunction with sklearn's Group cross-validation
+            functions, such as sklearn.model_selection.GroupKFold
 
         Returns
         -------
@@ -797,15 +799,13 @@ class TPOTBase(BaseEstimator):
             One individual is a list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
         features: numpy.ndarray {n_samples, n_features}
-            A numpy matrix containing the training and testing features for the
-            individual's evaluation
+            A numpy matrix containing the training and testing features for the individual's evaluation
         classes: numpy.ndarray {n_samples}
-            A numpy matrix containing the training and testing classes for the
-            `individual`'s evaluation
-        sample_weight: array-like {n_samples}
-            List of sample weights
+            A numpy matrix containing the training and testing classes for the individual's evaluation
+        sample_weight: array-like {n_samples}, optional
+            List of sample weights to balance (or un-balanace) the dataset classes as needed
         groups: array-like {n_samples, }, optional
-            Group labels for the samples used while splitting the dataset into train/test set.
+            Group labels for the samples used while splitting the dataset into train/test set
 
         Returns
         -------
@@ -875,14 +875,14 @@ class TPOTBase(BaseEstimator):
             jobs = []
             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
                 job = delayed(_wrapped_cross_val_score)(
-                    sklearn_pipeline,
-                    features,
-                    classes,
-                    self.cv,
-                    self.scoring_function,
-                    sample_weight,
-                    self.max_eval_time_mins,
-                    groups
+                    sklearn_pipeline=sklearn_pipeline,
+                    features=features,
+                    classes=classes,
+                    cv=self.cv,
+                    scoring_function=self.scoring_function,
+                    sample_weight=sample_weight,
+                    max_eval_time_mins=self.max_eval_time_mins,
+                    groups=groups
                 )
                 jobs.append(job)
             parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
@@ -952,7 +952,7 @@ class TPOTBase(BaseEstimator):
             Maximum Height of the produced trees.
         type_: class
             The type that should return the tree when called, when
-                  :obj:`None` (default) the type of :pset: (pset.ret)
+                  :obj:None (default) the type of :pset: (pset.ret)
                   is assumed.
         Returns
         -------
@@ -996,7 +996,7 @@ class TPOTBase(BaseEstimator):
             depth in the tree.
         type_: class
             The type that should return the tree when called, when
-            :obj:`None` (default) no return type is enforced.
+            :obj:None (default) no return type is enforced.
 
         Returns
         -------
