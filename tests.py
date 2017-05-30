@@ -25,7 +25,7 @@ from tpot.builtins import ZeroCount, StackingEstimator
 from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, main, _read_data_file
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
-from tpot.gp_deap import mutNodeReplacement
+from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score
 from tpot.metrics import balanced_accuracy
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
@@ -334,7 +334,8 @@ def test_timeout():
                                             cv=20,
                                             scoring_function='neg_mean_squared_error',
                                             sample_weight=None,
-                                            timeout=1)
+                                            max_eval_time_mins=0.02,
+                                            groups=None)
     assert return_value == "Timeout"
 
 
