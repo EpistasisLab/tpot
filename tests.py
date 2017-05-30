@@ -25,7 +25,7 @@ from tpot.builtins import ZeroCount, StackingEstimator
 from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, main, _read_data_file
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
-from tpot.gp_deap import mutNodeReplacement
+from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score
 from tpot.metrics import balanced_accuracy
 
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
@@ -40,6 +40,7 @@ import inspect
 import random
 import subprocess
 import sys
+from multiprocessing import cpu_count
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
@@ -247,6 +248,13 @@ def test_init_default_scoring():
     assert tpot_obj.scoring_function == 'accuracy'
 
 
+def test_init_default_scoring_2():
+    """Assert that TPOT intitializes with the correct customized scoring function."""
+
+    tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
+    assert tpot_obj.scoring_function == 'balanced_accuracy'
+
+
 def test_invaild_score_warning():
     """Assert that the TPOT intitializes raises a ValueError when the scoring metrics is not available in SCORERS."""
     # Mis-spelled scorer
@@ -277,12 +285,58 @@ def test_invaild_subsample_ratio_warning():
     TPOTClassifier(subsample=0.1)
 
 
+def test_invaild_mut_rate_plus_xo_rate():
+    """Assert that the TPOT intitializes raises a ValueError when the sum of crossover and mutation probabilities is large than 1."""
+    # Invalid ratio
+    assert_raises(ValueError, TPOTClassifier, mutation_rate=0.8, crossover_rate=0.8)
+    # Valid ratio
+    TPOTClassifier(mutation_rate=0.8, crossover_rate=0.1)
+
+
 def test_init_max_time_mins():
     """Assert that the TPOT init stores max run time and sets generations to 1000000."""
     tpot_obj = TPOTClassifier(max_time_mins=30, generations=1000)
 
     assert tpot_obj.generations == 1000000
     assert tpot_obj.max_time_mins == 30
+
+
+def test_init_n_jobs():
+    """Assert that the TPOT init stores current number of processes"""
+    tpot_obj = TPOTClassifier(n_jobs=2)
+    assert tpot_obj.n_jobs == 2
+
+    tpot_obj = TPOTClassifier(n_jobs=-1)
+    assert tpot_obj.n_jobs == cpu_count()
+
+
+def test_timeout():
+    """Assert that _wrapped_cross_val_score return Timeout in a time limit"""
+    tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
+    # a complex pipeline for the test
+    pipeline_string = (
+        "ExtraTreesRegressor("
+        "GradientBoostingRegressor(input_matrix, GradientBoostingRegressor__alpha=0.8,"
+        "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
+        "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
+        "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
+        "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)"
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj._fitted_pipeline = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    # test _wrapped_cross_val_score with cv=20 so that it is impossible to finish in 1 second
+    return_value = _wrapped_cross_val_score(tpot_obj._fitted_pipeline,
+                                            training_features_r,
+                                            training_classes_r,
+                                            cv=20,
+                                            scoring_function='neg_mean_squared_error',
+                                            sample_weight=None,
+                                            max_eval_time_mins=0.02,
+                                            groups=None)
+    assert return_value == "Timeout"
 
 
 def test_balanced_accuracy():
@@ -329,6 +383,11 @@ def test_set_params_2():
     tpot_obj.set_params(generations=3)
 
     assert tpot_obj.generations == 3
+
+
+def test_TPOTBase():
+    """Assert that TPOTBase class raises RuntimeError when using it directly."""
+    assert_raises(RuntimeError, TPOTBase)
 
 
 def test_conf_dict():
@@ -439,7 +498,6 @@ def test_score_2():
     score = tpot_obj.score(testing_features, testing_classes)
 
     assert np.allclose(known_score, score)
-
 
 
 def test_score_3():
