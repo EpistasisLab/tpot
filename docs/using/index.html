@@ -75,7 +75,7 @@
         
             <li><a class="toctree-l3" href="#customizing-tpots-operators-and-parameters">Customizing TPOT's operators and parameters</a></li>
         
-            <li><a class="toctree-l3" href="#missing-values">Missing Values</a></li>
+            <li><a class="toctree-l3" href="#missing-values">Missing values</a></li>
         
         </ul>
     
@@ -624,7 +624,7 @@ tpot.export('tpot_mnist_pipeline.py')
 <p>For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for <a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py">classification</a> and <a href="https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py">regression</a> in TPOT's source code.</p>
 <p>Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.</p>
 <p><a name="missingvalues"></a></p>
-<h2 id="missing-values">Missing Values</h2>
+<h2 id="missing-values">Missing values</h2>
 <p>All scikit-learn algorithms are written with the assumption that there will be no missing values in the feature matrix. As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed) using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html">median value imputation</a>.</p>
 <p>If you wish to use a different imputation strategy than median imputation, please make sure to apply imputation to your feature set prior to passing it to TPOT.</p>
               
