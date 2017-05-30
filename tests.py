@@ -1229,4 +1229,4 @@ def test_CV_methods():
         config_dict='TPOT light',
         cv = GroupKFold(n_splits=2),
     )
-    tpot_obj.fit(training_features, training_classes, groups = groups)
+    tpot_obj.fit(training_features, training_classes, groups=groups)
