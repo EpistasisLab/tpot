@@ -1,5 +1,5 @@
 <center>
-<img src="https://raw.githubusercontent.com/rhiever/tpot/master/images/tpot-logo.jpg" width=200 />
+<img src="https://raw.githubusercontent.com/rhiever/tpot/master/images/tpot-logo.jpg" width=300 />
 </center>
 
 Consider TPOT your **Data Science Assistant**. TPOT is a Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.

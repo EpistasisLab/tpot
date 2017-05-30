@@ -87,7 +87,7 @@ We recommend using the default parameter unless you understand how the crossover
 <br /><br />
 TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized.
 <br /><br />
-See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
+See the section on <a href="#scoring-functions">scoring functions</a> for more details.</td>
 </tr>
 <tr>
 <td>-cv</td>
@@ -138,7 +138,7 @@ Set this seed if you want your TPOT run to be reproducible with the same seed an
 <td>File path or string</td>
 <td>A path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process.
 <br /><br />
-See the <a href="#builtinconfig">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customconfig">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.</td>
+See the <a href="#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.</td>
 </tr>
 <tr>
 <td>-v</td>
@@ -240,7 +240,7 @@ We recommend using the default parameter unless you understand how the mutation 
 <br /><br />
 TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized.
 <br /><br />
-See the section on <a href="#scoringfunctions">scoring functions</a> for more details.</td>
+See the section on <a href="#scoring-functions">scoring functions</a> for more details.</td>
 </tr>
 <tr>
 <td>cv</td>
@@ -285,7 +285,7 @@ Use this to make sure that TPOT will give you the same results each time you run
 <td>Python dictionary or string</td>
 <td>A configuration dictionary for customizing the operators and parameters that TPOT uses in the optimization process.
 <br /><br />
-See the <a href="#builtinconfig">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customconfig">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
+See the <a href="#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
 </td>
 </tr>
 <tr>
@@ -357,7 +357,6 @@ Once this code finishes running, `tpot_exported_pipeline.py` will contain the Py
 
 Check our [examples](examples/) to see TPOT applied to some specific data sets.
 
-<a name="scoringfunctions"></a>
 ## Scoring functions
 
 TPOT makes use of `sklearn.model_selection.cross_val_score` for evaluating pipelines, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
@@ -385,7 +384,6 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 ```
 
-<a name="builtinconfig"></a>
 ## Built-in TPOT configurations
 
 TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. Below is a list of the current built-in configurations that come with TPOT.
@@ -447,7 +445,6 @@ tpot.export('tpot_mnist_pipeline.py')
 
 ```
 
-<a name="customconfig"></a>
 ## Customizing TPOT's operators and parameters
 
 Beyond the default configurations that come with TPOT, in some cases it is useful to limit the algorithms and parameters that TPOT considers. For that reason, we allow users to provide TPOT with a custom configuration for its operators and parameters.
@@ -518,7 +515,6 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
-<a name="missingvalues"></a>
 ## Missing values
 
 All scikit-learn algorithms are written with the assumption that there will be no missing values in the feature matrix. As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed) using [median value imputation](http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html).
