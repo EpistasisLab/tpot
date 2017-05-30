@@ -42,7 +42,7 @@ import subprocess
 import sys
 
 from sklearn.datasets import load_digits, load_boston
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from sklearn.linear_model import LogisticRegression, Lasso
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.pipeline import make_pipeline
@@ -1213,3 +1213,20 @@ def test_ZeroCount():
 
     assert np.allclose(zero_col, X_transformed[:, 0])
     assert np.allclose(non_zero, X_transformed[:, 1])
+
+def test_CV_methods():
+
+    # This tests if the darker MNIST images would generalize to the lighter ones.
+    means = np.mean(training_features, axis=1)
+    groups = means >= np.median(means)
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=2,
+        offspring_size=4,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light',
+        cv = GroupKFold(n_splits=2),
+    )
+    tpot_obj.fit(training_features, training_classes, groups=groups)

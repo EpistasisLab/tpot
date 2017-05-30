@@ -127,9 +127,11 @@ class TPOTBase(BaseEstimator):
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
             'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
             'recall_samples', 'recall_weighted', 'roc_auc']
-        cv: int (default: 5)
-            Number of folds to evaluate each pipeline over in k-fold cross-validation
-            during the TPOT optimization process.
+        cv: int or cross-validation generator (default: 5)
+            If CV is a number, then it is the number of folds to evaluate each
+            pipeline over in k-fold cross-validation during the TPOT optimization
+             process. If it is an object then it is an object to be used as a
+             cross-validation generator.
         subsample: float (default: 1.0)
             Subsample ratio of the training instance. Setting it to 0.5 means that TPOT
             randomly collects half of training samples for pipeline optimization process.
@@ -397,7 +399,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
-    def fit(self, features, classes, sample_weight=None):
+    def fit(self, features, classes, sample_weight=None, groups=None):
         """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
@@ -413,6 +415,8 @@ class TPOTBase(BaseEstimator):
             List of class labels for prediction
         sample_weight: array-like {n_samples}
             List of sample weights
+        groups: array-like, with shape (n_samples,), optional
+            Group labels for the samples used while splitting the dataset into train/test set.
 
         Returns
         -------
@@ -447,7 +451,7 @@ class TPOTBase(BaseEstimator):
             np.random.seed(self.random_state)
 
         self._start_datetime = datetime.now()
-        self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight)
+        self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight, groups=groups)
 
         # assign population, self._pop can only be not None if warm_start is enabled
         if self._pop:
@@ -783,7 +787,8 @@ class TPOTBase(BaseEstimator):
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
 
-    def _evaluate_individuals(self, individuals, features, classes, sample_weight=None):
+
+    def _evaluate_individuals(self, individuals, features, classes, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
 
         Parameters
@@ -793,17 +798,19 @@ class TPOTBase(BaseEstimator):
             compiled by DEAP into a callable function
         features: numpy.ndarray {n_samples, n_features}
             A numpy matrix containing the training and testing features for the
-            `individual`'s evaluation
+            individual's evaluation
         classes: numpy.ndarray {n_samples}
             A numpy matrix containing the training and testing classes for the
             `individual`'s evaluation
         sample_weight: array-like {n_samples}
             List of sample weights
+        groups: array-like {n_samples, }, optional
+            Group labels for the samples used while splitting the dataset into train/test set.
 
         Returns
         -------
         fitnesses_ordered: float
-            Returns a list of tuple value indicating the `individual`'s fitness
+            Returns a list of tuple value indicating the individual's fitness
             according to its performance on the provided data
 
         """
@@ -874,11 +881,13 @@ class TPOTBase(BaseEstimator):
                     self.cv,
                     self.scoring_function,
                     sample_weight,
-                    self.max_eval_time_mins
+                    self.max_eval_time_mins,
+                    groups
                 )
                 jobs.append(job)
             parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
             tmp_result_score = parallel(jobs)
+
             # update pbar
             for val in tmp_result_score:
                 if not self._pbar.disable:
