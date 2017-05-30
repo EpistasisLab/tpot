@@ -518,9 +518,9 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
-<a name="misssingvalues"></a>
+<a name="missingvalues"></a>
 ## Missing Values
 
-When feature matrices are passed into TPOT, any missing values will automatically be imputed. The imputation process uses the median value from each feature as its best guess for each missing value.
+All scikit-learn algorithms are written with the assumption that there will be no missing values in the feature matrix. As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed) using [median value imputation](http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html).
 
-If a different strategy for imputation than median computation is desired, then the feature set should be imputed before it is passed to TPOT.
+If you wish to use a different imputation strategy than median imputation, please make sure to apply imputation to your feature set prior to passing it to TPOT.
