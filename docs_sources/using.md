@@ -1,3 +1,70 @@
+# TPOT with code
+
+We've taken care to design the TPOT interface to be as similar as possible to scikit-learn.
+
+TPOT can be imported just like any regular Python module. To import TPOT, type:
+
+```Python
+from tpot import TPOTClassifier
+```
+
+then create an instance of TPOT as follows:
+
+```Python
+pipeline_optimizer = TPOTClassifier()
+```
+
+It's also possible to use TPOT for regression problems with the `TPOTRegressor` class. Other than the class name, a `TPOTRegressor` is used the same way as a `TPOTClassifier`. You can read more about the `TPOTClassifier` and `TPOTRegressor` classes in the [API documentation](/api/).
+
+Some example code with custom TPOT parameters might look like:
+
+```Python
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
+                                    random_state=42, verbosity=2)
+```
+
+Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize a pipeline based on a data set with the `fit` function:
+
+```Python
+pipeline_optimizer.fit(X_train, y_train)
+```
+
+The `fit` function takes in a training data set and uses k-fold cross-validation when evaluating pipelines. It then initializes the genetic programming algoritm to find the best pipeline based on average k-fold score.
+
+You can then proceed to evaluate the final pipeline on the testing set with the `score` function:
+
+```Python
+print(pipeline_optimizer.score(X_test, y_test))
+```
+
+Finally, you can tell TPOT to export the corresponding Python code for the optimized pipeline to a text file with the `export` function:
+
+```Python
+pipeline_optimizer.export('tpot_exported_pipeline.py')
+```
+
+Once this code finishes running, `tpot_exported_pipeline.py` will contain the Python code for the optimized pipeline.
+
+Below is a full example script using TPOT to optimize a pipeline, score it, and export the best pipeline to a file.
+
+```Python
+from tpot import TPOTClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25)
+
+pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
+                                    random_state=42, verbosity=2)
+pipeline_optimizer.fit(X_train, y_train)
+print(pipeline_optimizer.score(X_test, y_test))
+pipeline_optimizer.export('tpot_exported_pipeline.py')
+```
+
+Check our [examples](examples/) to see TPOT applied to some specific data sets.
+
 # TPOT on the command line
 
 To use TPOT via the command line, enter the following command with a path to the data file:
@@ -176,68 +243,7 @@ A setting of 2 or higher will add a progress bar during the optimization procedu
 </tr>
 </table>
 
-# TPOT with code
-
-We've taken care to design the TPOT interface to be as similar as possible to scikit-learn.
-
-TPOT can be imported just like any regular Python module. To import TPOT, type:
-
-```Python
-from tpot import TPOTClassifier
-```
-
-then create an instance of TPOT as follows:
-
-```Python
-pipeline_optimizer = TPOTClassifier()
-```
-
-It's also possible to use TPOT for regression problems with the `TPOTRegressor` class. Other than the class name, a `TPOTRegressor` is used the same way as a `TPOTClassifier`.
-
-Some example code with custom TPOT parameters might look like:
-
-```Python
-pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
-                                    random_state=42, verbosity=2)
-```
-
-Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize a pipeline based on a data set with the `fit` function:
-
-```Python
-pipeline_optimizer.fit(training_features, training_classes)
-```
-
-The `fit` function takes in a training data set and uses k-fold cross-validation when evaluating pipelines. It then initializes the genetic programming algoritm to find the best pipeline based on average k-fold score.
-
-You can then proceed to evaluate the final pipeline on the testing set with the `score` function:
-
-```Python
-print(pipeline_optimizer.score(testing_features, testing_classes))
-```
-
-Finally, you can tell TPOT to export the corresponding Python code for the optimized pipeline to a text file with the `export` function:
-
-```Python
-pipeline_optimizer.export('tpot_exported_pipeline.py')
-```
-
-Once this code finishes running, `tpot_exported_pipeline.py` will contain the Python code for the optimized pipeline.
-
-Below is a full example script using TPOT to optimize a pipeline, score it, and export the best pipeline to a file.
-
-```Python
-from tpot import TPOTClassifier
-
-pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
-                                    random_state=42, verbosity=2)
-pipeline_optimizer.fit(training_features, training_classes)
-print(pipeline_optimizer.score(testing_features, testing_classes))
-pipeline_optimizer.export('tpot_exported_pipeline.py')
-```
-
-Check our [examples](examples/) to see TPOT applied to some specific data sets.
-
-## Scoring functions
+# Scoring functions
 
 TPOT makes use of `sklearn.model_selection.cross_val_score` for evaluating pipelines, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
 
@@ -254,17 +260,17 @@ digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
                                                     train_size=0.75, test_size=0.25)
 
-def accuracy(y_true, y_pred):
+def my_custom_accuracy(y_true, y_pred):
     return float(sum(y_pred == y_true)) / len(y_true)
 
 tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                      scoring=accuracy)
+                      scoring=my_custom_accuracy)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 ```
 
-## Built-in TPOT configurations
+# Built-in TPOT configurations
 
 TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. Below is a list of the current built-in configurations that come with TPOT.
 
@@ -297,12 +303,12 @@ This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
 
 <tr>
 <td>TPOT MDR</td>
-<td>TPOT will search over a series of feature selectors and <a href="https://en.wikipedia.org/wiki/Multifactor_dimensionality_reduction">Multifactor Dimensionality Reduction</a> models to find a series of operators that maximize classification accuracy. The TPOT MDR configuration is specialized for <a href="https://en.wikipedia.org/wiki/Genome-wide_association_study">genome-wide association studies (GWAS)</a>, and is described in detail online <a href="https://arxiv.org/abs/1702.01780">here</a>.
+<td>TPOT will search over a series of feature selectors and <a href="https://en.wikipedia.org/wiki/Multifactor_dimensionality_reduction">Multifactor Dimensionality Reduction</a> models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for <a href="https://en.wikipedia.org/wiki/Genome-wide_association_study">genome-wide association studies (GWAS)</a>, and is described in detail online <a href="https://arxiv.org/abs/1702.01780">here</a>.
 <br /><br />
-Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets.
+Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets.</td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier_mdr.py">Classification</a>
 <br /><br />
-This configuration currently works only for the TPOTClassifier.</td>
-<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier_mdr.py">Classification</a></td>
+<a href="https://github.com/rhiever/tpot/blob/master/tpot/config_regressor_mdr.py">Regression</a></td>
 </tr>
 </table>
 
@@ -325,7 +331,7 @@ tpot.export('tpot_mnist_pipeline.py')
 
 ```
 
-## Customizing TPOT's operators and parameters
+# Customizing TPOT's operators and parameters
 
 Beyond the default configurations that come with TPOT, in some cases it is useful to limit the algorithms and parameters that TPOT considers. For that reason, we allow users to provide TPOT with a custom configuration for its operators and parameters.
 
@@ -389,7 +395,7 @@ Command-line users must create a separate `.py` file with the custom configurati
 tpot data/mnist.csv -is , -target class -config tpot_classifier_config.py -g 5 -p 20 -v 2 -o tpot_exported_pipeline.py
 ```
 
-When using the command-line interface, the configuration file specified in the `-config` parameter *must* name its custom TPOT config `tpot_config`. Otherwise, TPOT will not be able to locate the dictionary.
+When using the command-line interface, the configuration file specified in the `-config` parameter *must* name its custom TPOT configuration `tpot_config`. Otherwise, TPOT will not be able to locate the configuration dictionary.
 
 For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py) and [regression](https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py) in TPOT's source code.
 
