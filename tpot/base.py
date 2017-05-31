@@ -201,7 +201,7 @@ class TPOTBase(BaseEstimator):
 
         self._pareto_front = None
         self._optimized_pipeline = None
-        self._fitted_pipeline = None
+        self.fitted_pipeline_ = None
         self._fitted_imputer = None
         self._pop = None
         self.warm_start = warm_start
@@ -257,7 +257,7 @@ class TPOTBase(BaseEstimator):
 
         # Dictionary of individuals that have already been evaluated in previous
         # generations
-        self._evaluated_individuals = {}
+        self.evaluated_individuals_ = {}
         self.random_state = random_state
 
         # If the user passed a custom scoring function, store it in the sklearn
@@ -425,7 +425,7 @@ class TPOTBase(BaseEstimator):
             TPOT and all scikit-learn algorithms assume that the features will be numerical
             and there will be no missing values. As such, when a feature matrix is provided
             to TPOT, all missing values will automatically be replaced (i.e., imputed) using
-            median value imputation. 
+            median value imputation.
 
             If you wish to use a different imputation strategy than median imputation, please
             make sure to apply imputation to your feature set prior to passing it to TPOT.
@@ -562,11 +562,11 @@ class TPOTBase(BaseEstimator):
                                   'TPOTClassifier object. Please make sure you '
                                   'passed the data to TPOT correctly.')
                         else:
-                            self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+                            self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
 
                             with warnings.catch_warnings():
                                 warnings.simplefilter('ignore')
-                                self._fitted_pipeline.fit(features, classes)
+                                self.fitted_pipeline_.fit(features, classes)
 
                             if self.verbosity in [1, 2]:
                                 # Add an extra line of spacing if the progress bar was used
@@ -575,14 +575,14 @@ class TPOTBase(BaseEstimator):
                                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
                             # Store and fit the entire Pareto front if sciencing
-                            elif self.verbosity >= 3 and self._pareto_front:
-                                self._pareto_front_fitted_pipelines = {}
+                            elif self._pareto_front:
+                                self.pareto_front_fitted_pipelines_ = {}
 
                                 for pipeline in self._pareto_front.items:
-                                    self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                                    self.pareto_front_fitted_pipelines_[str(pipeline)] = self._toolbox.compile(expr=pipeline)
                                     with warnings.catch_warnings():
                                         warnings.simplefilter('ignore')
-                                        self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
+                                        self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, classes)
                     break
 
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
@@ -614,7 +614,7 @@ class TPOTBase(BaseEstimator):
             Predicted classes for the samples in the feature matrix
 
         """
-        if not self._fitted_pipeline:
+        if not self.fitted_pipeline_:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
         features = features.astype(np.float64)
@@ -622,7 +622,7 @@ class TPOTBase(BaseEstimator):
         if np.any(np.isnan(features)):
             features = self._impute_values(features)
 
-        return self._fitted_pipeline.predict(features)
+        return self.fitted_pipeline_.predict(features)
 
     def fit_predict(self, features, classes):
         """Call fit and predict in sequence.
@@ -659,13 +659,13 @@ class TPOTBase(BaseEstimator):
             The estimated test set accuracy
 
         """
-        if self._fitted_pipeline is None:
+        if self.fitted_pipeline_ is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
         score = SCORERS[self.scoring_function](
-            self._fitted_pipeline,
+            self.fitted_pipeline_,
             testing_features.astype(np.float64),
             testing_classes.astype(np.float64)
         )
@@ -685,12 +685,12 @@ class TPOTBase(BaseEstimator):
             The class probabilities of the input samples
 
         """
-        if not self._fitted_pipeline:
+        if not self.fitted_pipeline_:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
         else:
-            if not(hasattr(self._fitted_pipeline, 'predict_proba')):
+            if not(hasattr(self.fitted_pipeline_, 'predict_proba')):
                 raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
-            return self._fitted_pipeline.predict_proba(features.astype(np.float64))
+            return self.fitted_pipeline_.predict_proba(features.astype(np.float64))
 
     def set_params(self, **params):
         """Set the parameters of TPOT.
@@ -859,9 +859,9 @@ class TPOTBase(BaseEstimator):
                 if not self._pbar.disable:
                     self._pbar.update(1)
             # Check if the individual was evaluated before
-            elif individual_str in self._evaluated_individuals:
+            elif individual_str in self.evaluated_individuals_:
                 # Get fitness score from previous evaluation
-                fitnesses_dict[indidx] = self._evaluated_individuals[individual_str]
+                fitnesses_dict[indidx] = self.evaluated_individuals_[individual_str]
                 if self.verbosity > 2:
                     self._pbar.write('Pipeline encountered that has previously been evaluated during the '
                                      'optimization process. Using the score from the previous evaluation.')
@@ -923,8 +923,8 @@ class TPOTBase(BaseEstimator):
 
         for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
             if type(resulting_score) in [float, np.float64, np.float32]:
-                self._evaluated_individuals[individual_str] = (max(1, operator_count), resulting_score)
-                fitnesses_dict[test_idx] = self._evaluated_individuals[individual_str]
+                self.evaluated_individuals_[individual_str] = (max(1, operator_count), resulting_score)
+                fitnesses_dict[test_idx] = self.evaluated_individuals_[individual_str]
             else:
                 raise ValueError('Scoring function does not return a float.')
 
