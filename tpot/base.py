@@ -158,9 +158,9 @@ class TPOTBase(BaseEstimator):
             Setting this parameter to higher values will allow TPOT to explore more
             complex pipelines, but will also allow TPOT to run longer.
         random_state: int, optional (default: None)
-            Random number generator seed for TPOT. Use this to make sure
-            that TPOT will give you the same results each time you run it
-            against the same data set with that seed.
+            Random number generator seed for TPOT. Use this parameter to make sure
+            that TPOT will give you the same results each time you run it against the
+            same data set with that seed.
         config_dict: a Python dictionary or string, optional (default: None)
             Python dictionary:
                 A dictionary customizing the operators and parameters that

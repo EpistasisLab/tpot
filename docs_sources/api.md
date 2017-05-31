@@ -120,7 +120,7 @@ Setting this parameter to higher values will allow TPOT to evaluate more complex
 <blockquote>
 The seed of the pseudo random number generator used in TPOT.
 <br /><br />
-Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
+Use this parameter to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
 </blockquote>
 
 <strong>config_dict</strong>: Python dictionary, string, or None, optional (default=None)
@@ -553,7 +553,7 @@ Setting this parameter to higher values will allow TPOT to evaluate more complex
 <blockquote>
 The seed of the pseudo random number generator used in TPOT.
 <br /><br />
-Use this to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
+Use this parameter to make sure that TPOT will give you the same results each time you run it against the same data set with that seed.
 </blockquote>
 
 <strong>config_dict</strong>: Python dictionary, string, or None, optional (default=None)
