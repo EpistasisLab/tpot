@@ -20,7 +20,7 @@ Read more in the [User Guide](using/#tpot-with-code).
 
 <table>
 <tr>
-<td width="20%" style="vertical-align:top;"><strong>Parameters:</strong></td>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
 <td width="80%" style="background:white;">
 <strong>generations</strong>: int, optional (default=100)
 <blockquote>
@@ -158,6 +158,32 @@ The update checker will tell you when a new version of TPOT has been released.
 </blockquote>
 </td>
 </tr>
+
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Attributes:</strong></td>
+<td width="80%" style="background:white;">
+<strong>_fitted_pipeline</strong>: scikit-learn Pipeline object
+<blockquote>
+The best pipeline that TPOT discovered during the pipeline optimization process, fitted on the entire training dataset.
+</blockquote>
+
+<strong>_pareto_front_fitted_pipelines</strong>: Python dictionary
+<blockquote>
+Dictionary containing the all pipelines on the TPOT Pareto front, where the key is the string representation of the pipeline and the value is the corresponding pipeline fitted on the entire training dataset.
+<br /><br />
+The TPOT Pareto front provides a trade-off between pipeline complexity (i.e., the number of steps in the pipeline) and the predictive performance of the pipeline.
+<br /><br />
+Note: <em>_pareto_front_fitted_pipelines</em> is only available when <em>verbosity</em>=3.
+</blockquote>
+
+<strong>_evaluated_individuals</strong>: Python dictionary
+<blockquote>
+Dictionary containing all pipelines that were evaluated during the pipeline optimization process, where the key is the string representation of the pipeline and the value is a tuple containing (# of steps in pipeline, quality metric for the pipeline).
+<br /><br />
+This attribute is primarily for internal use, but may be useful for looking at the other pipelines that TPOT evaluated.
+</blockquote>
+</td>
+<tr>
 </table>
 
 # Regression
