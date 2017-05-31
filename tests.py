@@ -59,12 +59,12 @@ except:
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
-training_features, testing_features, training_classes, testing_classes = \
+training_features, testing_features, training_target, testing_target = \
     train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
 
 # Set up the Boston data set for testing
 boston_data = load_boston()
-training_features_r, testing_features_r, training_classes_r, testing_classes_r = \
+training_features_r, testing_features_r, training_target_r, testing_target_r = \
     train_test_split(boston_data.data, boston_data.target, random_state=42)
 
 np.random.seed(42)
@@ -272,9 +272,9 @@ def test_invaild_dataset_warning():
         generations=1,
         verbosity=0
     )
-    # common mistake in classes
-    bad_training_classes = training_classes.reshape((1, len(training_classes)))
-    assert_raises(ValueError, tpot_obj.fit, training_features, bad_training_classes)
+    # common mistake in target
+    bad_training_target = training_target.reshape((1, len(training_target)))
+    assert_raises(ValueError, tpot_obj.fit, training_features, bad_training_target)
 
 
 def test_invaild_subsample_ratio_warning():
@@ -330,7 +330,7 @@ def test_timeout():
     # test _wrapped_cross_val_score with cv=20 so that it is impossible to finish in 1 second
     return_value = _wrapped_cross_val_score(tpot_obj.fitted_pipeline_,
                                             training_features_r,
-                                            training_classes_r,
+                                            training_target_r,
                                             cv=20,
                                             scoring_function='neg_mean_squared_error',
                                             sample_weight=None,
@@ -456,7 +456,7 @@ from sklearn.tree import DecisionTreeClassifier
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
+training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
@@ -464,7 +464,7 @@ exported_pipeline = make_pipeline(
     DecisionTreeClassifier(criterion="gini", max_depth=7, min_samples_leaf=4, min_samples_split=18)
 )
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
 
@@ -474,7 +474,7 @@ results = exported_pipeline.predict(testing_features)
 def test_score():
     """Assert that the TPOT score function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
-    assert_raises(RuntimeError, tpot_obj.score, testing_features, testing_classes)
+    assert_raises(RuntimeError, tpot_obj.score, testing_features, testing_target)
 
 
 def test_score_2():
@@ -493,9 +493,9 @@ def test_score_2():
     )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
-    tpot_obj.fitted_pipeline_.fit(training_features, training_classes)
+    tpot_obj.fitted_pipeline_.fit(training_features, training_target)
     # Get score from TPOT
-    score = tpot_obj.score(testing_features, testing_classes)
+    score = tpot_obj.score(testing_features, testing_target)
 
     assert np.allclose(known_score, score)
 
@@ -519,10 +519,10 @@ def test_score_3():
     )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
-    tpot_obj.fitted_pipeline_.fit(training_features_r, training_classes_r)
+    tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r)
 
     # Get score from TPOT
-    score = tpot_obj.score(testing_features_r, testing_classes_r)
+    score = tpot_obj.score(testing_features_r, testing_target_r)
 
     assert np.allclose(known_score, score)
 
@@ -546,29 +546,29 @@ def test_sample_weight_func():
     )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
-    tpot_obj.fitted_pipeline_.fit(training_features_r, training_classes_r)
+    tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r)
 
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
 
     # make up a sample weight
-    training_classes_r_weight = np.array(range(1, len(training_classes_r)+1))
-    training_classes_r_weight_dict = set_sample_weight(tpot_obj.fitted_pipeline_.steps, training_classes_r_weight)
+    training_target_r_weight = np.array(range(1, len(training_target_r)+1))
+    training_target_r_weight_dict = set_sample_weight(tpot_obj.fitted_pipeline_.steps, training_target_r_weight)
 
     np.random.seed(42)
-    cv_score1 = cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_classes_r, cv=3, scoring='neg_mean_squared_error')
+    cv_score1 = cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_target_r, cv=3, scoring='neg_mean_squared_error')
 
     np.random.seed(42)
-    cv_score2 = cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_classes_r, cv=3, scoring='neg_mean_squared_error')
+    cv_score2 = cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_target_r, cv=3, scoring='neg_mean_squared_error')
 
     np.random.seed(42)
-    cv_score_weight = cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_classes_r, cv=3, scoring='neg_mean_squared_error', fit_params=training_classes_r_weight_dict)
+    cv_score_weight = cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_target_r, cv=3, scoring='neg_mean_squared_error', fit_params=training_target_r_weight_dict)
 
     np.random.seed(42)
-    tpot_obj.fitted_pipeline_.fit(training_features_r, training_classes_r, **training_classes_r_weight_dict)
+    tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r, **training_target_r_weight_dict)
     # Get score from TPOT
     known_score = 11.5790430757
-    score = tpot_obj.score(testing_features_r, testing_classes_r)
+    score = tpot_obj.score(testing_features_r, testing_target_r)
 
     assert np.allclose(cv_score1, cv_score2)
     assert not np.allclose(cv_score1, cv_score_weight)
@@ -589,8 +589,8 @@ def test_fit_GroupKFold():
         config_dict='TPOT light',
         cv = GroupKFold(n_splits=2),
     )
-    tpot_obj.fit(training_features, training_classes, groups=groups)
-    assert tpot_obj.score(testing_features, testing_classes) >= 0.97
+    tpot_obj.fit(training_features, training_target, groups=groups)
+    assert tpot_obj.score(testing_features, testing_target) >= 0.97
 
 
 def test_predict():
@@ -613,13 +613,13 @@ def test_predict_2():
     )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
-    tpot_obj.fitted_pipeline_.fit(training_features, training_classes)
+    tpot_obj.fitted_pipeline_.fit(training_features, training_target)
     result = tpot_obj.predict(testing_features)
 
     assert result.shape == (testing_features.shape[0],)
 
 def test_predict_proba():
-    """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_classes)."""
+    """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_target)."""
     tpot_obj = TPOTClassifier()
     pipeline_string = (
         'DecisionTreeClassifier('
@@ -631,10 +631,10 @@ def test_predict_proba():
     )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
-    tpot_obj.fitted_pipeline_.fit(training_features, training_classes)
+    tpot_obj.fitted_pipeline_.fit(training_features, training_target)
 
     result = tpot_obj.predict_proba(testing_features)
-    num_labels = np.amax(testing_classes) + 1
+    num_labels = np.amax(testing_target) + 1
 
     assert result.shape == (testing_features.shape[0], num_labels)
 
@@ -652,7 +652,7 @@ def test_predict_proba2():
     )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
-    tpot_obj.fitted_pipeline_.fit(training_features, training_classes)
+    tpot_obj.fitted_pipeline_.fit(training_features, training_target)
 
     result = tpot_obj.predict_proba(testing_features)
     rows, columns = result.shape
@@ -666,14 +666,14 @@ def test_predict_proba2():
 def test_warm_start():
     """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run."""
     tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, warm_start=True)
-    tpot_obj.fit(training_features, training_classes)
+    tpot_obj.fit(training_features, training_target)
 
     assert tpot_obj._pop is not None
     assert tpot_obj._pareto_front is not None
 
     first_pop = tpot_obj._pop
     tpot_obj.random_state = 21
-    tpot_obj.fit(training_features, training_classes)
+    tpot_obj.fit(training_features, training_target)
 
     assert tpot_obj._pop == first_pop
 
@@ -687,7 +687,7 @@ def test_fit():
         generations=1,
         verbosity=0
     )
-    tpot_obj.fit(training_features, training_classes)
+    tpot_obj.fit(training_features, training_target)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
@@ -703,7 +703,7 @@ def test_fit2():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj.fit(training_features, training_classes)
+    tpot_obj.fit(training_features, training_target)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
@@ -719,7 +719,7 @@ def test_fit3():
         subsample=0.8,
         verbosity=0
     )
-    tpot_obj.fit(training_features, training_classes)
+    tpot_obj.fit(training_features, training_target)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
@@ -735,7 +735,7 @@ def test_evaluated_individuals_():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj.fit(training_features, training_classes)
+    tpot_obj.fit(training_features, training_target)
     assert isinstance(tpot_obj.evaluated_individuals_, dict)
     for pipeline_string in sorted(tpot_obj.evaluated_individuals_.keys()):
         deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
@@ -743,7 +743,7 @@ def test_evaluated_individuals_():
         tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
         operator_count = tpot_obj._operator_count(deap_pipeline)
         try:
-            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_classes, cv=5, scoring='accuracy', verbose=0)
+            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
             mean_cv_scores = np.mean(cv_scores)
         except:
             mean_cv_scores = -float('inf')
@@ -760,13 +760,13 @@ def test_evaluate_individuals():
     )
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pop = tpot_obj._toolbox.population(n=10)
-    fitness_scores = tpot_obj._evaluate_individuals(pop, training_features, training_classes)
+    fitness_scores = tpot_obj._evaluate_individuals(pop, training_features, training_target)
     for deap_pipeline, fitness_score in zip(pop, fitness_scores):
         operator_count = tpot_obj._operator_count(deap_pipeline)
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
         tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
         try:
-            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_classes, cv=5, scoring='accuracy', verbose=0)
+            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
             mean_cv_scores = np.mean(cv_scores)
         except:
             mean_cv_scores = -float('inf')
@@ -788,7 +788,7 @@ def test_imputer():
     features_with_nan = np.copy(training_features)
     features_with_nan[0][0] = float('nan')
 
-    tpot_obj.fit(features_with_nan, training_classes)
+    tpot_obj.fit(features_with_nan, training_target)
 
 
 def test_imputer2():
@@ -804,7 +804,7 @@ def test_imputer2():
     features_with_nan = np.copy(training_features)
     features_with_nan[0][0] = float('nan')
 
-    tpot_obj.fit(features_with_nan, training_classes)
+    tpot_obj.fit(features_with_nan, training_target)
     tpot_obj.predict(features_with_nan)
 
 
@@ -969,7 +969,7 @@ def test_PolynomialFeatures_exception():
     pipelines = []
     pipelines.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
     pipelines.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
-    fitness_scores = tpot_obj._evaluate_individuals(pipelines, training_features, training_classes)
+    fitness_scores = tpot_obj._evaluate_individuals(pipelines, training_features, training_target)
     known_scores = [(2, 0.98068077235290885), (5000.0, -float('inf'))]
     assert np.allclose(known_scores, fitness_scores)
 
@@ -1036,7 +1036,7 @@ from tpot.built_in_operators import StackingEstimator
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
+training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
@@ -1047,7 +1047,7 @@ exported_pipeline = make_pipeline(
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 )
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
@@ -1073,12 +1073,12 @@ from sklearn.neighbors import KNeighborsClassifier
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
+training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
@@ -1104,7 +1104,7 @@ from sklearn.tree import DecisionTreeClassifier
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
+training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
@@ -1112,7 +1112,7 @@ exported_pipeline = make_pipeline(
     DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
 )
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
@@ -1143,7 +1143,7 @@ from copy import copy
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
+training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
@@ -1154,7 +1154,7 @@ exported_pipeline = make_pipeline(
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 )
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
@@ -1236,13 +1236,13 @@ def test_StackingEstimator_1():
     clf = RandomForestClassifier(random_state=42)
     stack_clf = StackingEstimator(estimator=RandomForestClassifier(random_state=42))
     # fit
-    clf.fit(training_features, training_classes)
-    stack_clf.fit(training_features, training_classes)
+    clf.fit(training_features, training_target)
+    stack_clf.fit(training_features, training_target)
     # get transformd X
     X_clf_transformed = stack_clf.transform(training_features)
 
     assert np.allclose(clf.predict(training_features), X_clf_transformed[:,0])
-    assert np.allclose(clf.predict_proba(training_features), X_clf_transformed[:,1:1+len(np.unique(training_classes))])
+    assert np.allclose(clf.predict_proba(training_features), X_clf_transformed[:,1:1+len(np.unique(training_target))])
 
 
 def test_StackingEstimator_2():
@@ -1250,8 +1250,8 @@ def test_StackingEstimator_2():
     reg = RandomForestRegressor(random_state=42)
     stack_reg = StackingEstimator(estimator=RandomForestRegressor(random_state=42))
     # fit
-    reg.fit(training_features_r, training_classes_r)
-    stack_reg.fit(training_features_r, training_classes_r)
+    reg.fit(training_features_r, training_target_r)
+    stack_reg.fit(training_features_r, training_target_r)
     # get transformd X
     X_reg_transformed = stack_reg.transform(training_features_r)
 
@@ -1264,18 +1264,18 @@ def test_StackingEstimator_3():
     meta_clf = LogisticRegression()
     sklearn_pipeline = make_pipeline(stack_clf, meta_clf)
     # fit in pipeline
-    sklearn_pipeline.fit(training_features, training_classes)
+    sklearn_pipeline.fit(training_features, training_target)
     # fit step by step
-    stack_clf.fit(training_features, training_classes)
+    stack_clf.fit(training_features, training_target)
     X_clf_transformed = stack_clf.transform(training_features)
-    meta_clf.fit(X_clf_transformed, training_classes)
+    meta_clf.fit(X_clf_transformed, training_target)
     # scoring
-    score = meta_clf.score(X_clf_transformed, training_classes)
-    pipeline_score = sklearn_pipeline.score(training_features, training_classes)
+    score = meta_clf.score(X_clf_transformed, training_target)
+    pipeline_score = sklearn_pipeline.score(training_features, training_target)
     assert np.allclose(score, pipeline_score)
 
     # test cv score
-    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features, training_classes, cv=3, scoring='accuracy'))
+    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features, training_target, cv=3, scoring='accuracy'))
 
     known_cv_score = 0.947282375315
 
@@ -1287,18 +1287,18 @@ def test_StackingEstimator_4():
     meta_reg = Lasso(random_state=42)
     sklearn_pipeline = make_pipeline(stack_reg, meta_reg)
     # fit in pipeline
-    sklearn_pipeline.fit(training_features_r, training_classes_r)
+    sklearn_pipeline.fit(training_features_r, training_target_r)
     # fit step by step
-    stack_reg.fit(training_features_r, training_classes_r)
+    stack_reg.fit(training_features_r, training_target_r)
     X_reg_transformed = stack_reg.transform(training_features_r)
-    meta_reg.fit(X_reg_transformed, training_classes_r)
+    meta_reg.fit(X_reg_transformed, training_target_r)
     # scoring
-    score = meta_reg.score(X_reg_transformed, training_classes_r)
-    pipeline_score = sklearn_pipeline.score(training_features_r, training_classes_r)
+    score = meta_reg.score(X_reg_transformed, training_target_r)
+    pipeline_score = sklearn_pipeline.score(training_features_r, training_target_r)
     assert np.allclose(score, pipeline_score)
 
     # test cv score
-    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features_r, training_classes_r, cv=3, scoring='r2'))
+    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features_r, training_target_r, cv=3, scoring='r2'))
     known_cv_score = 0.795877470354
 
     assert np.allclose(known_cv_score, cv_score)

@@ -416,7 +416,7 @@ def main(args):
         axis=1
     )
 
-    training_features, testing_features, training_classes, testing_classes = \
+    training_features, testing_features, training_target, testing_target = \
         train_test_split(features, input_data[args.TARGET_NAME], random_state=args.RANDOM_STATE)
     tpot_type = TPOTClassifier if args.TPOT_MODE == 'classification' else TPOTRegressor
     tpot = tpot_type(
@@ -439,12 +439,12 @@ def main(args):
 
     print('')
 
-    tpot.fit(training_features, training_classes)
+    tpot.fit(training_features, training_target)
 
     if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
         training_score = max([x.wvalues[1] for x in tpot._pareto_front.keys])
         print('\nTraining score: {}'.format(abs(training_score)))
-        print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
+        print('Holdout score: {}'.format(tpot.score(testing_features, testing_target)))
 
     elif args.VERBOSITY >= 3 and tpot._pareto_front:
         print('Final Pareto front testing scores:')
@@ -453,7 +453,7 @@ def main(args):
             tpot._fitted_pipeline = tpot._pareto_front_fitted_pipelines[str(pipeline)]
             print('{TRAIN_SCORE}\t{TEST_SCORE}\t{PIPELINE}'.format(
                     TRAIN_SCORE=int(abs(pipeline_scores.wvalues[0])),
-                    TEST_SCORE=tpot.score(testing_features, testing_classes),
+                    TEST_SCORE=tpot.score(testing_features, testing_target),
                     PIPELINE=pipeline
                 )
             )
