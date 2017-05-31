@@ -89,69 +89,79 @@ class TPOTBase(BaseEstimator):
 
         Parameters
         ----------
-        generations: int (default: 100)
+        generations: int, optional (default: 100)
             Number of iterations to the run pipeline optimization process.
             Generally, TPOT will work better when you give it more generations (and
             therefore time) to optimize the pipeline. TPOT will evaluate
             POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.
-        population_size: int (default: 100)
+        population_size: int, optional (default: 100)
             Number of individuals to retain in the GP population every generation.
             Generally, TPOT will work better when you give it more individuals
             (and therefore time) to optimize the pipeline. TPOT will evaluate
             POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.
-        offspring_size: int (default: None)
+        offspring_size: int, optional (default: None)
             Number of offspring to produce in each GP generation.
             By default, offspring_size = population_size.
-        mutation_rate: float (default: 0.9)
+        mutation_rate: float, optional (default: 0.9)
             Mutation rate for the genetic programming algorithm in the range [0.0, 1.0].
             This parameter tells the GP algorithm how many pipelines to apply random
             changes to every generation. We recommend using the default parameter unless
             you understand how the mutation rate affects GP algorithms.
-        crossover_rate: float (default: 0.1)
+        crossover_rate: float, optional (default: 0.1)
             Crossover rate for the genetic programming algorithm in the range [0.0, 1.0].
             This parameter tells the genetic programming algorithm how many pipelines to
             "breed" every generation. We recommend using the default parameter unless you
             understand how the mutation rate affects GP algorithms.
-        scoring: function or str
+        scoring: string or callable, optional
             Function used to evaluate the quality of a given pipeline for the
             problem. By default, accuracy is used for classification problems and
-            mean squared error (mse) for regression problems.
-            TPOT assumes that this scoring function should be maximized, i.e.,
-            higher is better.
+            mean squared error (MSE) for regression problems.
 
             Offers the same options as sklearn.model_selection.cross_val_score as well as
-            a built-in score "balanced_accuracy":
+            a built-in score 'balanced_accuracy'. Classification metrics:
 
             ['accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy',
             'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted',
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
-            'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
+            'precision_weighted', 'recall', 'recall_macro', 'recall_micro',
             'recall_samples', 'recall_weighted', 'roc_auc']
-        cv: int or cross-validation generator (default: 5)
+
+            Regression metrics:
+
+            ['neg_median_absolute_error', 'neg_mean_absolute_error',
+            'neg_mean_squared_error', 'r2']
+
+            If you would like to use a custom scoring function, you can pass a callable
+            function to this parameter with the signature scorer(y_true, y_pred).
+            See the section on scoring functions in the documentation for more details. 
+
+            TPOT assumes that any custom scoring function with "error" or "loss" in the
+            name is meant to be minimized, whereas any other functions will be maximized.
+        cv: int or cross-validation generator, optional (default: 5)
             If CV is a number, then it is the number of folds to evaluate each
             pipeline over in k-fold cross-validation during the TPOT optimization
              process. If it is an object then it is an object to be used as a
              cross-validation generator.
-        subsample: float (default: 1.0)
+        subsample: float, optional (default: 1.0)
             Subsample ratio of the training instance. Setting it to 0.5 means that TPOT
             randomly collects half of training samples for pipeline optimization process.
-        n_jobs: int (default: 1)
+        n_jobs: int, optional (default: 1)
             Number of CPUs for evaluating pipelines in parallel during the TPOT
             optimization process. Assigning this to -1 will use as many cores as available
             on the computer.
-        max_time_mins: int (default: None)
+        max_time_mins: int, optional (default: None)
             How many minutes TPOT has to optimize the pipeline.
             If provided, this setting will override the "generations" parameter and allow
             TPOT to run until it runs out of time.
-        max_eval_time_mins: int (default: 5)
+        max_eval_time_mins: int, optional (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
             complex pipelines, but will also allow TPOT to run longer.
-        random_state: int (default: None)
+        random_state: int, optional (default: None)
             Random number generator seed for TPOT. Use this to make sure
             that TPOT will give you the same results each time you run it
             against the same data set with that seed.
-        config_dict: a Python dictionary or string (default: None)
+        config_dict: a Python dictionary or string, optional (default: None)
             Python dictionary:
                 A dictionary customizing the operators and parameters that
                 TPOT uses in the optimization process.
@@ -166,14 +176,14 @@ class TPOTBase(BaseEstimator):
             String 'TPOT MDR':
                 TPOT uses a list of TPOT-MDR operator configuration dictionary instead of
                 the default one.
-        warm_start: bool (default: False)
+        warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
-        verbosity: int (default: 0)
+        verbosity: int, optional (default: 0)
             How much information TPOT communicates while it's running.
             0 = none, 1 = minimal, 2 = high, 3 = all.
             A setting of 2 or higher will add a progress bar during the optimization procedure.
-        disable_update_check: bool (default: False)
+        disable_update_check: bool, optional (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 
         Returns
