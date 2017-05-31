@@ -347,7 +347,7 @@ class Interruptable_cross_val_score(threading.Thread):
             pass
 
 
-def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
+def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight,
                              max_eval_time_mins, groups):
     max_time_seconds = max(int(max_eval_time_mins * 60), 1)
@@ -356,7 +356,7 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
     tmp_it = Interruptable_cross_val_score(
         clone(sklearn_pipeline),
         features,
-        classes,
+        target,
         scoring=scoring_function,
         cv=cv,
         n_jobs=1,

@@ -133,7 +133,7 @@ class TPOTBase(BaseEstimator):
 
             If you would like to use a custom scoring function, you can pass a callable
             function to this parameter with the signature scorer(y_true, y_pred).
-            See the section on scoring functions in the documentation for more details. 
+            See the section on scoring functions in the documentation for more details.
 
             TPOT assumes that any custom scoring function with "error" or "loss" in the
             name is meant to be minimized, whereas any other functions will be maximized.
@@ -409,11 +409,11 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
-    def fit(self, features, classes, sample_weight=None, groups=None):
+    def fit(self, features, target, sample_weight=None, groups=None):
         """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
-        maximizes score on the provided features and classes. Performs internal
+        maximizes score on the provided features and target. Performs internal
         k-fold cross-validaton to avoid overfitting on the training data.
 
         Parameters
@@ -428,7 +428,7 @@ class TPOTBase(BaseEstimator):
 
             If you wish to use a different imputation strategy than median imputation, please
             make sure to apply imputation to your feature set prior to passing it to TPOT.
-        classes: array-like {n_samples}
+        target: array-like {n_samples}
             List of class labels for prediction
         sample_weight: array-like {n_samples}, optional
             Per-sample weights. Higher weights force TPOT to put more emphasis on those points
@@ -451,11 +451,11 @@ class TPOTBase(BaseEstimator):
         if np.any(np.isnan(features)):
             features = self._impute_values(features)
 
-        self._check_dataset(features, classes)
+        self._check_dataset(features, target)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
-            features, _, classes, _ = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
+            features, _, target, _ = train_test_split(features, target, train_size=self.subsample, random_state=self.random_state)
             # Raise a warning message if the training size is less than 1500 when subsample is not default value
             if features.shape[0] < 1500:
                 print(
@@ -471,7 +471,7 @@ class TPOTBase(BaseEstimator):
             np.random.seed(self.random_state)
 
         self._start_datetime = datetime.now()
-        self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight, groups=groups)
+        self._toolbox.register('evaluate', self._evaluate_individuals, features=features, target=target, sample_weight=sample_weight, groups=groups)
 
         # assign population, self._pop can only be not None if warm_start is enabled
         if self._pop:
@@ -565,7 +565,7 @@ class TPOTBase(BaseEstimator):
 
                             with warnings.catch_warnings():
                                 warnings.simplefilter('ignore')
-                                self.fitted_pipeline_.fit(features, classes)
+                                self.fitted_pipeline_.fit(features, target)
 
                             if self.verbosity in [1, 2]:
                                 # Add an extra line of spacing if the progress bar was used
@@ -581,7 +581,7 @@ class TPOTBase(BaseEstimator):
                                     self.pareto_front_fitted_pipelines_[str(pipeline)] = self._toolbox.compile(expr=pipeline)
                                     with warnings.catch_warnings():
                                         warnings.simplefilter('ignore')
-                                        self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, classes)
+                                        self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, target)
                     break
 
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
@@ -600,7 +600,7 @@ class TPOTBase(BaseEstimator):
                     top_score = pipeline_scores.wvalues[1]
 
     def predict(self, features):
-        """Use the optimized pipeline to predict the classes for a feature set.
+        """Use the optimized pipeline to predict the target for a feature set.
 
         Parameters
         ----------
@@ -610,7 +610,7 @@ class TPOTBase(BaseEstimator):
         Returns
         ----------
         array-like: {n_samples}
-            Predicted classes for the samples in the feature matrix
+            Predicted target for the samples in the feature matrix
 
         """
         if not self.fitted_pipeline_:
@@ -623,33 +623,33 @@ class TPOTBase(BaseEstimator):
 
         return self.fitted_pipeline_.predict(features)
 
-    def fit_predict(self, features, classes):
+    def fit_predict(self, features, target):
         """Call fit and predict in sequence.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
-        classes: array-like {n_samples}
+        target: array-like {n_samples}
             List of class labels for prediction
 
         Returns
         ----------
         array-like: {n_samples}
-            Predicted classes for the provided features
+            Predicted target for the provided features
 
         """
-        self.fit(features, classes)
+        self.fit(features, target)
         return self.predict(features)
 
-    def score(self, testing_features, testing_classes):
+    def score(self, testing_features, testing_target):
         """Returns the score on the given testing data using the user-specified scoring function.
 
         Parameters
         ----------
         testing_features: array-like {n_samples, n_features}
             Feature matrix of the testing set
-        testing_classes: array-like {n_samples}
+        testing_target: array-like {n_samples}
             List of class labels for prediction in the testing set
 
         Returns
@@ -666,7 +666,7 @@ class TPOTBase(BaseEstimator):
         score = SCORERS[self.scoring_function](
             self.fitted_pipeline_,
             testing_features.astype(np.float64),
-            testing_classes.astype(np.float64)
+            testing_target.astype(np.float64)
         )
         return abs(score)
 
@@ -680,7 +680,7 @@ class TPOTBase(BaseEstimator):
 
         Returns
         -------
-        array-like: {n_samples, n_classes}
+        array-like: {n_samples, n_target}
             The class probabilities of the input samples
 
         """
@@ -742,14 +742,14 @@ class TPOTBase(BaseEstimator):
 
         return self._fitted_imputer.transform(features)
 
-    def _check_dataset(self, features, classes):
+    def _check_dataset(self, features, target):
         """Check if a dataset has a valid feature set and labels.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
-        classes: array-like {n_samples}
+        target: array-like {n_samples}
             List of class labels for prediction
 
         Returns
@@ -757,7 +757,7 @@ class TPOTBase(BaseEstimator):
         None
         """
         try:
-            check_X_y(features, classes, accept_sparse=False)
+            check_X_y(features, target, accept_sparse=False)
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
@@ -809,7 +809,7 @@ class TPOTBase(BaseEstimator):
                     setattr(obj, parameter, value)
 
 
-    def _evaluate_individuals(self, individuals, features, classes, sample_weight=None, groups=None):
+    def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
 
         Parameters
@@ -819,10 +819,10 @@ class TPOTBase(BaseEstimator):
             compiled by DEAP into a callable function
         features: numpy.ndarray {n_samples, n_features}
             A numpy matrix containing the training and testing features for the individual's evaluation
-        classes: numpy.ndarray {n_samples}
-            A numpy matrix containing the training and testing classes for the individual's evaluation
+        target: numpy.ndarray {n_samples}
+            A numpy matrix containing the training and testing target for the individual's evaluation
         sample_weight: array-like {n_samples}, optional
-            List of sample weights to balance (or un-balanace) the dataset classes as needed
+            List of sample weights to balance (or un-balanace) the dataset target as needed
         groups: array-like {n_samples, }, optional
             Group labels for the samples used while splitting the dataset into train/test set
 
@@ -897,7 +897,7 @@ class TPOTBase(BaseEstimator):
                 job = delayed(_wrapped_cross_val_score)(
                     sklearn_pipeline=sklearn_pipeline,
                     features=features,
-                    classes=classes,
+                    target=target,
                     cv=self.cv,
                     scoring_function=self.scoring_function,
                     sample_weight=sample_weight,

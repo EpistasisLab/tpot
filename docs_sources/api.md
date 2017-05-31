@@ -647,7 +647,7 @@ tpot.export('tpot_boston_pipeline.py')
 
 <table width="100%">
 <tr>
-<td width="25%"><a href="#tpotregressor-fit">fit</a>(features, classes[, sample_weight, groups])</td>
+<td width="25%"><a href="#tpotregressor-fit">fit</a>(features, target[, sample_weight, groups])</td>
 <td>Run the TPOT optimization process on the given training data.</td>
 </tr>
 
@@ -657,7 +657,7 @@ tpot.export('tpot_boston_pipeline.py')
 </tr>
 
 <tr>
-<td><a href="#tpotregressor-score">score</a>(testing_features, testing_classes)</td>
+<td><a href="#tpotregressor-score">score</a>(testing_features, testing_target)</td>
 <td>Returns the optimized pipeline's score on the given testing data using the user-specified scoring function.</td>
 </tr>
 
@@ -670,13 +670,13 @@ tpot.export('tpot_boston_pipeline.py')
 
 <a name="tpotregressor-fit"></a>
 ```Python
-fit(features, classes, sample_weight=None, groups=None)
+fit(features, target, sample_weight=None, groups=None)
 ```
 
 <div style="padding-left:5%" width="100%">
 Run the TPOT optimization process on the given training data.
 <br /><br />
-Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and classes. Performs internal k-fold cross-validaton to avoid overfitting on the provided data.
+Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and target. Performs internal k-fold cross-validaton to avoid overfitting on the provided data.
 <br /><br />
 <table width="100%">
 <tr>
@@ -693,7 +693,7 @@ using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preproce
 If you wish to use a different imputation strategy than median imputation, please make sure to apply imputation to your feature set prior to passing it to TPOT.
 </blockquote>
 
-<strong>classes</strong>: array-like {n_samples}
+<strong>target</strong>: array-like {n_samples}
 <blockquote>
 List of target labels for prediction
 </blockquote>
@@ -757,7 +757,7 @@ Predicted target values for the samples in the feature matrix
 
 <a name="tpotregressor-score"></a>
 ```Python
-score(testing_features, testing_classes)
+score(testing_features, testing_target)
 ```
 
 <div style="padding-left:5%" width="100%">
@@ -774,7 +774,7 @@ The default scoring function for TPOTClassifier is 'mean_squared_error'.
 Feature matrix of the testing set
 </blockquote>
 
-<strong>testing_classes</strong>: array-like {n_samples}
+<strong>testing_target</strong>: array-like {n_samples}
 <blockquote>
 List of target labels for prediction in the testing set
 </blockquote>
