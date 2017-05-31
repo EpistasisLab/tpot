@@ -19,6 +19,7 @@ pages:
 - Home: index.md
 - Installation: installing.md
 - Using TPOT: using.md
+- API: api.md
 - Examples: examples.md
 - Contributing: contributing.md
 - Release Notes: releases.md
