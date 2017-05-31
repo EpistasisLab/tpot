@@ -413,9 +413,8 @@ class TPOTBase(BaseEstimator):
         """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
-        maximizes score on the provided features and classes. Performs an internal
-        stratified training/testing cross-validaton split to avoid overfitting
-        on the provided data.
+        maximizes score on the provided features and classes. Performs internal
+        k-fold cross-validaton to avoid overfitting on the training data.
 
         Parameters
         ----------

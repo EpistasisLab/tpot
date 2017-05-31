@@ -83,8 +83,9 @@ Cross-validation strategy used when evaluating pipelines.
 <br /><br />
 Possible inputs:
 <ul>
-<li>integer, to specify the number of folds in a StratifiedKFold, or</li>
-<li>An object to be used as a cross-validation generator</li>
+<li>integer, to specify the number of folds in a StratifiedKFold,</li>
+<li>An object to be used as a cross-validation generator, or</li>
+<li>An iterable yielding train/test splits.</li>
 </blockquote>
 
 <strong>subsample</strong>: float, optional (default=1.0)
@@ -184,7 +185,7 @@ Note: <em>pareto_front_fitted_pipelines_</em> is only available when <em>verbosi
 
 <strong>evaluated_individuals_</strong>: Python dictionary
 <blockquote>
-Dictionary containing all pipelines that were evaluated during the pipeline optimization process, where the key is the string representation of the pipeline and the value is a tuple containing (# of steps in pipeline, quality metric for the pipeline).
+Dictionary containing all pipelines that were evaluated during the pipeline optimization process, where the key is the string representation of the pipeline and the value is a tuple containing (# of steps in pipeline, accuracy metric for the pipeline).
 <br /><br />
 This attribute is primarily for internal use, but may be useful for looking at the other pipelines that TPOT evaluated.
 </blockquote>
@@ -247,7 +248,7 @@ fit(features, classes, sample_weight=None, groups=None)
 <div style="padding-left:5%" width="100%">
 Run the TPOT optimization process on the given training data.
 <br /><br />
-Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and classes. Performs an internal stratified training/testing cross-validaton split to avoid overfitting on the provided data.
+Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and classes. Performs internal stratified k-fold cross-validaton to avoid overfitting on the provided data.
 <br /><br />
 <table width="100%">
 <tr>
@@ -257,7 +258,9 @@ Uses genetic programming to optimize a machine learning pipeline that maximizes 
 <blockquote>
 Feature matrix
 <br /><br />
-TPOT and all scikit-learn algorithms assume that the features will be numerical and there will be no missing values. As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed) using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html">median value imputation</a>.
+TPOT and all scikit-learn algorithms assume that the features will be numerical and there will be no missing values.
+As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed)
+using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html">median value imputation</a>.
 <br /><br />
 If you wish to use a different imputation strategy than median imputation, please make sure to apply imputation to your feature set prior to passing it to TPOT.
 </blockquote>
@@ -512,8 +515,10 @@ Cross-validation strategy used when evaluating pipelines.
 <br /><br />
 Possible inputs:
 <ul>
-<li>integer, to specify the number of folds in a StratifiedKFold, or</li>
-<li>An object to be used as a cross-validation generator</li>
+<li>integer, to specify the number of folds in a KFold,</li>
+<li>An object to be used as a cross-validation generator, or</li>
+<li>An iterable yielding train/test splits.</li>
+</ul>
 </blockquote>
 
 <strong>subsample</strong>: float, optional (default=1.0)
@@ -560,7 +565,7 @@ Possible inputs are:
 <li>Python dictionary, TPOT will use your custom configuration,</li>
 <li>string 'TPOT light', TPOT will use a built-in configuration with only fast models and preprocessors, or</li>
 <li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies, or</li>
-<li>None, TPOT will use the default TPOTClassifier configuration.</li>
+<li>None, TPOT will use the default TPOTRegressor configuration.</li>
 </ul>
 See the <a href="/using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="/using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
 </blockquote>
@@ -613,7 +618,7 @@ Note: <em>_pareto_front_fitted_pipelines</em> is only available when <em>verbosi
 
 <strong>_evaluated_individuals</strong>: Python dictionary
 <blockquote>
-Dictionary containing all pipelines that were evaluated during the pipeline optimization process, where the key is the string representation of the pipeline and the value is a tuple containing (# of steps in pipeline, quality metric for the pipeline).
+Dictionary containing all pipelines that were evaluated during the pipeline optimization process, where the key is the string representation of the pipeline and the value is a tuple containing (# of steps in pipeline, accuracy metric for the pipeline).
 <br /><br />
 This attribute is primarily for internal use, but may be useful for looking at the other pipelines that TPOT evaluated.
 </blockquote>
@@ -624,51 +629,46 @@ This attribute is primarily for internal use, but may be useful for looking at t
 <strong>Example</strong>
 
 ```Python
-from tpot import TPOTClassifier
-from sklearn.datasets import load_digits
+from tpot import TPOTRegressor
+from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
 
-digits = load_digits()
+digits = load_boston()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
                                                     train_size=0.75, test_size=0.25)
 
-tpot = TPOTClassifier(generations=5, population_size=50, verbosity=2)
+tpot = TPOTRegressor(generations=5, population_size=50, verbosity=2)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_boston_pipeline.py')
 ```
 
 <strong>Functions</strong>
 
 <table width="100%">
 <tr>
-<td width="25%"><a href="#tpotclassifier-fit">fit</a>(features, classes[, sample_weight, groups])</td>
+<td width="25%"><a href="#tpotregressor-fit">fit</a>(features, classes[, sample_weight, groups])</td>
 <td>Run the TPOT optimization process on the given training data.</td>
 </tr>
 
 <tr>
-<td><a href="#tpotclassifier-predict">predict</a>(features)</td>
-<td>Use the optimized pipeline to predict the classes for a feature set.</td>
+<td><a href="#tpotregressor-predict">predict</a>(features)</td>
+<td>Use the optimized pipeline to predict the target values for a feature set.</td>
 </tr>
 
 <tr>
-<td><a href="#tpotclassifier-predict-proba">predict_proba</a>(features)</td>
-<td>Use the optimized pipeline to estimate the class probabilities for a feature set.</td>
-</tr>
-
-<tr>
-<td><a href="#tpotclassifier-score">score</a>(testing_features, testing_classes)</td>
+<td><a href="#tpotregressor-score">score</a>(testing_features, testing_classes)</td>
 <td>Returns the optimized pipeline's score on the given testing data using the user-specified scoring function.</td>
 </tr>
 
 <tr>
-<td><a href="#tpotclassifier-export">export</a>(output_file_name)</td>
+<td><a href="#tpotregressor-export">export</a>(output_file_name)</td>
 <td>Export the optimized pipeline as Python code.</td>
 </tr>
 </table>
 
 
-<a name="tpotclassifier-fit"></a>
+<a name="tpotregressor-fit"></a>
 ```Python
 fit(features, classes, sample_weight=None, groups=None)
 ```
@@ -676,7 +676,7 @@ fit(features, classes, sample_weight=None, groups=None)
 <div style="padding-left:5%" width="100%">
 Run the TPOT optimization process on the given training data.
 <br /><br />
-Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and classes. Performs an internal stratified training/testing cross-validaton split to avoid overfitting on the provided data.
+Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and classes. Performs internal k-fold cross-validaton to avoid overfitting on the provided data.
 <br /><br />
 <table width="100%">
 <tr>
@@ -686,14 +686,16 @@ Uses genetic programming to optimize a machine learning pipeline that maximizes 
 <blockquote>
 Feature matrix
 <br /><br />
-TPOT and all scikit-learn algorithms assume that the features will be numerical and there will be no missing values. As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed) using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html">median value imputation</a>.
+TPOT and all scikit-learn algorithms assume that the features will be numerical and there will be no missing values.
+As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed)
+using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html">median value imputation</a>.
 <br /><br />
 If you wish to use a different imputation strategy than median imputation, please make sure to apply imputation to your feature set prior to passing it to TPOT.
 </blockquote>
 
 <strong>classes</strong>: array-like {n_samples}
 <blockquote>
-List of class labels for prediction
+List of target labels for prediction
 </blockquote>
 
 <strong>sample_weight</strong>: array-like {n_samples}, optional
@@ -722,13 +724,13 @@ Returns a copy of the fitted TPOT object
 </div>
 
 
-<a name="tpotclassifier-predict"></a>
+<a name="tpotregressor-predict"></a>
 ```Python
 predict(features)
 ```
 
 <div style="padding-left:5%" width="100%">
-Use the optimized pipeline to predict the classes for a feature set.
+Use the optimized pipeline to predict the target values for a feature set.
 <br /><br />
 <table width="100%">
 <tr>
@@ -745,7 +747,7 @@ Feature matrix
 <td width="80%" style="background:white;">
 <strong>predictions</strong>: array-like {n_samples}
 <blockquote>
-Predicted classes for the samples in the feature matrix
+Predicted target values for the samples in the feature matrix
 </blockquote>
 </td>
 </tr>
@@ -753,40 +755,7 @@ Predicted classes for the samples in the feature matrix
 </div>
 
 
-<a name="tpotclassifier-predict-proba"></a>
-```Python
-predict_proba(features)
-```
-
-<div style="padding-left:5%" width="100%">
-Use the optimized pipeline to estimate the class probabilities for a feature set.
-<br /><br />
-Note: This function will only work for pipelines whose final classifier supports the <em>predict_proba</em> function. TPOT will raise an error otherwise.
-<br /><br />
-<table width="100%">
-<tr>
-<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
-<td width="80%" style="background:white;">
-<strong>features</strong>: array-like {n_samples, n_features}
-<blockquote>
-Feature matrix
-</blockquote>
-</td>
-</tr>
-<tr>
-<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Returns:</strong></td>
-<td width="80%" style="background:white;">
-<strong>predictions</strong>: array-like {n_samples, n_classes}
-<blockquote>
-The class probabilities of the input samples
-</blockquote>
-</td>
-</tr>
-</table>
-</div>
-
-
-<a name="tpotclassifier-score"></a>
+<a name="tpotregressor-score"></a>
 ```Python
 score(testing_features, testing_classes)
 ```
@@ -794,7 +763,7 @@ score(testing_features, testing_classes)
 <div style="padding-left:5%" width="100%">
 Returns the optimized pipeline's score on the given testing data using the user-specified scoring function.
 <br /><br />
-The default scoring function for TPOTClassifier is 'accuracy'.
+The default scoring function for TPOTClassifier is 'mean_squared_error'.
 <br /><br />
 <table width="100%">
 <tr>
@@ -807,7 +776,7 @@ Feature matrix of the testing set
 
 <strong>testing_classes</strong>: array-like {n_samples}
 <blockquote>
-List of class labels for prediction in the testing set
+List of target labels for prediction in the testing set
 </blockquote>
 </td>
 </tr>
@@ -824,7 +793,7 @@ The estimated test set accuracy according to the user-specified scoring function
 </div>
 
 
-<a name="tpotclassifier-export"></a>
+<a name="tpotregressor-export"></a>
 ```Python
 export(output_file_name)
 ```
