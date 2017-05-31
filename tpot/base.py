@@ -411,18 +411,27 @@ class TPOTBase(BaseEstimator):
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
+
+            TPOT and all scikit-learn algorithms assume that the features will be numerical
+            and there will be no missing values. As such, when a feature matrix is provided
+            to TPOT, all missing values will automatically be replaced (i.e., imputed) using
+            median value imputation. 
+
+            If you wish to use a different imputation strategy than median imputation, please
+            make sure to apply imputation to your feature set prior to passing it to TPOT.
         classes: array-like {n_samples}
             List of class labels for prediction
-        sample_weight: array-like {n_samples}
-            List of sample weights
+        sample_weight: array-like {n_samples}, optional
+            Per-sample weights. Higher weights force TPOT to put more emphasis on those points
         groups: array-like, with shape {n_samples, }, optional
-            Group labels for the samples used while splitting the dataset into train/test set.
+            Group labels for the samples used when performing cross-validation.
             This parameter should only be used in conjunction with sklearn's Group cross-validation
             functions, such as sklearn.model_selection.GroupKFold
 
         Returns
         -------
-        None
+        self: object
+            Returns a copy of the fitted TPOT object
 
         """
         features = features.astype(np.float64)
@@ -564,15 +573,16 @@ class TPOTBase(BaseEstimator):
                                     with warnings.catch_warnings():
                                         warnings.simplefilter('ignore')
                                         self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
-
                     break
+
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
                     # raise the exception if it's our last attempt
-                    if attempt == attempts - 1:
+                    if attempt == (attempts - 1):
                         raise
+            return self
 
     def _update_top_pipeline(self):
-        """small helper function to update the _optimized_pipeline field"""
+        """Helper function to update the _optimized_pipeline field."""
         if self._pareto_front:
             top_score = -float('inf')
             for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
@@ -586,12 +596,12 @@ class TPOTBase(BaseEstimator):
         Parameters
         ----------
         features: array-like {n_samples, n_features}
-            Feature matrix to predict on
+            Feature matrix
 
         Returns
         ----------
         array-like: {n_samples}
-            Predicted classes for the feature matrix
+            Predicted classes for the samples in the feature matrix
 
         """
         if not self._fitted_pipeline:
@@ -624,7 +634,7 @@ class TPOTBase(BaseEstimator):
         return self.predict(features)
 
     def score(self, testing_features, testing_classes):
-        """Estimate the balanced testing accuracy of the optimized pipeline.
+        """Returns the score on the given testing data using the user-specified scoring function.
 
         Parameters
         ----------
@@ -684,11 +694,11 @@ class TPOTBase(BaseEstimator):
         return self
 
     def export(self, output_file_name):
-        """Export the current optimized pipeline as Python code.
+        """Export the optimized pipeline as Python code.
 
         Parameters
         ----------
-        output_file_name: str
+        output_file_name: string
             String containing the path and file name of the desired output file
 
         Returns

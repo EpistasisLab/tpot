@@ -394,9 +394,3 @@ When using the command-line interface, the configuration file specified in the `
 For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py) and [regression](https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py) in TPOT's source code.
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
-
-## Missing values
-
-All scikit-learn algorithms are written with the assumption that there will be no missing values in the feature matrix. As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed) using [median value imputation](http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html).
-
-If you wish to use a different imputation strategy than median imputation, please make sure to apply imputation to your feature set prior to passing it to TPOT.

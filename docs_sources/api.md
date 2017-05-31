@@ -8,7 +8,7 @@
                           <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                           <strong>warm_start</strong>=False, <strong>verbosity</strong>=0,
                           <strong>disable_update_check</strong>=False</em>)</pre>
-<div align="right"><a href="https://github.com/rhiever/tpot/blob/master/tpot/base.py#L77">source</a></div>
+<div align="right"><a href="https://github.com/rhiever/tpot/blob/master/tpot/base.py">source</a></div>
 
 Automated machine learning for supervised classification tasks.
 
@@ -185,6 +185,237 @@ This attribute is primarily for internal use, but may be useful for looking at t
 </td>
 <tr>
 </table>
+
+<strong>Example</strong>
+
+```Python
+from tpot import TPOTClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25)
+
+tpot = TPOTClassifier(generations=5, population_size=50, verbosity=2)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_mnist_pipeline.py')
+```
+
+<strong>Functions</strong>
+
+<table width="100%">
+<tr>
+<td width="25%"><a href="#tpotclassifier-fit">fit</a>(features, classes[, sample_weight, groups])</td>
+<td>Run the TPOT optimization process on the given training data.</td>
+</tr>
+
+<tr>
+<td><a href="#tpotclassifier-predict">predict</a>(features)</td>
+<td>Use the optimized pipeline to predict the classes for a feature set.</td>
+</tr>
+
+<tr>
+<td><a href="#tpotclassifier-predict-proba">predict_proba</a>(features)</td>
+<td>Use the optimized pipeline to estimate the class probabilities for a feature set.</td>
+</tr>
+
+<tr>
+<td><a href="#tpotclassifier-score">score</a>(testing_features, testing_classes)</td>
+<td>Returns the optimized pipeline's score on the given testing data using the user-specified scoring function.</td>
+</tr>
+
+<tr>
+<td><a href="#tpotclassifier-export">export</a>(output_file_name)</td>
+<td>Export the optimized pipeline as Python code.</td>
+</tr>
+</table>
+
+
+<a name="tpotclassifier-fit"></a>
+```Python
+fit(features, classes, sample_weight=None, groups=None)
+```
+
+<div style="padding-left:5%" width="100%">
+Run the TPOT optimization process on the given training data.
+<br /><br />
+Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and classes. Performs an internal stratified training/testing cross-validaton split to avoid overfitting on the provided data.
+<br /><br />
+<table width="100%">
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
+<td width="80%" style="background:white;">
+<strong>features</strong>: array-like {n_samples, n_features}
+<blockquote>
+Feature matrix
+<br /><br />
+TPOT and all scikit-learn algorithms assume that the features will be numerical and there will be no missing values. As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed) using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html">median value imputation</a>.
+<br /><br />
+If you wish to use a different imputation strategy than median imputation, please make sure to apply imputation to your feature set prior to passing it to TPOT.
+</blockquote>
+
+<strong>classes</strong>: array-like {n_samples}
+<blockquote>
+List of class labels for prediction
+</blockquote>
+
+<strong>sample_weight</strong>: array-like {n_samples}, optional
+<blockquote>
+Per-sample weights. Higher weights force TPOT to put more emphasis on those points.
+</blockquote>
+
+<strong>groups</strong>: array-like, with shape {n_samples, }, optional
+<blockquote>
+Group labels for the samples used when performing cross-validation.
+<br /><br />
+This parameter should only be used in conjunction with sklearn's Group cross-validation functions, such as <a href="http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html">sklearn.model_selection.GroupKFold</a>.
+</blockquote>
+</td>
+</tr>
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Returns:</strong></td>
+<td width="80%" style="background:white;">
+<strong>self</strong>: object
+<blockquote>
+Returns a copy of the fitted TPOT object
+</blockquote>
+</td>
+</tr>
+</table>
+</div>
+
+
+<a name="tpotclassifier-predict"></a>
+```Python
+predict(features)
+```
+
+<div style="padding-left:5%" width="100%">
+Use the optimized pipeline to predict the classes for a feature set.
+<br /><br />
+<table width="100%">
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
+<td width="80%" style="background:white;">
+<strong>features</strong>: array-like {n_samples, n_features}
+<blockquote>
+Feature matrix
+</blockquote>
+</td>
+</tr>
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Returns:</strong></td>
+<td width="80%" style="background:white;">
+<strong>predictions</strong>: array-like {n_samples}
+<blockquote>
+Predicted classes for the samples in the feature matrix
+</blockquote>
+</td>
+</tr>
+</table>
+</div>
+
+
+<a name="tpotclassifier-predict-proba"></a>
+```Python
+predict_proba(features)
+```
+
+<div style="padding-left:5%" width="100%">
+Use the optimized pipeline to estimate the class probabilities for a feature set.
+<br /><br />
+Note: This function will only work for pipelines whose final classifier supports the <em>predict_proba</em> function. TPOT will raise an error otherwise.
+<br /><br />
+<table width="100%">
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
+<td width="80%" style="background:white;">
+<strong>features</strong>: array-like {n_samples, n_features}
+<blockquote>
+Feature matrix
+</blockquote>
+</td>
+</tr>
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Returns:</strong></td>
+<td width="80%" style="background:white;">
+<strong>predictions</strong>: array-like {n_samples, n_classes}
+<blockquote>
+The class probabilities of the input samples
+</blockquote>
+</td>
+</tr>
+</table>
+</div>
+
+
+<a name="tpotclassifier-score"></a>
+```Python
+score(testing_features, testing_classes)
+```
+
+<div style="padding-left:5%" width="100%">
+Returns the optimized pipeline's score on the given testing data using the user-specified scoring function.
+<br /><br />
+The default scoring function for TPOTClassifier is 'accuracy'.
+<br /><br />
+<table width="100%">
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
+<td width="80%" style="background:white;">
+<strong>testing_features</strong>: array-like {n_samples, n_features}
+<blockquote>
+Feature matrix of the testing set
+</blockquote>
+
+<strong>testing_classes</strong>: array-like {n_samples}
+<blockquote>
+List of class labels for prediction in the testing set
+</blockquote>
+</td>
+</tr>
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Returns:</strong></td>
+<td width="80%" style="background:white;">
+<strong>accuracy_score</strong>: float
+<blockquote>
+The estimated test set accuracy according to the user-specified scoring function.
+</blockquote>
+</td>
+</tr>
+</table>
+</div>
+
+
+<a name="tpotclassifier-export"></a>
+```Python
+export(output_file_name)
+```
+
+<div style="padding-left:5%" width="100%">
+Export the optimized pipeline as Python code.
+<br /><br />
+See the <a href="/using/#tpot-with-code">usage documentation</a> for example usage of the export function.
+<br /><br />
+<table width="100%">
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
+<td width="80%" style="background:white;">
+<strong>output_file_name</strong>: string
+<blockquote>
+String containing the path and file name of the desired output file
+</blockquote>
+</tr>
+<tr>
+<td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Returns:</strong></td>
+<td width="80%" style="background:white;">
+Does not return anything
+</td>
+</tr>
+</table>
+</div>
 
 # Regression
 
