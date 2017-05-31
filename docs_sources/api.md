@@ -774,7 +774,7 @@ The default scoring function for TPOTClassifier is 'mean_squared_error'.
 Feature matrix of the testing set
 </blockquote>
 
-<strong>testing_testing_target</strong>: array-like {n_samples}
+<strong>testing_target</strong>: array-like {n_samples}
 <blockquote>
 List of target labels for prediction in the testing set
 </blockquote>
