@@ -406,7 +406,7 @@ export(output_file_name)
 <div style="padding-left:5%" width="100%">
 Export the optimized pipeline as Python code.
 <br /><br />
-See the <a href="/using/#tpot-with-code">usage documentation</a> for example usage of the export function.
+See the <a href="../using/#tpot-with-code">usage documentation</a> for example usage of the export function.
 <br /><br />
 <table width="100%">
 <tr>
@@ -504,7 +504,7 @@ Function used to evaluate the quality of a given pipeline for the regression pro
 <br /><br/>
 Note that we recommend using the <em>neg</em> version of mean squared error and related metrics so TPOT will minimize (instead of maximize) the metric.
 <br /><br/>
-If you would like to use a custom scoring function, you can pass a callable function to this parameter with the signature <em>scorer(y_true, y_pred)</em>. See the section on <a href="/using/#scoring-functions">scoring functions</a> for more details.
+If you would like to use a custom scoring function, you can pass a callable function to this parameter with the signature <em>scorer(y_true, y_pred)</em>. See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
 <br /><br />
 TPOT assumes that any custom scoring function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized.
 </blockquote>
@@ -567,7 +567,7 @@ Possible inputs are:
 <li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies, or</li>
 <li>None, TPOT will use the default TPOTRegressor configuration.</li>
 </ul>
-See the <a href="/using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="/using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
+See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
 </blockquote>
 
 <strong>warm_start</strong>: boolean, optional (default=False)
@@ -801,7 +801,7 @@ export(output_file_name)
 <div style="padding-left:5%" width="100%">
 Export the optimized pipeline as Python code.
 <br /><br />
-See the <a href="/using/#tpot-with-code">usage documentation</a> for example usage of the export function.
+See the <a href="../using/#tpot-with-code">usage documentation</a> for example usage of the export function.
 <br /><br />
 <table width="100%">
 <tr>
