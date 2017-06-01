@@ -1,20 +1,22 @@
 # Version 0.8
 
-* TPOT now detects whether there is missing data in the provided data set, and if so, add an evolvable imputer to the primitive set.
+* **TPOT now detects whether there are missing values in your dataset** and replaces them with the median value of the column.
 
-* TPOT now aloows you to set a group parameter in fit function in order to add Group labels for the samples used while splitting the dataset into train/test set.
+* TPOT now allows you to set a `group` parameter in the `fit` function so you can use the [GroupKFold](http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html) cross-validation strategy.
 
-* TPOT now allows you to set a subsample ratio of the training instance by `subsample` parameter. For example, setting it to 0.5 means that TPOT randomly collects half of training samples for pipeline optimization process.
+* TPOT now allows you to set a subsample ratio of the training instance with the `subsample` parameter. For example, setting `subsample`=0.5 tells TPOT to create a fixed subsample of half of the training data for the pipeline optimization process.
 
-* TPOR now has more [built-in-tpot-configurations](/using/#built-in-tpot-configurations), including TPOT MDR and TPOT light. And TPOT MDR now supports both classification and regression.
+* **TPOT now has more [built-in configurations](/using/#built-in-tpot-configurations)**, including TPOT MDR and TPOT light, for both classification and regression problems.
 
-* TPOTClassifier/TPOTRegressor now provides three useful internal attributes, `_fitted_pipeline`, `_pareto_front_fitted_pipelines`, and `_evaluated_individuals`.
+* `TPOTClassifier` and `TPOTRegressor` now expose three useful internal attributes, `fitted_pipeline_`, `pareto_front_fitted_pipelines_`, and `evaluated_individuals_`. These attributes are described in the [API documentation](/api/)
 
-* Fixed a reproducibility issue where setting `random_seed` didn't necessarily result in the same results every time. This bug was present since TPOT v0.7
+* Oh, **TPOT now has [thorough API documentation](/api/)**. Check it out!
 
-* Refined input checking in TPOT
+* Fixed a reproducibility issue where setting `random_seed` didn't necessarily result in the same results every time. This bug was present since TPOT v0.7.
 
-* Removed Python2 uncompliant codes
+* Refined input checking in TPOT.
+
+* Removed Python 2 uncompliant code.
 
 
 # Version 0.7
