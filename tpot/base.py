@@ -574,14 +574,13 @@ class TPOTBase(BaseEstimator):
                                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
                             # Store and fit the entire Pareto front as fitted models for convenience
-                            if self._pareto_front:
-                                self.pareto_front_fitted_pipelines_ = {}
+                            self.pareto_front_fitted_pipelines_ = {}
 
-                                for pipeline in self._pareto_front.items:
-                                    self.pareto_front_fitted_pipelines_[str(pipeline)] = self._toolbox.compile(expr=pipeline)
-                                    with warnings.catch_warnings():
-                                        warnings.simplefilter('ignore')
-                                        self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, target)
+                            for pipeline in self._pareto_front.items:
+                                self.pareto_front_fitted_pipelines_[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                                with warnings.catch_warnings():
+                                    warnings.simplefilter('ignore')
+                                    self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, target)
                     break
 
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
