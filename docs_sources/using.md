@@ -1,3 +1,47 @@
+# What to expect from AutoML software
+
+Automated machine learning (AutoML) takes a higher-level approach to machine learning than most practitioners are used to,
+so we've gathered a handful of guidelines on what to expect when running AutoML software such as TPOT.
+
+<h5>AutoML algorithms aren't intended to run for only a few minutes</h5>
+
+Of course, you *can* run TPOT for only a few minutes and it will find a reasonably good pipeline for your dataset.
+However, if you don't run TPOT for very long, it may not find the best pipeline possible for your dataset.
+Often it is worthwhile to run multiple instances of TPOT in parallel for a long time (hours to days) to allow TPOT to thoroughly search
+the pipeline space for your dataset.
+
+<h5>AutoML algorithms can take a long time to finish their search</h5>
+
+AutoML algorithms aren't as simple as fitting one model on the dataset; they are considering multiple machine learning algorithms
+(random forests, linear models, SVMs, etc.) in a pipeline with multiple preprocessing steps (missing value imputation, scaling,
+PCA, feature selection, etc.), the hyperparameters for all of the models and preprocessing steps, as well as multiple ways
+to ensemble or stack the algorithms within the pipeline.
+
+As such, TPOT will take a while to run on larger datasets, but it's important to realize why. With the default TPOT settings
+(100 generations with 100 population size), TPOT will evaluate 10,000 pipeline configurations before finishing.
+To put this number into context, think about a grid search of 10,000 hyperparameter combinations for a machine learning algorithm
+and how long that grid search will take. That is 10,000 model configurations to evaluate with 10-fold cross-validation,
+which means that roughly 100,000 models are fit and evaluated on the training data in one grid search.
+That's a time-consuming procedure, even for simpler models like decision trees.
+
+Typical TPOT runs will take hours to days to finish (unless it's a small dataset), but you can always interrupt
+the run partway through and see the best results so far. TPOT also [provides](/api/) a `warm_start` parameter that
+lets you restart a TPOT run from where it left off.
+
+<h5>AutoML algorithms can recommend different solutions for the same dataset</h5>
+
+If you're working with a reasonably complex dataset or run TPOT for a short amount of time, different TPOT runs
+may result in different pipeline recommendations. TPOT's optimization algorithm is stochastic in nature, which means
+that it uses randomness (in part) to search the possible pipeline space. When two TPOT runs recommend different
+pipelines, this means that the TPOT runs didn't converge due to lack of time *or* that multiple pipelines
+perform more-or-less the same on your dataset.
+
+This is actually an advantage over fixed grid search techniques: TPOT is meant to be an assistant that gives
+you ideas on how to solve a particular machine learning problem by exploring pipeline configurations that you
+might have never considered, then leaves the fine-tuning to more constrained parameter tuning techniques such
+as grid search.
+
+
 # TPOT with code
 
 We've taken care to design the TPOT interface to be as similar as possible to scikit-learn.
@@ -14,7 +58,8 @@ then create an instance of TPOT as follows:
 pipeline_optimizer = TPOTClassifier()
 ```
 
-It's also possible to use TPOT for regression problems with the `TPOTRegressor` class. Other than the class name, a `TPOTRegressor` is used the same way as a `TPOTClassifier`. You can read more about the `TPOTClassifier` and `TPOTRegressor` classes in the [API documentation](/api/).
+It's also possible to use TPOT for regression problems with the `TPOTRegressor` class. Other than the class name,
+a `TPOTRegressor` is used the same way as a `TPOTClassifier`. You can read more about the `TPOTClassifier` and `TPOTRegressor` classes in the [API documentation](/api/).
 
 Some example code with custom TPOT parameters might look like:
 
@@ -29,7 +74,8 @@ Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize 
 pipeline_optimizer.fit(X_train, y_train)
 ```
 
-The `fit` function takes in a training data set and uses k-fold cross-validation when evaluating pipelines. It then initializes the genetic programming algoritm to find the best pipeline based on average k-fold score.
+The `fit` function takes in a training data set and uses k-fold cross-validation when evaluating pipelines. It then
+initializes the genetic programming algoritm to find the best pipeline based on average k-fold score.
 
 You can then proceed to evaluate the final pipeline on the testing set with the `score` function:
 
@@ -79,7 +125,8 @@ An example command-line call to TPOT may look like:
 tpot data/mnist.csv -is , -target class -o tpot_exported_pipeline.py -g 5 -p 20 -cv 5 -s 42 -v 2
 ```
 
-TPOT offers several arguments that can be provided at the command line. To see brief descriptions of these arguments, enter the following command:
+TPOT offers several arguments that can be provided at the command line. To see brief descriptions of these arguments,
+enter the following command:
 
 ```Shell
 tpot --help
