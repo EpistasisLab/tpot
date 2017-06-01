@@ -1,3 +1,22 @@
+# Version 0.8
+
+* TPOT now detects whether there is missing data in the provided data set, and if so, add an evolvable imputer to the primitive set.
+
+* TPOT now aloows you to set a group parameter in fit function in order to add Group labels for the samples used while splitting the dataset into train/test set.
+
+* TPOT now allows you to set a subsample ratio of the training instance by `subsample` parameter. For example, setting it to 0.5 means that TPOT randomly collects half of training samples for pipeline optimization process.
+
+* TPOR now has more [built-in-tpot-configurations](/using/#built-in-tpot-configurations), including TPOT MDR and TPOT light. And TPOT MDR now supports both classification and regression.
+
+* TPOTClassifier/TPOTRegressor now provides three useful internal attributes, `_fitted_pipeline`, `_pareto_front_fitted_pipelines`, and `_evaluated_individuals`.
+
+* Fixed a reproducibility issue where setting `random_seed` didn't necessarily result in the same results every time. This bug was present since TPOT v0.7
+
+* Refined input checking in TPOT
+
+* Removed Python2 uncompliant codes
+
+
 # Version 0.7
 
 * **TPOT now has multiprocessing support.** TPOT allows you to use multiple processes in parallel to accelerate the pipeline optimization process in TPOT with the `n_jobs` parameter.
@@ -7,8 +26,6 @@
 * TPOT now allows you to **specify a time limit for evaluating a single pipeline**  (default limit is 5 minutes) in optimization process with the `max_eval_time_mins` parameter, so TPOT won't spend hours evaluating overly-complex pipelines.
 
 * We tweaked TPOT's underlying evolutionary optimization algorithm to work even better, including using the [mu+lambda algorithm](http://deap.readthedocs.io/en/master/api/algo.html#deap.algorithms.eaMuPlusLambda). This algorithm gives you more control of how many pipelines are generated every iteration with the `offspring_size` parameter.
-
-* Fixed a reproducibility issue where setting `random_seed` didn't necessarily result in the same results every time. This bug was present since TPOT v0.6.
 
 * Refined the default operators and parameters in TPOT, so TPOT 0.7 should work even better than 0.6.
 
