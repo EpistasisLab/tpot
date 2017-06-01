@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-Copyright 2015-Present Randal S. Olson
+"""Copyright 2015-Present Randal S. Olson.
 
 This file is part of the TPOT library.
 
@@ -17,17 +16,10 @@ GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
-
-
-dictionary format (json-like format):
-key:
-    operator name
-value:
-    source: module source (e.g sklearn.tree)
-    dependencies: depended module (e.g. ExtraTreesClassifier in selectors RFE); None for no dependency
-    params: a dictionary of parameter names (keys) and parameter ranges (values); None for no params
 """
 import numpy as np
+
+# Check the TPOT documentation for information on the structure of config dicts
 
 regressor_config_dict = {
 
@@ -160,7 +152,7 @@ regressor_config_dict = {
     'sklearn.preprocessing.StandardScaler': {
     },
 
-    'tpot.built_in_operators.ZeroCount': {
+    'tpot.builtins.ZeroCount': {
     },
 
     # Selectors
@@ -168,22 +160,14 @@ regressor_config_dict = {
         'alpha': np.arange(0, 0.05, 0.001),
         'score_func': {
             'sklearn.feature_selection.f_classif': None
-            } # read from dependencies ! need add an exception in preprocess_args
-
-    },
-
-    'sklearn.feature_selection.SelectKBest': {
-        'k': range(1, 100), # need check range!
-        'score_func': {
-            'sklearn.feature_selection.f_classif': None
-            }
+        }
     },
 
     'sklearn.feature_selection.SelectPercentile': {
         'percentile': range(1, 100),
         'score_func': {
             'sklearn.feature_selection.f_classif': None
-            }
+        }
     },
 
     'sklearn.feature_selection.VarianceThreshold': {
@@ -193,12 +177,11 @@ regressor_config_dict = {
     'sklearn.feature_selection.SelectFromModel': {
         'threshold': np.arange(0, 1.01, 0.05),
         'estimator': {
-                'sklearn.ensemble.ExtraTreesRegressor': {
-                    'n_estimators': [100],
-                    'max_features': np.arange(0.05, 1.01, 0.05)
-                    }
-                }
-
+            'sklearn.ensemble.ExtraTreesRegressor': {
+                'n_estimators': [100],
+                'max_features': np.arange(0.05, 1.01, 0.05)
+            }
+        }
     }
 
 }

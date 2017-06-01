@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-Copyright 2015-Present Randal S. Olson
+"""Copyright 2015-Present Randal S. Olson.
 
 This file is part of the TPOT library.
 
@@ -25,7 +24,7 @@ from sklearn.metrics import make_scorer, SCORERS
 
 
 def balanced_accuracy(y_true, y_pred):
-    """Default scoring function: balanced accuracy
+    """Default scoring function: balanced accuracy.
 
     Balanced accuracy computes each class' accuracy on a per-class basis using a
     one-vs-rest encoding, then computes an unweighted average of the class accuracies.
@@ -58,5 +57,6 @@ def balanced_accuracy(y_true, y_pred):
         all_class_accuracies.append(this_class_accuracy)
 
     return np.mean(all_class_accuracies)
+
 
 SCORERS['balanced_accuracy'] = make_scorer(balanced_accuracy)

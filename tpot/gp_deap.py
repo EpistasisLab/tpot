@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-Copyright 2015-Present Randal S. Olson
+"""Copyright 2015-Present Randal S. Olson.
 
 This file is part of the TPOT library.
 
@@ -34,6 +33,10 @@ from sklearn.base import clone
 from collections import defaultdict
 import warnings
 import threading
+
+# Limit loops to generate a different individual by crossover/mutation
+MAX_MUT_LOOPS = 50
+
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
@@ -70,15 +73,15 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
     offspring = []
     for _ in range(lambda_):
         op_choice = np.random.random()
-        if op_choice < cxpb:            # Apply crossover
-            idxs = np.random.randint(0, len(population),size=2)
+        if op_choice < cxpb:  # Apply crossover
+            idxs = np.random.randint(0, len(population), size=2)
             ind1, ind2 = toolbox.clone(population[idxs[0]]), toolbox.clone(population[idxs[1]])
             ind_str = str(ind1)
             num_loop = 0
-            while ind_str == str(ind1) and num_loop < 50 : # 50 loops at most to generate a different individual by crossover
+            while ind_str == str(ind1) and num_loop < MAX_MUT_LOOPS:
                 ind1, ind2 = toolbox.mate(ind1, ind2)
                 num_loop += 1
-            if ind_str != str(ind1): # check if crossover happened
+            if ind_str != str(ind1):  # check if crossover happened
                 del ind1.fitness.values
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
@@ -86,20 +89,21 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
             ind = toolbox.clone(population[idx])
             ind_str = str(ind)
             num_loop = 0
-            while ind_str == str(ind) and num_loop < 50 : # 50 loops at most to generate a different individual by mutation
+            while ind_str == str(ind) and num_loop < MAX_MUT_LOOPS:
                 ind, = toolbox.mutate(ind)
                 num_loop += 1
-            if ind_str != str(ind): # check if mutation happened
+            if ind_str != str(ind):  # check if mutation happened
                 del ind.fitness.values
             offspring.append(ind)
-        else: # Apply reproduction
+        else:  # Apply reproduction
             idx = np.random.randint(0, len(population))
             offspring.append(toolbox.clone(population[idx]))
 
     return offspring
 
+
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
-                   stats=None, halloffame=None, verbose=0, max_time_mins = None):
+                   stats=None, halloffame=None, verbose=0, max_time_mins=None):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
@@ -177,7 +181,6 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
 
-
         # Update the hall of fame with the generated individuals
         if halloffame is not None:
             halloffame.update(offspring)
@@ -196,9 +199,12 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
             elif verbose == 3:
                 pbar.write('Generation {} - Current Pareto front scores:'.format(gen))
                 for pipeline, pipeline_scores in zip(halloffame.items, reversed(halloffame.keys)):
-                    pbar.write('{}\t{}\t{}'.format(int(abs(pipeline_scores.wvalues[0])),
-                                                         abs(pipeline_scores.wvalues[1]),
-                                                         pipeline))
+                    pbar.write('{}\t{}\t{}'.format(
+                            int(abs(pipeline_scores.wvalues[0])),
+                            abs(pipeline_scores.wvalues[1]),
+                            pipeline
+                        )
+                    )
                 pbar.write('')
 
         # Update the statistics with the new population
@@ -235,7 +241,7 @@ def cxOnePoint(ind1, ind2):
             types1[node.ret].append(idx)
         common_types = []
         for idx, node in enumerate(ind2[1:], 1):
-            if node.ret in types1 and not node.ret in types2:
+            if node.ret in types1 and node.ret not in types2:
                 common_types.append(node.ret)
             types2[node.ret].append(idx)
 
@@ -283,10 +289,11 @@ def mutNodeReplacement(individual, pset):
         # find next primitive if any
         rindex = None
         if index + 1 < len(individual):
-            for i, tmpnode in enumerate(individual[index+1:], index+ 1):
+            for i, tmpnode in enumerate(individual[index + 1:], index + 1):
                 if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in tmpnode.args:
                     rindex = i
-        #pset.primitives[node.ret] can get a list of the type of node
+
+        # pset.primitives[node.ret] can get a list of the type of node
         # for example: if op.root is True then the node.ret is Output_DF object
         # based on the function _setup_pset. Then primitives is the list of classifor or regressor
         primitives = pset.primitives[node.ret]
@@ -323,9 +330,11 @@ class Interruptable_cross_val_score(threading.Thread):
         self.result = -float('inf')
         self._stopevent = threading.Event()
         self.daemon = True
+
     def stop(self):
         self._stopevent.set()
         threading.Thread.join(self)
+
     def run(self):
         # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
         # Note: Need attention if using parallel execution model of scikit-learn
@@ -337,20 +346,31 @@ class Interruptable_cross_val_score(threading.Thread):
         except Exception as e:
             pass
 
-def _wrapped_cross_val_score(sklearn_pipeline, features, classes,
-                             cv, scoring_function, sample_weight, max_eval_time_mins):
-    #sys.tracebacklimit = 0
+
+def _wrapped_cross_val_score(sklearn_pipeline, features, target,
+                             cv, scoring_function, sample_weight,
+                             max_eval_time_mins, groups):
     max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
     # build a job for cross_val_score
-    tmp_it = Interruptable_cross_val_score(clone(sklearn_pipeline), features, classes,
-        scoring=scoring_function,  cv=cv, n_jobs=1, verbose=0, fit_params=sample_weight_dict)
+    tmp_it = Interruptable_cross_val_score(
+        clone(sklearn_pipeline),
+        features,
+        target,
+        scoring=scoring_function,
+        cv=cv,
+        n_jobs=1,
+        verbose=0,
+        fit_params=sample_weight_dict,
+        groups=groups
+    )
     tmp_it.start()
     tmp_it.join(max_time_seconds)
+
     if tmp_it.isAlive():
         resulting_score = 'Timeout'
     else:
         resulting_score = np.mean(tmp_it.result)
-    #sys.tracebacklimit = 1000
+
     tmp_it.stop()
     return resulting_score

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-Copyright 2015-Present Randal S. Olson
+"""Copyright 2015-Present Randal S. Olson.
 
 This file is part of the TPOT library.
 
@@ -22,8 +21,9 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import deap
 
+
 def get_by_name(opname, operators):
-    """Returns operator class instance by name
+    """Return operator class instance by name.
 
     Parameters
     ----------
@@ -39,16 +39,20 @@ def get_by_name(opname, operators):
 
     """
     ret_op_classes = [op for op in operators if op.__name__ == opname]
+
     if len(ret_op_classes) == 0:
         raise TypeError('Cannot found operator {} in operator dictionary'.format(opname))
     elif len(ret_op_classes) > 1:
-        print('Found multiple operator {} in operator dictionary'.format(opname),
-        'Please check your dictionary file.')
+        print(
+            'Found multiple operator {} in operator dictionary. Please check '
+            'your dictionary file.'.format(opname)
+        )
     ret_op_class = ret_op_classes[0]
     return ret_op_class
 
+
 def export_pipeline(exported_pipeline, operators, pset):
-    """Generates the source code of a TPOT Pipeline
+    """Generate source code for a TPOT Pipeline.
 
     Parameters
     ----------
@@ -69,14 +73,29 @@ def export_pipeline(exported_pipeline, operators, pset):
     # Have the exported code import all of the necessary modules and functions
     pipeline_text = generate_import_code(exported_pipeline, operators)
 
+    pipeline_code = pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators))
+
+    if pipeline_code.count("FunctionTransformer(copy)"):
+        pipeline_text += """from sklearn.preprocessing import FunctionTransformer
+from copy import copy
+"""
+
+    pipeline_text += """
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_target, testing_target = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
+"""
+
     # Replace the function calls with their corresponding Python code
-    pipeline_text += pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators))
+    pipeline_text += pipeline_code
 
     return pipeline_text
 
 
 def expr_to_tree(ind, pset):
-    """Convert the unstructured DEAP pipeline into a tree data-structure
+    """Convert the unstructured DEAP pipeline into a tree data-structure.
 
     Parameters
     ----------
@@ -98,9 +117,9 @@ def expr_to_tree(ind, pset):
     def prim_to_list(prim, args):
         if isinstance(prim, deap.gp.Terminal):
             if prim.name in pset.context:
-                 return pset.context[prim.name]
+                return pset.context[prim.name]
             else:
-                 return prim.value
+                return prim.value
 
         return [prim.name] + args
 
@@ -119,7 +138,7 @@ def expr_to_tree(ind, pset):
 
 
 def generate_import_code(pipeline, operators):
-    """Generate all library import calls for use in TPOT.export()
+    """Generate all library import calls for use in TPOT.export().
 
     Parameters
     ----------
@@ -135,59 +154,24 @@ def generate_import_code(pipeline, operators):
         optimized pipeline
 
     """
-    # operator[1] is the name of the operator
+    def merge_imports(old_dict, new_dict):
+        # Key is a module name
+        for key in new_dict.keys():
+            if key in old_dict.keys():
+                # Union imports from the same module
+                old_dict[key] = set(old_dict[key]) | set(new_dict[key])
+            else:
+                old_dict[key] = set(new_dict[key])
+
     operators_used = [x.name for x in pipeline if isinstance(x, deap.gp.Primitive)]
-
     pipeline_text = 'import numpy as np\n\n'
-
-    # number of operators
-    num_op = len(operators_used)
+    pipeline_imports = _starting_imports(operators, operators_used)
 
     # Build dict of import requirments from list of operators
-    import_relations = {}
-    for op in operators:
-        import_relations[op.__name__] = op.import_hash
-
-    # number of classifier/regressor or CombineDFs
-    num_op_root = 0
-    for op in operators_used:
-        if op != 'CombineDFs':
-            tpot_op = get_by_name(op, operators)
-            if tpot_op.root:
-                num_op_root += 1
-        else:
-            num_op_root += 1
-
-    # Always start with these imports
-    if num_op_root > 1:
-        pipeline_imports = {
-            'sklearn.model_selection':  ['train_test_split'],
-            'sklearn.pipeline':         ['make_pipeline', 'make_union'],
-            'sklearn.preprocessing':    ['FunctionTransformer'],
-            'sklearn.ensemble':         ['VotingClassifier'],
-            'copy':                     ['copy']
-        }
-    elif num_op > 1:
-        pipeline_imports = {
-            'sklearn.model_selection':  ['train_test_split'],
-            'sklearn.pipeline':         ['make_pipeline']
-        }
-    else: # if  operators # == 1 and classifier/regressor # == 1, this import statement is simpler
-        pipeline_imports = {
-            'sklearn.model_selection':  ['train_test_split']
-        }
+    import_relations = {op.__name__: op.import_hash for op in operators}
 
     # Build import dict from operators used
     for op in operators_used:
-        def merge_imports(old_dict, new_dict):
-            # Key is a module name
-            for key in new_dict.keys():
-                if key in old_dict.keys():
-                    # Union imports from the same module
-                    old_dict[key] = set(old_dict[key]) | set(new_dict[key])
-                else:
-                    old_dict[key] = set(new_dict[key])
-
         try:
             operator_import = import_relations[op]
             merge_imports(pipeline_imports, operator_import)
@@ -199,19 +183,44 @@ def generate_import_code(pipeline, operators):
         module_list = ', '.join(sorted(pipeline_imports[key]))
         pipeline_text += 'from {} import {}\n'.format(key, module_list)
 
-    pipeline_text += """
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
-"""
-
     return pipeline_text
 
 
+def _starting_imports(operators, operators_used):
+    # number of operators
+    num_op = len(operators_used)
+
+    # number of classifier/regressor or CombineDFs
+    num_op_root = 0
+    for op in operators_used:
+        if op != 'CombineDFs':
+            tpot_op = get_by_name(op, operators)
+            if tpot_op.root:
+                num_op_root += 1
+        else:
+            num_op_root += 1
+
+
+    if num_op_root > 1:
+        return {
+            'sklearn.model_selection':  ['train_test_split'],
+            'sklearn.pipeline':         ['make_pipeline', 'make_union'],
+            'tpot.built_in_operators':  ['StackingEstimator'],
+        }
+    elif num_op > 1:
+        return {
+            'sklearn.model_selection':  ['train_test_split'],
+            'sklearn.pipeline':         ['make_pipeline']
+        }
+    # if operators # == 1 and classifier/regressor # == 1, this import statement is simpler
+    else:
+        return {
+            'sklearn.model_selection':  ['train_test_split']
+        }
+
+
 def pipeline_code_wrapper(pipeline_code):
-    """Generate code specific to the execution of the sklearn pipeline
+    """Generate code specific to the execution of the sklearn pipeline.
 
     Parameters
     ----------
@@ -226,13 +235,13 @@ def pipeline_code_wrapper(pipeline_code):
     return """
 exported_pipeline = {}
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """.format(pipeline_code)
 
 
 def generate_pipeline_code(pipeline_tree, operators):
-    """Generate code specific to the construction of the sklearn Pipeline
+    """Generate code specific to the construction of the sklearn Pipeline.
 
     Parameters
     ----------
@@ -244,12 +253,13 @@ def generate_pipeline_code(pipeline_tree, operators):
     Source code for the sklearn pipeline
 
     """
-    steps = process_operator(pipeline_tree, operators)
+    steps = _process_operator(pipeline_tree, operators)
     pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
     return pipeline_text
 
+
 def generate_export_pipeline_code(pipeline_tree, operators):
-    """Generate code specific to the construction of the sklearn Pipeline for export_pipeline
+    """Generate code specific to the construction of the sklearn Pipeline for export_pipeline.
 
     Parameters
     ----------
@@ -261,17 +271,19 @@ def generate_export_pipeline_code(pipeline_tree, operators):
     Source code for the sklearn pipeline
 
     """
-    steps = process_operator(pipeline_tree, operators)
+    steps = _process_operator(pipeline_tree, operators)
     # number of steps in a pipeline
     num_step = len(steps)
     if num_step > 1:
         pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
-    else: # only one operator (root = True)
-        pipeline_text =  "{STEPS}".format(STEPS=_indent(",\n".join(steps), 0))
+    # only one operator (root = True)
+    else:
+        pipeline_text = "{STEPS}".format(STEPS=_indent(",\n".join(steps), 0))
 
     return pipeline_text
 
-def process_operator(operator, operators, depth=0):
+
+def _process_operator(operator, operators, depth=0):
     steps = []
     op_name = operator[0]
 
@@ -284,13 +296,15 @@ def process_operator(operator, operators, depth=0):
         tpot_op = get_by_name(op_name, operators)
 
         if input_name != 'input_matrix':
-            steps.extend(process_operator(input_name, operators, depth + 1))
+            steps.extend(_process_operator(input_name, operators, depth + 1))
 
         # If the step is an estimator and is not the last step then we must
-        # add its guess as a synthetic feature
+        # add its guess as synthetic feature(s)
+        # classification prediction for both regression and classification
+        # classification probabilities for classification if available
         if tpot_op.root and depth > 0:
             steps.append(
-                "make_union(VotingClassifier([(\"est\", {})]), FunctionTransformer(copy))".
+                "StackingEstimator(estimator={})".
                 format(tpot_op.export(*args))
             )
         else:
@@ -299,7 +313,7 @@ def process_operator(operator, operators, depth=0):
 
 
 def _indent(text, amount):
-    """Indent a multiline string by some number of spaces
+    """Indent a multiline string by some number of spaces.
 
     Parameters
     ----------
@@ -327,18 +341,14 @@ def _combine_dfs(left, right, operators):
             tpot_op = get_by_name(branch[0], operators)
 
             if tpot_op.root:
-                return """make_union(VotingClassifier([('branch',
-{}
-)]), FunctionTransformer(copy))""".format(_indent(process_operator(branch, operators)[0], 4))
+                return "StackingEstimator(estimator={})".format(_process_operator(branch, operators)[0])
             else:
-                return process_operator(branch, operators)[0]
+                return _process_operator(branch, operators)[0]
         else:  # We're going to have to make a pipeline
             tpot_op = get_by_name(branch[0], operators)
 
             if tpot_op.root:
-                return """make_union(VotingClassifier([('branch',
-{}
-)]), FunctionTransformer(copy))""".format(_indent(generate_pipeline_code(branch, operators), 4))
+                return "StackingEstimator(estimator={})".format(generate_pipeline_code(branch, operators))
             else:
                 return generate_pipeline_code(branch, operators)
 

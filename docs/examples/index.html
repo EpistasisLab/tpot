@@ -62,6 +62,11 @@
     <a class="" href="../using/">Using TPOT</a>
 	    </li>
           
+            <li class="toctree-l1">
+		
+    <a class="" href="../api/">TPOT API</a>
+	    </li>
+          
             <li class="toctree-l1 current">
 		
     <a class="current" href="./">Examples</a>
@@ -168,7 +173,7 @@ from sklearn.preprocessing import Normalizer
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \
+training_features, testing_features, training_target, testing_target = \
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
@@ -176,7 +181,7 @@ exported_pipeline = make_pipeline(
     GaussianNB()
 )
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 </code></pre>
 
@@ -207,12 +212,12 @@ from sklearn.neighbors import KNeighborsClassifier
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \
+training_features, testing_features, training_target, testing_target = \
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=6, weights=&quot;distance&quot;)
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 </code></pre>
 
@@ -244,14 +249,14 @@ from sklearn.model_selection import train_test_split
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \
+training_features, testing_features, training_target, testing_target = \
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = GradientBoostingRegressor(alpha=0.85, learning_rate=0.1, loss=&quot;ls&quot;,
                                               max_features=0.9, min_samples_leaf=5,
                                               min_samples_split=6)
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 </code></pre>
 
@@ -267,7 +272,7 @@ results = exported_pipeline.predict(testing_features)
         <a href="../contributing/" class="btn btn-neutral float-right" title="Contributing">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../using/" class="btn btn-neutral" title="Using TPOT"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../api/" class="btn btn-neutral" title="TPOT API"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -297,7 +302,7 @@ results = exported_pipeline.predict(testing_features)
           <a href="https://github.com/rhiever/tpot" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../using/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../api/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../contributing/" style="color: #fcfcfc">Next &raquo;</a></span>
