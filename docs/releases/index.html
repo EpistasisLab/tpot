@@ -82,6 +82,9 @@
     <a class="current" href="./">Release Notes</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#version-08">Version 0.8</a></li>
+    
+
     <li class="toctree-l2"><a href="#version-07">Version 0.7</a></li>
     
 
@@ -151,7 +154,37 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="version-07">Version 0.7</h1>
+                <h1 id="version-08">Version 0.8</h1>
+<ul>
+<li>
+<p><strong>TPOT now detects whether there are missing values in your dataset</strong> and replaces them with the median value of the column.</p>
+</li>
+<li>
+<p>TPOT now allows you to set a <code>group</code> parameter in the <code>fit</code> function so you can use the <a href="http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html">GroupKFold</a> cross-validation strategy.</p>
+</li>
+<li>
+<p>TPOT now allows you to set a subsample ratio of the training instance with the <code>subsample</code> parameter. For example, setting <code>subsample</code>=0.5 tells TPOT to create a fixed subsample of half of the training data for the pipeline optimization process. This parameter can be useful for speeding up the pipeline optimization process, but may give less accurate performance estimates from cross-validation.</p>
+</li>
+<li>
+<p><strong>TPOT now has more <a href="../using/#built-in-tpot-configurations">built-in configurations</a></strong>, including TPOT MDR and TPOT light, for both classification and regression problems.</p>
+</li>
+<li>
+<p><code>TPOTClassifier</code> and <code>TPOTRegressor</code> now expose three useful internal attributes, <code>fitted_pipeline_</code>, <code>pareto_front_fitted_pipelines_</code>, and <code>evaluated_individuals_</code>. These attributes are described in the <a href="../api/">API documentation</a></p>
+</li>
+<li>
+<p>Oh, <strong>TPOT now has <a href="../api/">thorough API documentation</a></strong>. Check it out!</p>
+</li>
+<li>
+<p>Fixed a reproducibility issue where setting <code>random_seed</code> didn't necessarily result in the same results every time. This bug was present since TPOT v0.7.</p>
+</li>
+<li>
+<p>Refined input checking in TPOT.</p>
+</li>
+<li>
+<p>Removed Python 2 uncompliant code.</p>
+</li>
+</ul>
+<h1 id="version-07">Version 0.7</h1>
 <ul>
 <li>
 <p><strong>TPOT now has multiprocessing support.</strong> TPOT allows you to use multiple processes in parallel to accelerate the pipeline optimization process in TPOT with the <code>n_jobs</code> parameter.</p>
@@ -164,9 +197,6 @@
 </li>
 <li>
 <p>We tweaked TPOT's underlying evolutionary optimization algorithm to work even better, including using the <a href="http://deap.readthedocs.io/en/master/api/algo.html#deap.algorithms.eaMuPlusLambda">mu+lambda algorithm</a>. This algorithm gives you more control of how many pipelines are generated every iteration with the <code>offspring_size</code> parameter.</p>
-</li>
-<li>
-<p>Fixed a reproducibility issue where setting <code>random_seed</code> didn't necessarily result in the same results every time. This bug was present since TPOT v0.6.</p>
 </li>
 <li>
 <p>Refined the default operators and parameters in TPOT, so TPOT 0.7 should work even better than 0.6.</p>
