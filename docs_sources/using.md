@@ -208,7 +208,11 @@ We recommend using the default parameter unless you understand how the crossover
 <tr>
 <td>-scoring</td>
 <td>SCORING_FN</td>
-<td>'accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy',<br />'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error', 'median_absolute_error', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc'</td>
+<td>'accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy',<br />'f1',
+'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'neg_log_loss', 'neg_mean_absolute_error',
+'neg_mean_squared_error', 'neg_median_absolute_error', 'precision', 'precision_macro', 'precision_micro',
+'precision_samples', 'precision_weighted',<br />'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples',
+'recall_weighted', 'roc_auc'</td>
 <td>Function used to evaluate the quality of a given pipeline for the problem. By default, accuracy is used for classification and mean squared error (MSE) is used for regression.
 <br /><br />
 TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized.
@@ -332,7 +336,7 @@ TPOT comes with a handful of default operators and parameter configurations that
 <td>Default TPOT</td>
 <td>TPOT will search over a broad range of preprocessors, feature constructors, feature selectors, models, and parameters to find a series of operators that minimize the error of the model predictions. Some of these operators are complex and may take a long time to run, especially on larger datasets.
 <br /><br />
-<strong>Note: This is the default configuration for TPOT.</strong> To use this configuration, use the default value for the config_dict parameter.</td>
+<strong>Note: This is the default configuration for TPOT.</strong> To use this configuration, use the default value (None) for the config_dict parameter.</td>
 <td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config_classifier.py">Classification</a>
 <br /><br />
 <a href="https://github.com/rhiever/tpot/blob/master/tpot/config_regressor.py">Regression</a></td>
