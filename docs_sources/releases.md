@@ -1,3 +1,24 @@
+# Version 0.8
+
+* **TPOT now detects whether there are missing values in your dataset** and replaces them with the median value of the column.
+
+* TPOT now allows you to set a `group` parameter in the `fit` function so you can use the [GroupKFold](http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html) cross-validation strategy.
+
+* TPOT now allows you to set a subsample ratio of the training instance with the `subsample` parameter. For example, setting `subsample`=0.5 tells TPOT to create a fixed subsample of half of the training data for the pipeline optimization process.
+
+* **TPOT now has more [built-in configurations](/using/#built-in-tpot-configurations)**, including TPOT MDR and TPOT light, for both classification and regression problems.
+
+* `TPOTClassifier` and `TPOTRegressor` now expose three useful internal attributes, `fitted_pipeline_`, `pareto_front_fitted_pipelines_`, and `evaluated_individuals_`. These attributes are described in the [API documentation](/api/)
+
+* Oh, **TPOT now has [thorough API documentation](/api/)**. Check it out!
+
+* Fixed a reproducibility issue where setting `random_seed` didn't necessarily result in the same results every time. This bug was present since TPOT v0.7.
+
+* Refined input checking in TPOT.
+
+* Removed Python 2 uncompliant code.
+
+
 # Version 0.7
 
 * **TPOT now has multiprocessing support.** TPOT allows you to use multiple processes in parallel to accelerate the pipeline optimization process in TPOT with the `n_jobs` parameter.
@@ -7,8 +28,6 @@
 * TPOT now allows you to **specify a time limit for evaluating a single pipeline**  (default limit is 5 minutes) in optimization process with the `max_eval_time_mins` parameter, so TPOT won't spend hours evaluating overly-complex pipelines.
 
 * We tweaked TPOT's underlying evolutionary optimization algorithm to work even better, including using the [mu+lambda algorithm](http://deap.readthedocs.io/en/master/api/algo.html#deap.algorithms.eaMuPlusLambda). This algorithm gives you more control of how many pipelines are generated every iteration with the `offspring_size` parameter.
-
-* Fixed a reproducibility issue where setting `random_seed` didn't necessarily result in the same results every time. This bug was present since TPOT v0.6.
 
 * Refined the default operators and parameters in TPOT, so TPOT 0.7 should work even better than 0.6.
 
