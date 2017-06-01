@@ -573,8 +573,8 @@ class TPOTBase(BaseEstimator):
                                     print('')
                                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
-                            # Store and fit the entire Pareto front if sciencing
-                            elif self._pareto_front:
+                            # Store and fit the entire Pareto front as fitted models for convenience
+                            if self._pareto_front:
                                 self.pareto_front_fitted_pipelines_ = {}
 
                                 for pipeline in self._pareto_front.items:
