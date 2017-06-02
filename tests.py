@@ -98,32 +98,6 @@ def test_driver():
         ret_val = -float('inf')
     assert ret_val > 0.0
 
-
-def test_driver_2():
-    """Assert that the main() in TPOT driver outputs normal result."""
-    args_list = [
-                'tests.csv',
-                '-is', ',',
-                '-target', 'class',
-                '-g', '2',
-                '-p', '2',
-                '-os', '4',
-                '-cv', '5',
-                '-s',' 45',
-                '-config', 'TPOT light',
-                '-v', '1'
-                ]
-    args = _get_arg_parser().parse_args(args_list)
-    with captured_output() as (out, err):
-        main(args)
-    ret_stdout = out.getvalue()
-    try:
-        ret_val = float(ret_stdout.split('\n')[-2].split(': ')[-1])
-    except Exception:
-        ret_val = -float('inf')
-    assert ret_val > 0.0
-
-
 def test_read_data_file():
     """Assert that _read_data_file raises ValueError when the targe column is missing."""
     # Mis-spelled target
