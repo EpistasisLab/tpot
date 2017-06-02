@@ -19,7 +19,7 @@ install:
   - conda info -a
   - conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy scikit-learn nose cython
   - activate test-environment
-  - pip install deap tqdm
+  - pip install deap tqdm update_checker
 
 
 test_script:
