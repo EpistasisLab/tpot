@@ -180,7 +180,7 @@ class ParserTest(TestCase):
         output = out.getvalue()
         expected_output = """
 TPOT settings:
-CONFIG_FILE\t=\t
+CONFIG_FILE\t=\tNone
 CROSSOVER_RATE\t=\t0.1
 GENERATIONS\t=\t100
 INPUT_FILE\t=\ttests.csv
