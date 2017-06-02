@@ -837,29 +837,29 @@ class TPOTBase(BaseEstimator):
             if total_mins_elapsed >= self.max_time_mins:
                 raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
 
+        # Check we do not evaluate twice the same individual in one pass.
+        _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
+        unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
+
         # return fitness scores
-        fitnesses_dict = {}
+        operator_counts = {}
         # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
         eval_individuals_str = []
         sklearn_pipeline_list = []
-        operator_count_list = []
-        test_idx_list = []
-        for indidx, individual in enumerate(individuals):
+
+        for individual in unique_individuals:
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
-            individual = individuals[indidx]
             individual_str = str(individual)
             sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
             if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
                 if self.verbosity > 2:
                     self._pbar.write('Invalid pipeline encountered. Skipping its evaluation.')
-                fitnesses_dict[indidx] = (5000., -float('inf'))
+                self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
                 if not self._pbar.disable:
                     self._pbar.update(1)
             # Check if the individual was evaluated before
             elif individual_str in self.evaluated_individuals_:
-                # Get fitness score from previous evaluation
-                fitnesses_dict[indidx] = self.evaluated_individuals_[individual_str]
                 if self.verbosity > 2:
                     self._pbar.write('Pipeline encountered that has previously been evaluated during the '
                                      'optimization process. Using the score from the previous evaluation.')
@@ -870,22 +870,19 @@ class TPOTBase(BaseEstimator):
                     # Transform the tree expression into an sklearn pipeline
                     sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-
                     # Fix random state when the operator allows and build sample weight dictionary
                     self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
                     operator_count = self._operator_count(individual)
-
+                    operator_counts[individual_str] = max(1, operator_count)
                 except Exception:
-                    fitnesses_dict[indidx] = (5000., -float('inf'))
+                    self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
                     if not self._pbar.disable:
                         self._pbar.update(1)
                     continue
                 eval_individuals_str.append(individual_str)
-                operator_count_list.append(operator_count)
                 sklearn_pipeline_list.append(sklearn_pipeline)
-                test_idx_list.append(indidx)
 
         # evalurate pipeline
         resulting_score_list = []
@@ -919,17 +916,13 @@ class TPOTBase(BaseEstimator):
                 else:
                     resulting_score_list.append(val)
 
-        for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
+        for resulting_score, individual_str in zip(resulting_score_list, eval_individuals_str):
             if type(resulting_score) in [float, np.float64, np.float32]:
-                self.evaluated_individuals_[individual_str] = (max(1, operator_count), resulting_score)
-                fitnesses_dict[test_idx] = self.evaluated_individuals_[individual_str]
+                self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], resulting_score)
             else:
                 raise ValueError('Scoring function does not return a float.')
 
-        fitnesses_ordered = []
-        for key in sorted(fitnesses_dict.keys()):
-            fitnesses_ordered.append(fitnesses_dict[key])
-        return fitnesses_ordered
+        return [self.evaluated_individuals_[str(individual)] for individual in individuals]
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
