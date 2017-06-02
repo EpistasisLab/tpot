@@ -3,7 +3,11 @@ build: false
 environment:
   matrix:
     - PYTHON_VERSION: 3.6
-      MINICONDA: C:\Miniconda36-x64
+      MINICONDA: C:/Miniconda36-x64
+      XGBOOST: C:/projects/xgboost/build2015/xgboost.sln
+
+platform:
+  - x64
 
 init:
   - ECHO %PYTHON_VERSION% %MINICONDA%
@@ -17,7 +21,13 @@ install:
   - conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy scikit-learn nose cython
   - activate test-environment
   - pip install deap
-  - pip install xgboost
+
+before_build:
+  - mkdir build2015
+  - cmake .. -G"Visual Studio 14 2015 Win64"
+
+build_script:
+  - msbuild %XGBOOST% 
 
 test_script:
   - nosetests -s -v
