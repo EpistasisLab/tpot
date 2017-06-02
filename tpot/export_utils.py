@@ -205,7 +205,7 @@ def _starting_imports(operators, operators_used):
         return {
             'sklearn.model_selection':  ['train_test_split'],
             'sklearn.pipeline':         ['make_pipeline', 'make_union'],
-            'tpot.built_in_operators':  ['StackingEstimator'],
+            'tpot.builtins':  ['StackingEstimator'],
         }
     elif num_op > 1:
         return {

@@ -1031,7 +1031,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.tree import DecisionTreeClassifier
-from tpot.built_in_operators import StackingEstimator
+from tpot.builtins import StackingEstimator
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -1136,7 +1136,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.tree import DecisionTreeClassifier
-from tpot.built_in_operators import StackingEstimator
+from tpot.builtins import StackingEstimator
 from sklearn.preprocessing import FunctionTransformer
 from copy import copy
 
