@@ -1,9 +1,6 @@
 language: python
 virtualenv:
   system_site_packages: true
-os:
-  - linux
-  - osx
 env:
   matrix:
     # let's start simple:
