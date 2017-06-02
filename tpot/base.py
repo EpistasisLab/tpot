@@ -904,7 +904,7 @@ class TPOTBase(BaseEstimator):
                     groups=groups
                 )
                 jobs.append(job)
-            parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+            parallel = Parallel(n_jobs=self.n_jobs, backend='threading', verbose=0, pre_dispatch='2*n_jobs')
             tmp_result_score = parallel(jobs)
 
             # update pbar
