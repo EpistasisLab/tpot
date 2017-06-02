@@ -9,7 +9,7 @@ env:
     - PYTHON_VERSION="3.6" COVERAGE="true" LATEST="true"
     - PYTHON_VERSION="3.6" LATEST="true"
     - os: osx
-      PYTHON_VERSION="3.6" LATEST="true"
+      env: PYTHON_VERSION="3.6" LATEST="true"
 install: source ./ci/.travis_install.sh
 script: bash ./ci/.travis_test.sh
 after_success:
