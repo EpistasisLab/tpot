@@ -180,7 +180,7 @@ class ParserTest(TestCase):
         output = out.getvalue()
         expected_output = """
 TPOT settings:
-CONFIG_FILE\t=\t
+CONFIG_FILE\t=\tNone
 CROSSOVER_RATE\t=\t0.1
 GENERATIONS\t=\t100
 INPUT_FILE\t=\ttests.csv
@@ -947,6 +947,35 @@ from sklearn.preprocessing import RobustScaler
 """
     assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
 
+
+def test_generate_import_code_2():
+    """Assert that generate_import_code() returns the correct set of dependancies and dependancies are importable."""
+    tpot_obj = TPOTClassifier()
+    pipeline_string = (
+        'KNeighborsClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+        'DecisionTreeClassifier__min_samples_split=5), ZeroCount(input_matrix))'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform'
+    )
+
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+
+    import_code = generate_import_code(pipeline, tpot_obj.operators)
+
+    expected_code = """import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.tree import DecisionTreeClassifier
+from tpot.builtins import StackingEstimator, ZeroCount
+"""
+    exec(import_code) # should not raise error
+    assert expected_code == import_code
+
+
 def test_PolynomialFeatures_exception():
     """Assert that TPOT allows only one PolynomialFeatures operator in a pipeline"""
     tpot_obj = TPOTClassifier()
@@ -1031,7 +1060,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.tree import DecisionTreeClassifier
-from tpot.built_in_operators import StackingEstimator
+from tpot.builtins import StackingEstimator
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -1136,7 +1165,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.tree import DecisionTreeClassifier
-from tpot.built_in_operators import StackingEstimator
+from tpot.builtins import StackingEstimator
 from sklearn.preprocessing import FunctionTransformer
 from copy import copy
 
