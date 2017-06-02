@@ -842,7 +842,6 @@ class TPOTBase(BaseEstimator):
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
 
         # return fitness scores
-        fitnesses_dict = {}
         operator_counts = {}
         # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
         eval_individuals_str = []
