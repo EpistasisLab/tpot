@@ -4,7 +4,6 @@ environment:
   matrix:
     - PYTHON_VERSION: 3.6
       MINICONDA: C:/Miniconda36-x64
-      XGBOOST: C:/projects/xgboost/build2015/xgboost.sln
 
 platform:
   - x64
@@ -22,12 +21,6 @@ install:
   - activate test-environment
   - pip install deap
 
-before_build:
-  - mkdir build2015
-  - cmake .. -G"Visual Studio 14 2015 Win64"
-
-build_script:
-  - msbuild %XGBOOST% 
 
 test_script:
   - nosetests -s -v
