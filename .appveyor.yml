@@ -21,3 +21,4 @@ install:
 
 test_script:
   - nosetests -s -v
+  
