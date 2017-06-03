@@ -99,8 +99,8 @@ from tpot import TPOTRegressor
 from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
 
-digits = load_boston()
-X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+housing = load_boston()
+X_train, X_test, y_train, y_test = train_test_split(housing.data, housing.target,
                                                     train_size=0.75, test_size=0.25)
 
 tpot = TPOTRegressor(generations=5, population_size=50, verbosity=2)

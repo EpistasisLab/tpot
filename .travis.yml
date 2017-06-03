@@ -5,7 +5,6 @@ env:
   matrix:
     # let's start simple:
     - PYTHON_VERSION="2.7" LATEST="true"
-    - PYTHON_VERSION="3.5" LATEST="true"
     - PYTHON_VERSION="3.6" COVERAGE="true" LATEST="true"
     - PYTHON_VERSION="3.6" LATEST="true"
 install: source ./ci/.travis_install.sh
