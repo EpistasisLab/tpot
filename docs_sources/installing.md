@@ -36,12 +36,10 @@ pip install pywin32
 **Optionally**, you can install [XGBoost](https://github.com/dmlc/xgboost) if you would like TPOT to use the eXtreme Gradient Boosting models. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.
 
 ```Shell
-pip install xgboost
+conda install py-xgboost
 ```
 
 If you have issues installing XGBoost, check the [XGBoost installation documentation](http://xgboost.readthedocs.io/en/latest/build.html).
-
-**Note: For now, TPOT only supports xgboost 0.6a2. Please find the source codes [under v0.60 tag of xgboost's GitHub](https://github.com/dmlc/xgboost/tree/v0.60) if you need build xgboost**
 
 If you plan to use the [TPOT-MDR configuration](https://arxiv.org/abs/1702.01780), make sure to install [scikit-mdr](https://github.com/EpistasisLab/scikit-mdr) and [scikit-rebate](https://github.com/EpistasisLab/scikit-rebate):
 
