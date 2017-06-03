@@ -4,6 +4,8 @@ environment:
   matrix:
     - PYTHON_VERSION: 3.6
       MINICONDA: C:/Miniconda36-x64
+    - PYTHON_VERSION: 2.7
+      MINICONDA: C:/Miniconda27-x64
 
 platform:
   - x64
@@ -24,3 +26,5 @@ install:
 
 test_script:
   - nosetests -s -v
+
+  
