@@ -388,6 +388,7 @@ class TPOTBase(BaseEstimator):
     def _add_terminals(self):
         for _type in self.arguments:
             type_values = list(_type.values)
+            # This check prevents XGBoost from using multithreading, which breaks in TPOT
             if 'nthread' not in _type.__name__:
                 type_values += ['DEFAULT']
 
@@ -870,8 +871,13 @@ class TPOTBase(BaseEstimator):
                     # Transform the tree expression into an sklearn pipeline
                     sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-                    # Fix random state when the operator allows and build sample weight dictionary
+                    # Fix random state when the operator allows
                     self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+                    # Setting the seed is needed for XGBoost support because XGBoost currently stores
+                    # both a seed and random_state, and they're not synced correctly.
+                    # XGBoost will raise an exception if random_state != seed.
+                    if 'XGB' in sklearn_pipeline_str:
+                        self._set_param_recursive(sklearn_pipeline.steps, 'seed', 42)
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
                     operator_count = self._operator_count(individual)
