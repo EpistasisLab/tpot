@@ -49,14 +49,14 @@ from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _pre_test
-from .built_in_operators import CombineDFs, StackingEstimator
+from .builtins import CombineDFs, StackingEstimator
 
-from .config_classifier_light import classifier_config_dict_light
-from .config_regressor_light import regressor_config_dict_light
-from .config_classifier_mdr import tpot_mdr_classifier_config_dict
-from .config_regressor_mdr import tpot_mdr_regressor_config_dict
-from .config_classifier_sparse import classifier_config_sparse
-from .config_regressor_sparse import regressor_config_sparse
+from .config.classifier_light import classifier_config_dict_light
+from .config.regressor_light import regressor_config_dict_light
+from .config.classifier_mdr import tpot_mdr_classifier_config_dict
+from .config.regressor_mdr import tpot_mdr_regressor_config_dict
+from .config.regressor_sparse import regressor_config_sparse
+from .config.classifier_sparse import classifier_config_sparse
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -92,67 +92,79 @@ class TPOTBase(BaseEstimator):
 
         Parameters
         ----------
-        generations: int (default: 100)
+        generations: int, optional (default: 100)
             Number of iterations to the run pipeline optimization process.
             Generally, TPOT will work better when you give it more generations (and
             therefore time) to optimize the pipeline. TPOT will evaluate
             POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.
-        population_size: int (default: 100)
+        population_size: int, optional (default: 100)
             Number of individuals to retain in the GP population every generation.
             Generally, TPOT will work better when you give it more individuals
             (and therefore time) to optimize the pipeline. TPOT will evaluate
             POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.
-        offspring_size: int (default: None)
+        offspring_size: int, optional (default: None)
             Number of offspring to produce in each GP generation.
             By default, offspring_size = population_size.
-        mutation_rate: float (default: 0.9)
+        mutation_rate: float, optional (default: 0.9)
             Mutation rate for the genetic programming algorithm in the range [0.0, 1.0].
             This parameter tells the GP algorithm how many pipelines to apply random
             changes to every generation. We recommend using the default parameter unless
             you understand how the mutation rate affects GP algorithms.
-        crossover_rate: float (default: 0.1)
+        crossover_rate: float, optional (default: 0.1)
             Crossover rate for the genetic programming algorithm in the range [0.0, 1.0].
             This parameter tells the genetic programming algorithm how many pipelines to
             "breed" every generation. We recommend using the default parameter unless you
             understand how the mutation rate affects GP algorithms.
-        scoring: function or str
+        scoring: string or callable, optional
             Function used to evaluate the quality of a given pipeline for the
             problem. By default, accuracy is used for classification problems and
-            mean squared error (mse) for regression problems.
-            TPOT assumes that this scoring function should be maximized, i.e.,
-            higher is better.
+            mean squared error (MSE) for regression problems.
 
             Offers the same options as sklearn.model_selection.cross_val_score as well as
-            a built-in score "balanced_accuracy":
+            a built-in score 'balanced_accuracy'. Classification metrics:
 
             ['accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy',
             'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted',
             'precision', 'precision_macro', 'precision_micro', 'precision_samples',
-            'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro',
+            'precision_weighted', 'recall', 'recall_macro', 'recall_micro',
             'recall_samples', 'recall_weighted', 'roc_auc']
-        cv: int (default: 5)
-            Number of folds to evaluate each pipeline over in k-fold cross-validation
-            during the TPOT optimization process.
-        subsample: float (default: 1.0)
+
+            Regression metrics:
+
+            ['neg_median_absolute_error', 'neg_mean_absolute_error',
+            'neg_mean_squared_error', 'r2']
+
+            If you would like to use a custom scoring function, you can pass a callable
+            function to this parameter with the signature scorer(y_true, y_pred).
+            See the section on scoring functions in the documentation for more details.
+
+            TPOT assumes that any custom scoring function with "error" or "loss" in the
+            name is meant to be minimized, whereas any other functions will be maximized.
+        cv: int or cross-validation generator, optional (default: 5)
+            If CV is a number, then it is the number of folds to evaluate each
+            pipeline over in k-fold cross-validation during the TPOT optimization
+             process. If it is an object then it is an object to be used as a
+             cross-validation generator.
+        subsample: float, optional (default: 1.0)
             Subsample ratio of the training instance. Setting it to 0.5 means that TPOT
             randomly collects half of training samples for pipeline optimization process.
-        n_jobs: int (default: 1)
+        n_jobs: int, optional (default: 1)
             Number of CPUs for evaluating pipelines in parallel during the TPOT
             optimization process. Assigning this to -1 will use as many cores as available
             on the computer.
-        max_time_mins: int (default: None)
+        max_time_mins: int, optional (default: None)
             How many minutes TPOT has to optimize the pipeline.
             If provided, this setting will override the "generations" parameter and allow
             TPOT to run until it runs out of time.
-        max_eval_time_mins: int (default: 5)
+        max_eval_time_mins: int, optional (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
             complex pipelines, but will also allow TPOT to run longer.
-        random_state: int (default: None)
-            Random number generator seed for TPOT. Use this to make sure
-            that TPOT will give you the same results each time you run it
-            against the same data set with that seed.
-        config_dict: a Python dictionary or string (default: None)
+        random_state: int, optional (default: None)
+            Random number generator seed for TPOT. Use this parameter to make sure
+            that TPOT will give you the same results each time you run it against the
+            same data set with that seed.
+        config_dict: a Python dictionary or string, optional (default: None)
             Python dictionary:
                 A dictionary customizing the operators and parameters that
                 TPOT uses in the optimization process.
@@ -170,14 +182,14 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
-        warm_start: bool (default: False)
+        warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
-        verbosity: int (default: 0)
+        verbosity: int, optional (default: 0)
             How much information TPOT communicates while it's running.
             0 = none, 1 = minimal, 2 = high, 3 = all.
             A setting of 2 or higher will add a progress bar during the optimization procedure.
-        disable_update_check: bool (default: False)
+        disable_update_check: bool, optional (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 
         Returns
@@ -195,7 +207,7 @@ class TPOTBase(BaseEstimator):
 
         self._pareto_front = None
         self._optimized_pipeline = None
-        self._fitted_pipeline = None
+        self.fitted_pipeline_ = None
         self._fitted_imputer = None
         self._pop = None
         self.warm_start = warm_start
@@ -251,7 +263,7 @@ class TPOTBase(BaseEstimator):
 
         # Dictionary of individuals that have already been evaluated in previous
         # generations
-        self._evaluated_individuals = {}
+        self.evaluated_individuals_ = {}
         self.random_state = random_state
 
         # If the user passed a custom scoring function, store it in the sklearn
@@ -387,6 +399,7 @@ class TPOTBase(BaseEstimator):
     def _add_terminals(self):
         for _type in self.arguments:
             type_values = list(_type.values)
+            # This check prevents XGBoost from using multithreading, which breaks in TPOT
             if 'nthread' not in _type.__name__:
                 type_values += ['DEFAULT']
 
@@ -408,26 +421,38 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
-    def fit(self, features, classes, sample_weight=None):
+    def fit(self, features, target, sample_weight=None, groups=None):
         """Fit an optimized machine learning pipeline.
 
         Uses genetic programming to optimize a machine learning pipeline that
-        maximizes score on the provided features and classes. Performs an internal
-        stratified training/testing cross-validaton split to avoid overfitting
-        on the provided data.
+        maximizes score on the provided features and target. Performs internal
+        k-fold cross-validaton to avoid overfitting on the training data.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
-        classes: array-like {n_samples}
+
+            TPOT and all scikit-learn algorithms assume that the features will be numerical
+            and there will be no missing values. As such, when a feature matrix is provided
+            to TPOT, all missing values will automatically be replaced (i.e., imputed) using
+            median value imputation.
+
+            If you wish to use a different imputation strategy than median imputation, please
+            make sure to apply imputation to your feature set prior to passing it to TPOT.
+        target: array-like {n_samples}
             List of class labels for prediction
-        sample_weight: array-like {n_samples}
-            List of sample weights
+        sample_weight: array-like {n_samples}, optional
+            Per-sample weights. Higher weights force TPOT to put more emphasis on those points
+        groups: array-like, with shape {n_samples, }, optional
+            Group labels for the samples used when performing cross-validation.
+            This parameter should only be used in conjunction with sklearn's Group cross-validation
+            functions, such as sklearn.model_selection.GroupKFold
 
         Returns
         -------
-        None
+        self: object
+            Returns a copy of the fitted TPOT object
 
         """
         features = features.astype(np.float64)
@@ -438,11 +463,11 @@ class TPOTBase(BaseEstimator):
         if np.any(np.isnan(features)):
             features = self._impute_values(features)
 
-        self._check_dataset(features, classes)
+        self._check_dataset(features, target)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
-            features, _, classes, _ = train_test_split(features, classes, train_size=self.subsample, random_state=self.random_state)
+            features, _, target, _ = train_test_split(features, target, train_size=self.subsample, random_state=self.random_state)
             # Raise a warning message if the training size is less than 1500 when subsample is not default value
             if features.shape[0] < 1500:
                 print(
@@ -458,7 +483,7 @@ class TPOTBase(BaseEstimator):
             np.random.seed(self.random_state)
 
         self._start_datetime = datetime.now()
-        self._toolbox.register('evaluate', self._evaluate_individuals, features=features, classes=classes, sample_weight=sample_weight)
+        self._toolbox.register('evaluate', self._evaluate_individuals, features=features, target=target, sample_weight=sample_weight, groups=groups)
 
         # assign population, self._pop can only be not None if warm_start is enabled
         if self._pop:
@@ -548,11 +573,11 @@ class TPOTBase(BaseEstimator):
                                   'TPOTClassifier object. Please make sure you '
                                   'passed the data to TPOT correctly.')
                         else:
-                            self._fitted_pipeline = self._toolbox.compile(expr=self._optimized_pipeline)
+                            self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
 
                             with warnings.catch_warnings():
                                 warnings.simplefilter('ignore')
-                                self._fitted_pipeline.fit(features, classes)
+                                self.fitted_pipeline_.fit(features, target)
 
                             if self.verbosity in [1, 2]:
                                 # Add an extra line of spacing if the progress bar was used
@@ -560,24 +585,24 @@ class TPOTBase(BaseEstimator):
                                     print('')
                                 print('Best pipeline: {}'.format(self._optimized_pipeline))
 
-                            # Store and fit the entire Pareto front if sciencing
-                            elif self.verbosity >= 3 and self._pareto_front:
-                                self._pareto_front_fitted_pipelines = {}
+                            # Store and fit the entire Pareto front as fitted models for convenience
+                            self.pareto_front_fitted_pipelines_ = {}
 
-                                for pipeline in self._pareto_front.items:
-                                    self._pareto_front_fitted_pipelines[str(pipeline)] = self._toolbox.compile(expr=pipeline)
-                                    with warnings.catch_warnings():
-                                        warnings.simplefilter('ignore')
-                                        self._pareto_front_fitted_pipelines[str(pipeline)].fit(features, classes)
-
+                            for pipeline in self._pareto_front.items:
+                                self.pareto_front_fitted_pipelines_[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                                with warnings.catch_warnings():
+                                    warnings.simplefilter('ignore')
+                                    self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, target)
                     break
+
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
                     # raise the exception if it's our last attempt
-                    if attempt == attempts - 1:
+                    if attempt == (attempts - 1):
                         raise
+            return self
 
     def _update_top_pipeline(self):
-        """small helper function to update the _optimized_pipeline field"""
+        """Helper function to update the _optimized_pipeline field."""
         if self._pareto_front:
             top_score = -float('inf')
             for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
@@ -586,20 +611,20 @@ class TPOTBase(BaseEstimator):
                     top_score = pipeline_scores.wvalues[1]
 
     def predict(self, features):
-        """Use the optimized pipeline to predict the classes for a feature set.
+        """Use the optimized pipeline to predict the target for a feature set.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
-            Feature matrix to predict on
+            Feature matrix
 
         Returns
         ----------
         array-like: {n_samples}
-            Predicted classes for the feature matrix
+            Predicted target for the samples in the feature matrix
 
         """
-        if not self._fitted_pipeline:
+        if not self.fitted_pipeline_:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
         features = features.astype(np.float64)
@@ -607,35 +632,35 @@ class TPOTBase(BaseEstimator):
         if np.any(np.isnan(features)):
             features = self._impute_values(features)
 
-        return self._fitted_pipeline.predict(features)
+        return self.fitted_pipeline_.predict(features)
 
-    def fit_predict(self, features, classes):
+    def fit_predict(self, features, target):
         """Call fit and predict in sequence.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
-        classes: array-like {n_samples}
+        target: array-like {n_samples}
             List of class labels for prediction
 
         Returns
         ----------
         array-like: {n_samples}
-            Predicted classes for the provided features
+            Predicted target for the provided features
 
         """
-        self.fit(features, classes)
+        self.fit(features, target)
         return self.predict(features)
 
-    def score(self, testing_features, testing_classes):
-        """Estimate the balanced testing accuracy of the optimized pipeline.
+    def score(self, testing_features, testing_target):
+        """Return the score on the given testing data using the user-specified scoring function.
 
         Parameters
         ----------
         testing_features: array-like {n_samples, n_features}
             Feature matrix of the testing set
-        testing_classes: array-like {n_samples}
+        testing_target: array-like {n_samples}
             List of class labels for prediction in the testing set
 
         Returns
@@ -644,15 +669,15 @@ class TPOTBase(BaseEstimator):
             The estimated test set accuracy
 
         """
-        if self._fitted_pipeline is None:
+        if self.fitted_pipeline_ is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
         score = SCORERS[self.scoring_function](
-            self._fitted_pipeline,
+            self.fitted_pipeline_,
             testing_features.astype(np.float64),
-            testing_classes.astype(np.float64)
+            testing_target.astype(np.float64)
         )
         return abs(score)
 
@@ -666,16 +691,16 @@ class TPOTBase(BaseEstimator):
 
         Returns
         -------
-        array-like: {n_samples, n_classes}
+        array-like: {n_samples, n_target}
             The class probabilities of the input samples
 
         """
-        if not self._fitted_pipeline:
+        if not self.fitted_pipeline_:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
         else:
-            if not(hasattr(self._fitted_pipeline, 'predict_proba')):
+            if not(hasattr(self.fitted_pipeline_, 'predict_proba')):
                 raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
-            return self._fitted_pipeline.predict_proba(features.astype(np.float64))
+            return self.fitted_pipeline_.predict_proba(features.astype(np.float64))
 
     def set_params(self, **params):
         """Set the parameters of TPOT.
@@ -689,11 +714,11 @@ class TPOTBase(BaseEstimator):
         return self
 
     def export(self, output_file_name):
-        """Export the current optimized pipeline as Python code.
+        """Export the optimized pipeline as Python code.
 
         Parameters
         ----------
-        output_file_name: str
+        output_file_name: string
             String containing the path and file name of the desired output file
 
         Returns
@@ -728,14 +753,14 @@ class TPOTBase(BaseEstimator):
 
         return self._fitted_imputer.transform(features)
 
-    def _check_dataset(self, features, classes):
+    def _check_dataset(self, features, target):
         """Check if a dataset has a valid feature set and labels.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
-        classes: array-like {n_samples}
+        target: array-like {n_samples}
             List of class labels for prediction
 
         Returns
@@ -743,7 +768,7 @@ class TPOTBase(BaseEstimator):
         None
         """
         try:
-            check_X_y(features, classes, accept_sparse=False)
+            check_X_y(features, target, accept_sparse=False)
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
@@ -794,7 +819,7 @@ class TPOTBase(BaseEstimator):
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
 
-    def _evaluate_individuals(self, individuals, features, classes, sample_weight=None):
+    def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
 
         Parameters
@@ -803,16 +828,18 @@ class TPOTBase(BaseEstimator):
             One individual is a list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
         features: numpy.ndarray {n_samples, n_features}
-            A numpy matrix containing the training and testing features for the
-            `individual`'s evaluation
-        classes: numpy.ndarray {n_samples, }
-            A numpy matrix containing the training and testing classes for the
-            `individual`'s evaluation
+            A numpy matrix containing the training and testing features for the individual's evaluation
+        target: numpy.ndarray {n_samples}
+            A numpy matrix containing the training and testing target for the individual's evaluation
+        sample_weight: array-like {n_samples}, optional
+            List of sample weights to balance (or un-balanace) the dataset target as needed
+        groups: array-like {n_samples, }, optional
+            Group labels for the samples used while splitting the dataset into train/test set
 
         Returns
         -------
         fitnesses_ordered: float
-            Returns a list of tuple value indicating the `individual`'s fitness
+            Returns a list of tuple value indicating the individual's fitness
             according to its performance on the provided data
 
         """
@@ -821,29 +848,29 @@ class TPOTBase(BaseEstimator):
             if total_mins_elapsed >= self.max_time_mins:
                 raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
 
+        # Check we do not evaluate twice the same individual in one pass.
+        _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
+        unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
+
         # return fitness scores
-        fitnesses_dict = {}
+        operator_counts = {}
         # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
         eval_individuals_str = []
         sklearn_pipeline_list = []
-        operator_count_list = []
-        test_idx_list = []
-        for indidx, individual in enumerate(individuals):
+
+        for individual in unique_individuals:
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
-            individual = individuals[indidx]
             individual_str = str(individual)
-            if individual_str.count('PolynomialFeatures') > 1:
+            sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
+            if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
                 if self.verbosity > 2:
                     self._pbar.write('Invalid pipeline encountered. Skipping its evaluation.')
-                fitnesses_dict[indidx] = (5000., -float('inf'))
+                self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
                 if not self._pbar.disable:
                     self._pbar.update(1)
-
             # Check if the individual was evaluated before
-            elif individual_str in self._evaluated_individuals:
-                # Get fitness score from previous evaluation
-                fitnesses_dict[indidx] = self._evaluated_individuals[individual_str]
+            elif individual_str in self.evaluated_individuals_:
                 if self.verbosity > 2:
                     self._pbar.write('Pipeline encountered that has previously been evaluated during the '
                                      'optimization process. Using the score from the previous evaluation.')
@@ -854,21 +881,24 @@ class TPOTBase(BaseEstimator):
                     # Transform the tree expression into an sklearn pipeline
                     sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-                    # Fix random state when the operator allows and build sample weight dictionary
+                    # Fix random state when the operator allows
                     self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+                    # Setting the seed is needed for XGBoost support because XGBoost currently stores
+                    # both a seed and random_state, and they're not synced correctly.
+                    # XGBoost will raise an exception if random_state != seed.
+                    if 'XGB' in sklearn_pipeline_str:
+                        self._set_param_recursive(sklearn_pipeline.steps, 'seed', 42)
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
                     operator_count = self._operator_count(individual)
-
+                    operator_counts[individual_str] = max(1, operator_count)
                 except Exception:
-                    fitnesses_dict[indidx] = (5000., -float('inf'))
+                    self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
                     if not self._pbar.disable:
                         self._pbar.update(1)
                     continue
                 eval_individuals_str.append(individual_str)
-                operator_count_list.append(operator_count)
                 sklearn_pipeline_list.append(sklearn_pipeline)
-                test_idx_list.append(indidx)
 
         # evalurate pipeline
         resulting_score_list = []
@@ -877,17 +907,19 @@ class TPOTBase(BaseEstimator):
             jobs = []
             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
                 job = delayed(_wrapped_cross_val_score)(
-                    sklearn_pipeline,
-                    features,
-                    classes,
-                    self.cv,
-                    self.scoring_function,
-                    sample_weight,
-                    self.max_eval_time_mins
+                    sklearn_pipeline=sklearn_pipeline,
+                    features=features,
+                    target=target,
+                    cv=self.cv,
+                    scoring_function=self.scoring_function,
+                    sample_weight=sample_weight,
+                    max_eval_time_mins=self.max_eval_time_mins,
+                    groups=groups
                 )
                 jobs.append(job)
             parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
             tmp_result_score = parallel(jobs)
+
             # update pbar
             for val in tmp_result_score:
                 if not self._pbar.disable:
@@ -900,17 +932,13 @@ class TPOTBase(BaseEstimator):
                 else:
                     resulting_score_list.append(val)
 
-        for resulting_score, operator_count, individual_str, test_idx in zip(resulting_score_list, operator_count_list, eval_individuals_str, test_idx_list):
+        for resulting_score, individual_str in zip(resulting_score_list, eval_individuals_str):
             if type(resulting_score) in [float, np.float64, np.float32]:
-                self._evaluated_individuals[individual_str] = (max(1, operator_count), resulting_score)
-                fitnesses_dict[test_idx] = self._evaluated_individuals[individual_str]
+                self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], resulting_score)
             else:
                 raise ValueError('Scoring function does not return a float.')
 
-        fitnesses_ordered = []
-        for key in sorted(fitnesses_dict.keys()):
-            fitnesses_ordered.append(fitnesses_dict[key])
-        return fitnesses_ordered
+        return [self.evaluated_individuals_[str(individual)] for individual in individuals]
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
@@ -952,7 +980,7 @@ class TPOTBase(BaseEstimator):
             Maximum Height of the produced trees.
         type_: class
             The type that should return the tree when called, when
-                  :obj:`None` (default) the type of :pset: (pset.ret)
+                  :obj:None (default) the type of :pset: (pset.ret)
                   is assumed.
         Returns
         -------
@@ -996,7 +1024,7 @@ class TPOTBase(BaseEstimator):
             depth in the tree.
         type_: class
             The type that should return the tree when called, when
-            :obj:`None` (default) no return type is enforced.
+            :obj:None (default) no return type is enforced.
 
         Returns
         -------

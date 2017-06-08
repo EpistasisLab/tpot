@@ -29,7 +29,7 @@ except ImportError:
 
 import numpy as np
 
-from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, main, _read_data_file
+from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, _read_data_file
 from nose.tools import assert_raises
 from unittest import TestCase
 
@@ -46,38 +46,11 @@ def captured_output():
 
 
 def test_driver():
-    """Assert that the TPOT driver output normal result."""
+    """Assert that the TPOT driver outputs normal result in mode mode."""
     batcmd = "python -m tpot.driver tests/tests.csv -is , -target class -g 2 -p 2 -os 4 -cv 5 -s 45 -v 1"
     ret_stdout = subprocess.check_output(batcmd, shell=True)
-
     try:
         ret_val = float(ret_stdout.decode('UTF-8').split('\n')[-2].split(': ')[-1])
-    except Exception:
-        ret_val = -float('inf')
-
-    assert ret_val > 0.0
-
-
-def test_driver_2():
-    """Assert that the main() in TPOT driver outputs normal result."""
-    args_list = [
-                'tests/tests.csv',
-                '-is', ',',
-                '-target', 'class',
-                '-g', '2',
-                '-p', '2',
-                '-os', '4',
-                '-cv', '5',
-                '-s', '45',
-                '-config', 'TPOT light',
-                '-v', '1'
-                ]
-    args = _get_arg_parser().parse_args(args_list)
-    with captured_output() as (out, err):
-        main(args)
-    ret_stdout = out.getvalue()
-    try:
-        ret_val = float(ret_stdout.split('\n')[-2].split(': ')[-1])
     except Exception:
         ret_val = -float('inf')
     assert ret_val > 0.0
@@ -87,20 +60,22 @@ def test_read_data_file():
     """Assert that _read_data_file raises ValueError when the targe column is missing."""
     # Mis-spelled target
     args_list = [
-                'tests/tests.csv',
-                '-is', ',',
-                '-target', 'clas'  # typo for right target 'class'
-                ]
+        'tests/tests.csv',
+        '-is', ',',
+        '-target', 'clas'   # typo for right target 'class'
+    ]
     args = _get_arg_parser().parse_args(args_list)
     assert_raises(ValueError, _read_data_file, args=args)
-    # Correctly spelled
+
+    # Correctly spelled target
     args_list = [
-                'tests/tests.csv',
-                '-is', ',',
-                '-target', 'class'
-                ]
+        'tests/tests.csv',
+        '-is', ',',
+        '-target', 'class'
+    ]
     args = _get_arg_parser().parse_args(args_list)
     input_data = _read_data_file(args)
+
     assert isinstance(input_data, np.recarray)
 
 
@@ -132,16 +107,16 @@ class ParserTest(TestCase):
 
     def test_print_args(self):
         """Assert that _print_args prints correct values for all parameters."""
-        args = self.parser.parse_args(['tests.csv'])
+        args = self.parser.parse_args(['tests/tests.csv'])
         with captured_output() as (out, err):
             _print_args(args)
         output = out.getvalue()
         expected_output = """
 TPOT settings:
-CONFIG_FILE\t=\t
+CONFIG_FILE\t=\tNone
 CROSSOVER_RATE\t=\t0.1
 GENERATIONS\t=\t100
-INPUT_FILE\t=\ttests.csv
+INPUT_FILE\t=\ttests/tests.csv
 INPUT_SEPARATOR\t=\t\t
 MAX_EVAL_MINS\t=\t5
 MAX_TIME_MINS\t=\tNone

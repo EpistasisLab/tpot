@@ -34,7 +34,7 @@ from sklearn.utils.testing import assert_array_almost_equal
 from sklearn.datasets import load_iris
 from nose.tools import assert_equal
 
-from tpot.one_hot_encoder import OneHotEncoder, _auto_select_categorical_features
+from tpot.builtins.one_hot_encoder import OneHotEncoder, _auto_select_categorical_features
 
 
 iris_data = load_iris().data

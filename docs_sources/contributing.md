@@ -69,7 +69,7 @@ Before you submit a pull request for your contribution, please work through this
 
 If your contribution changes TPOT in any way:
 
-* Update the [documentation](https://github.com/rhiever/tpot/tree/master/docs/sources) so all of your changes are reflected there.
+* Update the [documentation](https://github.com/rhiever/tpot/tree/master/docs_sources) so all of your changes are reflected there.
 
 * Update the [README](https://github.com/rhiever/tpot/blob/master/README.md) if anything there has changed.
 

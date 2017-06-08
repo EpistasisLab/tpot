@@ -33,22 +33,21 @@ conda update --yes conda
 # provided versions
 if [[ "$LATEST" == "true" ]]; then
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
-        numpy scipy scikit-learn cython
+        numpy scipy scikit-learn cython py-xgboost
 else
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION \
         scikit-learn=$SKLEARN_VERSION \
-    cython
+	py-xgboost=$XGBOOST_VERSION \
+	cython
 fi
 
 source activate testenv
 
 if [[ "$LATEST" == "true" ]]; then
     pip install deap
-    pip install xgboost
 else
     pip install deap==$DEAP_VERSION
-    pip install xgboost==$XGBOOST_VERSION
 fi
 
 pip install update_checker

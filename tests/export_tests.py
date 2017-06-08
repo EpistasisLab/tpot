@@ -23,9 +23,9 @@ from tqdm import tqdm
 import numpy as np
 
 from tpot import TPOTClassifier
-from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code
+from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.operator_utils import TPOTOperatorClassFactory
-from tpot.config_classifier import classifier_config_dict
+from tpot.config.classifier import classifier_config_dict
 
 from deap import creator
 
@@ -39,7 +39,7 @@ TPOTSelectPercentile, TPOTSelectPercentile_args = TPOTOperatorClassFactory(
 )
 
 
-def test_random_ind_2():
+def test_export_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 39."""
     tpot_obj = TPOTClassifier(random_state=39)
     tpot_obj._pbar = tqdm(total=1, disable=True)
@@ -54,7 +54,7 @@ from sklearn.tree import DecisionTreeClassifier
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
+training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
@@ -62,7 +62,7 @@ exported_pipeline = make_pipeline(
     DecisionTreeClassifier(criterion="gini", max_depth=7, min_samples_leaf=4, min_samples_split=18)
 )
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
 
@@ -132,6 +132,32 @@ from sklearn.preprocessing import RobustScaler
     assert expected_code == generate_import_code(pipeline, tpot_obj.operators)
 
 
+def test_generate_import_code_2():
+    """Assert that generate_import_code() returns the correct set of dependancies and dependancies are importable."""
+    tpot_obj = TPOTClassifier()
+    pipeline_string = (
+        'KNeighborsClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+        'DecisionTreeClassifier__min_samples_split=5), ZeroCount(input_matrix))'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform'
+    )
+
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    import_code = generate_import_code(pipeline, tpot_obj.operators)
+    expected_code = """import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.tree import DecisionTreeClassifier
+from tpot.builtins import StackingEstimator, ZeroCount
+"""
+    exec(import_code)  # should not raise error
+    assert expected_code == import_code
+
+
 def test_operators():
     """Assert that the TPOT operators match the output of their sklearn counterparts."""
     tpot_obj = TPOTClassifier(random_state=42)
@@ -174,12 +200,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.tree import DecisionTreeClassifier
-from tpot.built_in_operators import StackingEstimator
+from tpot.builtins import StackingEstimator
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
+training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
@@ -190,7 +216,7 @@ exported_pipeline = make_pipeline(
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 )
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
@@ -216,12 +242,12 @@ from sklearn.neighbors import KNeighborsClassifier
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
+training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
@@ -247,7 +273,7 @@ from sklearn.tree import DecisionTreeClassifier
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
+training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
@@ -255,7 +281,7 @@ exported_pipeline = make_pipeline(
     DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
 )
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
@@ -280,14 +306,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.tree import DecisionTreeClassifier
-from tpot.built_in_operators import StackingEstimator
+from tpot.builtins import StackingEstimator
 from sklearn.preprocessing import FunctionTransformer
 from copy import copy
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \\
+training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
@@ -298,7 +324,7 @@ exported_pipeline = make_pipeline(
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 )
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
@@ -308,6 +334,12 @@ def test_operator_export():
     """Assert that a TPOT operator can export properly with a function as a parameter to a classifier."""
     export_string = TPOTSelectPercentile.export(5)
     assert export_string == "SelectPercentile(score_func=f_classif, percentile=5)"
+
+
+def test_get_by_name():
+    """Assert that the Operator class returns operators by name appropriately."""
+    tpot_obj = TPOTClassifier()
+    assert get_by_name("SelectPercentile", tpot_obj.operators).__class__ == TPOTSelectPercentile.__class__
 
 
 def test_indent():

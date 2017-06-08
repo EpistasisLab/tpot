@@ -24,53 +24,6 @@ from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
 from sklearn.utils import check_array
 
 
-class ZeroCount(BaseEstimator, TransformerMixin):
-    """Adds the count of zeros and count of non-zeros per sample as features."""
-
-    def fit(self, X, y=None):
-        """Dummy function to fit in with the sklearn API."""
-        return self
-
-    def transform(self, X, y=None):
-        """Transform data by adding two virtual features.
-
-        Parameters
-        ----------
-        X: numpy ndarray, {n_samples, n_components}
-            New data, where n_samples is the number of samples and n_components
-            is the number of components.
-        y: None
-            Unused
-
-        Returns
-        -------
-        X_transformed: array-like, shape (n_samples, n_features)
-            The transformed feature set
-        """
-        X = check_array(X)
-        n_features = X.shape[1]
-
-        X_transformed = np.copy(X)
-
-        non_zero_vector = np.count_nonzero(X_transformed, axis=1)
-        non_zero = np.reshape(non_zero_vector, (-1, 1))
-        zero_col = np.reshape(n_features - non_zero_vector, (-1, 1))
-
-        X_transformed = np.hstack((non_zero, X_transformed))
-        X_transformed = np.hstack((zero_col, X_transformed))
-
-        return X_transformed
-
-
-class CombineDFs(object):
-    """Combine two DataFrames."""
-
-    @property
-    def __name__(self):
-        """Instance name is the same as the class name."""
-        return self.__class__.__name__
-
-
 class StackingEstimator(BaseEstimator, TransformerMixin):
     """Meta-transformer for adding predictions and/or class probabilities as synthetic feature(s).
 
@@ -81,6 +34,13 @@ class StackingEstimator(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, estimator):
+        """Create a StackingEstimator object.
+
+        Parameters
+        ----------
+        estimator: object with fit, predict, and predict_proba methods.
+            The estimator to generate synthetic features from.
+        """
         self.estimator = estimator
 
     def fit(self, X, y=None, **fit_params):

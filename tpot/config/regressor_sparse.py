@@ -21,7 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 
 regressor_config_sparse = {
-    'tpot.one_hot_encoder.OneHotEncoder': {
+    'tpot.builtins.OneHotEncoder': {
         'minimum_fraction': [0.05, 0.1, 0.15, 0.2, 0.25]
     },
 

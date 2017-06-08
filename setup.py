@@ -37,7 +37,7 @@ This project is hosted at https://github.com/rhiever/tpot
     zip_safe=True,
     install_requires=['numpy>=1.12.1', 'scipy>=0.19.0', 'scikit-learn>=0.18.1', 'deap>=1.0', 'update_checker>=0.16', 'tqdm>=4.11.2'],
     extras_require={
-        'xgboost': ['xgboost>=0.6'],
+        'xgboost': ['xgboost==0.6a2'],
         'skrebate': ['skrebate>=0.3.4'],
         'mdr': ['scikit-mdr>=0.4.4']
     },

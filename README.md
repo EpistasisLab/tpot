@@ -1,10 +1,12 @@
-Master status: [![Master Build Status](https://travis-ci.org/rhiever/tpot.svg?branch=master)](https://travis-ci.org/rhiever/tpot)
+Master status: [![Master Build Status - Mac/Linux](https://travis-ci.org/rhiever/tpot.svg?branch=master)](https://travis-ci.org/rhiever/tpot)
+[![Master Build Status - Windows](https://ci.appveyor.com/api/projects/status/fgylout0lxddt0my?svg=true)](https://ci.appveyor.com/project/rhiever/tpot/branch/master)
 [![Master Code Health](https://landscape.io/github/rhiever/tpot/master/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/master)
-[![Master Coverage Status](https://coveralls.io/repos/rhiever/tpot/badge.svg?branch=master&service=github)](https://coveralls.io/github/rhiever/tpot?branch=master)
+[![Master Coverage Status](https://coveralls.io/repos/github/rhiever/tpot/badge.svg?branch=master)](https://coveralls.io/github/rhiever/tpot?branch=master)
 
-Development status: [![Development Build Status](https://travis-ci.org/rhiever/tpot.svg?branch=development)](https://travis-ci.org/rhiever/tpot/branches)
+Development status: [![Development Build Status - Mac/Windows](https://travis-ci.org/rhiever/tpot.svg?branch=development)](https://travis-ci.org/rhiever/tpot/branches)
+[![Development Build Status - Windows](https://ci.appveyor.com/api/projects/status/fgylout0lxddt0my/branch/development?svg=true)](https://ci.appveyor.com/project/rhiever/tpot?branch=development)
 [![Development Code Health](https://landscape.io/github/rhiever/tpot/development/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/development)
-[![Development Coverage Status](https://coveralls.io/repos/rhiever/tpot/badge.svg?branch=development&service=github)](https://coveralls.io/github/rhiever/tpot?branch=development)
+[![Development Coverage Status](https://coveralls.io/repos/github/rhiever/tpot/badge.svg?branch=development)](https://coveralls.io/github/rhiever/tpot?branch=development)
 
 Package information: [![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)](https://www.python.org/download/releases/2.7/)
 [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
@@ -104,8 +106,8 @@ from tpot import TPOTRegressor
 from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
 
-digits = load_boston()
-X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+housing = load_boston()
+X_train, X_test, y_train, y_test = train_test_split(housing.data, housing.target,
                                                     train_size=0.75, test_size=0.25)
 
 tpot = TPOTRegressor(generations=5, population_size=20, verbosity=2)
