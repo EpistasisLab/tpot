@@ -29,8 +29,6 @@ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 """
 
-from enum import Enum
-
 import numpy as np
 from scipy import sparse
 
@@ -38,11 +36,10 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 
 
-class SparseMatrixEncodings(Enum):
-    """Integer encodings for special values in one-hot-encoded feature matrices."""
-
-    OTHER = 1
-    NAN = 2
+SPARSE_ENCODINGS = {
+    'OTHER': 1,
+    'NAN': 2,
+}
 
 
 def _auto_select_categorical_features(X, threshold=10):
@@ -250,8 +247,8 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         #
         # A value of 0 is reserved, as that is specially handled in sparse
         # matrices.
-        data_matrix += len(SparseMatrixEncodings) + 1
-        data_matrix[~np.isfinite(data_matrix)] = SparseMatrixEncodings.NAN.value
+        data_matrix += len(SPARSE_ENCODINGS) + 1
+        data_matrix[~np.isfinite(data_matrix)] = SPARSE_ENCODINGS['NAN']
 
         return X
 
@@ -321,16 +318,16 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
                             indptr_end = X.indptr[column + 1]
                             X.data[indptr_start:indptr_end][
                                 X.data[indptr_start:indptr_end] ==
-                                unique_value] = SparseMatrixEncodings.OTHER.value
+                                unique_value] = SPARSE_ENCODINGS['OTHER']
                         else:
-                            X[:, column][X[:, column] == unique_value] = SparseMatrixEncodings.OTHER.value
+                            X[:, column][X[:, column] == unique_value] = SPARSE_ENCODINGS['OTHER']
 
             self.do_not_replace_by_other_ = do_not_replace_by_other
 
         if sparse.issparse(X):
-            n_values = X.max(axis=0).toarray().flatten() + len(SparseMatrixEncodings)
+            n_values = X.max(axis=0).toarray().flatten() + len(SPARSE_ENCODINGS)
         else:
-            n_values = np.max(X, axis=0) + len(SparseMatrixEncodings)
+            n_values = np.max(X, axis=0) + len(SPARSE_ENCODINGS)
 
         self.n_values_ = n_values
         n_values = np.hstack([[0], n_values])
@@ -422,9 +419,9 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
                             indptr_end = X.indptr[column + 1]
                             X.data[indptr_start:indptr_end][
                                 X.data[indptr_start:indptr_end] ==
-                                unique_value] = SparseMatrixEncodings.OTHER.value
+                                unique_value] = SPARSE_ENCODINGS['OTHER']
                         else:
-                            X[:, column][X[:, column] == unique_value] = SparseMatrixEncodings.OTHER.value
+                            X[:, column][X[:, column] == unique_value] = SPARSE_ENCODINGS['OTHER']
 
         if sparse.issparse(X):
             n_values_check = X.max(axis=0).toarray().flatten() + 1
