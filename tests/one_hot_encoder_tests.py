@@ -31,9 +31,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 import scipy.sparse
 from sklearn.utils.testing import assert_array_almost_equal
+from sklearn.datasets import load_iris
+from nose.tools import assert_equal
 
-from tpot.one_hot_encoder import OneHotEncoder
+from tpot.one_hot_encoder import OneHotEncoder, _auto_select_categorical_features
 
+
+iris_data = load_iris().data
 
 dense1 = np.array([[0, 1, 0],
                    [0, 0, 0],
@@ -101,6 +105,13 @@ sparse2_csr = scipy.sparse.csr_matrix(([2, 1, 0, 0, 0, 0],
 sparse2_csr_1h = scipy.sparse.csr_matrix(([1, 1, 1, 1, 1, 1],
                                          ((5, 4, 1, 2, 3, 5),
                                           (0, 1, 2, 3, 3, 3))), shape=(6, 4))
+
+
+def test_auto_detect_categorical():
+    """Assert that automatic selection of categorical features works as expected with a threshold of 10."""
+    selected = _auto_select_categorical_features(iris_data[0:16, :], threshold=10)
+    expected = [False, False, True, True]
+    assert_equal(selected, expected)
 
 
 def test_dense1():

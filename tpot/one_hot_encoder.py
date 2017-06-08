@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Copyright (c) 2015 The auto-sklearn developers.
-All rights reserved.
+"""Copyright (c) 2015 The auto-sklearn developers. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,11 +29,53 @@ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 """
 
+from enum import Enum
+
 import numpy as np
 from scipy import sparse
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
+
+
+class SparseMatrixEncodings(Enum):
+    """Integer encodings for special values in one-hot-encoded feature matrices."""
+
+    OTHER = 1
+    NAN = 2
+
+
+def _auto_select_categorical_features(X, threshold=10):
+    """Make a feature mask of categorical features in X.
+
+    Features with less than 10 unique values are considered categorical.
+
+    Parameters
+    ----------
+    X : array-like or sparse matrix, shape=(n_samples, n_features)
+        Dense array or sparse matrix.
+
+    threshold : int
+        Maximum number of unique values per feature to consider the feature
+        to be categorical.
+
+    Returns
+    -------
+    feature_mask : array of booleans of size {n_features, }
+    """
+    feature_mask = []
+
+    for column in range(X.shape[1]):
+        if sparse.issparse(X):
+            indptr_start = X.indptr[column]
+            indptr_end = X.indptr[column + 1]
+            unique = np.unique(X.data[indptr_start:indptr_end])
+        else:
+            unique = np.unique(X[:, column])
+
+        feature_mask.append(len(unique) <= threshold)
+
+    return feature_mask
 
 
 def _transform_selected(X, transform, selected="all", copy=True):
@@ -51,7 +92,7 @@ def _transform_selected(X, transform, selected="all", copy=True):
     copy : boolean, optional
         Copy X even if it could be avoided.
 
-    selected: "all" or array of indices or mask
+    selected: "all", "auto" or array of indices or mask
         Specify which features to apply the transform to.
 
     Returns
@@ -60,6 +101,8 @@ def _transform_selected(X, transform, selected="all", copy=True):
     """
     if selected == "all":
         return transform(X)
+    elif selected == "auto":
+        selected = _auto_select_categorical_features(X)
 
     if len(selected) == 0:
         return X
@@ -160,7 +203,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
       encoding of dictionary items or strings.
     """
 
-    def __init__(self, categorical_features="all", dtype=np.float,
+    def __init__(self, categorical_features="auto", dtype=np.float,
                  sparse=True, minimum_fraction=None):
         self.categorical_features = categorical_features
         self.dtype = dtype
@@ -182,6 +225,36 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         self.fit_transform(X)
         return self
 
+    def _matrix_adjust(self, X):
+        """Adjust all values in X to encode for NaNs and infinities in the data.
+
+        Parameters
+        ----------
+        X : array-like, shape=(n_samples, n_feature)
+            Input array of type int.
+
+        Returns
+        -------
+        X : array-like, shape=(n_samples, n_feature)
+            Input array without any NaNs or infinities.
+        """
+        data_matrix = X.data if sparse.issparse(X) else X
+
+        # Shift all values to specially encode for NAN/infinity/OTHER and 0
+        #   Old value       New Value
+        #   ---------       ---------
+        #   N (0..int_max)  N + 3
+        #   np.NaN          2
+        #   infinity        2
+        #   *other*         1
+        #
+        # A value of 0 is reserved, as that is specially handled in sparse
+        # matrices.
+        data_matrix += len(SparseMatrixEncodings) + 1
+        data_matrix[~np.isfinite(data_matrix)] = SparseMatrixEncodings.NAN.value
+
+        return X
+
     def _fit_transform(self, X):
         """Assume X contains only categorical features.
 
@@ -190,15 +263,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         X : array-like or sparse matrix, shape=(n_samples, n_features)
             Dense array or sparse matrix.
         """
-        # First increment everything by three to account for the fact that
-        # np.NaN will get an index of two, and 'other' values will get index of
-        # one, index of zero is not assigned to also work with sparse data
-        if sparse.issparse(X):
-            X.data += 3
-            X.data[~np.isfinite(X.data)] = 2
-        else:
-            X += 3
-            X[~np.isfinite(X)] = 2
+        X = self._matrix_adjust(X)
 
         X = check_array(
             X,
@@ -256,16 +321,16 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
                             indptr_end = X.indptr[column + 1]
                             X.data[indptr_start:indptr_end][
                                 X.data[indptr_start:indptr_end] ==
-                                unique_value] = 1
+                                unique_value] = SparseMatrixEncodings.OTHER.value
                         else:
-                            X[:, column][X[:, column] == unique_value] = 1
+                            X[:, column][X[:, column] == unique_value] = SparseMatrixEncodings.OTHER.value
 
             self.do_not_replace_by_other_ = do_not_replace_by_other
 
         if sparse.issparse(X):
-            n_values = X.max(axis=0).toarray().flatten() + 2
+            n_values = X.max(axis=0).toarray().flatten() + len(SparseMatrixEncodings)
         else:
-            n_values = np.max(X, axis=0) + 2
+            n_values = np.max(X, axis=0) + len(SparseMatrixEncodings)
 
         self.n_values_ = n_values
         n_values = np.hstack([[0], n_values])
@@ -325,15 +390,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         X : array-like or sparse matrix, shape=(n_samples, n_features)
             Dense array or sparse matrix.
         """
-        # First increment everything by three to account for the fact that
-        # np.NaN will get an index of two, and 'other' values will get index of
-        #  one, index of zero is not assigned to also work with sparse data
-        if sparse.issparse(X):
-            X.data += 3
-            X.data[~np.isfinite(X.data)] = 2
-        else:
-            X += 3
-            X[~np.isfinite(X)] = 2
+        X = self._matrix_adjust(X)
 
         X = check_array(X, accept_sparse='csc', force_all_finite=False,
                         dtype=int)
@@ -365,9 +422,9 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
                             indptr_end = X.indptr[column + 1]
                             X.data[indptr_start:indptr_end][
                                 X.data[indptr_start:indptr_end] ==
-                                unique_value] = 1
+                                unique_value] = SparseMatrixEncodings.OTHER.value
                         else:
-                            X[:, column][X[:, column] == unique_value] = 1
+                            X[:, column][X[:, column] == unique_value] = SparseMatrixEncodings.OTHER.value
 
         if sparse.issparse(X):
             n_values_check = X.max(axis=0).toarray().flatten() + 1
