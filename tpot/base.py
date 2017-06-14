@@ -890,28 +890,31 @@ class TPOTBase(BaseEstimator):
                 eval_individuals_str.append(individual_str)
                 sklearn_pipeline_list.append(sklearn_pipeline)
 
+        # make partial function
+        partial_wrapped_cross_val_score = partial(_wrapped_cross_val_score,
+                            features=features,
+                            target=target,
+                            cv=self.cv,
+                            scoring_function=self.scoring_function,
+                            sample_weight=sample_weight,
+                            max_eval_time_mins=self.max_eval_time_mins,
+                            groups=groups
+                            )
+
         # evalurate pipeline
         resulting_score_list = []
         # chunk size for pbar update
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
-            jobs = []
-            for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
-                job = delayed(_wrapped_cross_val_score)(
-                    sklearn_pipeline=sklearn_pipeline,
-                    features=features,
-                    target=target,
-                    cv=self.cv,
-                    scoring_function=self.scoring_function,
-                    sample_weight=sample_weight,
-                    max_eval_time_mins=self.max_eval_time_mins,
-                    groups=groups
-                )
-                jobs.append(job)
-            parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-            tmp_result_score = parallel(jobs)
-
+            if self.n_jobs == 1:
+                tmp_result_scores = [partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]]
+            else:
+                parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(
+                    sklearn_pipeline=sklearn_pipeline)
+                    for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
             # update pbar
-            for val in tmp_result_score:
+            for val in tmp_result_scores:
                 if not self._pbar.disable:
                     self._pbar.update(1)
                 if val == 'Timeout':

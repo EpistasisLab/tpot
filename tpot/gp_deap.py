@@ -377,7 +377,6 @@ class Interruptable_cross_val_score(threading.Thread):
                                     for train, test in self.cv_iter]
                 self.result = np.array(scores)[:, 0]
         except Exception as e:
-            print(e)
             pass
 
 
