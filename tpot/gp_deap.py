@@ -381,8 +381,35 @@ class Interruptable_cross_val_score(threading.Thread):
 
 
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
-                             cv, scoring_function, sample_weight,
-                             max_eval_time_mins, groups):
+                             cv, scoring_function, sample_weight=None,
+                             max_eval_time_mins=5, groups=None):
+    """Fit estimator and compute scores for a given dataset split.
+    Parameters
+    ----------
+    sklearn_pipeline : pipeline object implementing 'fit'
+        The object to use to fit the data.
+    features : array-like of shape at least 2D
+        The data to fit.
+    target : array-like, optional, default: None
+        The target variable to try to predict in the case of
+        supervised learning.
+    cv: int or cross-validation generator
+        If CV is a number, then it is the number of folds to evaluate each
+        pipeline over in k-fold cross-validation during the TPOT optimization
+         process. If it is an object then it is an object to be used as a
+         cross-validation generator.
+    scoring_function : callable
+        A scorer callable object / function with signature
+        ``scorer(estimator, X, y)``.
+    sample_weight : array-like, optional
+        List of sample weights to balance (or un-balanace) the dataset target as needed
+    max_eval_time_mins: int, optional (default: 5)
+        How many minutes TPOT has to optimize a single pipeline.
+        Setting this parameter to higher values will allow TPOT to explore more
+        complex pipelines, but will also allow TPOT to run longer.
+    groups: array-like {n_samples, }, optional
+        Group labels for the samples used while splitting the dataset into train/test set
+    """
     max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
 
