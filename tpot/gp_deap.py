@@ -28,8 +28,12 @@ import numpy as np
 from deap import tools, gp
 from inspect import isclass
 from .operator_utils import set_sample_weight
-from sklearn.model_selection import cross_val_score
-from sklearn.base import clone
+from sklearn.utils import indexable
+from sklearn.metrics.scorer import check_scoring
+from sklearn.model_selection._validation import _fit_and_score
+from sklearn.model_selection._split import check_cv
+
+from sklearn.base import clone, is_classifier
 from collections import defaultdict
 import warnings
 import threading
@@ -323,10 +327,32 @@ def mutNodeReplacement(individual, pset):
 
 
 class Interruptable_cross_val_score(threading.Thread):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, estimator, X, y, scorer, fit_params, cv_iter):
+        """Fit estimator and compute scores for a given dataset split.
+        Parameters
+        ----------
+        estimator : estimator object implementing 'fit'
+            The object to use to fit the data.
+        X : array-like of shape at least 2D
+            The data to fit.
+        y : array-like, optional, default: None
+            The target variable to try to predict in the case of
+            supervised learning.
+        scorer : callable
+            A scorer callable object / function with signature
+            ``scorer(estimator, X, y)``.
+        fit_params : dict or None
+            Parameters that will be passed to ``estimator.fit``.
+        cv_iter: list
+            A list of test and train samples
+        """
         threading.Thread.__init__(self)
-        self.args = args
-        self.kwargs = kwargs
+        self.estimator = estimator
+        self.X = X
+        self.y = y
+        self.scorer = scorer
+        self.fit_params = fit_params
+        self.cv_iter = cv_iter
         self.result = -float('inf')
         self._stopevent = threading.Event()
         self.daemon = True
@@ -336,14 +362,22 @@ class Interruptable_cross_val_score(threading.Thread):
         threading.Thread.join(self)
 
     def run(self):
-        # Note: changed name of the thread to "MainThread" to avoid such warning from joblib (maybe bugs)
-        # Note: Need attention if using parallel execution model of scikit-learn
-        threading.current_thread().name = 'MainThread'
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
-                self.result = cross_val_score(*self.args, **self.kwargs)
+                scores = [_fit_and_score(estimator=clone(self.estimator),
+                                        X=self.X,
+                                        y=self.y,
+                                        scorer=self.scorer,
+                                        train=train,
+                                        test=test,
+                                        verbose=0,
+                                        parameters=None,
+                                        fit_params=self.fit_params)
+                                    for train, test in self.cv_iter]
+                self.result = np.array(scores)[:, 0]
         except Exception as e:
+            print(e)
             pass
 
 
@@ -352,18 +386,22 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              max_eval_time_mins, groups):
     max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
+
+    features, target, groups = indexable(features, target, groups)
+
+    cv = check_cv(cv, target, classifier=is_classifier(sklearn_pipeline))
+    cv_iter = list(cv.split(features, target, groups))
+    scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
     # build a job for cross_val_score
     tmp_it = Interruptable_cross_val_score(
-        clone(sklearn_pipeline),
-        features,
-        target,
-        scoring=scoring_function,
-        cv=cv,
-        n_jobs=1,
-        verbose=0,
+        estimator=sklearn_pipeline,
+        X=features,
+        y=target,
+        scorer=scorer,
         fit_params=sample_weight_dict,
-        groups=groups
-    )
+        cv_iter=cv_iter
+        )
+
     tmp_it.start()
     tmp_it.join(max_time_seconds)
 
