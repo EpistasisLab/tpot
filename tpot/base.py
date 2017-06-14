@@ -903,27 +903,24 @@ class TPOTBase(BaseEstimator):
 
         # evalurate pipeline
         resulting_score_list = []
-        # chunk size for pbar update
-        for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
-            if self.n_jobs == 1:
-                tmp_result_scores = [partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
-                for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]]
-            else:
-                parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(
-                    sklearn_pipeline=sklearn_pipeline)
-                    for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
-            # update pbar
-            for val in tmp_result_scores:
-                if not self._pbar.disable:
-                    self._pbar.update(1)
-                if val == 'Timeout':
-                    if self.verbosity > 2:
-                        self._pbar.write('Skipped pipeline #{0} due to time out. '
-                                         'Continuing to the next pipeline.'.format(self._pbar.n))
-                    resulting_score_list.append(-float('inf'))
+        if self.n_jobs == 1:
+            for sklearn_pipeline in sklearn_pipeline_list:
+                val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                resulting_score_list = self._update_pbar(val, resulting_score_list)
+        else:
+            # chunk size for pbar update
+            for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
+                if self.n_jobs == 1:
+                    tmp_result_scores = [partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                    for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]]
                 else:
-                    resulting_score_list.append(val)
+                    parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                    tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(
+                        sklearn_pipeline=sklearn_pipeline)
+                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
+                # update pbar
+                for val in tmp_result_scores:
+                    resulting_score_list = self._update_pbar(val, resulting_score_list)
 
         for resulting_score, individual_str in zip(resulting_score_list, eval_individuals_str):
             if type(resulting_score) in [float, np.float64, np.float32]:
@@ -994,6 +991,19 @@ class TPOTBase(BaseEstimator):
             if type(node) is deap.gp.Primitive and node.name != 'CombineDFs':
                 operator_count += 1
         return operator_count
+
+    # update self._pbar during pipeline evaluration
+    def _update_pbar(self, val, resulting_score_list):
+        if not self._pbar.disable:
+            self._pbar.update(1)
+        if val == 'Timeout':
+            if self.verbosity > 2:
+                self._pbar.write('Skipped pipeline #{0} due to time out. '
+                                 'Continuing to the next pipeline.'.format(self._pbar.n))
+            resulting_score_list.append(-float('inf'))
+        else:
+            resulting_score_list.append(val)
+        return resulting_score_list
 
     # Generate function stolen straight from deap.gp.generate
     @_pre_test
