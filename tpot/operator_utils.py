@@ -226,13 +226,12 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 dep_op_arguments = {}
 
             for arg_class, arg_value in zip(arg_types, args):
-                if arg_value == "DEFAULT":
-                    continue
                 aname_split = arg_class.__name__.split('__')
                 if isinstance(arg_value, str):
                     arg_value = '\"{}\"'.format(arg_value)
                 if len(aname_split) == 2:  # simple parameter
-                    op_arguments.append("{}={}".format(aname_split[-1], arg_value))
+                    if arg_value != "DEFAULT":
+                        op_arguments.append("{}={}".format(aname_split[-1], arg_value))
                 # Parameter of internal operator as a parameter in the
                 # operator, usually in Selector
                 else:
@@ -241,7 +240,8 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                     else:
                         if aname_split[1] not in dep_op_arguments:
                             dep_op_arguments[aname_split[1]] = []
-                        dep_op_arguments[aname_split[1]].append("{}={}".format(aname_split[-1], arg_value))
+                        if arg_value != "DEFAULT":
+                            dep_op_arguments[aname_split[1]].append("{}={}".format(aname_split[-1], arg_value))
 
             tmp_op_args = []
             if dep_op_list:
