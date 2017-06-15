@@ -910,14 +910,10 @@ class TPOTBase(BaseEstimator):
         else:
             # chunk size for pbar update
             for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
-                if self.n_jobs == 1:
-                    tmp_result_scores = [partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
-                            for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]]
-                else:
-                    parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                    tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(
-                            sklearn_pipeline=sklearn_pipeline)
-                            for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
+                parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(
+                        sklearn_pipeline=sklearn_pipeline)
+                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
                 # update pbar
                 for val in tmp_result_scores:
                     resulting_score_list = self._update_pbar(val, resulting_score_list)
@@ -983,8 +979,19 @@ class TPOTBase(BaseEstimator):
 
         return self._generate(pset, min_, max_, condition, type_)
 
-    # Count the number of pipeline operators as a measure of pipeline complexity
+
     def _operator_count(self, individual):
+        """Count the number of pipeline operators as a measure of pipeline complexity
+        Parameters
+        ----------
+        individual: list
+            A grown tree with leaves at possibly different depths
+            dependending on the condition function.
+        Returns
+        -------
+        operator_count: int
+            How many operators in a pipeline
+        """
         operator_count = 0
         for i in range(len(individual)):
             node = individual[i]
@@ -992,8 +999,20 @@ class TPOTBase(BaseEstimator):
                 operator_count += 1
         return operator_count
 
-    # update self._pbar during pipeline evaluration
+
     def _update_pbar(self, val, resulting_score_list):
+        """Update self._pbar during pipeline evaluration
+        Parameters
+        ----------
+        val: float or "Timeout"
+            CV scores
+        resulting_score_list: list
+            A list of CV scores
+        Returns
+        -------
+        resulting_score_list: list
+            A updated list of CV scores
+        """
         if not self._pbar.disable:
             self._pbar.update(1)
         if val == 'Timeout':
@@ -1005,7 +1024,7 @@ class TPOTBase(BaseEstimator):
             resulting_score_list.append(val)
         return resulting_score_list
 
-    # Generate function stolen straight from deap.gp.generate
+
     @_pre_test
     def _generate(self, pset, min_, max_, condition, type_=None):
         """Generate a Tree as a list of lists.
