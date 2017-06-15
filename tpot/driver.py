@@ -404,6 +404,7 @@ def _read_data_file(args):
 
     return input_data
 
+
 def main():
     """Perform a TPOT run."""
     args = _get_arg_parser().parse_args()

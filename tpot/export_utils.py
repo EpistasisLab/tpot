@@ -200,7 +200,6 @@ def _starting_imports(operators, operators_used):
         else:
             num_op_root += 1
 
-
     if num_op_root > 1:
         return {
             'sklearn.model_selection':  ['train_test_split'],
