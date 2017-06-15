@@ -212,6 +212,7 @@ class TPOTBase(BaseEstimator):
 
         self._pareto_front = None
         self._optimized_pipeline = None
+        self._optimized_pipeline_score = None
         self._exported_pipeline_text = ""
         self.fitted_pipeline_ = None
         self._fitted_imputer = None
@@ -613,6 +614,7 @@ class TPOTBase(BaseEstimator):
                 if pipeline_scores.wvalues[1] > top_score:
                     self._optimized_pipeline = pipeline
                     top_score = pipeline_scores.wvalues[1]
+                    self._optimized_pipeline_score = top_score
 
     def predict(self, features):
         """Use the optimized pipeline to predict the target for a feature set.
@@ -755,7 +757,7 @@ class TPOTBase(BaseEstimator):
         if self._optimized_pipeline is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset)
+        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._optimized_pipeline_score)
 
         #dont export a pipeline you just had
         if skip_if_repeated and (self._exported_pipeline_text == to_write):
