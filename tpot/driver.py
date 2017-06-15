@@ -23,6 +23,11 @@ import numpy as np
 import argparse
 from sklearn.model_selection import train_test_split
 
+# for manual scoring function, see load_scoring_function
+import sys
+import os
+from importlib import import_module
+
 from .tpot import TPOTClassifier, TPOTRegressor
 from ._version import __version__
 
@@ -424,6 +429,28 @@ def _read_data_file(args):
 
     return input_data
 
+def load_scoring_function(scoring_func):
+    """
+    converts mymodule.myfunc in the myfunc
+    object itself so tpot receives a scoring function
+    """
+    if scoring_func and ("." in scoring_func):
+        try:
+            module_name, func_name = scoring_func.rsplit('.', 1)
+
+            module_path = os.getcwd()
+            sys.path.insert(0, module_path)
+            scoring_func = getattr(import_module(module_name), func_name)
+            sys.path.pop(0)
+            
+            print('manual scoring function: {}'.format(scoring_func))
+            print('taken from module: {}'.format(module_name))
+        except Exception as e:
+            print('failed importing custom scoring function, error: {}'.format(str(e)))
+            raise
+    
+    return scoring_func
+
 def main():
     """Perform a TPOT run."""
     args = _get_arg_parser().parse_args()
@@ -437,25 +464,8 @@ def main():
         axis=1
     )
 
-    if args.SCORING_FN and ("." in args.SCORING_FN):
-        try:
-            module_name, func_name = args.SCORING_FN.rsplit('.', 1)
-
-            import sys
-            import os
-            from importlib import import_module
-            module_path = os.getcwd()
-            sys.path.insert(0, module_path)
-            scoring_func = getattr(import_module(module_name), func_name)
-            
-            print('manual scoring function: {}'.format(scoring_func))
-            print('taken from module: {}'.format(module_name))
-        except Exception as e:
-            print('failed importing custom scoring function, error: {}'.format(str(e)))
-            raise
-    else:
-        scoring_func = args.SCORING_FN
-
+    
+    scoring_func = load_scoring_function(args.SCORING_FN)
 
     training_features, testing_features, training_target, testing_target = \
         train_test_split(features, input_data[args.TARGET_NAME], random_state=args.RANDOM_STATE)

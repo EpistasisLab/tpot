@@ -22,7 +22,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.builtins import ZeroCount, StackingEstimator
-from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, main, _read_data_file
+from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, main, _read_data_file, load_scoring_function
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score
@@ -181,6 +181,16 @@ VERBOSITY\t=\t1
 
 def _sort_lines(text):
     return '\n'.join(sorted(text.split('\n')))
+
+def test_scoring_function_argument():
+    # regular argument returns regular string
+    assert_equal(load_scoring_function("roc_auc"), "roc_auc")
+    
+    # bad function returns exception
+    assert_raises(Exception, load_scoring_function, scoring_func="tests.__fake_BAD_FUNC_NAME")
+
+    # manual function loads the function
+    assert_equal(load_scoring_function('tests.test_scoring_function_argument'), test_scoring_function_argument)
 
 def test_init_custom_parameters():
     """Assert that the TPOT instantiator stores the TPOT variables properly."""
