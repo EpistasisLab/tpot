@@ -900,7 +900,7 @@ class TPOTBase(BaseEstimator):
                 eval_individuals_str.append(individual_str)
                 sklearn_pipeline_list.append(sklearn_pipeline)
 
-        # make partial function
+        # Make the partial function that will be called below
         partial_wrapped_cross_val_score = partial(_wrapped_cross_val_score,
                             features=features,
                             target=target,
@@ -911,8 +911,8 @@ class TPOTBase(BaseEstimator):
                             groups=groups
                             )
 
-        # evalurate pipeline
         resulting_score_list = []
+        # Don't use parallelization if n_jobs==1
         if self.n_jobs == 1:
             for sklearn_pipeline in sklearn_pipeline_list:
                 val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
@@ -921,9 +921,8 @@ class TPOTBase(BaseEstimator):
             # chunk size for pbar update
             for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
                 parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(
-                        sklearn_pipeline=sklearn_pipeline)
-                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
+                tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
+                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
                 # update pbar
                 for val in tmp_result_scores:
                     resulting_score_list = self._update_pbar(val, resulting_score_list)
