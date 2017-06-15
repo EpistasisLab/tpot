@@ -733,13 +733,17 @@ class TPOTBase(BaseEstimator):
                 self._update_top_pipeline()
 
                 filename = os.path.join(self.periodic_save_path, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
-                write('saving best periodic pipeline to {}'.format(filename))
+
+                if self.verbosity >= 2:
+                    write('saving best periodic pipeline to {}'.format(filename))
                 did_export = self.export(filename, skip_if_repeated=True)
 
                 if not did_export:
-                    write('periodic pipeline was not saved, probably saved before...')
+                    if self.verbosity >= 2:
+                        write('periodic pipeline was not saved, probably saved before...')
             except Exception as e:
-                write('failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
+                if self.verbosity >= 2:
+                    write('failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
 
     def export(self, output_file_name, skip_if_repeated=False):
         """Export the optimized pipeline as Python code.

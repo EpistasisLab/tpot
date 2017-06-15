@@ -447,7 +447,7 @@ def load_scoring_function(scoring_func):
             print('taken from module: {}'.format(module_name))
         except Exception as e:
             print('failed importing custom scoring function, error: {}'.format(str(e)))
-            raise
+            raise ValueError(e)
     
     return scoring_func
 
