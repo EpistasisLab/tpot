@@ -992,11 +992,13 @@ class TPOTBase(BaseEstimator):
 
     def _operator_count(self, individual):
         """Count the number of pipeline operators as a measure of pipeline complexity
+
         Parameters
         ----------
         individual: list
             A grown tree with leaves at possibly different depths
             dependending on the condition function.
+
         Returns
         -------
         operator_count: int
@@ -1009,15 +1011,16 @@ class TPOTBase(BaseEstimator):
                 operator_count += 1
         return operator_count
 
-
     def _update_pbar(self, val, resulting_score_list):
         """Update self._pbar during pipeline evaluration
+
         Parameters
         ----------
         val: float or "Timeout"
             CV scores
         resulting_score_list: list
             A list of CV scores
+
         Returns
         -------
         resulting_score_list: list
@@ -1033,7 +1036,6 @@ class TPOTBase(BaseEstimator):
         else:
             resulting_score_list.append(val)
         return resulting_score_list
-
 
     @_pre_test
     def _generate(self, pset, min_, max_, condition, type_=None):
