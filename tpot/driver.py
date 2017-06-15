@@ -272,6 +272,21 @@ def _get_arg_parser():
     )
 
     parser.add_argument(
+        '-psp',
+        action='store',
+        dest='PERIODIC_SAVE_PATH',
+        default=None,
+        type=str,
+        help=('If supplied, a folder in which tpot will periodically '
+        'save the best pipeline so far while optimizing. '
+        'This is useful in multiple cases: '
+        'sudden death before tpot could save an optimized pipeline, '
+        'progress tracking, '
+        "grabbing a pipeline while it's still optimizing etc."
+        )
+    )
+
+    parser.add_argument(
         '-njobs',
         action='store',
         dest='NUM_JOBS',
@@ -435,7 +450,8 @@ def main():
         random_state=args.RANDOM_STATE,
         config_dict=args.CONFIG_FILE,
         verbosity=args.VERBOSITY,
-        disable_update_check=args.DISABLE_UPDATE_CHECK
+        disable_update_check=args.DISABLE_UPDATE_CHECK,
+        periodic_save_path=args.PERIODIC_SAVE_PATH
     )
 
     tpot_obj.fit(training_features, training_target)

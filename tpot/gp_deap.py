@@ -103,7 +103,8 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
-                   stats=None, halloffame=None, verbose=0, max_time_mins=None):
+                   stats=None, halloffame=None, verbose=0, max_time_mins=None,
+                   periodic_pipeline_saver=None):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
@@ -164,6 +165,9 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
     # Begin the generational process
     for gen in range(1, ngen + 1):
+        # after each population save a periodic pipeline
+        if periodic_pipeline_saver is not None:
+            periodic_pipeline_saver()
 
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
