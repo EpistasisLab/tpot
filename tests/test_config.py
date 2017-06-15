@@ -19,11 +19,17 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from .classifier_light import classifier_config_dict_light
-from .classifier_mdr import tpot_mdr_classifier_config_dict
-from .classifier_sparse import classifier_config_sparse
-from .classifier import classifier_config_dict
-from .regressor_light import regressor_config_dict_light
-from .regressor_mdr import tpot_mdr_regressor_config_dict
-from .regressor_sparse import regressor_config_sparse
-from .regressor import regressor_config_dict
+tpot_config = {
+    'sklearn.naive_bayes.GaussianNB': {
+    },
+
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    },
+
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    }
+}

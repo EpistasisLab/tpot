@@ -50,10 +50,13 @@ from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _pre_test
 from .builtins import CombineDFs, StackingEstimator
+
 from .config.classifier_light import classifier_config_dict_light
 from .config.regressor_light import regressor_config_dict_light
 from .config.classifier_mdr import tpot_mdr_classifier_config_dict
 from .config.regressor_mdr import tpot_mdr_regressor_config_dict
+from .config.regressor_sparse import regressor_config_sparse
+from .config.classifier_sparse import classifier_config_sparse
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -176,6 +179,9 @@ class TPOTBase(BaseEstimator):
             String 'TPOT MDR':
                 TPOT uses a list of TPOT-MDR operator configuration dictionary instead of
                 the default one.
+            String 'TPOT sparse':
+                TPOT uses a configuration dictionary with a one-hot-encoder and the
+                operators normally included in TPOT that also support sparse matrices.
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -316,6 +322,11 @@ class TPOTBase(BaseEstimator):
                     self.config_dict = tpot_mdr_classifier_config_dict
                 else:
                     self.config_dict = tpot_mdr_regressor_config_dict
+            elif config_dict == 'TPOT sparse':
+                if self.classification:
+                    self.config_dict = classifier_config_sparse
+                else:
+                    self.config_dict = regressor_config_sparse
             else:
                 self.config_dict = self._read_config_file(config_dict)
         else:
@@ -643,7 +654,7 @@ class TPOTBase(BaseEstimator):
         return self.predict(features)
 
     def score(self, testing_features, testing_target):
-        """Returns the score on the given testing data using the user-specified scoring function.
+        """Return the score on the given testing data using the user-specified scoring function.
 
         Parameters
         ----------
@@ -807,7 +818,6 @@ class TPOTBase(BaseEstimator):
             else:
                 if hasattr(obj, parameter):
                     setattr(obj, parameter, value)
-
 
     def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
