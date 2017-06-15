@@ -25,7 +25,6 @@ from tpot.driver import float_range
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score
 from tpot.metrics import balanced_accuracy
-from tpot.builtins import StackingEstimator, ZeroCount
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 
 from tpot.config.classifier import classifier_config_dict
@@ -43,9 +42,6 @@ from multiprocessing import cpu_count
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
-from sklearn.linear_model import LogisticRegression, Lasso
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.pipeline import make_pipeline
 from deap import creator
 from nose.tools import assert_raises, assert_not_equal
 
@@ -789,89 +785,3 @@ def test_gen():
 
     assert len(pipeline) > 1
     assert pipeline[0].ret == Output_Array
-
-
-def test_StackingEstimator_1():
-    """Assert that the StackingEstimator returns transformed X with synthetic features in classification."""
-    clf = RandomForestClassifier(random_state=42)
-    stack_clf = StackingEstimator(estimator=RandomForestClassifier(random_state=42))
-    # fit
-    clf.fit(training_features, training_target)
-    stack_clf.fit(training_features, training_target)
-    # get transformd X
-    X_clf_transformed = stack_clf.transform(training_features)
-
-    assert np.allclose(clf.predict(training_features), X_clf_transformed[:, 0])
-    assert np.allclose(clf.predict_proba(training_features), X_clf_transformed[:, 1:1 + len(np.unique(training_target))])
-
-
-def test_StackingEstimator_2():
-    """Assert that the StackingEstimator returns transformed X with a synthetic feature in regression."""
-    reg = RandomForestRegressor(random_state=42)
-    stack_reg = StackingEstimator(estimator=RandomForestRegressor(random_state=42))
-    # fit
-    reg.fit(training_features_r, training_target_r)
-    stack_reg.fit(training_features_r, training_target_r)
-    # get transformd X
-    X_reg_transformed = stack_reg.transform(training_features_r)
-
-    assert np.allclose(reg.predict(training_features_r), X_reg_transformed[:, 0])
-
-
-def test_StackingEstimator_3():
-    """Assert that the StackingEstimator worked as expected in scikit-learn pipeline in classification."""
-    stack_clf = StackingEstimator(estimator=RandomForestClassifier(random_state=42))
-    meta_clf = LogisticRegression()
-    sklearn_pipeline = make_pipeline(stack_clf, meta_clf)
-    # fit in pipeline
-    sklearn_pipeline.fit(training_features, training_target)
-    # fit step by step
-    stack_clf.fit(training_features, training_target)
-    X_clf_transformed = stack_clf.transform(training_features)
-    meta_clf.fit(X_clf_transformed, training_target)
-    # scoring
-    score = meta_clf.score(X_clf_transformed, training_target)
-    pipeline_score = sklearn_pipeline.score(training_features, training_target)
-    assert np.allclose(score, pipeline_score)
-
-    # test cv score
-    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features, training_target, cv=3, scoring='accuracy'))
-
-    known_cv_score = 0.947282375315
-
-    assert np.allclose(known_cv_score, cv_score)
-
-
-def test_StackingEstimator_4():
-    """Assert that the StackingEstimator worked as expected in scikit-learn pipeline in regression."""
-    stack_reg = StackingEstimator(estimator=RandomForestRegressor(random_state=42))
-    meta_reg = Lasso(random_state=42)
-    sklearn_pipeline = make_pipeline(stack_reg, meta_reg)
-    # fit in pipeline
-    sklearn_pipeline.fit(training_features_r, training_target_r)
-    # fit step by step
-    stack_reg.fit(training_features_r, training_target_r)
-    X_reg_transformed = stack_reg.transform(training_features_r)
-    meta_reg.fit(X_reg_transformed, training_target_r)
-    # scoring
-    score = meta_reg.score(X_reg_transformed, training_target_r)
-    pipeline_score = sklearn_pipeline.score(training_features_r, training_target_r)
-    assert np.allclose(score, pipeline_score)
-
-    # test cv score
-    cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features_r, training_target_r, cv=3, scoring='r2'))
-    known_cv_score = 0.795877470354
-
-    assert np.allclose(known_cv_score, cv_score)
-
-
-def test_ZeroCount():
-    """Assert that ZeroCount operator returns correct transformed X."""
-    X = np.array([[0, 1, 7, 0, 0], [3, 0, 0, 2, 19], [0, 1, 3, 4, 5], [5, 0, 0, 0, 0]])
-    op = ZeroCount()
-    X_transformed = op.transform(X)
-    zero_col = np.array([3, 2, 1, 4])
-    non_zero = np.array([2, 3, 4, 1])
-
-    assert np.allclose(zero_col, X_transformed[:, 0])
-    assert np.allclose(non_zero, X_transformed[:, 1])
