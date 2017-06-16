@@ -22,7 +22,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 from tqdm import tqdm
 import numpy as np
 
-from tpot import TPOTClassifier
+from tpot import TPOTClassifier, TPOTRegressor
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.operator_utils import TPOTOperatorClassFactory
 from tpot.config.classifier import classifier_config_dict
@@ -322,6 +322,41 @@ exported_pipeline = make_pipeline(
         FunctionTransformer(copy)
     ),
     KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
+)
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+"""
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
+
+
+def test_export_pipeline_5():
+    """Assert that exported_pipeline() generated a compile source file as expected given a fixed simple pipeline with SelectFromModel."""
+    tpot_obj = TPOTRegressor()
+    pipeline_string = (
+        'DecisionTreeRegressor(SelectFromModel(input_matrix, '
+        'SelectFromModel__ExtraTreesRegressor__max_features=0.05, SelectFromModel__ExtraTreesRegressor__n_estimators=100, '
+        'SelectFromModel__threshold=0.05), DecisionTreeRegressor__max_depth=8,'
+        'DecisionTreeRegressor__min_samples_leaf=5, DecisionTreeRegressor__min_samples_split=5)'
+    )
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    expected_code = """import numpy as np
+
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.feature_selection import SelectFromModel
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.tree import DecisionTreeRegressor
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_target, testing_target = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
+
+exported_pipeline = make_pipeline(
+    SelectFromModel(estimator=ExtraTreesRegressor(max_features=0.05, n_estimators=100), threshold=0.05),
+    DecisionTreeRegressor(max_depth=8, min_samples_leaf=5, min_samples_split=5)
 )
 
 exported_pipeline.fit(training_features, training_target)

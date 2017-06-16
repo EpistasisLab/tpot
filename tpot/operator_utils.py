@@ -226,8 +226,6 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 dep_op_arguments = {}
 
             for arg_class, arg_value in zip(arg_types, args):
-                if arg_value == "DEFAULT":
-                    continue
                 aname_split = arg_class.__name__.split('__')
                 if isinstance(arg_value, str):
                     arg_value = '\"{}\"'.format(arg_value)
