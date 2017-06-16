@@ -712,7 +712,7 @@ def test_PolynomialFeatures_exception():
         'LogisticRegression(PolynomialFeatures'
         '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
         'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
-        'LogisticRegression__dual=False, LogisticRegression__penalty=l1)'
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
     )
 
     # pipeline with two PolynomialFeatures operator
@@ -722,7 +722,7 @@ def test_PolynomialFeatures_exception():
         'PolynomialFeatures__include_bias=False, PolynomialFeatures__interaction_only=False), '
         'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
         'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
-        'LogisticRegression__dual=False, LogisticRegression__penalty=l1)'
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
     )
 
     # make a list for _evaluate_individuals
