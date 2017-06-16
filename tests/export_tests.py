@@ -335,7 +335,7 @@ def test_export_pipeline_5():
     tpot_obj = TPOTRegressor()
     pipeline_string = (
         'DecisionTreeRegressor(SelectFromModel(input_matrix, '
-        'SelectFromModel__ExtraTreesRegressor__max_features=DEFAULT, SelectFromModel__ExtraTreesRegressor__n_estimators=100, '
+        'SelectFromModel__ExtraTreesRegressor__max_features=0.05, SelectFromModel__ExtraTreesRegressor__n_estimators=100, '
         'SelectFromModel__threshold=0.05), DecisionTreeRegressor__max_depth=8,'
         'DecisionTreeRegressor__min_samples_leaf=5, DecisionTreeRegressor__min_samples_split=5)'
     )
@@ -355,7 +355,7 @@ training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    SelectFromModel(estimator=ExtraTreesRegressor(n_estimators=100), threshold=0.05),
+    SelectFromModel(estimator=ExtraTreesRegressor(max_features=0.05, n_estimators=100), threshold=0.05),
     DecisionTreeRegressor(max_depth=8, min_samples_leaf=5, min_samples_split=5)
 )
 

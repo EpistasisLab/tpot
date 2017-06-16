@@ -714,19 +714,19 @@ def test_PolynomialFeatures_exception():
     # pipeline with one PolynomialFeatures operator
     pipeline_string_1 = (
         'LogisticRegression(PolynomialFeatures'
-        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=DEFAULT, '
+        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
         'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
-        'LogisticRegression__dual=DEFAULT, LogisticRegression__penalty=DEFAULT)'
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l1)'
     )
 
     # pipeline with two PolynomialFeatures operator
     pipeline_string_2 = (
         'LogisticRegression(PolynomialFeatures'
         '(PolynomialFeatures(input_matrix, PolynomialFeatures__degree=2, '
-        'PolynomialFeatures__include_bias=DEFAULT, PolynomialFeatures__interaction_only=False), '
-        'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=DEFAULT, '
+        'PolynomialFeatures__include_bias=False, PolynomialFeatures__interaction_only=False), '
+        'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
         'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
-        'LogisticRegression__dual=DEFAULT, LogisticRegression__penalty=DEFAULT)'
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l1)'
     )
 
     # make a list for _evaluate_individuals
@@ -734,6 +734,7 @@ def test_PolynomialFeatures_exception():
     pipelines.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
     pipelines.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
     fitness_scores = tpot_obj._evaluate_individuals(pipelines, training_features, training_target)
+    print(fitness_scores)
     known_scores = [(2, 0.98068077235290885), (5000.0, -float('inf'))]
     assert np.allclose(known_scores, fitness_scores)
 
