@@ -190,7 +190,7 @@ class TPOTBase(BaseEstimator):
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
-        periodic_checkpoint_folder: path string (default: None)
+        periodic_checkpoint_folder: path string, optional (default: None)
             If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.
             Currently once per generation but not more often than once per 30 seconds.
             Useful in multiple cases:
