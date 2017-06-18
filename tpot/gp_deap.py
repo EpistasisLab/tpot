@@ -108,7 +108,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                    stats=None, halloffame=None, verbose=0, max_time_mins=None,
-                   periodic_pipeline_saver=None):
+                   per_generation_function=None):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
@@ -124,6 +124,8 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     :param halloffame: A :class:`~deap.tools.HallOfFame` object that will
                        contain the best individuals, optional.
     :param verbose: Whether or not to log the statistics.
+    :param per_generation_function: if supplied, call this function before each generation
+                            used by tpot to save best pipeline before each new generation
     :returns: The final population
     :returns: A class:`~deap.tools.Logbook` with the statistics of the
               evolution.
@@ -170,8 +172,8 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     # Begin the generational process
     for gen in range(1, ngen + 1):
         # after each population save a periodic pipeline
-        if periodic_pipeline_saver is not None:
-            periodic_pipeline_saver()
+        if per_generation_function is not None:
+            per_generation_function()
 
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)

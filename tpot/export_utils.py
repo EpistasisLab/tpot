@@ -51,7 +51,7 @@ def get_by_name(opname, operators):
     return ret_op_class
 
 
-def export_pipeline(exported_pipeline, operators, pset, pscore=None):
+def export_pipeline(exported_pipeline, operators, pset, pipeline_score=None):
     """Generate source code for a TPOT Pipeline.
 
     Parameters
@@ -60,7 +60,7 @@ def export_pipeline(exported_pipeline, operators, pset, pscore=None):
         The pipeline that is being exported
     operators:
         List of operator classes from operator library
-    pscore:
+    pipeline_score:
         Optional pipeline score to be saved to the exported file
 
     Returns
@@ -90,10 +90,9 @@ training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
 """
 
-    if pscore is not None:
-        pipeline_text += '\n# Score on the training set was:{}\n'.format(pscore)
-    else:
-        pipeline_text += '\n'
+    if pipeline_score is not None:
+        pipeline_text += '\n# Score on the training set was:{}'.format(pipeline_score)
+    pipeline_text += '\n'
 
     # Replace the function calls with their corresponding Python code
     pipeline_text += pipeline_code

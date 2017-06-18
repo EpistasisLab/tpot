@@ -282,9 +282,9 @@ def _get_arg_parser():
     )
 
     parser.add_argument(
-        '-psp',
+        '-pcf',
         action='store',
-        dest='PERIODIC_SAVE_PATH',
+        dest='PERIODIC_CHECKPOINT_FOLDER',
         default=None,
         type=str,
         help=('If supplied, a folder in which tpot will periodically '
@@ -484,9 +484,9 @@ def main():
         max_eval_time_mins=args.MAX_EVAL_MINS,
         random_state=args.RANDOM_STATE,
         config_dict=args.CONFIG_FILE,
+        periodic_checkpoint_folder=args.PERIODIC_CHECKPOINT_FOLDER,
         verbosity=args.VERBOSITY,
-        disable_update_check=args.DISABLE_UPDATE_CHECK,
-        periodic_save_path=args.PERIODIC_SAVE_PATH
+        disable_update_check=args.DISABLE_UPDATE_CHECK
     )
 
     tpot_obj.fit(training_features, training_target)

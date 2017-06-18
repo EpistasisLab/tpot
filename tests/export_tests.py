@@ -419,4 +419,4 @@ exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
 
-    assert_equal(expected_code, export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset, pscore=0.929813743))
+    assert_equal(expected_code, export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset, pipeline_score=0.929813743))

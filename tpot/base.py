@@ -91,7 +91,8 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None, warm_start=False,
-                 verbosity=0, disable_update_check=False, periodic_save_path=None):
+                 periodic_checkpoint_folder=None,
+                 verbosity=0, disable_update_check=False):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -189,19 +190,19 @@ class TPOTBase(BaseEstimator):
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
-        verbosity: int, optional (default: 0)
-            How much information TPOT communicates while it's running.
-            0 = none, 1 = minimal, 2 = high, 3 = all.
-            A setting of 2 or higher will add a progress bar during the optimization procedure.
-        disable_update_check: bool, optional (default: False)
-            Flag indicating whether the TPOT version checker should be disabled.
-        periodic_save_path: path string (default: None)
+        periodic_checkpoint_folder: path string (default: None)
             If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.
             Currently once per generation but not more often than once per 30 seconds.
             Useful in multiple cases:
                 Sudden death before tpot could save optimized pipeline
                 Track its progress
                 Grab pipelines while it's still optimizing
+        verbosity: int, optional (default: 0)
+            How much information TPOT communicates while it's running.
+            0 = none, 1 = minimal, 2 = high, 3 = all.
+            A setting of 2 or higher will add a progress bar during the optimization procedure.
+        disable_update_check: bool, optional (default: False)
+            Flag indicating whether the TPOT version checker should be disabled.
 
         Returns
         -------
@@ -228,7 +229,7 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
-        self.periodic_save_path = periodic_save_path
+        self.periodic_checkpoint_folder = periodic_checkpoint_folder
 
         # Set offspring_size equal to population_size by default
         if offspring_size:
@@ -550,7 +551,7 @@ class TPOTBase(BaseEstimator):
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
                     max_time_mins=self.max_time_mins,
-                    periodic_pipeline_saver=self.save_pipeline_if_period
+                    per_generation_function=self._save_pipeline_if_period
                 )
 
             # store population for the next call
@@ -617,12 +618,11 @@ class TPOTBase(BaseEstimator):
     def _update_top_pipeline(self):
         """Helper function to update the _optimized_pipeline field."""
         if self._pareto_front:
-            top_score = -float('inf')
+            self._optimized_pipeline_score = -float('inf')
             for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
-                if pipeline_scores.wvalues[1] > top_score:
+                if pipeline_scores.wvalues[1] > self._optimized_pipeline_score:
                     self._optimized_pipeline = pipeline
-                    top_score = pipeline_scores.wvalues[1]
-                    self._optimized_pipeline_score = top_score
+                    self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
     def predict(self, features):
         """Use the optimized pipeline to predict the target for a feature set.
@@ -727,31 +727,35 @@ class TPOTBase(BaseEstimator):
 
         return self
 
-    def save_pipeline_if_period(self):
+    def _save_pipeline_if_period(self):
+        """
+        If enough time has passed, save a new optimized pipeline.
+        Currently used in the per generation hook in the optimization loop.
+        """
         total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
         if total_since_last_pipeline_save > self.OUTPUT_BEST_PIPELINE_PERIOD_SECONDS:
             self._last_pipeline_write = datetime.now()
             self._save_periodic_pipeline()
 
     def _save_periodic_pipeline(self):
-        if self.periodic_save_path is not None:
+        if self.periodic_checkpoint_folder is not None:
             try:
-                write = self._pbar.write if not self._pbar.disable else print
+                print_func = self._pbar.write if not self._pbar.disable else print
 
                 self._update_top_pipeline()
 
-                filename = os.path.join(self.periodic_save_path, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
+                filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
 
                 if self.verbosity >= 2:
-                    write('saving best periodic pipeline to {}'.format(filename))
+                    print_func('saving best periodic pipeline to {}'.format(filename))
                 did_export = self.export(filename, skip_if_repeated=True)
 
                 if not did_export:
                     if self.verbosity >= 2:
-                        write('periodic pipeline was not saved, probably saved before...')
+                        print_func('periodic pipeline was not saved, probably saved before...')
             except Exception as e:
                 if self.verbosity >= 2:
-                    write('failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
+                    print_func('failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
 
     def export(self, output_file_name, skip_if_repeated=False):
         """Export the optimized pipeline as Python code.
@@ -760,10 +764,14 @@ class TPOTBase(BaseEstimator):
         ----------
         output_file_name: string
             String containing the path and file name of the desired output file
+        skip_if_repeated: boolean
+            If True, skip the actual writing if a pipeline
+            code would be identical to the last pipeline exported
 
         Returns
         -------
-        None
+        False if it skipped writing the pipeline to file
+        True if the pipeline was actually written
 
         """
         if self._optimized_pipeline is None:
@@ -778,7 +786,8 @@ class TPOTBase(BaseEstimator):
         with open(output_file_name, 'w') as output_file:
             output_file.write(to_write)
             self._exported_pipeline_text = to_write
-            return True
+        
+        return True
 
     def _impute_values(self, features):
         """Impute missing values in a feature set.

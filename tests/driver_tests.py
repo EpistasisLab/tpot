@@ -53,19 +53,19 @@ def test_scoring_function_argument():
         assert_raises(Exception, load_scoring_function, scoring_func="tests.__fake_BAD_FUNC_NAME")
 
         # manual function loads the function
-        assert_equal(load_scoring_function('tests.driver_tests.test_scoring_function_argument').__name__, test_scoring_function_argument.__name__)
+        assert_equal(load_scoring_function('driver_tests.test_scoring_function_argument').__name__, test_scoring_function_argument.__name__)
 
         # installed-module function test
         assert_equal(load_scoring_function('sklearn.metrics.auc').__name__, "auc")
 
         out, err = out.getvalue(), err.getvalue()
 
-        assert_in("failed importing custom scoring function", out)
-        assert_in("manual scoring function: <function auc", out)
-        assert_in("taken from module: sklearn.metrics", out)
-        assert_in("manual scoring function: <function test_scoring_function_argument", out)
-        assert_in("taken from module: tests.driver_tests", out)
-        assert_equal(err, "")
+    assert_in("failed importing custom scoring function", out)
+    assert_in("manual scoring function: <function auc", out)
+    assert_in("taken from module: sklearn.metrics", out)
+    assert_in("manual scoring function: <function test_scoring_function_argument", out)
+    assert_in("taken from module: driver_tests", out)
+    assert_equal(err, "")
 
 
 
@@ -148,7 +148,7 @@ MUTATION_RATE\t=\t0.9
 NUM_CV_FOLDS\t=\t5
 NUM_JOBS\t=\t1
 OFFSPRING_SIZE\t=\t100
-PERIODIC_SAVE_PATH\t=\tNone
+PERIODIC_CHECKPOINT_FOLDER\t=\tNone
 OUTPUT_FILE\t=\t
 POPULATION_SIZE\t=\t100
 RANDOM_STATE\t=\tNone
