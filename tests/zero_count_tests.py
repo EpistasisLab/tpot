@@ -19,11 +19,20 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from .classifier_light import classifier_config_dict_light
-from .classifier_mdr import tpot_mdr_classifier_config_dict
-from .classifier_sparse import classifier_config_sparse
-from .classifier import classifier_config_dict
-from .regressor_light import regressor_config_dict_light
-from .regressor_mdr import tpot_mdr_regressor_config_dict
-from .regressor_sparse import regressor_config_sparse
-from .regressor import regressor_config_dict
+import numpy as np
+from tpot.builtins import ZeroCount
+
+X = np.array([[0, 1, 7, 0, 0],
+            [3, 0, 0, 2, 19],
+            [0, 1, 3, 4, 5],
+            [5, 0, 0, 0, 0]])
+
+def test_ZeroCount():
+    """Assert that ZeroCount operator returns correct transformed X."""
+    op = ZeroCount()
+    X_transformed = op.transform(X)
+    zero_col = np.array([3, 2, 1, 4])
+    non_zero = np.array([2, 3, 4, 1])
+
+    assert np.allclose(zero_col, X_transformed[:, 0])
+    assert np.allclose(non_zero, X_transformed[:, 1])
