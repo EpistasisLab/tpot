@@ -212,10 +212,12 @@ We recommend using the default parameter unless you understand how the crossover
 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'neg_log_loss', 'neg_mean_absolute_error',
 'neg_mean_squared_error', 'neg_median_absolute_error', 'precision', 'precision_macro', 'precision_micro',
 'precision_samples', 'precision_weighted',<br />'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples',
-'recall_weighted', 'roc_auc'</td>
+'recall_weighted', 'roc_auc', 'my_module.scorer_name*'</td>
 <td>Function used to evaluate the quality of a given pipeline for the problem. By default, accuracy is used for classification and mean squared error (MSE) is used for regression.
 <br /><br />
 TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized.
+<br /><br />
+my_module.scorer_name: You can also specify your own function or a full python path to an existing one.
 <br /><br />
 See the section on <a href="#scoring-functions">scoring functions</a> for more details.</td>
 </tr>
@@ -271,6 +273,26 @@ Set this seed if you want your TPOT run to be reproducible with the same seed an
 See the <a href="#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.</td>
 </tr>
 <tr>
+<td>-cf</td>
+<td>CHECKPOINT_FOLDER</td>
+<td>Folder path</td>
+<td>
+If supplied, a folder you created, in which tpot will periodically save the best pipeline so far while optimizing.
+<br /><br />
+This is useful in multiple cases:
+<ul>
+<li>sudden death before tpot could save an optimized pipeline</li>
+<li>progress tracking</li>
+<li>grabbing a pipeline while tpot is working</li>
+</ul>
+<br /><br />
+Example:
+<br />
+mkdir my_checkpoints
+<br />
+-cf ./my_checkpoints
+</tr>
+<tr>
 <td>-v</td>
 <td>VERBOSITY</td>
 <td>{0, 1, 2, 3}</td>
@@ -320,6 +342,9 @@ tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 ```
+
+* **my_module.scorer_name**: you can also use your manual  `scorer(y_true, y_pred)` function through the command line, just add an argument `-scoring my_module.scorer` and TPOT will import your module and take the function from there. TPOT will also include current workdir when importing the module, so you can just put it in the same folder where you are going to run.
+Example: `-scoring sklearn.metrics.auc` will use the function auc from sklearn.metrics module.
 
 # Built-in TPOT configurations
 

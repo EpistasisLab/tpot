@@ -43,7 +43,7 @@ from multiprocessing import cpu_count
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from deap import creator
-from nose.tools import assert_raises, assert_not_equal
+from nose.tools import assert_raises, assert_not_equal, assert_greater_equal
 
 from tqdm import tqdm
 
@@ -425,7 +425,7 @@ def test_fit_GroupKFold():
         cv=GroupKFold(n_splits=2),
     )
     tpot_obj.fit(training_features, training_target, groups=groups)
-    assert tpot_obj.score(testing_features, testing_target) >= 0.97
+    assert_greater_equal(tpot_obj.score(testing_features, testing_target), 0.97)
 
 
 def test_predict():
