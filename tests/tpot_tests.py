@@ -297,6 +297,21 @@ def test_conf_dict_3():
     assert tpot_obj.config_dict == tested_config_dict
 
 
+def test_conf_dict_4():
+    """Assert that TPOT uses seeds from custom dictionary as the starting population."""
+    tpot_obj = TPOTRegressor(config_dict='tests/test_config.py', generations=1, population_size=10)
+
+    assert isinstance(tpot_obj._pop, list)
+    assert isinstance(tpot_obj._pop[0], creator.Individual)
+
+
+def test_conf_dict_5():
+    """Assert that TPOT has a starting population of the same size as the population_size parameter when using seeds."""
+    tpot_obj = TPOTRegressor(config_dict='tests/test_config.py')
+
+    assert len(tpot_obj._pop) == tpot_obj.population_size
+
+
 def test_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline with same random seed."""
     tpot_obj = TPOTClassifier(random_state=43)

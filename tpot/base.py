@@ -90,8 +90,8 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, config_dict=None, warm_start=False,
-                 periodic_checkpoint_folder=None,
+                 random_state=None, config_dict=None, seeds=None,
+                 warm_start=False, periodic_checkpoint_folder=None,
                  verbosity=0, disable_update_check=False):
         """Set up the genetic programming algorithm for pipeline optimization.
 
@@ -187,6 +187,8 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
+        seeds: list of strings, optional (Default: None)
+            The set of pipelines used in the first generation.
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -322,6 +324,7 @@ class TPOTBase(BaseEstimator):
 
         self._setup_pset()
         self._setup_toolbox()
+        self._setup_pop(seeds, config_dict)
 
     def _setup_config(self, config_dict):
         if config_dict:
@@ -343,7 +346,7 @@ class TPOTBase(BaseEstimator):
                 else:
                     self.config_dict = regressor_config_sparse
             else:
-                self.config_dict = self._read_config_file(config_dict)
+                self.config_dict = self._read_config_file(config_dict).tpot_config
         else:
             self.config_dict = self.default_config_dict
 
@@ -355,22 +358,35 @@ class TPOTBase(BaseEstimator):
                 file_string = config_file.read()
                 exec(file_string, custom_config.__dict__)
 
-            return custom_config.tpot_config
+            return custom_config
         except FileNotFoundError as e:
             raise FileNotFoundError(
                 'Could not open specified TPOT operator config file: '
                 '{}'.format(e.filename)
-            )
-        except AttributeError:
-            raise AttributeError(
-                'The supplied TPOT operator config file does not contain '
-                'a dictionary named "tpot_config".'
             )
         except Exception as e:
             raise type(e)(
                 'An error occured while attempting to read the specified '
                 'custom TPOT operator configuration file.'
             )
+
+    def _setup_pop(self, seeds, config_path):
+        """If the seeds are specified, use them as the starting population."""
+        try:
+            config = self._read_config_file(config_path)
+
+            if hasattr(config, 'seeds'):
+                seeds = config.seeds
+        except Exception as e:
+            # Config isn't a file
+            return
+
+        seed_individuals = [creator.Individual.from_string(x, self._pset) for x in seeds]
+        self._pop = []
+
+        # Add the same set of seeds to the population until we have population_size seeds
+        for x in range(self.population_size):
+            self._pop.append(seed_individuals[x % len(seed_individuals)])
 
     def _setup_pset(self):
         if self.random_state is not None:
@@ -779,14 +795,14 @@ class TPOTBase(BaseEstimator):
 
         to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._optimized_pipeline_score)
 
-        #dont export a pipeline you just had
+        # dont export a pipeline you just had
         if skip_if_repeated and (self._exported_pipeline_text == to_write):
             return False
-        
+
         with open(output_file_name, 'w') as output_file:
             output_file.write(to_write)
             self._exported_pipeline_text = to_write
-        
+
         return True
 
     def _impute_values(self, features):
@@ -958,15 +974,16 @@ class TPOTBase(BaseEstimator):
                 sklearn_pipeline_list.append(sklearn_pipeline)
 
         # Make the partial function that will be called below
-        partial_wrapped_cross_val_score = partial(_wrapped_cross_val_score,
-                            features=features,
-                            target=target,
-                            cv=self.cv,
-                            scoring_function=self.scoring_function,
-                            sample_weight=sample_weight,
-                            max_eval_time_mins=self.max_eval_time_mins,
-                            groups=groups
-                            )
+        partial_wrapped_cross_val_score = partial(
+            _wrapped_cross_val_score,
+            features=features,
+            target=target,
+            cv=self.cv,
+            scoring_function=self.scoring_function,
+            sample_weight=sample_weight,
+            max_eval_time_mins=self.max_eval_time_mins,
+            groups=groups
+        )
 
         resulting_score_list = []
         # Don't use parallelization if n_jobs==1
@@ -1044,7 +1061,6 @@ class TPOTBase(BaseEstimator):
             return type_ not in [np.ndarray, Output_Array] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
-
 
     def _operator_count(self, individual):
         """Count the number of pipeline operators as a measure of pipeline complexity
