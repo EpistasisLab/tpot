@@ -792,7 +792,7 @@ def test_clean_pipeline_string():
     with_prefix = 'BernoulliNB(input_matrix, BernoulliNB__alpha=1.0, BernoulliNB__fit_prior=True)'
     without_prefix = 'BernoulliNB(input_matrix, alpha=1.0, fit_prior=True)'
     tpot_obj = TPOTClassifier()
-    ind1 = creator.Individual.from_string(with_prefix)
+    ind1 = creator.Individual.from_string(with_prefix, tpot_obj._pset)
     
     pretty_string = tpot_obj.clean_pipeline_string(ind1)
     assert pretty_string == without_prefix
