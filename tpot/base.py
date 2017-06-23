@@ -230,8 +230,6 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
-        self.dupes = []
-        self.caches = []
 
         # Set offspring_size equal to population_size by default
         if offspring_size:
@@ -1068,7 +1066,7 @@ class TPOTBase(BaseEstimator):
 
         # Sometimes you have pipelines for which every shrunk version has already been explored too.
         # To still mutate the individual, one of the two other mutators should be applied instead.
-        if (i == 49) and (mutator == mutation_techniques[-1]):
+        if (i == 49) and (type(mutator) is partial and mutator.func is gp.mutShrink):
             offspring, = self._random_mutation_operator(individual, allow_shrink=False)
 
         return offspring,
