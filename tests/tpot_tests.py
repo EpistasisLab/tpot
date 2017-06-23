@@ -785,3 +785,14 @@ def test_gen():
 
     assert len(pipeline) > 1
     assert pipeline[0].ret == Output_Array
+
+def test_clean_pipeline_string():
+    """Assert that clean_pipeline_string correctly returns a string without parameter prefixes"""
+
+    with_prefix = 'BernoulliNB(input_matrix, BernoulliNB__alpha=1.0, BernoulliNB__fit_prior=True)'
+    without_prefix = 'BernoulliNB(input_matrix, alpha=1.0, fit_prior=True)'
+    tpot_obj = TPOTClassifier()
+    ind1 = creator.Individual.from_string(with_prefix)
+    
+    pretty_string = tpot_obj.clean_pipeline_string(ind1)
+    assert pretty_string == without_prefix
