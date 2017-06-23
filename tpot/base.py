@@ -912,14 +912,13 @@ class TPOTBase(BaseEstimator):
         # Check we do not evaluate twice the same individual in one pass.
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
-        self.dupes.append((len(individuals)-len(unique_individuals)))
+        
         # return fitness scores
         operator_counts = {}
         # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
         eval_individuals_str = []
         sklearn_pipeline_list = []
 
-        cache_hits = 0
         for individual in unique_individuals:
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
@@ -933,7 +932,6 @@ class TPOTBase(BaseEstimator):
                     self._pbar.update(1)
             # Check if the individual was evaluated before
             elif individual_str in self.evaluated_individuals_:
-                cache_hits += 1
                 if self.verbosity > 2:
                     self._pbar.write('Pipeline encountered that has previously been evaluated during the '
                                      'optimization process. Using the score from the previous evaluation.')
