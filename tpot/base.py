@@ -28,6 +28,7 @@ from functools import partial
 from datetime import datetime
 from multiprocessing import cpu_count
 import os
+import re
 
 import numpy as np
 import deap
@@ -598,7 +599,9 @@ class TPOTBase(BaseEstimator):
                                 # Add an extra line of spacing if the progress bar was used
                                 if self.verbosity >= 2:
                                     print('')
-                                print('Best pipeline: {}'.format(self._optimized_pipeline))
+
+                                optimized_pipeline_str = self.clean_pipeline_string(self._optimized_pipeline)
+                                print('Best pipeline:', optimized_pipeline_str)
 
                             # Store and fit the entire Pareto front as fitted models for convenience
                             self.pareto_front_fitted_pipelines_ = {}
@@ -727,6 +730,31 @@ class TPOTBase(BaseEstimator):
         self.__init__(**params)
 
         return self
+
+    def clean_pipeline_string(self, individual):
+        """
+        Provide a string of the individual without the parameter prefixes.
+
+        Parameters
+        ----------
+        individual: individual
+            Individual which should be represented by a pretty string
+
+        Returns
+        -------
+        A string like str(individual), but with parameter prefixes removed.
+        
+        """
+        dirty_string = str(individual)
+        # There are many parameter prefixes in the pipeline strings, used solely for 
+        # making the terminal name unique, eg. LinearSVC__.
+        parameter_prefixes = [(m.start(), m.end()) for m in re.finditer(', [\w]+__', dirty_string)]
+        # We handle them in reverse so we do not mess up indices
+        pretty = dirty_string
+        for (start, end) in reversed(parameter_prefixes):
+            pretty = pretty[:start+2] + pretty[end:]
+
+        return pretty
 
     def _save_pipeline_if_period(self):
         """
