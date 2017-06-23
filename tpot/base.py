@@ -912,7 +912,7 @@ class TPOTBase(BaseEstimator):
         # Check we do not evaluate twice the same individual in one pass.
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
-        
+
         # return fitness scores
         operator_counts = {}
         # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
@@ -961,7 +961,6 @@ class TPOTBase(BaseEstimator):
                 eval_individuals_str.append(individual_str)
                 sklearn_pipeline_list.append(sklearn_pipeline)
 
-        self.caches.append(cache_hits)
         # Make the partial function that will be called below
         partial_wrapped_cross_val_score = partial(_wrapped_cross_val_score,
                             features=features,
