@@ -22,7 +22,6 @@ from __future__ import print_function
 import random
 import inspect
 import warnings
-import traceback
 import sys
 import imp
 from functools import partial
@@ -561,8 +560,6 @@ class TPOTBase(BaseEstimator):
                 self._pop = pop
 
         # Allow for certain exceptions to signal a premature fit() cancellation
-        except Exception as e:
-            print(traceback.format_exc())
         except (KeyboardInterrupt, SystemExit):
             if self.verbosity > 0:
                 self._pbar.write('')
