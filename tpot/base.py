@@ -1003,21 +1003,11 @@ class TPOTBase(BaseEstimator):
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
-        remake = 0
         for i in range(50):
             ind1_copy, ind2_copy = self._toolbox.clone(ind1),self._toolbox.clone(ind2)
             offspring, _ = cxOnePoint(ind1_copy, ind2_copy)
             if str(offspring) not in self.evaluated_individuals_:
                 break
-            else:
-                remake += 1
-        #print('remaking xover', remake)
-        if remake == 50:
-            print('unsuccesful xover:')
-            print('pipeline length',
-                sum([isinstance(node, deap.gp.Primitive) for node in ind1]),
-                sum([isinstance(node, deap.gp.Primitive) for node in ind2]))
-            print(str(ind1),str(ind2))
         
         return offspring, _
 
@@ -1059,7 +1049,6 @@ class TPOTBase(BaseEstimator):
         # Sometimes you have pipelines for which every shrunk version has already been explored too.
         # To still mutate the individual, one of the two other mutators should be applied instead.
         if (i == 49) and (mutator == mutation_techniques[-1]):
-            print('Shrinking doesn\'t work.')
             offspring, = self._random_mutation_operator(individual, allow_shrink=False)
 
         return offspring,
