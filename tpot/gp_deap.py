@@ -75,10 +75,13 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
     1 - *cxpb* - *mutpb*.
     """
     offspring = []
+    crossover_eligible_individuals = [i for i, ind in enumerate(population)
+                                      if sum([isinstance(node, gp.Primitive) for node in ind]) > 1]
     for _ in range(lambda_):
         op_choice = np.random.random()
         if op_choice < cxpb:  # Apply crossover
-            idxs = np.random.randint(0, len(population), size=2)
+
+            idxs = np.random.choice(crossover_eligible_individuals, size=2, replace=False)            
             ind1, ind2 = toolbox.clone(population[idxs[0]]), toolbox.clone(population[idxs[1]])
             ind_str = str(ind1)
             num_loop = 0

@@ -18,11 +18,11 @@ You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
-
 from __future__ import print_function
 import random
 import inspect
 import warnings
+import traceback
 import sys
 import imp
 from functools import partial
@@ -230,6 +230,8 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
+        self.dupes = []
+        self.caches = []
 
         # Set offspring_size equal to population_size by default
         if offspring_size:
@@ -559,6 +561,8 @@ class TPOTBase(BaseEstimator):
                 self._pop = pop
 
         # Allow for certain exceptions to signal a premature fit() cancellation
+        except Exception as e:
+            print(traceback.format_exc())
         except (KeyboardInterrupt, SystemExit):
             if self.verbosity > 0:
                 self._pbar.write('')
@@ -900,6 +904,8 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
+        print(self.dupes)
+        print(self.caches)
         if self.max_time_mins:
             total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
             if total_mins_elapsed >= self.max_time_mins:
@@ -908,13 +914,14 @@ class TPOTBase(BaseEstimator):
         # Check we do not evaluate twice the same individual in one pass.
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
-
+        self.dupes.append((len(individuals)-len(unique_individuals)))
         # return fitness scores
         operator_counts = {}
         # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
         eval_individuals_str = []
         sklearn_pipeline_list = []
 
+        cache_hits = 0
         for individual in unique_individuals:
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
@@ -928,6 +935,7 @@ class TPOTBase(BaseEstimator):
                     self._pbar.update(1)
             # Check if the individual was evaluated before
             elif individual_str in self.evaluated_individuals_:
+                cache_hits += 1
                 if self.verbosity > 2:
                     self._pbar.write('Pipeline encountered that has previously been evaluated during the '
                                      'optimization process. Using the score from the previous evaluation.')
@@ -957,6 +965,7 @@ class TPOTBase(BaseEstimator):
                 eval_individuals_str.append(individual_str)
                 sklearn_pipeline_list.append(sklearn_pipeline)
 
+        self.caches.append(cache_hits)
         # Make the partial function that will be called below
         partial_wrapped_cross_val_score = partial(_wrapped_cross_val_score,
                             features=features,
@@ -994,10 +1003,26 @@ class TPOTBase(BaseEstimator):
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
-        return cxOnePoint(ind1, ind2)
+        remake = 0
+        for i in range(50):
+            ind1_copy, ind2_copy = self._toolbox.clone(ind1),self._toolbox.clone(ind2)
+            offspring, _ = cxOnePoint(ind1_copy, ind2_copy)
+            if str(offspring) not in self.evaluated_individuals_:
+                break
+            else:
+                remake += 1
+        #print('remaking xover', remake)
+        if remake == 50:
+            print('unsuccesful xover:')
+            print('pipeline length',
+                sum([isinstance(node, deap.gp.Primitive) for node in ind1]),
+                sum([isinstance(node, deap.gp.Primitive) for node in ind2]))
+            print(str(ind1),str(ind2))
+        
+        return offspring, _
 
     @_pre_test
-    def _random_mutation_operator(self, individual):
+    def _random_mutation_operator(self, individual, allow_shrink=True):
         """Perform a replacement, insertion, or shrink mutation on an individual.
 
         Parameters
@@ -1014,10 +1039,30 @@ class TPOTBase(BaseEstimator):
         """
         mutation_techniques = [
             partial(gp.mutInsert, pset=self._pset),
-            partial(mutNodeReplacement, pset=self._pset),
-            partial(gp.mutShrink)
+            partial(mutNodeReplacement, pset=self._pset)
         ]
-        return np.random.choice(mutation_techniques)(individual)
+
+        # We can't shrink pipelines with only one primitive, so we only add it if we find more primitives.
+        number_of_primitives = sum([isinstance(node, deap.gp.Primitive) for node in individual])
+        if number_of_primitives > 1 and allow_shrink:
+            mutation_techniques.append(partial(gp.mutShrink))
+        
+        mutator = np.random.choice(mutation_techniques)
+
+        for i in range(50):
+            # We have to clone the individual because mutator operators work in-place.
+            ind = self._toolbox.clone(individual)
+            offspring, = mutator(ind)
+            if str(offspring) not in self.evaluated_individuals_:
+                break
+
+        # Sometimes you have pipelines for which every shrunk version has already been explored too.
+        # To still mutate the individual, one of the two other mutators should be applied instead.
+        if (i == 49) and (mutator == mutation_techniques[-1]):
+            print('Shrinking doesn\'t work.')
+            offspring, = self._random_mutation_operator(individual, allow_shrink=False)
+
+        return offspring,
 
     def _gen_grow_safe(self, pset, min_, max_, type_=None):
         """Generate an expression where each leaf might have a different depth between min_ and max_.
