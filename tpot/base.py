@@ -904,8 +904,6 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
-        print(self.dupes)
-        print(self.caches)
         if self.max_time_mins:
             total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
             if total_mins_elapsed >= self.max_time_mins:
