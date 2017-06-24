@@ -1021,7 +1021,7 @@ class TPOTBase(BaseEstimator):
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
-        for i in range(50):
+        for _ in range(50):
             ind1_copy, ind2_copy = self._toolbox.clone(ind1),self._toolbox.clone(ind2)
             offspring, _ = cxOnePoint(ind1_copy, ind2_copy)
             if str(offspring) not in self.evaluated_individuals_:
@@ -1057,16 +1057,20 @@ class TPOTBase(BaseEstimator):
         
         mutator = np.random.choice(mutation_techniques)
 
-        for i in range(50):
+        unsuccesful_mutations = 0
+        for _ in range(50):
             # We have to clone the individual because mutator operators work in-place.
             ind = self._toolbox.clone(individual)
             offspring, = mutator(ind)
             if str(offspring) not in self.evaluated_individuals_:
                 break
+            else:
+                unsuccesful_mutations += 1
 
         # Sometimes you have pipelines for which every shrunk version has already been explored too.
         # To still mutate the individual, one of the two other mutators should be applied instead.
-        if (i == 49) and (type(mutator) is partial and mutator.func is gp.mutShrink):
+        if ((unsuccesful_mutations == 50) and 
+           (type(mutator) is partial and mutator.func is gp.mutShrink)):
             offspring, = self._random_mutation_operator(individual, allow_shrink=False)
 
         return offspring,
