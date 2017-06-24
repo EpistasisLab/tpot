@@ -85,19 +85,13 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
             del ind1.fitness.values
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
-            idx = np.random.randint(0, len(population))
-            ind = toolbox.clone(population[idx])
-            ind_str = str(ind)
-            num_loop = 0
-            while ind_str == str(ind) and num_loop < MAX_MUT_LOOPS:
-                ind, = toolbox.mutate(ind)
-                num_loop += 1
-            if ind_str != str(ind):  # check if mutation happened
-                del ind.fitness.values
+            ind = np.random.choice(population)
+            ind, = toolbox.mutate(ind)            
+            del ind.fitness.values
             offspring.append(ind)
         else:  # Apply reproduction
-            idx = np.random.randint(0, len(population))
-            offspring.append(toolbox.clone(population[idx]))
+            ind = np.random.choice(population)
+            offspring.append(toolbox.clone(ind))
 
     return offspring
 
