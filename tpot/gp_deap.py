@@ -80,16 +80,9 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
     for _ in range(lambda_):
         op_choice = np.random.random()
         if op_choice < cxpb:  # Apply crossover
-
-            idxs = np.random.choice(crossover_eligible_individuals, size=2, replace=False)            
-            ind1, ind2 = toolbox.clone(population[idxs[0]]), toolbox.clone(population[idxs[1]])
-            ind_str = str(ind1)
-            num_loop = 0
-            while ind_str == str(ind1) and num_loop < MAX_MUT_LOOPS:
-                ind1, ind2 = toolbox.mate(ind1, ind2)
-                num_loop += 1
-            if ind_str != str(ind1):  # check if crossover happened
-                del ind1.fitness.values
+            idxs = np.random.choice(crossover_eligible_individuals, size=2, replace=False)      
+            ind1, _ = toolbox.mate(ind1, ind2)
+            del ind1.fitness.values
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
             idx = np.random.randint(0, len(population))
