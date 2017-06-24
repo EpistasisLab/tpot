@@ -564,8 +564,6 @@ class TPOTBase(BaseEstimator):
             if self.verbosity > 0:
                 self._pbar.write('')
                 self._pbar.write('TPOT closed prematurely. Will use the current best pipeline.')
-        except Exception as e:
-            print(e)
         finally:
             # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
             attempts = 10
