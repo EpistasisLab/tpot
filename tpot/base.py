@@ -85,6 +85,7 @@ class TPOTBase(BaseEstimator):
 
     # dont save periodic pipelines more often than this
     OUTPUT_BEST_PIPELINE_PERIOD_SECONDS = 30
+    MAX_MUT_LOOPS = 50
 
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
@@ -563,6 +564,8 @@ class TPOTBase(BaseEstimator):
             if self.verbosity > 0:
                 self._pbar.write('')
                 self._pbar.write('TPOT closed prematurely. Will use the current best pipeline.')
+        except Exception as e:
+            print(e)
         finally:
             # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
             attempts = 10
@@ -1021,7 +1024,7 @@ class TPOTBase(BaseEstimator):
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
-        for _ in range(50):
+        for _ in range(self.MAX_MUT_LOOPS):
             ind1_copy, ind2_copy = self._toolbox.clone(ind1),self._toolbox.clone(ind2)
             offspring, _ = cxOnePoint(ind1_copy, ind2_copy)
             if str(offspring) not in self.evaluated_individuals_:
@@ -1058,7 +1061,7 @@ class TPOTBase(BaseEstimator):
         mutator = np.random.choice(mutation_techniques)
 
         unsuccesful_mutations = 0
-        for _ in range(50):
+        for _ in range(self.MAX_MUT_LOOPS):
             # We have to clone the individual because mutator operators work in-place.
             ind = self._toolbox.clone(individual)
             offspring, = mutator(ind)

@@ -38,10 +38,6 @@ from collections import defaultdict
 import warnings
 import threading
 
-# Limit loops to generate a different individual by crossover/mutation
-MAX_MUT_LOOPS = 50
-
-
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
     (crossover, mutation **or** reproduction). The modified individuals have
