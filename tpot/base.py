@@ -1024,7 +1024,7 @@ class TPOTBase(BaseEstimator):
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
-        for _ in range(self.MAX_MUT_LOOPS):
+        for __ in range(self.MAX_MUT_LOOPS):
             ind1_copy, ind2_copy = self._toolbox.clone(ind1),self._toolbox.clone(ind2)
             offspring, _ = cxOnePoint(ind1_copy, ind2_copy)
             if str(offspring) not in self.evaluated_individuals_:
