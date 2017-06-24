@@ -39,6 +39,17 @@ import warnings
 import threading
 
 def pick_two_individuals_eligible_for_crossover(population):
+    """ Pick two individuals from the population which can do crossover, that is, they share a primitive.
+
+    Parameters
+    ----------
+    population: array of individuals
+
+    Returns
+    ----------
+    tuple: (individual, individual)
+        Two individuals which are not the same, but share at least one primitive.
+    """
     primitives_by_ind = [set([node.name for node in ind if isinstance(node, gp.Primitive)])
                          for ind in population]
     pop_as_str = [str(ind) for ind in population]
@@ -90,13 +101,11 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
     1 - *cxpb* - *mutpb*.
     """
     offspring = []
-    crossover_eligible_individuals = [i for i, ind in enumerate(population)
-                                      if sum([isinstance(node, gp.Primitive) for node in ind]) > 1]
+    
     for _ in range(lambda_):
         op_choice = np.random.random()
         if op_choice < cxpb:  # Apply crossover
-            idxs = np.random.choice(crossover_eligible_individuals, size=2, replace=False)            
-            ind1, ind2 = population[idxs[0]], population[idxs[1]]
+            ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)  
             ind1, _ = toolbox.mate(ind1, ind2)  
             del ind1.fitness.values
             offspring.append(ind1)
