@@ -265,14 +265,6 @@ Setting this parameter to higher values will allow TPOT to consider more complex
 Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
 </tr>
 <tr>
-<td></td>
-<td>SEEDS</td>
-<td>File path or string</td>
-<td>A path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process.
-<br /><br />
-See the <a href="#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.</td>
-</tr>
-<tr>
 <td>-cf</td>
 <td>CHECKPOINT_FOLDER</td>
 <td>Folder path</td>
@@ -479,16 +471,16 @@ Note that you must have all of the corresponding packages for the operators inst
 
 # Customizing TPOT's starting population
 
-TPOT allows for the initial population of pipelines to be seeded. This can be done either through the `seeds` parameter in the TPOT constructor, or through a `seeds` attribute in a custom config file.
+TPOT allows for the initial population of pipelines to be seeded. This can be done either through the `population_seeds` parameter in the TPOT constructor, or through a `population_seeds` attribute in a custom config file.
 
 ```Python
-seeds = [
+population_seeds = [
     'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
     'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
 ]
 
 tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                      config_dict=tpot_config, seeds=seeds)
+                      config_dict=tpot_config, population_seeds=population_seeds)
 ```
 
 If specified through a config file, your config file would look like this:
@@ -509,14 +501,14 @@ tpot_config = {
     }
 }
 
-seeds = [
+population_seeds = [
     'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
     'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
 ]
 ```
 
-As with `tpot_config`, when using a custom config file the seeds *must* have the standardized name of "seeds". It should only ever be a list of strings.
+As with `tpot_config`, when using a custom config file the seeds *must* have the standardized name of "population_seeds". It should only ever be a list of strings.
 
-The seed individuals will be duplicated until there are as many seeds as the starting population size (given by the `population_size` parameter).
+If less seeds are provided than there are to be individuals in the entire population, then the remainder will be filled with random individuals.
 
-If the `seeds` parameter is provided along with seeds from a configuration file, the configuration file's seeds will take precedence.
+If the `population_seeds` parameter is provided along with seeds from a configuration file, the configuration file's seeds will take precedence.

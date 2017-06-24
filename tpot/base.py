@@ -90,7 +90,7 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, config_dict=None, seeds=None,
+                 random_state=None, config_dict=None, population_seeds=None,
                  warm_start=False, periodic_checkpoint_folder=None,
                  verbosity=0, disable_update_check=False):
         """Set up the genetic programming algorithm for pipeline optimization.
@@ -187,7 +187,7 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
-        seeds: list of strings, optional (Default: None)
+        population_seeds: list of strings, optional (Default: None)
             The set of pipelines used in the first generation.
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
@@ -225,7 +225,7 @@ class TPOTBase(BaseEstimator):
         self._exported_pipeline_text = ""
         self.fitted_pipeline_ = None
         self._fitted_imputer = None
-        self._pop = None
+        self._pop = []
         self.warm_start = warm_start
         self.population_size = population_size
         self.generations = generations
@@ -324,7 +324,7 @@ class TPOTBase(BaseEstimator):
 
         self._setup_pset()
         self._setup_toolbox()
-        self._setup_pop(seeds, config_dict)
+        self._setup_pop(population_seeds, config_dict)
 
     def _setup_config(self, config_dict):
         if config_dict:
@@ -370,23 +370,18 @@ class TPOTBase(BaseEstimator):
                 'custom TPOT operator configuration file.'
             )
 
-    def _setup_pop(self, seeds, config_path):
-        """If the seeds are specified, use them as the starting population."""
+    def _setup_pop(self, population_seeds, config_path):
+        """If the population_seeds are specified, use them as the starting population."""
         try:
             config = self._read_config_file(config_path)
 
-            if hasattr(config, 'seeds'):
-                seeds = config.seeds
+            if hasattr(config, 'population_seeds'):
+                population_seeds = config.population_seeds
         except Exception as e:
             # Config isn't a file
             return
 
-        seed_individuals = [creator.Individual.from_string(x, self._pset) for x in seeds]
-        self._pop = []
-
-        # Add the same set of seeds to the population until we have population_size seeds
-        for x in range(self.population_size):
-            self._pop.append(seed_individuals[x % len(seed_individuals)])
+        self._pop = [creator.Individual.from_string(x, self._pset) for x in population_seeds]
 
     def _setup_pset(self):
         if self.random_state is not None:
@@ -514,9 +509,11 @@ class TPOTBase(BaseEstimator):
         self._last_pipeline_write = self._start_datetime
         self._toolbox.register('evaluate', self._evaluate_individuals, features=features, target=target, sample_weight=sample_weight, groups=groups)
 
-        # assign population, self._pop can only be not None if warm_start is enabled
-        if self._pop:
-            pop = self._pop
+        # assign population. self._pop maybe be non-empty if the population is
+        # seeded or a warm-start is being performed.
+        if len(self._pop) > 0:
+            n_left_to_generate = self.population_size - len(self._pop)
+            pop = self._pop + self._toolbox.population(n=n_left_to_generate)
         else:
             pop = self._toolbox.population(n=self.population_size)
 
@@ -744,8 +741,8 @@ class TPOTBase(BaseEstimator):
         return self
 
     def _save_pipeline_if_period(self):
-        """
-        If enough time has passed, save a new optimized pipeline.
+        """If enough time has passed, save a new optimized pipeline.
+
         Currently used in the per generation hook in the optimization loop.
         """
         total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
@@ -1063,7 +1060,7 @@ class TPOTBase(BaseEstimator):
         return self._generate(pset, min_, max_, condition, type_)
 
     def _operator_count(self, individual):
-        """Count the number of pipeline operators as a measure of pipeline complexity
+        """Count the number of pipeline operators as a measure of pipeline complexity.
 
         Parameters
         ----------
@@ -1084,7 +1081,7 @@ class TPOTBase(BaseEstimator):
         return operator_count
 
     def _update_pbar(self, val, resulting_score_list):
-        """Update self._pbar during pipeline evaluration
+        """Update self._pbar during pipeline evaluration.
 
         Parameters
         ----------

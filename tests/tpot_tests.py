@@ -306,10 +306,11 @@ def test_conf_dict_4():
 
 
 def test_conf_dict_5():
-    """Assert that TPOT has a starting population of the same size as the population_size parameter when using seeds."""
+    """Assert that TPOT has a _pop attribute of the same size as the number of seeds provided."""
     tpot_obj = TPOTRegressor(config_dict='tests/test_config.py')
+    n_seeds = len(tpot_obj._read_config_file('tests/test_config.py').population_seeds)
 
-    assert len(tpot_obj._pop) == tpot_obj.population_size
+    assert len(tpot_obj._pop) == n_seeds
 
 
 def test_random_ind():
