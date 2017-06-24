@@ -42,18 +42,19 @@ def pick_two_individuals_eligible_for_crossover(population):
     primitives_by_ind = [set([node.name for node in ind if isinstance(node, gp.Primitive)])
                          for ind in population]
     pop_as_str = [str(ind) for ind in population]
+    eligible_pairs = [(i, i+1+j) for i, ind1_prims in enumerate(primitives_by_ind)
+                                 for j, ind2_prims in enumerate(primitives_by_ind[i+1:])
+                                 if not ind1_prims.isdisjoint(ind2_prims) and
+                                    pop_as_str[i] != pop_as_str[j]]
     
-    idx = np.random.choice(len(population))
-    eligible_individuals = [i for i, ind_prims in enumerate(primitives_by_ind)
-                              if pop_as_str[i] != pop_as_str[idx] and 
-                              not primitives_by_ind[i].isdisjoint(primitives_by_ind[idx])]
-    if not eligible_individuals:
-        # What to do here? Currently just 
-        eligible_individuals = [idx]
+    if not eligible_pairs:
+        # what TODO? placeholder
+        return population[0], population[0]
+
+    pair = np.random.choice(len(eligible_pairs))
+    idx1, idx2 = eligible_pairs[pair]
     
-    idx2 = np.random.choice(eligible_individuals)
-    
-    return population[idx], population[idx2]
+    return population[idx1], population[idx2]
 
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
