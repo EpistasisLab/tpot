@@ -38,6 +38,24 @@ from collections import defaultdict
 import warnings
 import threading
 
+def pick_two_individuals_eligible_for_crossover(population):
+    primitives_by_ind = [set([node.name for node in ind if isinstance(node, gp.Primitive)])
+                         for ind in population]
+    pop_as_str = [str(ind) for ind in population]
+    
+    idx = np.random.choice(len(population))
+    eligible_individuals = [i for i, ind_prims in enumerate(primitives_by_ind)
+                              if pop_as_str[i] != pop_as_str[idx] and 
+                              not primitives_by_ind[i].isdisjoint(primitives_by_ind[idx])]
+    if not eligible_individuals:
+        # What to do here? Currently just 
+        eligible_individuals = [idx]
+    
+    idx2 = np.random.choice(eligible_individuals)
+    
+    return population[idx], population[idx2]
+
+
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
     (crossover, mutation **or** reproduction). The modified individuals have
