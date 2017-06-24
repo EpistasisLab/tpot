@@ -82,7 +82,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
         if op_choice < cxpb:  # Apply crossover
             idxs = np.random.choice(crossover_eligible_individuals, size=2, replace=False)            
             ind1, ind2 = population[idxs[0]], population[idxs[1]]
-            ind1, ind2 = toolbox.mate(ind1, ind2)  
+            ind1, _ = toolbox.mate(ind1, ind2)  
             del ind1.fitness.values
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
