@@ -305,17 +305,6 @@ class TPOTBase(BaseEstimator):
             raise ValueError(
                 'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
             )
-        # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
-        if sys.platform.startswith('win') and n_jobs != 1:
-            print(
-                'Warning: Although parallelization is currently supported in '
-                'TPOT for Windows, pressing Ctrl+C will freeze the optimization '
-                'process without saving the best pipeline! Thus, Please DO NOT '
-                'press Ctrl+C during the optimization procss if n_jobs is not '
-                'equal to 1. For quick test in Windows, please set n_jobs to 1 '
-                'for saving the best pipeline in the middle of the optimization '
-                'process via Ctrl+C.'
-            )
         if n_jobs == -1:
             self.n_jobs = cpu_count()
         else:
