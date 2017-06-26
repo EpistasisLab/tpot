@@ -23,7 +23,7 @@ from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
-from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score
+from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover
 from tpot.metrics import balanced_accuracy
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 
@@ -733,6 +733,66 @@ def test_PolynomialFeatures_exception():
     known_scores = [(2, 0.98068077235290885), (5000.0, -float('inf'))]
     assert np.allclose(known_scores, fitness_scores)
 
+def test_pick_two_individuals_eligible_for_crossover():
+    """Assert that pick_two_individuals_eligible_for_crossover() picks the correct pair of nodes to perform crossover with"""
+    tpot_obj = TPOTClassifier()
+    ind1 = creator.Individual.from_string(
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=1.0, BernoulliNB__fit_prior=True)',
+        tpot_obj._pset
+    )
+    ind2 = creator.Individual.from_string(
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True)',
+        tpot_obj._pset
+    )
+    ind3 = creator.Individual.from_string(
+        'GaussianNB(input_matrix)',
+        tpot_obj._pset
+    )
+
+    pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1, ind2, ind3])
+    assert ((str(pick1) == str(ind1) and str(pick2) == str(ind2)) or
+             str(pick1) == str(ind2) and str(pick2) == str(ind1))  
+
+    ind4 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+    
+    # Eventhough ind4 does not have the same primitive at the root, the tree shares a primitive with ind1 
+    pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1, ind3, ind4])
+    assert ((str(pick1) == str(ind1) and str(pick2) == str(ind4)) or
+             str(pick1) == str(ind4) and str(pick2) == str(ind1))
+
+def test_pick_two_individuals_eligible_for_crossover_bad():
+    """Assert that pick_two_individuals_eligible_for_crossover() returns the right output when no pair is eligible"""
+    tpot_obj = TPOTClassifier()
+    ind1 = creator.Individual.from_string(
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=1.0, BernoulliNB__fit_prior=True)',
+        tpot_obj._pset
+    )
+    ind2 = creator.Individual.from_string(
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=1.0, BernoulliNB__fit_prior=True)',
+        tpot_obj._pset
+    )
+    ind3 = creator.Individual.from_string(
+        'GaussianNB(input_matrix)',
+        tpot_obj._pset
+    )
+
+    # Ind1 and ind2 are not a pair because they are the same, ind3 shares no primitive
+    pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1, ind2, ind3])
+    # What do to here?
+    assert str(pick1) == str(ind1) and str(pick2) == str(ind2)
+
+    # You can not do crossover with a population of only 1.
+    pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1])
+    # What do to here?
+    assert str(pick1) == str(ind1) and str(pick2) == str(ind2)
 
 def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
