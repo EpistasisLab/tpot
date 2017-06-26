@@ -358,7 +358,6 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     groups: array-like {n_samples, }, optional
         Group labels for the samples used while splitting the dataset into train/test set
     """
-    max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
 
     features, target, groups = indexable(features, target, groups)
@@ -384,5 +383,5 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             return np.mean(CV_score)
     except TimeoutException:
         return "Timeout"
-    except Exception:
+    except Exception as e:
         return -float('inf')
