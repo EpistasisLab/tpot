@@ -643,7 +643,7 @@ class TPOTBase(BaseEstimator):
                         warnings.simplefilter('ignore')
                         self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, target)
         else:
-            # If user passed CTRL+C in initial generation, self._pareto_front (halloffame) shoule be not updated yet.
+            # If user passes CTRL+C in initial generation, self._pareto_front (halloffame) shoule be not updated yet.
             # need raise RuntimeError because no pipeline has been optimized
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
