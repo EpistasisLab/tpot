@@ -573,43 +573,8 @@ class TPOTBase(BaseEstimator):
                     if not isinstance(self._pbar, type(None)):
                         self._pbar.close()
 
-                    # Store the pipeline with the highest internal testing score
-                    if self._pareto_front:
-                        self._update_top_pipeline()
-
-                        if not self._optimized_pipeline:
-                            print('There was an error in the TPOT optimization '
-                                  'process. This could be because the data was '
-                                  'not formatted properly, or because data for '
-                                  'a regression problem was provided to the '
-                                  'TPOTClassifier object. Please make sure you '
-                                  'passed the data to TPOT correctly.')
-                        else:
-                            self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
-
-                            with warnings.catch_warnings():
-                                warnings.simplefilter('ignore')
-                                self.fitted_pipeline_.fit(features, target)
-
-                            if self.verbosity in [1, 2]:
-                                # Add an extra line of spacing if the progress bar was used
-                                if self.verbosity >= 2:
-                                    print('')
-                                print('Best pipeline: {}'.format(self._optimized_pipeline))
-
-                            # Store and fit the entire Pareto front as fitted models for convenience
-                            self.pareto_front_fitted_pipelines_ = {}
-
-                            for pipeline in self._pareto_front.items:
-                                self.pareto_front_fitted_pipelines_[str(pipeline)] = self._toolbox.compile(expr=pipeline)
-                                with warnings.catch_warnings():
-                                    warnings.simplefilter('ignore')
-                                    self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, target)
-                        break
-                    else:
-                        # If user passed CTRL+C in initial generation, self._pareto_front (halloffame) shoule be not updated yet.
-                        # need raise RuntimeError because no pipeline has been optimized
-                        raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
+                    self._update_top_pipeline(features, target)
+                    break
 
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
                     # raise the exception if it's our last attempt
@@ -617,13 +582,71 @@ class TPOTBase(BaseEstimator):
                         raise
             return self
 
-    def _update_top_pipeline(self):
-        """Helper function to update the _optimized_pipeline field."""
-        self._optimized_pipeline_score = -float('inf')
-        for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
-            if pipeline_scores.wvalues[1] > self._optimized_pipeline_score:
-                self._optimized_pipeline = pipeline
-                self._optimized_pipeline_score = pipeline_scores.wvalues[1]
+
+    def _update_top_pipeline(self, features, target):
+        """Helper function to update the _optimized_pipeline field.
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix
+
+            TPOT and all scikit-learn algorithms assume that the features will be numerical
+            and there will be no missing values. As such, when a feature matrix is provided
+            to TPOT, all missing values will automatically be replaced (i.e., imputed) using
+            median value imputation.
+
+            If you wish to use a different imputation strategy than median imputation, please
+            make sure to apply imputation to your feature set prior to passing it to TPOT.
+        target: array-like {n_samples}
+            List of class labels for prediction
+
+        Returns
+        -------
+        self: object
+            Returns a copy of the fitted TPOT object
+        """
+        # Store the pipeline with the highest internal testing score
+        if self._pareto_front:
+            self._optimized_pipeline_score = -float('inf')
+            for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                if pipeline_scores.wvalues[1] > self._optimized_pipeline_score:
+                    self._optimized_pipeline = pipeline
+                    self._optimized_pipeline_score = pipeline_scores.wvalues[1]
+
+            if not self._optimized_pipeline:
+                print('There was an error in the TPOT optimization '
+                      'process. This could be because the data was '
+                      'not formatted properly, or because data for '
+                      'a regression problem was provided to the '
+                      'TPOTClassifier object. Please make sure you '
+                      'passed the data to TPOT correctly.')
+            else:
+                self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    self.fitted_pipeline_.fit(features, target)
+
+                if self.verbosity in [1, 2]:
+                    # Add an extra line of spacing if the progress bar was used
+                    if self.verbosity >= 2:
+                        print('')
+                    print('Best pipeline: {}'.format(self._optimized_pipeline))
+
+                # Store and fit the entire Pareto front as fitted models for convenience
+                self.pareto_front_fitted_pipelines_ = {}
+
+                for pipeline in self._pareto_front.items:
+                    self.pareto_front_fitted_pipelines_[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore')
+                        self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, target)
+        else:
+            # If user passed CTRL+C in initial generation, self._pareto_front (halloffame) shoule be not updated yet.
+            # need raise RuntimeError because no pipeline has been optimized
+            raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
+
 
     def predict(self, features):
         """Use the optimized pipeline to predict the target for a feature set.
