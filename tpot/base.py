@@ -577,8 +577,6 @@ class TPOTBase(BaseEstimator):
                     if self._pareto_front:
                         self._update_top_pipeline()
 
-                        # It won't raise error for a small test like in a unit test because a few pipeline sometimes
-                        # may fail due to the training data does not fit the operator's requirement.
                         if not self._optimized_pipeline:
                             print('There was an error in the TPOT optimization '
                                   'process. This could be because the data was '
@@ -607,7 +605,11 @@ class TPOTBase(BaseEstimator):
                                 with warnings.catch_warnings():
                                     warnings.simplefilter('ignore')
                                     self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, target)
-                    break
+                        break
+                    else:
+                        # If user passed CTRL+C in initial generation, self._pareto_front (halloffame) shoule be not updated yet.
+                        # need raise RuntimeError because no pipeline has been optimized
+                        raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
                     # raise the exception if it's our last attempt
@@ -617,12 +619,11 @@ class TPOTBase(BaseEstimator):
 
     def _update_top_pipeline(self):
         """Helper function to update the _optimized_pipeline field."""
-        if self._pareto_front:
-            self._optimized_pipeline_score = -float('inf')
-            for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
-                if pipeline_scores.wvalues[1] > self._optimized_pipeline_score:
-                    self._optimized_pipeline = pipeline
-                    self._optimized_pipeline_score = pipeline_scores.wvalues[1]
+        self._optimized_pipeline_score = -float('inf')
+        for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+            if pipeline_scores.wvalues[1] > self._optimized_pipeline_score:
+                self._optimized_pipeline = pipeline
+                self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
     def predict(self, features):
         """Use the optimized pipeline to predict the target for a feature set.
@@ -782,11 +783,11 @@ class TPOTBase(BaseEstimator):
         #dont export a pipeline you just had
         if skip_if_repeated and (self._exported_pipeline_text == to_write):
             return False
-        
+
         with open(output_file_name, 'w') as output_file:
             output_file.write(to_write)
             self._exported_pipeline_text = to_write
-        
+
         return True
 
     def _impute_values(self, features):
