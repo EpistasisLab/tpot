@@ -229,6 +229,7 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
+        self.max_eval_time_seconds = max(int(self.max_eval_time_mins * 60), 1)
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
 
         # Set offspring_size equal to population_size by default
@@ -782,11 +783,11 @@ class TPOTBase(BaseEstimator):
         #dont export a pipeline you just had
         if skip_if_repeated and (self._exported_pipeline_text == to_write):
             return False
-        
+
         with open(output_file_name, 'w') as output_file:
             output_file.write(to_write)
             self._exported_pipeline_text = to_write
-        
+
         return True
 
     def _impute_values(self, features):
@@ -964,8 +965,8 @@ class TPOTBase(BaseEstimator):
                             cv=self.cv,
                             scoring_function=self.scoring_function,
                             sample_weight=sample_weight,
-                            max_eval_time_mins=self.max_eval_time_mins,
-                            groups=groups
+                            groups=groups,
+                            timeout=self.max_eval_time_seconds
                             )
 
         resulting_score_list = []

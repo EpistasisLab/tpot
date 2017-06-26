@@ -36,7 +36,7 @@ from sklearn.model_selection._split import check_cv
 from sklearn.base import clone, is_classifier
 from collections import defaultdict
 import warnings
-import threading
+from stopit import threading_timeoutable, TimeoutException
 
 # Limit loops to generate a different individual by crossover/mutation
 MAX_MUT_LOOPS = 50
@@ -332,63 +332,9 @@ def mutNodeReplacement(individual, pset):
     return individual,
 
 
-class Interruptable_cross_val_score(threading.Thread):
-    def __init__(self, estimator, X, y, scorer, fit_params, cv_iter):
-        """Fit estimator and compute scores for a given dataset split.
-        Parameters
-        ----------
-        estimator : estimator object implementing 'fit'
-            The object to use to fit the data.
-        X : array-like of shape at least 2D
-            The data to fit.
-        y : array-like, optional, default: None
-            The target variable to try to predict in the case of
-            supervised learning.
-        scorer : callable
-            A scorer callable object / function with signature
-            ``scorer(estimator, X, y)``.
-        fit_params : dict or None
-            Parameters that will be passed to ``estimator.fit``.
-        cv_iter: list
-            A list of test and train samples
-        """
-        threading.Thread.__init__(self)
-        self.estimator = estimator
-        self.X = X
-        self.y = y
-        self.scorer = scorer
-        self.fit_params = fit_params
-        self.cv_iter = cv_iter
-        self.result = -float('inf')
-        self._stopevent = threading.Event()
-        self.daemon = True
-
-    def stop(self):
-        self._stopevent.set()
-        threading.Thread.join(self)
-
-    def run(self):
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                scores = [_fit_and_score(estimator=clone(self.estimator),
-                                        X=self.X,
-                                        y=self.y,
-                                        scorer=self.scorer,
-                                        train=train,
-                                        test=test,
-                                        verbose=0,
-                                        parameters=None,
-                                        fit_params=self.fit_params)
-                                    for train, test in self.cv_iter]
-                self.result = np.array(scores)[:, 0]
-        except Exception as e:
-            pass
-
-
+@threading_timeoutable(default= "Timeout")
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
-                             cv, scoring_function, sample_weight=None,
-                             max_eval_time_mins=5, groups=None):
+                             cv, scoring_function, sample_weight=None, groups=None):
     """Fit estimator and compute scores for a given dataset split.
     Parameters
     ----------
@@ -409,10 +355,6 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         ``scorer(estimator, X, y)``.
     sample_weight : array-like, optional
         List of sample weights to balance (or un-balanace) the dataset target as needed
-    max_eval_time_mins: int, optional (default: 5)
-        How many minutes TPOT has to optimize a single pipeline.
-        Setting this parameter to higher values will allow TPOT to explore more
-        complex pipelines, but will also allow TPOT to run longer.
     groups: array-like {n_samples, }, optional
         Group labels for the samples used while splitting the dataset into train/test set
     """
@@ -424,23 +366,23 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     cv = check_cv(cv, target, classifier=is_classifier(sklearn_pipeline))
     cv_iter = list(cv.split(features, target, groups))
     scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
-    # build a job for cross_val_score
-    tmp_it = Interruptable_cross_val_score(
-        estimator=sklearn_pipeline,
-        X=features,
-        y=target,
-        scorer=scorer,
-        fit_params=sample_weight_dict,
-        cv_iter=cv_iter
-        )
 
-    tmp_it.start()
-    tmp_it.join(max_time_seconds)
-
-    if tmp_it.isAlive():
-        resulting_score = 'Timeout'
-    else:
-        resulting_score = np.mean(tmp_it.result)
-
-    tmp_it.stop()
-    return resulting_score
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
+                                    X=features,
+                                    y=target,
+                                    scorer=scorer,
+                                    train=train,
+                                    test=test,
+                                    verbose=0,
+                                    parameters=None,
+                                    fit_params=sample_weight_dict)
+                                for train, test in cv_iter]
+            CV_score = np.array(scores)[:, 0]
+            return np.mean(CV_score)
+    except TimeoutException:
+        return "Timeout"
+    except Exception:
+        return -float('inf')
