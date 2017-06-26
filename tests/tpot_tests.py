@@ -43,6 +43,7 @@ from multiprocessing import cpu_count
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from deap import creator
+from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal
 
 from tqdm import tqdm
@@ -558,6 +559,43 @@ def test_fit3():
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
+
+
+def test_update_top_pipeline():
+    """Assert that the TPOT _update_top_pipeline updated an optimized pipeline"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    tpot_obj._optimized_pipeline = None
+    tpot_obj.fitted_pipeline_ = None
+    tpot_obj._update_top_pipeline(training_features, training_target)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj.fitted_pipeline_ is None)
+
+
+def test_update_top_pipeline_2():
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._pareto_front is empty"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    def pareto_eq(ind1, ind2):
+        return np.allclose(ind1.fitness.values, ind2.fitness.values)
+    tpot_obj._pareto_front = ParetoFront(similar=pareto_eq)
+
+    assert_raises(RuntimeError, tpot_obj._update_top_pipeline, features=training_features, target=training_target)
 
 
 def test_evaluated_individuals_():
