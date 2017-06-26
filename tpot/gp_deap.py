@@ -53,8 +53,7 @@ def pick_two_individuals_eligible_for_crossover(population):
     primitives_by_ind = [set([node.name for node in ind if isinstance(node, gp.Primitive)])
                          for ind in population]
     pop_as_str = [str(ind) for ind in population]
-    print(pop_as_str)
-    print(primitives_by_ind)
+    
     eligible_pairs = [(i, i+1+j) for i, ind1_prims in enumerate(primitives_by_ind)
                                  for j, ind2_prims in enumerate(primitives_by_ind[i+1:])
                                  if not ind1_prims.isdisjoint(ind2_prims) and
