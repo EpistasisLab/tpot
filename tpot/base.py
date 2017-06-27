@@ -1050,11 +1050,12 @@ class TPOTBase(BaseEstimator):
     def _mate_operator(self, ind1, ind2):
         for _ in range(self._max_mut_loops):
             ind1_copy, ind2_copy = self._toolbox.clone(ind1),self._toolbox.clone(ind2)
-            offspring, _ = cxOnePoint(ind1_copy, ind2_copy)
+            offspring, offspring2 = cxOnePoint(ind1_copy, ind2_copy)
             if str(offspring) not in self.evaluated_individuals_:
+                # We only use the first offspring, so we do not care to check uniqueness of the second.
                 break
         
-        return offspring, _
+        return offspring, offspring2
 
     @_pre_test
     def _random_mutation_operator(self, individual, allow_shrink=True):
