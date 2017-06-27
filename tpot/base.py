@@ -1064,6 +1064,11 @@ class TPOTBase(BaseEstimator):
             A list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
 
+        allow_shrink: bool (True)
+            If True the `mutShrink` operator, which randomly shrinks the pipeline,
+            is allowed to be chosen as one of the random mutation operators.
+            If False, `mutShrink`  will never be chosen as a mutation operator.
+
         Returns
         -------
         mut_ind: DEAP individual
