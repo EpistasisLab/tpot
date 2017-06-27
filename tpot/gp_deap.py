@@ -40,7 +40,7 @@ import threading
 
 def pick_two_individuals_eligible_for_crossover(population):
     """Pick two individuals from the population which can do crossover, that is, they share a primitive.
-
+    
     Parameters
     ----------
     population: array of individuals
@@ -49,6 +49,7 @@ def pick_two_individuals_eligible_for_crossover(population):
     ----------
     tuple: (individual, individual)
         Two individuals which are not the same, but share at least one primitive.
+        Alternatively, if no such pair exists in the population, (None, None) is returned instead.
     """
     primitives_by_ind = [set([node.name for node in ind if isinstance(node, gp.Primitive)])
                          for ind in population]
@@ -63,14 +64,32 @@ def pick_two_individuals_eligible_for_crossover(population):
     eligible_pairs += [(j, i) for (i,j) in eligible_pairs]
     
     if not eligible_pairs:
-        # what TODO? placeholder
-        return population[0], population[0]
+        # If there are no eligible pairs, the caller should decide what to do
+        return None, None
 
     pair = np.random.randint(len(eligible_pairs))
     idx1, idx2 = eligible_pairs[pair]
     
     return population[idx1], population[idx2]
 
+def mutate_random_individual(population, toolbox):
+    """Picks a random individual from the population, and performs mutation on a copy of it.
+    
+    Parameters
+    ----------
+    population: array of individuals
+
+    Returns
+    ----------
+    individual: individual
+        An individual which is a mutated copy of one of the individuals in population,
+        the returned individual does not have fitness.values
+    """
+    idx = np.random.randint(len(population))
+    ind = population[idx]
+    ind, = toolbox.mutate(ind)            
+    del ind.fitness.values
+    return ind
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
@@ -109,15 +128,17 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
     for _ in range(lambda_):
         op_choice = np.random.random()
         if op_choice < cxpb:  # Apply crossover
-            ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)  
-            ind1, _ = toolbox.mate(ind1, ind2)  
-            del ind1.fitness.values
+            ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)
+            if ind1 is not None:  
+                ind1, _ = toolbox.mate(ind1, ind2) 
+                del ind1.fitness.values 
+            else:
+                # If there is no pair eligible for crossover, we still want to
+                # create diversity in the population, and do so by mutation instead.
+                ind1 = mutate_random_individual(population, toolbox)
             offspring.append(ind1)
-        elif op_choice < cxpb + mutpb:  # Apply mutation
-            idx = np.random.randint(len(population))
-            ind = population[idx]
-            ind, = toolbox.mutate(ind)            
-            del ind.fitness.values
+        elif op_choice < cxpb + mutpb:  # Apply mutation     
+            ind = mutate_random_individual(population, toolbox)       
             offspring.append(ind)
         else:  # Apply reproduction
             idx = np.random.randint(len(population))
