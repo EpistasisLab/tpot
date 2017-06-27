@@ -229,6 +229,7 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
+        self.max_eval_time_seconds = max(int(self.max_eval_time_mins * 60), 1)
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
 
         # Set offspring_size equal to population_size by default
@@ -303,17 +304,6 @@ class TPOTBase(BaseEstimator):
         if self.subsample <= 0.0 or self.subsample > 1.0:
             raise ValueError(
                 'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
-            )
-        # If the OS is windows, reset cpu number to 1 since the OS did not have multiprocessing module
-        if sys.platform.startswith('win') and n_jobs != 1:
-            print(
-                'Warning: Although parallelization is currently supported in '
-                'TPOT for Windows, pressing Ctrl+C will freeze the optimization '
-                'process without saving the best pipeline! Thus, Please DO NOT '
-                'press Ctrl+C during the optimization procss if n_jobs is not '
-                'equal to 1. For quick test in Windows, please set n_jobs to 1 '
-                'for saving the best pipeline in the middle of the optimization '
-                'process via Ctrl+C.'
             )
         if n_jobs == -1:
             self.n_jobs = cpu_count()
@@ -988,8 +978,8 @@ class TPOTBase(BaseEstimator):
                             cv=self.cv,
                             scoring_function=self.scoring_function,
                             sample_weight=sample_weight,
-                            max_eval_time_mins=self.max_eval_time_mins,
-                            groups=groups
+                            groups=groups,
+                            timeout=self.max_eval_time_seconds
                             )
 
         resulting_score_list = []

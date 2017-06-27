@@ -194,8 +194,8 @@ def test_timeout():
                                             cv=20,
                                             scoring_function='neg_mean_squared_error',
                                             sample_weight=None,
-                                            max_eval_time_mins=0.02,
-                                            groups=None)
+                                            groups=None,
+                                            timeout=1)
     assert return_value == "Timeout"
 
 
