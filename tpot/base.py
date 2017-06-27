@@ -229,11 +229,11 @@ class TPOTBase(BaseEstimator):
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
 
         # dont save periodic pipelines more often than this
-        self.OUTPUT_BEST_PIPELINE_PERIOD_SECONDS = 30
+        self._output_best_pipeline_period_seconds = 30
 
         # Try crossover and mutation at most this many times for
         # any one given individual (or pair of individuals)
-        self.MAX_MUT_LOOPS = 50
+        self._max_mut_loops = 50
 
         # Set offspring_size equal to population_size by default
         if offspring_size:
@@ -758,8 +758,7 @@ class TPOTBase(BaseEstimator):
         return self
 
     def clean_pipeline_string(self, individual):
-        """
-        Provide a string of the individual without the parameter prefixes.
+        """Provide a string of the individual without the parameter prefixes.
 
         Parameters
         ----------
@@ -788,7 +787,7 @@ class TPOTBase(BaseEstimator):
         Currently used in the per generation hook in the optimization loop.
         """
         total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
-        if total_since_last_pipeline_save > self.OUTPUT_BEST_PIPELINE_PERIOD_SECONDS:
+        if total_since_last_pipeline_save > self._output_best_pipeline_period_seconds:
             self._last_pipeline_write = datetime.now()
             self._save_periodic_pipeline()
 
@@ -1049,7 +1048,7 @@ class TPOTBase(BaseEstimator):
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
-        for __ in range(self.MAX_MUT_LOOPS):
+        for _ in range(self._max_mut_loops):
             ind1_copy, ind2_copy = self._toolbox.clone(ind1),self._toolbox.clone(ind2)
             offspring, _ = cxOnePoint(ind1_copy, ind2_copy)
             if str(offspring) not in self.evaluated_individuals_:
@@ -1091,7 +1090,7 @@ class TPOTBase(BaseEstimator):
         mutator = np.random.choice(mutation_techniques)
 
         unsuccesful_mutations = 0
-        for _ in range(self.MAX_MUT_LOOPS):
+        for _ in range(self._max_mut_loops):
             # We have to clone the individual because mutator operators work in-place.
             ind = self._toolbox.clone(individual)
             offspring, = mutator(ind)
