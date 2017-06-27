@@ -67,7 +67,7 @@ def pick_two_individuals_eligible_for_crossover(population):
         # If there are no eligible pairs, the caller should decide what to do
         return None, None
 
-    pair = np.random.randint(len(eligible_pairs))
+    pair = np.random.randint(0,len(eligible_pairs))
     idx1, idx2 = eligible_pairs[pair]
     
     return population[idx1], population[idx2]
@@ -85,7 +85,7 @@ def mutate_random_individual(population, toolbox):
         An individual which is a mutated copy of one of the individuals in population,
         the returned individual does not have fitness.values
     """
-    idx = np.random.randint(len(population))
+    idx = np.random.randint(0,len(population))
     ind = population[idx]
     ind, = toolbox.mutate(ind)            
     del ind.fitness.values
@@ -141,7 +141,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
             ind = mutate_random_individual(population, toolbox)       
             offspring.append(ind)
         else:  # Apply reproduction
-            idx = np.random.randint(len(population))
+            idx = np.random.randint(0, len(population))
             offspring.append(toolbox.clone(population[idx]))
 
     return offspring
