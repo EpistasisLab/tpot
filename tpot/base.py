@@ -928,8 +928,8 @@ class TPOTBase(BaseEstimator):
                             cv=self.cv,
                             scoring_function=self.scoring_function,
                             sample_weight=sample_weight,
-                            max_eval_time_mins=self.max_eval_time_mins,
-                            groups=groups
+                            groups=groups,
+                            timeout=self.max_eval_time_seconds
                             )
 
         result_score_list = []
