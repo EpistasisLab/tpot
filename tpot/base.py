@@ -967,7 +967,7 @@ class TPOTBase(BaseEstimator):
         return [self.evaluated_individuals_[str(individual)] for individual in individuals]
 
 
-    def _preprocess_individuals(self, individuals):
+    def _preprocess_individuals(self, individuals, file=sys.stdout):
         """
         Preprocess DEAP individuals before pipeline evaluation.
 
@@ -976,6 +976,8 @@ class TPOTBase(BaseEstimator):
         individuals: a list of DEAP individual
             One individual is a list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
+        file: io.TextIOWrapper or io.StringIO
+            Specifies where to output the progress messages (default: sys.stdout)
 
         Returns
         -------
@@ -990,7 +992,7 @@ class TPOTBase(BaseEstimator):
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
         # update number of duplicate pipelines
-        self._update_pbar(pbar_num=len(individuals)-len(unique_individuals))
+        self._update_pbar(pbar_num=len(individuals)-len(unique_individuals), file=file)
 
         # a dictionary for storing operator counts
         operator_counts = {}
@@ -1005,11 +1007,11 @@ class TPOTBase(BaseEstimator):
             sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
             if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
                 self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
-                self._update_pbar(pbar_msg='Invalid pipeline encountered. Skipping its evaluation.')
+                self._update_pbar(pbar_msg='Invalid pipeline encountered. Skipping its evaluation.', file=file)
             # Check if the individual was evaluated before
             elif individual_str in self.evaluated_individuals_:
                 self._update_pbar(pbar_msg=('Pipeline encountered that has previously been evaluated during the '
-                                 'optimization process. Using the score from the previous evaluation.'))
+                                 'optimization process. Using the score from the previous evaluation.'), file=file)
             else:
                 try:
                     # Transform the tree expression into an sklearn pipeline
@@ -1028,7 +1030,7 @@ class TPOTBase(BaseEstimator):
                     operator_counts[individual_str] = max(1, operator_count)
                 except Exception:
                     self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
-                    self._update_pbar()
+                    self._update_pbar(file=file)
                     continue
                 eval_individuals_str.append(individual_str)
                 sklearn_pipeline_list.append(sklearn_pipeline)
@@ -1036,7 +1038,7 @@ class TPOTBase(BaseEstimator):
         return operator_counts, eval_individuals_str, sklearn_pipeline_list
 
 
-    def _update_pbar(self, pbar_num=1, pbar_msg=None):
+    def _update_pbar(self, pbar_num=1, pbar_msg=None, file=sys.stdout):
         """Update self._pbar and error message during pipeline evaluration.
 
         Parameters
@@ -1045,13 +1047,15 @@ class TPOTBase(BaseEstimator):
             How many pipelines has been processed
         pbar_msg: None or string
             Error message
+        file: io.TextIOWrapper or io.StringIO
+            Specifies where to output the progress messages (default: sys.stdout)
 
         Returns
         -------
         None
         """
-        if self.verbosity > 2 and update_msg is not None:
-            self._pbar.write(pbar_msg)
+        if self.verbosity > 2 and pbar_msg is not None:
+            self._pbar.write(pbar_msg, file=file)
         if not self._pbar.disable:
             self._pbar.update(pbar_num)
 
@@ -1131,7 +1135,7 @@ class TPOTBase(BaseEstimator):
                 operator_count += 1
         return operator_count
 
-    def _update_val(self, val, result_score_list):
+    def _update_val(self, val, result_score_list, file=sys.stdout):
         """Update values in the list of result scores and self._pbar during pipeline evaluration.
 
         Parameters
@@ -1140,6 +1144,8 @@ class TPOTBase(BaseEstimator):
             CV scores
         result_score_list: list
             A list of CV scores
+        file: io.TextIOWrapper or io.StringIO
+            Specifies where to output the progress messages (default: sys.stdout)
 
         Returns
         -------
@@ -1149,7 +1155,7 @@ class TPOTBase(BaseEstimator):
         self._update_pbar()
         if val == 'Timeout':
             self._update_pbar(pbar_msg=('Skipped pipeline #{0} due to time out. '
-                             'Continuing to the next pipeline.'.format(self._pbar.n)))
+                             'Continuing to the next pipeline.'.format(self._pbar.n)), file=file)
             result_score_list.append(-float('inf'))
         else:
             result_score_list.append(val)
