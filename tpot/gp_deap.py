@@ -59,6 +59,7 @@ def pick_two_individuals_eligible_for_crossover(population):
                                  if not ind1_prims.isdisjoint(ind2_prims) and
                                     pop_as_str[i] != pop_as_str[i+1+j]]
 
+    # Pairs are eligible in both orders, this ensures that both orders are considered
     eligible_pairs += [(j, i) for (i,j) in eligible_pairs]
     
     if not eligible_pairs:
