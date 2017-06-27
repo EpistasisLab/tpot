@@ -83,10 +83,6 @@ if sys.platform.startswith('win'):
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
 
-    # dont save periodic pipelines more often than this
-    OUTPUT_BEST_PIPELINE_PERIOD_SECONDS = 30
-    MAX_MUT_LOOPS = 50
-
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
@@ -231,6 +227,13 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
+
+        # dont save periodic pipelines more often than this
+        self.OUTPUT_BEST_PIPELINE_PERIOD_SECONDS = 30
+
+        # Try crossover and mutation at most this many times for
+        # any one given individual (or pair of individuals)
+        self.MAX_MUT_LOOPS = 50
 
         # Set offspring_size equal to population_size by default
         if offspring_size:
