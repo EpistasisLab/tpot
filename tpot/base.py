@@ -952,6 +952,7 @@ class TPOTBase(BaseEstimator):
                     self._pbar.update(1)
             # Check if the individual was evaluated before
             elif individual_str in self.evaluated_individuals_:
+                self.update_pbar(update_msg
                 if self.verbosity > 2:
                     self._pbar.write('Pipeline encountered that has previously been evaluated during the '
                                      'optimization process. Using the score from the previous evaluation.')
@@ -997,7 +998,7 @@ class TPOTBase(BaseEstimator):
         if self.n_jobs == 1:
             for sklearn_pipeline in sklearn_pipeline_list:
                 val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
-                resulting_score_list = self._update_pbar(val, resulting_score_list)
+                resulting_score_list = self._update_val(val, resulting_score_list)
         else:
             # chunk size for pbar update
             for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
@@ -1006,7 +1007,7 @@ class TPOTBase(BaseEstimator):
                                              for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
                 # update pbar
                 for val in tmp_result_scores:
-                    resulting_score_list = self._update_pbar(val, resulting_score_list)
+                    resulting_score_list = self._update_val(val, resulting_score_list)
 
         for resulting_score, individual_str in zip(resulting_score_list, eval_individuals_str):
             if type(resulting_score) in [float, np.float64, np.float32]:
@@ -1015,6 +1016,26 @@ class TPOTBase(BaseEstimator):
                 raise ValueError('Scoring function does not return a float.')
 
         return [self.evaluated_individuals_[str(individual)] for individual in individuals]
+
+    def _update_pbar(self, pbar_num=1, pbar_msg=None):
+        """Update self._pbar and error message during pipeline evaluration.
+
+        Parameters
+        ----------
+        pbar_num: int
+            How many pipelines has been processed
+        pbar_msg: None or string
+            Error message
+
+        Returns
+        -------
+        None
+        """
+        if self.verbosity > 2 and update_msg is not None:
+            self._pbar.write(pbar_msg)
+        if not self._pbar.disable:
+            self._pbar.update(pbar_num)
+
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
@@ -1091,8 +1112,8 @@ class TPOTBase(BaseEstimator):
                 operator_count += 1
         return operator_count
 
-    def _update_pbar(self, val, resulting_score_list):
-        """Update self._pbar during pipeline evaluration
+    def _update_val(self, val, resulting_score_list):
+        """Update values in resulting_score_list and self._pbar during pipeline evaluration.
 
         Parameters
         ----------
