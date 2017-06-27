@@ -824,13 +824,15 @@ def test_pick_two_individuals_eligible_for_crossover_bad():
 
     # Ind1 and ind2 are not a pair because they are the same, ind3 shares no primitive
     pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1, ind2, ind3])
-    # What do to here?
-    assert str(pick1) == str(ind1) and str(pick2) == str(ind2)
+    assert pick1 is None and pick2 is None
 
     # You can not do crossover with a population of only 1.
     pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1])
-    # What do to here?
-    assert str(pick1) == str(ind1) and str(pick2) == str(ind2)
+    assert pick1 is None and pick2 is None
+
+    # You can not do crossover with a population of 0.
+    pick1, pick2 = pick_two_individuals_eligible_for_crossover([])
+    assert pick1 is None and pick2 is None
 
 def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
