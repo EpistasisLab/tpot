@@ -199,6 +199,29 @@ def test_timeout():
     assert return_value == "Timeout"
 
 
+def test_invaild_pipeline():
+    """Assert that _wrapped_cross_val_score return -float(\'inf\') with a invalid_pipeline"""
+    tpot_obj = TPOTClassifier()
+    # a invalid pipeline
+    # Dual or primal formulation. Dual formulation is only implemented for l2 penalty.
+    pipeline_string = (
+        'LogisticRegression(input_matrix,  LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=True, LogisticRegression__penalty=l1)'
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    # test _wrapped_cross_val_score with cv=20 so that it is impossible to finish in 1 second
+    return_value = _wrapped_cross_val_score(tpot_obj.fitted_pipeline_,
+                                            training_features,
+                                            training_target,
+                                            cv=5,
+                                            scoring_function='accuracy',
+                                            sample_weight=None,
+                                            groups=None,
+                                            timeout=300)
+    assert return_value == -float('inf')
+
+
 def test_balanced_accuracy():
     """Assert that the balanced_accuracy in TPOT returns correct accuracy."""
     y_true = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4])
