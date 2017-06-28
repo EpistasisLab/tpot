@@ -339,6 +339,11 @@ class TPOTBase(BaseEstimator):
 
     def _read_config_file(self, config_path):
         try:
+            FileNotFoundError
+        except NameError: # python 2 has no FileNotFoundError
+            FileNotFoundError = IOError
+
+        try:
             custom_config = imp.new_module('custom_config')
 
             with open(config_path, 'r') as config_file:
@@ -357,7 +362,7 @@ class TPOTBase(BaseEstimator):
                 'a dictionary named "tpot_config".'
             )
         except Exception as e:
-            raise type(e)(
+            raise ValueError(
                 'An error occured while attempting to read the specified '
                 'custom TPOT operator configuration file.'
             )

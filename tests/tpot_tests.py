@@ -325,6 +325,11 @@ def test_read_config_file():
     """Assert that _read_config_file rasie FileNotFoundError with a wrong path."""
     tpot_obj = TPOTRegressor()
     # typo for "tests/test_config.py"
+    try:
+        FileNotFoundError
+    except NameError: # python 2 has no FileNotFoundError
+        FileNotFoundError = IOError
+
     assert_raises(FileNotFoundError, tpot_obj._read_config_file, "tests/test_confg.py")
 
 
@@ -332,6 +337,12 @@ def test_read_config_file_2():
     """Assert that _read_config_file rasie AttributeError with a wrong dictionary name."""
     tpot_obj = TPOTRegressor()
     assert_raises(AttributeError, tpot_obj._read_config_file, "tpot/config/classifier_light.py")
+
+
+def test_read_config_file_3():
+    """Assert that _read_config_file rasie ValueError with wrong dictionary format"""
+    tpot_obj = TPOTRegressor()
+    assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_bad_config.py")
 
 
 def test_random_ind():

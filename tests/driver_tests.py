@@ -82,7 +82,7 @@ def test_driver():
 
 
 def test_driver_2():
-    """Assert that the tpot_driver() in TPOT driver outputs normal result with verbosity = 1"""
+    """Assert that the tpot_driver() in TPOT driver outputs normal result with verbosity = 1."""
     args_list = [
                 'tests/tests.csv',
                 '-is', ',',
@@ -110,7 +110,7 @@ def test_driver_2():
 
 
 def test_driver_3():
-    """Assert that the tpot_driver() in TPOT driver outputs normal result with verbosity = 2"""
+    """Assert that the tpot_driver() in TPOT driver outputs normal result with verbosity = 2."""
     args_list = [
                 'tests/tests.csv',
                 '-is', ',',
@@ -137,7 +137,7 @@ def test_driver_3():
 
 
 def test_driver_4():
-    """Assert that the tpot_driver() in TPOT driver outputs normal result with verbosity = 3"""
+    """Assert that the tpot_driver() in TPOT driver outputs normal result with verbosity = 3."""
     args_list = [
                 'tests/tests.csv',
                 '-is', ',',
@@ -216,7 +216,7 @@ class ParserTest(TestCase):
 
 
     def test_print_args(self):
-        """Assert that _print_args prints correct values for all parameters in default settings"""
+        """Assert that _print_args prints correct values for all parameters in default settings."""
         args = self.parser.parse_args(['tests/tests.csv'])
         with captured_output() as (out, err):
             _print_args(args)
