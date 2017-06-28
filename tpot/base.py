@@ -338,33 +338,30 @@ class TPOTBase(BaseEstimator):
             self.config_dict = self.default_config_dict
 
     def _read_config_file(self, config_path):
-        try:
-            FileNotFoundError
-        except NameError: # python 2 has no FileNotFoundError
-            FileNotFoundError = IOError
+        if os.path.isfile(config_path):
+            try:
+                custom_config = imp.new_module('custom_config')
 
-        try:
-            custom_config = imp.new_module('custom_config')
+                with open(config_path, 'r') as config_file:
+                    file_string = config_file.read()
+                    exec(file_string, custom_config.__dict__)
 
-            with open(config_path, 'r') as config_file:
-                file_string = config_file.read()
-                exec(file_string, custom_config.__dict__)
+                return custom_config.tpot_config
 
-            return custom_config.tpot_config
-        except FileNotFoundError as e:
-            raise FileNotFoundError(
-                'Could not open specified TPOT operator config file: '
-                '{}'.format(e.filename)
-            )
-        except AttributeError:
-            raise AttributeError(
-                'The supplied TPOT operator config file does not contain '
-                'a dictionary named "tpot_config".'
-            )
-        except Exception as e:
+            except AttributeError:
+                raise AttributeError(
+                    'The supplied TPOT operator config file does not contain '
+                    'a dictionary named "tpot_config".'
+                )
+            except Exception as e:
+                raise ValueError(
+                    'An error occured while attempting to read the specified '
+                    'custom TPOT operator configuration file.'
+                )
+        else:
             raise ValueError(
-                'An error occured while attempting to read the specified '
-                'custom TPOT operator configuration file.'
+                'Could not open specified TPOT operator config file: '
+                '{}'.format(config_path)
             )
 
     def _setup_pset(self):

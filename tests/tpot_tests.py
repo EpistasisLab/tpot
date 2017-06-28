@@ -325,12 +325,7 @@ def test_read_config_file():
     """Assert that _read_config_file rasie FileNotFoundError with a wrong path."""
     tpot_obj = TPOTRegressor()
     # typo for "tests/test_config.py"
-    try:
-        FileNotFoundError
-    except NameError: # python 2 has no FileNotFoundError
-        FileNotFoundError = IOError
-
-    assert_raises(FileNotFoundError, tpot_obj._read_config_file, "tests/test_confg.py")
+    assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_confg.py")
 
 
 def test_read_config_file_2():
