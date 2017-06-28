@@ -29,7 +29,7 @@ except ImportError:
 
 import numpy as np
 
-from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, _read_data_file, load_scoring_function
+from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, _read_data_file, load_scoring_function, main
 from nose.tools import assert_raises, assert_equal, assert_in
 from unittest import TestCase
 
@@ -43,6 +43,7 @@ def captured_output():
         yield sys.stdout, sys.stderr
     finally:
         sys.stdout, sys.stderr = old_out, old_err
+
 
 def test_scoring_function_argument():
     with captured_output() as (out, err):
@@ -75,6 +76,89 @@ def test_driver():
     ret_stdout = subprocess.check_output(batcmd, shell=True)
     try:
         ret_val = float(ret_stdout.decode('UTF-8').split('\n')[-2].split(': ')[-1])
+    except Exception:
+        ret_val = -float('inf')
+    assert ret_val > 0.0
+
+
+def test_driver_2():
+    """Assert that the main() in TPOT driver outputs normal result with verbosity = 1"""
+    args_list = [
+                'tests/tests.csv',
+                '-is', ',',
+                '-target', 'class',
+                '-g', '1',
+                '-p', '2',
+                '-os', '4',
+                '-cv', '5',
+                '-s',' 45',
+                '-config', 'TPOT light',
+                '-v', '1'
+                ]
+    args = _get_arg_parser().parse_args(args_list)
+    with captured_output() as (out, err):
+        main(args)
+    ret_stdout = out.getvalue()
+
+    assert "TPOT settings" not in ret_stdout
+    assert "Final Pareto front testing scores" not in ret_stdout
+    try:
+        ret_val = float(ret_stdout.split('\n')[-2].split(': ')[-1])
+    except Exception:
+        ret_val = -float('inf')
+    assert ret_val > 0.0
+
+
+def test_driver_3():
+    """Assert that the main() in TPOT driver outputs normal result with verbosity = 2"""
+    args_list = [
+                'tests/tests.csv',
+                '-is', ',',
+                '-target', 'class',
+                '-g', '1',
+                '-p', '2',
+                '-os', '4',
+                '-cv', '5',
+                '-s',' 45',
+                '-config', 'TPOT light',
+                '-v', '2'
+                ]
+    args = _get_arg_parser().parse_args(args_list)
+    with captured_output() as (out, err):
+        main(args)
+    ret_stdout = out.getvalue()
+    assert "TPOT settings" in ret_stdout
+    assert "Final Pareto front testing scores" not in ret_stdout
+    try:
+        ret_val = float(ret_stdout.split('\n')[-2].split(': ')[-1])
+    except Exception:
+        ret_val = -float('inf')
+    assert ret_val > 0.0
+
+
+def test_driver_4():
+    """Assert that the main() in TPOT driver outputs normal result with verbosity = 3"""
+    args_list = [
+                'tests/tests.csv',
+                '-is', ',',
+                '-target', 'class',
+                '-g', '1',
+                '-p', '2',
+                '-os', '4',
+                '-cv', '5',
+                '-s', '42',
+                '-config', 'TPOT light',
+                '-v', '3'
+                ]
+    args = _get_arg_parser().parse_args(args_list)
+    with captured_output() as (out, err):
+        main(args)
+    ret_stdout = out.getvalue()
+
+    assert "TPOT settings" in ret_stdout
+    assert "Final Pareto front testing scores" in ret_stdout
+    try:
+        ret_val = float(ret_stdout.split('\n')[-2].split('\t')[1])
     except Exception:
         ret_val = -float('inf')
     assert ret_val > 0.0
