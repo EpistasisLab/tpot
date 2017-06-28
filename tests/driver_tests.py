@@ -29,7 +29,7 @@ except ImportError:
 
 import numpy as np
 
-from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, _read_data_file, load_scoring_function, main
+from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, _read_data_file, load_scoring_function, tpot_driver
 from nose.tools import assert_raises, assert_equal, assert_in
 from unittest import TestCase
 

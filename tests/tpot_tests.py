@@ -123,7 +123,7 @@ def test_invalid_score_warning():
     TPOTClassifier(scoring='balanced_accuracy')
 
 
-def test_invaild_dataset_warning():
+def test_invalid_dataset_warning():
     """Assert that the TPOT fit function raises a ValueError when dataset is not in right format."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -137,7 +137,7 @@ def test_invaild_dataset_warning():
     assert_raises(ValueError, tpot_obj.fit, training_features, bad_training_target)
 
 
-def test_invaild_subsample_ratio_warning():
+def test_invalid_subsample_ratio_warning():
     """Assert that the TPOT intitializes raises a ValueError when subsample ratio is not in the range (0.0, 1.0]."""
     # Invalid ratio
     assert_raises(ValueError, TPOTClassifier, subsample=0.0)
@@ -145,7 +145,7 @@ def test_invaild_subsample_ratio_warning():
     TPOTClassifier(subsample=0.1)
 
 
-def test_invaild_mut_rate_plus_xo_rate():
+def test_invalid_mut_rate_plus_xo_rate():
     """Assert that the TPOT intitializes raises a ValueError when the sum of crossover and mutation probabilities is large than 1."""
     # Invalid ratio
     assert_raises(ValueError, TPOTClassifier, mutation_rate=0.8, crossover_rate=0.8)
@@ -199,7 +199,7 @@ def test_timeout():
     assert return_value == "Timeout"
 
 
-def test_invaild_pipeline():
+def test_invalid_pipeline():
     """Assert that _wrapped_cross_val_score return -float(\'inf\') with a invalid_pipeline"""
     tpot_obj = TPOTClassifier()
     # a invalid pipeline
