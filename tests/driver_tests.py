@@ -82,7 +82,7 @@ def test_driver():
 
 
 def test_driver_2():
-    """Assert that the main() in TPOT driver outputs normal result with verbosity = 1"""
+    """Assert that the tpot_driver() in TPOT driver outputs normal result with verbosity = 1"""
     args_list = [
                 'tests/tests.csv',
                 '-is', ',',
@@ -97,7 +97,7 @@ def test_driver_2():
                 ]
     args = _get_arg_parser().parse_args(args_list)
     with captured_output() as (out, err):
-        main(args)
+        tpot_driver(args)
     ret_stdout = out.getvalue()
 
     assert "TPOT settings" not in ret_stdout
@@ -110,7 +110,7 @@ def test_driver_2():
 
 
 def test_driver_3():
-    """Assert that the main() in TPOT driver outputs normal result with verbosity = 2"""
+    """Assert that the tpot_driver() in TPOT driver outputs normal result with verbosity = 2"""
     args_list = [
                 'tests/tests.csv',
                 '-is', ',',
@@ -125,7 +125,7 @@ def test_driver_3():
                 ]
     args = _get_arg_parser().parse_args(args_list)
     with captured_output() as (out, err):
-        main(args)
+        tpot_driver(args)
     ret_stdout = out.getvalue()
     assert "TPOT settings" in ret_stdout
     assert "Final Pareto front testing scores" not in ret_stdout
@@ -137,7 +137,7 @@ def test_driver_3():
 
 
 def test_driver_4():
-    """Assert that the main() in TPOT driver outputs normal result with verbosity = 3"""
+    """Assert that the tpot_driver() in TPOT driver outputs normal result with verbosity = 3"""
     args_list = [
                 'tests/tests.csv',
                 '-is', ',',
@@ -152,7 +152,7 @@ def test_driver_4():
                 ]
     args = _get_arg_parser().parse_args(args_list)
     with captured_output() as (out, err):
-        main(args)
+        tpot_driver(args)
     ret_stdout = out.getvalue()
 
     assert "TPOT settings" in ret_stdout

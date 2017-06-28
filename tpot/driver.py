@@ -451,11 +451,8 @@ def load_scoring_function(scoring_func):
 
     return scoring_func
 
-def main(args=None):
+def tpot_driver(args):
     """Perform a TPOT run."""
-    if args is None:
-        args = sys.argv[1:]
-    
     if args.VERBOSITY >= 2:
         _print_args(args)
 
@@ -513,7 +510,9 @@ def main(args=None):
     if args.OUTPUT_FILE != '':
         tpot_obj.export(args.OUTPUT_FILE)
 
+def main():
+    args = _get_arg_parser().parse_args()
+    tpot_driver(args)
 
 if __name__ == '__main__':
-    args = _get_arg_parser().parse_args()
-    main(args)
+    main()
