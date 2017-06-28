@@ -342,7 +342,7 @@ def test_read_config_file_2():
 def test_read_config_file_3():
     """Assert that _read_config_file rasie ValueError with wrong dictionary format"""
     tpot_obj = TPOTRegressor()
-    assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_bad_config.py")
+    assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_config.py.bad")
 
 
 def test_random_ind():

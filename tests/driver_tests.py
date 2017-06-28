@@ -76,7 +76,8 @@ def test_driver():
     ret_stdout = subprocess.check_output(batcmd, shell=True)
     try:
         ret_val = float(ret_stdout.decode('UTF-8').split('\n')[-2].split(': ')[-1])
-    except Exception:
+
+    except Exception as e:
         ret_val = -float('inf')
     assert ret_val > 0.0
 
