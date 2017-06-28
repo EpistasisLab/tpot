@@ -451,8 +451,11 @@ def load_scoring_function(scoring_func):
 
     return scoring_func
 
-def main(args):
+def main(args=None):
     """Perform a TPOT run."""
+    if args is None:
+        args = sys.argv[1:]
+    
     if args.VERBOSITY >= 2:
         _print_args(args)
 
