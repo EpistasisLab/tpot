@@ -115,7 +115,7 @@ def test_init_default_scoring_2():
     assert tpot_obj.scoring_function == 'balanced_accuracy'
 
 
-def test_invaild_score_warning():
+def test_invalid_score_warning():
     """Assert that the TPOT intitializes raises a ValueError when the scoring metrics is not available in SCORERS."""
     # Mis-spelled scorer
     assert_raises(ValueError, TPOTClassifier, scoring='balanced_accuray')
