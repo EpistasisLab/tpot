@@ -664,7 +664,7 @@ class TPOTBase(BaseEstimator):
 
         return self.fitted_pipeline_.predict(features)
 
-    def fit_predict(self, features, target):
+    def fit_predict(self, features, target, sample_weight=None, groups=None):
         """Call fit and predict in sequence.
 
         Parameters
@@ -673,6 +673,12 @@ class TPOTBase(BaseEstimator):
             Feature matrix
         target: array-like {n_samples}
             List of class labels for prediction
+        sample_weight: array-like {n_samples}, optional
+            Per-sample weights. Higher weights force TPOT to put more emphasis on those points
+        groups: array-like, with shape {n_samples, }, optional
+            Group labels for the samples used when performing cross-validation.
+            This parameter should only be used in conjunction with sklearn's Group cross-validation
+            functions, such as sklearn.model_selection.GroupKFold
 
         Returns
         ----------
@@ -680,7 +686,7 @@ class TPOTBase(BaseEstimator):
             Predicted target for the provided features
 
         """
-        self.fit(features, target)
+        self.fit(features, target, sample_weight=sample_weight, groups=groups)
         return self.predict(features)
 
     def score(self, testing_features, testing_target):

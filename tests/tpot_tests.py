@@ -603,8 +603,25 @@ def test_fit3():
     assert not (tpot_obj._start_datetime is None)
 
 
+def test_fit_predict():
+    """Assert that the TPOT fit_predict function provides an optimized pipeline and correct output."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    result = tpot_obj.fit_predict(training_features, training_target)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+    assert result.shape == (training_features.shape[0],)
+
+
 def test_update_top_pipeline():
-    """Assert that the TPOT _update_top_pipeline updated an optimized pipeline"""
+    """Assert that the TPOT _update_top_pipeline updated an optimized pipeline."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -623,7 +640,7 @@ def test_update_top_pipeline():
 
 
 def test_update_top_pipeline_2():
-    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._pareto_front is empty"""
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._pareto_front is empty."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -641,7 +658,7 @@ def test_update_top_pipeline_2():
 
 
 def test_update_top_pipeline_3():
-    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._optimized_pipeline is updated"""
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._optimized_pipeline is not updated."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
