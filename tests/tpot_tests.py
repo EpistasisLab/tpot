@@ -321,6 +321,19 @@ def test_conf_dict_3():
     assert tpot_obj.config_dict == tested_config_dict
 
 
+def test_read_config_file():
+    """Assert that _read_config_file rasie FileNotFoundError with a wrong path."""
+    tpot_obj = TPOTRegressor()
+    # typo for "tests/test_config.py"
+    assert_raises(FileNotFoundError, tpot_obj._read_config_file, "tests/test_confg.py")
+
+
+def test_read_config_file_2():
+    """Assert that _read_config_file rasie AttributeError with a wrong dictionary name."""
+    tpot_obj = TPOTRegressor()
+    assert_raises(AttributeError, tpot_obj._read_config_file, "tpot/config/classifier_light.py")
+
+
 def test_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline with same random seed."""
     tpot_obj = TPOTClassifier(random_state=43)
