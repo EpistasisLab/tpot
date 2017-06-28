@@ -607,12 +607,12 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
             if not self._optimized_pipeline:
-                print('There was an error in the TPOT optimization '
-                      'process. This could be because the data was '
-                      'not formatted properly, or because data for '
-                      'a regression problem was provided to the '
-                      'TPOTClassifier object. Please make sure you '
-                      'passed the data to TPOT correctly.')
+                raise RuntimeError('There was an error in the TPOT optimization '
+                                  'process. This could be because the data was '
+                                  'not formatted properly, or because data for '
+                                  'a regression problem was provided to the '
+                                  'TPOTClassifier object. Please make sure you '
+                                  'passed the data to TPOT correctly.')
             else:
                 self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
 

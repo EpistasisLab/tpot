@@ -640,6 +640,25 @@ def test_update_top_pipeline_2():
     assert_raises(RuntimeError, tpot_obj._update_top_pipeline, features=training_features, target=training_target)
 
 
+def test_update_top_pipeline_3():
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._optimized_pipeline is updated"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    tpot_obj._optimized_pipeline = None
+    # reset the fitness score to -float('inf')
+    for pipeline_scores in reversed(tpot_obj._pareto_front.keys):
+        pipeline_scores.wvalues = (5000., -float('inf'))
+
+    assert_raises(RuntimeError, tpot_obj._update_top_pipeline, features=training_features, target=training_target)
+
+
 def test_evaluated_individuals_():
     """Assert that evaluated_individuals_ stores current pipelines and their CV scores."""
     tpot_obj = TPOTClassifier(
