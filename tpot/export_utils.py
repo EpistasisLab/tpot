@@ -84,10 +84,10 @@ from copy import copy
 
     pipeline_text += """
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_target, testing_target = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('class', axis=1).values
+training_features, testing_features, training_classes, testing_classes = \\
+            train_test_split(features, tpot_data['class'].values, random_state=42)
 """
 
     if pipeline_score is not None:
@@ -170,7 +170,7 @@ def generate_import_code(pipeline, operators):
                 old_dict[key] = set(new_dict[key])
 
     operators_used = [x.name for x in pipeline if isinstance(x, deap.gp.Primitive)]
-    pipeline_text = 'import numpy as np\n\n'
+    pipeline_text = 'import numpy as np\nimport pandas as pd\n'
     pipeline_imports = _starting_imports(operators, operators_used)
 
     # Build dict of import requirments from list of operators
