@@ -83,11 +83,11 @@ from copy import copy
 """
 
     pipeline_text += """
-# NOTE: Make sure that the class is labeled 'class' in the data file
+# NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('class', axis=1).values
-training_features, testing_features, training_classes, testing_classes = \\
-            train_test_split(features, tpot_data['class'].values, random_state=42)
+features = tpot_data.drop('target', axis=1).values
+training_features, testing_features, training_target, testing_target = \\
+            train_test_split(features, tpot_data['target'].values, random_state=42)
 """
 
     if pipeline_score is not None:
