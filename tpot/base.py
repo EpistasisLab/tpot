@@ -63,7 +63,9 @@ from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
 
+
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
+# https://github.com/ContinuumIO/anaconda-issues/issues/905
 if sys.platform.startswith('win'):
     import win32api
     try:
