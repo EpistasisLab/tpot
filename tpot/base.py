@@ -863,6 +863,7 @@ class TPOTBase(BaseEstimator):
         sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr, self._pset), self.operators)
         return eval(sklearn_pipeline, self.operators_context)
 
+
     def _set_param_recursive(self, pipeline_steps, parameter, value):
         """Recursively iterate through all objects in the pipeline and set a given parameter.
 
@@ -881,14 +882,16 @@ class TPOTBase(BaseEstimator):
         """
         for (_, obj) in pipeline_steps:
             recursive_attrs = ['steps', 'transformer_list', 'estimators']
-
             for attr in recursive_attrs:
                 if hasattr(obj, attr):
                     self._set_param_recursive(getattr(obj, attr), parameter, value)
-                    break
-            else:
-                if hasattr(obj, parameter):
-                    setattr(obj, parameter, value)
+            if hasattr(obj, 'estimator'): # nested estimator
+                est = getattr(obj, 'estimator')
+                if hasattr(est, parameter):
+                    setattr(est, parameter, value)
+            if hasattr(obj, parameter):
+                setattr(obj, parameter, value)
+
 
     def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
