@@ -599,7 +599,7 @@ def test_update_top_pipeline_2():
 
 
 def test_set_param_recursive():
-    """Assert that _set_param_recursive sets \"random_state\" to 42 in all steps in a simple pipeline"""
+    """Assert that _set_param_recursive sets \"random_state\" to 42 in all steps in a simple pipeline."""
     pipeline_string = (
         'DecisionTreeClassifier(PCA(input_matrix, PCA__iterated_power=5, PCA__svd_solver=randomized), '
         'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
@@ -633,7 +633,7 @@ def test_set_param_recursive_2():
 
 
 def test_set_param_recursive_3():
-    """Assert that _set_param_recursive sets \"random_state\" to 42 in nested estimator in StackingEstimator in a complex pipeline"""
+    """Assert that _set_param_recursive sets \"random_state\" to 42 in nested estimator in StackingEstimator in a complex pipeline."""
     pipeline_string = (
         'DecisionTreeClassifier(CombineDFs('
         'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
