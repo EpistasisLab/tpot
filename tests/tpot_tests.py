@@ -349,6 +349,15 @@ def test_random_ind():
     assert pipeline1 == pipeline2
 
 
+def test_random_ind_2():
+    """Assert that the TPOTRegressor can generate the same pipeline with same random seed."""
+    tpot_obj = TPOTRegressor(random_state=43)
+    pipeline1 = str(tpot_obj._toolbox.individual())
+    tpot_obj = TPOTRegressor(random_state=43)
+    pipeline2 = str(tpot_obj._toolbox.individual())
+    assert pipeline1 == pipeline2
+
+
 def test_score():
     """Assert that the TPOT score function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()

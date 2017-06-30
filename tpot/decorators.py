@@ -90,10 +90,8 @@ def _pre_test(func):
                         e=e
                     )
                     # Use the pbar output stream if it's active
-                    if not isinstance(self._pbar, type(None)):
+                    if not pbar.disable:
                         self._pbar.write(message)
-                    else:
-                        print(message)
             finally:
                 num_test += 1
 
