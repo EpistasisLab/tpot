@@ -234,12 +234,9 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 # Parameter of internal operator as a parameter in the
                 # operator, usually in Selector
                 else:
-                    if not list(dep_op_list.values()).count(aname_split[1]):
-                        raise TypeError('Warning: the operator {} is not in right format in the operator dictionary'.format(aname_split[0]))
-                    else:
-                        if aname_split[1] not in dep_op_arguments:
-                            dep_op_arguments[aname_split[1]] = []
-                        dep_op_arguments[aname_split[1]].append("{}={}".format(aname_split[-1], arg_value))
+                    if aname_split[1] not in dep_op_arguments:
+                        dep_op_arguments[aname_split[1]] = []
+                    dep_op_arguments[aname_split[1]].append("{}={}".format(aname_split[-1], arg_value))
 
             tmp_op_args = []
             if dep_op_list:
