@@ -21,7 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tqdm import tqdm
 import numpy as np
-from os import remove
+from os import remove, path
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
@@ -86,6 +86,7 @@ def test_export():
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj._optimized_pipeline = pipeline
     tpot_obj.export("test_export.py")
+    assert path.isfile("test_export.py")
     remove("test_export.py") # clean up exported file
 
 

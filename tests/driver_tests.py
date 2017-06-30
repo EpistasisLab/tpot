@@ -21,6 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
 import sys
+from os import remove, path
 from contextlib import contextmanager
 try:
     from StringIO import StringIO
@@ -72,7 +73,7 @@ def test_scoring_function_argument():
 
 def test_driver():
     """Assert that the TPOT driver outputs normal result in mode mode."""
-    batcmd = "python -m tpot.driver tests/tests.csv -is , -target class -g 2 -p 2 -os 4 -cv 5 -s 45 -v 1"
+    batcmd = "python -m tpot.driver tests/tests.csv -is , -target class -g 1 -p 2 -os 4 -cv 5 -s 45 -v 1"
     ret_stdout = subprocess.check_output(batcmd, shell=True)
     try:
         ret_val = float(ret_stdout.decode('UTF-8').split('\n')[-2].split(': ')[-1])
@@ -90,8 +91,7 @@ def test_driver_2():
                 '-target', 'class',
                 '-g', '1',
                 '-p', '2',
-                '-os', '4',
-                '-cv', '5',
+                '-cv', '2',
                 '-s',' 45',
                 '-config', 'TPOT light',
                 '-v', '1'
@@ -118,8 +118,7 @@ def test_driver_3():
                 '-target', 'class',
                 '-g', '1',
                 '-p', '2',
-                '-os', '4',
-                '-cv', '5',
+                '-cv', '3',
                 '-s',' 45',
                 '-config', 'TPOT light',
                 '-v', '2'
@@ -145,8 +144,7 @@ def test_driver_4():
                 '-target', 'class',
                 '-g', '1',
                 '-p', '2',
-                '-os', '4',
-                '-cv', '5',
+                '-cv', '3',
                 '-s', '42',
                 '-config', 'TPOT light',
                 '-v', '3'
@@ -163,6 +161,30 @@ def test_driver_4():
     except Exception:
         ret_val = -float('inf')
     assert ret_val > 0.0
+
+
+def test_driver_5():
+    """Assert that the tpot_driver() in TPOT driver outputs normal result with exported python file and verbosity = 0."""
+    args_list = [
+                'tests/tests.csv',
+                '-is', ',',
+                '-target', 'class',
+                '-o', 'test_export.py',
+                '-g', '1',
+                '-p', '2',
+                '-cv', '3',
+                '-s', '42',
+                '-config', 'TPOT light',
+                '-v', '0'
+                ]
+    args = _get_arg_parser().parse_args(args_list)
+    with captured_output() as (out, err):
+        tpot_driver(args)
+    ret_stdout = out.getvalue()
+
+    assert ret_stdout == ""
+    assert path.isfile("test_export.py")
+    remove("test_export.py") # clean up exported file
 
 
 def test_read_data_file():
