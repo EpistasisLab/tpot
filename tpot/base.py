@@ -448,7 +448,7 @@ class TPOTBase(BaseEstimator):
                 'Warning: Pressing Ctrl+C will freeze the optimization '
                 'process without saving the best pipeline in Windows! Thus, Please DO NOT '
                 'press Ctrl+C during the optimization procss For quick test in Windows, '
-                'please set max_eval_time_mins to decrease time limit (default: 5 minutes)'
+                'please set max_eval_time_mins to decrease time limit (default: 5 minutes) '
                 'of evaluating a pipeline.'
             )
 
