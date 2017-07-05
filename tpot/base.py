@@ -63,22 +63,6 @@ from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
 
-# hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
-if sys.platform.startswith('win'):
-    import win32api
-    try:
-        import _thread
-    except ImportError:
-        import thread as _thread
-
-    def handler(dwCtrlType, hook_sigint=_thread.interrupt_main):
-        """SIGINT handler function."""
-        if dwCtrlType == 0:  # CTRL_C_EVENT
-            hook_sigint()
-            return 1  # don't chain to the next handler
-        return 0
-    win32api.SetConsoleCtrlHandler(handler, 1)
-
 
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
@@ -457,6 +441,17 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
 
         """
+
+        # If the OS is windows, ci
+        if sys.platform.startswith('win'):
+            print(
+                'Warning: Pressing Ctrl+C will freeze the optimization '
+                'process without saving the best pipeline in Windows! Thus, Please DO NOT '
+                'press Ctrl+C during the optimization procss For quick test in Windows, '
+                'please set max_eval_time_mins to decrease time limit (default: 5 minutes)'
+                'of evaluating a pipeline.'
+            )
+
         features = features.astype(np.float64)
 
         # Resets the imputer to be fit for the new dataset
