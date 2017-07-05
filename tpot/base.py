@@ -511,11 +511,9 @@ class TPOTBase(BaseEstimator):
 
         # assign population. self._pop maybe be non-empty if the population is
         # seeded or a warm-start is being performed.
-        if len(self._pop) > 0:
-            n_left_to_generate = self.population_size - len(self._pop)
+        n_left_to_generate = self.population_size - len(self._pop)
+        if n_left_to_generate > 0:
             pop = self._pop + self._toolbox.population(n=n_left_to_generate)
-        else:
-            pop = self._toolbox.population(n=self.population_size)
 
         def pareto_eq(ind1, ind2):
             """Determine whether two individuals are equal on the Pareto front.
