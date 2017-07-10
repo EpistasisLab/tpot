@@ -591,8 +591,10 @@ def test_update_top_pipeline_2():
         config_dict='TPOT light'
     )
     tpot_obj.fit(training_features, training_target)
+
     def pareto_eq(ind1, ind2):
         return np.allclose(ind1.fitness.values, ind2.fitness.values)
+
     tpot_obj._pareto_front = ParetoFront(similar=pareto_eq)
 
     assert_raises(RuntimeError, tpot_obj._update_top_pipeline, features=training_features, target=training_target)

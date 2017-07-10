@@ -27,6 +27,8 @@ from tpot.export_utils import export_pipeline, generate_import_code, _indent, ge
 from tpot.operator_utils import TPOTOperatorClassFactory
 from tpot.config.classifier import classifier_config_dict
 
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 from deap import creator
 
 from nose.tools import assert_raises, assert_equal
@@ -37,6 +39,10 @@ TPOTSelectPercentile, TPOTSelectPercentile_args = TPOTOperatorClassFactory(
     test_operator_key,
     classifier_config_dict[test_operator_key]
 )
+
+mnist_data = load_digits()
+training_features, testing_features, training_target, testing_target = \
+    train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
 
 
 def test_export_random_ind():
@@ -391,8 +397,9 @@ test3"""
 
     assert indented_multiline_string == _indent(multiline_string, 4)
 
+
 def test_pipeline_score_save():
-    """Assert that the TPOTClassifier can generate a scored pipeline export correctly"""
+    """Assert that the TPOTClassifier can generate a scored pipeline export correctly."""
     tpot_obj = TPOTClassifier(random_state=39)
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pipeline = tpot_obj._toolbox.individual()
@@ -420,3 +427,46 @@ results = exported_pipeline.predict(testing_features)
 """
 
     assert_equal(expected_code, export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset, pipeline_score=0.929813743))
+
+
+def test_imputer_in_export():
+    """Assert that TPOT exports a pipeline with an imputation step if imputation was used in fit()."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    features_with_nan = np.copy(training_features)
+    features_with_nan[0][0] = float('nan')
+
+    tpot_obj.fit(features_with_nan, training_target)
+    export_code = export_pipeline(tpot_obj._optimized_pipeline, tpot_obj.operators, tpot_obj._pset, tpot_obj._imputed)
+
+    expected_code = """import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import Imputer
+
+# NOTE: Make sure that the class is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_target, testing_target = \\
+    train_test_split(features, tpot_data['class'], random_state=42)
+
+imputer = Imputer(strategy="median", axis=1)
+imputer.fit(training_features)
+training_features = imputer.transform(training_features)
+testing_features = imputer.transform(testing_features)
+
+exported_pipeline = KNeighborsClassifier(n_neighbors=21, p=2, weights="distance")
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+"""
+
+    print(export_code)
+    assert_equal(export_code, expected_code)

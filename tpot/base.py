@@ -223,6 +223,7 @@ class TPOTBase(BaseEstimator):
         self._exported_pipeline_text = ""
         self.fitted_pipeline_ = None
         self._fitted_imputer = None
+        self._imputed = False
         self._pop = None
         self.warm_start = warm_start
         self.population_size = population_size
@@ -463,7 +464,10 @@ class TPOTBase(BaseEstimator):
         self._fitted_imputer = None
 
         if np.any(np.isnan(features)):
+            self._imputed = True
             features = self._impute_values(features)
+        else:
+            self._imputed = False
 
         self._check_dataset(features, target)
 
@@ -572,7 +576,6 @@ class TPOTBase(BaseEstimator):
                         raise
             return self
 
-
     def _update_top_pipeline(self, features, target):
         """Helper function to update the _optimized_pipeline field.
 
@@ -637,7 +640,6 @@ class TPOTBase(BaseEstimator):
             # need raise RuntimeError because no pipeline has been optimized
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-
     def predict(self, features):
         """Use the optimized pipeline to predict the target for a feature set.
 
@@ -658,7 +660,10 @@ class TPOTBase(BaseEstimator):
         features = features.astype(np.float64)
 
         if np.any(np.isnan(features)):
+            self._imputed = True
             features = self._impute_values(features)
+        else:
+            self._imputed = False
 
         return self.fitted_pipeline_.predict(features)
 
@@ -791,9 +796,9 @@ class TPOTBase(BaseEstimator):
         if self._optimized_pipeline is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._optimized_pipeline_score)
+        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._imputed, self._optimized_pipeline_score)
 
-        #dont export a pipeline you just had
+        # dont export a pipeline you just had
         if skip_if_repeated and (self._exported_pipeline_text == to_write):
             return False
 
@@ -972,15 +977,16 @@ class TPOTBase(BaseEstimator):
                 sklearn_pipeline_list.append(sklearn_pipeline)
 
         # Make the partial function that will be called below
-        partial_wrapped_cross_val_score = partial(_wrapped_cross_val_score,
-                            features=features,
-                            target=target,
-                            cv=self.cv,
-                            scoring_function=self.scoring_function,
-                            sample_weight=sample_weight,
-                            groups=groups,
-                            timeout=self.max_eval_time_seconds
-                            )
+        partial_wrapped_cross_val_score = partial(
+            _wrapped_cross_val_score,
+            features=features,
+            target=target,
+            cv=self.cv,
+            scoring_function=self.scoring_function,
+            sample_weight=sample_weight,
+            groups=groups,
+            timeout=self.max_eval_time_seconds
+        )
 
         resulting_score_list = []
         # Don't use parallelization if n_jobs==1
@@ -1058,7 +1064,6 @@ class TPOTBase(BaseEstimator):
             return type_ not in [np.ndarray, Output_Array] or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
-
 
     def _operator_count(self, individual):
         """Count the number of pipeline operators as a measure of pipeline complexity
