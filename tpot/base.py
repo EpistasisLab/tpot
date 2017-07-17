@@ -358,14 +358,15 @@ class TPOTBase(BaseEstimator):
                     exec(file_string, custom_config.__dict__)
                 return custom_config
             except Exception as e:
-                raise type(e)(
+                raise ValueError(
                     'An error occured while attempting to read the specified '
-                    'custom TPOT operator configuration file.'
+                    'custom TPOT operator configuration file: {}'.format(e)
                 )
         else:
             raise ValueError(
                 'Could not open specified TPOT operator config file: '
                 '{}'.format(config_path)
+            )
 
 
     def _setup_pop(self, population_seeds, config_path):
