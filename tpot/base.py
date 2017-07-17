@@ -965,13 +965,74 @@ class TPOTBase(BaseEstimator):
             if total_mins_elapsed >= self.max_time_mins:
                 raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
 
+        operator_counts, eval_individuals_str, sklearn_pipeline_list = self._preprocess_individuals(individuals)
+
+        # Make the partial function that will be called below
+        partial_wrapped_cross_val_score = partial(_wrapped_cross_val_score,
+                            features=features,
+                            target=target,
+                            cv=self.cv,
+                            scoring_function=self.scoring_function,
+                            sample_weight=sample_weight,
+                            groups=groups,
+                            timeout=self.max_eval_time_seconds
+                            )
+
+        result_score_list = []
+        # Don't use parallelization if n_jobs==1
+        if self.n_jobs == 1:
+            for sklearn_pipeline in sklearn_pipeline_list:
+                val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                result_score_list = self._update_val(val, result_score_list)
+        else:
+            # chunk size for pbar update
+            for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
+                parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
+                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
+                # update pbar
+                for val in tmp_result_scores:
+                    result_score_list = self._update_val(val, result_score_list)
+
+        for result_score, individual_str in zip(result_score_list, eval_individuals_str):
+            if type(result_score) in [float, np.float64, np.float32]:
+                self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], result_score)
+            else:
+                raise ValueError('Scoring function does not return a float.')
+
+        return [self.evaluated_individuals_[str(individual)] for individual in individuals]
+
+
+    def _preprocess_individuals(self, individuals, file=sys.stdout):
+        """
+        Preprocess DEAP individuals before pipeline evaluation.
+
+        Parameters
+        ----------
+        individuals: a list of DEAP individual
+            One individual is a list of pipeline operators and model parameters that can be
+            compiled by DEAP into a callable function
+        file: io.TextIOWrapper or io.StringIO
+            Specifies where to output the progress messages (default: sys.stdout)
+
+        Returns
+        -------
+        operator_counts: dictionary
+            a dictionary of operator counts in individuals for evaluation
+        eval_individuals_str: list
+            a list of string of individuals for evaluation
+        sklearn_pipeline_list: list
+            a list of scikit-learn pipelines converted from DEAP individuals for evaluation
+        """
         # Check we do not evaluate twice the same individual in one pass.
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
+        # update number of duplicate pipelines
+        self._update_pbar(pbar_num=len(individuals)-len(unique_individuals), file=file)
 
-        # return fitness scores
+        # a dictionary for storing operator counts
         operator_counts = {}
-        # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
+        # 2 lists of DEAP individuals' string, their sklearn pipelines for parallel computing
         eval_individuals_str = []
         sklearn_pipeline_list = []
 
@@ -981,18 +1042,12 @@ class TPOTBase(BaseEstimator):
             individual_str = str(individual)
             sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
             if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
-                if self.verbosity > 2:
-                    self._pbar.write('Invalid pipeline encountered. Skipping its evaluation.')
                 self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
-                if not self._pbar.disable:
-                    self._pbar.update(1)
+                self._update_pbar(pbar_msg='Invalid pipeline encountered. Skipping its evaluation.', file=file)
             # Check if the individual was evaluated before
             elif individual_str in self.evaluated_individuals_:
-                if self.verbosity > 2:
-                    self._pbar.write('Pipeline encountered that has previously been evaluated during the '
-                                     'optimization process. Using the score from the previous evaluation.')
-                if not self._pbar.disable:
-                    self._pbar.update(1)
+                self._update_pbar(pbar_msg=('Pipeline encountered that has previously been evaluated during the '
+                                 'optimization process. Using the score from the previous evaluation.'), file=file)
             else:
                 try:
                     # Transform the tree expression into an sklearn pipeline
@@ -1011,47 +1066,36 @@ class TPOTBase(BaseEstimator):
                     operator_counts[individual_str] = max(1, operator_count)
                 except Exception:
                     self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
-                    if not self._pbar.disable:
-                        self._pbar.update(1)
+                    self._update_pbar(file=file)
                     continue
                 eval_individuals_str.append(individual_str)
                 sklearn_pipeline_list.append(sklearn_pipeline)
 
-        # Make the partial function that will be called below
-        partial_wrapped_cross_val_score = partial(
-            _wrapped_cross_val_score,
-            features=features,
-            target=target,
-            cv=self.cv,
-            scoring_function=self.scoring_function,
-            sample_weight=sample_weight,
-            groups=groups,
-            timeout=self.max_eval_time_seconds
-        )
+        return operator_counts, eval_individuals_str, sklearn_pipeline_list
 
-        resulting_score_list = []
-        # Don't use parallelization if n_jobs==1
-        if self.n_jobs == 1:
-            for sklearn_pipeline in sklearn_pipeline_list:
-                val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
-                resulting_score_list = self._update_pbar(val, resulting_score_list)
-        else:
-            # chunk size for pbar update
-            for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
-                parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
-                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
-                # update pbar
-                for val in tmp_result_scores:
-                    resulting_score_list = self._update_pbar(val, resulting_score_list)
 
-        for resulting_score, individual_str in zip(resulting_score_list, eval_individuals_str):
-            if type(resulting_score) in [float, np.float64, np.float32]:
-                self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], resulting_score)
-            else:
-                raise ValueError('Scoring function does not return a float.')
 
-        return [self.evaluated_individuals_[str(individual)] for individual in individuals]
+    def _update_pbar(self, pbar_num=1, pbar_msg=None, file=sys.stdout):
+        """Update self._pbar and error message during pipeline evaluration.
+
+        Parameters
+        ----------
+        pbar_num: int
+            How many pipelines has been processed
+        pbar_msg: None or string
+            Error message
+        file: io.TextIOWrapper or io.StringIO
+            Specifies where to output the progress messages (default: sys.stdout)
+
+        Returns
+        -------
+        None
+        """
+        if self.verbosity > 2 and pbar_msg is not None:
+            self._pbar.write(pbar_msg, file=file)
+        if not self._pbar.disable:
+            self._pbar.update(pbar_num)
+
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
@@ -1162,31 +1206,32 @@ class TPOTBase(BaseEstimator):
                 operator_count += 1
         return operator_count
 
-    def _update_pbar(self, val, resulting_score_list):
-        """Update self._pbar during pipeline evaluation.
+
+    def _update_val(self, val, result_score_list, file=sys.stdout):
+        """Update values in the list of result scores and self._pbar during pipeline evaluation.
 
         Parameters
         ----------
         val: float or "Timeout"
             CV scores
-        resulting_score_list: list
+        result_score_list: list
             A list of CV scores
+        file: io.TextIOWrapper or io.StringIO
+            Specifies where to output the progress messages (default: sys.stdout)
 
         Returns
         -------
-        resulting_score_list: list
+        result_score_list: list
             A updated list of CV scores
         """
-        if not self._pbar.disable:
-            self._pbar.update(1)
+        self._update_pbar()
         if val == 'Timeout':
-            if self.verbosity > 2:
-                self._pbar.write('Skipped pipeline #{0} due to time out. '
-                                 'Continuing to the next pipeline.'.format(self._pbar.n))
-            resulting_score_list.append(-float('inf'))
+            self._update_pbar(pbar_msg=('Skipped pipeline #{0} due to time out. '
+                             'Continuing to the next pipeline.'.format(self._pbar.n)), file=file)
+            result_score_list.append(-float('inf'))
         else:
-            resulting_score_list.append(val)
-        return resulting_score_list
+            result_score_list.append(val)
+        return result_score_list
 
     @_pre_test
     def _generate(self, pset, min_, max_, condition, type_=None):

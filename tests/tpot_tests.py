@@ -44,9 +44,22 @@ from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from deap import creator
 from deap.tools import ParetoFront
-from nose.tools import assert_raises, assert_not_equal, assert_greater_equal
+from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
 
 from tqdm import tqdm
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+# Ensure we can use `with closing(...) as ... :` syntax
+if getattr(StringIO, '__exit__', False) and \
+   getattr(StringIO, '__enter__', False):
+    def closing(arg):
+        return arg
+else:
+    from contextlib import closing
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -669,6 +682,132 @@ def test_evaluate_individuals():
         assert isinstance(deap_pipeline, creator.Individual)
         assert np.allclose(fitness_score[0], operator_count)
         assert np.allclose(fitness_score[1], mean_cv_scores)
+
+
+def test_update_pbar():
+    """Assert that _update_pbar updates self._pbar with printing correct warning message."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    # reset verbosity = 3 for checking pbar message
+    tpot_obj.verbosity = 3
+    with closing(StringIO()) as our_file:
+        tpot_obj._pbar = tqdm(total=10, disable=False, file=our_file)
+        tpot_obj._update_pbar(pbar_num=2, pbar_msg="Test Warning Message", file=our_file)
+        our_file.seek(0)
+        assert_in("Test Warning Message", our_file.read())
+        assert_equal(tpot_obj._pbar.n, 2)
+
+
+def test_update_val():
+    """Assert _update_val updates result score in list and prints timeout message."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    # reset verbosity = 3 for checking pbar message
+    tpot_obj.verbosity = 3
+    with closing(StringIO()) as our_file:
+        tpot_obj._pbar = tqdm(total=10, disable=False, file=our_file)
+        result_score_list = []
+        result_score_list = tpot_obj._update_val(0.9999, result_score_list, file=our_file)
+        assert_equal(result_score_list, [0.9999])
+        # check "Timeout"
+        result_score_list = tpot_obj._update_val("Timeout", result_score_list, file=our_file)
+        our_file.seek(0)
+        assert_in("Skipped pipeline #2 due to time out.", our_file.read())
+        assert_equal(result_score_list, [0.9999, -float('inf')])
+
+
+def test_preprocess_individuals():
+    """Assert _preprocess_individuals preprocess DEAP individuals including one evaluated individual"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0
+    )
+
+    pipeline_string_1 = (
+        'LogisticRegression(PolynomialFeatures'
+        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
+    )
+
+    # a normal pipeline
+    pipeline_string_2 = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5)'
+    )
+
+    individuals = []
+    individuals.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
+    individuals.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
+
+    # set pipeline 2 has been evaluated before
+    tpot_obj.evaluated_individuals_[pipeline_string_2] = (1, 0.99999)
+
+    # reset verbosity = 3 for checking pbar message
+    tpot_obj.verbosity = 3
+    with closing(StringIO()) as our_file:
+        tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
+        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+                                tpot_obj._preprocess_individuals(individuals, file=our_file)
+        our_file.seek(0)
+        assert_in("Pipeline encountered that has previously been evaluated", our_file.read())
+        assert_in(pipeline_string_1, eval_individuals_str)
+        assert_equal(operator_counts[pipeline_string_1], 2)
+        assert_equal(len(sklearn_pipeline_list), 1)
+
+
+def test_preprocess_individuals_2():
+    """Assert _preprocess_individuals preprocess DEAP individuals with one invalid pipeline"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0
+    )
+
+    # pipeline with two PolynomialFeatures operator
+    pipeline_string_1 = (
+        'LogisticRegression(PolynomialFeatures'
+        '(PolynomialFeatures(input_matrix, PolynomialFeatures__degree=2, '
+        'PolynomialFeatures__include_bias=False, PolynomialFeatures__interaction_only=False), '
+        'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
+    )
+
+    # a normal pipeline
+    pipeline_string_2 = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5)'
+    )
+
+    individuals = []
+    individuals.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
+    individuals.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
+
+    # reset verbosity = 3 for checking pbar message
+    tpot_obj.verbosity = 3
+    with closing(StringIO()) as our_file:
+        tpot_obj._pbar = tqdm(total=3, disable=False, file=our_file)
+        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+                                tpot_obj._preprocess_individuals(individuals, file=our_file)
+        our_file.seek(0)
+        assert_in("Invalid pipeline encountered. Skipping its evaluation.", our_file.read())
+        assert_in(pipeline_string_2, eval_individuals_str)
+        assert_equal(operator_counts[pipeline_string_2], 1)
+        assert_equal(len(sklearn_pipeline_list), 1)
 
 
 def test_imputer():
