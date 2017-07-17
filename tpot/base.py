@@ -1122,6 +1122,7 @@ class TPOTBase(BaseEstimator):
 
         return offspring, offspring2
 
+
     @_pre_test
     def _random_mutation_operator(self, individual, allow_shrink=True):
         """Perform a replacement, insertion, or shrink mutation on an individual.

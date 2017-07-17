@@ -38,6 +38,7 @@ from collections import defaultdict
 import warnings
 from stopit import threading_timeoutable, TimeoutException
 
+
 def pick_two_individuals_eligible_for_crossover(population):
     """Pick two individuals from the population which can do crossover, that is, they share a primitive.
 
@@ -72,6 +73,7 @@ def pick_two_individuals_eligible_for_crossover(population):
 
     return population[idx1], population[idx2]
 
+
 def mutate_random_individual(population, toolbox):
     """Picks a random individual from the population, and performs mutation on a copy of it.
 
@@ -90,6 +92,7 @@ def mutate_random_individual(population, toolbox):
     ind, = toolbox.mutate(ind)
     del ind.fitness.values
     return ind
+
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
