@@ -20,6 +20,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
+import pandas as pd
 import argparse
 from sklearn.model_selection import train_test_split
 
@@ -413,14 +414,13 @@ def _print_args(args):
 
 
 def _read_data_file(args):
-    input_data = np.recfromcsv(
+    input_data = pd.read_csv(
         args.INPUT_FILE,
-        delimiter=args.INPUT_SEPARATOR,
+        sep=args.INPUT_SEPARATOR,
         dtype=np.float64,
-        case_sensitive=True
     )
 
-    if args.TARGET_NAME not in input_data.dtype.names:
+    if args.TARGET_NAME not in input_data.columns.values:
         raise ValueError(
             'The provided data file does not seem to have a target column. '
             'Please make sure to specify the target column using the -target '
@@ -428,6 +428,7 @@ def _read_data_file(args):
         )
 
     return input_data
+
 
 def load_scoring_function(scoring_func):
     """
@@ -451,24 +452,22 @@ def load_scoring_function(scoring_func):
 
     return scoring_func
 
+
 def tpot_driver(args):
     """Perform a TPOT run."""
     if args.VERBOSITY >= 2:
         _print_args(args)
 
     input_data = _read_data_file(args)
-    features = np.delete(
-        input_data.view(np.float64).reshape(input_data.size, -1),
-        input_data.dtype.names.index(args.TARGET_NAME),
-        axis=1
-    )
+    features = input_data.drop(args.TARGET_NAME, axis=1).values
 
+    training_features, testing_features, training_target, testing_target = \
+        train_test_split(features, input_data[args.TARGET_NAME].values, random_state=args.RANDOM_STATE)
+
+    tpot_type = TPOTClassifier if args.TPOT_MODE == 'classification' else TPOTRegressor
 
     scoring_func = load_scoring_function(args.SCORING_FN)
 
-    training_features, testing_features, training_target, testing_target = \
-        train_test_split(features, input_data[args.TARGET_NAME], random_state=args.RANDOM_STATE)
-    tpot_type = TPOTClassifier if args.TPOT_MODE == 'classification' else TPOTRegressor
     tpot_obj = tpot_type(
         generations=args.GENERATIONS,
         population_size=args.POPULATION_SIZE,
