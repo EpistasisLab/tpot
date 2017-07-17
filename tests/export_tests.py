@@ -443,6 +443,17 @@ def test_imputer_in_export():
     features_with_nan[0][0] = float('nan')
 
     tpot_obj.fit(features_with_nan, training_target)
+    # use fixed pipeline since the random.seed() performs differently in python 2.* and 3.*
+    pipeline_string = (
+        'KNeighborsClassifier('
+        'input_matrix, '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+
     export_code = export_pipeline(tpot_obj._optimized_pipeline, tpot_obj.operators, tpot_obj._pset, tpot_obj._imputed)
 
     expected_code = """import numpy as np
@@ -462,11 +473,10 @@ imputer.fit(training_features)
 training_features = imputer.transform(training_features)
 testing_features = imputer.transform(testing_features)
 
-exported_pipeline = KNeighborsClassifier(n_neighbors=21, p=2, weights="distance")
+exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
 
-    print(export_code)
     assert_equal(export_code, expected_code)
