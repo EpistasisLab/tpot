@@ -983,15 +983,16 @@ class TPOTBase(BaseEstimator):
                 sklearn_pipeline_list.append(sklearn_pipeline)
 
         # Make the partial function that will be called below
-        partial_wrapped_cross_val_score = partial(_wrapped_cross_val_score,
-                                                    features=features,
-                                                    target=target,
-                                                    cv=self.cv,
-                                                    scoring_function=self.scoring_function,
-                                                    sample_weight=sample_weight,
-                                                    groups=groups,
-                                                    timeout=self.max_eval_time_seconds
-                                                    )
+        partial_wrapped_cross_val_score = partial(
+            _wrapped_cross_val_score,
+            features=features,
+            target=target,
+            cv=self.cv,
+            scoring_function=self.scoring_function,
+            sample_weight=sample_weight,
+            groups=groups,
+            timeout=self.max_eval_time_seconds
+            )
 
         resulting_score_list = []
         # Don't use parallelization if n_jobs==1
