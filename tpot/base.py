@@ -1092,7 +1092,7 @@ class TPOTBase(BaseEstimator):
         return operator_count
 
     def _update_pbar(self, val, resulting_score_list):
-        """Update self._pbar during pipeline evaluration.
+        """Update self._pbar during pipeline evaluation.
 
         Parameters
         ----------
