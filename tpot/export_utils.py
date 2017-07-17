@@ -51,7 +51,7 @@ def get_by_name(opname, operators):
     return ret_op_class
 
 
-def export_pipeline(exported_pipeline, operators, pset, pipeline_score=None):
+def export_pipeline(exported_pipeline, operators, pset, impute=False, pipeline_score=None):
     """Generate source code for a TPOT Pipeline.
 
     Parameters
@@ -73,7 +73,7 @@ def export_pipeline(exported_pipeline, operators, pset, pipeline_score=None):
     pipeline_tree = expr_to_tree(exported_pipeline, pset)
 
     # Have the exported code import all of the necessary modules and functions
-    pipeline_text = generate_import_code(exported_pipeline, operators)
+    pipeline_text = generate_import_code(exported_pipeline, operators, impute)
 
     pipeline_code = pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators))
 
@@ -88,6 +88,15 @@ tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dty
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_target, testing_target = \\
     train_test_split(features, tpot_data['class'], random_state=42)
+"""
+
+    # Add the imputation step if it was used by TPOT
+    if impute:
+        pipeline_text += """
+imputer = Imputer(strategy="median", axis=1)
+imputer.fit(training_features)
+training_features = imputer.transform(training_features)
+testing_features = imputer.transform(testing_features)
 """
 
     if pipeline_score is not None:
@@ -143,7 +152,7 @@ def expr_to_tree(ind, pset):
     return tree
 
 
-def generate_import_code(pipeline, operators):
+def generate_import_code(pipeline, operators, impute=False):
     """Generate all library import calls for use in TPOT.export().
 
     Parameters
@@ -152,6 +161,8 @@ def generate_import_code(pipeline, operators):
         List of operators in the current optimized pipeline
     operators:
         List of operator class from operator library
+    impute : bool
+        Whether to impute new values in the feature set.
 
     Returns
     -------
@@ -175,6 +186,10 @@ def generate_import_code(pipeline, operators):
 
     # Build dict of import requirments from list of operators
     import_relations = {op.__name__: op.import_hash for op in operators}
+
+    # Add the imputer if necessary
+    if impute:
+        pipeline_imports['sklearn.preprocessing'] = ['Imputer']
 
     # Build import dict from operators used
     for op in operators_used:

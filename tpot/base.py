@@ -222,6 +222,7 @@ class TPOTBase(BaseEstimator):
         self._exported_pipeline_text = ""
         self.fitted_pipeline_ = None
         self._fitted_imputer = None
+        self._imputed = False
         self._pop = []
         self.warm_start = warm_start
         self.population_size = population_size
@@ -478,7 +479,10 @@ class TPOTBase(BaseEstimator):
         self._fitted_imputer = None
 
         if np.any(np.isnan(features)):
+            self._imputed = True
             features = self._impute_values(features)
+        else:
+            self._imputed = False
 
         self._check_dataset(features, target)
 
@@ -577,7 +581,7 @@ class TPOTBase(BaseEstimator):
                     # Standard truthiness checks won't work for tqdm
                     if not isinstance(self._pbar, type(None)):
                         self._pbar.close()
-                        
+
                     self._update_top_pipeline(features, target)
                     break
 
@@ -586,7 +590,6 @@ class TPOTBase(BaseEstimator):
                     if attempt == (attempts - 1):
                         raise
             return self
-
 
     def _update_top_pipeline(self, features, target):
         """Helper function to update the _optimized_pipeline field.
@@ -637,7 +640,7 @@ class TPOTBase(BaseEstimator):
                     # Add an extra line of spacing if the progress bar was used
                     if self.verbosity >= 2:
                         print('')
-                    
+
                     optimized_pipeline_str = self.clean_pipeline_string(self._optimized_pipeline)
                     print('Best pipeline:', optimized_pipeline_str)
 
@@ -653,7 +656,6 @@ class TPOTBase(BaseEstimator):
             # If user passes CTRL+C in initial generation, self._pareto_front (halloffame) shoule be not updated yet.
             # need raise RuntimeError because no pipeline has been optimized
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
-
 
     def predict(self, features):
         """Use the optimized pipeline to predict the target for a feature set.
@@ -675,7 +677,10 @@ class TPOTBase(BaseEstimator):
         features = features.astype(np.float64)
 
         if np.any(np.isnan(features)):
+            self._imputed = True
             features = self._impute_values(features)
+        else:
+            self._imputed = False
 
         return self.fitted_pipeline_.predict(features)
 
@@ -769,10 +774,10 @@ class TPOTBase(BaseEstimator):
         Returns
         -------
         A string like str(individual), but with parameter prefixes removed.
-        
+
         """
         dirty_string = str(individual)
-        # There are many parameter prefixes in the pipeline strings, used solely for 
+        # There are many parameter prefixes in the pipeline strings, used solely for
         # making the terminal name unique, eg. LinearSVC__.
         parameter_prefixes = [(m.start(), m.end()) for m in re.finditer(', [\w]+__', dirty_string)]
         # We handle them in reverse so we do not mess up indices
@@ -832,7 +837,7 @@ class TPOTBase(BaseEstimator):
         if self._optimized_pipeline is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._optimized_pipeline_score)
+        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._imputed, self._optimized_pipeline_score)
 
         # dont export a pipeline you just had
         if skip_if_repeated and (self._exported_pipeline_text == to_write):
@@ -1022,7 +1027,7 @@ class TPOTBase(BaseEstimator):
             sample_weight=sample_weight,
             groups=groups,
             timeout=self.max_eval_time_seconds
-            )
+        )
 
         resulting_score_list = []
         # Don't use parallelization if n_jobs==1
@@ -1056,7 +1061,7 @@ class TPOTBase(BaseEstimator):
             if str(offspring) not in self.evaluated_individuals_:
                 # We only use the first offspring, so we do not care to check uniqueness of the second.
                 break
-        
+
         return offspring, offspring2
 
     @_pre_test
@@ -1089,7 +1094,7 @@ class TPOTBase(BaseEstimator):
         number_of_primitives = sum([isinstance(node, deap.gp.Primitive) for node in individual])
         if number_of_primitives > 1 and allow_shrink:
             mutation_techniques.append(partial(gp.mutShrink))
-        
+
         mutator = np.random.choice(mutation_techniques)
 
         unsuccesful_mutations = 0
@@ -1104,7 +1109,7 @@ class TPOTBase(BaseEstimator):
 
         # Sometimes you have pipelines for which every shrunk version has already been explored too.
         # To still mutate the individual, one of the two other mutators should be applied instead.
-        if ((unsuccesful_mutations == 50) and 
+        if ((unsuccesful_mutations == 50) and
            (type(mutator) is partial and mutator.func is gp.mutShrink)):
             offspring, = self._random_mutation_operator(individual, allow_shrink=False)
 
