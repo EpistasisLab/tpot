@@ -18,7 +18,6 @@ You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
-
 from __future__ import print_function
 import random
 import inspect
@@ -29,6 +28,7 @@ from functools import partial
 from datetime import datetime
 from multiprocessing import cpu_count
 import os
+import re
 
 import numpy as np
 import deap
@@ -82,9 +82,6 @@ if sys.platform.startswith('win'):
 
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
-
-    # dont save periodic pipelines more often than this
-    OUTPUT_BEST_PIPELINE_PERIOD_SECONDS = 30
 
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
@@ -233,6 +230,13 @@ class TPOTBase(BaseEstimator):
         self.max_eval_time_mins = max_eval_time_mins
         self.max_eval_time_seconds = max(int(self.max_eval_time_mins * 60), 1)
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
+
+        # dont save periodic pipelines more often than this
+        self._output_best_pipeline_period_seconds = 30
+
+        # Try crossover and mutation at most this many times for
+        # any one given individual (or pair of individuals)
+        self._max_mut_loops = 50
 
         # Set offspring_size equal to population_size by default
         if offspring_size:
@@ -573,7 +577,7 @@ class TPOTBase(BaseEstimator):
                     # Standard truthiness checks won't work for tqdm
                     if not isinstance(self._pbar, type(None)):
                         self._pbar.close()
-
+                        
                     self._update_top_pipeline(features, target)
                     break
 
@@ -633,7 +637,9 @@ class TPOTBase(BaseEstimator):
                     # Add an extra line of spacing if the progress bar was used
                     if self.verbosity >= 2:
                         print('')
-                    print('Best pipeline: {}'.format(self._optimized_pipeline))
+                    
+                    optimized_pipeline_str = self.clean_pipeline_string(self._optimized_pipeline)
+                    print('Best pipeline:', optimized_pipeline_str)
 
                 # Store and fit the entire Pareto front as fitted models for convenience
                 self.pareto_front_fitted_pipelines_ = {}
@@ -752,13 +758,37 @@ class TPOTBase(BaseEstimator):
 
         return self
 
+    def clean_pipeline_string(self, individual):
+        """Provide a string of the individual without the parameter prefixes.
+
+        Parameters
+        ----------
+        individual: individual
+            Individual which should be represented by a pretty string
+
+        Returns
+        -------
+        A string like str(individual), but with parameter prefixes removed.
+        
+        """
+        dirty_string = str(individual)
+        # There are many parameter prefixes in the pipeline strings, used solely for 
+        # making the terminal name unique, eg. LinearSVC__.
+        parameter_prefixes = [(m.start(), m.end()) for m in re.finditer(', [\w]+__', dirty_string)]
+        # We handle them in reverse so we do not mess up indices
+        pretty = dirty_string
+        for (start, end) in reversed(parameter_prefixes):
+            pretty = pretty[:start+2] + pretty[end:]
+
+        return pretty
+
     def _save_pipeline_if_period(self):
         """If enough time has passed, save a new optimized pipeline.
 
         Currently used in the per generation hook in the optimization loop.
         """
         total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
-        if total_since_last_pipeline_save > self.OUTPUT_BEST_PIPELINE_PERIOD_SECONDS:
+        if total_since_last_pipeline_save > self._output_best_pipeline_period_seconds:
             self._last_pipeline_write = datetime.now()
             self._save_periodic_pipeline()
 
@@ -1020,10 +1050,17 @@ class TPOTBase(BaseEstimator):
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
-        return cxOnePoint(ind1, ind2)
+        for _ in range(self._max_mut_loops):
+            ind1_copy, ind2_copy = self._toolbox.clone(ind1),self._toolbox.clone(ind2)
+            offspring, offspring2 = cxOnePoint(ind1_copy, ind2_copy)
+            if str(offspring) not in self.evaluated_individuals_:
+                # We only use the first offspring, so we do not care to check uniqueness of the second.
+                break
+        
+        return offspring, offspring2
 
     @_pre_test
-    def _random_mutation_operator(self, individual):
+    def _random_mutation_operator(self, individual, allow_shrink=True):
         """Perform a replacement, insertion, or shrink mutation on an individual.
 
         Parameters
@@ -1031,6 +1068,11 @@ class TPOTBase(BaseEstimator):
         individual: DEAP individual
             A list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
+
+        allow_shrink: bool (True)
+            If True the `mutShrink` operator, which randomly shrinks the pipeline,
+            is allowed to be chosen as one of the random mutation operators.
+            If False, `mutShrink`  will never be chosen as a mutation operator.
 
         Returns
         -------
@@ -1040,10 +1082,33 @@ class TPOTBase(BaseEstimator):
         """
         mutation_techniques = [
             partial(gp.mutInsert, pset=self._pset),
-            partial(mutNodeReplacement, pset=self._pset),
-            partial(gp.mutShrink)
+            partial(mutNodeReplacement, pset=self._pset)
         ]
-        return np.random.choice(mutation_techniques)(individual)
+
+        # We can't shrink pipelines with only one primitive, so we only add it if we find more primitives.
+        number_of_primitives = sum([isinstance(node, deap.gp.Primitive) for node in individual])
+        if number_of_primitives > 1 and allow_shrink:
+            mutation_techniques.append(partial(gp.mutShrink))
+        
+        mutator = np.random.choice(mutation_techniques)
+
+        unsuccesful_mutations = 0
+        for _ in range(self._max_mut_loops):
+            # We have to clone the individual because mutator operators work in-place.
+            ind = self._toolbox.clone(individual)
+            offspring, = mutator(ind)
+            if str(offspring) not in self.evaluated_individuals_:
+                break
+            else:
+                unsuccesful_mutations += 1
+
+        # Sometimes you have pipelines for which every shrunk version has already been explored too.
+        # To still mutate the individual, one of the two other mutators should be applied instead.
+        if ((unsuccesful_mutations == 50) and 
+           (type(mutator) is partial and mutator.func is gp.mutShrink)):
+            offspring, = self._random_mutation_operator(individual, allow_shrink=False)
+
+        return offspring,
 
     def _gen_grow_safe(self, pset, min_, max_, type_=None):
         """Generate an expression where each leaf might have a different depth between min_ and max_.
