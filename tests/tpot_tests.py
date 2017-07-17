@@ -1256,6 +1256,7 @@ def test_gen():
     assert len(pipeline) > 1
     assert pipeline[0].ret == Output_Array
 
+
 def test_clean_pipeline_string():
     """Assert that clean_pipeline_string correctly returns a string without parameter prefixes"""
 
