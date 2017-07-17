@@ -21,6 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tqdm import tqdm
 import numpy as np
+from os import remove, path
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
@@ -79,6 +80,20 @@ def test_export():
     """Assert that TPOT's export function throws a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
     assert_raises(RuntimeError, tpot_obj.export, "test_export.py")
+    pipeline_string = (
+        'KNeighborsClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+        'DecisionTreeClassifier__min_samples_split=5), ZeroCount(input_matrix))'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform'
+    )
+
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj._optimized_pipeline = pipeline
+    tpot_obj.export("test_export.py")
+    assert path.isfile("test_export.py")
+    remove("test_export.py") # clean up exported file
 
 
 def test_generate_pipeline_code():

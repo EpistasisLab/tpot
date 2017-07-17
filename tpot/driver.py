@@ -442,18 +442,17 @@ def load_scoring_function(scoring_func):
             sys.path.insert(0, module_path)
             scoring_func = getattr(import_module(module_name), func_name)
             sys.path.pop(0)
-            
+
             print('manual scoring function: {}'.format(scoring_func))
             print('taken from module: {}'.format(module_name))
         except Exception as e:
             print('failed importing custom scoring function, error: {}'.format(str(e)))
             raise ValueError(e)
-    
+
     return scoring_func
 
-def main():
+def tpot_driver(args):
     """Perform a TPOT run."""
-    args = _get_arg_parser().parse_args()
     if args.VERBOSITY >= 2:
         _print_args(args)
 
@@ -464,7 +463,7 @@ def main():
         axis=1
     )
 
-    
+
     scoring_func = load_scoring_function(args.SCORING_FN)
 
     training_features, testing_features, training_target, testing_target = \
@@ -511,6 +510,9 @@ def main():
     if args.OUTPUT_FILE != '':
         tpot_obj.export(args.OUTPUT_FILE)
 
+def main():
+    args = _get_arg_parser().parse_args()
+    tpot_driver(args)
 
 if __name__ == '__main__':
     main()
