@@ -265,14 +265,6 @@ Setting this parameter to higher values will allow TPOT to consider more complex
 Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
 </tr>
 <tr>
-<td>-config</td>
-<td>CONFIG_FILE</td>
-<td>File path or string</td>
-<td>A path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process.
-<br /><br />
-See the <a href="#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.</td>
-</tr>
-<tr>
 <td>-cf</td>
 <td>CHECKPOINT_FOLDER</td>
 <td>Folder path</td>
@@ -476,3 +468,47 @@ When using the command-line interface, the configuration file specified in the `
 For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/rhiever/tpot/blob/master/tpot/config/classifier.py) and [regression](https://github.com/rhiever/tpot/blob/master/tpot/config/regressor.py) in TPOT's source code.
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
+
+# Customizing TPOT's starting population
+
+TPOT allows for the initial population of pipelines to be seeded. This can be done either through the `population_seeds` parameter in the TPOT constructor, or through a `population_seeds` attribute in a custom config file.
+
+```Python
+population_seeds = [
+    'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
+    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
+]
+
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
+                      config_dict=tpot_config, population_seeds=population_seeds)
+```
+
+If specified through a config file, your config file would look like this:
+
+```Python
+tpot_config = {
+    'sklearn.naive_bayes.GaussianNB': {
+    },
+
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    },
+
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    }
+}
+
+population_seeds = [
+    'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
+    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
+]
+```
+
+As with `tpot_config`, when using a custom config file the seeds *must* have the standardized name of "population_seeds". It should only ever be a list of strings.
+
+If less seeds are provided than there are to be individuals in the entire population, then the remainder will be filled with random individuals.
+
+If the `population_seeds` parameter is provided along with seeds from a configuration file, the configuration file's seeds will take precedence.
