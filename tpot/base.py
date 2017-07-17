@@ -63,7 +63,9 @@ from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
 
+
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
+# https://github.com/ContinuumIO/anaconda-issues/issues/905
 if sys.platform.startswith('win'):
     import win32api
     try:
@@ -345,25 +347,27 @@ class TPOTBase(BaseEstimator):
         else:
             self.config_dict = self.default_config_dict
 
+
     def _read_config_file(self, config_path):
-        try:
-            custom_config = imp.new_module('custom_config')
+        if os.path.isfile(config_path):
+            try:
+                custom_config = imp.new_module('custom_config')
 
-            with open(config_path, 'r') as config_file:
-                file_string = config_file.read()
-                exec(file_string, custom_config.__dict__)
-
-            return custom_config
-        except FileNotFoundError as e:
-            raise FileNotFoundError(
+                with open(config_path, 'r') as config_file:
+                    file_string = config_file.read()
+                    exec(file_string, custom_config.__dict__)
+                return custom_config
+            except Exception as e:
+                raise ValueError(
+                    'An error occured while attempting to read the specified '
+                    'custom TPOT operator configuration file: {}'.format(e)
+                )
+        else:
+            raise ValueError(
                 'Could not open specified TPOT operator config file: '
-                '{}'.format(e.filename)
+                '{}'.format(config_path)
             )
-        except Exception as e:
-            raise type(e)(
-                'An error occured while attempting to read the specified '
-                'custom TPOT operator configuration file.'
-            )
+
 
     def _setup_pop(self, population_seeds, config_path):
         """If the population_seeds are specified, use them as the starting population."""
@@ -623,12 +627,12 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
             if not self._optimized_pipeline:
-                print('There was an error in the TPOT optimization '
-                      'process. This could be because the data was '
-                      'not formatted properly, or because data for '
-                      'a regression problem was provided to the '
-                      'TPOTClassifier object. Please make sure you '
-                      'passed the data to TPOT correctly.')
+                raise RuntimeError('There was an error in the TPOT optimization '
+                                  'process. This could be because the data was '
+                                  'not formatted properly, or because data for '
+                                  'a regression problem was provided to the '
+                                  'TPOTClassifier object. Please make sure you '
+                                  'passed the data to TPOT correctly.')
             else:
                 self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
 
@@ -684,7 +688,7 @@ class TPOTBase(BaseEstimator):
 
         return self.fitted_pipeline_.predict(features)
 
-    def fit_predict(self, features, target):
+    def fit_predict(self, features, target, sample_weight=None, groups=None):
         """Call fit and predict in sequence.
 
         Parameters
@@ -693,6 +697,12 @@ class TPOTBase(BaseEstimator):
             Feature matrix
         target: array-like {n_samples}
             List of class labels for prediction
+        sample_weight: array-like {n_samples}, optional
+            Per-sample weights. Higher weights force TPOT to put more emphasis on those points
+        groups: array-like, with shape {n_samples, }, optional
+            Group labels for the samples used when performing cross-validation.
+            This parameter should only be used in conjunction with sklearn's Group cross-validation
+            functions, such as sklearn.model_selection.GroupKFold
 
         Returns
         ----------
@@ -700,7 +710,7 @@ class TPOTBase(BaseEstimator):
             Predicted target for the provided features
 
         """
-        self.fit(features, target)
+        self.fit(features, target, sample_weight=sample_weight, groups=groups)
         return self.predict(features)
 
     def score(self, testing_features, testing_target):

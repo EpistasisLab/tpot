@@ -128,7 +128,7 @@ def test_init_default_scoring_2():
     assert tpot_obj.scoring_function == 'balanced_accuracy'
 
 
-def test_invaild_score_warning():
+def test_invalid_score_warning():
     """Assert that the TPOT intitializes raises a ValueError when the scoring metrics is not available in SCORERS."""
     # Mis-spelled scorer
     assert_raises(ValueError, TPOTClassifier, scoring='balanced_accuray')
@@ -136,7 +136,7 @@ def test_invaild_score_warning():
     TPOTClassifier(scoring='balanced_accuracy')
 
 
-def test_invaild_dataset_warning():
+def test_invalid_dataset_warning():
     """Assert that the TPOT fit function raises a ValueError when dataset is not in right format."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -150,7 +150,7 @@ def test_invaild_dataset_warning():
     assert_raises(ValueError, tpot_obj.fit, training_features, bad_training_target)
 
 
-def test_invaild_subsample_ratio_warning():
+def test_invalid_subsample_ratio_warning():
     """Assert that the TPOT intitializes raises a ValueError when subsample ratio is not in the range (0.0, 1.0]."""
     # Invalid ratio
     assert_raises(ValueError, TPOTClassifier, subsample=0.0)
@@ -158,7 +158,7 @@ def test_invaild_subsample_ratio_warning():
     TPOTClassifier(subsample=0.1)
 
 
-def test_invaild_mut_rate_plus_xo_rate():
+def test_invalid_mut_rate_plus_xo_rate():
     """Assert that the TPOT intitializes raises a ValueError when the sum of crossover and mutation probabilities is large than 1."""
     # Invalid ratio
     assert_raises(ValueError, TPOTClassifier, mutation_rate=0.8, crossover_rate=0.8)
@@ -210,6 +210,29 @@ def test_timeout():
                                             groups=None,
                                             timeout=1)
     assert return_value == "Timeout"
+
+
+def test_invalid_pipeline():
+    """Assert that _wrapped_cross_val_score return -float(\'inf\') with a invalid_pipeline"""
+    tpot_obj = TPOTClassifier()
+    # a invalid pipeline
+    # Dual or primal formulation. Dual formulation is only implemented for l2 penalty.
+    pipeline_string = (
+        'LogisticRegression(input_matrix,  LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=True, LogisticRegression__penalty=l1)'
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    # test _wrapped_cross_val_score with cv=20 so that it is impossible to finish in 1 second
+    return_value = _wrapped_cross_val_score(tpot_obj.fitted_pipeline_,
+                                            training_features,
+                                            training_target,
+                                            cv=5,
+                                            scoring_function='accuracy',
+                                            sample_weight=None,
+                                            groups=None,
+                                            timeout=300)
+    assert return_value == -float('inf')
 
 
 def test_balanced_accuracy():
@@ -310,7 +333,6 @@ def test_conf_dict_3():
     assert isinstance(tpot_obj.config_dict, dict)
     assert tpot_obj.config_dict == tested_config_dict
 
-
 def test_conf_dict_4():
     """Assert that TPOT uses seeds from custom dictionary as the starting population."""
     tpot_obj = TPOTRegressor(config_dict='tests/test_config.py', generations=1, population_size=10)
@@ -327,11 +349,33 @@ def test_conf_dict_5():
     assert len(tpot_obj._pop) == n_seeds
 
 
+def test_read_config_file():
+    """Assert that _read_config_file rasie FileNotFoundError with a wrong path."""
+    tpot_obj = TPOTRegressor()
+    # typo for "tests/test_config.py"
+    assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_confg.py")
+
+
+def test_read_config_file_2():
+    """Assert that _read_config_file rasie ValueError with wrong dictionary format"""
+    tpot_obj = TPOTRegressor()
+    assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_config.py.bad")
+
+
 def test_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline with same random seed."""
     tpot_obj = TPOTClassifier(random_state=43)
     pipeline1 = str(tpot_obj._toolbox.individual())
     tpot_obj = TPOTClassifier(random_state=43)
+    pipeline2 = str(tpot_obj._toolbox.individual())
+    assert pipeline1 == pipeline2
+
+
+def test_random_ind_2():
+    """Assert that the TPOTRegressor can generate the same pipeline with same random seed."""
+    tpot_obj = TPOTRegressor(random_state=43)
+    pipeline1 = str(tpot_obj._toolbox.individual())
+    tpot_obj = TPOTRegressor(random_state=43)
     pipeline2 = str(tpot_obj._toolbox.individual())
     assert pipeline1 == pipeline2
 
@@ -590,8 +634,25 @@ def test_fit3():
     assert not (tpot_obj._start_datetime is None)
 
 
+def test_fit_predict():
+    """Assert that the TPOT fit_predict function provides an optimized pipeline and correct output."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    result = tpot_obj.fit_predict(training_features, training_target)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+    assert result.shape == (training_features.shape[0],)
+
+
 def test_update_top_pipeline():
-    """Assert that the TPOT _update_top_pipeline updated an optimized pipeline"""
+    """Assert that the TPOT _update_top_pipeline updated an optimized pipeline."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -610,7 +671,7 @@ def test_update_top_pipeline():
 
 
 def test_update_top_pipeline_2():
-    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._pareto_front is empty"""
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._pareto_front is empty."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -625,6 +686,25 @@ def test_update_top_pipeline_2():
         return np.allclose(ind1.fitness.values, ind2.fitness.values)
 
     tpot_obj._pareto_front = ParetoFront(similar=pareto_eq)
+
+    assert_raises(RuntimeError, tpot_obj._update_top_pipeline, features=training_features, target=training_target)
+
+
+def test_update_top_pipeline_3():
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._optimized_pipeline is not updated."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    tpot_obj._optimized_pipeline = None
+    # reset the fitness score to -float('inf')
+    for pipeline_scores in reversed(tpot_obj._pareto_front.keys):
+        pipeline_scores.wvalues = (5000., -float('inf'))
 
     assert_raises(RuntimeError, tpot_obj._update_top_pipeline, features=training_features, target=training_target)
 
@@ -946,7 +1026,7 @@ def test_pick_two_individuals_eligible_for_crossover():
 
     pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1, ind2, ind3])
     assert ((str(pick1) == str(ind1) and str(pick2) == str(ind2)) or
-             str(pick1) == str(ind2) and str(pick2) == str(ind1))  
+             str(pick1) == str(ind2) and str(pick2) == str(ind1))
 
     ind4 = creator.Individual.from_string(
         'KNeighborsClassifier('
@@ -957,8 +1037,8 @@ def test_pick_two_individuals_eligible_for_crossover():
         ')',
         tpot_obj._pset
     )
-    
-    # Eventhough ind4 does not have the same primitive at the root, the tree shares a primitive with ind1 
+
+    # Eventhough ind4 does not have the same primitive at the root, the tree shares a primitive with ind1
     pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1, ind3, ind4])
     assert ((str(pick1) == str(ind1) and str(pick2) == str(ind4)) or
              str(pick1) == str(ind4) and str(pick2) == str(ind1))
@@ -1050,6 +1130,6 @@ def test_clean_pipeline_string():
     without_prefix = 'BernoulliNB(input_matrix, alpha=1.0, fit_prior=True)'
     tpot_obj = TPOTClassifier()
     ind1 = creator.Individual.from_string(with_prefix, tpot_obj._pset)
-    
+
     pretty_string = tpot_obj.clean_pipeline_string(ind1)
     assert pretty_string == without_prefix
