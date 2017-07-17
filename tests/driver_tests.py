@@ -29,6 +29,7 @@ except ImportError:
     from io import StringIO
 
 import numpy as np
+import pandas as pd
 
 from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, _read_data_file, load_scoring_function, tpot_driver
 from nose.tools import assert_raises, assert_equal, assert_in
@@ -207,7 +208,7 @@ def test_read_data_file():
     args = _get_arg_parser().parse_args(args_list)
     input_data = _read_data_file(args)
 
-    assert isinstance(input_data, np.recarray)
+    assert isinstance(input_data, pd.DataFrame)
 
 
 class ParserTest(TestCase):
