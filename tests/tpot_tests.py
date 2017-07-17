@@ -709,6 +709,60 @@ def test_update_top_pipeline_3():
     assert_raises(RuntimeError, tpot_obj._update_top_pipeline, features=training_features, target=training_target)
 
 
+def test_set_param_recursive():
+    """Assert that _set_param_recursive sets \"random_state\" to 42 in all steps in a simple pipeline."""
+    pipeline_string = (
+        'DecisionTreeClassifier(PCA(input_matrix, PCA__iterated_power=5, PCA__svd_solver=randomized), '
+        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
+    )
+    tpot_obj = TPOTClassifier()
+    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+    # assert "random_state" of PCA at step 1
+    assert getattr(sklearn_pipeline.steps[0][1], 'random_state') == 42
+    # assert "random_state" of DecisionTreeClassifier at step 2
+    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
+
+
+def test_set_param_recursive_2():
+    """Assert that _set_param_recursive sets \"random_state\" to 42 in nested estimator in SelectFromModel."""
+    pipeline_string = (
+        'DecisionTreeRegressor(SelectFromModel(input_matrix, '
+        'SelectFromModel__ExtraTreesRegressor__max_features=0.05, SelectFromModel__ExtraTreesRegressor__n_estimators=100, '
+        'SelectFromModel__threshold=0.05), DecisionTreeRegressor__max_depth=8,'
+        'DecisionTreeRegressor__min_samples_leaf=5, DecisionTreeRegressor__min_samples_split=5)'
+    )
+    tpot_obj = TPOTRegressor()
+    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+
+    assert getattr(getattr(sklearn_pipeline.steps[0][1], 'estimator'), 'random_state') == 42
+    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
+
+
+def test_set_param_recursive_3():
+    """Assert that _set_param_recursive sets \"random_state\" to 42 in nested estimator in StackingEstimator in a complex pipeline."""
+    pipeline_string = (
+        'DecisionTreeClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, DecisionTreeClassifier__min_samples_leaf=5,'
+        'DecisionTreeClassifier__min_samples_split=5),input_matrix) '
+        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
+    )
+    tpot_obj = TPOTClassifier()
+    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+
+    # StackingEstimator under the transformer_list of FeatureUnion
+    assert getattr(getattr(sklearn_pipeline.steps[0][1].transformer_list[0][1], 'estimator'), 'random_state') == 42
+    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
+
+
 def test_evaluated_individuals_():
     """Assert that evaluated_individuals_ stores current pipelines and their CV scores."""
     tpot_obj = TPOTClassifier(
