@@ -370,7 +370,7 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     if tmp_it.isAlive():
         resulting_score = 'Timeout'
     else:
-        resulting_score = np.mean(tmp_it.result)
+        resulting_score = np.nanmean(tmp_it.result)
 
     tmp_it.stop()
     return resulting_score
