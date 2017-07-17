@@ -21,16 +21,10 @@ NumPy, SciPy, and scikit-learn can be installed in Anaconda via the command:
 conda install numpy scipy scikit-learn
 ```
 
-DEAP, update_checker, tqdm and stopit can be installed with `pip` via the command:
+DEAP, update_checker and tqdm can be installed with `pip` via the command:
 
 ```Shell
-pip install deap update_checker tqdm stopit
-```
-
-**For the Windows users**, the pywin32 module is required if Python is NOT installed via the [Anaconda Python distribution](https://www.continuum.io/downloads) and can be installed with `pip`:
-
-```Shell
-pip install pywin32
+pip install deap update_checker tqdm
 ```
 
 **Optionally**, you can install [XGBoost](https://github.com/dmlc/xgboost) if you would like TPOT to use the eXtreme Gradient Boosting models. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.

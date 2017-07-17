@@ -36,7 +36,7 @@ from sklearn.model_selection._split import check_cv
 from sklearn.base import clone, is_classifier
 from collections import defaultdict
 import warnings
-from stopit import threading_timeoutable, TimeoutException
+from multiprocessing import Process, Pipe
 
 def pick_two_individuals_eligible_for_crossover(population):
     """Pick two individuals from the population which can do crossover, that is, they share a primitive.
@@ -372,10 +372,57 @@ def mutNodeReplacement(individual, pset):
             individual[slice_] = new_subtree
     return individual,
 
+def _fit_score(sklearn_pipeline, features, target, cv_iter, cv, scorer, _conn, sample_weight_dict=None):
+    """
+    Fit estimator and compute scores for a given dataset split.
+    Parameters
+    ----------
+    sklearn_pipeline : pipeline object implementing 'fit'
+        The object to use to fit the data.
+    features : array-like of shape at least 2D
+        The data to fit.
+    target : array-like, optional, default: None
+        The target variable to try to predict in the case of
+        supervised learning.
+    cv_iter : list
+        Train and test datasets. Store it as list as we will be iterating
+        over the list multiple times
+    cv: int or cross-validation generator
+        If CV is a number, then it is the number of folds to evaluate each
+        pipeline over in k-fold cross-validation during the TPOT optimization
+         process. If it is an object then it is an object to be used as a
+         cross-validation generator.
+    scorer : callable
+        A scorer callable object / function with signature
+        ``scorer(estimator, X, y)``.
+    _conn : multiprocessing.Pipe object
+        Calling process
+    sample_weight_dict : dictionary, optional
+        dictionary of sample weights to balance (or un-balanace) the dataset target as neede
+    """
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
+                                    X=features,
+                                    y=target,
+                                    scorer=scorer,
+                                    train=train,
+                                    test=test,
+                                    verbose=0,
+                                    parameters=None,
+                                    fit_params=sample_weight_dict)
+                                for train, test in cv_iter]
+            CV_score = np.array(scores)[:, 0]
+            rval = np.mean(CV_score)
+    except Exception as e:
+        rval = -float('inf')
 
-@threading_timeoutable(default="Timeout")
+    # return the result to calling process
+    _conn.send(rval)
+
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
-                             cv, scoring_function, sample_weight=None, groups=None):
+                             cv, scoring_function, sample_weight=None, groups=None, timeout=300):
     """Fit estimator and compute scores for a given dataset split.
     Parameters
     ----------
@@ -398,7 +445,15 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         List of sample weights to balance (or un-balanace) the dataset target as needed
     groups: array-like {n_samples, }, optional
         Group labels for the samples used while splitting the dataset into train/test set
+    timeout: int, optional
+        Time limits (seconds) of evalurating a pipeline
+
+    Returns
+    ----------
+    fn_rval[1]: str or float
+        Average CV score
     """
+
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
 
     features, target, groups = indexable(features, target, groups)
@@ -407,22 +462,22 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     cv_iter = list(cv.split(features, target, groups))
     scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
 
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
-                                    X=features,
-                                    y=target,
-                                    scorer=scorer,
-                                    train=train,
-                                    test=test,
-                                    verbose=0,
-                                    parameters=None,
-                                    fit_params=sample_weight_dict)
-                                for train, test in cv_iter]
-            CV_score = np.array(scores)[:, 0]
-            return np.mean(CV_score)
-    except TimeoutException:
-        return "Timeout"
-    except Exception as e:
-        return -float('inf')
+    conn1, conn2 = Pipe()
+    th = Process(target=_fit_score, args=(sklearn_pipeline,
+                                            features,
+                                            target,
+                                            cv_iter,
+                                            cv,
+                                            scorer,
+                                            conn2,
+                                            sample_weight_dict))
+    th.start()
+    if conn1.poll(timeout):
+        fn_rval = conn1.recv()
+        th.join()
+    else:
+        th.terminate()
+        th.join()
+        fn_rval = 'Timeout'
+
+    return fn_rval
