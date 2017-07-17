@@ -23,7 +23,7 @@ from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
-from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover
+from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint
 from tpot.metrics import balanced_accuracy
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 
@@ -1062,6 +1062,7 @@ def test_PolynomialFeatures_exception():
     known_scores = [(2, 0.98068077235290885), (5000.0, -float('inf'))]
     assert np.allclose(known_scores, fitness_scores)
 
+
 def test_pick_two_individuals_eligible_for_crossover():
     """Assert that pick_two_individuals_eligible_for_crossover() picks the correct pair of nodes to perform crossover with"""
     tpot_obj = TPOTClassifier()
@@ -1097,6 +1098,7 @@ def test_pick_two_individuals_eligible_for_crossover():
     assert ((str(pick1) == str(ind1) and str(pick2) == str(ind4)) or
              str(pick1) == str(ind4) and str(pick2) == str(ind1))
 
+
 def test_pick_two_individuals_eligible_for_crossover_bad():
     """Assert that pick_two_individuals_eligible_for_crossover() returns the right output when no pair is eligible"""
     tpot_obj = TPOTClassifier()
@@ -1124,6 +1126,83 @@ def test_pick_two_individuals_eligible_for_crossover_bad():
     # You can not do crossover with a population of 0.
     pick1, pick2 = pick_two_individuals_eligible_for_crossover([])
     assert pick1 is None and pick2 is None
+
+
+def test_mate_operator():
+    """Assert that self._mate_operator returns offsprings as expected."""
+    tpot_obj = TPOTClassifier()
+    ind1 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+    ind2 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=2, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+
+    # set as evaluated pipelines in tpot_obj.evaluated_individuals_
+    tpot_obj.evaluated_individuals_[str(ind1)] = (2, 0.99)
+    tpot_obj.evaluated_individuals_[str(ind2)] = (2, 0.99)
+
+    offspring1, offspring2 = tpot_obj._mate_operator(ind1, ind2)
+    expected_offspring1 = (
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False), '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=2, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
+    expected_offspring1_alt = (
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True), '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
+    assert str(offspring1) in [expected_offspring1, expected_offspring1_alt]
+
+
+def test_cxOnePoint():
+    """Assert that cxOnePoint() returns the correct type of node between two fixed pipelines."""
+    tpot_obj = TPOTClassifier()
+    ind1 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+    ind2 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=2, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+    ind1[0].ret = Output_Array
+    ind2[0].ret = Output_Array
+    ind1_copy, ind2_copy = tpot_obj._toolbox.clone(ind1),tpot_obj._toolbox.clone(ind2)
+    offspring1, offspring2 = cxOnePoint(ind1_copy, ind2_copy)
+
+    assert offspring1[0].ret == Output_Array
+    assert offspring2[0].ret == Output_Array
+
 
 def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
@@ -1176,6 +1255,7 @@ def test_gen():
 
     assert len(pipeline) > 1
     assert pipeline[0].ret == Output_Array
+
 
 def test_clean_pipeline_string():
     """Assert that clean_pipeline_string correctly returns a string without parameter prefixes"""
