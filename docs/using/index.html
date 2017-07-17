@@ -80,6 +80,9 @@
     <li class="toctree-l2"><a href="#customizing-tpots-operators-and-parameters">Customizing TPOT's operators and parameters</a></li>
     
 
+    <li class="toctree-l2"><a href="#customizing-tpots-starting-population">Customizing TPOT's starting population</a></li>
+    
+
     </ul>
 	    </li>
           
@@ -378,14 +381,6 @@ Setting this parameter to higher values will allow TPOT to consider more complex
 Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
 </tr>
 <tr>
-<td>-config</td>
-<td>CONFIG_FILE</td>
-<td>File path or string</td>
-<td>A path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process.
-<br /><br />
-See the <a href="#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.</td>
-</tr>
-<tr>
 <td>-cf</td>
 <td>CHECKPOINT_FOLDER</td>
 <td>Folder path</td>
@@ -576,6 +571,42 @@ tpot.export('tpot_mnist_pipeline.py')
 <p>When using the command-line interface, the configuration file specified in the <code>-config</code> parameter <em>must</em> name its custom TPOT configuration <code>tpot_config</code>. Otherwise, TPOT will not be able to locate the configuration dictionary.</p>
 <p>For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for <a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier.py">classification</a> and <a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor.py">regression</a> in TPOT's source code.</p>
 <p>Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.</p>
+<h1 id="customizing-tpots-starting-population">Customizing TPOT's starting population</h1>
+<p>TPOT allows for the initial population of pipelines to be seeded. This can be done either through the <code>population_seeds</code> parameter in the TPOT constructor, or through a <code>population_seeds</code> attribute in a custom config file.</p>
+<pre><code class="Python">population_seeds = [
+    'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
+    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
+]
+
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
+                      config_dict=tpot_config, population_seeds=population_seeds)
+</code></pre>
+
+<p>If specified through a config file, your config file would look like this:</p>
+<pre><code class="Python">tpot_config = {
+    'sklearn.naive_bayes.GaussianNB': {
+    },
+
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    },
+
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    }
+}
+
+population_seeds = [
+    'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
+    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
+]
+</code></pre>
+
+<p>As with <code>tpot_config</code>, when using a custom config file the seeds <em>must</em> have the standardized name of "population_seeds". It should only ever be a list of strings.</p>
+<p>If less seeds are provided than there are to be individuals in the entire population, then the remainder will be filled with random individuals.</p>
+<p>If the <code>population_seeds</code> parameter is provided along with seeds from a configuration file, the configuration file's seeds will take precedence.</p>
               
             </div>
           </div>
