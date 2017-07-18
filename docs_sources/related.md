@@ -20,27 +20,33 @@ Other automated machine-learning tools:
 <td>An automated machine learning toolkit and a drop-in replacement for a scikit-learn estimator.</td>
 </tr>
 <tr>
-<td><a href="https://github.com/joeddav/devol">devol</a></td>
-<td>Python</td>
-<td>MIT</td>
-<td>Automated deep neural network design via genetic programming.</td>
-</tr>
-<tr>
-<td><a href="https://github.com/reiinakano/xcessiv">Xcessiv</a></td>
-<td>Python</td>
-<td>Apache-2.0</td>
-<td>A web-based application for quick, scalable, and automated hyper-parameter tuning and stacked ensembling in Python.</td>
-</tr>
-<tr>
 <td><a href="https://github.com/ClimbsRocks/auto_ml">auto_ml</a></td>
 <td>Python</td>
 <td>MIT</td>
 <td>Automated machine learning for analytics & production. Supports manual feature type declarations.</td>
 </tr>
 <tr>
+<td><a href="https://github.com/joeddav/devol">devol</a></td>
+<td>Python</td>
+<td>MIT</td>
+<td>Automated deep neural network design via genetic programming.</td>
+</tr>
+<tr>
 <td><a href="https://github.com/AxeldeRomblay/MLBox">MLBox</a></td>
 <td>Python</td>
 <td>BSD-3-Clause</td>
 <td>Accurate hyper-parameter optimization in high-dimensional space with support for distributed computing.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/RecipeML/Recipe">Recipe</a></td>
+<td>C</td>
+<td>GPL-v3</td>
+<td>Machine-learning pipeline optimization through genetic programming. Uses grammars to define pipeline structure.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/reiinakano/xcessiv">Xcessiv</a></td>
+<td>Python</td>
+<td>Apache-2.0</td>
+<td>A web-based application for quick, scalable, and automated hyper-parameter tuning and stacked ensembling in Python.</td>
 </tr>
 </table>
