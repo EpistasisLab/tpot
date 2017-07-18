@@ -398,6 +398,23 @@ def test_get_by_name():
     assert get_by_name("SelectPercentile", tpot_obj.operators).__class__ == TPOTSelectPercentile.__class__
 
 
+def test_get_by_name_2():
+    """Assert that get_by_name raises TypeError with a incorrect operator name"""
+    tpot_obj = TPOTClassifier()
+    assert_raises(TypeError, get_by_name, "RandomForestRegressor", tpot_obj.operators)
+    # with correct name
+    ret_op_class = get_by_name("RandomForestClassifier", tpot_obj.operators)
+
+
+def test_get_by_name_3():
+    """Assert that get_by_name raises ValueError with duplicate operators in operator dictionary."""
+    tpot_obj = TPOTClassifier()
+    ret_op_class = get_by_name("SelectPercentile", tpot_obj.operators)
+    # add a copy of TPOTSelectPercentile into operator list
+    tpot_obj.operators.append(TPOTSelectPercentile)
+    assert_raises(ValueError, get_by_name, "SelectPercentile", tpot_obj.operators)
+
+
 def test_indent():
     """Assert that indenting a multiline string by 4 spaces prepends 4 spaces before each new line."""
     multiline_string = """test
