@@ -377,12 +377,14 @@ def test_random_ind_2():
     pipeline1 = str(tpot_obj._toolbox.individual())
     tpot_obj = TPOTRegressor(random_state=43)
     pipeline2 = str(tpot_obj._toolbox.individual())
+    
     assert pipeline1 == pipeline2
 
 
 def test_score():
     """Assert that the TPOT score function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
+
     assert_raises(RuntimeError, tpot_obj.score, testing_features, testing_target)
 
 
@@ -499,12 +501,14 @@ def test_fit_GroupKFold():
         cv=GroupKFold(n_splits=2),
     )
     tpot_obj.fit(training_features, training_target, groups=groups)
+
     assert_greater_equal(tpot_obj.score(testing_features, testing_target), 0.97)
 
 
 def test_predict():
     """Assert that the TPOT predict function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
+
     assert_raises(RuntimeError, tpot_obj.predict, testing_features)
 
 
@@ -549,7 +553,7 @@ def test_predict_proba():
     assert result.shape == (testing_features.shape[0], num_labels)
 
 
-def test_predict_proba2():
+def test_predict_proba_2():
     """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)."""
     tpot_obj = TPOTClassifier()
     pipeline_string = (
@@ -570,6 +574,29 @@ def test_predict_proba2():
     for i in range(rows):
         for j in range(columns):
             float_range(result[i][j])
+
+
+def test_predict_proba_3():
+    """Assert that the TPOT predict_proba function raises a RuntimeError when no optimized pipeline exists."""
+    tpot_obj = TPOTClassifier()
+
+    assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
+
+
+def test_predict_proba_4():
+    """Assert that the TPOT predict_proba function raises a RuntimeError when the optimized pipeline do not have the predict_proba() function"""
+    tpot_obj = TPOTRegressor()
+    pipeline_string = (
+        "ExtraTreesRegressor(input_matrix, "
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)"
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r)
+
+    assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
 
 
 def test_warm_start():
