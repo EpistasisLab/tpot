@@ -45,6 +45,7 @@ from sklearn.model_selection import train_test_split, cross_val_score, GroupKFol
 from deap import creator
 from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
+from driver_tests import captured_output
 
 from tqdm import tqdm
 
@@ -377,7 +378,7 @@ def test_random_ind_2():
     pipeline1 = str(tpot_obj._toolbox.individual())
     tpot_obj = TPOTRegressor(random_state=43)
     pipeline2 = str(tpot_obj._toolbox.individual())
-    
+
     assert pipeline1 == pipeline2
 
 
@@ -991,7 +992,7 @@ def test_imputer():
     tpot_obj.fit(features_with_nan, training_target)
 
 
-def test_imputer2():
+def test_imputer_2():
     """Assert that the TPOT predict function will not raise a ValueError in a dataset where NaNs are present."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -1008,20 +1009,22 @@ def test_imputer2():
     tpot_obj.predict(features_with_nan)
 
 
-def test_imputer3():
+def test_imputer_3():
     """Assert that the TPOT _impute_values function returns a feature matrix with imputed NaN values."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
         offspring_size=2,
         generations=1,
-        verbosity=0,
+        verbosity=2,
         config_dict='TPOT light'
     )
     features_with_nan = np.copy(training_features)
     features_with_nan[0][0] = float('nan')
+    with captured_output() as (out, err):
+        imputed_features = tpot_obj._impute_values(features_with_nan)
+        assert_in("Imputing missing values in feature set", out.getvalue())
 
-    imputed_features = tpot_obj._impute_values(features_with_nan)
     assert_not_equal(imputed_features[0][0], float('nan'))
 
 

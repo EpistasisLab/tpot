@@ -1205,6 +1205,7 @@ class TPOTBase(BaseEstimator):
 
         return self._generate(pset, min_, max_, condition, type_)
 
+
     def _operator_count(self, individual):
         """Count the number of pipeline operators as a measure of pipeline complexity.
 
