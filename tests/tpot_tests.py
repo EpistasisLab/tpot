@@ -39,6 +39,10 @@ import numpy as np
 import inspect
 import random
 from multiprocessing import cpu_count
+import os
+from re import search
+from datetime import datetime
+from time import sleep
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
@@ -630,7 +634,7 @@ def test_fit():
     assert not (tpot_obj._start_datetime is None)
 
 
-def test_fit2():
+def test_fit_2():
     """Assert that the TPOT fit function provides an optimized pipeline when config_dict is 'TPOT light'."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -646,7 +650,7 @@ def test_fit2():
     assert not (tpot_obj._start_datetime is None)
 
 
-def test_fit3():
+def test_fit_3():
     """Assert that the TPOT fit function provides an optimized pipeline with subsample is 0.8."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -654,12 +658,105 @@ def test_fit3():
         offspring_size=2,
         generations=1,
         subsample=0.8,
-        verbosity=0
+        verbosity=0,
+        config_dict='TPOT light'
     )
     tpot_obj.fit(training_features, training_target)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
+
+
+def test_save_pipeline_if_period():
+    """Assert that the _save_pipeline_if_period exports periodic pipeline."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.1)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './'
+        tpot_obj._save_pipeline_if_period(training_features, training_target)
+        our_file.seek(0)
+
+        assert_in('Saving best periodic pipeline to ./pipeline', our_file.read())
+        # clean up
+        for f in os.listdir('./'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./', f))
+
+
+def test_save_pipeline_if_period_2():
+    """Assert that the _save_pipeline_if_period does not export periodic pipeline if the pipeline has been saved before."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.1)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './'
+        # export once before
+        tpot_obj.export('./pipeline_test.py')
+        tpot_obj._save_pipeline_if_period(training_features, training_target)
+        our_file.seek(0)
+
+        assert_in('Periodic pipeline was not saved, probably saved before...', our_file.read())
+        # clean up
+        for f in os.listdir('./'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./', f))
+
+
+def test_save_pipeline_if_period_3():
+    """Assert that the _save_pipeline_if_period does not export periodic pipeline if exception happened"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.1)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './'
+        # reset _optimized_pipeline
+        tpot_obj._optimized_pipeline = None
+        # reset pipeline_scores in tpot_obj._pareto_front to cause exception
+        for pipeline_scores in reversed(tpot_obj._pareto_front.keys):
+            pipeline_scores.wvalues = (5000., -float('inf'))
+
+        tpot_obj._save_pipeline_if_period(training_features, training_target)
+        our_file.seek(0)
+
+        assert_in('Failed saving periodic pipeline, exception', our_file.read())
+        # clean up
+        for f in os.listdir('./'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./', f))
 
 
 def test_fit_predict():

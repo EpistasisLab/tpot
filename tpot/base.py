@@ -567,7 +567,7 @@ class TPOTBase(BaseEstimator):
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
                     max_time_mins=self.max_time_mins,
-                    per_generation_function=self._save_pipeline_if_period
+                    per_generation_function=partial(self._save_pipeline_if_period, features=features, target=target)
                 )
 
             # store population for the next call
@@ -691,6 +691,7 @@ class TPOTBase(BaseEstimator):
 
         return self.fitted_pipeline_.predict(features)
 
+
     def fit_predict(self, features, target, sample_weight=None, groups=None):
         """Call fit and predict in sequence.
 
@@ -715,6 +716,7 @@ class TPOTBase(BaseEstimator):
         """
         self.fit(features, target, sample_weight=sample_weight, groups=groups)
         return self.predict(features)
+
 
     def score(self, testing_features, testing_target):
         """Return the score on the given testing data using the user-specified scoring function.
@@ -744,6 +746,7 @@ class TPOTBase(BaseEstimator):
         )
         return abs(score)
 
+
     def predict_proba(self, features):
         """Use the optimized pipeline to estimate the class probabilities for a feature set.
 
@@ -765,6 +768,7 @@ class TPOTBase(BaseEstimator):
                 raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
             return self.fitted_pipeline_.predict_proba(features.astype(np.float64))
 
+
     def set_params(self, **params):
         """Set the parameters of TPOT.
 
@@ -775,6 +779,7 @@ class TPOTBase(BaseEstimator):
         self.__init__(**params)
 
         return self
+
 
     def clean_pipeline_string(self, individual):
         """Provide a string of the individual without the parameter prefixes.
@@ -801,7 +806,7 @@ class TPOTBase(BaseEstimator):
         return pretty
 
 
-    def _save_pipeline_if_period(self):
+    def _save_pipeline_if_period(self, features, target):
         """If enough time has passed, save a new optimized pipeline.
 
         Currently used in the per generation hook in the optimization loop.
@@ -809,28 +814,22 @@ class TPOTBase(BaseEstimator):
         total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
         if total_since_last_pipeline_save > self._output_best_pipeline_period_seconds:
             self._last_pipeline_write = datetime.now()
-            self._save_periodic_pipeline()
+            self._save_periodic_pipeline(features, target)
 
 
-    def _save_periodic_pipeline(self):
+    def _save_periodic_pipeline(self, features, target):
         if self.periodic_checkpoint_folder is not None:
             try:
-                print_func = self._pbar.write if not self._pbar.disable else print
-
-                self._update_top_pipeline()
-
+                self._update_top_pipeline(features, target)
                 filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
-
-                if self.verbosity >= 2:
-                    print_func('saving best periodic pipeline to {}'.format(filename))
+                
                 did_export = self.export(filename, skip_if_repeated=True)
-
                 if not did_export:
-                    if self.verbosity >= 2:
-                        print_func('periodic pipeline was not saved, probably saved before...')
+                    self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
+                else:
+                    self._update_pbar(pbar_num=0, pbar_msg='Saving best periodic pipeline to {}'.format(filename))
             except Exception as e:
-                if self.verbosity >= 2:
-                    print_func('failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
+                self._update_pbar(pbar_num=0, pbar_msg='Failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
 
 
     def export(self, output_file_name, skip_if_repeated=False):
