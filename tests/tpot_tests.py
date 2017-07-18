@@ -828,8 +828,9 @@ def test_update_pbar():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=10, disable=False, file=our_file)
-        tpot_obj._update_pbar(pbar_num=2, pbar_msg="Test Warning Message", file=our_file)
+        tpot_obj._update_pbar(pbar_num=2, pbar_msg="Test Warning Message")
         our_file.seek(0)
         assert_in("Test Warning Message", our_file.read())
         assert_equal(tpot_obj._pbar.n, 2)
@@ -845,12 +846,13 @@ def test_update_val():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=10, disable=False, file=our_file)
         result_score_list = []
-        result_score_list = tpot_obj._update_val(0.9999, result_score_list, file=our_file)
+        result_score_list = tpot_obj._update_val(0.9999, result_score_list)
         assert_equal(result_score_list, [0.9999])
         # check "Timeout"
-        result_score_list = tpot_obj._update_val("Timeout", result_score_list, file=our_file)
+        result_score_list = tpot_obj._update_val("Timeout", result_score_list)
         our_file.seek(0)
         assert_in("Skipped pipeline #2 due to time out.", our_file.read())
         assert_equal(result_score_list, [0.9999, -float('inf')])
@@ -890,9 +892,10 @@ def test_preprocess_individuals():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
         operator_counts, eval_individuals_str, sklearn_pipeline_list = \
-                                tpot_obj._preprocess_individuals(individuals, file=our_file)
+                                tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
         assert_in("Pipeline encountered that has previously been evaluated", our_file.read())
         assert_in(pipeline_string_1, eval_individuals_str)
@@ -934,9 +937,10 @@ def test_preprocess_individuals_2():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=3, disable=False, file=our_file)
         operator_counts, eval_individuals_str, sklearn_pipeline_list = \
-                                tpot_obj._preprocess_individuals(individuals, file=our_file)
+                                tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
         assert_in("Invalid pipeline encountered. Skipping its evaluation.", our_file.read())
         assert_in(pipeline_string_2, eval_individuals_str)
