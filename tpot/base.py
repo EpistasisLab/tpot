@@ -1108,10 +1108,11 @@ class TPOTBase(BaseEstimator):
         -------
         None
         """
-        if self.verbosity > 2 and pbar_msg is not None:
-            self._pbar.write(pbar_msg, file=self._file)
-        if not self._pbar.disable:
-            self._pbar.update(pbar_num)
+        if not isinstance(self._pbar, type(None)):
+            if self.verbosity > 2 and pbar_msg is not None:
+                self._pbar.write(pbar_msg, file=self._file)
+            if not self._pbar.disable:
+                self._pbar.update(pbar_num)
 
 
     @_pre_test

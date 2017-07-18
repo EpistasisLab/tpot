@@ -89,7 +89,7 @@ def _pre_test(func):
                     e=e
                 )
                 # Use the pbar output stream if it's active
-                self._update_pbar.write(pbar_num=0, pbar_msg=message)
+                self._update_pbar(pbar_num=0, pbar_msg=message)
             finally:
                 num_test += 1
 
