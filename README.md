@@ -3,7 +3,7 @@ Master status: [![Master Build Status - Mac/Linux](https://travis-ci.org/rhiever
 [![Master Code Health](https://landscape.io/github/rhiever/tpot/master/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/master)
 [![Master Coverage Status](https://coveralls.io/repos/github/rhiever/tpot/badge.svg?branch=master)](https://coveralls.io/github/rhiever/tpot?branch=master)
 
-Development status: [![Development Build Status - Mac/Windows](https://travis-ci.org/rhiever/tpot.svg?branch=development)](https://travis-ci.org/rhiever/tpot/branches)
+Development status: [![Development Build Status - Mac/Linux](https://travis-ci.org/rhiever/tpot.svg?branch=development)](https://travis-ci.org/rhiever/tpot/branches)
 [![Development Build Status - Windows](https://ci.appveyor.com/api/projects/status/fgylout0lxddt0my/branch/development?svg=true)](https://ci.appveyor.com/project/rhiever/tpot?branch=development)
 [![Development Code Health](https://landscape.io/github/rhiever/tpot/development/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/development)
 [![Development Coverage Status](https://coveralls.io/repos/github/rhiever/tpot/badge.svg?branch=development)](https://coveralls.io/github/rhiever/tpot?branch=development)
