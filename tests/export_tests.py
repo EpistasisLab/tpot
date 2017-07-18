@@ -138,6 +138,58 @@ def test_generate_pipeline_code():
     assert expected_code == generate_pipeline_code(pipeline, tpot_obj.operators)
 
 
+def test_generate_pipeline_code_2():
+    """Assert that generate_pipeline_code() returns the correct code given a specific pipeline with two CombineDFs."""
+    tpot_obj = TPOTClassifier()
+    pipeline = [
+        'KNeighborsClassifier',
+        [
+            'CombineDFs',
+            [
+                'GradientBoostingClassifier',
+                'input_matrix',
+                38.0,
+                5,
+                5,
+                5,
+                0.05,
+                0.5],
+            [
+                'CombineDFs',
+                [
+                    'MinMaxScaler',
+                    'input_matrix'
+                ],
+                ['ZeroCount',
+                    [
+                        'MaxAbsScaler',
+                        'input_matrix'
+                    ]
+                ]
+            ]
+        ],
+        18,
+        'uniform',
+        2
+    ]
+
+    expected_code = """make_pipeline(
+    make_union(
+        StackingEstimator(estimator=GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, n_estimators=0.5)),
+        make_union(
+            MinMaxScaler(),
+            make_pipeline(
+                MaxAbsScaler(),
+                ZeroCount()
+            )
+        )
+    ),
+    KNeighborsClassifier(n_neighbors=18, p="uniform", weights=2)
+)"""
+
+    assert expected_code == generate_pipeline_code(pipeline, tpot_obj.operators)
+
+
 def test_generate_import_code():
     """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline."""
     tpot_obj = TPOTClassifier()
