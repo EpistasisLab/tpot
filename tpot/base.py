@@ -822,7 +822,7 @@ class TPOTBase(BaseEstimator):
             try:
                 self._update_top_pipeline(features, target)
                 filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
-                
+
                 did_export = self.export(filename, skip_if_repeated=True)
                 if not did_export:
                     self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
@@ -956,6 +956,14 @@ class TPOTBase(BaseEstimator):
                 setattr(obj, parameter, value)
 
 
+    def _stop_by_max_time_mins(self):
+        """Stop optimization process once maximum minutes have elapsed."""
+        if self.max_time_mins:
+            total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
+            if total_mins_elapsed >= self.max_time_mins:
+                raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
+
+
     def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
 
@@ -980,10 +988,7 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
-        if self.max_time_mins:
-            total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
-            if total_mins_elapsed >= self.max_time_mins:
-                raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
+        self._stop_by_max_time_mins()
 
         operator_counts, eval_individuals_str, sklearn_pipeline_list = self._preprocess_individuals(individuals)
 
