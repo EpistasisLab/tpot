@@ -151,8 +151,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
-                   stats=None, halloffame=None, verbose=0, max_time_mins=None,
-                   per_generation_function=None):
+                   stats=None, halloffame=None, verbose=0, per_generation_function=None):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
@@ -225,11 +224,9 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
-        # update pbar for valid_ind
+        # update pbar for valid individuals (with fitness values)
         if not pbar.disable:
             pbar.update(len(offspring)-len(invalid_ind))
-            if not (max_time_mins is None) and pbar.n >= pbar.total:
-                pbar.total += lambda_
 
         fitnesses = toolbox.evaluate(invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):

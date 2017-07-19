@@ -1079,12 +1079,9 @@ def test_preprocess_individuals_2():
         verbosity=0
     )
 
-    # pipeline with two PolynomialFeatures operator
     pipeline_string_1 = (
         'LogisticRegression(PolynomialFeatures'
-        '(PolynomialFeatures(input_matrix, PolynomialFeatures__degree=2, '
-        'PolynomialFeatures__include_bias=False, PolynomialFeatures__interaction_only=False), '
-        'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
         'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
         'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
     )
@@ -1115,6 +1112,52 @@ def test_preprocess_individuals_2():
         assert_in(pipeline_string_2, eval_individuals_str)
         assert_equal(operator_counts[pipeline_string_2], 1)
         assert_equal(len(sklearn_pipeline_list), 1)
+
+def test_preprocess_individuals_3():
+    """Assert _preprocess_individuals updatas self._pbar.total when max_time_mins is not None"""
+    tpot_obj = TPOTClassifier(
+        population_size=2,
+        offspring_size=4,
+        random_state=42,
+        max_time_mins=5,
+        verbosity=0
+    )
+
+    # pipeline with two PolynomialFeatures operator
+    pipeline_string_1 = (
+        'LogisticRegression(PolynomialFeatures'
+        '(PolynomialFeatures(input_matrix, PolynomialFeatures__degree=2, '
+        'PolynomialFeatures__include_bias=False, PolynomialFeatures__interaction_only=False), '
+        'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
+    )
+
+    # a normal pipeline
+    pipeline_string_2 = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5)'
+    )
+
+    individuals = []
+    individuals.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
+    individuals.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
+
+    # reset verbosity = 3 for checking pbar message
+
+    with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
+        tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
+        tpot_obj._pbar.n = 2
+        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+                                tpot_obj._preprocess_individuals(individuals)
+        assert tpot_obj._pbar.total == 6
+
+
 
 
 def test_imputer():
@@ -1434,7 +1477,7 @@ def test_varOr():
 
     offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=1.0, mutpb=0.0)
     invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-    
+
     assert len(offspring) == 5
     assert len(invalid_ind) == 5
 

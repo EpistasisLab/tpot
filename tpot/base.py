@@ -566,7 +566,6 @@ class TPOTBase(BaseEstimator):
                     pbar=self._pbar,
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
-                    max_time_mins=self.max_time_mins,
                     per_generation_function=partial(self._save_pipeline_if_period, features=features, target=target)
                 )
 
@@ -1045,6 +1044,9 @@ class TPOTBase(BaseEstimator):
         sklearn_pipeline_list: list
             a list of scikit-learn pipelines converted from DEAP individuals for evaluation
         """
+        # update self._pbar.total
+        if not (self.max_time_mins is None) and not self._pbar.disable and self._pbar.total <= self._pbar.n:
+            self._pbar.total += self.offspring_size
         # Check we do not evaluate twice the same individual in one pass.
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
