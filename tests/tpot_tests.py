@@ -1102,9 +1102,12 @@ def test_preprocess_individuals_2():
         verbosity=0
     )
 
+    # pipeline with two PolynomialFeatures operator
     pipeline_string_1 = (
         'LogisticRegression(PolynomialFeatures'
-        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        '(PolynomialFeatures(input_matrix, PolynomialFeatures__degree=2, '
+        'PolynomialFeatures__include_bias=False, PolynomialFeatures__interaction_only=False), '
+        'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
         'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
         'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
     )
@@ -1131,6 +1134,7 @@ def test_preprocess_individuals_2():
         operator_counts, eval_individuals_str, sklearn_pipeline_list = \
                                 tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
+
         assert_in("Invalid pipeline encountered. Skipping its evaluation.", our_file.read())
         assert_in(pipeline_string_2, eval_individuals_str)
         assert_equal(operator_counts[pipeline_string_2], 1)
@@ -1147,12 +1151,9 @@ def test_preprocess_individuals_3():
         verbosity=0
     )
 
-    # pipeline with two PolynomialFeatures operator
     pipeline_string_1 = (
         'LogisticRegression(PolynomialFeatures'
-        '(PolynomialFeatures(input_matrix, PolynomialFeatures__degree=2, '
-        'PolynomialFeatures__include_bias=False, PolynomialFeatures__interaction_only=False), '
-        'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
         'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
         'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
     )
@@ -1516,7 +1517,6 @@ def test_varOr_2():
     pop = tpot_obj._toolbox.population(n=5)
     for ind in pop:
         ind.fitness.values = (2, 1.0)
-        print(type(ind.fitness.values))
 
     offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=0.0, mutpb=1.0)
     invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
