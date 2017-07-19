@@ -683,9 +683,7 @@ def test_fit_4():
     tpot_obj.generations == 100
 
     tpot_obj.fit(training_features, training_target)
-    total_mins_elapsed = (datetime.now() - tpot_obj._start_datetime).total_seconds() / 60.
-    # allow two seconds more
-    assert total_mins_elapsed < 4/60.
+    
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
 
