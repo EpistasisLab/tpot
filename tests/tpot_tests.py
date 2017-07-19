@@ -23,7 +23,7 @@ from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
-from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint
+from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr
 from tpot.metrics import balanced_accuracy
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 
@@ -1417,6 +1417,66 @@ def test_mutNodeReplacement():
             assert diff_prims[0].ret == diff_prims[1].ret
 
         assert mut_ind[0][0].ret == Output_Array
+
+
+def test_varOr():
+    """Assert that varOr() applys crossover only and removes CV scores in offsprings."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=5)
+    for ind in pop:
+        ind.fitness.values = (2, 1.0)
+
+    offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=1.0, mutpb=0.0)
+
+    assert len(offspring) == 5
+    for ind in offspring:
+        assert not ind.fitness.values
+
+
+def test_varOr_2():
+    """Assert that varOr() applys mutation only and removes CV scores in offsprings."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=5)
+    for ind in pop:
+        ind.fitness.values = (2, 1.0)
+
+    offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=0.0, mutpb=1.0)
+
+    assert len(offspring) == 5
+    for ind in offspring:
+        assert not ind.fitness.values
+
+
+def test_varOr_3():
+    """Assert that varOr() applys reproduction only and does NOT remove CV scores in offsprings."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=5)
+    for ind in pop:
+        ind.fitness.values = (2, 1.0)
+
+    offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=0.0, mutpb=0.0)
+
+    assert len(offspring) == 5
+    for ind in offspring:
+        assert ind.fitness.values
 
 
 def test_operator_type():
