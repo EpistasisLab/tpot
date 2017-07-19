@@ -1379,33 +1379,6 @@ def test_cxOnePoint():
     assert offspring2[0].ret == Output_Array
 
 
-def test_cxOnePoint_2():
-    """Assert that cxOnePoint() return the same individuals if one of individuals only has one operators"""
-    tpot_obj = TPOTClassifier()
-    ind1 = creator.Individual.from_string(
-        'KNeighborsClassifier(input_matrix '
-        'KNeighborsClassifier__n_neighbors=10, '
-        'KNeighborsClassifier__p=1, '
-        'KNeighborsClassifier__weights=uniform'
-        ')',
-        tpot_obj._pset
-    )
-    ind2 = creator.Individual.from_string(
-        'KNeighborsClassifier('
-        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True),'
-        'KNeighborsClassifier__n_neighbors=10, '
-        'KNeighborsClassifier__p=2, '
-        'KNeighborsClassifier__weights=uniform'
-        ')',
-        tpot_obj._pset
-    )
-
-    offspring1, offspring2 = cxOnePoint(ind1, ind2)
-
-    assert offspring1 == ind1
-    assert offspring2 == ind2
-
-
 def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
     tpot_obj = TPOTClassifier()
