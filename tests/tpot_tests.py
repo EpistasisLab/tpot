@@ -1434,6 +1434,7 @@ def test_varOr():
 
     offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=1.0, mutpb=0.0)
     invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+    
     assert len(offspring) == 5
     assert len(invalid_ind) == 5
 
@@ -1454,6 +1455,7 @@ def test_varOr_2():
 
     offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=0.0, mutpb=1.0)
     invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+
     assert len(offspring) == 5
     assert len(invalid_ind) == 5
 
@@ -1473,6 +1475,7 @@ def test_varOr_3():
 
     offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=0.0, mutpb=0.0)
     invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+
     assert len(offspring) == 5
     assert len(invalid_ind) == 0
 
