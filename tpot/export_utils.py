@@ -43,8 +43,8 @@ def get_by_name(opname, operators):
     if len(ret_op_classes) == 0:
         raise TypeError('Cannot found operator {} in operator dictionary'.format(opname))
     elif len(ret_op_classes) > 1:
-        print(
-            'Found multiple operator {} in operator dictionary. Please check '
+        raise ValueError(
+            'Found duplicate operators {} in operator dictionary. Please check '
             'your dictionary file.'.format(opname)
         )
     ret_op_class = ret_op_classes[0]

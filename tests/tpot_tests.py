@@ -39,12 +39,17 @@ import numpy as np
 import inspect
 import random
 from multiprocessing import cpu_count
+import os
+from re import search
+from datetime import datetime
+from time import sleep
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from deap import creator
 from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
+from driver_tests import captured_output
 
 from tqdm import tqdm
 
@@ -377,12 +382,14 @@ def test_random_ind_2():
     pipeline1 = str(tpot_obj._toolbox.individual())
     tpot_obj = TPOTRegressor(random_state=43)
     pipeline2 = str(tpot_obj._toolbox.individual())
+
     assert pipeline1 == pipeline2
 
 
 def test_score():
     """Assert that the TPOT score function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
+
     assert_raises(RuntimeError, tpot_obj.score, testing_features, testing_target)
 
 
@@ -499,12 +506,14 @@ def test_fit_GroupKFold():
         cv=GroupKFold(n_splits=2),
     )
     tpot_obj.fit(training_features, training_target, groups=groups)
+
     assert_greater_equal(tpot_obj.score(testing_features, testing_target), 0.97)
 
 
 def test_predict():
     """Assert that the TPOT predict function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
+
     assert_raises(RuntimeError, tpot_obj.predict, testing_features)
 
 
@@ -549,7 +558,7 @@ def test_predict_proba():
     assert result.shape == (testing_features.shape[0], num_labels)
 
 
-def test_predict_proba2():
+def test_predict_proba_2():
     """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)."""
     tpot_obj = TPOTClassifier()
     pipeline_string = (
@@ -570,6 +579,29 @@ def test_predict_proba2():
     for i in range(rows):
         for j in range(columns):
             float_range(result[i][j])
+
+
+def test_predict_proba_3():
+    """Assert that the TPOT predict_proba function raises a RuntimeError when no optimized pipeline exists."""
+    tpot_obj = TPOTClassifier()
+
+    assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
+
+
+def test_predict_proba_4():
+    """Assert that the TPOT predict_proba function raises a RuntimeError when the optimized pipeline do not have the predict_proba() function"""
+    tpot_obj = TPOTRegressor()
+    pipeline_string = (
+        "ExtraTreesRegressor(input_matrix, "
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)"
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r)
+
+    assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
 
 
 def test_warm_start():
@@ -602,7 +634,7 @@ def test_fit():
     assert not (tpot_obj._start_datetime is None)
 
 
-def test_fit2():
+def test_fit_2():
     """Assert that the TPOT fit function provides an optimized pipeline when config_dict is 'TPOT light'."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -618,7 +650,7 @@ def test_fit2():
     assert not (tpot_obj._start_datetime is None)
 
 
-def test_fit3():
+def test_fit_3():
     """Assert that the TPOT fit function provides an optimized pipeline with subsample is 0.8."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -626,12 +658,105 @@ def test_fit3():
         offspring_size=2,
         generations=1,
         subsample=0.8,
-        verbosity=0
+        verbosity=0,
+        config_dict='TPOT light'
     )
     tpot_obj.fit(training_features, training_target)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
+
+
+def test_save_pipeline_if_period():
+    """Assert that the _save_pipeline_if_period exports periodic pipeline."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.1)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './'
+        tpot_obj._save_pipeline_if_period(training_features, training_target)
+        our_file.seek(0)
+
+        assert_in('Saving best periodic pipeline to ./pipeline', our_file.read())
+        # clean up
+        for f in os.listdir('./'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./', f))
+
+
+def test_save_pipeline_if_period_2():
+    """Assert that the _save_pipeline_if_period does not export periodic pipeline if the pipeline has been saved before."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.1)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './'
+        # export once before
+        tpot_obj.export('./pipeline_test.py')
+        tpot_obj._save_pipeline_if_period(training_features, training_target)
+        our_file.seek(0)
+
+        assert_in('Periodic pipeline was not saved, probably saved before...', our_file.read())
+        # clean up
+        for f in os.listdir('./'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./', f))
+
+
+def test_save_pipeline_if_period_3():
+    """Assert that the _save_pipeline_if_period does not export periodic pipeline if exception happened"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.1)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './'
+        # reset _optimized_pipeline
+        tpot_obj._optimized_pipeline = None
+        # reset pipeline_scores in tpot_obj._pareto_front to cause exception
+        for pipeline_scores in reversed(tpot_obj._pareto_front.keys):
+            pipeline_scores.wvalues = (5000., -float('inf'))
+
+        tpot_obj._save_pipeline_if_period(training_features, training_target)
+        our_file.seek(0)
+
+        assert_in('Failed saving periodic pipeline, exception', our_file.read())
+        # clean up
+        for f in os.listdir('./'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./', f))
 
 
 def test_fit_predict():
@@ -828,8 +953,9 @@ def test_update_pbar():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=10, disable=False, file=our_file)
-        tpot_obj._update_pbar(pbar_num=2, pbar_msg="Test Warning Message", file=our_file)
+        tpot_obj._update_pbar(pbar_num=2, pbar_msg="Test Warning Message")
         our_file.seek(0)
         assert_in("Test Warning Message", our_file.read())
         assert_equal(tpot_obj._pbar.n, 2)
@@ -845,12 +971,13 @@ def test_update_val():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=10, disable=False, file=our_file)
         result_score_list = []
-        result_score_list = tpot_obj._update_val(0.9999, result_score_list, file=our_file)
+        result_score_list = tpot_obj._update_val(0.9999, result_score_list)
         assert_equal(result_score_list, [0.9999])
         # check "Timeout"
-        result_score_list = tpot_obj._update_val("Timeout", result_score_list, file=our_file)
+        result_score_list = tpot_obj._update_val("Timeout", result_score_list)
         our_file.seek(0)
         assert_in("Skipped pipeline #2 due to time out.", our_file.read())
         assert_equal(result_score_list, [0.9999, -float('inf')])
@@ -890,9 +1017,10 @@ def test_preprocess_individuals():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
         operator_counts, eval_individuals_str, sklearn_pipeline_list = \
-                                tpot_obj._preprocess_individuals(individuals, file=our_file)
+                                tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
         assert_in("Pipeline encountered that has previously been evaluated", our_file.read())
         assert_in(pipeline_string_1, eval_individuals_str)
@@ -934,9 +1062,10 @@ def test_preprocess_individuals_2():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=3, disable=False, file=our_file)
         operator_counts, eval_individuals_str, sklearn_pipeline_list = \
-                                tpot_obj._preprocess_individuals(individuals, file=our_file)
+                                tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
         assert_in("Invalid pipeline encountered. Skipping its evaluation.", our_file.read())
         assert_in(pipeline_string_2, eval_individuals_str)
@@ -960,7 +1089,7 @@ def test_imputer():
     tpot_obj.fit(features_with_nan, training_target)
 
 
-def test_imputer2():
+def test_imputer_2():
     """Assert that the TPOT predict function will not raise a ValueError in a dataset where NaNs are present."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -977,20 +1106,22 @@ def test_imputer2():
     tpot_obj.predict(features_with_nan)
 
 
-def test_imputer3():
+def test_imputer_3():
     """Assert that the TPOT _impute_values function returns a feature matrix with imputed NaN values."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
         offspring_size=2,
         generations=1,
-        verbosity=0,
+        verbosity=2,
         config_dict='TPOT light'
     )
     features_with_nan = np.copy(training_features)
     features_with_nan[0][0] = float('nan')
+    with captured_output() as (out, err):
+        imputed_features = tpot_obj._impute_values(features_with_nan)
+        assert_in("Imputing missing values in feature set", out.getvalue())
 
-    imputed_features = tpot_obj._impute_values(features_with_nan)
     assert_not_equal(imputed_features[0][0], float('nan'))
 
 
@@ -1202,6 +1333,33 @@ def test_cxOnePoint():
 
     assert offspring1[0].ret == Output_Array
     assert offspring2[0].ret == Output_Array
+
+
+def test_cxOnePoint_2():
+    """Assert that cxOnePoint() return the same individuals if one of individuals only has one operators"""
+    tpot_obj = TPOTClassifier()
+    ind1 = creator.Individual.from_string(
+        'KNeighborsClassifier(input_matrix '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+    ind2 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=2, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+
+    offspring1, offspring2 = cxOnePoint(ind1, ind2)
+
+    assert offspring1 == ind1
+    assert offspring2 == ind2
 
 
 def test_mutNodeReplacement():

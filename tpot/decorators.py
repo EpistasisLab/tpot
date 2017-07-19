@@ -83,15 +83,13 @@ def _pre_test(func):
                             sklearn_pipeline.fit(pretest_X_reg, pretest_y_reg)
                         bad_pipeline = False
             except BaseException as e:
-                if self.verbosity > 2:
-                    message = '_pre_test decorator: {fname}: num_test={n} {e}'.format(
-                        n=num_test,
-                        fname=func.__name__,
-                        e=e
-                    )
-                    # Use the pbar output stream if it's active
-                    if not isinstance(self._pbar, type(None)):
-                        self._pbar.write(message)
+                message = '_pre_test decorator: {fname}: num_test={n} {e}'.format(
+                    n=num_test,
+                    fname=func.__name__,
+                    e=e
+                )
+                # Use the pbar output stream if it's active
+                self._update_pbar(pbar_num=0, pbar_msg=message)
             finally:
                 num_test += 1
 

@@ -285,6 +285,9 @@ class TPOTBase(BaseEstimator):
             'copy': copy
         }
         self._pbar = None
+        # Specifies where to output the progress messages (default: sys.stdout).
+        # Maybe open this API in future version of TPOT.(io.TextIOWrapper or io.StringIO)
+        self._file = sys.stdout
 
         # Dictionary of individuals that have already been evaluated in previous
         # generations
@@ -564,7 +567,7 @@ class TPOTBase(BaseEstimator):
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
                     max_time_mins=self.max_time_mins,
-                    per_generation_function=self._save_pipeline_if_period
+                    per_generation_function=partial(self._save_pipeline_if_period, features=features, target=target)
                 )
 
             # store population for the next call
@@ -574,8 +577,8 @@ class TPOTBase(BaseEstimator):
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit):
             if self.verbosity > 0:
-                self._pbar.write('')
-                self._pbar.write('TPOT closed prematurely. Will use the current best pipeline.')
+                self._pbar.write('', file=self._file)
+                self._pbar.write('TPOT closed prematurely. Will use the current best pipeline.', file=self._file)
         finally:
             # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
             attempts = 10
@@ -688,6 +691,7 @@ class TPOTBase(BaseEstimator):
 
         return self.fitted_pipeline_.predict(features)
 
+
     def fit_predict(self, features, target, sample_weight=None, groups=None):
         """Call fit and predict in sequence.
 
@@ -712,6 +716,7 @@ class TPOTBase(BaseEstimator):
         """
         self.fit(features, target, sample_weight=sample_weight, groups=groups)
         return self.predict(features)
+
 
     def score(self, testing_features, testing_target):
         """Return the score on the given testing data using the user-specified scoring function.
@@ -741,6 +746,7 @@ class TPOTBase(BaseEstimator):
         )
         return abs(score)
 
+
     def predict_proba(self, features):
         """Use the optimized pipeline to estimate the class probabilities for a feature set.
 
@@ -762,6 +768,7 @@ class TPOTBase(BaseEstimator):
                 raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
             return self.fitted_pipeline_.predict_proba(features.astype(np.float64))
 
+
     def set_params(self, **params):
         """Set the parameters of TPOT.
 
@@ -772,6 +779,7 @@ class TPOTBase(BaseEstimator):
         self.__init__(**params)
 
         return self
+
 
     def clean_pipeline_string(self, individual):
         """Provide a string of the individual without the parameter prefixes.
@@ -797,7 +805,8 @@ class TPOTBase(BaseEstimator):
 
         return pretty
 
-    def _save_pipeline_if_period(self):
+
+    def _save_pipeline_if_period(self, features, target):
         """If enough time has passed, save a new optimized pipeline.
 
         Currently used in the per generation hook in the optimization loop.
@@ -805,27 +814,23 @@ class TPOTBase(BaseEstimator):
         total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
         if total_since_last_pipeline_save > self._output_best_pipeline_period_seconds:
             self._last_pipeline_write = datetime.now()
-            self._save_periodic_pipeline()
+            self._save_periodic_pipeline(features, target)
 
-    def _save_periodic_pipeline(self):
+
+    def _save_periodic_pipeline(self, features, target):
         if self.periodic_checkpoint_folder is not None:
             try:
-                print_func = self._pbar.write if not self._pbar.disable else print
-
-                self._update_top_pipeline()
-
+                self._update_top_pipeline(features, target)
                 filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
-
-                if self.verbosity >= 2:
-                    print_func('saving best periodic pipeline to {}'.format(filename))
+                
                 did_export = self.export(filename, skip_if_repeated=True)
-
                 if not did_export:
-                    if self.verbosity >= 2:
-                        print_func('periodic pipeline was not saved, probably saved before...')
+                    self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
+                else:
+                    self._update_pbar(pbar_num=0, pbar_msg='Saving best periodic pipeline to {}'.format(filename))
             except Exception as e:
-                if self.verbosity >= 2:
-                    print_func('failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
+                self._update_pbar(pbar_num=0, pbar_msg='Failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
+
 
     def export(self, output_file_name, skip_if_repeated=False):
         """Export the optimized pipeline as Python code.
@@ -859,6 +864,7 @@ class TPOTBase(BaseEstimator):
 
         return True
 
+
     def _impute_values(self, features):
         """Impute missing values in a feature set.
 
@@ -879,6 +885,7 @@ class TPOTBase(BaseEstimator):
             self._fitted_imputer.fit(features)
 
         return self._fitted_imputer.transform(features)
+
 
     def _check_dataset(self, features, target):
         """Check if a dataset has a valid feature set and labels.
@@ -1017,7 +1024,7 @@ class TPOTBase(BaseEstimator):
         return [self.evaluated_individuals_[str(individual)] for individual in individuals]
 
 
-    def _preprocess_individuals(self, individuals, file=sys.stdout):
+    def _preprocess_individuals(self, individuals):
         """
         Preprocess DEAP individuals before pipeline evaluation.
 
@@ -1026,8 +1033,6 @@ class TPOTBase(BaseEstimator):
         individuals: a list of DEAP individual
             One individual is a list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
-        file: io.TextIOWrapper or io.StringIO
-            Specifies where to output the progress messages (default: sys.stdout)
 
         Returns
         -------
@@ -1042,7 +1047,7 @@ class TPOTBase(BaseEstimator):
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
         # update number of duplicate pipelines
-        self._update_pbar(pbar_num=len(individuals)-len(unique_individuals), file=file)
+        self._update_pbar(pbar_num=len(individuals)-len(unique_individuals))
 
         # a dictionary for storing operator counts
         operator_counts = {}
@@ -1057,11 +1062,11 @@ class TPOTBase(BaseEstimator):
             sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
             if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
                 self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
-                self._update_pbar(pbar_msg='Invalid pipeline encountered. Skipping its evaluation.', file=file)
+                self._update_pbar(pbar_msg='Invalid pipeline encountered. Skipping its evaluation.')
             # Check if the individual was evaluated before
             elif individual_str in self.evaluated_individuals_:
                 self._update_pbar(pbar_msg=('Pipeline encountered that has previously been evaluated during the '
-                                 'optimization process. Using the score from the previous evaluation.'), file=file)
+                                 'optimization process. Using the score from the previous evaluation.'))
             else:
                 try:
                     # Transform the tree expression into an sklearn pipeline
@@ -1080,7 +1085,7 @@ class TPOTBase(BaseEstimator):
                     operator_counts[individual_str] = max(1, operator_count)
                 except Exception:
                     self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
-                    self._update_pbar(file=file)
+                    self._update_pbar()
                     continue
                 eval_individuals_str.append(individual_str)
                 sklearn_pipeline_list.append(sklearn_pipeline)
@@ -1088,8 +1093,7 @@ class TPOTBase(BaseEstimator):
         return operator_counts, eval_individuals_str, sklearn_pipeline_list
 
 
-
-    def _update_pbar(self, pbar_num=1, pbar_msg=None, file=sys.stdout):
+    def _update_pbar(self, pbar_num=1, pbar_msg=None):
         """Update self._pbar and error message during pipeline evaluration.
 
         Parameters
@@ -1098,17 +1102,16 @@ class TPOTBase(BaseEstimator):
             How many pipelines has been processed
         pbar_msg: None or string
             Error message
-        file: io.TextIOWrapper or io.StringIO
-            Specifies where to output the progress messages (default: sys.stdout)
 
         Returns
         -------
         None
         """
-        if self.verbosity > 2 and pbar_msg is not None:
-            self._pbar.write(pbar_msg, file=file)
-        if not self._pbar.disable:
-            self._pbar.update(pbar_num)
+        if not isinstance(self._pbar, type(None)):
+            if self.verbosity > 2 and pbar_msg is not None:
+                self._pbar.write(pbar_msg, file=self._file)
+            if not self._pbar.disable:
+                self._pbar.update(pbar_num)
 
 
     @_pre_test
@@ -1174,6 +1177,7 @@ class TPOTBase(BaseEstimator):
 
         return offspring,
 
+
     def _gen_grow_safe(self, pset, min_, max_, type_=None):
         """Generate an expression where each leaf might have a different depth between min_ and max_.
 
@@ -1200,6 +1204,7 @@ class TPOTBase(BaseEstimator):
 
         return self._generate(pset, min_, max_, condition, type_)
 
+
     def _operator_count(self, individual):
         """Count the number of pipeline operators as a measure of pipeline complexity.
 
@@ -1222,7 +1227,7 @@ class TPOTBase(BaseEstimator):
         return operator_count
 
 
-    def _update_val(self, val, result_score_list, file=sys.stdout):
+    def _update_val(self, val, result_score_list):
         """Update values in the list of result scores and self._pbar during pipeline evaluation.
 
         Parameters
@@ -1231,8 +1236,6 @@ class TPOTBase(BaseEstimator):
             CV scores
         result_score_list: list
             A list of CV scores
-        file: io.TextIOWrapper or io.StringIO
-            Specifies where to output the progress messages (default: sys.stdout)
 
         Returns
         -------
@@ -1242,7 +1245,7 @@ class TPOTBase(BaseEstimator):
         self._update_pbar()
         if val == 'Timeout':
             self._update_pbar(pbar_msg=('Skipped pipeline #{0} due to time out. '
-                             'Continuing to the next pipeline.'.format(self._pbar.n)), file=file)
+                             'Continuing to the next pipeline.'.format(self._pbar.n)))
             result_score_list.append(-float('inf'))
         else:
             result_score_list.append(val)
