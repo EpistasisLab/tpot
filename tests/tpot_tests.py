@@ -651,7 +651,7 @@ def test_fit_2():
 
 
 def test_fit_3():
-    """Assert that the TPOT fit function provides an optimized pipeline with subsample is 0.8."""
+    """Assert that the TPOT fit function provides an optimized pipeline with subsample of 0.8."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -663,6 +663,29 @@ def test_fit_3():
     )
     tpot_obj.fit(training_features, training_target)
 
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+
+def test_fit_4():
+    """Assert that the TPOT fit function provides an optimized pipeline with max_time_mins of 1 seconds"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=5,
+        generations=1,
+        verbosity=0,
+        max_time_mins=1/60.,
+        config_dict='TPOT light'
+    )
+    assert tpot_obj.generations == 1000000
+
+    # reset generations to 10 just in case that the failed test may take too much time
+    tpot_obj.generations == 100
+
+    tpot_obj.fit(training_features, training_target)
+    total_mins_elapsed = (datetime.now() - tpot_obj._start_datetime).total_seconds() / 60.
+    # allow two seconds more
+    assert total_mins_elapsed < 3/60.
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
 
