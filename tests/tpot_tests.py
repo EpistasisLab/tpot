@@ -943,6 +943,35 @@ def test_evaluate_individuals():
         assert np.allclose(fitness_score[1], mean_cv_scores)
 
 
+def test_evaluate_individuals_2():
+    """Assert that _evaluate_individuals returns operator_counts and CV scores in correct order with n_jobs=2"""
+    tpot_obj = TPOTClassifier(
+        n_jobs=2,
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=10)
+    fitness_scores = tpot_obj._evaluate_individuals(pop, training_features, training_target)
+
+    for deap_pipeline, fitness_score in zip(pop, fitness_scores):
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+
+        try:
+            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
+            mean_cv_scores = np.mean(cv_scores)
+        except Exception as e:
+            mean_cv_scores = -float('inf')
+
+        assert isinstance(deap_pipeline, creator.Individual)
+        assert np.allclose(fitness_score[0], operator_count)
+        assert np.allclose(fitness_score[1], mean_cv_scores)
+
+
 def test_update_pbar():
     """Assert that _update_pbar updates self._pbar with printing correct warning message."""
     tpot_obj = TPOTClassifier(
