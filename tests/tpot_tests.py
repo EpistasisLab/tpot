@@ -924,6 +924,12 @@ def test_stop_by_max_time_mins():
     assert_raises(KeyboardInterrupt, tpot_obj._stop_by_max_time_mins)
 
 
+def test_update_evaluated_individuals_():
+    """Assert that _update_evaluated_individuals_ raises ValueError when scoring function does not return a float."""
+    tpot_obj = TPOTClassifier(config_dict='TPOT light')
+    assert_raises(ValueError, tpot_obj._update_evaluated_individuals_, ['Non-Float-Score'], ['Test_Pipeline'], [1])
+
+
 def test_evaluate_individuals():
     """Assert that _evaluate_individuals returns operator_counts and CV scores in correct order."""
     tpot_obj = TPOTClassifier(
