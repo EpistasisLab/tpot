@@ -1113,6 +1113,7 @@ def test_preprocess_individuals_2():
         assert_equal(operator_counts[pipeline_string_2], 1)
         assert_equal(len(sklearn_pipeline_list), 1)
 
+
 def test_preprocess_individuals_3():
     """Assert _preprocess_individuals updatas self._pbar.total when max_time_mins is not None"""
     tpot_obj = TPOTClassifier(
@@ -1156,8 +1157,6 @@ def test_preprocess_individuals_3():
         operator_counts, eval_individuals_str, sklearn_pipeline_list = \
                                 tpot_obj._preprocess_individuals(individuals)
         assert tpot_obj._pbar.total == 6
-
-
 
 
 def test_imputer():
