@@ -278,26 +278,17 @@ def cxOnePoint(ind1, ind2):
     # Define the name of type for any types.
     __type__ = object
 
-    if len(ind1) < 2 or len(ind2) < 2:
-        # No crossover on single node tree
-        return ind1, ind2
-
     # List all available primitive types in each individual
     types1 = defaultdict(list)
     types2 = defaultdict(list)
-    if ind1.root.ret == __type__:
-        # Not STGP optimization
-        types1[__type__] = range(1, len(ind1))
-        types2[__type__] = range(1, len(ind2))
-        common_types = [__type__]
-    else:
-        for idx, node in enumerate(ind1[1:], 1):
-            types1[node.ret].append(idx)
-        common_types = []
-        for idx, node in enumerate(ind2[1:], 1):
-            if node.ret in types1 and node.ret not in types2:
-                common_types.append(node.ret)
-            types2[node.ret].append(idx)
+
+    for idx, node in enumerate(ind1[1:], 1):
+        types1[node.ret].append(idx)
+    common_types = []
+    for idx, node in enumerate(ind2[1:], 1):
+        if node.ret in types1 and node.ret not in types2:
+            common_types.append(node.ret)
+        types2[node.ret].append(idx)
 
     if len(common_types) > 0:
         type_ = np.random.choice(common_types)
