@@ -1021,11 +1021,7 @@ class TPOTBase(BaseEstimator):
                 for val in tmp_result_scores:
                     result_score_list = self._update_val(val, result_score_list)
 
-        for result_score, individual_str in zip(result_score_list, eval_individuals_str):
-            if type(result_score) in [float, np.float64, np.float32]:
-                self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], result_score)
-            else:
-                raise ValueError('Scoring function does not return a float.')
+        self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts)
 
         return [self.evaluated_individuals_[str(individual)] for individual in individuals]
 
@@ -1099,8 +1095,30 @@ class TPOTBase(BaseEstimator):
         return operator_counts, eval_individuals_str, sklearn_pipeline_list
 
 
+    def _update_evaluated_individuals_(self, result_score_list, eval_individuals_str, operator_counts):
+        """Update self.evaluated_individuals_ and error message during pipeline evaluation.
+        Parameters
+        ----------
+        result_score_list: list
+            A list of CV scores for evaluated pipelines
+        eval_individuals_str: list
+            A list of strings for evaluated pipelines
+        operator_counts: list
+            A list of operator counts for evaluated pipelines
+
+        Returns
+        -------
+        None
+        """
+        for result_score, individual_str in zip(result_score_list, eval_individuals_str):
+            if type(result_score) in [float, np.float64, np.float32]:
+                self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], result_score)
+            else:
+                raise ValueError('Scoring function does not return a float.')
+
+
     def _update_pbar(self, pbar_num=1, pbar_msg=None):
-        """Update self._pbar and error message during pipeline evaluration.
+        """Update self._pbar and error message during pipeline evaluation.
 
         Parameters
         ----------
