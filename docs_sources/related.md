@@ -1,4 +1,4 @@
-Other automated machine-learning tools:
+Other Automated Machine Learning (AutoML) tools and related projects:
 
 <table>
 <tr>
