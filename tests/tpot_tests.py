@@ -1404,17 +1404,19 @@ def test_mutNodeReplacement():
     pipeline[0].ret = Output_Array
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
-    mut_ind = mutNodeReplacement(pipeline, pset=tpot_obj._pset)
-    new_ret_type_list = [node.ret for node in mut_ind[0]]
-    new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
+    # test 10 times
+    for _ in range(10):
+        mut_ind = mutNodeReplacement(tpot_obj._toolbox.clone(pipeline), pset=tpot_obj._pset)
+        new_ret_type_list = [node.ret for node in mut_ind[0]]
+        new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
 
-    if new_prims_list == old_prims_list:  # Terminal mutated
-        assert new_ret_type_list == old_ret_type_list
-    else:  # Primitive mutated
-        diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
-        assert diff_prims[0].ret == diff_prims[1].ret
+        if new_prims_list == old_prims_list:  # Terminal mutated
+            assert new_ret_type_list == old_ret_type_list
+        else:  # Primitive mutated
+            diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
+            assert diff_prims[0].ret == diff_prims[1].ret
 
-    assert mut_ind[0][0].ret == Output_Array
+        assert mut_ind[0][0].ret == Output_Array
 
 
 def test_operator_type():
