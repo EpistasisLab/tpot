@@ -988,7 +988,6 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
-        self._stop_by_max_time_mins()
 
         operator_counts, eval_individuals_str, sklearn_pipeline_list = self._preprocess_individuals(individuals)
 
@@ -1008,11 +1007,13 @@ class TPOTBase(BaseEstimator):
         # Don't use parallelization if n_jobs==1
         if self.n_jobs == 1:
             for sklearn_pipeline in sklearn_pipeline_list:
+                self._stop_by_max_time_mins()
                 val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
                 result_score_list = self._update_val(val, result_score_list)
         else:
             # chunk size for pbar update
             for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
+                self._stop_by_max_time_mins()
                 parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
                 tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
                                              for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])

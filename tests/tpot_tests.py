@@ -915,6 +915,15 @@ def test_evaluated_individuals_():
         assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string][0], operator_count)
 
 
+def test_stop_by_max_time_mins():
+    """Assert that _stop_by_max_time_mins raises KeyboardInterrupt when maximum minutes have elapsed."""
+    tpot_obj = TPOTClassifier(config_dict='TPOT light')
+    tpot_obj._start_datetime = datetime.now()
+    sleep(0.1)
+    tpot_obj.max_time_mins = 0.1/60.
+    assert_raises(KeyboardInterrupt, tpot_obj._stop_by_max_time_mins)
+
+
 def test_evaluate_individuals():
     """Assert that _evaluate_individuals returns operator_counts and CV scores in correct order."""
     tpot_obj = TPOTClassifier(
