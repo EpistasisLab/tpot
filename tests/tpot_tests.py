@@ -668,7 +668,7 @@ def test_fit_3():
 
 
 def test_fit_4():
-    """Assert that the TPOT fit function provides an optimized pipeline with max_time_mins of 1 seconds"""
+    """Assert that the TPOT fit function provides an optimized pipeline with max_time_mins of 1 second."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=5,
