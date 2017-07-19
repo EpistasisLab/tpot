@@ -668,13 +668,13 @@ def test_fit_3():
 
 
 def test_fit_4():
-    """Assert that the TPOT fit function provides an optimized pipeline with max_time_mins of 1 second."""
+    """Assert that the TPOT fit function provides an optimized pipeline with max_time_mins of 2 second."""
     tpot_obj = TPOTClassifier(
         random_state=42,
-        population_size=5,
+        population_size=2,
         generations=1,
         verbosity=0,
-        max_time_mins=1/60.,
+        max_time_mins=2/60.,
         config_dict='TPOT light'
     )
     assert tpot_obj.generations == 1000000
@@ -685,7 +685,7 @@ def test_fit_4():
     tpot_obj.fit(training_features, training_target)
     total_mins_elapsed = (datetime.now() - tpot_obj._start_datetime).total_seconds() / 60.
     # allow two seconds more
-    assert total_mins_elapsed < 3/60.
+    assert total_mins_elapsed < 4/60.
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
 
@@ -705,7 +705,7 @@ def test_save_pipeline_if_period():
         tpot_obj._file = our_file
         tpot_obj.verbosity = 3
         tpot_obj._last_pipeline_write = datetime.now()
-        sleep(0.1)
+        sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
         tpot_obj.periodic_checkpoint_folder = './'
         tpot_obj._save_pipeline_if_period(training_features, training_target)
@@ -733,7 +733,7 @@ def test_save_pipeline_if_period_2():
         tpot_obj._file = our_file
         tpot_obj.verbosity = 3
         tpot_obj._last_pipeline_write = datetime.now()
-        sleep(0.1)
+        sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
         tpot_obj.periodic_checkpoint_folder = './'
         # export once before
@@ -763,7 +763,7 @@ def test_save_pipeline_if_period_3():
         tpot_obj._file = our_file
         tpot_obj.verbosity = 3
         tpot_obj._last_pipeline_write = datetime.now()
-        sleep(0.1)
+        sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
         tpot_obj.periodic_checkpoint_folder = './'
         # reset _optimized_pipeline
@@ -942,7 +942,7 @@ def test_stop_by_max_time_mins():
     """Assert that _stop_by_max_time_mins raises KeyboardInterrupt when maximum minutes have elapsed."""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
     tpot_obj._start_datetime = datetime.now()
-    sleep(0.1)
+    sleep(0.11)
     tpot_obj.max_time_mins = 0.1/60.
     assert_raises(KeyboardInterrupt, tpot_obj._stop_by_max_time_mins)
 
