@@ -679,11 +679,11 @@ def test_fit_4():
     )
     assert tpot_obj.generations == 1000000
 
-    # reset generations to 10 just in case that the failed test may take too much time
-    tpot_obj.generations == 100
+    # reset generations to 20 just in case that the failed test may take too much time
+    tpot_obj.generations == 20
 
     tpot_obj.fit(training_features, training_target)
-    
+
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
 
