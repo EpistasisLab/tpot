@@ -965,7 +965,7 @@ class TPOTBase(BaseEstimator):
 
     def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
-
+        
         Parameters
         ----------
         individuals: a list of DEAP individual
@@ -1026,8 +1026,7 @@ class TPOTBase(BaseEstimator):
 
 
     def _preprocess_individuals(self, individuals):
-        """
-        Preprocess DEAP individuals before pipeline evaluation.
+        """Preprocess DEAP individuals before pipeline evaluation.
 
         Parameters
         ----------
@@ -1099,6 +1098,7 @@ class TPOTBase(BaseEstimator):
 
     def _update_evaluated_individuals_(self, result_score_list, eval_individuals_str, operator_counts):
         """Update self.evaluated_individuals_ and error message during pipeline evaluation.
+
         Parameters
         ----------
         result_score_list: list

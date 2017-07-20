@@ -272,9 +272,6 @@ def cxOnePoint(ind1, ind2):
     :param ind2: Second tree participating in the crossover.
     :returns: A tuple of two trees.
     """
-    # Define the name of type for any types.
-    __type__ = object
-
     # List all available primitive types in each individual
     types1 = defaultdict(list)
     types2 = defaultdict(list)
