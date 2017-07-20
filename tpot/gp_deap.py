@@ -151,8 +151,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
-                   stats=None, halloffame=None, verbose=0, max_time_mins=None,
-                   per_generation_function=None):
+                   stats=None, halloffame=None, verbose=0, per_generation_function=None):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
@@ -225,11 +224,9 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
-        # update pbar for valid_ind
+        # update pbar for valid individuals (with fitness values)
         if not pbar.disable:
             pbar.update(len(offspring)-len(invalid_ind))
-            if not (max_time_mins is None) and pbar.n >= pbar.total:
-                pbar.total += lambda_
 
         fitnesses = toolbox.evaluate(invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
@@ -278,26 +275,17 @@ def cxOnePoint(ind1, ind2):
     # Define the name of type for any types.
     __type__ = object
 
-    if len(ind1) < 2 or len(ind2) < 2:
-        # No crossover on single node tree
-        return ind1, ind2
-
     # List all available primitive types in each individual
     types1 = defaultdict(list)
     types2 = defaultdict(list)
-    if ind1.root.ret == __type__:
-        # Not STGP optimization
-        types1[__type__] = range(1, len(ind1))
-        types2[__type__] = range(1, len(ind2))
-        common_types = [__type__]
-    else:
-        for idx, node in enumerate(ind1[1:], 1):
-            types1[node.ret].append(idx)
-        common_types = []
-        for idx, node in enumerate(ind2[1:], 1):
-            if node.ret in types1 and node.ret not in types2:
-                common_types.append(node.ret)
-            types2[node.ret].append(idx)
+
+    for idx, node in enumerate(ind1[1:], 1):
+        types1[node.ret].append(idx)
+    common_types = []
+    for idx, node in enumerate(ind2[1:], 1):
+        if node.ret in types1 and node.ret not in types2:
+            common_types.append(node.ret)
+        types2[node.ret].append(idx)
 
     if len(common_types) > 0:
         type_ = np.random.choice(common_types)

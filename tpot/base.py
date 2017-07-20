@@ -566,7 +566,6 @@ class TPOTBase(BaseEstimator):
                     pbar=self._pbar,
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
-                    max_time_mins=self.max_time_mins,
                     per_generation_function=partial(self._save_pipeline_if_period, features=features, target=target)
                 )
 
@@ -822,7 +821,7 @@ class TPOTBase(BaseEstimator):
             try:
                 self._update_top_pipeline(features, target)
                 filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
-                
+
                 did_export = self.export(filename, skip_if_repeated=True)
                 if not did_export:
                     self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
@@ -956,6 +955,14 @@ class TPOTBase(BaseEstimator):
                 setattr(obj, parameter, value)
 
 
+    def _stop_by_max_time_mins(self):
+        """Stop optimization process once maximum minutes have elapsed."""
+        if self.max_time_mins:
+            total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
+            if total_mins_elapsed >= self.max_time_mins:
+                raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
+
+
     def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
 
@@ -980,10 +987,6 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
-        if self.max_time_mins:
-            total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
-            if total_mins_elapsed >= self.max_time_mins:
-                raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
 
         operator_counts, eval_individuals_str, sklearn_pipeline_list = self._preprocess_individuals(individuals)
 
@@ -1003,11 +1006,13 @@ class TPOTBase(BaseEstimator):
         # Don't use parallelization if n_jobs==1
         if self.n_jobs == 1:
             for sklearn_pipeline in sklearn_pipeline_list:
+                self._stop_by_max_time_mins()
                 val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
                 result_score_list = self._update_val(val, result_score_list)
         else:
             # chunk size for pbar update
             for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
+                self._stop_by_max_time_mins()
                 parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
                 tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
                                              for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
@@ -1015,11 +1020,7 @@ class TPOTBase(BaseEstimator):
                 for val in tmp_result_scores:
                     result_score_list = self._update_val(val, result_score_list)
 
-        for result_score, individual_str in zip(result_score_list, eval_individuals_str):
-            if type(result_score) in [float, np.float64, np.float32]:
-                self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], result_score)
-            else:
-                raise ValueError('Scoring function does not return a float.')
+        self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts)
 
         return [self.evaluated_individuals_[str(individual)] for individual in individuals]
 
@@ -1043,6 +1044,9 @@ class TPOTBase(BaseEstimator):
         sklearn_pipeline_list: list
             a list of scikit-learn pipelines converted from DEAP individuals for evaluation
         """
+        # update self._pbar.total
+        if not (self.max_time_mins is None) and not self._pbar.disable and self._pbar.total <= self._pbar.n:
+            self._pbar.total += self.offspring_size
         # Check we do not evaluate twice the same individual in one pass.
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
@@ -1093,8 +1097,30 @@ class TPOTBase(BaseEstimator):
         return operator_counts, eval_individuals_str, sklearn_pipeline_list
 
 
+    def _update_evaluated_individuals_(self, result_score_list, eval_individuals_str, operator_counts):
+        """Update self.evaluated_individuals_ and error message during pipeline evaluation.
+        Parameters
+        ----------
+        result_score_list: list
+            A list of CV scores for evaluated pipelines
+        eval_individuals_str: list
+            A list of strings for evaluated pipelines
+        operator_counts: list
+            A list of operator counts for evaluated pipelines
+
+        Returns
+        -------
+        None
+        """
+        for result_score, individual_str in zip(result_score_list, eval_individuals_str):
+            if type(result_score) in [float, np.float64, np.float32]:
+                self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], result_score)
+            else:
+                raise ValueError('Scoring function does not return a float.')
+
+
     def _update_pbar(self, pbar_num=1, pbar_msg=None):
-        """Update self._pbar and error message during pipeline evaluration.
+        """Update self._pbar and error message during pipeline evaluation.
 
         Parameters
         ----------
