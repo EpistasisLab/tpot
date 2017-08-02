@@ -243,7 +243,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 # To make sure the inital operators is the first parameter just
                 # for better persentation
                 for dep_op_pname, dep_op_str in dep_op_list.items():
-                    if dep_op_str in ['f_classif', 'f_regression']:
+                    if dep_op_pname == 'score_func':
                         arg_value = dep_op_str
                     else:
                         arg_value = "{}({})".format(dep_op_str, ", ".join(dep_op_arguments[dep_op_str]))
