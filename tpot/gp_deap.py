@@ -349,10 +349,11 @@ class Interruptable_cross_val_score(threading.Thread):
 
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight,
-                             max_eval_time_mins, groups):
+                             max_eval_time_mins, groups,output_path, r):
     max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
     # build a job for cross_val_score
+    r.publish(output_path,"starting job: {} + -end".format(sklearn_pipeline))
     tmp_it = Interruptable_cross_val_score(
         clone(sklearn_pipeline),
         features,
@@ -373,4 +374,6 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         resulting_score = np.mean(tmp_it.result)
 
     tmp_it.stop()
+    r.publish(output_path,"ending: {} -end".format(sklearn_pipeline))
+    r.publish(output_path,"score: {}".format(resulting_score))
     return resulting_score
