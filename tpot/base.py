@@ -839,7 +839,7 @@ class TPOTBase(BaseEstimator):
             total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
             if total_since_last_pipeline_save > self._output_best_pipeline_period_seconds:
                 self._last_pipeline_write = datetime.now()
-                self._save_periodic_pipeline(features, target)
+                self._save_periodic_pipeline()
 
         if self.early_stop is not None:
             if self._last_optimized_pipeline_n_gens >= self.early_stop:
@@ -850,7 +850,6 @@ class TPOTBase(BaseEstimator):
     def _save_periodic_pipeline(self):
         try:
             filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
-
             did_export = self.export(filename, skip_if_repeated=True)
             if not did_export:
                 self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
