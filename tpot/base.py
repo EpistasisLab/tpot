@@ -199,7 +199,7 @@ class TPOTBase(BaseEstimator):
                 Track its progress
                 Grab pipelines while it's still optimizing
         early_stop: int or None (default: None)
-            How many generations TPOT checks whether there is any improvement in optimization process.
+            How many generations TPOT checks whether there is no improvement in optimization process.
             Kill optimization process if there is no improvement.
         verbosity: int, optional (default: 0)
             How much information TPOT communicates while it's running.
@@ -586,7 +586,7 @@ class TPOTBase(BaseEstimator):
                 self._pop = pop
 
         # Allow for certain exceptions to signal a premature fit() cancellation
-        except (KeyboardInterrupt, SystemExit) as e:
+        except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
                 self._pbar.write('', file=self._file)
                 self._pbar.write('{}\nTPOT closed prematurely. Will use the current best pipeline.'.format(e),
@@ -605,11 +605,12 @@ class TPOTBase(BaseEstimator):
                     self._summary_of_best_pipeline(features, target)
                     break
 
-                except (KeyboardInterrupt, SystemExit, Exception):
+                except (KeyboardInterrupt, SystemExit, Exception) as e:
                     # raise the exception if it's our last attempt
                     if attempt == (attempts - 1):
-                        raise
+                        raise e
             return self
+
 
     def _update_top_pipeline(self):
         """Helper function to update the _optimized_pipeline field.
@@ -847,7 +848,7 @@ class TPOTBase(BaseEstimator):
 
         if self.early_stop is not None:
             if self._last_optimized_pipeline_n_gens >= self.early_stop:
-                raise KeyboardInterrupt("The optimized pipeline was not improved after evaluating {} more generations. "
+                raise StopIteration("The optimized pipeline was not improved after evaluating {} more generations. "
                                         "Will kill the optimization process.\n".format(self.early_stop))
 
 
