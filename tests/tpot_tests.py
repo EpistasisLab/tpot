@@ -746,6 +746,25 @@ def test_check_periodic_pipeline_2():
                 os.remove(os.path.join('./', f))
 
 
+def test_check_periodic_pipeline_3():
+    """Assert that the _check_periodic_pipeline rasie KeyboardInterrupt if self._last_optimized_pipeline_n_gens >= self.early_stop."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light',
+        early_stop=3
+    )
+    tpot_obj.fit(training_features, training_target)
+    tpot_obj._last_optimized_pipeline_n_gens = 2
+    # will pass
+    tpot_obj._check_periodic_pipeline()
+    tpot_obj._last_optimized_pipeline_n_gens = 3
+    assert_raises(KeyboardInterrupt, tpot_obj._check_periodic_pipeline)
+
+
 def test_save_periodic_pipeline():
     """Assert that the _save_periodic_pipeline does not export periodic pipeline if exception happened"""
     tpot_obj = TPOTClassifier(
@@ -863,7 +882,6 @@ def test_summary_of_best_pipeline():
     )
 
     assert_raises(RuntimeError, tpot_obj._summary_of_best_pipeline, features=training_features, target=training_target)
-
 
 
 def test_set_param_recursive():
