@@ -161,7 +161,7 @@ Useful in multiple cases:
 <strong>early_stop</strong>: integer, optional (default: None)
 <blockquote>
 How many generations TPOT checks whether there is no improvement in optimization process.<br /><br />
-Kill optimization process if there is no improvement in the set number of generations.<br /><br />
+End optimization process if there is no improvement in the set number of generations.<br /><br />
 </blockquote>
 
 <strong>verbosity</strong>: integer, optional (default=0)
@@ -614,7 +614,7 @@ Useful in multiple cases:
 <strong>early_stop</strong>: integer, optional (default: None)
 <blockquote>
 How many generations TPOT checks whether there is no improvement in optimization process.<br /><br />
-Kill optimization process if there is no improvement in the set number of generations.<br /><br />
+End optimization process if there is no improvement in the set number of generations.<br /><br />
 </blockquote>
 
 <strong>verbosity</strong>: integer, optional (default=0)

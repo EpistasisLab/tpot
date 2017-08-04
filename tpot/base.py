@@ -200,7 +200,7 @@ class TPOTBase(BaseEstimator):
                 Grab pipelines while it's still optimizing
         early_stop: int or None (default: None)
             How many generations TPOT checks whether there is no improvement in optimization process.
-            Kill optimization process if there is no improvement in the set number of generations.
+            End optimization process if there is no improvement in the set number of generations.
         verbosity: int, optional (default: 0)
             How much information TPOT communicates while it's running.
             0 = none, 1 = minimal, 2 = high, 3 = all.
@@ -849,7 +849,7 @@ class TPOTBase(BaseEstimator):
         if self.early_stop is not None:
             if self._last_optimized_pipeline_n_gens >= self.early_stop:
                 raise StopIteration("The optimized pipeline was not improved after evaluating {} more generations. "
-                                        "Will kill the optimization process.\n".format(self.early_stop))
+                                        "Will end the optimization process.\n".format(self.early_stop))
 
 
     def _save_periodic_pipeline(self):

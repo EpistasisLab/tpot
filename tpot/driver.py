@@ -372,7 +372,7 @@ def _get_arg_parser():
         type=int,
         help=(
             'How many generations TPOT checks whether there is no improvement '
-            'in optimization process. Kill optimization process if there is no improvement '
+            'in optimization process. End optimization process if there is no improvement '
             'in the set number of generations.'
         )
     )

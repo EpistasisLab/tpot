@@ -291,7 +291,7 @@ mkdir my_checkpoints
 <td>
 How many generations TPOT checks whether there is no improvement in optimization process.
 <br /><br />
-Kill optimization process if there is no improvement in the set number of generations.
+End optimization process if there is no improvement in the set number of generations.
 </tr>
 <tr>
 <td>-v</td>
