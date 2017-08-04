@@ -200,7 +200,7 @@ class TPOTBase(BaseEstimator):
                 Grab pipelines while it's still optimizing
         early_stop: int or None (default: None)
             How many generations TPOT checks whether there is no improvement in optimization process.
-            Kill optimization process if there is no improvement.
+            Kill optimization process if there is no improvement in the set number of generations.
         verbosity: int, optional (default: 0)
             How much information TPOT communicates while it's running.
             0 = none, 1 = minimal, 2 = high, 3 = all.

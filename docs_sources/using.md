@@ -224,7 +224,7 @@ See the section on <a href="#scoring-functions">scoring functions</a> for more d
 <tr>
 <td>-cv</td>
 <td>CV</td>
-<td>Any integer >1</td>
+<td>Any integer > 1</td>
 <td>Number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process.</td>
 </tr>
 <td>-sub</td>
@@ -283,6 +283,15 @@ Example:
 mkdir my_checkpoints
 <br />
 -cf ./my_checkpoints
+</tr>
+<tr>
+<td>-es</td>
+<td>EARLY_STOP</td>
+<td>Any positive integer</td>
+<td>
+How many generations TPOT checks whether there is no improvement in optimization process.
+<br /><br />
+Kill optimization process if there is no improvement in the set number of generations.
 </tr>
 <tr>
 <td>-v</td>
