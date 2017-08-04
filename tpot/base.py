@@ -332,6 +332,7 @@ class TPOTBase(BaseEstimator):
         self._setup_toolbox()
         self._setup_pop(population_seeds, config_dict)
 
+
     def _setup_config(self, config_dict):
         if config_dict:
             if isinstance(config_dict, dict):

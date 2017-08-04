@@ -851,6 +851,21 @@ def test_update_top_pipeline_3():
     assert_raises(RuntimeError, tpot_obj._update_top_pipeline)
 
 
+def test_summary_of_best_pipeline():
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._optimized_pipeline is not updated."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    assert_raises(RuntimeError, tpot_obj._summary_of_best_pipeline, features=training_features, target=training_target)
+
+
+
 def test_set_param_recursive():
     """Assert that _set_param_recursive sets \"random_state\" to 42 in all steps in a simple pipeline."""
     pipeline_string = (
