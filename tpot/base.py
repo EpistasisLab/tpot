@@ -85,7 +85,7 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None, warm_start=False,
-                 verbosity=0, disable_update_check=False,output_path=None):
+                 verbosity=0, disable_update_check=False,output_file=None):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -210,11 +210,11 @@ class TPOTBase(BaseEstimator):
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
-        self.output_path = None
+        self.output_file = None
 
-        if output_path:
+        if output_file:
             self.r = redis.StrictRedis(host='redis', port=6379, db=0)
-            self.output_path = output_path
+            self.output_file = output_file
 
         # Set offspring_size equal to population_size by default
         if offspring_size:
@@ -518,7 +518,7 @@ class TPOTBase(BaseEstimator):
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
-        self.r.publish(self.output_path,"total evaluation: {}".format(total_evals))
+        self.r.publish(self.output_file,"total evaluation: {}".format(total_evals))
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
@@ -596,7 +596,7 @@ class TPOTBase(BaseEstimator):
                     if attempt == (attempts - 1):
                         raise
 
-            self.r.publish(self.output_path,"EVALUATION_COMPLETE")
+            self.r.publish(self.output_file,"EVALUATION_COMPLETE")
             return self
 
     def _update_top_pipeline(self):
@@ -915,7 +915,7 @@ class TPOTBase(BaseEstimator):
                     max_eval_time_mins=self.max_eval_time_mins,
                     groups=groups,
                     output_file=self.output_file,
-                    r = self.r
+                    r = r
                 )
                 jobs.append(job)
             parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')

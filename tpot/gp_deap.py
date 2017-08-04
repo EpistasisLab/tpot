@@ -33,6 +33,7 @@ from sklearn.base import clone
 from collections import defaultdict
 import warnings
 import threading
+import redis
 
 # Limit loops to generate a different individual by crossover/mutation
 MAX_MUT_LOOPS = 50
@@ -346,14 +347,13 @@ class Interruptable_cross_val_score(threading.Thread):
         except Exception as e:
             pass
 
-
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight,
-                             max_eval_time_mins, groups,output_path, r):
+                             max_eval_time_mins, groups,output_file, r):
     max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
     # build a job for cross_val_score
-    r.publish(output_path,"starting job: {} + -end".format(sklearn_pipeline))
+    r.publish(output_file,"starting job: {}".format(sklearn_pipeline))
     tmp_it = Interruptable_cross_val_score(
         clone(sklearn_pipeline),
         features,
@@ -374,6 +374,6 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         resulting_score = np.mean(tmp_it.result)
 
     tmp_it.stop()
-    r.publish(output_path,"ending: {} -end".format(sklearn_pipeline))
-    r.publish(output_path,"score: {}".format(resulting_score))
+    r.publish(output_file,"ending: {}".format(sklearn_pipeline))
+    r.publish(output_file,"score: {}".format(resulting_score))
     return resulting_score
