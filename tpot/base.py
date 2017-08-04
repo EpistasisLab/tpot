@@ -432,6 +432,7 @@ class TPOTBase(BaseEstimator):
 
         self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
 
+
     def _add_terminals(self):
         for _type in self.arguments:
             type_values = list(_type.values)
@@ -439,6 +440,7 @@ class TPOTBase(BaseEstimator):
             for val in type_values:
                 terminal_name = _type.__name__ + "=" + str(val)
                 self._pset.addTerminal(val, _type, name=terminal_name)
+
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
@@ -453,6 +455,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('mate', self._mate_operator)
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
+
 
     def fit(self, features, target, sample_weight=None, groups=None):
         """Fit an optimized machine learning pipeline.
