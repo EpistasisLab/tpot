@@ -34,7 +34,7 @@ from collections import defaultdict
 import warnings
 import threading
 import redis
-
+import uuid
 # Limit loops to generate a different individual by crossover/mutation
 MAX_MUT_LOOPS = 50
 
@@ -353,7 +353,8 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
     # build a job for cross_val_score
-    r.publish(output_file,"starting job: {}".format(sklearn_pipeline))
+    uid = uuid.uuid4().hex[:15].upper()
+    r.publish(output_file,"starting job: {}:{}".format(uid,sklearn_pipeline))
     tmp_it = Interruptable_cross_val_score(
         clone(sklearn_pipeline),
         features,
@@ -374,6 +375,6 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         resulting_score = np.mean(tmp_it.result)
 
     tmp_it.stop()
-    r.publish(output_file,"ending: {}".format(sklearn_pipeline))
-    r.publish(output_file,"score: {}".format(resulting_score))
+    r.publish(output_file,"ending: {}:{}".format(uid,sklearn_pipeline))
+    r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
     return resulting_score

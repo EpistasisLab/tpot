@@ -902,6 +902,7 @@ class TPOTBase(BaseEstimator):
         # evalurate pipeline
         resulting_score_list = []
         # chunk size for pbar update
+
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
             jobs = []
             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
