@@ -35,6 +35,7 @@ import warnings
 import threading
 import redis
 import uuid
+import re
 # Limit loops to generate a different individual by crossover/mutation
 MAX_MUT_LOOPS = 50
 
@@ -354,7 +355,13 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
     # build a job for cross_val_score
     uid = uuid.uuid4().hex[:15].upper()
-    r.publish(output_file,"starting job: {}:{}".format(uid,sklearn_pipeline))
+
+    sklearn_pipeline_formatted = _format_pipeline_output(sklearn_pipeline.steps)
+    sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps)
+
+    r.publish(output_file,"starting job: {}:{}".format(uid,sklearn_pipeline_json))
+    r.hset(output_file,uid,sklearn_pipeline_formatted)
+
     tmp_it = Interruptable_cross_val_score(
         clone(sklearn_pipeline),
         features,
@@ -375,6 +382,18 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         resulting_score = np.mean(tmp_it.result)
 
     tmp_it.stop()
-    r.publish(output_file,"ending: {}:{}".format(uid,sklearn_pipeline))
+    r.publish(output_file,"ending: {}:{}".format(uid,sklearn_pipeline_json))
     r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
     return resulting_score
+
+def _format_pipeline_output(pipeline):
+    sklearn_pipeline_formatted = str(pipeline)
+    sklearn_pipeline_formatted = re.sub(" at+\s+\w+>","",sklearn_pipeline_formatted)
+    sklearn_pipeline_formatted = re.sub("<function ","",sklearn_pipeline_formatted)
+    sklearn_pipeline_formatted = re.sub("\n","",sklearn_pipeline_formatted)
+
+def _format_pipeline_json(pipeline):
+    json = {'funcs':[]}
+    for item in pipeline:
+        json['funcs'].append({'name':item[1].__class__.__name__, 'params':item[1].__dict__})
+    return json
