@@ -237,8 +237,8 @@ class TPOTBase(BaseEstimator):
         self.max_eval_time_seconds = max(int(self.max_eval_time_mins * 60), 1)
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
         self.early_stop = early_stop
-        self._last_optimized_pipeline = None
-        self._last_optimized_pipeline_n_gens = 0
+        self._last_optimized_pareto_front = None
+        self._last_optimized_pareto_front_n_gens = 0
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -631,13 +631,14 @@ class TPOTBase(BaseEstimator):
                                   'TPOTClassifier object. Please make sure you '
                                   'passed the data to TPOT correctly.')
             else:
-                if not self._last_optimized_pipeline:
-                    self._last_optimized_pipeline = str(self._optimized_pipeline)
-                elif self._last_optimized_pipeline == str(self._optimized_pipeline):
-                    self._last_optimized_pipeline_n_gens += 1
+                pareto_front_wvalues = [pipeline_scores.wvalues[1] for pipeline_scores in self._pareto_front.keys]
+                if not self._last_optimized_pareto_front:
+                    self._last_optimized_pareto_front = pareto_front_wvalues
+                elif self._last_optimized_pareto_front == pareto_front_wvalues:
+                    self._last_optimized_pareto_front_n_gens += 1
                 else:
-                    self._last_optimized_pipeline = str(self._optimized_pipeline)
-                    self._last_optimized_pipeline_n_gens = 0
+                    self._last_optimized_pareto_front = pareto_front_wvalues
+                    self._last_optimized_pareto_front_n_gens = 0
         else:
             # If user passes CTRL+C in initial generation, self._pareto_front (halloffame) shoule be not updated yet.
             # need raise RuntimeError because no pipeline has been optimized
@@ -847,7 +848,7 @@ class TPOTBase(BaseEstimator):
                 self._save_periodic_pipeline()
 
         if self.early_stop is not None:
-            if self._last_optimized_pipeline_n_gens >= self.early_stop:
+            if self._last_optimized_pareto_front_n_gens >= self.early_stop:
                 raise StopIteration("The optimized pipeline was not improved after evaluating {} more generations. "
                                         "Will end the optimization process.\n".format(self.early_stop))
 
