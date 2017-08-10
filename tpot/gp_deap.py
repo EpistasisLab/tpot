@@ -391,9 +391,20 @@ def _format_pipeline_output(pipeline):
     sklearn_pipeline_formatted = re.sub(" at+\s+\w+>","",sklearn_pipeline_formatted)
     sklearn_pipeline_formatted = re.sub("<function ","",sklearn_pipeline_formatted)
     sklearn_pipeline_formatted = re.sub("\n","",sklearn_pipeline_formatted)
+    return sklearn_pipeline_formatted
 
 def _format_pipeline_json(pipeline):
     json = {'funcs':[]}
     for item in pipeline:
-        json['funcs'].append({'name':item[1].__class__.__name__, 'params':item[1].__dict__})
+        params = {}
+        for param in item[1].__dict__:
+            if param.strip() == 'score_func':
+                tmp = str(item[1].__dict__[param])
+                tmp = re.sub(" at+\s+\w+>","",tmp)
+                tmp = re.sub("<function ","",tmp)
+                params[param] = tmp
+            else:
+                params[param] = item[1].__dict__[param]
+
+        json['funcs'].append({'name':item[1].__class__.__name__, 'params':params})
     return json
