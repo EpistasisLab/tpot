@@ -747,7 +747,7 @@ def test_check_periodic_pipeline_2():
 
 
 def test_check_periodic_pipeline_3():
-    """Assert that the _check_periodic_pipeline rasie StopIteration if self._last_optimized_pipeline_n_gens >= self.early_stop."""
+    """Assert that the _check_periodic_pipeline rasie StopIteration if self._last_optimized_pareto_front_n_gens >= self.early_stop."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -760,7 +760,7 @@ def test_check_periodic_pipeline_3():
     tpot_obj.early_stop = 3
     # will pass
     tpot_obj._check_periodic_pipeline()
-    tpot_obj._last_optimized_pipeline_n_gens = 3
+    tpot_obj._last_optimized_pareto_front_n_gens = 3
     assert_raises(StopIteration, tpot_obj._check_periodic_pipeline)
 
 
