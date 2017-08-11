@@ -398,7 +398,7 @@ def _format_pipeline_json(pipeline):
     for item in pipeline:
         params = {}
         for param in item[1].__dict__:
-            if param.strip() == 'score_func':
+            if '_func' in param:
                 tmp = str(item[1].__dict__[param])
                 tmp = re.sub(" at+\s+\w+>","",tmp)
                 tmp = re.sub("<function ","",tmp)
@@ -406,5 +406,5 @@ def _format_pipeline_json(pipeline):
             else:
                 params[param] = item[1].__dict__[param]
 
-        json['funcs'].append({'name':item[1].__class__.__name__, 'params':params})
+        json['funcs'].append({"name":item[1].__class__.__name__, "params":params})
     return json
