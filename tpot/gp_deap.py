@@ -357,7 +357,7 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     uid = uuid.uuid4().hex[:15].upper()
 
     sklearn_pipeline_formatted = _format_pipeline_output(sklearn_pipeline.steps)
-    sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps)
+    sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
 
     r.publish(output_file,"starting job: {}:{}".format(uid,sklearn_pipeline_json))
     r.hset(output_file,uid,sklearn_pipeline_formatted)
@@ -393,8 +393,9 @@ def _format_pipeline_output(pipeline):
     sklearn_pipeline_formatted = re.sub("\n","",sklearn_pipeline_formatted)
     return sklearn_pipeline_formatted
 
-def _format_pipeline_json(pipeline):
+def _format_pipeline_json(pipeline,features=None,target=None):
     json = {'funcs':[]}
+    json['feature_matrix'] = _collect_feature_list(pipeline,features,target)
     for item in pipeline:
         params = {}
         for param in item[1].__dict__:
@@ -408,3 +409,11 @@ def _format_pipeline_json(pipeline):
 
         json['funcs'].append({"name":item[1].__class__.__name__, "params":params})
     return json
+
+def _collect_feature_list(pipeline,features,target):
+    feature_list = []
+    for step in pipeline:
+        if "get_support" in dir(step[1]):
+            fit_step = step[1].fit(features,target)
+            feature_list = fit_step.get_support()
+    return feature_list
