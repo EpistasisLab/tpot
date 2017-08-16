@@ -384,9 +384,8 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         resulting_score = np.mean(tmp_it.result)
 
     tmp_it.stop()
-    output_str = "ending: {}:{}".format(uid, sklearn_pipeline_json)
-    output_str += "score: {}:{}".format(uid, resulting_score)
-    r.publish(output_file, output_str)
+    
+    r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
     return resulting_score
 
 def _format_pipeline_output(pipeline):
