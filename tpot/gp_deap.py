@@ -384,7 +384,7 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         resulting_score = np.mean(tmp_it.result)
 
     tmp_it.stop()
-    
+
     r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
     return resulting_score
 
@@ -415,7 +415,14 @@ def _format_pipeline_json(pipeline,features=None,target=None):
 def _collect_feature_list(pipeline,features,target):
     feature_list = []
     for step in pipeline:
+        if step[1].__class__.__name__ == 'FeatureUnion':
+            transformer_list = step[1].transformer_list
+            for transformer in transformer_list:
+                if "get_support" in transformer[1]:
+                    fit_step = transformer[1].fit(features,target)
+                    feature_list.append(fit_step.get_support().tolist)
+                    
         if "get_support" in dir(step[1]):
             fit_step = step[1].fit(features,target)
-            feature_list = fit_step.get_support()
+            feature_list.append(fit_step.get_support().tolist)
     return feature_list
