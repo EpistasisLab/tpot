@@ -420,9 +420,9 @@ def _collect_feature_list(pipeline,features,target):
             for transformer in transformer_list:
                 if "get_support" in transformer[1]:
                     fit_step = transformer[1].fit(features,target)
-                    feature_list.append(fit_step.get_support().tolist)
-                    
+                    feature_list.append(fit_step.get_support().tolist())
+
         if "get_support" in dir(step[1]):
             fit_step = step[1].fit(features,target)
-            feature_list.append(fit_step.get_support().tolist)
+            feature_list.append(fit_step.get_support().tolist())
     return feature_list
