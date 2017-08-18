@@ -562,7 +562,7 @@ class TPOTBase(BaseEstimator):
                         # It won't raise error for a small test like in a unit test because a few pipeline sometimes
                         # may fail due to the training data does not fit the operator's requirement.
                         if not self._optimized_pipeline:
-                            print('There was an error in the TPOT optimization '
+                            raise Exception('There was an error in the TPOT optimization '
                                   'process. This could be because the data was '
                                   'not formatted properly, or because data for '
                                   'a regression problem was provided to the '
