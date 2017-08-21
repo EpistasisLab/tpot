@@ -350,7 +350,7 @@ class Interruptable_cross_val_score(threading.Thread):
 
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight,
-                             max_eval_time_mins, groups, output_file):
+                             max_eval_time_mins, groups, output_file,model_type):
     max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
     # build a job for cross_val_score
