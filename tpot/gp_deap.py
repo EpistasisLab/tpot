@@ -28,7 +28,7 @@ import numpy as np
 from deap import tools, gp
 from inspect import isclass
 from .operator_utils import set_sample_weight
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
 from sklearn.base import clone
 from collections import defaultdict
 import warnings
@@ -363,6 +363,12 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
 
     r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
     r.hset(output_file, uid, sklearn_pipeline_formatted)
+    r.hset(output_file, uid + '-fold', cv)
+
+    if "Classifier" in model_type:
+        cv_obj = StratifiedKFold(n_splits=cv, random_state=cv)
+    else:
+        cv_obj = KFold(n_splits=cv, random_state=cv)
 
     tmp_it = Interruptable_cross_val_score(
         clone(sklearn_pipeline),
