@@ -36,6 +36,8 @@ import threading
 import redis
 import uuid
 import re
+import traceback
+
 # Limit loops to generate a different individual by crossover/mutation
 MAX_MUT_LOOPS = 50
 
@@ -351,48 +353,49 @@ class Interruptable_cross_val_score(threading.Thread):
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight,
                              max_eval_time_mins, groups, output_file):
-    max_time_seconds = max(int(max_eval_time_mins * 60), 1)
-    sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
-    # build a job for cross_val_score
-    uid = uuid.uuid4().hex[:15].upper()
+    try:
+        max_time_seconds = max(int(max_eval_time_mins * 60), 1)
+        sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
+        # build a job for cross_val_score
+        uid = uuid.uuid4().hex[:15].upper()
 
-    sklearn_pipeline_formatted = _format_pipeline_output(sklearn_pipeline.steps)
-    sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
+        sklearn_pipeline_formatted = _format_pipeline_output(sklearn_pipeline.steps)
+        sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
 
-    r = redis.StrictRedis(host='redis', port=6379, db=0)
+        r = redis.StrictRedis(host='redis', port=6379, db=0)
 
-    r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
-    r.hset(output_file, uid, sklearn_pipeline_formatted)
-    r.hset(output_file, uid + '-fold', cv)
+        r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
+        r.hset(output_file, uid, sklearn_pipeline_formatted)
+        r.hset(output_file, uid + '-fold', cv)
 
-    # if "Classifier" in model_type:
-    #     cv_obj = StratifiedKFold(n_splits=cv, random_state=cv)
-    # else:
-    #     cv_obj = KFold(n_splits=cv, random_state=cv)
+        tmp_it = Interruptable_cross_val_score(
+            clone(sklearn_pipeline),
+            features,
+            target,
+            scoring=scoring_function,
+            cv=cv,
+            n_jobs=1,
+            verbose=0,
+            fit_params=sample_weight_dict,
+            groups=groups
+        )
+        tmp_it.start()
+        tmp_it.join(max_time_seconds)
 
-    tmp_it = Interruptable_cross_val_score(
-        clone(sklearn_pipeline),
-        features,
-        target,
-        scoring=scoring_function,
-        cv=cv,
-        n_jobs=1,
-        verbose=0,
-        fit_params=sample_weight_dict,
-        groups=groups
-    )
-    tmp_it.start()
-    tmp_it.join(max_time_seconds)
+        if tmp_it.isAlive():
+            resulting_score = 'Timeout'
+        else:
+            resulting_score = np.mean(tmp_it.result)
 
-    if tmp_it.isAlive():
-        resulting_score = 'Timeout'
-    else:
-        resulting_score = np.mean(tmp_it.result)
+        tmp_it.stop()
 
-    tmp_it.stop()
+        r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
+        return resulting_score
+    except Exception as e:
+        print("Error while running _wrapped_cross_val_score : %s" % str(e))
+        print(traceback.format_exc())
 
-    r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
-    return resulting_score
+        raise e
 
 def _format_pipeline_output(pipeline):
     sklearn_pipeline_formatted = str(pipeline)
@@ -421,22 +424,14 @@ def _format_pipeline_json(pipeline,features=None,target=None):
 def _collect_feature_list(pipeline,features,target):
     feature_list = []
     for step in pipeline:
+        if step[1].__class__.__name__ == 'FeatureUnion':
+            transformer_list = step[1].transformer_list
+            for transformer in transformer_list:
+                if "get_support" in transformer[1]:
+                    fit_step = transformer[1].fit(features,target)
+                    feature_list.append(fit_step.get_support().tolist())
+
         if "get_support" in dir(step[1]):
             fit_step = step[1].fit(features,target)
-            feature_list = fit_step.get_support()
+            feature_list.append(fit_step.get_support().tolist())
     return feature_list
-
-# def _collect_feature_list(pipeline,features,target):
-#     feature_list = []
-#     for step in pipeline:
-#         if step[1].__class__.__name__ == 'FeatureUnion':
-#             transformer_list = step[1].transformer_list
-#             for transformer in transformer_list:
-#                 if "get_support" in transformer[1]:
-#                     fit_step = transformer[1].fit(features,target)
-#                     feature_list.append(fit_step.get_support().tolist())
-#
-#         if "get_support" in dir(step[1]):
-#             fit_step = step[1].fit(features,target)
-#             feature_list.append(fit_step.get_support().tolist())
-#     return feature_list
