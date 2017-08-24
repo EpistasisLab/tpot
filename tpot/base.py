@@ -212,8 +212,8 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
         self.output_file = None
-        self.sc=sc
-
+        self.sc = sc
+        self.r = None
         if output_file:
             self.r = redis.StrictRedis(host='redis', port=6379, db=0)
             self.output_file = output_file
@@ -520,7 +520,9 @@ class TPOTBase(BaseEstimator):
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
-        self.r.publish(self.output_file,"total evaluation: {}".format(total_evals))
+        if self.r is not None:
+            self.r.publish(self.output_file,"total evaluation: {}".format(total_evals))
+
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
@@ -598,7 +600,8 @@ class TPOTBase(BaseEstimator):
                     if attempt == (attempts - 1):
                         raise
 
-            self.r.publish(self.output_file,"EVALUATION_COMPLETE")
+            if self.r is not None:
+                self.r.publish(self.output_file,"EVALUATION_COMPLETE")
             return self
 
     def _update_top_pipeline(self):
