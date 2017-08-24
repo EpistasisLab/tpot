@@ -981,6 +981,7 @@ class TPOTBase(BaseEstimator):
         except Exception as e:
             print("Error while running _wrapped_cross_val_score : %s" % str(e))
             print(traceback.format_exc())
+            raise e
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):
