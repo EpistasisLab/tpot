@@ -59,6 +59,7 @@ from .config.regressor_mdr import tpot_mdr_regressor_config_dict
 from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
+import traceback
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -85,7 +86,7 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None, warm_start=False,
-                 verbosity=0, disable_update_check=False,output_file=None):
+                 verbosity=0, disable_update_check=False,output_file=None, sc=None):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -211,6 +212,7 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
         self.output_file = None
+        self.sc=sc
 
         if output_file:
             self.r = redis.StrictRedis(host='redis', port=6379, db=0)
@@ -903,24 +905,55 @@ class TPOTBase(BaseEstimator):
         resulting_score_list = []
         # chunk size for pbar update
 
+        arPipelines = []
+        model_type = self.__class__.__name__
+        output_file = self.output_file
+        max_eval_time_mins = self.max_eval_time_mins
+        scoring_function=self.scoring_function
+        cv=self.cv
+        def mapFunc(index):
+            return (index, _wrapped_cross_val_score(
+                sklearn_pipeline=arPipelines[index],
+                features=features,
+                target=target,
+                cv=cv, #self.cv,
+                scoring_function=scoring_function, #self.scoring_function,
+                sample_weight=sample_weight,
+                max_eval_time_mins=max_eval_time_mins, #self.max_eval_time_mins,
+                groups=groups,
+                output_file=output_file, #self.output_file,
+                model_type=model_type
+                ))
+
         for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
-            jobs = []
-            for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
-                job = delayed(_wrapped_cross_val_score)(
-                    sklearn_pipeline=sklearn_pipeline,
-                    features=features,
-                    target=target,
-                    cv=self.cv,
-                    scoring_function=self.scoring_function,
-                    sample_weight=sample_weight,
-                    max_eval_time_mins=self.max_eval_time_mins,
-                    groups=groups,
-                    output_file=self.output_file,
-                    model_type=self.__class__.__name__
-                )
-                jobs.append(job)
-            parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-            tmp_result_score = parallel(jobs)
+            if self.sc is not None:
+                arPipelines = []
+                arParams = []
+                for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
+                    arParams.append(len(arPipelines))
+                    arPipelines.append(sklearn_pipeline)
+                rddParams = self.sc.parallelize(arParams)
+                indexed_result_score = dict(rddParams.map(mapFunc).collect())
+                tmp_result_score = [indexed_result_score[idx] for idx in range(len(indexed_result_score))]
+            else:
+                jobs = []
+
+                for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
+                    job = delayed(_wrapped_cross_val_score)(
+                        sklearn_pipeline=sklearn_pipeline,
+                        features=features,
+                        target=target,
+                        cv=self.cv,
+                        scoring_function=self.scoring_function,
+                        sample_weight=sample_weight,
+                        max_eval_time_mins=self.max_eval_time_mins,
+                        groups=groups,
+                        output_file=self.output_file,
+                        model_type=self.__class__.__name__
+                    )
+                    jobs.append(job)
+                parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                tmp_result_score = parallel(jobs)
 
             # update pbar
             for val in tmp_result_score:
