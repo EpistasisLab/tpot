@@ -75,7 +75,7 @@ def _auto_select_categorical_features(X, threshold=10):
     return feature_mask
 
 
-def _transform_selected(X, transform, selected="all", copy=True):
+def _transform_selected(X, transform, selected, copy=True):
     """Apply a transform function to portion of selected features.
 
     Parameters
@@ -98,9 +98,6 @@ def _transform_selected(X, transform, selected="all", copy=True):
     """
     if selected == "all":
         return transform(X)
-    elif selected == "auto":
-        selected = _auto_select_categorical_features(X)
-
     if len(selected) == 0:
         return X
 
@@ -147,7 +144,8 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
     categorical_features: "all" or array of indices or mask
         Specify what features are treated as categorical.
 
-        - 'all' (default): All features are treated as categorical.
+        - 'all': All features are treated as categorical.
+        - 'auto' (default): Select only features that have less than 10 unique values.
         - array of indices: Array of categorical feature indices.
         - mask: Array of length n_features and with dtype=bool.
 
@@ -200,7 +198,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
       encoding of dictionary items or strings.
     """
 
-    def __init__(self, categorical_features='all', dtype=np.float,
+    def __init__(self, categorical_features='auto', dtype=np.float,
                  sparse=True, minimum_fraction=None):
         self.categorical_features = categorical_features
         self.dtype = dtype
@@ -372,6 +370,9 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         y: array-like {n_samples,} (Optional, ignored)
             Feature labels
         """
+        if self.categorical_features == "auto":
+            self.categorical_features = _auto_select_categorical_features(X)
+
         return _transform_selected(
             X,
             self._fit_transform,
