@@ -28,11 +28,15 @@ import numpy as np
 from deap import tools, gp
 from inspect import isclass
 from .operator_utils import set_sample_weight
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
 from sklearn.base import clone
 from collections import defaultdict
 import warnings
 import threading
+import redis
+import uuid
+import re
+import traceback
 
 # Limit loops to generate a different individual by crossover/mutation
 MAX_MUT_LOOPS = 50
@@ -346,31 +350,95 @@ class Interruptable_cross_val_score(threading.Thread):
         except Exception as e:
             pass
 
-
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight,
-                             max_eval_time_mins, groups):
-    max_time_seconds = max(int(max_eval_time_mins * 60), 1)
-    sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
-    # build a job for cross_val_score
-    tmp_it = Interruptable_cross_val_score(
-        clone(sklearn_pipeline),
-        features,
-        target,
-        scoring=scoring_function,
-        cv=cv,
-        n_jobs=1,
-        verbose=0,
-        fit_params=sample_weight_dict,
-        groups=groups
-    )
-    tmp_it.start()
-    tmp_it.join(max_time_seconds)
+                             max_eval_time_mins, groups, output_file,model_type):
+    try:
+        max_time_seconds = max(int(max_eval_time_mins * 60), 1)
+        sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
+        # build a job for cross_val_score
+        uid = uuid.uuid4().hex[:15].upper()
 
-    if tmp_it.isAlive():
-        resulting_score = 'Timeout'
-    else:
-        resulting_score = np.mean(tmp_it.result)
+        sklearn_pipeline_formatted = _format_pipeline_output(sklearn_pipeline.steps)
+        sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
 
-    tmp_it.stop()
-    return resulting_score
+        r = redis.StrictRedis(host='redis', port=6379, db=0)
+
+        r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
+        r.hset(output_file, uid, sklearn_pipeline_formatted)
+        r.hset(output_file, uid + '-fold', cv)
+
+        n_classes = len(np.unique(target))
+        #use Kfold for everything but binary classification so we can display metric charts like roc_curve
+        if "Classifier" in model_type and n_classes < 3:
+            cv_obj = StratifiedKFold(n_splits=cv, random_state=cv)
+        else:
+            cv_obj = KFold(n_splits=cv, random_state=cv)
+
+        tmp_it = Interruptable_cross_val_score(
+            clone(sklearn_pipeline),
+            features,
+            target,
+            scoring=scoring_function,
+            cv=cv,
+            n_jobs=1,
+            verbose=0,
+            fit_params=sample_weight_dict,
+            groups=groups
+        )
+        tmp_it.start()
+        tmp_it.join(max_time_seconds)
+
+        if tmp_it.isAlive():
+            resulting_score = 'Timeout'
+        else:
+            resulting_score = np.mean(tmp_it.result)
+
+        tmp_it.stop()
+
+        r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
+        return resulting_score
+
+    except Exception as e:
+        print("Error while running _wrapped_cross_val_score : %s" % str(e))
+        print(traceback.format_exc())
+
+
+def _format_pipeline_output(pipeline):
+    sklearn_pipeline_formatted = str(pipeline)
+    sklearn_pipeline_formatted = re.sub(" at+\s+\w+>","",sklearn_pipeline_formatted)
+    sklearn_pipeline_formatted = re.sub("<function ","",sklearn_pipeline_formatted)
+    sklearn_pipeline_formatted = re.sub("\n","",sklearn_pipeline_formatted)
+    return sklearn_pipeline_formatted
+
+def _format_pipeline_json(pipeline,features=None,target=None):
+    json = {'funcs':[]}
+    json['feature_matrix'] = _collect_feature_list(pipeline,features,target)
+    for item in pipeline:
+        params = {}
+        for param in item[1].__dict__:
+            if '_func' in param:
+                tmp = str(item[1].__dict__[param])
+                tmp = re.sub(" at+\s+\w+>","",tmp)
+                tmp = re.sub("<function ","",tmp)
+                params[param] = tmp
+            else:
+                params[param] = item[1].__dict__[param]
+
+        json['funcs'].append({"name":item[1].__class__.__name__, "params":params})
+    return json
+
+def _collect_feature_list(pipeline,features,target):
+    feature_list = []
+    for step in pipeline:
+        if step[1].__class__.__name__ == 'FeatureUnion':
+            transformer_list = step[1].transformer_list
+            for transformer in transformer_list:
+                if "get_support" in dir(transformer[1]):
+                    fit_step = transformer[1].fit(features,target)
+                    feature_list.append(fit_step.get_support().tolist())
+
+        if "get_support" in dir(step[1]):
+            fit_step = step[1].fit(features,target)
+            feature_list.append(fit_step.get_support().tolist())
+    return feature_list
