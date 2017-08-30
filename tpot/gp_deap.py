@@ -368,7 +368,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         r.hset(output_file, uid, sklearn_pipeline_formatted)
         r.hset(output_file, uid + '-fold', cv)
 
-        if "Classifier" in model_type:
+        n_classes = len(np.unique(target))
+        #use Kfold for everything but binary classification so we can display metric charts like roc_curve
+        if "Classifier" in model_type and n_classes < 3:
             cv_obj = StratifiedKFold(n_splits=cv, random_state=cv)
         else:
             cv_obj = KFold(n_splits=cv, random_state=cv)
@@ -393,7 +395,7 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             resulting_score = np.mean(tmp_it.result)
 
         tmp_it.stop()
-        
+
         r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
         return resulting_score
 
