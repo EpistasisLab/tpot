@@ -157,6 +157,10 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
     sparse : boolean, default=True
         Will return sparse matrix if set True else will return an array.
 
+    threshold : int, default=10
+        Maximum number of unique values per feature to consider the feature
+        to be categorical when categorical_features is 'auto' .
+
     Attributes
     ----------
     `active_features_` : array
@@ -199,11 +203,12 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, categorical_features='auto', dtype=np.float,
-                 sparse=True, minimum_fraction=None):
+                 sparse=True, minimum_fraction=None, threshold=10):
         self.categorical_features = categorical_features
         self.dtype = dtype
         self.sparse = sparse
         self.minimum_fraction = minimum_fraction
+        self.threshold = threshold
 
     def fit(self, X, y=None):
         """Fit OneHotEncoder to X.
@@ -371,7 +376,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
             Feature labels
         """
         if self.categorical_features == "auto":
-            self.categorical_features = _auto_select_categorical_features(X)
+            self.categorical_features = _auto_select_categorical_features(X, threshold=self.threshold)
 
         return _transform_selected(
             X,
