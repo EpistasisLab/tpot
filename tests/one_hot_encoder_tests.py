@@ -31,7 +31,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 import scipy.sparse
 from sklearn.utils.testing import assert_array_almost_equal
-from sklearn.datasets import load_iris
+from sklearn.datasets import load_iris, load_boston
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_val_score, KFold
 from nose.tools import assert_equal
 
 from tpot.builtins.one_hot_encoder import OneHotEncoder, _auto_select_categorical_features
@@ -276,3 +279,18 @@ def test_transform_with_unknown_value():
     tds = scipy.sparse.csr_matrix(test_data)
     output = ohe.transform(tds).todense()
     assert np.sum(output) == 3
+
+
+def test_k_fold_cv():
+    boston = load_boston()
+
+    clf = make_pipeline(
+        OneHotEncoder(
+            categorical_features='auto',
+            sparse=False,
+            minimum_fraction=0.05
+        ),
+        LinearRegression()
+    )
+
+    cross_val_score(clf, boston.data, boston.target, cv=KFold(n_splits=10, shuffle=True))
