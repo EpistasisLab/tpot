@@ -90,7 +90,7 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None, population_seeds=None,
-                 warm_start=False, periodic_checkpoint_folder=None,
+                 warm_start=False, periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False):
         """Set up the genetic programming algorithm for pipeline optimization.
 
@@ -198,6 +198,9 @@ class TPOTBase(BaseEstimator):
                 Sudden death before tpot could save optimized pipeline
                 Track its progress
                 Grab pipelines while it's still optimizing
+        early_stop: int or None (default: None)
+            How many generations TPOT checks whether there is no improvement in optimization process.
+            End optimization process if there is no improvement in the set number of generations.
         verbosity: int, optional (default: 0)
             How much information TPOT communicates while it's running.
             0 = none, 1 = minimal, 2 = high, 3 = all.
@@ -233,6 +236,9 @@ class TPOTBase(BaseEstimator):
         self.max_eval_time_mins = max_eval_time_mins
         self.max_eval_time_seconds = max(int(self.max_eval_time_mins * 60), 1)
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
+        self.early_stop = early_stop
+        self._last_optimized_pareto_front = None
+        self._last_optimized_pareto_front_n_gens = 0
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -326,6 +332,7 @@ class TPOTBase(BaseEstimator):
         self._setup_toolbox()
         self._setup_pop(population_seeds, config_dict)
 
+
     def _setup_config(self, config_dict):
         if config_dict:
             if isinstance(config_dict, dict):
@@ -385,6 +392,7 @@ class TPOTBase(BaseEstimator):
 
         self._pop = [creator.Individual.from_string(x, self._pset) for x in population_seeds]
 
+
     def _setup_pset(self):
         if self.random_state is not None:
             random.seed(self.random_state)
@@ -397,6 +405,7 @@ class TPOTBase(BaseEstimator):
 
         if self.verbosity > 2:
             print('{} operators have been imported by TPOT.'.format(len(self.operators)))
+
 
     def _add_operators(self):
         for operator in self.operators:
@@ -424,6 +433,7 @@ class TPOTBase(BaseEstimator):
 
         self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
 
+
     def _add_terminals(self):
         for _type in self.arguments:
             type_values = list(_type.values)
@@ -431,6 +441,7 @@ class TPOTBase(BaseEstimator):
             for val in type_values:
                 terminal_name = _type.__name__ + "=" + str(val)
                 self._pset.addTerminal(val, _type, name=terminal_name)
+
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
@@ -445,6 +456,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('mate', self._mate_operator)
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
+
 
     def fit(self, features, target, sample_weight=None, groups=None):
         """Fit an optimized machine learning pipeline.
@@ -566,7 +578,7 @@ class TPOTBase(BaseEstimator):
                     pbar=self._pbar,
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
-                    per_generation_function=partial(self._save_pipeline_if_period, features=features, target=target)
+                    per_generation_function=self._check_periodic_pipeline
                 )
 
             # store population for the next call
@@ -574,10 +586,11 @@ class TPOTBase(BaseEstimator):
                 self._pop = pop
 
         # Allow for certain exceptions to signal a premature fit() cancellation
-        except (KeyboardInterrupt, SystemExit):
+        except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
                 self._pbar.write('', file=self._file)
-                self._pbar.write('TPOT closed prematurely. Will use the current best pipeline.', file=self._file)
+                self._pbar.write('{}\nTPOT closed prematurely. Will use the current best pipeline.'.format(e),
+                                    file=self._file)
         finally:
             # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
             attempts = 10
@@ -588,37 +601,19 @@ class TPOTBase(BaseEstimator):
                     if not isinstance(self._pbar, type(None)):
                         self._pbar.close()
 
-                    self._update_top_pipeline(features, target)
+                    self._update_top_pipeline()
+                    self._summary_of_best_pipeline(features, target)
                     break
 
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
                     # raise the exception if it's our last attempt
                     if attempt == (attempts - 1):
-                        raise
+                        raise e
             return self
 
-    def _update_top_pipeline(self, features, target):
+
+    def _update_top_pipeline(self):
         """Helper function to update the _optimized_pipeline field.
-
-        Parameters
-        ----------
-        features: array-like {n_samples, n_features}
-            Feature matrix
-
-            TPOT and all scikit-learn algorithms assume that the features will be numerical
-            and there will be no missing values. As such, when a feature matrix is provided
-            to TPOT, all missing values will automatically be replaced (i.e., imputed) using
-            median value imputation.
-
-            If you wish to use a different imputation strategy than median imputation, please
-            make sure to apply imputation to your feature set prior to passing it to TPOT.
-        target: array-like {n_samples}
-            List of class labels for prediction
-
-        Returns
-        -------
-        self: object
-            Returns a copy of the fitted TPOT object
         """
         # Store the pipeline with the highest internal testing score
         if self._pareto_front:
@@ -636,32 +631,67 @@ class TPOTBase(BaseEstimator):
                                   'TPOTClassifier object. Please make sure you '
                                   'passed the data to TPOT correctly.')
             else:
-                self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
-
-                with warnings.catch_warnings():
-                    warnings.simplefilter('ignore')
-                    self.fitted_pipeline_.fit(features, target)
-
-                if self.verbosity in [1, 2]:
-                    # Add an extra line of spacing if the progress bar was used
-                    if self.verbosity >= 2:
-                        print('')
-
-                    optimized_pipeline_str = self.clean_pipeline_string(self._optimized_pipeline)
-                    print('Best pipeline:', optimized_pipeline_str)
-
-                # Store and fit the entire Pareto front as fitted models for convenience
-                self.pareto_front_fitted_pipelines_ = {}
-
-                for pipeline in self._pareto_front.items:
-                    self.pareto_front_fitted_pipelines_[str(pipeline)] = self._toolbox.compile(expr=pipeline)
-                    with warnings.catch_warnings():
-                        warnings.simplefilter('ignore')
-                        self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, target)
+                pareto_front_wvalues = [pipeline_scores.wvalues[1] for pipeline_scores in self._pareto_front.keys]
+                if not self._last_optimized_pareto_front:
+                    self._last_optimized_pareto_front = pareto_front_wvalues
+                elif self._last_optimized_pareto_front == pareto_front_wvalues:
+                    self._last_optimized_pareto_front_n_gens += 1
+                else:
+                    self._last_optimized_pareto_front = pareto_front_wvalues
+                    self._last_optimized_pareto_front_n_gens = 0
         else:
             # If user passes CTRL+C in initial generation, self._pareto_front (halloffame) shoule be not updated yet.
             # need raise RuntimeError because no pipeline has been optimized
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
+
+
+    def _summary_of_best_pipeline(self, features, target):
+        """Print out best pipeline at the end of optimization process.
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix
+
+        target: array-like {n_samples}
+            List of class labels for prediction
+
+        Returns
+        -------
+        self: object
+            Returns a copy of the fitted TPOT object
+        """
+        if not self._optimized_pipeline:
+            raise RuntimeError('There was an error in the TPOT optimization '
+                              'process. This could be because the data was '
+                              'not formatted properly, or because data for '
+                              'a regression problem was provided to the '
+                              'TPOTClassifier object. Please make sure you '
+                              'passed the data to TPOT correctly.')
+        else:
+            self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
+
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                self.fitted_pipeline_.fit(features, target)
+
+            if self.verbosity in [1, 2]:
+                # Add an extra line of spacing if the progress bar was used
+                if self.verbosity >= 2:
+                    print('')
+
+                optimized_pipeline_str = self.clean_pipeline_string(self._optimized_pipeline)
+                print('Best pipeline:', optimized_pipeline_str)
+
+            # Store and fit the entire Pareto front as fitted models for convenience
+            self.pareto_front_fitted_pipelines_ = {}
+
+            for pipeline in self._pareto_front.items:
+                self.pareto_front_fitted_pipelines_[str(pipeline)] = self._toolbox.compile(expr=pipeline)
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    self.pareto_front_fitted_pipelines_[str(pipeline)].fit(features, target)
+
 
     def predict(self, features):
         """Use the optimized pipeline to predict the target for a feature set.
@@ -805,30 +835,34 @@ class TPOTBase(BaseEstimator):
         return pretty
 
 
-    def _save_pipeline_if_period(self, features, target):
+    def _check_periodic_pipeline(self):
         """If enough time has passed, save a new optimized pipeline.
 
         Currently used in the per generation hook in the optimization loop.
         """
-        total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
-        if total_since_last_pipeline_save > self._output_best_pipeline_period_seconds:
-            self._last_pipeline_write = datetime.now()
-            self._save_periodic_pipeline(features, target)
-
-
-    def _save_periodic_pipeline(self, features, target):
+        self._update_top_pipeline()
         if self.periodic_checkpoint_folder is not None:
-            try:
-                self._update_top_pipeline(features, target)
-                filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
+            total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
+            if total_since_last_pipeline_save > self._output_best_pipeline_period_seconds:
+                self._last_pipeline_write = datetime.now()
+                self._save_periodic_pipeline()
 
-                did_export = self.export(filename, skip_if_repeated=True)
-                if not did_export:
-                    self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
-                else:
-                    self._update_pbar(pbar_num=0, pbar_msg='Saving best periodic pipeline to {}'.format(filename))
-            except Exception as e:
-                self._update_pbar(pbar_num=0, pbar_msg='Failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
+        if self.early_stop is not None:
+            if self._last_optimized_pareto_front_n_gens >= self.early_stop:
+                raise StopIteration("The optimized pipeline was not improved after evaluating {} more generations. "
+                                        "Will end the optimization process.\n".format(self.early_stop))
+
+
+    def _save_periodic_pipeline(self):
+        try:
+            filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
+            did_export = self.export(filename, skip_if_repeated=True)
+            if not did_export:
+                self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
+            else:
+                self._update_pbar(pbar_num=0, pbar_msg='Saving best periodic pipeline to {}'.format(filename))
+        except Exception as e:
+            self._update_pbar(pbar_num=0, pbar_msg='Failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
 
 
     def export(self, output_file_name, skip_if_repeated=False):
@@ -965,7 +999,7 @@ class TPOTBase(BaseEstimator):
 
     def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
-        
+
         Parameters
         ----------
         individuals: a list of DEAP individual

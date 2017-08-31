@@ -688,8 +688,8 @@ def test_fit_4():
     assert not (tpot_obj._start_datetime is None)
 
 
-def test_save_pipeline_if_period():
-    """Assert that the _save_pipeline_if_period exports periodic pipeline."""
+def test_check_periodic_pipeline():
+    """Assert that the _check_periodic_pipeline exports periodic pipeline."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -706,7 +706,7 @@ def test_save_pipeline_if_period():
         sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
         tpot_obj.periodic_checkpoint_folder = './'
-        tpot_obj._save_pipeline_if_period(training_features, training_target)
+        tpot_obj._check_periodic_pipeline()
         our_file.seek(0)
 
         assert_in('Saving best periodic pipeline to ./pipeline', our_file.read())
@@ -716,8 +716,8 @@ def test_save_pipeline_if_period():
                 os.remove(os.path.join('./', f))
 
 
-def test_save_pipeline_if_period_2():
-    """Assert that the _save_pipeline_if_period does not export periodic pipeline if the pipeline has been saved before."""
+def test_check_periodic_pipeline_2():
+    """Assert that the _check_periodic_pipeline does not export periodic pipeline if the pipeline has been saved before."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -736,7 +736,7 @@ def test_save_pipeline_if_period_2():
         tpot_obj.periodic_checkpoint_folder = './'
         # export once before
         tpot_obj.export('./pipeline_test.py')
-        tpot_obj._save_pipeline_if_period(training_features, training_target)
+        tpot_obj._check_periodic_pipeline()
         our_file.seek(0)
 
         assert_in('Periodic pipeline was not saved, probably saved before...', our_file.read())
@@ -746,8 +746,26 @@ def test_save_pipeline_if_period_2():
                 os.remove(os.path.join('./', f))
 
 
-def test_save_pipeline_if_period_3():
-    """Assert that the _save_pipeline_if_period does not export periodic pipeline if exception happened"""
+def test_check_periodic_pipeline_3():
+    """Assert that the _check_periodic_pipeline rasie StopIteration if self._last_optimized_pareto_front_n_gens >= self.early_stop."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    tpot_obj.early_stop = 3
+    # will pass
+    tpot_obj._check_periodic_pipeline()
+    tpot_obj._last_optimized_pareto_front_n_gens = 3
+    assert_raises(StopIteration, tpot_obj._check_periodic_pipeline)
+
+
+def test_save_periodic_pipeline():
+    """Assert that the _save_periodic_pipeline does not export periodic pipeline if exception happened"""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -764,13 +782,10 @@ def test_save_pipeline_if_period_3():
         sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
         tpot_obj.periodic_checkpoint_folder = './'
-        # reset _optimized_pipeline
+        # reset _optimized_pipeline to rasie exception
         tpot_obj._optimized_pipeline = None
-        # reset pipeline_scores in tpot_obj._pareto_front to cause exception
-        for pipeline_scores in reversed(tpot_obj._pareto_front.keys):
-            pipeline_scores.wvalues = (5000., -float('inf'))
 
-        tpot_obj._save_pipeline_if_period(training_features, training_target)
+        tpot_obj._save_periodic_pipeline()
         our_file.seek(0)
 
         assert_in('Failed saving periodic pipeline, exception', our_file.read())
@@ -810,10 +825,9 @@ def test_update_top_pipeline():
     tpot_obj.fit(training_features, training_target)
     tpot_obj._optimized_pipeline = None
     tpot_obj.fitted_pipeline_ = None
-    tpot_obj._update_top_pipeline(training_features, training_target)
+    tpot_obj._update_top_pipeline()
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
-    assert not (tpot_obj.fitted_pipeline_ is None)
 
 
 def test_update_top_pipeline_2():
@@ -833,7 +847,7 @@ def test_update_top_pipeline_2():
 
     tpot_obj._pareto_front = ParetoFront(similar=pareto_eq)
 
-    assert_raises(RuntimeError, tpot_obj._update_top_pipeline, features=training_features, target=training_target)
+    assert_raises(RuntimeError, tpot_obj._update_top_pipeline)
 
 
 def test_update_top_pipeline_3():
@@ -852,7 +866,21 @@ def test_update_top_pipeline_3():
     for pipeline_scores in reversed(tpot_obj._pareto_front.keys):
         pipeline_scores.wvalues = (5000., -float('inf'))
 
-    assert_raises(RuntimeError, tpot_obj._update_top_pipeline, features=training_features, target=training_target)
+    assert_raises(RuntimeError, tpot_obj._update_top_pipeline)
+
+
+def test_summary_of_best_pipeline():
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._optimized_pipeline is not updated."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    assert_raises(RuntimeError, tpot_obj._summary_of_best_pipeline, features=training_features, target=training_target)
 
 
 def test_set_param_recursive():
