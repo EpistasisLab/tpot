@@ -219,7 +219,9 @@ class ParserTest(TestCase):
     def test_default_param(self):
         """Assert that the TPOT driver stores correct default values for all parameters."""
         args = self.parser.parse_args(['tests/tests.csv'])
+        self.assertEqual(args.CONFIG_FILE, None)
         self.assertEqual(args.CROSSOVER_RATE, 0.1)
+        self.assertEqual(args.EARLY_STOP, None)
         self.assertEqual(args.DISABLE_UPDATE_CHECK, False)
         self.assertEqual(args.GENERATIONS, 100)
         self.assertEqual(args.INPUT_FILE, 'tests/tests.csv')
@@ -249,6 +251,7 @@ class ParserTest(TestCase):
 TPOT settings:
 CONFIG_FILE\t=\tNone
 CROSSOVER_RATE\t=\t0.1
+EARLY_STOP\t=\tNone
 GENERATIONS\t=\t100
 INPUT_FILE\t=\ttests/tests.csv
 INPUT_SEPARATOR\t=\t\t
@@ -287,6 +290,7 @@ VERBOSITY\t=\t1
 TPOT settings:
 CONFIG_FILE\t=\tNone
 CROSSOVER_RATE\t=\t0.1
+EARLY_STOP\t=\tNone
 GENERATIONS\t=\t100
 INPUT_FILE\t=\ttests/tests.csv
 INPUT_SEPARATOR\t=\t\t

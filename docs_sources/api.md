@@ -158,6 +158,12 @@ Useful in multiple cases:
 </ul>
 </blockquote>
 
+<strong>early_stop</strong>: integer, optional (default: None)
+<blockquote>
+How many generations TPOT checks whether there is no improvement in optimization process.<br /><br />
+End optimization process if there is no improvement in the set number of generations.<br /><br />
+</blockquote>
+
 <strong>verbosity</strong>: integer, optional (default=0)
 <blockquote>
 How much information TPOT communicates while it's running.
@@ -603,6 +609,12 @@ Useful in multiple cases:
 <li>Track its progress</li>
 <li>Grab pipelines while it's still optimizing</li>
 </ul>
+</blockquote>
+
+<strong>early_stop</strong>: integer, optional (default: None)
+<blockquote>
+How many generations TPOT checks whether there is no improvement in optimization process.<br /><br />
+End optimization process if there is no improvement in the set number of generations.<br /><br />
 </blockquote>
 
 <strong>verbosity</strong>: integer, optional (default=0)
