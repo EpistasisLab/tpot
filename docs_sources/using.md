@@ -521,3 +521,20 @@ As with `tpot_config`, when using a custom config file the seeds *must* have the
 If less seeds are provided than there are to be individuals in the entire population, then the remainder will be filled with random individuals.
 
 If the `population_seeds` parameter is provided along with seeds from a configuration file, the configuration file's seeds will take precedence.
+
+**Crash/freeze issue with n_jobs > 1 under OSX or Linux**
+
+TPOT allows parallel computing for speeding up optimization process, but it suffers the crash/freeze issue with n_jobs > 1 under OSX or Linux [as  scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux). One solution is to configure Python `multiprocessing` to use the `forkserver` start methods (instead of the default `fork`) to manage the process pools. You may enable the `forkserver` mode globally for your program with putting the following codes into your main script:
+
+```
+import multiprocessing
+
+# other imports, custom code, load data, define model...
+
+if __name__ == '__main__':
+    multiprocessing.set_start_method('forkserver')
+
+    # call scikit-learn utils or tpot utils with n_jobs > 1 here
+```
+
+More information about these start methods can be found in the [multiprocessing documentation](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods)
