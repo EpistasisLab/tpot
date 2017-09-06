@@ -46,36 +46,6 @@ training_features, testing_features, training_target, testing_target = \
     train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
 
 
-def test_export_random_ind():
-    """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 39."""
-    tpot_obj = TPOTClassifier(random_state=39)
-    tpot_obj._pbar = tqdm(total=1, disable=True)
-    pipeline = tpot_obj._toolbox.individual()
-    expected_code = """import numpy as np
-import pandas as pd
-from sklearn.feature_selection import SelectPercentile, f_classif
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import make_pipeline
-from sklearn.tree import DecisionTreeClassifier
-
-# NOTE: Make sure that the class is labeled 'target' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
-training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
-
-exported_pipeline = make_pipeline(
-    SelectPercentile(score_func=f_classif, percentile=65),
-    DecisionTreeClassifier(criterion="gini", max_depth=7, min_samples_leaf=4, min_samples_split=18)
-)
-
-exported_pipeline.fit(training_features, training_target)
-results = exported_pipeline.predict(testing_features)
-"""
-    print(export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset))
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
-
-
 def test_export():
     """Assert that TPOT's export function throws a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
@@ -481,37 +451,6 @@ test3"""
     test3"""
 
     assert indented_multiline_string == _indent(multiline_string, 4)
-
-
-def test_pipeline_score_save():
-    """Assert that the TPOTClassifier can generate a scored pipeline export correctly."""
-    tpot_obj = TPOTClassifier(random_state=39)
-    tpot_obj._pbar = tqdm(total=1, disable=True)
-    pipeline = tpot_obj._toolbox.individual()
-    expected_code = """import numpy as np
-import pandas as pd
-from sklearn.feature_selection import SelectPercentile, f_classif
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import make_pipeline
-from sklearn.tree import DecisionTreeClassifier
-
-# NOTE: Make sure that the class is labeled 'target' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
-training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
-
-# Score on the training set was:0.929813743
-exported_pipeline = make_pipeline(
-    SelectPercentile(score_func=f_classif, percentile=65),
-    DecisionTreeClassifier(criterion="gini", max_depth=7, min_samples_leaf=4, min_samples_split=18)
-)
-
-exported_pipeline.fit(training_features, training_target)
-results = exported_pipeline.predict(testing_features)
-"""
-
-    assert_equal(expected_code, export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset, pipeline_score=0.929813743))
 
 
 def test_imputer_in_export():
