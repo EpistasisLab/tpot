@@ -37,8 +37,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_val_score, KFold
 from nose.tools import assert_equal
 
-from tpot.builtins.one_hot_encoder import OneHotEncoder
-from tpot.builtins.feature_transformers import auto_select_categorical_features
+from tpot.builtins.one_hot_encoder import OneHotEncoder, auto_select_categorical_features
 
 
 iris_data = load_iris().data
@@ -147,6 +146,7 @@ def test_auto_detect_categorical():
     """Assert that automatic selection of categorical features works as expected with a threshold of 10."""
     selected = auto_select_categorical_features(iris_data[0:16, :], threshold=10)
     expected = [False, False, True, True]
+
     assert_equal(selected, expected)
 
 
@@ -295,11 +295,10 @@ def test_transform():
     output = ohe.transform(tds).todense()
     assert np.sum(output) == 3
 
-
+# need update
 def test_k_fold_cv():
     """Test OneHotEncoder with categorical_features='auto'."""
     boston = load_boston()
-    """
     clf = make_pipeline(
         OneHotEncoder(
             categorical_features='auto',
@@ -309,4 +308,4 @@ def test_k_fold_cv():
         LinearRegression()
     )
 
-    cross_val_score(clf, boston.data, boston.target, cv=KFold(n_splits=10, shuffle=True))"""
+    cross_val_score(clf, boston.data, boston.target, cv=KFold(n_splits=10, shuffle=True))
