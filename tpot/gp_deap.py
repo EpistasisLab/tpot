@@ -362,11 +362,12 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         sklearn_pipeline_formatted = _format_pipeline_output(sklearn_pipeline.steps)
         sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
 
-        r = redis.StrictRedis(host='redis', port=6379, db=0)
+        if output_file is not None:
+            r = redis.StrictRedis(host='redis', port=6379, db=0)
 
-        r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
-        r.hset(output_file, uid, sklearn_pipeline_formatted)
-        r.hset(output_file, uid + '-fold', cv)
+            r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
+            r.hset(output_file, uid, sklearn_pipeline_formatted)
+            r.hset(output_file, uid + '-fold', cv)
 
         if "Classifier" in model_type:
             cv_obj = StratifiedKFold(n_splits=cv, random_state=cv)
@@ -393,8 +394,10 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             resulting_score = np.mean(tmp_it.result)
 
         tmp_it.stop()
-        
-        r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
+
+        if output_file is not None:
+            r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
+
         return resulting_score
 
     except Exception as e:
