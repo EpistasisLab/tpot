@@ -905,7 +905,7 @@ class TPOTBase(BaseEstimator):
                     eval_individuals_str.append(individual_str)
                     sklearn_pipeline_list.append(sklearn_pipeline)
 
-            # evalurate pipeline
+            # evaluate pipeline
             resulting_score_list = []
             # chunk size for pbar update
 
