@@ -85,3 +85,85 @@ class CategoricalSelector(BaseEstimator, TransformerMixin):
         else:
             ohe = OneHotEncoder(categorical_features='all', sparse=False, minimum_fraction=self.minimum_fraction)
             return ohe.fit_transform(X_sel)
+
+
+class ContinuousSelector(BaseEstimator, TransformerMixin):
+    """Meta-transformer for selecting continuous features and transform them using PCA.
+
+    Parameters
+    ----------
+
+    threshold : int, default=10
+        Maximum number of unique values per feature to consider the feature
+        to be categorical.
+
+    svd_solver : string {'auto', 'full', 'arpack', 'randomized'}
+        auto :
+            the solver is selected by a default policy based on `X.shape` and
+            `n_components`: if the input data is larger than 500x500 and the
+            number of components to extract is lower than 80% of the smallest
+            dimension of the data, then the more efficient 'randomized'
+            method is enabled. Otherwise the exact full SVD is computed and
+            optionally truncated afterwards.
+        full :
+            run exact full SVD calling the standard LAPACK solver via
+            `scipy.linalg.svd` and select the components by postprocessing
+        arpack :
+            run SVD truncated to n_components calling ARPACK solver via
+            `scipy.sparse.linalg.svds`. It requires strictly
+            0 < n_components < X.shape[1]
+        randomized :
+            run randomized SVD by the method of Halko et al.
+
+    iterated_power : int >= 0, or 'auto', (default 'auto')
+        Number of iterations for the power method computed by
+        svd_solver == 'randomized'.
+
+    """
+
+    def __init__(self, threshold=10, svd_solver='randomized' ,iterated_power='auto', random_state=42):
+        """Create a ContinuousSelector object."""
+        self.threshold=threshold
+        self.svd_solver=svd_solver
+        self.iterated_power = iterated_power
+        self.random_state = random_state
+
+
+    def fit(self, X, y=None):
+        """Do nothing and return the estimator unchanged
+        This method is just there to implement the usual API and hence
+        work in pipelines.
+        Parameters
+        ----------
+        X : array-like
+        """
+        X = check_array(X, accept_sparse='csr')
+        return self
+
+
+    def transform(self, X):
+        """Select continuous features and transform them using OneHotEncoder.
+
+        Parameters
+        ----------
+        X: numpy ndarray, {n_samples, n_components}
+            New data, where n_samples is the number of samples and n_components is the number of components.
+
+        Returns
+        -------
+        array-like, {n_samples, n_components}
+        """
+        selected = auto_select_categorical_features(X, threshold=self.threshold)
+        n_features = X.shape[1]
+        ind = np.arange(n_features)
+        sel = np.zeros(n_features, dtype=bool)
+        sel[np.asarray(selected)] = False
+        X_sel = X[:, ind[sel]]
+        n_selected = np.sum(sel)
+
+        if n_selected == 0:
+            # No features selected.
+            raise ValueError('No categorical feature was found!')
+        else:
+            ohe = OneHotEncoder(categorical_features='all', sparse=False, minimum_fraction=self.minimum_fraction)
+            return ohe.fit_transform(X_sel)
