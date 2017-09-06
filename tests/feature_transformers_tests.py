@@ -13,7 +13,7 @@ def test_CategoricalSelector():
 
 
 def test_CategoricalSelector_2():
-    """Assert that CategoricalSelector works as expected with threshold=5"""
+    """Assert that CategoricalSelector works as expected with threshold=5."""
     cs = CategoricalSelector(threshold=5)
     X_transformed = cs.transform(iris_data[0:16, :])
 
@@ -21,7 +21,7 @@ def test_CategoricalSelector_2():
 
 
 def test_CategoricalSelector_3():
-    """Assert that CategoricalSelector works as expected with threshold=20"""
+    """Assert that CategoricalSelector works as expected with threshold=20."""
     cs = CategoricalSelector(threshold=20)
     X_transformed = cs.transform(iris_data[0:16, :])
 
@@ -29,7 +29,7 @@ def test_CategoricalSelector_3():
 
 
 def test_CategoricalSelector_4():
-    """Assert that CategoricalSelector rasies ValueError without categorical features"""
+    """Assert that CategoricalSelector rasies ValueError without categorical features."""
     cs = CategoricalSelector()
 
     assert_raises(ValueError, cs.transform, iris_data)
@@ -37,22 +37,28 @@ def test_CategoricalSelector_4():
 
 def test_ContinuousSelector():
     """Assert that ContinuousSelector works as expected."""
-    cs = ContinuousSelector()
+    cs = ContinuousSelector(svd_solver='randomized')
     X_transformed = cs.transform(iris_data[0:16, :])
 
     assert_equal(X_transformed.shape[1],2)
 
 
-def test_CategoricalSelector_2():
-    """Assert that ContinuousSelector works as expected with threshold=5"""
-    cs = ContinuousSelector(threshold=5)
+def test_ContinuousSelector_2():
+    """Assert that ContinuousSelector works as expected with threshold=5."""
+    cs = ContinuousSelector(threshold=5, svd_solver='randomized')
     X_transformed = cs.transform(iris_data[0:16, :])
-
     assert_equal(X_transformed.shape[1],3)
 
 
 def test_ContinuousSelector_3():
-    """Assert that ContinuousSelector rasies ValueError without categorical features"""
+    """Assert that ContinuousSelector works as expected with svd_solver='full'"""
+    cs = ContinuousSelector(threshold=10, svd_solver='full')
+    X_transformed = cs.transform(iris_data[0:16, :])
+    assert_equal(X_transformed.shape[1],2)
+
+
+def test_ContinuousSelector_4():
+    """Assert that ContinuousSelector rasies ValueError without categorical features."""
     cs = ContinuousSelector()
 
     assert_raises(ValueError, cs.transform, iris_data[0:10,:])
