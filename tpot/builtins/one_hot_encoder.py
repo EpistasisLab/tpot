@@ -75,6 +75,19 @@ def auto_select_categorical_features(X, threshold=10):
     return feature_mask
 
 
+def _X_selected(X, selected):
+    """Split X into selected features and other features"""
+    n_features = X.shape[1]
+    ind = np.arange(n_features)
+    sel = np.zeros(n_features, dtype=bool)
+    sel[np.asarray(selected)] = True
+    non_sel = np.logical_not(sel)
+    n_selected = np.sum(sel)
+    X_sel = X[:, ind[sel]]
+    X_not_sel = X[:, ind[non_sel]]
+    return X_sel, X_not_sel, n_selected, n_features
+
+
 def _transform_selected(X, transform, selected, copy=True):
     """Apply a transform function to portion of selected features.
 
@@ -103,12 +116,7 @@ def _transform_selected(X, transform, selected, copy=True):
 
     X = check_array(X, accept_sparse='csc', force_all_finite=False)
 
-    n_features = X.shape[1]
-    ind = np.arange(n_features)
-    sel = np.zeros(n_features, dtype=bool)
-    sel[np.asarray(selected)] = True
-    not_sel = np.logical_not(sel)
-    n_selected = np.sum(sel)
+    X_sel, X_not_sel, n_selected, n_features = _X_selected(X, selected)
 
     if n_selected == 0:
         # No features selected.
@@ -117,8 +125,7 @@ def _transform_selected(X, transform, selected, copy=True):
         # All features selected.
         return transform(X)
     else:
-        X_sel = transform(X[:, ind[sel]])
-        X_not_sel = X[:, ind[not_sel]]
+        X_sel = transform(X_sel)
 
         if sparse.issparse(X_sel) or sparse.issparse(X_not_sel):
             return sparse.hstack((X_sel, X_not_sel), format='csr')

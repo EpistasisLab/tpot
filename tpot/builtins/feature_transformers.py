@@ -24,7 +24,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.decomposition import PCA
 
-from .one_hot_encoder import OneHotEncoder, auto_select_categorical_features
+from .one_hot_encoder import OneHotEncoder, auto_select_categorical_features, _X_selected
 
 
 class CategoricalSelector(BaseEstimator, TransformerMixin):
@@ -73,12 +73,7 @@ class CategoricalSelector(BaseEstimator, TransformerMixin):
         array-like, {n_samples, n_components}
         """
         selected = auto_select_categorical_features(X, threshold=self.threshold)
-        n_features = X.shape[1]
-        ind = np.arange(n_features)
-        sel = np.zeros(n_features, dtype=bool)
-        sel[np.asarray(selected)] = True
-        X_sel = X[:, ind[sel]]
-        n_selected = np.sum(sel)
+        X_sel, _, n_selected, _ = _X_selected(X, selected)
 
         if n_selected == 0:
             # No features selected.
@@ -138,7 +133,7 @@ class ContinuousSelector(BaseEstimator, TransformerMixin):
         ----------
         X : array-like
         """
-        X = check_array(X, accept_sparse='csr')
+        X = check_array(X)
         return self
 
 
@@ -155,13 +150,7 @@ class ContinuousSelector(BaseEstimator, TransformerMixin):
         array-like, {n_samples, n_components}
         """
         selected = auto_select_categorical_features(X, threshold=self.threshold)
-        n_features = X.shape[1]
-        ind = np.arange(n_features)
-        sel = np.zeros(n_features, dtype=bool)
-        sel[np.asarray(selected)] = True
-        not_sel = np.logical_not(sel) # Non-categorical features
-        X_sel = X[:, ind[not_sel]]
-        n_selected = np.sum(sel)
+        _, X_sel, n_selected, _ = _X_selected(X, selected)
 
         if n_selected == 0:
             # No features selected.

@@ -155,8 +155,22 @@ regressor_config_dict = {
 
     'tpot.builtins.OneHotEncoder': {
         'minimum_fraction': [0.05, 0.1, 0.15, 0.2, 0.25],
+        'sparse': [False],
+        'threshold': [10]
+    },
+
+    'tpot.builtins.CategoricalSelector': {
+        'threshold': [10],
+        'minimum_fraction': [0.05, 0.1, 0.15, 0.2, 0.25],
         'sparse': [False]
     },
+
+    'tpot.builtins.ContinuousSelector': {
+        'threshold': [10],
+        'svd_solver': ['randomized'],
+        'iterated_power': range(1, 11)
+    },
+
 
     # Selectors
     'sklearn.feature_selection.SelectFwe': {
