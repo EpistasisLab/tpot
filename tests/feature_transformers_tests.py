@@ -1,5 +1,5 @@
 from sklearn.datasets import load_iris
-from tpot.builtins.feature_transformers import CategoricalSelector
+from tpot.builtins import CategoricalSelector, ContinuousSelector
 from nose.tools import assert_equal, assert_raises
 
 iris_data = load_iris().data
@@ -16,7 +16,7 @@ def test_CategoricalSelector_2():
     """Assert that CategoricalSelector works as expected with threshold=5"""
     cs = CategoricalSelector(threshold=5)
     X_transformed = cs.transform(iris_data[0:16, :])
-    
+
     assert_equal(X_transformed.shape[1],1)
 
 
@@ -33,3 +33,26 @@ def test_CategoricalSelector_4():
     cs = CategoricalSelector()
 
     assert_raises(ValueError, cs.transform, iris_data)
+
+
+def test_ContinuousSelector():
+    """Assert that ContinuousSelector works as expected."""
+    cs = ContinuousSelector()
+    X_transformed = cs.transform(iris_data[0:16, :])
+
+    assert_equal(X_transformed.shape[1],2)
+
+
+def test_CategoricalSelector_2():
+    """Assert that ContinuousSelector works as expected with threshold=5"""
+    cs = ContinuousSelector(threshold=5)
+    X_transformed = cs.transform(iris_data[0:16, :])
+
+    assert_equal(X_transformed.shape[1],3)
+
+
+def test_ContinuousSelector_3():
+    """Assert that ContinuousSelector rasies ValueError without categorical features"""
+    cs = ContinuousSelector()
+
+    assert_raises(ValueError, cs.transform, iris_data[0:10,:])

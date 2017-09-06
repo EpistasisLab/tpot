@@ -22,6 +22,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
+from sklearn.decomposition import PCA
 
 from .one_hot_encoder import OneHotEncoder, auto_select_categorical_features
 
@@ -43,7 +44,7 @@ class CategoricalSelector(BaseEstimator, TransformerMixin):
 
     def __init__(self, threshold=10, minimum_fraction=None):
         """Create a CategoricalSelector object."""
-        self.threshold=threshold
+        self.threshold = threshold
         self.minimum_fraction = minimum_fraction
 
 
@@ -123,8 +124,8 @@ class ContinuousSelector(BaseEstimator, TransformerMixin):
 
     def __init__(self, threshold=10, svd_solver='randomized' ,iterated_power='auto', random_state=42):
         """Create a ContinuousSelector object."""
-        self.threshold=threshold
-        self.svd_solver=svd_solver
+        self.threshold = threshold
+        self.svd_solver = svd_solver
         self.iterated_power = iterated_power
         self.random_state = random_state
 
@@ -157,13 +158,14 @@ class ContinuousSelector(BaseEstimator, TransformerMixin):
         n_features = X.shape[1]
         ind = np.arange(n_features)
         sel = np.zeros(n_features, dtype=bool)
-        sel[np.asarray(selected)] = False
-        X_sel = X[:, ind[sel]]
+        sel[np.asarray(selected)] = True
+        not_sel = np.logical_not(sel) # Non-categorical features
+        X_sel = X[:, ind[not_sel]]
         n_selected = np.sum(sel)
 
         if n_selected == 0:
             # No features selected.
-            raise ValueError('No categorical feature was found!')
+            raise ValueError('No continuous feature was found!')
         else:
-            ohe = OneHotEncoder(categorical_features='all', sparse=False, minimum_fraction=self.minimum_fraction)
-            return ohe.fit_transform(X_sel)
+            pca = PCA(svd_solver=self.svd_solver, iterated_power=self.iterated_power, random_state=self.random_state)
+            return pca.fit_transform(X_sel)
