@@ -369,7 +369,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             r.hset(output_file, uid, sklearn_pipeline_formatted)
             r.hset(output_file, uid + '-fold', cv)
 
-        if "Classifier" in model_type:
+        n_classes = len(np.unique(target))
+        #use Kfold for everything but binary classification so we can display metric charts like roc_curve
+        if "Classifier" in model_type and n_classes < 3:
             cv_obj = StratifiedKFold(n_splits=cv, random_state=cv)
         else:
             cv_obj = KFold(n_splits=cv, random_state=cv)
@@ -418,7 +420,7 @@ def _format_pipeline_json(pipeline,features=None,target=None):
     for item in pipeline:
         params = {}
         for param in item[1].__dict__:
-            if '_func' in param:
+            if '_func' in param or 'transformer_list' in param:
                 tmp = str(item[1].__dict__[param])
                 tmp = re.sub(" at+\s+\w+>","",tmp)
                 tmp = re.sub("<function ","",tmp)
