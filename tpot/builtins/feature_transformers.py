@@ -69,7 +69,7 @@ class CategoricalSelector(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X_transformed: array-like, {n_samples, n_components}
+        array-like, {n_samples, n_components}
         """
         selected = auto_select_categorical_features(X, threshold=self.threshold)
         n_features = X.shape[1]
@@ -77,6 +77,11 @@ class CategoricalSelector(BaseEstimator, TransformerMixin):
         sel = np.zeros(n_features, dtype=bool)
         sel[np.asarray(selected)] = True
         X_sel = X[:, ind[sel]]
-        ohe = OneHotEncoder(categorical_features='all', sparse=False, minimum_fraction=self.minimum_fraction)
+        n_selected = np.sum(sel)
 
-        return ohe.fit_transform(X_sel)
+        if n_selected == 0:
+            # No features selected.
+            raise ValueError('No categorical feature was found!')
+        else:
+            ohe = OneHotEncoder(categorical_features='all', sparse=False, minimum_fraction=self.minimum_fraction)
+            return ohe.fit_transform(X_sel)

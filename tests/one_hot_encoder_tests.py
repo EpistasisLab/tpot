@@ -37,7 +37,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_val_score, KFold
 from nose.tools import assert_equal
 
-from tpot.builtins.one_hot_encoder import OneHotEncoder, auto_select_categorical_features
+from tpot.builtins import OneHotEncoder, auto_select_categorical_features
 
 
 iris_data = load_iris().data
