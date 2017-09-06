@@ -59,6 +59,7 @@ from .config.regressor_mdr import tpot_mdr_regressor_config_dict
 from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
+import traceback
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -85,7 +86,7 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None, warm_start=False,
-                 verbosity=0, disable_update_check=False,output_file=None):
+                 verbosity=0, disable_update_check=False,output_file=None, sc=None):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -211,7 +212,8 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
         self.output_file = None
-
+        self.sc = sc
+        self.r = None
         if output_file:
             self.r = redis.StrictRedis(host='redis', port=6379, db=0)
             self.output_file = output_file
@@ -518,7 +520,9 @@ class TPOTBase(BaseEstimator):
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
-        self.r.publish(self.output_file,"total evaluation: {}".format(total_evals))
+        if self.r is not None:
+            self.r.publish(self.output_file,"total evaluation: {}".format(total_evals))
+
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
@@ -596,7 +600,8 @@ class TPOTBase(BaseEstimator):
                     if attempt == (attempts - 1):
                         raise
 
-            self.r.publish(self.output_file,"EVALUATION_COMPLETE")
+            if self.r is not None:
+                self.r.publish(self.output_file,"EVALUATION_COMPLETE")
             return self
 
     def _update_top_pipeline(self):
@@ -842,105 +847,141 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
-        if self.max_time_mins:
-            total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
-            if total_mins_elapsed >= self.max_time_mins:
-                raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
+        try:
+            if self.max_time_mins:
+                total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
+                if total_mins_elapsed >= self.max_time_mins:
+                    raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
 
-        # Check we do not evaluate twice the same individual in one pass.
-        _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
-        unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
+            # Check we do not evaluate twice the same individual in one pass.
+            _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
+            unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
 
-        # return fitness scores
-        operator_counts = {}
-        # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
-        eval_individuals_str = []
-        sklearn_pipeline_list = []
+            # return fitness scores
+            operator_counts = {}
+            # 4 lists of DEAP individuals, their sklearn pipelines and their operator counts for parallel computing
+            eval_individuals_str = []
+            sklearn_pipeline_list = []
 
-        for individual in unique_individuals:
-            # Disallow certain combinations of operators because they will take too long or take up too much RAM
-            # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
-            individual_str = str(individual)
-            sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
-            if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
-                if self.verbosity > 2:
-                    self._pbar.write('Invalid pipeline encountered. Skipping its evaluation.')
-                self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
-                if not self._pbar.disable:
-                    self._pbar.update(1)
-            # Check if the individual was evaluated before
-            elif individual_str in self.evaluated_individuals_:
-                if self.verbosity > 2:
-                    self._pbar.write('Pipeline encountered that has previously been evaluated during the '
-                                     'optimization process. Using the score from the previous evaluation.')
-                if not self._pbar.disable:
-                    self._pbar.update(1)
-            else:
-                try:
-                    # Transform the tree expression into an sklearn pipeline
-                    sklearn_pipeline = self._toolbox.compile(expr=individual)
-
-                    # Fix random state when the operator allows
-                    self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
-                    # Setting the seed is needed for XGBoost support because XGBoost currently stores
-                    # both a seed and random_state, and they're not synced correctly.
-                    # XGBoost will raise an exception if random_state != seed.
-                    if 'XGB' in sklearn_pipeline_str:
-                        self._set_param_recursive(sklearn_pipeline.steps, 'seed', 42)
-
-                    # Count the number of pipeline operators as a measure of pipeline complexity
-                    operator_count = self._operator_count(individual)
-                    operator_counts[individual_str] = max(1, operator_count)
-                except Exception:
+            for individual in unique_individuals:
+                # Disallow certain combinations of operators because they will take too long or take up too much RAM
+                # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
+                individual_str = str(individual)
+                sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
+                if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
+                    if self.verbosity > 2:
+                        self._pbar.write('Invalid pipeline encountered. Skipping its evaluation.')
                     self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
                     if not self._pbar.disable:
                         self._pbar.update(1)
-                    continue
-                eval_individuals_str.append(individual_str)
-                sklearn_pipeline_list.append(sklearn_pipeline)
+                # Check if the individual was evaluated before
+                elif individual_str in self.evaluated_individuals_:
+                    if self.verbosity > 2:
+                        self._pbar.write('Pipeline encountered that has previously been evaluated during the '
+                                         'optimization process. Using the score from the previous evaluation.')
+                    if not self._pbar.disable:
+                        self._pbar.update(1)
+                else:
+                    try:
+                        # Transform the tree expression into an sklearn pipeline
+                        sklearn_pipeline = self._toolbox.compile(expr=individual)
 
-        # evalurate pipeline
-        resulting_score_list = []
-        # chunk size for pbar update
+                        # Fix random state when the operator allows
+                        self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+                        # Setting the seed is needed for XGBoost support because XGBoost currently stores
+                        # both a seed and random_state, and they're not synced correctly.
+                        # XGBoost will raise an exception if random_state != seed.
+                        if 'XGB' in sklearn_pipeline_str:
+                            self._set_param_recursive(sklearn_pipeline.steps, 'seed', 42)
 
-        for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
-            jobs = []
-            for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
-                job = delayed(_wrapped_cross_val_score)(
-                    sklearn_pipeline=sklearn_pipeline,
+                        # Count the number of pipeline operators as a measure of pipeline complexity
+                        operator_count = self._operator_count(individual)
+                        operator_counts[individual_str] = max(1, operator_count)
+                    except Exception:
+                        self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
+                        if not self._pbar.disable:
+                            self._pbar.update(1)
+                        continue
+                    eval_individuals_str.append(individual_str)
+                    sklearn_pipeline_list.append(sklearn_pipeline)
+
+            # evaluate pipeline
+            resulting_score_list = []
+            # chunk size for pbar update
+
+            arPipelines = []
+            model_type = self.__class__.__name__
+            output_file = self.output_file
+            max_eval_time_mins = self.max_eval_time_mins
+            scoring_function=self.scoring_function
+            cv=self.cv
+            def mapFunc(index):
+                return (index, _wrapped_cross_val_score(
+                    sklearn_pipeline=arPipelines[index],
                     features=features,
                     target=target,
-                    cv=self.cv,
-                    scoring_function=self.scoring_function,
+                    cv=cv, #self.cv,
+                    scoring_function=scoring_function, #self.scoring_function,
                     sample_weight=sample_weight,
-                    max_eval_time_mins=self.max_eval_time_mins,
+                    max_eval_time_mins=max_eval_time_mins, #self.max_eval_time_mins,
                     groups=groups,
-                    output_file=self.output_file,
-                    model_type=self.__class__.__name__
-                )
-                jobs.append(job)
-            parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-            tmp_result_score = parallel(jobs)
+                    output_file=output_file, #self.output_file,
+                    model_type=model_type
+                    ))
 
-            # update pbar
-            for val in tmp_result_score:
-                if not self._pbar.disable:
-                    self._pbar.update(1)
-                if val == 'Timeout':
-                    if self.verbosity > 2:
-                        self._pbar.write('Skipped pipeline #{0} due to time out. '
-                                         'Continuing to the next pipeline.'.format(self._pbar.n))
-                    resulting_score_list.append(-float('inf'))
+            for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
+                if self.sc is not None:
+                    arPipelines = []
+                    arParams = []
+                    for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
+                        arParams.append(len(arPipelines))
+                        arPipelines.append(sklearn_pipeline)
+                    rddParams = self.sc.parallelize(arParams)
+                    indexed_result_score = dict(rddParams.map(mapFunc).collect())
+                    tmp_result_score = [indexed_result_score[idx] for idx in range(len(indexed_result_score))]
                 else:
-                    resulting_score_list.append(val)
+                    jobs = []
 
-        for resulting_score, individual_str in zip(resulting_score_list, eval_individuals_str):
-            if type(resulting_score) in [float, np.float64, np.float32]:
-                self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], resulting_score)
-            else:
-                raise ValueError('Scoring function does not return a float.')
+                    for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
+                        job = delayed(_wrapped_cross_val_score)(
+                            sklearn_pipeline=sklearn_pipeline,
+                            features=features,
+                            target=target,
+                            cv=self.cv,
+                            scoring_function=self.scoring_function,
+                            sample_weight=sample_weight,
+                            max_eval_time_mins=self.max_eval_time_mins,
+                            groups=groups,
+                            output_file=self.output_file,
+                            model_type=self.__class__.__name__
+                        )
+                        jobs.append(job)
+                    parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                    tmp_result_score = parallel(jobs)
 
-        return [self.evaluated_individuals_[str(individual)] for individual in individuals]
+                # update pbar
+                for val in tmp_result_score:
+                    if not self._pbar.disable:
+                        self._pbar.update(1)
+                    if val == 'Timeout':
+                        if self.verbosity > 2:
+                            self._pbar.write('Skipped pipeline #{0} due to time out. '
+                                             'Continuing to the next pipeline.'.format(self._pbar.n))
+                        resulting_score_list.append(-float('inf'))
+                    else:
+                        resulting_score_list.append(val)
+
+            for resulting_score, individual_str in zip(resulting_score_list, eval_individuals_str):
+                if type(resulting_score) in [float, np.float64, np.float32]:
+                    self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], resulting_score)
+                else:
+                    raise ValueError('Scoring function does not return a float.')
+
+            return [self.evaluated_individuals_[str(individual)] for individual in individuals]
+        except Exception as e:
+            print("Error while running _wrapped_cross_val_score : %s" % str(e))
+            print(traceback.format_exc())
+            raise e
 
     @_pre_test
     def _mate_operator(self, ind1, ind2):

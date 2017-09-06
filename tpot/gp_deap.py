@@ -362,11 +362,12 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         sklearn_pipeline_formatted = _format_pipeline_output(sklearn_pipeline.steps)
         sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
 
-        r = redis.StrictRedis(host='redis', port=6379, db=0)
+        if output_file is not None:
+            r = redis.StrictRedis(host='redis', port=6379, db=0)
 
-        r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
-        r.hset(output_file, uid, sklearn_pipeline_formatted)
-        r.hset(output_file, uid + '-fold', cv)
+            r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
+            r.hset(output_file, uid, sklearn_pipeline_formatted)
+            r.hset(output_file, uid + '-fold', cv)
 
         n_classes = len(np.unique(target))
         #use Kfold for everything but binary classification so we can display metric charts like roc_curve
@@ -396,7 +397,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
 
         tmp_it.stop()
 
-        r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
+        if output_file is not None:
+            r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
+
         return resulting_score
 
     except Exception as e:
@@ -417,7 +420,7 @@ def _format_pipeline_json(pipeline,features=None,target=None):
     for item in pipeline:
         params = {}
         for param in item[1].__dict__:
-            if '_func' in param:
+            if '_func' in param or 'transformer_list' in param:
                 tmp = str(item[1].__dict__[param])
                 tmp = re.sub(" at+\s+\w+>","",tmp)
                 tmp = re.sub("<function ","",tmp)
