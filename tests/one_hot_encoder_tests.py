@@ -37,7 +37,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_val_score, KFold
 from nose.tools import assert_equal
 
-from tpot.builtins import OneHotEncoder, auto_select_categorical_features
+from tpot.builtins import OneHotEncoder, auto_select_categorical_features, _transform_selected
 
 
 iris_data = load_iris().data
@@ -295,7 +295,31 @@ def test_transform():
     output = ohe.transform(tds).todense()
     assert np.sum(output) == 3
 
-# need update
+
+def test_transform_selected():
+    """Assert _transform_selected return original X when selected is empty list"""
+    ohe = OneHotEncoder(categorical_features=[])
+    X = _transform_selected(
+            dense1,
+            ohe._fit_transform,
+            ohe.categorical_features,
+            copy=True
+        )
+    assert np.allclose(X, dense1)
+
+
+def test_transform_selected_2():
+    """Assert _transform_selected return original X when selected is a list of False values"""
+    ohe = OneHotEncoder(categorical_features=[False, False, False])
+    X = _transform_selected(
+            dense1,
+            ohe._fit_transform,
+            ohe.categorical_features,
+            copy=True
+        )
+    assert np.allclose(X, dense1)
+
+
 def test_k_fold_cv():
     """Test OneHotEncoder with categorical_features='auto'."""
     boston = load_boston()
