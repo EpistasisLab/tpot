@@ -39,8 +39,8 @@ def test_ZeroCount():
 
 
 def test_ZeroCount_fit():
-    """Assert that fit() ZeroCount operator does nothing."""
+    """Assert that fit() in ZeroCount does nothing."""
     op = ZeroCount()
     ret_op = op.fit(X)
-    
+
     assert ret_op==op

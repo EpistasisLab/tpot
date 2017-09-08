@@ -35,6 +35,14 @@ def test_CategoricalSelector_4():
     assert_raises(ValueError, cs.transform, iris_data)
 
 
+def test_CategoricalSelector_fit():
+    """Assert that fit() in CategoricalSelector does nothing."""
+    op = CategoricalSelector()
+    ret_op = op.fit(iris_data)
+
+    assert ret_op==op
+
+
 def test_ContinuousSelector():
     """Assert that ContinuousSelector works as expected."""
     cs = ContinuousSelector(svd_solver='randomized')
@@ -62,3 +70,11 @@ def test_ContinuousSelector_4():
     cs = ContinuousSelector()
 
     assert_raises(ValueError, cs.transform, iris_data[0:10,:])
+
+
+def test_ContinuousSelector_fit():
+    """Assert that fit() in ContinuousSelector does nothing."""
+    op = ContinuousSelector()
+    ret_op = op.fit(iris_data)
+
+    assert ret_op==op
