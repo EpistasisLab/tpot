@@ -35,6 +35,7 @@ import warnings
 import threading
 import redis
 import uuid
+import pipeline_exports as pe
 import re
 import traceback
 
@@ -414,34 +415,8 @@ def _format_pipeline_output(pipeline):
     sklearn_pipeline_formatted = re.sub("\n","",sklearn_pipeline_formatted)
     return sklearn_pipeline_formatted
 
-def _format_pipeline_json(pipeline,features=None,target=None):
-    json = {'funcs':[]}
-    json['feature_matrix'] = _collect_feature_list(pipeline,features,target)
-    for item in pipeline:
-        params = {}
-        for param in item[1].__dict__:
-            if '_func' in param or 'transformer_list' in param:
-                tmp = str(item[1].__dict__[param])
-                tmp = re.sub(" at+\s+\w+>","",tmp)
-                tmp = re.sub("<function ","",tmp)
-                params[param] = tmp
-            else:
-                params[param] = item[1].__dict__[param]
-
-        json['funcs'].append({"name":item[1].__class__.__name__, "params":params})
+def _format_pipeline_json(pipeline,features,target):
+    json = {'pipeline_list':[],'func_dict':{}}
+    json['feature_matrix'] = pe.collect_feature_list(pipeline,features,target)
+    pe.serialize_to_js(pipeline,json['pipeline_list'],json['func_dict'])
     return json
-
-def _collect_feature_list(pipeline,features,target):
-    feature_list = []
-    for step in pipeline:
-        if step[1].__class__.__name__ == 'FeatureUnion':
-            transformer_list = step[1].transformer_list
-            for transformer in transformer_list:
-                if "get_support" in dir(transformer[1]):
-                    fit_step = transformer[1].fit(features,target)
-                    feature_list.append(fit_step.get_support().tolist())
-
-        if "get_support" in dir(step[1]):
-            fit_step = step[1].fit(features,target)
-            feature_list.append(fit_step.get_support().tolist())
-    return feature_list
