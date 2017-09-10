@@ -26,13 +26,18 @@ def build_pipeline_js(step,storage,func_dict):
                     tmp = re.sub("<function ","",tmp)
                     param_list[param] = tmp
 
-            func_dict[func_name] = {'name':step[1].__class__.__name__,'params':param_list}
             obj = {'name':step[0], 'obj_type':'algorithm', 'items':[], 'func':func_name, 'lib':lib}
             #look for estimator and format as tuple
             if 'estimator' in param_list.keys():
                 estimator_name = "estimator_" + uid
                 tup = (estimator_name,param_list['estimator'])
                 build_pipeline_js(tup,obj['items'],func_dict)
+                #add func key to parent object
+                estimator_func = obj['items'][0]['func']
+                param_list['estimator'] = estimator_func
+                func_dict[func_name] = {'name':step[1].__class__.__name__,'params':param_list}
+            else:
+                func_dict[func_name] = {'name':step[1].__class__.__name__,'params':param_list}
 
             storage.append(obj)
 
