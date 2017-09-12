@@ -19,8 +19,10 @@ def build_pipeline_js(step,storage,func_dict):
             uid = uuid.uuid4().hex[:6].upper()
             func_name = step[0] + '_' + uid
             param_list = step[1].get_params()
+
+            #clean any func objects in params
             for param in param_list:
-                if '_func' in param:
+                if 'func' in param:
                     tmp = str(param_list[param])
                     tmp = re.sub(" at+\s+\w+>","",tmp)
                     tmp = re.sub("<function ","",tmp)
