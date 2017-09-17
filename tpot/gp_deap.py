@@ -35,6 +35,7 @@ import warnings
 import threading
 import redis
 import uuid
+import pickle
 import pipeline_exports as pe
 import re
 import traceback
@@ -359,15 +360,12 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
         # build a job for cross_val_score
         uid = uuid.uuid4().hex[:15].upper()
-
-        sklearn_pipeline_formatted = _format_pipeline_output(sklearn_pipeline.steps)
         sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
 
         if output_file is not None:
             r = redis.StrictRedis(host='redis', port=6379, db=0)
-
             r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
-            r.hset(output_file, uid, sklearn_pipeline_formatted)
+            r.hset(output_file, uid, pickle.dumps(sklearn_pipeline_json))
             r.hset(output_file, uid + '-fold', cv)
 
         n_classes = len(np.unique(target))
@@ -407,13 +405,6 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         print("Error while running _wrapped_cross_val_score : %s" % str(e))
         print(traceback.format_exc())
 
-
-def _format_pipeline_output(pipeline):
-    sklearn_pipeline_formatted = str(pipeline)
-    sklearn_pipeline_formatted = re.sub(" at+\s+\w+>","",sklearn_pipeline_formatted)
-    sklearn_pipeline_formatted = re.sub("<function ","",sklearn_pipeline_formatted)
-    sklearn_pipeline_formatted = re.sub("\n","",sklearn_pipeline_formatted)
-    return sklearn_pipeline_formatted
 
 def _format_pipeline_json(pipeline,features,target):
     json = {'pipeline_list':[],'func_dict':{}}
