@@ -17,7 +17,12 @@ def build_pipeline_js(step,storage,func_dict):
             build_pipeline_js(step[1].steps,obj['items'],func_dict)
         else:
             uid = uuid.uuid4().hex[:6].upper()
-            func_name = step[0] + '_' + uid
+            #estimators should use reference func_name instead of creating new one
+            if 'estimator_' in step[0]:
+                func_name = step[0]
+            else:
+                func_name = step[0] + '_' + uid
+
             param_list = step[1].get_params()
 
             #clean any func objects in params
