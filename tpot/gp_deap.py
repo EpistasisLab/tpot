@@ -359,13 +359,13 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         max_time_seconds = max(int(max_eval_time_mins * 60), 1)
         sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
         # build a job for cross_val_score
-        uid = uuid.uuid4().hex[:15].upper()
-        sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
-
         if output_file is not None:
+            uid = uuid.uuid4().hex[:15].upper()
+            sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
             r = redis.StrictRedis(host='redis', port=6379, db=0)
             r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
-            r.hset(output_file, uid, pickle.dumps(sklearn_pipeline_json))
+            r.hset(output_file, uid, pickle.dumps(sklearn_pipeline_json['pipeline_list']))
+            r.hset(output_file, 'func_dict', pickle.dumps(sklearn_pipeline_json['func_dict']))
             r.hset(output_file, uid + '-fold', cv)
 
         n_classes = len(np.unique(target))
