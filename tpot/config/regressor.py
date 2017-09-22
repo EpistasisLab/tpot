@@ -23,6 +23,26 @@ import numpy as np
 
 regressor_config_dict = {
 
+    'xgboost.XGBRegressor': {
+        'n_estimators': [100],
+        'max_depth': range(1, 11),
+        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+        'subsample': np.arange(0.05, 1.01, 0.05),
+        'min_child_weight': range(1, 21),
+        'nthread': [1]
+    },
+
+    'sklearn.linear_model.LassoLarsCV': {
+        'normalize': [True, False]
+    },
+
+    'sklearn.ensemble.RandomForestRegressor': {
+        'n_estimators': [100],
+        'max_features': np.arange(0.05, 1.01, 0.05),
+        'min_samples_split': range(2, 21),
+        'min_samples_leaf': range(1, 21),
+        'bootstrap': [True, False]
+    },
 
     'sklearn.linear_model.ElasticNetCV': {
         'l1_ratio': np.arange(0.0, 1.01, 0.05),
@@ -68,10 +88,6 @@ regressor_config_dict = {
         'p': [1, 2]
     },
 
-    'sklearn.linear_model.LassoLarsCV': {
-        'normalize': [True, False]
-    },
-
     'sklearn.svm.LinearSVR': {
         'loss': ["epsilon_insensitive", "squared_epsilon_insensitive"],
         'dual': [True, False],
@@ -80,25 +96,7 @@ regressor_config_dict = {
         'epsilon': [1e-4, 1e-3, 1e-2, 1e-1, 1.]
     },
 
-    'sklearn.ensemble.RandomForestRegressor': {
-        'n_estimators': [100],
-        'max_features': np.arange(0.05, 1.01, 0.05),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'bootstrap': [True, False]
-    },
-
     'sklearn.linear_model.RidgeCV': {
-    },
-
-
-    'xgboost.XGBRegressor': {
-        'n_estimators': [100],
-        'max_depth': range(1, 11),
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'subsample': np.arange(0.05, 1.01, 0.05),
-        'min_child_weight': range(1, 21),
-        'nthread': [1]
     },
 
     # Preprocesssors
