@@ -909,25 +909,27 @@ class TPOTBase(BaseEstimator):
             resulting_score_list = []
             # chunk size for pbar update
 
-            arPipelines = []
-            model_type = self.__class__.__name__
-            output_file = self.output_file
-            max_eval_time_mins = self.max_eval_time_mins
-            scoring_function=self.scoring_function
-            cv=self.cv
-            def mapFunc(index):
-                return (index, _wrapped_cross_val_score(
-                    sklearn_pipeline=arPipelines[index],
-                    features=features,
-                    target=target,
-                    cv=cv, #self.cv,
-                    scoring_function=scoring_function, #self.scoring_function,
-                    sample_weight=sample_weight,
-                    max_eval_time_mins=max_eval_time_mins, #self.max_eval_time_mins,
-                    groups=groups,
-                    output_file=output_file, #self.output_file,
-                    model_type=model_type
-                    ))
+            if self.sc is not None:
+                arPipelines = []
+                model_type = self.__class__.__name__
+                output_file = self.output_file
+                max_eval_time_mins = self.max_eval_time_mins
+                scoring_function=self.scoring_function
+                cv=self.cv
+                br_features = self.sc.broadcast(features)
+                def mapFunc(index):
+                    return (index, _wrapped_cross_val_score(
+                        sklearn_pipeline=arPipelines[index],
+                        features=br_features.value,
+                        target=target,
+                        cv=cv, #self.cv,
+                        scoring_function=scoring_function, #self.scoring_function,
+                        sample_weight=sample_weight,
+                        max_eval_time_mins=max_eval_time_mins, #self.max_eval_time_mins,
+                        groups=groups,
+                        output_file=output_file, #self.output_file,
+                        model_type=model_type
+                        ))
 
             for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
                 if self.sc is not None:
