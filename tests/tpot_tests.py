@@ -77,6 +77,11 @@ boston_data = load_boston()
 training_features_r, testing_features_r, training_target_r, testing_target_r = \
     train_test_split(boston_data.data, boston_data.target, random_state=42)
 
+# Set up the  sparse matrix
+sparse_features = sparse.csr_matrix(training_features)
+sparse_target = training_target
+
+
 np.random.seed(42)
 random.seed(42)
 
@@ -1306,9 +1311,8 @@ def test_sparse_matrix():
         verbosity=0,
         config_dict='TPOT light'
     )
-    sparse_features = sparse.csr_matrix(training_features)
 
-    assert_raises(ValueError, tpot_obj.fit, sparse_features, training_target)
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
 
 
 def test_sparse_matrix_2():
@@ -1321,9 +1325,8 @@ def test_sparse_matrix_2():
         verbosity=0,
         config_dict=None
     )
-    sparse_features = sparse.csr_matrix(training_features)
 
-    assert_raises(ValueError, tpot_obj.fit, sparse_features, training_target)
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
 
 
 def test_sparse_matrix_3():
@@ -1336,9 +1339,8 @@ def test_sparse_matrix_3():
         verbosity=0,
         config_dict='TPOT MDR'
     )
-    sparse_features = sparse.csr_matrix(training_features)
 
-    assert_raises(ValueError, tpot_obj.fit, sparse_features, training_target)
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
 
 
 def test_sparse_matrix_4():
@@ -1351,14 +1353,13 @@ def test_sparse_matrix_4():
         verbosity=0,
         config_dict='TPOT sparse'
     )
-    sparse_features = sparse.csr_matrix(training_features)
 
-    tpot_obj.fit(sparse_features, training_target)
+    tpot_obj.fit(sparse_features, sparse_target)
 
 
 def test_sparse_matrix_5():
     """Assert that the TPOT fit function will not raise a ValueError in a sparse matrix with a customized config dictionary."""
-    tpot_obj = TPOTRegressor(
+    tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
         offspring_size=2,
@@ -1366,9 +1367,8 @@ def test_sparse_matrix_5():
         verbosity=0,
         config_dict='tests/test_config_sparse.py'
     )
-    sparse_features = sparse.csr_matrix(training_features_r)
 
-    tpot_obj.fit(sparse_features, training_target_r)
+    tpot_obj.fit(sparse_features, sparse_target)
 
 
 def test_tpot_operator_factory_class():
