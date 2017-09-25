@@ -31,6 +31,7 @@ import os
 import re
 
 import numpy as np
+from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
 from tqdm import tqdm
@@ -186,8 +187,12 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
-        population_seeds: list of strings, optional (Default: None)
-            The set of pipelines used in the first generation.
+        population_seeds: a Python list or a string, optional (Default: None)
+            Python list:
+                A list customizing a set of pipelines used in the first generation.
+            Path for configuration file:
+                A path to a configuration file for customizing a set of pipelines used in
+                the first generation.
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -253,7 +258,8 @@ class TPOTBase(BaseEstimator):
         else:
             self.offspring_size = population_size
 
-        self._setup_config(config_dict)
+        self.config_dict_params=config_dict
+        self._setup_config(self.config_dict_params)
 
         self.operators = []
         self.arguments = []
@@ -330,7 +336,7 @@ class TPOTBase(BaseEstimator):
 
         self._setup_pset()
         self._setup_toolbox()
-        self._setup_pop(population_seeds, config_dict)
+        self._setup_pop(population_seeds)
 
 
     def _setup_config(self, config_dict):
@@ -353,7 +359,16 @@ class TPOTBase(BaseEstimator):
                 else:
                     self.config_dict = regressor_config_sparse
             else:
-                self.config_dict = self._read_config_file(config_dict).tpot_config
+                config = self._read_config_file(config_dict)
+                if hasattr(config, 'tpot_config'):
+                    self.config_dict = config.tpot_config
+                else:
+                    raise ValueError(
+                                    'Could not find "tpot_config" in configuration file {}. '
+                                    'When using a custom config file for customizing operators '
+                                    'dictionary, the file must have a python dictionary with '
+                                    'the standardized name of "tpot_config"'.format(config_dict)
+                                    )
         else:
             self.config_dict = self.default_config_dict
 
@@ -379,18 +394,24 @@ class TPOTBase(BaseEstimator):
             )
 
 
-    def _setup_pop(self, population_seeds, config_path):
+    def _setup_pop(self, population_seeds):
         """If the population_seeds are specified, use them as the starting population."""
-        try:
-            config = self._read_config_file(config_path)
+        if population_seeds:
+            if not isinstance(population_seeds, list):
+                config = self._read_config_file(population_seeds)
+                if hasattr(config, 'population_seeds'):
+                    pop_seeds = config.population_seeds
+                else:
+                    raise ValueError(
+                                    'Could not find "population_seeds" in configuration file {}. '
+                                    'When using a custom config file for customizing the seeds, '
+                                    'the file must have a list of strings with the standardized '
+                                    'name of "population_seeds"'.format(population_seeds)
+                                    )
+            else:
+                pop_seeds = population_seeds
 
-            if hasattr(config, 'population_seeds'):
-                population_seeds = config.population_seeds
-        except Exception as e:
-            # Config isn't a file
-            return
-
-        self._pop = [creator.Individual.from_string(x, self._pset) for x in population_seeds]
+            self._pop = [creator.Individual.from_string(x, self._pset) for x in pop_seeds]
 
 
     def _setup_pset(self):
@@ -496,12 +517,23 @@ class TPOTBase(BaseEstimator):
 
         # Resets the imputer to be fit for the new dataset
         self._fitted_imputer = None
-
-        if np.any(np.isnan(features)):
-            self._imputed = True
-            features = self._impute_values(features)
+        self._imputed = False
+        # If features is a sparse matrix, do not apply imputation
+        if sparse.issparse(features):
+            if self.config_dict_params in [None, "TPOT light", "TPOT MDR"]:
+                raise ValueError(
+                                'Not all operators in {} supports sparse matrix. '
+                                'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict_params)
+                                )
+            elif self.config_dict_params != "TPOT sparse":
+                print(
+                    'Warning: Since the input matrix is a sparse matrix, please makes sure all the operators in the '
+                    'customized config dictionary supports sparse matriies.'
+                    )
         else:
-            self._imputed = False
+            if np.any(np.isnan(features)):
+                self._imputed = True
+                features = self._impute_values(features)
 
         self._check_dataset(features, target)
 
@@ -914,7 +946,7 @@ class TPOTBase(BaseEstimator):
             print('Imputing missing values in feature set')
 
         if self._fitted_imputer is None:
-            self._fitted_imputer = Imputer(strategy="median", axis=0)
+            self._fitted_imputer = Imputer(strategy="median")
             self._fitted_imputer.fit(features)
 
         return self._fitted_imputer.transform(features)
@@ -935,7 +967,7 @@ class TPOTBase(BaseEstimator):
         None
         """
         try:
-            check_X_y(features, target, accept_sparse=False)
+            check_X_y(features, target, accept_sparse=True)
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
@@ -943,6 +975,7 @@ class TPOTBase(BaseEstimator):
                 'the features must be a 2-D array and target labels must be a '
                 '1-D array.'
             )
+
 
     def _compile_to_sklearn(self, expr):
         """Compile a DEAP pipeline into a sklearn pipeline.
