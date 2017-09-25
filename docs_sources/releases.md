@@ -10,7 +10,7 @@
 
 * TPOT now reduces the number of duplicated pipelines between generations.
 
-* TPOT now allows personal/manual scoring function in command-line mode.
+* TPOT now allows customized scoring function in command-line mode.
 
 * We have added a new optional argument, `periodic_checkpoint_folder`, that lets TPOT periodically save the best pipeline so far to a local folder during optimization process.
 
