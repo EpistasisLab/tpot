@@ -10,13 +10,15 @@
 
 * TPOT now reduces the number of duplicated pipelines between generations.
 
+* TPOT now allows personal/manual scoring function in command-line mode.
+
 * We have added a new optional argument, `periodic_checkpoint_folder`, that lets TPOT periodically save the best pipeline so far to a local folder during optimization process.
 
 * TPOT now does not use `sklearn.externals.joblib` when `n_jobs=1` to allow potential freezing issue [as scikit-learn has](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux).
 
 * Fix a bug that `DEFAULT` in the parameter(s) of nested estimator raises `KeyError` when exporting pipeline.
 
-* Fixed a bug related to setting `random_state` innested estimators. The issue would happen with pipeline with `SelectFromModel` (`ExtraTreesClassifier` as nested estimator) or `StackingEstimator` if nested estimator has `random_state` as a parameter.
+* Fixed a bug related to setting `random_state` innested estimators. The issue would happen with pipeline with `SelectFromModel` (`ExtraTreesClassifier` as nested estimator) or `StackingEstimator` if nested estimator has `random_state` parameter.
 
 * Fixed a bug in imputation function in TPOT to impute along columns instead rows.
 
