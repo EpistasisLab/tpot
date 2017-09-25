@@ -77,7 +77,7 @@ boston_data = load_boston()
 training_features_r, testing_features_r, training_target_r, testing_target_r = \
     train_test_split(boston_data.data, boston_data.target, random_state=42)
 
-# Set up the  sparse matrix
+# Set up the sparse matrix for testing
 sparse_features = sparse.csr_matrix(training_features)
 sparse_target = training_target
 
@@ -1611,13 +1611,7 @@ def test_mutNodeReplacement():
         mut_ind = mutNodeReplacement(tpot_obj._toolbox.clone(pipeline), pset=tpot_obj._pset)
         new_ret_type_list = [node.ret for node in mut_ind[0]]
         new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
-
-        if new_prims_list == old_prims_list:  # Terminal mutated
-            assert new_ret_type_list == old_ret_type_list
-        else:  # Primitive mutated
-            diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
-            assert diff_prims[0].ret == diff_prims[1].ret
-
+        assert new_ret_type_list == old_ret_type_list
         assert mut_ind[0][0].ret == Output_Array
 
 
