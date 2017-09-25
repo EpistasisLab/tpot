@@ -516,8 +516,23 @@ Note that you must have all of the corresponding packages for the operators inst
 TPOT allows for the initial population of pipelines to be seeded. This can be done either through the `population_seeds` parameter in the TPOT constructor, or through a `population_seeds` attribute in a custom config file.
 
 ```Python
+tpot_config = {
+    'sklearn.naive_bayes.GaussianNB': {
+    },
+
+    'sklearn.naive_bayes.BernoulliNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    },
+
+    'sklearn.naive_bayes.MultinomialNB': {
+        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'fit_prior': [True, False]
+    }
+}
+
 population_seeds = [
-    'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
+    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
     'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
 ]
 
