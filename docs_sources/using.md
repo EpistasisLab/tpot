@@ -504,22 +504,7 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
 
 If specified through a config file, your config file would look like this:
 
-```Python
-tpot_config = {
-    'sklearn.naive_bayes.GaussianNB': {
-    },
-
-    'sklearn.naive_bayes.BernoulliNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    },
-
-    'sklearn.naive_bayes.MultinomialNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    }
-}
-
+```
 population_seeds = [
     'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
     'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
@@ -532,7 +517,7 @@ If less seeds are provided than there are to be individuals in the entire popula
 
 If the `population_seeds` parameter is provided along with seeds from a configuration file, the configuration file's seeds will take precedence.
 
-**Crash/freeze issue with n_jobs > 1 under OSX or Linux**
+# Crash/freeze issue with n_jobs > 1 under OSX or Linux
 
 TPOT allows parallel computing for speeding up optimization process, but it may suffers the crash/freeze issue with n_jobs > 1 under OSX or Linux [as  scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large dataset. One solution is to configure Python `multiprocessing` to use the `forkserver` start methods (instead of the default `fork`) to manage the process pools. You may enable the `forkserver` mode globally for your program with putting the following codes into your main script:
 
