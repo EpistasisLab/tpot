@@ -369,6 +369,16 @@ TPOT comes with a handful of default operators and parameter configurations that
 </tr>
 
 <tr>
+<td>TPOT sparse</td>
+<td>TPOT uses a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices.
+<br /><br />
+This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier_sparse.py">Classification</a>
+<br /><br />
+<a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_sparse.py">Regression</a></td>
+</tr>
+
+<tr>
 <td>TPOT light</td>
 <td>TPOT will search over a restricted range of preprocessors, feature constructors, feature selectors, models, and parameters to find a series of operators that minimize the error of the model predictions. Only simpler and fast-running operators will be used in these pipelines, so TPOT light is useful for finding quick and simple pipelines for a classification or regression problem.
 <br /><br />
