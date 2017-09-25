@@ -16,7 +16,7 @@
 
 * TPOT now does not use `sklearn.externals.joblib` when `n_jobs=1` to allow potential freezing issue [as scikit-learn has](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux).
 
-* Fix a bug that `DEFAULT` in the parameter(s) of nested estimator raises `KeyError` when exporting pipeline.
+* Fixed a bug that `DEFAULT` in the parameter(s) of nested estimator raises `KeyError` when exporting pipeline.
 
 * Fixed a bug related to setting `random_state` innested estimators. The issue would happen with pipeline with `SelectFromModel` (`ExtraTreesClassifier` as nested estimator) or `StackingEstimator` if nested estimator has `random_state` parameter.
 
