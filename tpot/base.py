@@ -365,7 +365,7 @@ class TPOTBase(BaseEstimator):
                 else:
                     raise ValueError(
                                     'Could not find "tpot_config" in configuration file {}. '
-                                    'when using a custom config file for customizing operators '
+                                    'When using a custom config file for customizing operators '
                                     'dictionary, the file must have a python dictionary with '
                                     'the standardized name of "tpot_config"'.format(config_dict)
                                     )
@@ -404,7 +404,7 @@ class TPOTBase(BaseEstimator):
                 else:
                     raise ValueError(
                                     'Could not find "population_seeds" in configuration file {}. '
-                                    'when using a custom config file for customizing the seeds, '
+                                    'When using a custom config file for customizing the seeds, '
                                     'the file must have a list of strings with the standardized '
                                     'name of "population_seeds"'.format(population_seeds)
                                     )

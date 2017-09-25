@@ -339,6 +339,7 @@ def test_conf_dict_3():
     assert isinstance(tpot_obj.config_dict, dict)
     assert tpot_obj.config_dict == tested_config_dict
 
+
 def test_conf_dict_4():
     """Assert that TPOT uses seeds from custom dictionary as the starting population."""
     tpot_obj = TPOTRegressor(config_dict='tests/test_config.py', population_seeds='tests/test_config.py', generations=1, population_size=10)
@@ -356,16 +357,49 @@ def test_conf_dict_5():
 
 
 def test_read_config_file():
-    """Assert that _read_config_file rasie FileNotFoundError with a wrong path."""
+    """Assert that _read_config_file rasies FileNotFoundError with a wrong path."""
     tpot_obj = TPOTRegressor()
     # typo for "tests/test_config.py"
     assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_confg.py")
 
 
 def test_read_config_file_2():
-    """Assert that _read_config_file rasie ValueError with wrong dictionary format"""
+    """Assert that _read_config_file rasies ValueError with wrong dictionary format"""
     tpot_obj = TPOTRegressor()
     assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_config.py.bad")
+
+
+def test_read_config_file_3():
+    """Assert that _read_config_file rasies ValueError without a dictionary named 'tpot_config'."""
+    tpot_obj = TPOTRegressor()
+    assert_raises(ValueError, tpot_obj._setup_config, "tpot/config/regressor_sparse.py")
+
+
+def test_setup_pop():
+    """Assert that _setup_pop rasies ValueError without a dictionary named 'population_seeds'."""
+    tpot_obj = TPOTRegressor()
+    assert_raises(ValueError, tpot_obj._setup_pop, "tpot/config/regressor_sparse.py")
+
+
+def test_setup_pop_2():
+    """Assert that _setup_pop will not rasie ValueError with a python list"""
+    tpot_obj = TPOTRegressor()
+
+    pipeline_string = (
+        "ExtraTreesRegressor("
+        "GradientBoostingRegressor(input_matrix, GradientBoostingRegressor__alpha=0.8,"
+        "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
+        "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
+        "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
+        "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)"
+    )
+    assert tpot_obj._pop == []
+
+    tpot_obj._setup_pop([pipeline_string])
+    assert len(tpot_obj._pop) == 1
 
 
 def test_random_ind():
