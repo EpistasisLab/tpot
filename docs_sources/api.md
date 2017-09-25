@@ -135,6 +135,7 @@ Possible inputs are:
 <li>Python dictionary, TPOT will use your custom configuration,</li>
 <li>string 'TPOT light', TPOT will use a built-in configuration with only fast models and preprocessors, or</li>
 <li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies, or</li>
+<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices, or</li>
 <li>None, TPOT will use the default TPOTClassifier configuration.</li>
 </ul>
 See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
@@ -147,9 +148,10 @@ A configuration list for customizing a set of pipelines used in the first genera
 Possible inputs are:
 <ul>
 <li>Python list, TPOT will use your custom population seeds,</li>
-<li>string , TPOT will use the path to a configuration file for customizing a set of pipelines used in the first generation, or</li>
+<li>string, TPOT will use the path to a configuration file for customizing a set of pipelines used in the first generation, or</li>
 <li>None, TPOT won't any population seeds</li>
 </ul>
+See the the <a href="../using/#customizing-tpots-starting-population">starting population configuration</a> section for more information and examples of how to create your own starting population.
 </blockquote>
 
 <strong>warm_start</strong>: boolean, optional (default=False)
@@ -601,6 +603,7 @@ Possible inputs are:
 <li>Python dictionary, TPOT will use your custom configuration,</li>
 <li>string 'TPOT light', TPOT will use a built-in configuration with only fast models and preprocessors, or</li>
 <li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies, or</li>
+<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices, or</li>
 <li>None, TPOT will use the default TPOTRegressor configuration.</li>
 </ul>
 See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
@@ -613,9 +616,10 @@ A configuration list for customizing a set of pipelines used in the first genera
 Possible inputs are:
 <ul>
 <li>Python list, TPOT will use your custom population seeds,</li>
-<li>string , TPOT will use the path to a configuration file for customizing a set of pipelines used in the first generation, or</li>
+<li>string, TPOT will use the path to a configuration file for customizing a set of pipelines used in the first generation, or</li>
 <li>None, TPOT won't any population seeds</li>
 </ul>
+See the the <a href="../using/#customizing-tpots-starting-population">starting population configuration</a> section for more information and examples of how to create your own starting population.
 </blockquote>
 
 <strong>warm_start</strong>: boolean, optional (default=False)

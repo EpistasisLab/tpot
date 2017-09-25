@@ -265,6 +265,29 @@ Setting this parameter to higher values will allow TPOT to consider more complex
 Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
 </tr>
 <tr>
+<td>-config</td>
+<td>CONFIG_FILE</td>
+<td>String or file path</td>
+<td>Operators and parameter configurations in TPOT:
+<br /><br />
+<ul>
+<li>Path for configuration file: TPOT will use the path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process</li>
+<li>string 'TPOT light', TPOT will use a built-in configuration with only fast models and preprocessors</li>
+<li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies</li>
+<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices.</li>
+</ul>
+See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
+</td>
+</tr>
+<tr>
+<td>-pseed</td>
+<td>POPULATION_SEEDS</td>
+<td>File path</td>
+<td>Configuration file for customizing a set of pipelines used in the first generation.
+<br /><br />
+See the the <a href="../using/#customizing-tpots-starting-population">starting population configuration</a> section for more information and examples of how to create your own starting population.
+</tr>
+<tr>
 <td>-cf</td>
 <td>CHECKPOINT_FOLDER</td>
 <td>Folder path</td>
