@@ -81,7 +81,6 @@ training_features_r, testing_features_r, training_target_r, testing_target_r = \
 sparse_features = sparse.csr_matrix(training_features)
 sparse_target = training_target
 
-
 np.random.seed(42)
 random.seed(42)
 
