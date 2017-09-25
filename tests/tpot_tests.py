@@ -1584,17 +1584,8 @@ def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
     tpot_obj = TPOTClassifier()
     pipeline_string = (
-        'KNeighborsClassifier(CombineDFs('
-        'DecisionTreeClassifier(input_matrix, '
-        'DecisionTreeClassifier__criterion=gini, '
-        'DecisionTreeClassifier__max_depth=8, '
-        'DecisionTreeClassifier__min_samples_leaf=5, '
-        'DecisionTreeClassifier__min_samples_split=5'
-        '), '
-        'SelectPercentile('
-        'input_matrix, '
-        'SelectPercentile__percentile=20'
-        ')'
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False),'
         'KNeighborsClassifier__n_neighbors=10, '
         'KNeighborsClassifier__p=1, '
         'KNeighborsClassifier__weights=uniform'
