@@ -341,7 +341,7 @@ def test_conf_dict_3():
 
 def test_conf_dict_4():
     """Assert that TPOT uses seeds from custom dictionary as the starting population."""
-    tpot_obj = TPOTRegressor(config_dict='tests/test_config.py', generations=1, population_size=10)
+    tpot_obj = TPOTRegressor(config_dict='tests/test_config.py', population_seeds='tests/test_config.py', generations=1, population_size=10)
 
     assert isinstance(tpot_obj._pop, list)
     assert isinstance(tpot_obj._pop[0], creator.Individual)
