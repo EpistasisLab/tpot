@@ -1584,27 +1584,17 @@ def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
     tpot_obj = TPOTClassifier()
     pipeline_string = (
-        'KNeighborsClassifier(CombineDFs('
-        'DecisionTreeClassifier(input_matrix, '
-        'DecisionTreeClassifier__criterion=gini, '
-        'DecisionTreeClassifier__max_depth=8, '
-        'DecisionTreeClassifier__min_samples_leaf=5, '
-        'DecisionTreeClassifier__min_samples_split=5'
-        '), '
-        'SelectPercentile('
-        'input_matrix, '
-        'SelectPercentile__percentile=20'
-        ')'
-        'KNeighborsClassifier__n_neighbors=10, '
-        'KNeighborsClassifier__p=1, '
-        'KNeighborsClassifier__weights=uniform'
-        ')'
+        'LogisticRegression(PolynomialFeatures'
+        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
     )
 
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     pipeline[0].ret = Output_Array
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
+
     # test 10 times
     for _ in range(10):
         mut_ind = mutNodeReplacement(tpot_obj._toolbox.clone(pipeline), pset=tpot_obj._pset)
@@ -1615,8 +1605,8 @@ def test_mutNodeReplacement():
             assert new_ret_type_list == old_ret_type_list
         else:  # Primitive mutated
             diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
-            assert diff_prims[0].ret == diff_prims[1].ret
-
+            if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
+                assert diff_prims[0].ret == diff_prims[1].ret
         assert mut_ind[0][0].ret == Output_Array
 
 
