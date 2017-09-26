@@ -363,33 +363,6 @@ def test_read_config_file_3():
     assert_raises(ValueError, tpot_obj._setup_config, "tpot/config/regressor_sparse.py")
 
 
-def test_setup_pop():
-    """Assert that _setup_pop rasies ValueError without a dictionary named 'population_seeds'."""
-    tpot_obj = TPOTRegressor()
-    assert_raises(ValueError, tpot_obj._setup_pop, "tpot/config/regressor_sparse.py")
-
-
-def test_setup_pop_2():
-    """Assert that _setup_pop will not rasie ValueError with a python list"""
-    tpot_obj = TPOTRegressor()
-
-    pipeline_string = (
-        "ExtraTreesRegressor("
-        "GradientBoostingRegressor(input_matrix, GradientBoostingRegressor__alpha=0.8,"
-        "GradientBoostingRegressor__learning_rate=0.1,GradientBoostingRegressor__loss=huber,"
-        "GradientBoostingRegressor__max_depth=5, GradientBoostingRegressor__max_features=0.5,"
-        "GradientBoostingRegressor__min_samples_leaf=5, GradientBoostingRegressor__min_samples_split=5,"
-        "GradientBoostingRegressor__n_estimators=100, GradientBoostingRegressor__subsample=0.25),"
-        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
-        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
-        "ExtraTreesRegressor__n_estimators=100)"
-    )
-    assert tpot_obj._pop == []
-
-    tpot_obj._setup_pop([pipeline_string])
-    assert len(tpot_obj._pop) == 1
-
-
 def test_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline with same random seed."""
     tpot_obj = TPOTClassifier(random_state=43)

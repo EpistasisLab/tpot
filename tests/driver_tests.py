@@ -220,7 +220,6 @@ class ParserTest(TestCase):
         """Assert that the TPOT driver stores correct default values for all parameters."""
         args = self.parser.parse_args(['tests/tests.csv'])
         self.assertEqual(args.CONFIG_FILE, None)
-        self.assertEqual(args.POPULATION_SEEDS, None)
         self.assertEqual(args.CROSSOVER_RATE, 0.1)
         self.assertEqual(args.EARLY_STOP, None)
         self.assertEqual(args.DISABLE_UPDATE_CHECK, False)
@@ -264,7 +263,6 @@ NUM_JOBS\t=\t1
 OFFSPRING_SIZE\t=\t100
 CHECKPOINT_FOLDER\t=\tNone
 OUTPUT_FILE\t=\t
-POPULATION_SEEDS\t=\tNone
 POPULATION_SIZE\t=\t100
 RANDOM_STATE\t=\tNone
 SCORING_FN\t=\taccuracy
@@ -304,7 +302,6 @@ NUM_JOBS\t=\t1
 OFFSPRING_SIZE\t=\t100
 CHECKPOINT_FOLDER\t=\tNone
 OUTPUT_FILE\t=\t
-POPULATION_SEEDS\t=\tNone
 POPULATION_SIZE\t=\t100
 RANDOM_STATE\t=\tNone
 SCORING_FN\t=\tneg_mean_squared_error
