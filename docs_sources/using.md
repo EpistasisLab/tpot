@@ -478,49 +478,6 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
-# Customizing TPOT's starting population
-
-TPOT allows for the initial population of pipelines to be seeded. This can be done either through the `population_seeds` parameter in the TPOT constructor, or through a `population_seeds` attribute in a custom config file.
-
-```Python
-population_seeds = [
-    'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
-    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
-]
-
-tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                      config_dict=tpot_config, population_seeds=population_seeds)
-```
-
-If specified through a config file, your config file would look like this:
-
-```Python
-tpot_config = {
-    'sklearn.naive_bayes.GaussianNB': {
-    },
-
-    'sklearn.naive_bayes.BernoulliNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    },
-
-    'sklearn.naive_bayes.MultinomialNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    }
-}
-
-population_seeds = [
-    'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
-    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
-]
-```
-
-As with `tpot_config`, when using a custom config file the seeds *must* have the standardized name of "population_seeds". It should only ever be a list of strings.
-
-If less seeds are provided than there are to be individuals in the entire population, then the remainder will be filled with random individuals.
-
-If the `population_seeds` parameter is provided along with seeds from a configuration file, the configuration file's seeds will take precedence.
 
 **Crash/freeze issue with n_jobs > 1 under OSX or Linux**
 
