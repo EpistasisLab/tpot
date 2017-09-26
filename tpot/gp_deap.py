@@ -363,8 +363,6 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             uid = uuid.uuid4().hex[:15].upper()
             sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
             r = redis.StrictRedis(host='redis', port=6379, db=0)
-            r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
-            r.hset(output_file, uid, pickle.dumps(sklearn_pipeline_json['pipeline_list']))
             r.hset(output_file, uid + '-fold', cv)
 
         n_classes = len(np.unique(target))
@@ -396,8 +394,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         tmp_it.stop()
 
         if output_file is not None:
-            r.publish(output_file,"score: {}:{}".format(uid,resulting_score))
-
+            sklearn_pipeline_json['score'] = resulting_score
+            json = {uid: sklearn_pipeline_json}
+            r.publish(output_file,pickle.dumps(json))
         return resulting_score
 
     except Exception as e:

@@ -60,6 +60,7 @@ from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
 import traceback
+import pickle
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 if sys.platform.startswith('win'):
@@ -521,7 +522,8 @@ class TPOTBase(BaseEstimator):
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         if self.r is not None:
-            self.r.publish(self.output_file,"total evaluation: {}".format(total_evals))
+            total_eval_str = pickle.dumps({'total_evaluation': total_evals})
+            self.r.publish(self.output_file,total_eval_str)
 
         try:
             with warnings.catch_warnings():
@@ -601,7 +603,8 @@ class TPOTBase(BaseEstimator):
                         raise
 
             if self.r is not None:
-                self.r.publish(self.output_file,"EVALUATION_COMPLETE")
+                status = pickle.dumps({'evaluation_status': 'complete'})
+                self.r.publish(self.output_file,status)
             return self
 
     def _update_top_pipeline(self):
