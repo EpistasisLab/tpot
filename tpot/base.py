@@ -31,6 +31,7 @@ import os
 import re
 
 import numpy as np
+from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
 from tqdm import tqdm
