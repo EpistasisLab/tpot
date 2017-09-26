@@ -265,6 +265,29 @@ Setting this parameter to higher values will allow TPOT to consider more complex
 Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
 </tr>
 <tr>
+<td>-config</td>
+<td>CONFIG_FILE</td>
+<td>String or file path</td>
+<td>Operators and parameter configurations in TPOT:
+<br /><br />
+<ul>
+<li>Path for configuration file: TPOT will use the path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process</li>
+<li>string 'TPOT light', TPOT will use a built-in configuration with only fast models and preprocessors</li>
+<li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies</li>
+<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices.</li>
+</ul>
+See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
+</td>
+</tr>
+<tr>
+<td>-pseed</td>
+<td>POPULATION_SEEDS</td>
+<td>File path</td>
+<td>Configuration file for customizing a set of pipelines used in the first generation.
+<br /><br />
+See the the <a href="../using/#customizing-tpots-starting-population">starting population configuration</a> section for more information and examples of how to create your own starting population.
+</tr>
+<tr>
 <td>-cf</td>
 <td>CHECKPOINT_FOLDER</td>
 <td>Folder path</td>
@@ -366,6 +389,16 @@ TPOT comes with a handful of default operators and parameter configurations that
 <td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier.py">Classification</a>
 <br /><br />
 <a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor.py">Regression</a></td>
+</tr>
+
+<tr>
+<td>TPOT sparse</td>
+<td>TPOT uses a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices.
+<br /><br />
+This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier_sparse.py">Classification</a>
+<br /><br />
+<a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_sparse.py">Regression</a></td>
 </tr>
 
 <tr>
@@ -483,18 +516,6 @@ Note that you must have all of the corresponding packages for the operators inst
 TPOT allows for the initial population of pipelines to be seeded. This can be done either through the `population_seeds` parameter in the TPOT constructor, or through a `population_seeds` attribute in a custom config file.
 
 ```Python
-population_seeds = [
-    'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
-    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
-]
-
-tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                      config_dict=tpot_config, population_seeds=population_seeds)
-```
-
-If specified through a config file, your config file would look like this:
-
-```Python
 tpot_config = {
     'sklearn.naive_bayes.GaussianNB': {
     },
@@ -511,6 +532,18 @@ tpot_config = {
 }
 
 population_seeds = [
+    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
+    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
+]
+
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
+                      config_dict=tpot_config, population_seeds=population_seeds)
+```
+
+If specified through a config file, your config file would look like this:
+
+```Python
+population_seeds = [
     'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
     'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
 ]
@@ -522,11 +555,11 @@ If less seeds are provided than there are to be individuals in the entire popula
 
 If the `population_seeds` parameter is provided along with seeds from a configuration file, the configuration file's seeds will take precedence.
 
-**Crash/freeze issue with n_jobs > 1 under OSX or Linux**
+# Crash/freeze issue with n_jobs > 1 under OSX or Linux
 
-TPOT allows parallel computing for speeding up optimization process, but it may suffers the crash/freeze issue with n_jobs > 1 under OSX or Linux [as  scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large dataset. One solution is to configure Python `multiprocessing` to use the `forkserver` start methods (instead of the default `fork`) to manage the process pools. You may enable the `forkserver` mode globally for your program with putting the following codes into your main script:
+TPOT allows parallel computing for speeding up optimization process, but it may suffers the crash/freeze issue with n_jobs > 1 under OSX or Linux [as scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large dataset. One solution is to configure Python `multiprocessing` to use the `forkserver` start methods (instead of the default `fork`) to manage the process pools. You may enable the `forkserver` mode globally for your program with putting the following codes into your main script:
 
-```
+```Python
 import multiprocessing
 
 # other imports, custom code, load data, define model...
