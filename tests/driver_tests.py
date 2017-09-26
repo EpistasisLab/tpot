@@ -71,7 +71,6 @@ def test_scoring_function_argument():
     assert_equal(err, "")
 
 
-
 def test_driver():
     """Assert that the TPOT driver outputs normal result in mode mode."""
     batcmd = "python -m tpot.driver tests/tests.csv -is , -target class -g 1 -p 2 -os 4 -cv 5 -s 45 -v 1"
