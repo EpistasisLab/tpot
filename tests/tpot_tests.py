@@ -36,6 +36,7 @@ from tpot.config.regressor_sparse import regressor_config_sparse
 from tpot.config.classifier_sparse import classifier_config_sparse
 
 import numpy as np
+from scipy import sparse
 import inspect
 import random
 from multiprocessing import cpu_count
@@ -75,6 +76,10 @@ training_features, testing_features, training_target, testing_target = \
 boston_data = load_boston()
 training_features_r, testing_features_r, training_target_r, testing_target_r = \
     train_test_split(boston_data.data, boston_data.target, random_state=42)
+
+# Set up the sparse matrix for testing
+sparse_features = sparse.csr_matrix(training_features)
+sparse_target = training_target
 
 np.random.seed(42)
 random.seed(42)
@@ -1293,6 +1298,76 @@ def test_imputer_3():
         assert_in("Imputing missing values in feature set", out.getvalue())
 
     assert_not_equal(imputed_features[0][0], float('nan'))
+
+
+def test_sparse_matrix():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict='TPOT light'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_2():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict=None."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict=None
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_3():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict='TPOT MDR'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT MDR'
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_4():
+    """Assert that the TPOT fit function will not raise a ValueError in a sparse matrix with config_dict='TPOT sparse'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT sparse'
+    )
+
+    tpot_obj.fit(sparse_features, sparse_target)
+
+
+def test_sparse_matrix_5():
+    """Assert that the TPOT fit function will not raise a ValueError in a sparse matrix with a customized config dictionary."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='tests/test_config_sparse.py'
+    )
+
+    tpot_obj.fit(sparse_features, sparse_target)
 
 
 def test_tpot_operator_factory_class():
