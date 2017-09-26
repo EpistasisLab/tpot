@@ -31,6 +31,7 @@ import os
 import re
 
 import numpy as np
+from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
 from tqdm import tqdm
@@ -89,7 +90,7 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, config_dict=None, population_seeds=None,
+                 random_state=None, config_dict=None,
                  warm_start=False, periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False):
         """Set up the genetic programming algorithm for pipeline optimization.
@@ -186,8 +187,6 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
-        population_seeds: list of strings, optional (Default: None)
-            The set of pipelines used in the first generation.
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -253,7 +252,8 @@ class TPOTBase(BaseEstimator):
         else:
             self.offspring_size = population_size
 
-        self._setup_config(config_dict)
+        self.config_dict_params=config_dict
+        self._setup_config(self.config_dict_params)
 
         self.operators = []
         self.arguments = []
@@ -330,7 +330,6 @@ class TPOTBase(BaseEstimator):
 
         self._setup_pset()
         self._setup_toolbox()
-        self._setup_pop(population_seeds, config_dict)
 
 
     def _setup_config(self, config_dict):
@@ -353,7 +352,16 @@ class TPOTBase(BaseEstimator):
                 else:
                     self.config_dict = regressor_config_sparse
             else:
-                self.config_dict = self._read_config_file(config_dict).tpot_config
+                config = self._read_config_file(config_dict)
+                if hasattr(config, 'tpot_config'):
+                    self.config_dict = config.tpot_config
+                else:
+                    raise ValueError(
+                                    'Could not find "tpot_config" in configuration file {}. '
+                                    'When using a custom config file for customizing operators '
+                                    'dictionary, the file must have a python dictionary with '
+                                    'the standardized name of "tpot_config"'.format(config_dict)
+                                    )
         else:
             self.config_dict = self.default_config_dict
 
@@ -377,20 +385,6 @@ class TPOTBase(BaseEstimator):
                 'Could not open specified TPOT operator config file: '
                 '{}'.format(config_path)
             )
-
-
-    def _setup_pop(self, population_seeds, config_path):
-        """If the population_seeds are specified, use them as the starting population."""
-        try:
-            config = self._read_config_file(config_path)
-
-            if hasattr(config, 'population_seeds'):
-                population_seeds = config.population_seeds
-        except Exception as e:
-            # Config isn't a file
-            return
-
-        self._pop = [creator.Individual.from_string(x, self._pset) for x in population_seeds]
 
 
     def _setup_pset(self):
@@ -496,12 +490,23 @@ class TPOTBase(BaseEstimator):
 
         # Resets the imputer to be fit for the new dataset
         self._fitted_imputer = None
-
-        if np.any(np.isnan(features)):
-            self._imputed = True
-            features = self._impute_values(features)
+        self._imputed = False
+        # If features is a sparse matrix, do not apply imputation
+        if sparse.issparse(features):
+            if self.config_dict_params in [None, "TPOT light", "TPOT MDR"]:
+                raise ValueError(
+                                'Not all operators in {} supports sparse matrix. '
+                                'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict_params)
+                                )
+            elif self.config_dict_params != "TPOT sparse":
+                print(
+                    'Warning: Since the input matrix is a sparse matrix, please makes sure all the operators in the '
+                    'customized config dictionary supports sparse matriies.'
+                    )
         else:
-            self._imputed = False
+            if np.any(np.isnan(features)):
+                self._imputed = True
+                features = self._impute_values(features)
 
         self._check_dataset(features, target)
 
@@ -526,11 +531,11 @@ class TPOTBase(BaseEstimator):
         self._last_pipeline_write = self._start_datetime
         self._toolbox.register('evaluate', self._evaluate_individuals, features=features, target=target, sample_weight=sample_weight, groups=groups)
 
-        # assign population. self._pop maybe be non-empty if the population is
-        # seeded or a warm-start is being performed.
-        n_left_to_generate = self.population_size - len(self._pop)
-        if n_left_to_generate > 0:
-            pop = self._pop + self._toolbox.population(n=n_left_to_generate)
+        # assign population, self._pop can only be not None if warm_start is enabled
+        if self._pop:
+            pop = self._pop
+        else:
+            pop = self._toolbox.population(n=self.population_size)
 
         def pareto_eq(ind1, ind2):
             """Determine whether two individuals are equal on the Pareto front.
@@ -914,7 +919,7 @@ class TPOTBase(BaseEstimator):
             print('Imputing missing values in feature set')
 
         if self._fitted_imputer is None:
-            self._fitted_imputer = Imputer(strategy="median", axis=0)
+            self._fitted_imputer = Imputer(strategy="median")
             self._fitted_imputer.fit(features)
 
         return self._fitted_imputer.transform(features)
@@ -935,7 +940,7 @@ class TPOTBase(BaseEstimator):
         None
         """
         try:
-            check_X_y(features, target, accept_sparse=False)
+            check_X_y(features, target, accept_sparse=True)
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '

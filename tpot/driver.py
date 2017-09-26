@@ -335,6 +335,7 @@ def _get_arg_parser():
         )
     )
 
+
     parser.add_argument(
         '-config',
         action='store',
@@ -348,6 +349,8 @@ def _get_arg_parser():
             'built-in configuration.'
         )
     )
+
+
 
     parser.add_argument(
         '-cf',

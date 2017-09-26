@@ -36,6 +36,7 @@ from tpot.config.regressor_sparse import regressor_config_sparse
 from tpot.config.classifier_sparse import classifier_config_sparse
 
 import numpy as np
+from scipy import sparse
 import inspect
 import random
 from multiprocessing import cpu_count
@@ -75,6 +76,10 @@ training_features, testing_features, training_target, testing_target = \
 boston_data = load_boston()
 training_features_r, testing_features_r, training_target_r, testing_target_r = \
     train_test_split(boston_data.data, boston_data.target, random_state=42)
+
+# Set up the sparse matrix for testing
+sparse_features = sparse.csr_matrix(training_features)
+sparse_target = training_target
 
 np.random.seed(42)
 random.seed(42)
@@ -338,33 +343,24 @@ def test_conf_dict_3():
     assert isinstance(tpot_obj.config_dict, dict)
     assert tpot_obj.config_dict == tested_config_dict
 
-def test_conf_dict_4():
-    """Assert that TPOT uses seeds from custom dictionary as the starting population."""
-    tpot_obj = TPOTRegressor(config_dict='tests/test_config.py', generations=1, population_size=10)
-
-    assert isinstance(tpot_obj._pop, list)
-    assert isinstance(tpot_obj._pop[0], creator.Individual)
-
-
-def test_conf_dict_5():
-    """Assert that TPOT has a _pop attribute of the same size as the number of seeds provided."""
-    tpot_obj = TPOTRegressor(config_dict='tests/test_config.py')
-    n_seeds = len(tpot_obj._read_config_file('tests/test_config.py').population_seeds)
-
-    assert len(tpot_obj._pop) == n_seeds
-
 
 def test_read_config_file():
-    """Assert that _read_config_file rasie FileNotFoundError with a wrong path."""
+    """Assert that _read_config_file rasies FileNotFoundError with a wrong path."""
     tpot_obj = TPOTRegressor()
     # typo for "tests/test_config.py"
     assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_confg.py")
 
 
 def test_read_config_file_2():
-    """Assert that _read_config_file rasie ValueError with wrong dictionary format"""
+    """Assert that _read_config_file rasies ValueError with wrong dictionary format"""
     tpot_obj = TPOTRegressor()
     assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_config.py.bad")
+
+
+def test_read_config_file_3():
+    """Assert that _read_config_file rasies ValueError without a dictionary named 'tpot_config'."""
+    tpot_obj = TPOTRegressor()
+    assert_raises(ValueError, tpot_obj._setup_config, "tpot/config/regressor_sparse.py")
 
 
 def test_random_ind():
@@ -1261,6 +1257,76 @@ def test_imputer_3():
     assert_not_equal(imputed_features[0][0], float('nan'))
 
 
+def test_sparse_matrix():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict='TPOT light'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_2():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict=None."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict=None
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_3():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict='TPOT MDR'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT MDR'
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_4():
+    """Assert that the TPOT fit function will not raise a ValueError in a sparse matrix with config_dict='TPOT sparse'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT sparse'
+    )
+
+    tpot_obj.fit(sparse_features, sparse_target)
+
+
+def test_sparse_matrix_5():
+    """Assert that the TPOT fit function will not raise a ValueError in a sparse matrix with a customized config dictionary."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='tests/test_config_sparse.py'
+    )
+
+    tpot_obj.fit(sparse_features, sparse_target)
+
+
 def test_tpot_operator_factory_class():
     """Assert that the TPOT operators class factory."""
     test_config_dict = {
@@ -1475,27 +1541,17 @@ def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
     tpot_obj = TPOTClassifier()
     pipeline_string = (
-        'KNeighborsClassifier(CombineDFs('
-        'DecisionTreeClassifier(input_matrix, '
-        'DecisionTreeClassifier__criterion=gini, '
-        'DecisionTreeClassifier__max_depth=8, '
-        'DecisionTreeClassifier__min_samples_leaf=5, '
-        'DecisionTreeClassifier__min_samples_split=5'
-        '), '
-        'SelectPercentile('
-        'input_matrix, '
-        'SelectPercentile__percentile=20'
-        ')'
-        'KNeighborsClassifier__n_neighbors=10, '
-        'KNeighborsClassifier__p=1, '
-        'KNeighborsClassifier__weights=uniform'
-        ')'
+        'LogisticRegression(PolynomialFeatures'
+        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
     )
 
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     pipeline[0].ret = Output_Array
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
+
     # test 10 times
     for _ in range(10):
         mut_ind = mutNodeReplacement(tpot_obj._toolbox.clone(pipeline), pset=tpot_obj._pset)
@@ -1506,8 +1562,8 @@ def test_mutNodeReplacement():
             assert new_ret_type_list == old_ret_type_list
         else:  # Primitive mutated
             diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
-            assert diff_prims[0].ret == diff_prims[1].ret
-
+            if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
+                assert diff_prims[0].ret == diff_prims[1].ret
         assert mut_ind[0][0].ret == Output_Array
 
 

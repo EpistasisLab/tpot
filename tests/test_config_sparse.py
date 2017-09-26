@@ -19,17 +19,21 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+import numpy as np
+
 tpot_config = {
-    'sklearn.naive_bayes.GaussianNB': {
+    'sklearn.neighbors.KNeighborsClassifier': {
+        'n_neighbors': range(1, 101),
+        'weights': ["uniform", "distance"],
+        'p': [1, 2]
     },
 
-    'sklearn.naive_bayes.BernoulliNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    },
-
-    'sklearn.naive_bayes.MultinomialNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
+    'sklearn.ensemble.RandomForestClassifier': {
+        'n_estimators': [100],
+        'criterion': ["gini", "entropy"],
+        'max_features': np.arange(0.05, 1.01, 0.05),
+        'min_samples_split': range(2, 21),
+        'min_samples_leaf':  range(1, 21),
+        'bootstrap': [True, False]
     }
 }
