@@ -33,8 +33,3 @@ tpot_config = {
         'fit_prior': [True, False]
     }
 }
-
-population_seeds = [
-    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
-    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
-]
