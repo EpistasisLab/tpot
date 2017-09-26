@@ -1584,8 +1584,8 @@ def test_mutNodeReplacement():
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
 
-    # test 10 times
-    for _ in range(10):
+    # test 20 times
+    for _ in range(20):
         mut_ind = mutNodeReplacement(tpot_obj._toolbox.clone(pipeline), pset=tpot_obj._pset)
         new_ret_type_list = [node.ret for node in mut_ind[0]]
         new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
