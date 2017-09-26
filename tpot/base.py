@@ -517,12 +517,23 @@ class TPOTBase(BaseEstimator):
 
         # Resets the imputer to be fit for the new dataset
         self._fitted_imputer = None
-
-        if np.any(np.isnan(features)):
-            self._imputed = True
-            features = self._impute_values(features)
+        self._imputed = False
+        # If features is a sparse matrix, do not apply imputation
+        if sparse.issparse(features):
+            if self.config_dict_params in [None, "TPOT light", "TPOT MDR"]:
+                raise ValueError(
+                                'Not all operators in {} supports sparse matrix. '
+                                'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict_params)
+                                )
+            elif self.config_dict_params != "TPOT sparse":
+                print(
+                    'Warning: Since the input matrix is a sparse matrix, please makes sure all the operators in the '
+                    'customized config dictionary supports sparse matriies.'
+                    )
         else:
-            self._imputed = False
+            if np.any(np.isnan(features)):
+                self._imputed = True
+                features = self._impute_values(features)
 
         self._check_dataset(features, target)
 
@@ -956,7 +967,7 @@ class TPOTBase(BaseEstimator):
         None
         """
         try:
-            check_X_y(features, target, accept_sparse=False)
+            check_X_y(features, target, accept_sparse=True)
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
