@@ -509,11 +509,11 @@ class TPOTBase(BaseEstimator):
         self._last_pipeline_write = self._start_datetime
         self._toolbox.register('evaluate', self._evaluate_individuals, features=features, target=target, sample_weight=sample_weight, groups=groups)
 
-        # assign population. self._pop maybe be non-empty if the population is
-        # seeded or a warm-start is being performed.
-        n_left_to_generate = self.population_size - len(self._pop)
-        if n_left_to_generate > 0:
-            pop = self._pop + self._toolbox.population(n=n_left_to_generate)
+        # assign population, self._pop can only be not None if warm_start is enabled
+        if self._pop:
+            pop = self._pop
+        else:
+            pop = self._toolbox.population(n=self.population_size)
 
         def pareto_eq(ind1, ind2):
             """Determine whether two individuals are equal on the Pareto front.
