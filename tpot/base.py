@@ -551,6 +551,8 @@ class TPOTBase(BaseEstimator):
         n_left_to_generate = self.population_size - len(self._pop)
         if n_left_to_generate > 0:
             pop = self._pop + self._toolbox.population(n=n_left_to_generate)
+        else:
+            pop = self._pop
 
         def pareto_eq(ind1, ind2):
             """Determine whether two individuals are equal on the Pareto front.
