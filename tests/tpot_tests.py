@@ -346,14 +346,6 @@ def test_conf_dict_4():
     assert isinstance(tpot_obj._pop[0], creator.Individual)
 
 
-def test_conf_dict_5():
-    """Assert that TPOT has a _pop attribute of the same size as the number of seeds provided."""
-    tpot_obj = TPOTRegressor(config_dict='tests/test_config.py')
-    n_seeds = len(tpot_obj._read_config_file('tests/test_config.py').population_seeds)
-
-    assert len(tpot_obj._pop) == n_seeds
-
-
 def test_read_config_file():
     """Assert that _read_config_file rasie FileNotFoundError with a wrong path."""
     tpot_obj = TPOTRegressor()

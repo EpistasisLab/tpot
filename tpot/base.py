@@ -89,7 +89,7 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, config_dict=None, population_seeds=None,
+                 random_state=None, config_dict=None,
                  warm_start=False, periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False):
         """Set up the genetic programming algorithm for pipeline optimization.
@@ -186,8 +186,6 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
-        population_seeds: list of strings, optional (Default: None)
-            The set of pipelines used in the first generation.
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -330,7 +328,6 @@ class TPOTBase(BaseEstimator):
 
         self._setup_pset()
         self._setup_toolbox()
-        self._setup_pop(population_seeds, config_dict)
 
 
     def _setup_config(self, config_dict):
@@ -377,20 +374,6 @@ class TPOTBase(BaseEstimator):
                 'Could not open specified TPOT operator config file: '
                 '{}'.format(config_path)
             )
-
-
-    def _setup_pop(self, population_seeds, config_path):
-        """If the population_seeds are specified, use them as the starting population."""
-        try:
-            config = self._read_config_file(config_path)
-
-            if hasattr(config, 'population_seeds'):
-                population_seeds = config.population_seeds
-        except Exception as e:
-            # Config isn't a file
-            return
-
-        self._pop = [creator.Individual.from_string(x, self._pset) for x in population_seeds]
 
 
     def _setup_pset(self):
