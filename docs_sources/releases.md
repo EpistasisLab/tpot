@@ -2,8 +2,6 @@
 
 * **TPOT now supports sparse matrices** with a new built-in TPOT configurations, "TPOT sparse".
 
-* TPOT now allows you to customize a set of pipelines used in the first generatio with the `population_seeds` parameter.
-
 * We have added `pandas` as a dependency to read dataset instead of `numpy.recfromcsv`.
 
 * We heve added "early stopping" option for stopping optimization process when no improvement in a set number of generations with `early_stop` parameter.
