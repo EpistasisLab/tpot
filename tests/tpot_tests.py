@@ -355,6 +355,70 @@ def test_conf_dict_5():
     assert len(tpot_obj._pop) == n_seeds
 
 
+def test_population_seeds():
+    """Assert that population_seeds takes python list as input."""
+    pipeline_string_1 = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5'
+        ')'
+    )
+    pipeline_string_2 = (
+        'KNeighborsClassifier('
+        'input_matrix, '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
+    pseeds = [pipeline_string_1, pipeline_string_2]
+    tpot_obj = TPOTClassifier(
+            random_state=42,
+            population_size=3,
+            generations=0,
+            population_seeds=pseeds,
+            verbosity=0,
+            cv=3
+        )
+    tpot_obj.fit(training_features, training_target)
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+
+
+def test_population_seeds_2():
+    """Assert that population_seeds takes python list as input and population_size is not larger than population_seeds"""
+    pipeline_string_1 = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5'
+        ')'
+    )
+    pipeline_string_2 = (
+        'KNeighborsClassifier('
+        'input_matrix, '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
+    pseeds = [pipeline_string_1, pipeline_string_2]
+    tpot_obj = TPOTClassifier(
+            random_state=42,
+            population_size=2,
+            generations=0,
+            population_seeds=pseeds,
+            verbosity=0,
+            cv=3
+        )
+    tpot_obj.fit(training_features, training_target)
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+
+
 def test_read_config_file():
     """Assert that _read_config_file rasies FileNotFoundError with a wrong path."""
     tpot_obj = TPOTRegressor()
