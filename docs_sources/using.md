@@ -274,7 +274,7 @@ Set this seed if you want your TPOT run to be reproducible with the same seed an
 <li>Path for configuration file: TPOT will use the path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process</li>
 <li>string 'TPOT light', TPOT will use a built-in configuration with only fast models and preprocessors</li>
 <li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies</li>
-<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices.</li>
+<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot encoder and the operators normally included in TPOT that also support sparse matrices.</li>
 </ul>
 See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
 </td>
@@ -405,7 +405,7 @@ Note that TPOT MDR may be slow to run because the feature selection routines are
 
 <tr>
 <td>TPOT sparse</td>
-<td>TPOT uses a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices.
+<td>TPOT uses a configuration dictionary with a one-hot encoder and the operators normally included in TPOT that also support sparse matrices.
 <br /><br />
 This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
 <td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier_sparse.py">Classification</a>
