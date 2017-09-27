@@ -426,7 +426,11 @@ def _print_args(args):
             arg_val = args.__dict__['POPULATION_SIZE']
         else:
             arg_val = args.__dict__[arg]
-        print('{}\t=\t{}'.format(arg, arg_val))
+
+        # Pad the outputs with an even amount of space
+        arg = (arg + (' ') * 100)[:20]
+        arg_val = ((' ') * 5 + str(arg_val))
+        print('{}={}'.format(arg, arg_val))
     print('')
 
 
