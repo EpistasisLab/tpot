@@ -588,7 +588,7 @@ Possible inputs are:
 <li>Python dictionary, TPOT will use your custom configuration,</li>
 <li>string 'TPOT light', TPOT will use a built-in configuration with only fast models and preprocessors, or</li>
 <li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies, or</li>
-<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices, or</li>
+<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot encoder and the operators normally included in TPOT that also support sparse matrices, or</li>
 <li>None, TPOT will use the default TPOTRegressor configuration.</li>
 </ul>
 See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
