@@ -265,6 +265,21 @@ Setting this parameter to higher values will allow TPOT to consider more complex
 Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
 </tr>
 <tr>
+<td>-config</td>
+<td>CONFIG_FILE</td>
+<td>String or file path</td>
+<td>Operators and parameter configurations in TPOT:
+<br /><br />
+<ul>
+<li>Path for configuration file: TPOT will use the path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process</li>
+<li>string 'TPOT light', TPOT will use a built-in configuration with only fast models and preprocessors</li>
+<li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies</li>
+<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices.</li>
+</ul>
+See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
+</td>
+</tr>
+<tr>
 <td>-cf</td>
 <td>CHECKPOINT_FOLDER</td>
 <td>Folder path</td>
@@ -387,6 +402,17 @@ Note that TPOT MDR may be slow to run because the feature selection routines are
 <br /><br />
 <a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_mdr.py">Regression</a></td>
 </tr>
+
+<tr>
+<td>TPOT sparse</td>
+<td>TPOT uses a configuration dictionary with a one-hot-encoder and the operators normally included in TPOT that also support sparse matrices.
+<br /><br />
+This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier_sparse.py">Classification</a>
+<br /><br />
+<a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_sparse.py">Regression</a></td>
+</tr>
+
 </table>
 
 To use any of these configurations, simply pass the string name of the configuration to the `config_dict` parameter (or `-config` on the command line). For example, to use the "TPOT light" configuration:
@@ -479,11 +505,11 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
 
-**Crash/freeze issue with n_jobs > 1 under OSX or Linux**
+# Crash/freeze issue with n_jobs > 1 under OSX or Linux
 
 TPOT allows parallel computing for speeding up optimization process, but it may suffers the crash/freeze issue with n_jobs > 1 under OSX or Linux [as scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large dataset. One solution is to configure Python `multiprocessing` to use the `forkserver` start methods (instead of the default `fork`) to manage the process pools. You may enable the `forkserver` mode globally for your program with putting the following codes into your main script:
 
-```
+```Python
 import multiprocessing
 
 # other imports, custom code, load data, define model...
