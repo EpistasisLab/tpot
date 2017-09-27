@@ -75,7 +75,7 @@ def _auto_select_categorical_features(X, threshold=10):
     return feature_mask
 
 
-def _transform_selected(X, transform, selected="all", copy=True):
+def _transform_selected(X, transform, selected, copy=True):
     """Apply a transform function to portion of selected features.
 
     Parameters
@@ -98,9 +98,6 @@ def _transform_selected(X, transform, selected="all", copy=True):
     """
     if selected == "all":
         return transform(X)
-    elif selected == "auto":
-        selected = _auto_select_categorical_features(X)
-
     if len(selected) == 0:
         return X
 
@@ -147,7 +144,8 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
     categorical_features: "all" or array of indices or mask
         Specify what features are treated as categorical.
 
-        - 'all' (default): All features are treated as categorical.
+        - 'all': All features are treated as categorical.
+        - 'auto' (default): Select only features that have less than 10 unique values.
         - array of indices: Array of categorical feature indices.
         - mask: Array of length n_features and with dtype=bool.
 
@@ -158,6 +156,10 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
 
     sparse : boolean, default=True
         Will return sparse matrix if set True else will return an array.
+
+    threshold : int, default=10
+        Maximum number of unique values per feature to consider the feature
+        to be categorical when categorical_features is 'auto' .
 
     Attributes
     ----------
@@ -200,12 +202,13 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
       encoding of dictionary items or strings.
     """
 
-    def __init__(self, categorical_features="auto", dtype=np.float,
-                 sparse=True, minimum_fraction=None):
+    def __init__(self, categorical_features='auto', dtype=np.float,
+                 sparse=True, minimum_fraction=None, threshold=10):
         self.categorical_features = categorical_features
         self.dtype = dtype
         self.sparse = sparse
         self.minimum_fraction = minimum_fraction
+        self.threshold = threshold
 
     def fit(self, X, y=None):
         """Fit OneHotEncoder to X.
@@ -372,6 +375,9 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         y: array-like {n_samples,} (Optional, ignored)
             Feature labels
         """
+        if self.categorical_features == "auto":
+            self.categorical_features = _auto_select_categorical_features(X, threshold=self.threshold)
+
         return _transform_selected(
             X,
             self._fit_transform,

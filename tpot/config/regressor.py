@@ -162,14 +162,14 @@ regressor_config_dict = {
     'sklearn.feature_selection.SelectFwe': {
         'alpha': np.arange(0, 0.05, 0.001),
         'score_func': {
-            'sklearn.feature_selection.f_classif': None
+            'sklearn.feature_selection.f_regression': None
         }
     },
 
     'sklearn.feature_selection.SelectPercentile': {
         'percentile': range(1, 100),
         'score_func': {
-            'sklearn.feature_selection.f_classif': None
+            'sklearn.feature_selection.f_regression': None
         }
     },
 

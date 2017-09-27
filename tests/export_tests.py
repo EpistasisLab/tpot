@@ -21,15 +21,18 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tqdm import tqdm
 import numpy as np
+from os import remove, path
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
 from tpot.operator_utils import TPOTOperatorClassFactory
 from tpot.config.classifier import classifier_config_dict
 
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 from deap import creator
 
-from nose.tools import assert_raises
+from nose.tools import assert_raises, assert_equal
 
 test_operator_key = 'sklearn.feature_selection.SelectPercentile'
 
@@ -38,6 +41,10 @@ TPOTSelectPercentile, TPOTSelectPercentile_args = TPOTOperatorClassFactory(
     classifier_config_dict[test_operator_key]
 )
 
+mnist_data = load_digits()
+training_features, testing_features, training_target, testing_target = \
+    train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
+
 
 def test_export_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 39."""
@@ -45,17 +52,17 @@ def test_export_random_ind():
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pipeline = tpot_obj._toolbox.individual()
     expected_code = """import numpy as np
-
+import pandas as pd
 from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.tree import DecisionTreeClassifier
 
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=42)
 
 exported_pipeline = make_pipeline(
     SelectPercentile(score_func=f_classif, percentile=65),
@@ -65,7 +72,7 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
-
+    print(export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset))
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 
@@ -73,6 +80,20 @@ def test_export():
     """Assert that TPOT's export function throws a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
     assert_raises(RuntimeError, tpot_obj.export, "test_export.py")
+    pipeline_string = (
+        'KNeighborsClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8,DecisionTreeClassifier__min_samples_leaf=5,'
+        'DecisionTreeClassifier__min_samples_split=5), ZeroCount(input_matrix))'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1,KNeighborsClassifier__weights=uniform'
+    )
+
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj._optimized_pipeline = pipeline
+    tpot_obj.export("test_export.py")
+    assert path.isfile("test_export.py")
+    remove("test_export.py") # clean up exported file
 
 
 def test_generate_pipeline_code():
@@ -117,13 +138,65 @@ def test_generate_pipeline_code():
     assert expected_code == generate_pipeline_code(pipeline, tpot_obj.operators)
 
 
+def test_generate_pipeline_code_2():
+    """Assert that generate_pipeline_code() returns the correct code given a specific pipeline with two CombineDFs."""
+    tpot_obj = TPOTClassifier()
+    pipeline = [
+        'KNeighborsClassifier',
+        [
+            'CombineDFs',
+            [
+                'GradientBoostingClassifier',
+                'input_matrix',
+                38.0,
+                5,
+                5,
+                5,
+                0.05,
+                0.5],
+            [
+                'CombineDFs',
+                [
+                    'MinMaxScaler',
+                    'input_matrix'
+                ],
+                ['ZeroCount',
+                    [
+                        'MaxAbsScaler',
+                        'input_matrix'
+                    ]
+                ]
+            ]
+        ],
+        18,
+        'uniform',
+        2
+    ]
+
+    expected_code = """make_pipeline(
+    make_union(
+        StackingEstimator(estimator=GradientBoostingClassifier(learning_rate=38.0, max_depth=5, max_features=5, min_samples_leaf=5, min_samples_split=0.05, n_estimators=0.5)),
+        make_union(
+            MinMaxScaler(),
+            make_pipeline(
+                MaxAbsScaler(),
+                ZeroCount()
+            )
+        )
+    ),
+    KNeighborsClassifier(n_neighbors=18, p="uniform", weights=2)
+)"""
+
+    assert expected_code == generate_pipeline_code(pipeline, tpot_obj.operators)
+
+
 def test_generate_import_code():
     """Assert that generate_import_code() returns the correct set of dependancies for a given pipeline."""
     tpot_obj = TPOTClassifier()
     pipeline = creator.Individual.from_string('GaussianNB(RobustScaler(input_matrix))', tpot_obj._pset)
 
     expected_code = """import numpy as np
-
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import make_pipeline
@@ -147,7 +220,7 @@ def test_generate_import_code_2():
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     import_code = generate_import_code(pipeline, tpot_obj.operators)
     expected_code = """import numpy as np
-
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
@@ -194,7 +267,7 @@ def test_export_pipeline():
 
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
-
+import pandas as pd
 from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -202,11 +275,11 @@ from sklearn.pipeline import make_pipeline, make_union
 from sklearn.tree import DecisionTreeClassifier
 from tpot.builtins import StackingEstimator
 
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=42)
 
 exported_pipeline = make_pipeline(
     make_union(
@@ -235,15 +308,15 @@ def test_export_pipeline_2():
     )
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
-
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=42)
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 
@@ -264,17 +337,17 @@ def test_export_pipeline_3():
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
 
     expected_code = """import numpy as np
-
+import pandas as pd
 from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.tree import DecisionTreeClassifier
 
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=42)
 
 exported_pipeline = make_pipeline(
     SelectPercentile(score_func=f_classif, percentile=20),
@@ -301,7 +374,7 @@ def test_export_pipeline_4():
 
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
-
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline, make_union
@@ -310,11 +383,11 @@ from tpot.builtins import StackingEstimator
 from sklearn.preprocessing import FunctionTransformer
 from copy import copy
 
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=42)
 
 exported_pipeline = make_pipeline(
     make_union(
@@ -341,18 +414,18 @@ def test_export_pipeline_5():
     )
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
-
+import pandas as pd
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.feature_selection import SelectFromModel
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.tree import DecisionTreeRegressor
 
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=42)
 
 exported_pipeline = make_pipeline(
     SelectFromModel(estimator=ExtraTreesRegressor(max_features=0.05, n_estimators=100), threshold=0.05),
@@ -377,6 +450,24 @@ def test_get_by_name():
     assert get_by_name("SelectPercentile", tpot_obj.operators).__class__ == TPOTSelectPercentile.__class__
 
 
+def test_get_by_name_2():
+    """Assert that get_by_name raises TypeError with a incorrect operator name."""
+    tpot_obj = TPOTClassifier()
+    assert_raises(TypeError, get_by_name, "RandomForestRegressor", tpot_obj.operators)
+    # use correct name
+    ret_op_class = get_by_name("RandomForestClassifier", tpot_obj.operators)
+
+
+def test_get_by_name_3():
+    """Assert that get_by_name raises ValueError with duplicate operators in operator dictionary."""
+    tpot_obj = TPOTClassifier()
+    # no duplicate
+    ret_op_class = get_by_name("SelectPercentile", tpot_obj.operators)
+    # add a copy of TPOTSelectPercentile into operator list
+    tpot_obj.operators.append(TPOTSelectPercentile)
+    assert_raises(ValueError, get_by_name, "SelectPercentile", tpot_obj.operators)
+
+
 def test_indent():
     """Assert that indenting a multiline string by 4 spaces prepends 4 spaces before each new line."""
     multiline_string = """test
@@ -390,3 +481,87 @@ test3"""
     test3"""
 
     assert indented_multiline_string == _indent(multiline_string, 4)
+
+
+def test_pipeline_score_save():
+    """Assert that the TPOTClassifier can generate a scored pipeline export correctly."""
+    tpot_obj = TPOTClassifier(random_state=39)
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pipeline = tpot_obj._toolbox.individual()
+    expected_code = """import numpy as np
+import pandas as pd
+from sklearn.feature_selection import SelectPercentile, f_classif
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.tree import DecisionTreeClassifier
+
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
+training_features, testing_features, training_target, testing_target = \\
+            train_test_split(features, tpot_data['target'].values, random_state=42)
+
+# Score on the training set was:0.929813743
+exported_pipeline = make_pipeline(
+    SelectPercentile(score_func=f_classif, percentile=65),
+    DecisionTreeClassifier(criterion="gini", max_depth=7, min_samples_leaf=4, min_samples_split=18)
+)
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+"""
+
+    assert_equal(expected_code, export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset, pipeline_score=0.929813743))
+
+
+def test_imputer_in_export():
+    """Assert that TPOT exports a pipeline with an imputation step if imputation was used in fit()."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    features_with_nan = np.copy(training_features)
+    features_with_nan[0][0] = float('nan')
+
+    tpot_obj.fit(features_with_nan, training_target)
+    # use fixed pipeline since the random.seed() performs differently in python 2.* and 3.*
+    pipeline_string = (
+        'KNeighborsClassifier('
+        'input_matrix, '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+
+    export_code = export_pipeline(tpot_obj._optimized_pipeline, tpot_obj.operators, tpot_obj._pset, tpot_obj._imputed)
+
+    expected_code = """import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import Imputer
+
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
+training_features, testing_features, training_target, testing_target = \\
+            train_test_split(features, tpot_data['target'].values, random_state=42)
+
+imputer = Imputer(strategy="median")
+imputer.fit(training_features)
+training_features = imputer.transform(training_features)
+testing_features = imputer.transform(testing_features)
+
+exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+"""
+
+    assert_equal(export_code, expected_code)

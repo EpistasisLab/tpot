@@ -212,17 +212,19 @@ We recommend using the default parameter unless you understand how the crossover
 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'neg_log_loss', 'neg_mean_absolute_error',
 'neg_mean_squared_error', 'neg_median_absolute_error', 'precision', 'precision_macro', 'precision_micro',
 'precision_samples', 'precision_weighted',<br />'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples',
-'recall_weighted', 'roc_auc'</td>
+'recall_weighted', 'roc_auc', 'my_module.scorer_name*'</td>
 <td>Function used to evaluate the quality of a given pipeline for the problem. By default, accuracy is used for classification and mean squared error (MSE) is used for regression.
 <br /><br />
 TPOT assumes that any function with "error" or "loss" in the name is meant to be minimized, whereas any other functions will be maximized.
+<br /><br />
+my_module.scorer_name: You can also specify your own function or a full python path to an existing one.
 <br /><br />
 See the section on <a href="#scoring-functions">scoring functions</a> for more details.</td>
 </tr>
 <tr>
 <td>-cv</td>
 <td>CV</td>
-<td>Any integer >1</td>
+<td>Any integer > 1</td>
 <td>Number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process.</td>
 </tr>
 <td>-sub</td>
@@ -265,10 +267,46 @@ Set this seed if you want your TPOT run to be reproducible with the same seed an
 <tr>
 <td>-config</td>
 <td>CONFIG_FILE</td>
-<td>File path or string</td>
-<td>A path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process.
+<td>String or file path</td>
+<td>Operators and parameter configurations in TPOT:
 <br /><br />
-See the <a href="#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.</td>
+<ul>
+<li>Path for configuration file: TPOT will use the path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process</li>
+<li>string 'TPOT light', TPOT will use a built-in configuration with only fast models and preprocessors</li>
+<li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies</li>
+<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot encoder and the operators normally included in TPOT that also support sparse matrices.</li>
+</ul>
+See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
+</td>
+</tr>
+<tr>
+<td>-cf</td>
+<td>CHECKPOINT_FOLDER</td>
+<td>Folder path</td>
+<td>
+If supplied, a folder you created, in which tpot will periodically save the best pipeline so far while optimizing.
+<br /><br />
+This is useful in multiple cases:
+<ul>
+<li>sudden death before tpot could save an optimized pipeline</li>
+<li>progress tracking</li>
+<li>grabbing a pipeline while tpot is working</li>
+</ul>
+<br /><br />
+Example:
+<br />
+mkdir my_checkpoints
+<br />
+-cf ./my_checkpoints
+</tr>
+<tr>
+<td>-es</td>
+<td>EARLY_STOP</td>
+<td>Any positive integer</td>
+<td>
+How many generations TPOT checks whether there is no improvement in optimization process.
+<br /><br />
+End optimization process if there is no improvement in the set number of generations.
 </tr>
 <tr>
 <td>-v</td>
@@ -321,6 +359,9 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 ```
 
+* **my_module.scorer_name**: you can also use your manual  `scorer(y_true, y_pred)` function through the command line, just add an argument `-scoring my_module.scorer` and TPOT will import your module and take the function from there. TPOT will also include current workdir when importing the module, so you can just put it in the same folder where you are going to run.
+Example: `-scoring sklearn.metrics.auc` will use the function auc from sklearn.metrics module.
+
 # Built-in TPOT configurations
 
 TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. Below is a list of the current built-in configurations that come with TPOT.
@@ -361,6 +402,17 @@ Note that TPOT MDR may be slow to run because the feature selection routines are
 <br /><br />
 <a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_mdr.py">Regression</a></td>
 </tr>
+
+<tr>
+<td>TPOT sparse</td>
+<td>TPOT uses a configuration dictionary with a one-hot encoder and the operators normally included in TPOT that also support sparse matrices.
+<br /><br />
+This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier_sparse.py">Classification</a>
+<br /><br />
+<a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_sparse.py">Regression</a></td>
+</tr>
+
 </table>
 
 To use any of these configurations, simply pass the string name of the configuration to the `config_dict` parameter (or `-config` on the command line). For example, to use the "TPOT light" configuration:
@@ -451,3 +503,21 @@ When using the command-line interface, the configuration file specified in the `
 For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/rhiever/tpot/blob/master/tpot/config/classifier.py) and [regression](https://github.com/rhiever/tpot/blob/master/tpot/config/regressor.py) in TPOT's source code.
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
+
+
+# Crash/freeze issue with n_jobs > 1 under OSX or Linux
+
+TPOT allows parallel computing for speeding up optimization process, but it may suffers the crash/freeze issue with n_jobs > 1 under OSX or Linux [as scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large dataset. One solution is to configure Python `multiprocessing` to use the `forkserver` start methods (instead of the default `fork`) to manage the process pools. You may enable the `forkserver` mode globally for your program with putting the following codes into your main script:
+
+```Python
+import multiprocessing
+
+# other imports, custom code, load data, define model...
+
+if __name__ == '__main__':
+    multiprocessing.set_start_method('forkserver')
+
+    # call scikit-learn utils or tpot utils with n_jobs > 1 here
+```
+
+More information about these start methods can be found in the [multiprocessing documentation](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods)

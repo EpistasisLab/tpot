@@ -20,8 +20,14 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
+import pandas as pd
 import argparse
 from sklearn.model_selection import train_test_split
+
+# for manual scoring function, see load_scoring_function
+import sys
+import os
+from importlib import import_module
 
 from .tpot import TPOTClassifier, TPOTRegressor
 from ._version import __version__
@@ -217,6 +223,11 @@ def _get_arg_parser():
             'Function used to evaluate the quality of a given pipeline for the '
             'problem. By default, accuracy is used for classification problems '
             'and mean squared error (mse) is used for regression problems. '
+
+            'Note: If you wrote your own function, set this argument to mymodule.myfunction'
+            'and TPOT will import your module and take the function from there.'
+            'TPOT will assume the module can be imported from the current workdir.'
+
             'TPOT assumes that any function with "error" or "loss" in the name '
             'is meant to be minimized, whereas any other functions will be '
             'maximized. Offers the same options as cross_val_score: '
@@ -271,6 +282,7 @@ def _get_arg_parser():
         )
     )
 
+
     parser.add_argument(
         '-njobs',
         action='store',
@@ -323,6 +335,7 @@ def _get_arg_parser():
         )
     )
 
+
     parser.add_argument(
         '-config',
         action='store',
@@ -334,6 +347,36 @@ def _get_arg_parser():
             'that TPOT uses in the optimization process. Must be a Python '
             'module containing a dict export named "tpot_config" or the name of '
             'built-in configuration.'
+        )
+    )
+
+
+
+    parser.add_argument(
+        '-cf',
+        action='store',
+        dest='CHECKPOINT_FOLDER',
+        default=None,
+        type=str,
+        help=('If supplied, a folder in which tpot will periodically '
+        'save the best pipeline so far while optimizing. '
+        'This is useful in multiple cases: '
+        'sudden death before tpot could save an optimized pipeline, '
+        'progress tracking, '
+        "grabbing a pipeline while it's still optimizing etc."
+        )
+    )
+
+    parser.add_argument(
+        '-es',
+        action='store',
+        dest='EARLY_STOP',
+        default=None,
+        type=int,
+        help=(
+            'How many generations TPOT checks whether there is no improvement '
+            'in optimization process. End optimization process if there is no improvement '
+            'in the set number of generations.'
         )
     )
 
@@ -388,14 +431,13 @@ def _print_args(args):
 
 
 def _read_data_file(args):
-    input_data = np.recfromcsv(
+    input_data = pd.read_csv(
         args.INPUT_FILE,
-        delimiter=args.INPUT_SEPARATOR,
+        sep=args.INPUT_SEPARATOR,
         dtype=np.float64,
-        case_sensitive=True
     )
 
-    if args.TARGET_NAME not in input_data.dtype.names:
+    if args.TARGET_NAME not in input_data.columns.values:
         raise ValueError(
             'The provided data file does not seem to have a target column. '
             'Please make sure to specify the target column using the -target '
@@ -405,22 +447,44 @@ def _read_data_file(args):
     return input_data
 
 
-def main():
+def load_scoring_function(scoring_func):
+    """
+    converts mymodule.myfunc in the myfunc
+    object itself so tpot receives a scoring function
+    """
+    if scoring_func and ("." in scoring_func):
+        try:
+            module_name, func_name = scoring_func.rsplit('.', 1)
+
+            module_path = os.getcwd()
+            sys.path.insert(0, module_path)
+            scoring_func = getattr(import_module(module_name), func_name)
+            sys.path.pop(0)
+
+            print('manual scoring function: {}'.format(scoring_func))
+            print('taken from module: {}'.format(module_name))
+        except Exception as e:
+            print('failed importing custom scoring function, error: {}'.format(str(e)))
+            raise ValueError(e)
+
+    return scoring_func
+
+
+def tpot_driver(args):
     """Perform a TPOT run."""
-    args = _get_arg_parser().parse_args()
     if args.VERBOSITY >= 2:
         _print_args(args)
 
     input_data = _read_data_file(args)
-    features = np.delete(
-        input_data.view(np.float64).reshape(input_data.size, -1),
-        input_data.dtype.names.index(args.TARGET_NAME),
-        axis=1
-    )
+    features = input_data.drop(args.TARGET_NAME, axis=1).values
 
     training_features, testing_features, training_target, testing_target = \
-        train_test_split(features, input_data[args.TARGET_NAME], random_state=args.RANDOM_STATE)
+        train_test_split(features, input_data[args.TARGET_NAME].values, random_state=args.RANDOM_STATE)
+
     tpot_type = TPOTClassifier if args.TPOT_MODE == 'classification' else TPOTRegressor
+
+    scoring_func = load_scoring_function(args.SCORING_FN)
+
     tpot_obj = tpot_type(
         generations=args.GENERATIONS,
         population_size=args.POPULATION_SIZE,
@@ -430,11 +494,13 @@ def main():
         cv=args.NUM_CV_FOLDS,
         subsample=args.SUBSAMPLE,
         n_jobs=args.NUM_JOBS,
-        scoring=args.SCORING_FN,
+        scoring=scoring_func,
         max_time_mins=args.MAX_TIME_MINS,
         max_eval_time_mins=args.MAX_EVAL_MINS,
         random_state=args.RANDOM_STATE,
         config_dict=args.CONFIG_FILE,
+        periodic_checkpoint_folder=args.CHECKPOINT_FOLDER,
+        early_stop=args.EARLY_STOP,
         verbosity=args.VERBOSITY,
         disable_update_check=args.DISABLE_UPDATE_CHECK
     )
@@ -461,6 +527,9 @@ def main():
     if args.OUTPUT_FILE != '':
         tpot_obj.export(args.OUTPUT_FILE)
 
+def main():
+    args = _get_arg_parser().parse_args()
+    tpot_driver(args)
 
 if __name__ == '__main__':
     main()

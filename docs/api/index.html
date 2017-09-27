@@ -101,6 +101,11 @@
     <a class="" href="../support/">Support</a>
 	    </li>
           
+            <li class="toctree-l1">
+		
+    <a class="" href="../related/">Related</a>
+	    </li>
+          
         </ul>
       </div>
       &nbsp;
@@ -144,7 +149,9 @@
                           <strong>subsample</strong>=1.0, <strong>n_jobs</strong>=1,
                           <strong>max_time_mins</strong>=None, <strong>max_eval_time_mins</strong>=5,
                           <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
-                          <strong>warm_start</strong>=False, <strong>verbosity</strong>=0,
+                          <strong>warm_start</strong>=False,
+                          <strong>periodic_checkpoint_folder</strong>=None,
+                          <strong>verbosity</strong>=0,
                           <strong>disable_update_check</strong>=False</em>)</pre>
 
 <div align="right"><a href="https://github.com/rhiever/tpot/blob/master/tpot/base.py">source</a></div>
@@ -276,6 +283,18 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 Flag indicating whether the TPOT instance will reuse the population from previous calls to <em>fit()</em>.
 <br /><br />
 Setting <em>warm_start</em>=True can be useful for running TPOT for a short time on a dataset, checking the results, then resuming the TPOT run from where it left off.
+</blockquote>
+
+<strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
+<blockquote>
+If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.<br /><br />
+Currently once per generation but not more often than once per 30 seconds.<br /><br />
+Useful in multiple cases:
+<ul>
+<li>Sudden death before tpot could save optimized pipeline</li>
+<li>Track its progress</li>
+<li>Grab pipelines while it's still optimizing</li>
+</ul>
 </blockquote>
 
 <strong>verbosity</strong>: integer, optional (default=0)
@@ -555,7 +574,9 @@ Does not return anything
                          <strong>subsample</strong>=1.0, <strong>n_jobs</strong>=1,
                          <strong>max_time_mins</strong>=None, <strong>max_eval_time_mins</strong>=5,
                          <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
-                         <strong>warm_start</strong>=False, <strong>verbosity</strong>=0,
+                         <strong>warm_start</strong>=False,
+                         <strong>periodic_checkpoint_folder</strong>=None,
+                         <strong>verbosity</strong>=0,
                          <strong>disable_update_check</strong>=False</em>)</pre>
 
 <div align="right"><a href="https://github.com/rhiever/tpot/blob/master/tpot/base.py">source</a></div>
@@ -689,6 +710,18 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 Flag indicating whether the TPOT instance will reuse the population from previous calls to <em>fit()</em>.
 <br /><br />
 Setting <em>warm_start</em>=True can be useful for running TPOT for a short time on a dataset, checking the results, then resuming the TPOT run from where it left off.
+</blockquote>
+
+<strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
+<blockquote>
+If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.<br /><br />
+Currently once per generation but not more often than once per 30 seconds.<br /><br />
+Useful in multiple cases:
+<ul>
+<li>Sudden death before tpot could save optimized pipeline</li>
+<li>Track its progress</li>
+<li>Grab pipelines while it's still optimizing</li>
+</ul>
 </blockquote>
 
 <strong>verbosity</strong>: integer, optional (default=0)

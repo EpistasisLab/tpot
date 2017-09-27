@@ -36,10 +36,62 @@ from sklearn.model_selection._split import check_cv
 from sklearn.base import clone, is_classifier
 from collections import defaultdict
 import warnings
-import threading
+from stopit import threading_timeoutable, TimeoutException
 
-# Limit loops to generate a different individual by crossover/mutation
-MAX_MUT_LOOPS = 50
+
+def pick_two_individuals_eligible_for_crossover(population):
+    """Pick two individuals from the population which can do crossover, that is, they share a primitive.
+
+    Parameters
+    ----------
+    population: array of individuals
+
+    Returns
+    ----------
+    tuple: (individual, individual)
+        Two individuals which are not the same, but share at least one primitive.
+        Alternatively, if no such pair exists in the population, (None, None) is returned instead.
+    """
+    primitives_by_ind = [set([node.name for node in ind if isinstance(node, gp.Primitive)])
+                         for ind in population]
+    pop_as_str = [str(ind) for ind in population]
+
+    eligible_pairs = [(i, i+1+j) for i, ind1_prims in enumerate(primitives_by_ind)
+                                 for j, ind2_prims in enumerate(primitives_by_ind[i+1:])
+                                 if not ind1_prims.isdisjoint(ind2_prims) and
+                                    pop_as_str[i] != pop_as_str[i+1+j]]
+
+    # Pairs are eligible in both orders, this ensures that both orders are considered
+    eligible_pairs += [(j, i) for (i,j) in eligible_pairs]
+
+    if not eligible_pairs:
+        # If there are no eligible pairs, the caller should decide what to do
+        return None, None
+
+    pair = np.random.randint(0,len(eligible_pairs))
+    idx1, idx2 = eligible_pairs[pair]
+
+    return population[idx1], population[idx2]
+
+
+def mutate_random_individual(population, toolbox):
+    """Picks a random individual from the population, and performs mutation on a copy of it.
+
+    Parameters
+    ----------
+    population: array of individuals
+
+    Returns
+    ----------
+    individual: individual
+        An individual which is a mutated copy of one of the individuals in population,
+        the returned individual does not have fitness.values
+    """
+    idx = np.random.randint(0,len(population))
+    ind = population[idx]
+    ind, = toolbox.mutate(ind)
+    del ind.fitness.values
+    return ind
 
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
@@ -75,29 +127,21 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
     1 - *cxpb* - *mutpb*.
     """
     offspring = []
+
     for _ in range(lambda_):
         op_choice = np.random.random()
         if op_choice < cxpb:  # Apply crossover
-            idxs = np.random.randint(0, len(population), size=2)
-            ind1, ind2 = toolbox.clone(population[idxs[0]]), toolbox.clone(population[idxs[1]])
-            ind_str = str(ind1)
-            num_loop = 0
-            while ind_str == str(ind1) and num_loop < MAX_MUT_LOOPS:
-                ind1, ind2 = toolbox.mate(ind1, ind2)
-                num_loop += 1
-            if ind_str != str(ind1):  # check if crossover happened
+            ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)
+            if ind1 is not None:
+                ind1, _ = toolbox.mate(ind1, ind2)
                 del ind1.fitness.values
+            else:
+                # If there is no pair eligible for crossover, we still want to
+                # create diversity in the population, and do so by mutation instead.
+                ind1 = mutate_random_individual(population, toolbox)
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
-            idx = np.random.randint(0, len(population))
-            ind = toolbox.clone(population[idx])
-            ind_str = str(ind)
-            num_loop = 0
-            while ind_str == str(ind) and num_loop < MAX_MUT_LOOPS:
-                ind, = toolbox.mutate(ind)
-                num_loop += 1
-            if ind_str != str(ind):  # check if mutation happened
-                del ind.fitness.values
+            ind = mutate_random_individual(population, toolbox)
             offspring.append(ind)
         else:  # Apply reproduction
             idx = np.random.randint(0, len(population))
@@ -107,7 +151,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
-                   stats=None, halloffame=None, verbose=0, max_time_mins=None):
+                   stats=None, halloffame=None, verbose=0, per_generation_function=None):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
@@ -123,6 +167,8 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     :param halloffame: A :class:`~deap.tools.HallOfFame` object that will
                        contain the best individuals, optional.
     :param verbose: Whether or not to log the statistics.
+    :param per_generation_function: if supplied, call this function before each generation
+                            used by tpot to save best pipeline before each new generation
     :returns: The final population
     :returns: A class:`~deap.tools.Logbook` with the statistics of the
               evolution.
@@ -168,6 +214,9 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
     # Begin the generational process
     for gen in range(1, ngen + 1):
+        # after each population save a periodic pipeline
+        if per_generation_function is not None:
+            per_generation_function()
 
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
@@ -175,11 +224,9 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
-        # update pbar for valid_ind
+        # update pbar for valid individuals (with fitness values)
         if not pbar.disable:
             pbar.update(len(offspring)-len(invalid_ind))
-            if not (max_time_mins is None) and pbar.n >= pbar.total:
-                pbar.total += lambda_
 
         fitnesses = toolbox.evaluate(invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
@@ -225,29 +272,17 @@ def cxOnePoint(ind1, ind2):
     :param ind2: Second tree participating in the crossover.
     :returns: A tuple of two trees.
     """
-    # Define the name of type for any types.
-    __type__ = object
-
-    if len(ind1) < 2 or len(ind2) < 2:
-        # No crossover on single node tree
-        return ind1, ind2
-
     # List all available primitive types in each individual
     types1 = defaultdict(list)
     types2 = defaultdict(list)
-    if ind1.root.ret == __type__:
-        # Not STGP optimization
-        types1[__type__] = range(1, len(ind1))
-        types2[__type__] = range(1, len(ind2))
-        common_types = [__type__]
-    else:
-        for idx, node in enumerate(ind1[1:], 1):
-            types1[node.ret].append(idx)
-        common_types = []
-        for idx, node in enumerate(ind2[1:], 1):
-            if node.ret in types1 and node.ret not in types2:
-                common_types.append(node.ret)
-            types2[node.ret].append(idx)
+
+    for idx, node in enumerate(ind1[1:], 1):
+        types1[node.ret].append(idx)
+    common_types = []
+    for idx, node in enumerate(ind2[1:], 1):
+        if node.ret in types1 and node.ret not in types2:
+            common_types.append(node.ret)
+        types2[node.ret].append(idx)
 
     if len(common_types) > 0:
         type_ = np.random.choice(common_types)
@@ -326,63 +361,9 @@ def mutNodeReplacement(individual, pset):
     return individual,
 
 
-class Interruptable_cross_val_score(threading.Thread):
-    def __init__(self, estimator, X, y, scorer, fit_params, cv_iter):
-        """Fit estimator and compute scores for a given dataset split.
-        Parameters
-        ----------
-        estimator : estimator object implementing 'fit'
-            The object to use to fit the data.
-        X : array-like of shape at least 2D
-            The data to fit.
-        y : array-like, optional, default: None
-            The target variable to try to predict in the case of
-            supervised learning.
-        scorer : callable
-            A scorer callable object / function with signature
-            ``scorer(estimator, X, y)``.
-        fit_params : dict or None
-            Parameters that will be passed to ``estimator.fit``.
-        cv_iter: list
-            A list of test and train samples
-        """
-        threading.Thread.__init__(self)
-        self.estimator = estimator
-        self.X = X
-        self.y = y
-        self.scorer = scorer
-        self.fit_params = fit_params
-        self.cv_iter = cv_iter
-        self.result = -float('inf')
-        self._stopevent = threading.Event()
-        self.daemon = True
-
-    def stop(self):
-        self._stopevent.set()
-        threading.Thread.join(self)
-
-    def run(self):
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                scores = [_fit_and_score(estimator=clone(self.estimator),
-                                        X=self.X,
-                                        y=self.y,
-                                        scorer=self.scorer,
-                                        train=train,
-                                        test=test,
-                                        verbose=0,
-                                        parameters=None,
-                                        fit_params=self.fit_params)
-                                    for train, test in self.cv_iter]
-                self.result = np.array(scores)[:, 0]
-        except Exception as e:
-            pass
-
-
+@threading_timeoutable(default="Timeout")
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
-                             cv, scoring_function, sample_weight=None,
-                             max_eval_time_mins=5, groups=None):
+                             cv, scoring_function, sample_weight=None, groups=None):
     """Fit estimator and compute scores for a given dataset split.
     Parameters
     ----------
@@ -403,14 +384,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         ``scorer(estimator, X, y)``.
     sample_weight : array-like, optional
         List of sample weights to balance (or un-balanace) the dataset target as needed
-    max_eval_time_mins: int, optional (default: 5)
-        How many minutes TPOT has to optimize a single pipeline.
-        Setting this parameter to higher values will allow TPOT to explore more
-        complex pipelines, but will also allow TPOT to run longer.
     groups: array-like {n_samples, }, optional
         Group labels for the samples used while splitting the dataset into train/test set
     """
-    max_time_seconds = max(int(max_eval_time_mins * 60), 1)
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
 
     features, target, groups = indexable(features, target, groups)
@@ -418,23 +394,23 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     cv = check_cv(cv, target, classifier=is_classifier(sklearn_pipeline))
     cv_iter = list(cv.split(features, target, groups))
     scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
-    # build a job for cross_val_score
-    tmp_it = Interruptable_cross_val_score(
-        estimator=sklearn_pipeline,
-        X=features,
-        y=target,
-        scorer=scorer,
-        fit_params=sample_weight_dict,
-        cv_iter=cv_iter
-        )
 
-    tmp_it.start()
-    tmp_it.join(max_time_seconds)
-
-    if tmp_it.isAlive():
-        resulting_score = 'Timeout'
-    else:
-        resulting_score = np.mean(tmp_it.result)
-
-    tmp_it.stop()
-    return resulting_score
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
+                                    X=features,
+                                    y=target,
+                                    scorer=scorer,
+                                    train=train,
+                                    test=test,
+                                    verbose=0,
+                                    parameters=None,
+                                    fit_params=sample_weight_dict)
+                                for train, test in cv_iter]
+            CV_score = np.array(scores)[:, 0]
+            return np.nanmean(CV_score)
+    except TimeoutException:
+        return "Timeout"
+    except Exception as e:
+        return -float('inf')

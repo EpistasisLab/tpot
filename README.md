@@ -174,8 +174,6 @@ BibTeX entry:
 }
 ```
 
-Evaluation of a Tree-based Pipeline Optimization Tool for Automating Data Science
-
 Randal S. Olson, Nathan Bartley, Ryan J. Urbanowicz, and Jason H. Moore (2016). [Evaluation of a Tree-based Pipeline Optimization Tool for Automating Data Science](http://dl.acm.org/citation.cfm?id=2908918). *Proceedings of GECCO 2016*, pages 485-492.
 
 BibTeX entry:

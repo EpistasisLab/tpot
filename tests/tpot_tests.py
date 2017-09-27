@@ -23,7 +23,7 @@ from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
-from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score
+from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr
 from tpot.metrics import balanced_accuracy
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 
@@ -36,16 +36,36 @@ from tpot.config.regressor_sparse import regressor_config_sparse
 from tpot.config.classifier_sparse import classifier_config_sparse
 
 import numpy as np
+from scipy import sparse
 import inspect
 import random
 from multiprocessing import cpu_count
+import os
+from re import search
+from datetime import datetime
+from time import sleep
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from deap import creator
-from nose.tools import assert_raises, assert_not_equal
+from deap.tools import ParetoFront
+from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
+from driver_tests import captured_output
 
 from tqdm import tqdm
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+# Ensure we can use `with closing(...) as ... :` syntax
+if getattr(StringIO, '__exit__', False) and \
+   getattr(StringIO, '__enter__', False):
+    def closing(arg):
+        return arg
+else:
+    from contextlib import closing
 
 # Set up the MNIST data set for testing
 mnist_data = load_digits()
@@ -56,6 +76,10 @@ training_features, testing_features, training_target, testing_target = \
 boston_data = load_boston()
 training_features_r, testing_features_r, training_target_r, testing_target_r = \
     train_test_split(boston_data.data, boston_data.target, random_state=42)
+
+# Set up the sparse matrix for testing
+sparse_features = sparse.csr_matrix(training_features)
+sparse_target = training_target
 
 np.random.seed(42)
 random.seed(42)
@@ -114,7 +138,7 @@ def test_init_default_scoring_2():
     assert tpot_obj.scoring_function == 'balanced_accuracy'
 
 
-def test_invaild_score_warning():
+def test_invalid_score_warning():
     """Assert that the TPOT intitializes raises a ValueError when the scoring metrics is not available in SCORERS."""
     # Mis-spelled scorer
     assert_raises(ValueError, TPOTClassifier, scoring='balanced_accuray')
@@ -122,7 +146,7 @@ def test_invaild_score_warning():
     TPOTClassifier(scoring='balanced_accuracy')
 
 
-def test_invaild_dataset_warning():
+def test_invalid_dataset_warning():
     """Assert that the TPOT fit function raises a ValueError when dataset is not in right format."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -136,7 +160,7 @@ def test_invaild_dataset_warning():
     assert_raises(ValueError, tpot_obj.fit, training_features, bad_training_target)
 
 
-def test_invaild_subsample_ratio_warning():
+def test_invalid_subsample_ratio_warning():
     """Assert that the TPOT intitializes raises a ValueError when subsample ratio is not in the range (0.0, 1.0]."""
     # Invalid ratio
     assert_raises(ValueError, TPOTClassifier, subsample=0.0)
@@ -144,7 +168,7 @@ def test_invaild_subsample_ratio_warning():
     TPOTClassifier(subsample=0.1)
 
 
-def test_invaild_mut_rate_plus_xo_rate():
+def test_invalid_mut_rate_plus_xo_rate():
     """Assert that the TPOT intitializes raises a ValueError when the sum of crossover and mutation probabilities is large than 1."""
     # Invalid ratio
     assert_raises(ValueError, TPOTClassifier, mutation_rate=0.8, crossover_rate=0.8)
@@ -193,9 +217,32 @@ def test_timeout():
                                             cv=20,
                                             scoring_function='neg_mean_squared_error',
                                             sample_weight=None,
-                                            max_eval_time_mins=0.02,
-                                            groups=None)
+                                            groups=None,
+                                            timeout=1)
     assert return_value == "Timeout"
+
+
+def test_invalid_pipeline():
+    """Assert that _wrapped_cross_val_score return -float(\'inf\') with a invalid_pipeline"""
+    tpot_obj = TPOTClassifier()
+    # a invalid pipeline
+    # Dual or primal formulation. Dual formulation is only implemented for l2 penalty.
+    pipeline_string = (
+        'LogisticRegression(input_matrix,  LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=True, LogisticRegression__penalty=l1)'
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    # test _wrapped_cross_val_score with cv=20 so that it is impossible to finish in 1 second
+    return_value = _wrapped_cross_val_score(tpot_obj.fitted_pipeline_,
+                                            training_features,
+                                            training_target,
+                                            cv=5,
+                                            scoring_function='accuracy',
+                                            sample_weight=None,
+                                            groups=None,
+                                            timeout=300)
+    assert return_value == -float('inf')
 
 
 def test_balanced_accuracy():
@@ -297,6 +344,25 @@ def test_conf_dict_3():
     assert tpot_obj.config_dict == tested_config_dict
 
 
+def test_read_config_file():
+    """Assert that _read_config_file rasies FileNotFoundError with a wrong path."""
+    tpot_obj = TPOTRegressor()
+    # typo for "tests/test_config.py"
+    assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_confg.py")
+
+
+def test_read_config_file_2():
+    """Assert that _read_config_file rasies ValueError with wrong dictionary format"""
+    tpot_obj = TPOTRegressor()
+    assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_config.py.bad")
+
+
+def test_read_config_file_3():
+    """Assert that _read_config_file rasies ValueError without a dictionary named 'tpot_config'."""
+    tpot_obj = TPOTRegressor()
+    assert_raises(ValueError, tpot_obj._setup_config, "tpot/config/regressor_sparse.py")
+
+
 def test_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline with same random seed."""
     tpot_obj = TPOTClassifier(random_state=43)
@@ -306,9 +372,20 @@ def test_random_ind():
     assert pipeline1 == pipeline2
 
 
+def test_random_ind_2():
+    """Assert that the TPOTRegressor can generate the same pipeline with same random seed."""
+    tpot_obj = TPOTRegressor(random_state=43)
+    pipeline1 = str(tpot_obj._toolbox.individual())
+    tpot_obj = TPOTRegressor(random_state=43)
+    pipeline2 = str(tpot_obj._toolbox.individual())
+
+    assert pipeline1 == pipeline2
+
+
 def test_score():
     """Assert that the TPOT score function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
+
     assert_raises(RuntimeError, tpot_obj.score, testing_features, testing_target)
 
 
@@ -425,12 +502,14 @@ def test_fit_GroupKFold():
         cv=GroupKFold(n_splits=2),
     )
     tpot_obj.fit(training_features, training_target, groups=groups)
-    assert tpot_obj.score(testing_features, testing_target) >= 0.97
+
+    assert_greater_equal(tpot_obj.score(testing_features, testing_target), 0.97)
 
 
 def test_predict():
     """Assert that the TPOT predict function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
+
     assert_raises(RuntimeError, tpot_obj.predict, testing_features)
 
 
@@ -475,7 +554,7 @@ def test_predict_proba():
     assert result.shape == (testing_features.shape[0], num_labels)
 
 
-def test_predict_proba2():
+def test_predict_proba_2():
     """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)."""
     tpot_obj = TPOTClassifier()
     pipeline_string = (
@@ -496,6 +575,29 @@ def test_predict_proba2():
     for i in range(rows):
         for j in range(columns):
             float_range(result[i][j])
+
+
+def test_predict_proba_3():
+    """Assert that the TPOT predict_proba function raises a RuntimeError when no optimized pipeline exists."""
+    tpot_obj = TPOTClassifier()
+
+    assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
+
+
+def test_predict_proba_4():
+    """Assert that the TPOT predict_proba function raises a RuntimeError when the optimized pipeline do not have the predict_proba() function"""
+    tpot_obj = TPOTRegressor()
+    pipeline_string = (
+        "ExtraTreesRegressor(input_matrix, "
+        "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
+        "ExtraTreesRegressor__min_samples_leaf=5, ExtraTreesRegressor__min_samples_split=5, "
+        "ExtraTreesRegressor__n_estimators=100)"
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r)
+
+    assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
 
 
 def test_warm_start():
@@ -528,7 +630,7 @@ def test_fit():
     assert not (tpot_obj._start_datetime is None)
 
 
-def test_fit2():
+def test_fit_2():
     """Assert that the TPOT fit function provides an optimized pipeline when config_dict is 'TPOT light'."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -544,20 +646,291 @@ def test_fit2():
     assert not (tpot_obj._start_datetime is None)
 
 
-def test_fit3():
-    """Assert that the TPOT fit function provides an optimized pipeline with subsample is 0.8."""
+def test_fit_3():
+    """Assert that the TPOT fit function provides an optimized pipeline with subsample of 0.8."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
         offspring_size=2,
         generations=1,
         subsample=0.8,
-        verbosity=0
+        verbosity=0,
+        config_dict='TPOT light'
     )
     tpot_obj.fit(training_features, training_target)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
+
+
+def test_fit_4():
+    """Assert that the TPOT fit function provides an optimized pipeline with max_time_mins of 2 second."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=2,
+        generations=1,
+        verbosity=0,
+        max_time_mins=2/60.,
+        config_dict='TPOT light'
+    )
+    assert tpot_obj.generations == 1000000
+
+    # reset generations to 20 just in case that the failed test may take too much time
+    tpot_obj.generations == 20
+
+    tpot_obj.fit(training_features, training_target)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+
+def test_check_periodic_pipeline():
+    """Assert that the _check_periodic_pipeline exports periodic pipeline."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.11)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './'
+        tpot_obj._check_periodic_pipeline()
+        our_file.seek(0)
+
+        assert_in('Saving best periodic pipeline to ./pipeline', our_file.read())
+        # clean up
+        for f in os.listdir('./'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./', f))
+
+
+def test_check_periodic_pipeline_2():
+    """Assert that the _check_periodic_pipeline does not export periodic pipeline if the pipeline has been saved before."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.11)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './'
+        # export once before
+        tpot_obj.export('./pipeline_test.py')
+        tpot_obj._check_periodic_pipeline()
+        our_file.seek(0)
+
+        assert_in('Periodic pipeline was not saved, probably saved before...', our_file.read())
+        # clean up
+        for f in os.listdir('./'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./', f))
+
+
+def test_check_periodic_pipeline_3():
+    """Assert that the _check_periodic_pipeline rasie StopIteration if self._last_optimized_pareto_front_n_gens >= self.early_stop."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    tpot_obj.early_stop = 3
+    # will pass
+    tpot_obj._check_periodic_pipeline()
+    tpot_obj._last_optimized_pareto_front_n_gens = 3
+    assert_raises(StopIteration, tpot_obj._check_periodic_pipeline)
+
+
+def test_save_periodic_pipeline():
+    """Assert that the _save_periodic_pipeline does not export periodic pipeline if exception happened"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.11)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './'
+        # reset _optimized_pipeline to rasie exception
+        tpot_obj._optimized_pipeline = None
+
+        tpot_obj._save_periodic_pipeline()
+        our_file.seek(0)
+
+        assert_in('Failed saving periodic pipeline, exception', our_file.read())
+        # clean up
+        for f in os.listdir('./'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./', f))
+
+
+def test_fit_predict():
+    """Assert that the TPOT fit_predict function provides an optimized pipeline and correct output."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    result = tpot_obj.fit_predict(training_features, training_target)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+    assert result.shape == (training_features.shape[0],)
+
+
+def test_update_top_pipeline():
+    """Assert that the TPOT _update_top_pipeline updated an optimized pipeline."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    tpot_obj._optimized_pipeline = None
+    tpot_obj.fitted_pipeline_ = None
+    tpot_obj._update_top_pipeline()
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+
+
+def test_update_top_pipeline_2():
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._pareto_front is empty."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+
+    def pareto_eq(ind1, ind2):
+        return np.allclose(ind1.fitness.values, ind2.fitness.values)
+
+    tpot_obj._pareto_front = ParetoFront(similar=pareto_eq)
+
+    assert_raises(RuntimeError, tpot_obj._update_top_pipeline)
+
+
+def test_update_top_pipeline_3():
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._optimized_pipeline is not updated."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    tpot_obj._optimized_pipeline = None
+    # reset the fitness score to -float('inf')
+    for pipeline_scores in reversed(tpot_obj._pareto_front.keys):
+        pipeline_scores.wvalues = (5000., -float('inf'))
+
+    assert_raises(RuntimeError, tpot_obj._update_top_pipeline)
+
+
+def test_summary_of_best_pipeline():
+    """Assert that the TPOT _update_top_pipeline raises RuntimeError when self._optimized_pipeline is not updated."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    assert_raises(RuntimeError, tpot_obj._summary_of_best_pipeline, features=training_features, target=training_target)
+
+
+def test_set_param_recursive():
+    """Assert that _set_param_recursive sets \"random_state\" to 42 in all steps in a simple pipeline."""
+    pipeline_string = (
+        'DecisionTreeClassifier(PCA(input_matrix, PCA__iterated_power=5, PCA__svd_solver=randomized), '
+        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
+    )
+    tpot_obj = TPOTClassifier()
+    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+    # assert "random_state" of PCA at step 1
+    assert getattr(sklearn_pipeline.steps[0][1], 'random_state') == 42
+    # assert "random_state" of DecisionTreeClassifier at step 2
+    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
+
+
+def test_set_param_recursive_2():
+    """Assert that _set_param_recursive sets \"random_state\" to 42 in nested estimator in SelectFromModel."""
+    pipeline_string = (
+        'DecisionTreeRegressor(SelectFromModel(input_matrix, '
+        'SelectFromModel__ExtraTreesRegressor__max_features=0.05, SelectFromModel__ExtraTreesRegressor__n_estimators=100, '
+        'SelectFromModel__threshold=0.05), DecisionTreeRegressor__max_depth=8,'
+        'DecisionTreeRegressor__min_samples_leaf=5, DecisionTreeRegressor__min_samples_split=5)'
+    )
+    tpot_obj = TPOTRegressor()
+    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+
+    assert getattr(getattr(sklearn_pipeline.steps[0][1], 'estimator'), 'random_state') == 42
+    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
+
+
+def test_set_param_recursive_3():
+    """Assert that _set_param_recursive sets \"random_state\" to 42 in nested estimator in StackingEstimator in a complex pipeline."""
+    pipeline_string = (
+        'DecisionTreeClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, DecisionTreeClassifier__min_samples_leaf=5,'
+        'DecisionTreeClassifier__min_samples_split=5),input_matrix) '
+        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
+    )
+    tpot_obj = TPOTClassifier()
+    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+
+    # StackingEstimator under the transformer_list of FeatureUnion
+    assert getattr(getattr(sklearn_pipeline.steps[0][1].transformer_list[0][1], 'estimator'), 'random_state') == 42
+    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
 
 
 def test_evaluated_individuals_():
@@ -585,6 +958,21 @@ def test_evaluated_individuals_():
             mean_cv_scores = -float('inf')
         assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string][1], mean_cv_scores)
         assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string][0], operator_count)
+
+
+def test_stop_by_max_time_mins():
+    """Assert that _stop_by_max_time_mins raises KeyboardInterrupt when maximum minutes have elapsed."""
+    tpot_obj = TPOTClassifier(config_dict='TPOT light')
+    tpot_obj._start_datetime = datetime.now()
+    sleep(0.11)
+    tpot_obj.max_time_mins = 0.1/60.
+    assert_raises(KeyboardInterrupt, tpot_obj._stop_by_max_time_mins)
+
+
+def test_update_evaluated_individuals_():
+    """Assert that _update_evaluated_individuals_ raises ValueError when scoring function does not return a float."""
+    tpot_obj = TPOTClassifier(config_dict='TPOT light')
+    assert_raises(ValueError, tpot_obj._update_evaluated_individuals_, ['Non-Float-Score'], ['Test_Pipeline'], [1])
 
 
 def test_evaluate_individuals():
@@ -615,6 +1003,208 @@ def test_evaluate_individuals():
         assert np.allclose(fitness_score[1], mean_cv_scores)
 
 
+def test_evaluate_individuals_2():
+    """Assert that _evaluate_individuals returns operator_counts and CV scores in correct order with n_jobs=2"""
+    tpot_obj = TPOTClassifier(
+        n_jobs=2,
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=10)
+    fitness_scores = tpot_obj._evaluate_individuals(pop, training_features, training_target)
+
+    for deap_pipeline, fitness_score in zip(pop, fitness_scores):
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+
+        try:
+            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
+            mean_cv_scores = np.mean(cv_scores)
+        except Exception as e:
+            mean_cv_scores = -float('inf')
+
+        assert isinstance(deap_pipeline, creator.Individual)
+        assert np.allclose(fitness_score[0], operator_count)
+        assert np.allclose(fitness_score[1], mean_cv_scores)
+
+
+def test_update_pbar():
+    """Assert that _update_pbar updates self._pbar with printing correct warning message."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    # reset verbosity = 3 for checking pbar message
+    tpot_obj.verbosity = 3
+    with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
+        tpot_obj._pbar = tqdm(total=10, disable=False, file=our_file)
+        tpot_obj._update_pbar(pbar_num=2, pbar_msg="Test Warning Message")
+        our_file.seek(0)
+        assert_in("Test Warning Message", our_file.read())
+        assert_equal(tpot_obj._pbar.n, 2)
+
+
+def test_update_val():
+    """Assert _update_val updates result score in list and prints timeout message."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    # reset verbosity = 3 for checking pbar message
+    tpot_obj.verbosity = 3
+    with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
+        tpot_obj._pbar = tqdm(total=10, disable=False, file=our_file)
+        result_score_list = []
+        result_score_list = tpot_obj._update_val(0.9999, result_score_list)
+        assert_equal(result_score_list, [0.9999])
+        # check "Timeout"
+        result_score_list = tpot_obj._update_val("Timeout", result_score_list)
+        our_file.seek(0)
+        assert_in("Skipped pipeline #2 due to time out.", our_file.read())
+        assert_equal(result_score_list, [0.9999, -float('inf')])
+
+
+def test_preprocess_individuals():
+    """Assert _preprocess_individuals preprocess DEAP individuals including one evaluated individual"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0
+    )
+
+    pipeline_string_1 = (
+        'LogisticRegression(PolynomialFeatures'
+        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
+    )
+
+    # a normal pipeline
+    pipeline_string_2 = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5)'
+    )
+
+    individuals = []
+    individuals.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
+    individuals.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
+
+    # set pipeline 2 has been evaluated before
+    tpot_obj.evaluated_individuals_[pipeline_string_2] = (1, 0.99999)
+
+    # reset verbosity = 3 for checking pbar message
+    tpot_obj.verbosity = 3
+    with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
+        tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
+        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+                                tpot_obj._preprocess_individuals(individuals)
+        our_file.seek(0)
+        assert_in("Pipeline encountered that has previously been evaluated", our_file.read())
+        assert_in(pipeline_string_1, eval_individuals_str)
+        assert_equal(operator_counts[pipeline_string_1], 2)
+        assert_equal(len(sklearn_pipeline_list), 1)
+
+
+def test_preprocess_individuals_2():
+    """Assert _preprocess_individuals preprocess DEAP individuals with one invalid pipeline"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0
+    )
+
+    # pipeline with two PolynomialFeatures operator
+    pipeline_string_1 = (
+        'LogisticRegression(PolynomialFeatures'
+        '(PolynomialFeatures(input_matrix, PolynomialFeatures__degree=2, '
+        'PolynomialFeatures__include_bias=False, PolynomialFeatures__interaction_only=False), '
+        'PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
+    )
+
+    # a normal pipeline
+    pipeline_string_2 = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5)'
+    )
+
+    individuals = []
+    individuals.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
+    individuals.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
+
+    # reset verbosity = 3 for checking pbar message
+    tpot_obj.verbosity = 3
+    with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
+        tpot_obj._pbar = tqdm(total=3, disable=False, file=our_file)
+        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+                                tpot_obj._preprocess_individuals(individuals)
+        our_file.seek(0)
+
+        assert_in("Invalid pipeline encountered. Skipping its evaluation.", our_file.read())
+        assert_in(pipeline_string_2, eval_individuals_str)
+        assert_equal(operator_counts[pipeline_string_2], 1)
+        assert_equal(len(sklearn_pipeline_list), 1)
+
+
+def test_preprocess_individuals_3():
+    """Assert _preprocess_individuals updatas self._pbar.total when max_time_mins is not None"""
+    tpot_obj = TPOTClassifier(
+        population_size=2,
+        offspring_size=4,
+        random_state=42,
+        max_time_mins=5,
+        verbosity=0
+    )
+
+    pipeline_string_1 = (
+        'LogisticRegression(PolynomialFeatures'
+        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
+    )
+
+    # a normal pipeline
+    pipeline_string_2 = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5)'
+    )
+
+    individuals = []
+    individuals.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
+    individuals.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
+
+    # reset verbosity = 3 for checking pbar message
+
+    with closing(StringIO()) as our_file:
+        tpot_obj._file=our_file
+        tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
+        tpot_obj._pbar.n = 2
+        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+                                tpot_obj._preprocess_individuals(individuals)
+        assert tpot_obj._pbar.total == 6
+
+
 def test_imputer():
     """Assert that the TPOT fit function will not raise a ValueError in a dataset where NaNs are present."""
     tpot_obj = TPOTClassifier(
@@ -631,7 +1221,7 @@ def test_imputer():
     tpot_obj.fit(features_with_nan, training_target)
 
 
-def test_imputer2():
+def test_imputer_2():
     """Assert that the TPOT predict function will not raise a ValueError in a dataset where NaNs are present."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -648,8 +1238,27 @@ def test_imputer2():
     tpot_obj.predict(features_with_nan)
 
 
-def test_imputer3():
+def test_imputer_3():
     """Assert that the TPOT _impute_values function returns a feature matrix with imputed NaN values."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=2,
+        config_dict='TPOT light'
+    )
+    features_with_nan = np.copy(training_features)
+    features_with_nan[0][0] = float('nan')
+    with captured_output() as (out, err):
+        imputed_features = tpot_obj._impute_values(features_with_nan)
+        assert_in("Imputing missing values in feature set", out.getvalue())
+
+    assert_not_equal(imputed_features[0][0], float('nan'))
+
+
+def test_sparse_matrix():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict='TPOT light'."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -658,11 +1267,64 @@ def test_imputer3():
         verbosity=0,
         config_dict='TPOT light'
     )
-    features_with_nan = np.copy(training_features)
-    features_with_nan[0][0] = float('nan')
 
-    imputed_features = tpot_obj._impute_values(features_with_nan)
-    assert_not_equal(imputed_features[0][0], float('nan'))
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_2():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict=None."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict=None
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_3():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict='TPOT MDR'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT MDR'
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_4():
+    """Assert that the TPOT fit function will not raise a ValueError in a sparse matrix with config_dict='TPOT sparse'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT sparse'
+    )
+
+    tpot_obj.fit(sparse_features, sparse_target)
+
+
+def test_sparse_matrix_5():
+    """Assert that the TPOT fit function will not raise a ValueError in a sparse matrix with a customized config dictionary."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='tests/test_config_sparse.py'
+    )
+
+    tpot_obj.fit(sparse_features, sparse_target)
 
 
 def test_tpot_operator_factory_class():
@@ -734,42 +1396,235 @@ def test_PolynomialFeatures_exception():
     assert np.allclose(known_scores, fitness_scores)
 
 
-def test_mutNodeReplacement():
-    """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
+def test_pick_two_individuals_eligible_for_crossover():
+    """Assert that pick_two_individuals_eligible_for_crossover() picks the correct pair of nodes to perform crossover with"""
     tpot_obj = TPOTClassifier()
-    pipeline_string = (
-        'KNeighborsClassifier(CombineDFs('
-        'DecisionTreeClassifier(input_matrix, '
-        'DecisionTreeClassifier__criterion=gini, '
-        'DecisionTreeClassifier__max_depth=8, '
-        'DecisionTreeClassifier__min_samples_leaf=5, '
-        'DecisionTreeClassifier__min_samples_split=5'
-        '), '
-        'SelectPercentile('
-        'input_matrix, '
-        'SelectPercentile__percentile=20'
+    ind1 = creator.Individual.from_string(
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=1.0, BernoulliNB__fit_prior=True)',
+        tpot_obj._pset
+    )
+    ind2 = creator.Individual.from_string(
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True)',
+        tpot_obj._pset
+    )
+    ind3 = creator.Individual.from_string(
+        'GaussianNB(input_matrix)',
+        tpot_obj._pset
+    )
+
+    pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1, ind2, ind3])
+    assert ((str(pick1) == str(ind1) and str(pick2) == str(ind2)) or
+             str(pick1) == str(ind2) and str(pick2) == str(ind1))
+
+    ind4 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+
+    # Eventhough ind4 does not have the same primitive at the root, the tree shares a primitive with ind1
+    pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1, ind3, ind4])
+    assert ((str(pick1) == str(ind1) and str(pick2) == str(ind4)) or
+             str(pick1) == str(ind4) and str(pick2) == str(ind1))
+
+
+def test_pick_two_individuals_eligible_for_crossover_bad():
+    """Assert that pick_two_individuals_eligible_for_crossover() returns the right output when no pair is eligible"""
+    tpot_obj = TPOTClassifier()
+    ind1 = creator.Individual.from_string(
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=1.0, BernoulliNB__fit_prior=True)',
+        tpot_obj._pset
+    )
+    ind2 = creator.Individual.from_string(
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=1.0, BernoulliNB__fit_prior=True)',
+        tpot_obj._pset
+    )
+    ind3 = creator.Individual.from_string(
+        'GaussianNB(input_matrix)',
+        tpot_obj._pset
+    )
+
+    # Ind1 and ind2 are not a pair because they are the same, ind3 shares no primitive
+    pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1, ind2, ind3])
+    assert pick1 is None and pick2 is None
+
+    # You can not do crossover with a population of only 1.
+    pick1, pick2 = pick_two_individuals_eligible_for_crossover([ind1])
+    assert pick1 is None and pick2 is None
+
+    # You can not do crossover with a population of 0.
+    pick1, pick2 = pick_two_individuals_eligible_for_crossover([])
+    assert pick1 is None and pick2 is None
+
+
+def test_mate_operator():
+    """Assert that self._mate_operator returns offsprings as expected."""
+    tpot_obj = TPOTClassifier()
+    ind1 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+    ind2 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=2, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+
+    # set as evaluated pipelines in tpot_obj.evaluated_individuals_
+    tpot_obj.evaluated_individuals_[str(ind1)] = (2, 0.99)
+    tpot_obj.evaluated_individuals_[str(ind2)] = (2, 0.99)
+
+    offspring1, offspring2 = tpot_obj._mate_operator(ind1, ind2)
+    expected_offspring1 = (
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False), '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=2, '
+        'KNeighborsClassifier__weights=uniform'
         ')'
+    )
+    expected_offspring1_alt = (
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True), '
         'KNeighborsClassifier__n_neighbors=10, '
         'KNeighborsClassifier__p=1, '
         'KNeighborsClassifier__weights=uniform'
         ')'
+    )
+    assert str(offspring1) in [expected_offspring1, expected_offspring1_alt]
+
+
+def test_cxOnePoint():
+    """Assert that cxOnePoint() returns the correct type of node between two fixed pipelines."""
+    tpot_obj = TPOTClassifier()
+    ind1 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+    ind2 = creator.Individual.from_string(
+        'KNeighborsClassifier('
+        'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=True),'
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=2, '
+        'KNeighborsClassifier__weights=uniform'
+        ')',
+        tpot_obj._pset
+    )
+    ind1[0].ret = Output_Array
+    ind2[0].ret = Output_Array
+    ind1_copy, ind2_copy = tpot_obj._toolbox.clone(ind1),tpot_obj._toolbox.clone(ind2)
+    offspring1, offspring2 = cxOnePoint(ind1_copy, ind2_copy)
+
+    assert offspring1[0].ret == Output_Array
+    assert offspring2[0].ret == Output_Array
+
+
+def test_mutNodeReplacement():
+    """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
+    tpot_obj = TPOTClassifier()
+    pipeline_string = (
+        'LogisticRegression(PolynomialFeatures'
+        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
     )
 
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     pipeline[0].ret = Output_Array
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
-    mut_ind = mutNodeReplacement(pipeline, pset=tpot_obj._pset)
-    new_ret_type_list = [node.ret for node in mut_ind[0]]
-    new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
 
-    if new_prims_list == old_prims_list:  # Terminal mutated
-        assert new_ret_type_list == old_ret_type_list
-    else:  # Primitive mutated
-        diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
-        assert diff_prims[0].ret == diff_prims[1].ret
+    # test 10 times
+    for _ in range(10):
+        mut_ind = mutNodeReplacement(tpot_obj._toolbox.clone(pipeline), pset=tpot_obj._pset)
+        new_ret_type_list = [node.ret for node in mut_ind[0]]
+        new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
 
-    assert mut_ind[0][0].ret == Output_Array
+        if new_prims_list == old_prims_list:  # Terminal mutated
+            assert new_ret_type_list == old_ret_type_list
+        else:  # Primitive mutated
+            diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
+            if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
+                assert diff_prims[0].ret == diff_prims[1].ret
+        assert mut_ind[0][0].ret == Output_Array
+
+
+def test_varOr():
+    """Assert that varOr() applys crossover only and removes CV scores in offsprings."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=5)
+    for ind in pop:
+        ind.fitness.values = (2, 1.0)
+
+    offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=1.0, mutpb=0.0)
+    invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+
+    assert len(offspring) == 5
+    assert len(invalid_ind) == 5
+
+
+def test_varOr_2():
+    """Assert that varOr() applys mutation only and removes CV scores in offsprings."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=5)
+    for ind in pop:
+        ind.fitness.values = (2, 1.0)
+
+    offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=0.0, mutpb=1.0)
+    invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+
+    assert len(offspring) == 5
+    assert len(invalid_ind) == 5
+
+
+def test_varOr_3():
+    """Assert that varOr() applys reproduction only and does NOT remove CV scores in offsprings."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pop = tpot_obj._toolbox.population(n=5)
+    for ind in pop:
+        ind.fitness.values = (2, 1.0)
+
+    offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=0.0, mutpb=0.0)
+    invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+
+    assert len(offspring) == 5
+    assert len(invalid_ind) == 0
 
 
 def test_operator_type():
@@ -785,3 +1640,15 @@ def test_gen():
 
     assert len(pipeline) > 1
     assert pipeline[0].ret == Output_Array
+
+
+def test_clean_pipeline_string():
+    """Assert that clean_pipeline_string correctly returns a string without parameter prefixes"""
+
+    with_prefix = 'BernoulliNB(input_matrix, BernoulliNB__alpha=1.0, BernoulliNB__fit_prior=True)'
+    without_prefix = 'BernoulliNB(input_matrix, alpha=1.0, fit_prior=True)'
+    tpot_obj = TPOTClassifier()
+    ind1 = creator.Individual.from_string(with_prefix, tpot_obj._pset)
+
+    pretty_string = tpot_obj.clean_pipeline_string(ind1)
+    assert pretty_string == without_prefix
