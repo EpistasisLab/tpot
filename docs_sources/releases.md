@@ -1,26 +1,26 @@
 # Version 0.9
 
-* **TPOT now supports sparse matrices** with a new built-in TPOT configurations, "TPOT sparse".
+* **TPOT now supports sparse matrices** with a new built-in TPOT configurations, "TPOT sparse". We are using a custom OneHotEncoder implementation that supports missing values and continuous features.
 
-* We have added `pandas` as a dependency to read dataset instead of `numpy.recfromcsv`.
+* We have added an "early stopping" option for stopping the optimization process if no improvement is made within a set number of generations. Look up the `early_stop` parameter to access this functionality.
 
-* We heve added "early stopping" option for stopping optimization process when no improvement in a set number of generations with `early_stop` parameter.
+* TPOT now reduces the number of duplicated pipelines between generations, which saves you time during the optimization process.
 
-* TPOT now reduces the number of duplicated pipelines between generations.
+* TPOT now supports custom scoring functions via the command-line mode.
 
-* TPOT now allows customized scoring function in command-line mode.
+* We have added a new optional argument, `periodic_checkpoint_folder`, that allows TPOT to periodically save the best pipeline so far to a local folder during optimization process.
 
-* We have added a new optional argument, `periodic_checkpoint_folder`, that lets TPOT periodically save the best pipeline so far to a local folder during optimization process.
+* TPOT no longer uses `sklearn.externals.joblib` when `n_jobs=1` to avoid the potential freezing issue [that scikit-learn suffers from](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux).
 
-* TPOT now does not use `sklearn.externals.joblib` when `n_jobs=1` to allow potential freezing issue [as scikit-learn has](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux).
+* We have added `pandas` as a dependency to read input datasets instead of `numpy.recfromcsv`. NumPy's `recfromcsv` function is unable to parse datasets with complex data types.
 
-* Fixed a bug that `DEFAULT` in the parameter(s) of nested estimator raises `KeyError` when exporting pipeline.
+* Fixed a bug that `DEFAULT` in the parameter(s) of nested estimator raises `KeyError` when exporting pipelines.
 
-* Fixed a bug related to setting `random_state` innested estimators. The issue would happen with pipeline with `SelectFromModel` (`ExtraTreesClassifier` as nested estimator) or `StackingEstimator` if nested estimator has `random_state` parameter.
+* Fixed a bug related to setting `random_state` in nested estimators. The issue would happen with pipeline with `SelectFromModel` (`ExtraTreesClassifier` as nested estimator) or `StackingEstimator` if nested estimator has `random_state` parameter.
 
-* Fixed a bug in imputation function in TPOT to impute along columns instead rows.
+* Fixed a bug in the missing value imputation function in TPOT to impute along columns instead rows.
 
-* Refined input checking for sparse matrix in TPOT.
+* Refined input checking for sparse matrices in TPOT.
 
 
 # Version 0.8

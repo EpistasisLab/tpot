@@ -149,11 +149,11 @@ Setting <em>warm_start</em>=True can be useful for running TPOT for a short time
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
 <blockquote>
-If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.<br /><br />
+If supplied, a folder in which TPOT will periodically save the best pipeline so far while optimizing.<br /><br />
 Currently once per generation but not more often than once per 30 seconds.<br /><br />
 Useful in multiple cases:
 <ul>
-<li>Sudden death before tpot could save optimized pipeline</li>
+<li>Sudden death before TPOT could save optimized pipeline</li>
 <li>Track its progress</li>
 <li>Grab pipelines while it's still optimizing</li>
 </ul>
@@ -161,8 +161,9 @@ Useful in multiple cases:
 
 <strong>early_stop</strong>: integer, optional (default: None)
 <blockquote>
-How many generations TPOT checks whether there is no improvement in optimization process.<br /><br />
-End optimization process if there is no improvement in the set number of generations.<br /><br />
+How many generations TPOT checks whether there is no improvement in optimization process.
+<br /><br />
+Ends the optimization process if there is no improvement in the given number of generations.
 </blockquote>
 
 <strong>verbosity</strong>: integer, optional (default=0)
@@ -603,11 +604,11 @@ Setting <em>warm_start</em>=True can be useful for running TPOT for a short time
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
 <blockquote>
-If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.<br /><br />
+If supplied, a folder in which TPOT will periodically save the best pipeline so far while optimizing.<br /><br />
 Currently once per generation but not more often than once per 30 seconds.<br /><br />
 Useful in multiple cases:
 <ul>
-<li>Sudden death before tpot could save optimized pipeline</li>
+<li>Sudden death before TPOT could save optimized pipeline</li>
 <li>Track its progress</li>
 <li>Grab pipelines while it's still optimizing</li>
 </ul>
@@ -615,8 +616,9 @@ Useful in multiple cases:
 
 <strong>early_stop</strong>: integer, optional (default: None)
 <blockquote>
-How many generations TPOT checks whether there is no improvement in optimization process.<br /><br />
-End optimization process if there is no improvement in the set number of generations.<br /><br />
+How many generations TPOT checks whether there is no improvement in optimization process.
+<br /><br />
+Ends the optimization process if there is no improvement in the given number of generations.
 </blockquote>
 
 <strong>verbosity</strong>: integer, optional (default=0)
