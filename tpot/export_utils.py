@@ -43,15 +43,15 @@ def get_by_name(opname, operators):
     if len(ret_op_classes) == 0:
         raise TypeError('Cannot found operator {} in operator dictionary'.format(opname))
     elif len(ret_op_classes) > 1:
-        print(
-            'Found multiple operator {} in operator dictionary. Please check '
+        raise ValueError(
+            'Found duplicate operators {} in operator dictionary. Please check '
             'your dictionary file.'.format(opname)
         )
     ret_op_class = ret_op_classes[0]
     return ret_op_class
 
 
-def export_pipeline(exported_pipeline, operators, pset):
+def export_pipeline(exported_pipeline, operators, pset, impute=False, pipeline_score=None):
     """Generate source code for a TPOT Pipeline.
 
     Parameters
@@ -60,6 +60,8 @@ def export_pipeline(exported_pipeline, operators, pset):
         The pipeline that is being exported
     operators:
         List of operator classes from operator library
+    pipeline_score:
+        Optional pipeline score to be saved to the exported file
 
     Returns
     -------
@@ -71,7 +73,7 @@ def export_pipeline(exported_pipeline, operators, pset):
     pipeline_tree = expr_to_tree(exported_pipeline, pset)
 
     # Have the exported code import all of the necessary modules and functions
-    pipeline_text = generate_import_code(exported_pipeline, operators)
+    pipeline_text = generate_import_code(exported_pipeline, operators, impute)
 
     pipeline_code = pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators))
 
@@ -81,12 +83,25 @@ from copy import copy
 """
 
     pipeline_text += """
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-    train_test_split(features, tpot_data['class'], random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=42)
 """
+
+    # Add the imputation step if it was used by TPOT
+    if impute:
+        pipeline_text += """
+imputer = Imputer(strategy="median")
+imputer.fit(training_features)
+training_features = imputer.transform(training_features)
+testing_features = imputer.transform(testing_features)
+"""
+
+    if pipeline_score is not None:
+        pipeline_text += '\n# Score on the training set was:{}'.format(pipeline_score)
+    pipeline_text += '\n'
 
     # Replace the function calls with their corresponding Python code
     pipeline_text += pipeline_code
@@ -137,7 +152,7 @@ def expr_to_tree(ind, pset):
     return tree
 
 
-def generate_import_code(pipeline, operators):
+def generate_import_code(pipeline, operators, impute=False):
     """Generate all library import calls for use in TPOT.export().
 
     Parameters
@@ -146,6 +161,8 @@ def generate_import_code(pipeline, operators):
         List of operators in the current optimized pipeline
     operators:
         List of operator class from operator library
+    impute : bool
+        Whether to impute new values in the feature set.
 
     Returns
     -------
@@ -164,11 +181,15 @@ def generate_import_code(pipeline, operators):
                 old_dict[key] = set(new_dict[key])
 
     operators_used = [x.name for x in pipeline if isinstance(x, deap.gp.Primitive)]
-    pipeline_text = 'import numpy as np\n\n'
+    pipeline_text = 'import numpy as np\nimport pandas as pd\n'
     pipeline_imports = _starting_imports(operators, operators_used)
 
     # Build dict of import requirments from list of operators
     import_relations = {op.__name__: op.import_hash for op in operators}
+
+    # Add the imputer if necessary
+    if impute:
+        pipeline_imports['sklearn.preprocessing'] = ['Imputer']
 
     # Build import dict from operators used
     for op in operators_used:
@@ -199,7 +220,6 @@ def _starting_imports(operators, operators_used):
                 num_op_root += 1
         else:
             num_op_root += 1
-
 
     if num_op_root > 1:
         return {
@@ -232,8 +252,7 @@ def pipeline_code_wrapper(pipeline_code):
     Source code for the sklearn pipeline and calls to fit and predict
 
     """
-    return """
-exported_pipeline = {}
+    return """exported_pipeline = {}
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)

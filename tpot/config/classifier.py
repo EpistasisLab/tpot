@@ -155,6 +155,11 @@ classifier_config_dict = {
     'tpot.builtins.ZeroCount': {
     },
 
+    'tpot.builtins.OneHotEncoder': {
+        'minimum_fraction': [0.05, 0.1, 0.15, 0.2, 0.25],
+        'sparse': [False]
+    },
+
     # Selectors
     'sklearn.feature_selection.SelectFwe': {
         'alpha': np.arange(0, 0.05, 0.001),

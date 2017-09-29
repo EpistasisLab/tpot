@@ -23,27 +23,6 @@ import numpy as np
 
 regressor_config_dict = {
 
-    'xgboost.XGBRegressor': {
-        'n_estimators': [100],
-        'max_depth': range(1, 11),
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'subsample': np.arange(0.05, 1.01, 0.05),
-        'min_child_weight': range(1, 21),
-        'nthread': [1]
-    },
-
-    'sklearn.linear_model.LassoLarsCV': {
-        'normalize': [True, False]
-    },
-
-    'sklearn.ensemble.RandomForestRegressor': {
-        'n_estimators': [100],
-        'max_features': np.arange(0.05, 1.01, 0.05),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'bootstrap': [True, False]
-    },
-
     'sklearn.linear_model.ElasticNetCV': {
         'l1_ratio': np.arange(0.0, 1.01, 0.05),
         'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
@@ -97,6 +76,15 @@ regressor_config_dict = {
     },
 
     'sklearn.linear_model.RidgeCV': {
+    },
+
+    'xgboost.XGBRegressor': {
+        'n_estimators': [100],
+        'max_depth': range(1, 11),
+        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+        'subsample': np.arange(0.05, 1.01, 0.05),
+        'min_child_weight': range(1, 21),
+        'nthread': [1]
     },
 
     # Preprocesssors
@@ -153,18 +141,23 @@ regressor_config_dict = {
     'tpot.builtins.ZeroCount': {
     },
 
+    'tpot.builtins.OneHotEncoder': {
+        'minimum_fraction': [0.05, 0.1, 0.15, 0.2, 0.25],
+        'sparse': [False]
+    },
+
     # Selectors
     'sklearn.feature_selection.SelectFwe': {
         'alpha': np.arange(0, 0.05, 0.001),
         'score_func': {
-            'sklearn.feature_selection.f_classif': None
+            'sklearn.feature_selection.f_regression': None
         }
     },
 
     'sklearn.feature_selection.SelectPercentile': {
         'percentile': range(1, 100),
         'score_func': {
-            'sklearn.feature_selection.f_classif': None
+            'sklearn.feature_selection.f_regression': None
         }
     },
 
