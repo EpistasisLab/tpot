@@ -1100,7 +1100,7 @@ class TPOTBase(BaseEstimator):
                       for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
                           arParams.append(len(arPipelines))
                           arPipelines.append(sklearn_pipeline)
-                      rddParams = self.sc.parallelize(arParams)
+                      rddParams = self.sc.parallelize(arParams, len(arParams))
                       indexed_result_score = dict(rddParams.map(mapFunc).collect())
                       tmp_result_scores = [indexed_result_score[idx] for idx in range(len(indexed_result_score))]
                   else:
