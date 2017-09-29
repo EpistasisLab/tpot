@@ -18,10 +18,10 @@ def build_pipeline_js(step,storage,func_dict):
         else:
             uid = uuid.uuid4().hex[:6].upper()
             #estimators should use reference func_name instead of creating new one
-            # if 'custom_' in step[0]:
-            #     func_name = step[0]
-            # else:
-            func_name = step[0] + '_' + uid
+            if 'custom_' in step[0]:
+                func_name = step[0]
+            else:
+                func_name = step[0] + '_' + uid
 
             param_list = step[1].get_params()
 
@@ -45,7 +45,6 @@ def build_pipeline_js(step,storage,func_dict):
                 func_dict[func_name] = {'name':step[1].__class__.__name__,'params':param_list}
             else:
                 func_dict[func_name] = {'name':step[1].__class__.__name__,'params':param_list}
-
             storage.append(obj)
 
             return storage
