@@ -437,8 +437,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             CV_score = np.array(scores)[:, 0]
 
             # DeepLearn code
+            print("cv score is {}".format(np.nanmean(CV_score)))
             if output_file is not None:
-                sklearn_pipeline_json['score'] = resulting_score
+                sklearn_pipeline_json['score'] = np.nanmean(CV_score)
                 json = {uid: sklearn_pipeline_json}
                 r.publish(output_file,pickle.dumps(json))
             # DeepLearn code
