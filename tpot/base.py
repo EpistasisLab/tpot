@@ -616,6 +616,7 @@ class TPOTBase(BaseEstimator):
                     self._summary_of_best_pipeline(features, target)
                     # Delete the temporary cache before exiting
                     rmtree(cachedir)
+                    self.memory = None
                     break
 
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
