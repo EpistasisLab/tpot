@@ -65,6 +65,7 @@ from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
 import traceback
+import pickle
 
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
@@ -581,7 +582,8 @@ class TPOTBase(BaseEstimator):
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         if self.r is not None:
-            self.r.publish(self.output_file,"total evaluation: {}".format(total_evals))
+            total_eval_str = pickle.dumps({'total_evaluation': total_evals})
+            self.r.publish(self.output_file,total_eval_str)
 
         try:
             with warnings.catch_warnings():
@@ -630,7 +632,8 @@ class TPOTBase(BaseEstimator):
                         raise
 
             if self.r is not None:
-                self.r.publish(self.output_file,"EVALUATION_COMPLETE")
+                status = pickle.dumps({'evaluation_status': 'complete'})
+                self.r.publish(self.output_file,status)
             return self
 
     def _update_top_pipeline(self):
@@ -1061,7 +1064,6 @@ class TPOTBase(BaseEstimator):
           #DeepLearn code
           if self.sc is not None:
               arPipelines = []
-              model_type = self.__class__.__name__
               output_file = self.output_file
               max_eval_time_mins = self.max_eval_time_mins
               scoring_function=self.scoring_function
@@ -1077,9 +1079,7 @@ class TPOTBase(BaseEstimator):
                   sample_weight=sample_weight,
                   groups=groups,
                   timeout=max_eval_time_mins, #self.max_eval_time_mins,
-
-                  output_file=output_file, #self.output_file,
-                  model_type=model_type
+                  output_file=output_file #self.output_file,
                 ))
           #DeepLearn code
 
@@ -1100,7 +1100,7 @@ class TPOTBase(BaseEstimator):
                       for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
                           arParams.append(len(arPipelines))
                           arPipelines.append(sklearn_pipeline)
-                      rddParams = self.sc.parallelize(arParams, len(arParams))
+                      rddParams = self.sc.parallelize(arParams)
                       indexed_result_score = dict(rddParams.map(mapFunc).collect())
                       tmp_result_scores = [indexed_result_score[idx] for idx in range(len(indexed_result_score))]
                   else:
