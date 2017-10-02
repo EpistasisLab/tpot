@@ -29,6 +29,8 @@ from datetime import datetime
 from multiprocessing import cpu_count
 import os
 import re
+from tempfile import mkdtemp
+from shutil import rmtree
 
 import numpy as np
 from scipy import sparse
@@ -39,7 +41,7 @@ from copy import copy
 
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
-from sklearn.externals.joblib import Parallel, delayed
+from sklearn.externals.joblib import Parallel, delayed, Memory
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
 from sklearn.model_selection import train_test_split
@@ -238,6 +240,7 @@ class TPOTBase(BaseEstimator):
         self.early_stop = early_stop
         self._last_optimized_pareto_front = None
         self._last_optimized_pareto_front_n_gens = 0
+        self.memory = None
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -571,6 +574,9 @@ class TPOTBase(BaseEstimator):
 
         try:
             with warnings.catch_warnings():
+                # Create a temporary folder to store the transformers of the pipeline
+                cachedir = mkdtemp()
+                self.memory = Memory(cachedir=cachedir, verbose=0)
                 warnings.simplefilter('ignore')
                 pop, _ = eaMuPlusLambda(
                     population=pop,
@@ -608,6 +614,8 @@ class TPOTBase(BaseEstimator):
 
                     self._update_top_pipeline()
                     self._summary_of_best_pipeline(features, target)
+                    # Delete the temporary cache before exiting
+                    rmtree(cachedir)
                     break
 
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
@@ -961,8 +969,10 @@ class TPOTBase(BaseEstimator):
         -------
         sklearn_pipeline: sklearn.pipeline.Pipeline
         """
-        sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr, self._pset), self.operators)
-        return eval(sklearn_pipeline, self.operators_context)
+        sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(expr, self._pset), self.operators)
+        sklearn_pipeline = eval(sklearn_pipeline_str, self.operators_context)
+        sklearn_pipeline.memory = self.memory
+        return sklearn_pipeline
 
 
     def _set_param_recursive(self, pipeline_steps, parameter, value):
