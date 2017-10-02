@@ -28,6 +28,8 @@ import numpy as np
 from deap import tools, gp
 from inspect import isclass
 from .operator_utils import set_sample_weight
+from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
+from sklearn.base import clone
 from sklearn.utils import indexable
 from sklearn.metrics.scorer import check_scoring
 from sklearn.model_selection._validation import _fit_and_score
@@ -41,6 +43,8 @@ from stopit import threading_timeoutable, TimeoutException
 import threading
 import redis
 import uuid
+import pickle
+import pipeline_exports as pe
 import re
 import traceback
 
@@ -366,50 +370,17 @@ def mutNodeReplacement(individual, pset):
     return individual,
 
 # DeepLearn code
-def _format_pipeline_output(pipeline):
-    sklearn_pipeline_formatted = str(pipeline)
-    sklearn_pipeline_formatted = re.sub(" at+\s+\w+>","",sklearn_pipeline_formatted)
-    sklearn_pipeline_formatted = re.sub("<function ","",sklearn_pipeline_formatted)
-    sklearn_pipeline_formatted = re.sub("\n","",sklearn_pipeline_formatted)
-    return sklearn_pipeline_formatted
-
-def _format_pipeline_json(pipeline,features=None,target=None):
-    json = {'funcs':[]}
-    json['feature_matrix'] = _collect_feature_list(pipeline,features,target)
-    for item in pipeline:
-        params = {}
-        for param in item[1].__dict__:
-            if '_func' in param or 'transformer_list' in param:
-                tmp = str(item[1].__dict__[param])
-                tmp = re.sub(" at+\s+\w+>","",tmp)
-                tmp = re.sub("<function ","",tmp)
-                params[param] = tmp
-            else:
-                params[param] = item[1].__dict__[param]
-
-        json['funcs'].append({"name":item[1].__class__.__name__, "params":params})
+def _format_pipeline_json(pipeline,features,target):
+    json = {'pipeline_list':[],'func_dict':{}}
+    json['feature_matrix'] = pe.collect_feature_list(pipeline,features,target)
+    pe.serialize_to_js(pipeline,json['pipeline_list'],json['func_dict'])
     return json
-
-def _collect_feature_list(pipeline,features,target):
-    feature_list = []
-    for step in pipeline:
-        if step[1].__class__.__name__ == 'FeatureUnion':
-            transformer_list = step[1].transformer_list
-            for transformer in transformer_list:
-                if "get_support" in dir(transformer[1]):
-                    fit_step = transformer[1].fit(features,target)
-                    feature_list.append(fit_step.get_support().tolist())
-
-        if "get_support" in dir(step[1]):
-            fit_step = step[1].fit(features,target)
-            feature_list.append(fit_step.get_support().tolist())
-    return feature_list
 # DeepLearn code
 
 @threading_timeoutable(default="Timeout")
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight=None, groups=None,
-                             output_file = None, model_type = None):
+                             output_file = None):
     """Fit estimator and compute scores for a given dataset split.
     Parameters
     ----------
@@ -437,22 +408,18 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
 
         features, target, groups = indexable(features, target, groups)
-
+        cv_num = cv
         cv = check_cv(cv, target, classifier=is_classifier(sklearn_pipeline))
+        cv.random_state = cv_num
         cv_iter = list(cv.split(features, target, groups))
         scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
 
         # DeepLearn code
-        uid = uuid.uuid4().hex[:15].upper()
-        sklearn_pipeline_formatted = _format_pipeline_output(sklearn_pipeline.steps)
-        sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps, features, target)
-
         if output_file is not None:
+            uid = uuid.uuid4().hex[:15].upper()
+            sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
             r = redis.StrictRedis(host='redis', port=6379, db=0)
-
-            r.publish(output_file, "starting job: {}:{}".format(uid, sklearn_pipeline_json))
-            r.hset(output_file, uid, sklearn_pipeline_formatted)
-            r.hset(output_file, uid + '-fold', cv)
+            r.hset(output_file, uid + '-fold', cv_num)
         # DeepLearn code
 
         with warnings.catch_warnings():
@@ -470,8 +437,11 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             CV_score = np.array(scores)[:, 0]
 
             # DeepLearn code
+            print("cv score is {}".format(np.nanmean(CV_score)))
             if output_file is not None:
-                r.publish(output_file,"score: {}:{}".format(uid, CV_score))
+                sklearn_pipeline_json['score'] = np.nanmean(CV_score)
+                json = {uid: sklearn_pipeline_json}
+                r.publish(output_file,pickle.dumps(json))
             # DeepLearn code
 
             return np.nanmean(CV_score)
