@@ -31,7 +31,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 import scipy.sparse
 from sklearn.utils.testing import assert_array_almost_equal
-from sklearn.datasets import load_iris
+from sklearn.datasets import load_iris, load_boston
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_val_score, KFold
 from nose.tools import assert_equal
 
 from tpot.builtins.one_hot_encoder import OneHotEncoder, _auto_select_categorical_features
@@ -107,127 +110,6 @@ sparse2_csr_1h = scipy.sparse.csr_matrix(([1, 1, 1, 1, 1, 1],
                                           (0, 1, 2, 3, 3, 3))), shape=(6, 4))
 
 
-def test_auto_detect_categorical():
-    """Assert that automatic selection of categorical features works as expected with a threshold of 10."""
-    selected = _auto_select_categorical_features(iris_data[0:16, :], threshold=10)
-    expected = [False, False, True, True]
-    assert_equal(selected, expected)
-
-
-def test_dense1():
-    fit_then_transform(dense1_1h, dense1)
-    fit_then_transform_dense(dense1_1h, dense1)
-
-
-def test_dense1_minimum_fraction():
-    fit_then_transform(dense1_1h_minimum_fraction, dense1, minimum_fraction=0.5)
-    fit_then_transform_dense(dense1_1h_minimum_fraction, dense1, minimum_fraction=0.5)
-
-
-def test_dense2():
-    fit_then_transform(dense2_1h, dense2)
-    fit_then_transform_dense(dense2_1h, dense2)
-
-
-def test_dense2_minimum_fraction():
-    fit_then_transform(
-        dense2_1h_minimum_fraction,
-        dense2,
-        minimum_fraction=0.3
-    )
-    fit_then_transform_dense(
-        dense2_1h_minimum_fraction,
-        dense2,
-        minimum_fraction=0.3
-    )
-
-
-def test_dense2_with_non_sparse_components():
-    fit_then_transform(
-        dense2_partial_1h,
-        dense2,
-        categorical_features=[True, True, False]
-    )
-    fit_then_transform_dense(
-        dense2_partial_1h,
-        dense2,
-        categorical_features=[True, True, False]
-    )
-
-
-# Minimum fraction is not too interesting here...
-def test_dense3():
-    fit_then_transform(dense3_1h, dense3)
-    fit_then_transform_dense(dense3_1h, dense3)
-
-
-def test_sparse1():
-    fit_then_transform(sparse1_1h.todense(), sparse1)
-    fit_then_transform_dense(sparse1_1h.todense(), sparse1)
-
-
-def test_sparse1_minimum_fraction():
-    expected = np.array([[0, 1, 0, 0, 1, 1],
-                         [0, 0, 1, 1, 0, 1]], dtype=float).transpose()
-    fit_then_transform(
-        expected,
-        sparse1,
-        minimum_fraction=0.5
-    )
-    fit_then_transform_dense(
-        expected,
-        sparse1,
-        minimum_fraction=0.5
-    )
-
-
-def test_sparse1_with_non_sparse_components():
-    fit_then_transform(
-        sparse1_paratial_1h.todense(),
-        sparse1,
-        categorical_features=[True, False]
-    )
-
-
-def test_sparse2():
-    fit_then_transform(sparse2_1h.todense(), sparse2)
-    fit_then_transform_dense(sparse2_1h.todense(), sparse2)
-
-
-def test_sparse2_minimum_fraction():
-    expected = np.array([[0, 1, 0, 0, 1, 1],
-                         [0, 0, 1, 1, 0, 1]], dtype=float).transpose()
-    fit_then_transform(
-        expected,
-        sparse2,
-        minimum_fraction=0.5
-    )
-    fit_then_transform_dense(
-        expected,
-        sparse2,
-        minimum_fraction=0.5
-    )
-
-
-def test_sparse2_csr():
-    fit_then_transform(sparse2_csr_1h.todense(), sparse2_csr)
-    fit_then_transform_dense(sparse2_csr_1h.todense(), sparse2_csr)
-
-
-def test_sparse_on_dense2_minimum_fraction():
-    sparse = scipy.sparse.csr_matrix(dense2)
-    fit_then_transform(
-        dense2_1h_minimum_fraction_as_sparse,
-        sparse,
-        minimum_fraction=0.5
-    )
-    fit_then_transform_dense(
-        dense2_1h_minimum_fraction_as_sparse,
-        sparse,
-        minimum_fraction=0.5
-    )
-
-
 def fit_then_transform(expected, input, categorical_features='all',
                        minimum_fraction=None):
     # Test fit_transform
@@ -260,7 +142,142 @@ def fit_then_transform_dense(expected, input,
     assert_array_almost_equal(expected, transformation)
 
 
-def test_transform_with_unknown_value():
+def test_auto_detect_categorical():
+    """Assert that automatic selection of categorical features works as expected with a threshold of 10."""
+    selected = _auto_select_categorical_features(iris_data[0:16, :], threshold=10)
+    expected = [False, False, True, True]
+    assert_equal(selected, expected)
+
+
+def test_dense1():
+    """Test fit_transform a dense matrix."""
+    fit_then_transform(dense1_1h, dense1)
+    fit_then_transform_dense(dense1_1h, dense1)
+
+
+def test_dense1_minimum_fraction():
+    """Test fit_transform a dense matrix with minimum_fraction=0.5."""
+    fit_then_transform(dense1_1h_minimum_fraction, dense1, minimum_fraction=0.5)
+    fit_then_transform_dense(dense1_1h_minimum_fraction, dense1, minimum_fraction=0.5)
+
+
+def test_dense2():
+    """Test fit_transform a dense matrix including NaNs."""
+    fit_then_transform(dense2_1h, dense2)
+    fit_then_transform_dense(dense2_1h, dense2)
+
+
+def test_dense2_minimum_fraction():
+    """Test fit_transform a dense matrix including NaNs with minimum_fraction=0.5"""
+    fit_then_transform(
+        dense2_1h_minimum_fraction,
+        dense2,
+        minimum_fraction=0.3
+    )
+    fit_then_transform_dense(
+        dense2_1h_minimum_fraction,
+        dense2,
+        minimum_fraction=0.3
+    )
+
+
+def test_dense2_with_non_sparse_components():
+    """Test fit_transform a dense matrix including NaNs with specifying categorical_features."""
+    fit_then_transform(
+        dense2_partial_1h,
+        dense2,
+        categorical_features=[True, True, False]
+    )
+    fit_then_transform_dense(
+        dense2_partial_1h,
+        dense2,
+        categorical_features=[True, True, False]
+    )
+
+
+def test_sparse_on_dense2_minimum_fraction():
+    """Test fit_transform a dense matrix with minimum_fraction as sparse"""
+    sparse = scipy.sparse.csr_matrix(dense2)
+    fit_then_transform(
+        dense2_1h_minimum_fraction_as_sparse,
+        sparse,
+        minimum_fraction=0.5
+    )
+    fit_then_transform_dense(
+        dense2_1h_minimum_fraction_as_sparse,
+        sparse,
+        minimum_fraction=0.5
+    )
+
+
+# Minimum fraction is not too interesting here...
+def test_dense3():
+    """Test fit_transform a dense matrix including all NaN slice."""
+    fit_then_transform(dense3_1h, dense3)
+    fit_then_transform_dense(dense3_1h, dense3)
+
+
+def test_sparse1():
+    """Test fit_transform a sparse matrix."""
+    fit_then_transform(sparse1_1h.todense(), sparse1)
+    fit_then_transform_dense(sparse1_1h.todense(), sparse1)
+
+
+def test_sparse1_minimum_fraction():
+    """Test fit_transform a sparse matrix with minimum_fraction=0.5."""
+    expected = np.array([[0, 1, 0, 0, 1, 1],
+                         [0, 0, 1, 1, 0, 1]], dtype=float).transpose()
+    fit_then_transform(
+        expected,
+        sparse1,
+        minimum_fraction=0.5
+    )
+    fit_then_transform_dense(
+        expected,
+        sparse1,
+        minimum_fraction=0.5
+    )
+
+
+def test_sparse1_with_non_sparse_components():
+    """Test fit_transform a sparse matrix with specifying categorical_features."""
+    fit_then_transform(
+        sparse1_paratial_1h.todense(),
+        sparse1,
+        categorical_features=[True, False]
+    )
+
+
+def test_sparse2():
+    """Test fit_transform a sparse matrix including all zeros slice."""
+    fit_then_transform(sparse2_1h.todense(), sparse2)
+    fit_then_transform_dense(sparse2_1h.todense(), sparse2)
+
+
+def test_sparse2_minimum_fraction():
+    """Test fit_transform a sparse matrix including all zeros slice with minimum_fraction=0.5."""
+    expected = np.array([[0, 1, 0, 0, 1, 1],
+                         [0, 0, 1, 1, 0, 1]], dtype=float).transpose()
+    fit_then_transform(
+        expected,
+        sparse2,
+        minimum_fraction=0.5
+    )
+    fit_then_transform_dense(
+        expected,
+        sparse2,
+        minimum_fraction=0.5
+    )
+
+
+def test_sparse2_csr():
+    """Test fit_transform another sparse matrix including all zeros slice."""
+    fit_then_transform(sparse2_csr_1h.todense(), sparse2_csr)
+    fit_then_transform_dense(sparse2_csr_1h.todense(), sparse2_csr)
+
+
+def test_transform():
+    """Test OneHotEncoder with both dense and sparse matrixes."""
     input = np.array(((0, 1, 2, 3, 4, 5), (0, 1, 2, 3, 4, 5))).transpose()
     ohe = OneHotEncoder()
     ohe.fit(input)
@@ -276,3 +293,19 @@ def test_transform_with_unknown_value():
     tds = scipy.sparse.csr_matrix(test_data)
     output = ohe.transform(tds).todense()
     assert np.sum(output) == 3
+
+
+def test_k_fold_cv():
+    """Test OneHotEncoder with categorical_features='auto'."""
+    boston = load_boston()
+
+    clf = make_pipeline(
+        OneHotEncoder(
+            categorical_features='auto',
+            sparse=False,
+            minimum_fraction=0.05
+        ),
+        LinearRegression()
+    )
+
+    cross_val_score(clf, boston.data, boston.target, cv=KFold(n_splits=10, shuffle=True))

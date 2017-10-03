@@ -282,20 +282,6 @@ def _get_arg_parser():
         )
     )
 
-    parser.add_argument(
-        '-cf',
-        action='store',
-        dest='CHECKPOINT_FOLDER',
-        default=None,
-        type=str,
-        help=('If supplied, a folder in which tpot will periodically '
-        'save the best pipeline so far while optimizing. '
-        'This is useful in multiple cases: '
-        'sudden death before tpot could save an optimized pipeline, '
-        'progress tracking, '
-        "grabbing a pipeline while it's still optimizing etc."
-        )
-    )
 
     parser.add_argument(
         '-njobs',
@@ -349,6 +335,7 @@ def _get_arg_parser():
         )
     )
 
+
     parser.add_argument(
         '-config',
         action='store',
@@ -360,6 +347,36 @@ def _get_arg_parser():
             'that TPOT uses in the optimization process. Must be a Python '
             'module containing a dict export named "tpot_config" or the name of '
             'built-in configuration.'
+        )
+    )
+
+
+
+    parser.add_argument(
+        '-cf',
+        action='store',
+        dest='CHECKPOINT_FOLDER',
+        default=None,
+        type=str,
+        help=('If supplied, a folder in which tpot will periodically '
+        'save the best pipeline so far while optimizing. '
+        'This is useful in multiple cases: '
+        'sudden death before tpot could save an optimized pipeline, '
+        'progress tracking, '
+        "grabbing a pipeline while it's still optimizing etc."
+        )
+    )
+
+    parser.add_argument(
+        '-es',
+        action='store',
+        dest='EARLY_STOP',
+        default=None,
+        type=int,
+        help=(
+            'How many generations TPOT checks whether there is no improvement '
+            'in optimization process. End optimization process if there is no improvement '
+            'in the set number of generations.'
         )
     )
 
@@ -409,7 +426,11 @@ def _print_args(args):
             arg_val = args.__dict__['POPULATION_SIZE']
         else:
             arg_val = args.__dict__[arg]
-        print('{}\t=\t{}'.format(arg, arg_val))
+
+        # Pad the outputs with an even amount of space
+        arg = (arg + (' ') * 100)[:20]
+        arg_val = ((' ') * 5 + str(arg_val))
+        print('{}={}'.format(arg, arg_val))
     print('')
 
 
@@ -483,6 +504,7 @@ def tpot_driver(args):
         random_state=args.RANDOM_STATE,
         config_dict=args.CONFIG_FILE,
         periodic_checkpoint_folder=args.CHECKPOINT_FOLDER,
+        early_stop=args.EARLY_STOP,
         verbosity=args.VERBOSITY,
         disable_update_check=args.DISABLE_UPDATE_CHECK
     )

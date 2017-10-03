@@ -224,7 +224,7 @@ See the section on <a href="#scoring-functions">scoring functions</a> for more d
 <tr>
 <td>-cv</td>
 <td>CV</td>
-<td>Any integer >1</td>
+<td>Any integer > 1</td>
 <td>Number of folds to evaluate each pipeline over in k-fold cross-validation during the TPOT optimization process.</td>
 </tr>
 <td>-sub</td>
@@ -265,6 +265,21 @@ Setting this parameter to higher values will allow TPOT to consider more complex
 Set this seed if you want your TPOT run to be reproducible with the same seed and data set in the future.</td>
 </tr>
 <tr>
+<td>-config</td>
+<td>CONFIG_FILE</td>
+<td>String or file path</td>
+<td>Operators and parameter configurations in TPOT:
+<br /><br />
+<ul>
+<li>Path for configuration file: TPOT will use the path to a configuration file for customizing the operators and parameters that TPOT uses in the optimization process</li>
+<li>string 'TPOT light', TPOT will use a built-in configuration with only fast models and preprocessors</li>
+<li>string 'TPOT MDR', TPOT will use a built-in configuration specialized for genomic studies</li>
+<li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot encoder and the operators normally included in TPOT that also support sparse matrices.</li>
+</ul>
+See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
+</td>
+</tr>
+<tr>
 <td>-cf</td>
 <td>CHECKPOINT_FOLDER</td>
 <td>Folder path</td>
@@ -283,6 +298,15 @@ Example:
 mkdir my_checkpoints
 <br />
 -cf ./my_checkpoints
+</tr>
+<tr>
+<td>-es</td>
+<td>EARLY_STOP</td>
+<td>Any positive integer</td>
+<td>
+How many generations TPOT checks whether there is no improvement in optimization process.
+<br /><br />
+End optimization process if there is no improvement in the set number of generations.
 </tr>
 <tr>
 <td>-v</td>
@@ -378,6 +402,17 @@ Note that TPOT MDR may be slow to run because the feature selection routines are
 <br /><br />
 <a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_mdr.py">Regression</a></td>
 </tr>
+
+<tr>
+<td>TPOT sparse</td>
+<td>TPOT uses a configuration dictionary with a one-hot encoder and the operators normally included in TPOT that also support sparse matrices.
+<br /><br />
+This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier_sparse.py">Classification</a>
+<br /><br />
+<a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_sparse.py">Regression</a></td>
+</tr>
+
 </table>
 
 To use any of these configurations, simply pass the string name of the configuration to the `config_dict` parameter (or `-config` on the command line). For example, to use the "TPOT light" configuration:
@@ -469,46 +504,22 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
-# Customizing TPOT's starting population
 
-TPOT allows for the initial population of pipelines to be seeded. This can be done either through the `population_seeds` parameter in the TPOT constructor, or through a `population_seeds` attribute in a custom config file.
+# Crash/freeze issue with n_jobs > 1 under OSX or Linux
 
-```Python
-population_seeds = [
-    'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
-    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
-]
+TPOT supports parallel computing for speeding up the optimization process, but it may crash/freeze with n_jobs > 1 under OSX or Linux [as scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large datasets.
 
-tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                      config_dict=tpot_config, population_seeds=population_seeds)
-```
-
-If specified through a config file, your config file would look like this:
+One solution is to configure Python's `multiprocessing` module to use the `forkserver` start method (instead of the default `fork`) to manage the process pools. You can enable the `forkserver` mode globally for your program by putting the following codes into your main script:
 
 ```Python
-tpot_config = {
-    'sklearn.naive_bayes.GaussianNB': {
-    },
+import multiprocessing
 
-    'sklearn.naive_bayes.BernoulliNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    },
+# other imports, custom code, load data, define model...
 
-    'sklearn.naive_bayes.MultinomialNB': {
-        'alpha': [1e-3, 1e-2, 1e-1, 1., 10., 100.],
-        'fit_prior': [True, False]
-    }
-}
+if __name__ == '__main__':
+    multiprocessing.set_start_method('forkserver')
 
-population_seeds = [
-    'BernoulliNB(GaussianNB(input_matrix), BernoulliNB__alpha=0.1, BernoulliNB__fit_prior=False)',
-    'BernoulliNB(input_matrix, BernoulliNB__alpha=0.01, BernoulliNB__fit_prior=True)'
-]
+    # call scikit-learn utils or tpot utils with n_jobs > 1 here
 ```
 
-As with `tpot_config`, when using a custom config file the seeds *must* have the standardized name of "population_seeds". It should only ever be a list of strings.
-
-If less seeds are provided than there are to be individuals in the entire population, then the remainder will be filled with random individuals.
-
-If the `population_seeds` parameter is provided along with seeds from a configuration file, the configuration file's seeds will take precedence.
+More information about these start methods can be found in the [multiprocessing documentation](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods).

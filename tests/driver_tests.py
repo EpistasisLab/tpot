@@ -71,7 +71,6 @@ def test_scoring_function_argument():
     assert_equal(err, "")
 
 
-
 def test_driver():
     """Assert that the TPOT driver outputs normal result in mode mode."""
     batcmd = "python -m tpot.driver tests/tests.csv -is , -target class -g 1 -p 2 -os 4 -cv 5 -s 45 -v 1"
@@ -219,7 +218,9 @@ class ParserTest(TestCase):
     def test_default_param(self):
         """Assert that the TPOT driver stores correct default values for all parameters."""
         args = self.parser.parse_args(['tests/tests.csv'])
+        self.assertEqual(args.CONFIG_FILE, None)
         self.assertEqual(args.CROSSOVER_RATE, 0.1)
+        self.assertEqual(args.EARLY_STOP, None)
         self.assertEqual(args.DISABLE_UPDATE_CHECK, False)
         self.assertEqual(args.GENERATIONS, 100)
         self.assertEqual(args.INPUT_FILE, 'tests/tests.csv')
@@ -241,34 +242,40 @@ class ParserTest(TestCase):
 
     def test_print_args(self):
         """Assert that _print_args prints correct values for all parameters in default settings."""
-        args = self.parser.parse_args(['tests/tests.csv'])
+        args_list = [
+            'tests/tests.csv',
+            '-is', ','
+        ]
+        args = self.parser.parse_args(args_list)
         with captured_output() as (out, err):
             _print_args(args)
         output = out.getvalue()
         expected_output = """
 TPOT settings:
-CONFIG_FILE\t=\tNone
-CROSSOVER_RATE\t=\t0.1
-GENERATIONS\t=\t100
-INPUT_FILE\t=\ttests/tests.csv
-INPUT_SEPARATOR\t=\t\t
-MAX_EVAL_MINS\t=\t5
-MAX_TIME_MINS\t=\tNone
-MUTATION_RATE\t=\t0.9
-NUM_CV_FOLDS\t=\t5
-NUM_JOBS\t=\t1
-OFFSPRING_SIZE\t=\t100
-CHECKPOINT_FOLDER\t=\tNone
-OUTPUT_FILE\t=\t
-POPULATION_SIZE\t=\t100
-RANDOM_STATE\t=\tNone
-SCORING_FN\t=\taccuracy
-SUBSAMPLE\t=\t1.0
-TARGET_NAME\t=\tclass
-TPOT_MODE\t=\tclassification
-VERBOSITY\t=\t1
+CHECKPOINT_FOLDER   =     None
+CONFIG_FILE         =     None
+CROSSOVER_RATE      =     0.1
+EARLY_STOP          =     None
+GENERATIONS         =     100
+INPUT_FILE          =     tests/tests.csv
+INPUT_SEPARATOR     =     ,
+MAX_EVAL_MINS       =     5
+MAX_TIME_MINS       =     None
+MUTATION_RATE       =     0.9
+NUM_CV_FOLDS        =     5
+NUM_JOBS            =     1
+OFFSPRING_SIZE      =     100
+OUTPUT_FILE         =     
+POPULATION_SIZE     =     100
+RANDOM_STATE        =     None
+SCORING_FN          =     accuracy
+SUBSAMPLE           =     1.0
+TARGET_NAME         =     class
+TPOT_MODE           =     classification
+VERBOSITY           =     1
 
 """
+        print
 
         self.assertEqual(_sort_lines(expected_output), _sort_lines(output))
 
@@ -278,6 +285,7 @@ VERBOSITY\t=\t1
         args_list = [
             'tests/tests.csv',
             '-mode', 'regression',
+            '-is', ','
         ]
         args = self.parser.parse_args(args_list)
         with captured_output() as (out, err):
@@ -285,26 +293,27 @@ VERBOSITY\t=\t1
         output = out.getvalue()
         expected_output = """
 TPOT settings:
-CONFIG_FILE\t=\tNone
-CROSSOVER_RATE\t=\t0.1
-GENERATIONS\t=\t100
-INPUT_FILE\t=\ttests/tests.csv
-INPUT_SEPARATOR\t=\t\t
-MAX_EVAL_MINS\t=\t5
-MAX_TIME_MINS\t=\tNone
-MUTATION_RATE\t=\t0.9
-NUM_CV_FOLDS\t=\t5
-NUM_JOBS\t=\t1
-OFFSPRING_SIZE\t=\t100
-CHECKPOINT_FOLDER\t=\tNone
-OUTPUT_FILE\t=\t
-POPULATION_SIZE\t=\t100
-RANDOM_STATE\t=\tNone
-SCORING_FN\t=\tneg_mean_squared_error
-SUBSAMPLE\t=\t1.0
-TARGET_NAME\t=\tclass
-TPOT_MODE\t=\tregression
-VERBOSITY\t=\t1
+CHECKPOINT_FOLDER   =     None
+CONFIG_FILE         =     None
+CROSSOVER_RATE      =     0.1
+EARLY_STOP          =     None
+GENERATIONS         =     100
+INPUT_FILE          =     tests/tests.csv
+INPUT_SEPARATOR     =     ,
+MAX_EVAL_MINS       =     5
+MAX_TIME_MINS       =     None
+MUTATION_RATE       =     0.9
+NUM_CV_FOLDS        =     5
+NUM_JOBS            =     1
+OFFSPRING_SIZE      =     100
+OUTPUT_FILE         =     
+POPULATION_SIZE     =     100
+RANDOM_STATE        =     None
+SCORING_FN          =     neg_mean_squared_error
+SUBSAMPLE           =     1.0
+TARGET_NAME         =     class
+TPOT_MODE           =     regression
+VERBOSITY           =     1
 
 """
 

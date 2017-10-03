@@ -553,7 +553,7 @@ features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'].values, random_state=42)
 
-imputer = Imputer(strategy="median", axis=1)
+imputer = Imputer(strategy="median")
 imputer.fit(training_features)
 training_features = imputer.transform(training_features)
 testing_features = imputer.transform(testing_features)

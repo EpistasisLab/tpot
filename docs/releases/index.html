@@ -82,6 +82,9 @@
     <a class="current" href="./">Release Notes</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#version-09">Version 0.9</a></li>
+    
+
     <li class="toctree-l2"><a href="#version-08">Version 0.8</a></li>
     
 
@@ -159,7 +162,43 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="version-08">Version 0.8</h1>
+                <h1 id="version-09">Version 0.9</h1>
+<ul>
+<li>
+<p><strong>TPOT now supports sparse matrices</strong> with a new built-in TPOT configurations, "TPOT sparse". We are using a custom OneHotEncoder implementation that supports missing values and continuous features.</p>
+</li>
+<li>
+<p>We have added an "early stopping" option for stopping the optimization process if no improvement is made within a set number of generations. Look up the <code>early_stop</code> parameter to access this functionality.</p>
+</li>
+<li>
+<p>TPOT now reduces the number of duplicated pipelines between generations, which saves you time during the optimization process.</p>
+</li>
+<li>
+<p>TPOT now supports custom scoring functions via the command-line mode.</p>
+</li>
+<li>
+<p>We have added a new optional argument, <code>periodic_checkpoint_folder</code>, that allows TPOT to periodically save the best pipeline so far to a local folder during optimization process.</p>
+</li>
+<li>
+<p>TPOT no longer uses <code>sklearn.externals.joblib</code> when <code>n_jobs=1</code> to avoid the potential freezing issue <a href="http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux">that scikit-learn suffers from</a>.</p>
+</li>
+<li>
+<p>We have added <code>pandas</code> as a dependency to read input datasets instead of <code>numpy.recfromcsv</code>. NumPy's <code>recfromcsv</code> function is unable to parse datasets with complex data types.</p>
+</li>
+<li>
+<p>Fixed a bug that <code>DEFAULT</code> in the parameter(s) of nested estimator raises <code>KeyError</code> when exporting pipelines.</p>
+</li>
+<li>
+<p>Fixed a bug related to setting <code>random_state</code> in nested estimators. The issue would happen with pipeline with <code>SelectFromModel</code> (<code>ExtraTreesClassifier</code> as nested estimator) or <code>StackingEstimator</code> if nested estimator has <code>random_state</code> parameter.</p>
+</li>
+<li>
+<p>Fixed a bug in the missing value imputation function in TPOT to impute along columns instead rows.</p>
+</li>
+<li>
+<p>Refined input checking for sparse matrices in TPOT.</p>
+</li>
+</ul>
+<h1 id="version-08">Version 0.8</h1>
 <ul>
 <li>
 <p><strong>TPOT now detects whether there are missing values in your dataset</strong> and replaces them with the median value of the column.</p>
