@@ -516,6 +516,30 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
+# Enabling memory caching in TPOT
+With `memory` parameter, TPOT allows users to specify a custom directory path or [`sklearn.external.joblib.Memory`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/externals/joblib/memory.py#L847) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run) even if the speedup for regular TPOT is fairly minor with this option.
+
+There are three methods for enabling memory caching in TPOT:
+
+```Python
+from tpot import TPOTClassifier
+from tempfile import mkdtemp
+from sklearn.externals.joblib import Memory
+
+# Method 1, auto mode: TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.
+tpot = TPOTClassifier(memory="auto")
+
+# Method 2, with a custom directory for memory caching
+tpot = TPOTClassifier(memory="/to/your/path")
+
+# Method 3, with a Memory object
+cachedir = mkdtemp() # Create a temporary folder
+memory = Memory(cachedir=cachedir, verbose=0)
+tpot = TPOTClassifier(memory=memory)
+```
+
+
+**Note: TPOT does NOT clean up memory caches if users set a custom directory path or Memory object. Please clean up the memory caches when these caches are not necessary.**
 
 # Crash/freeze issue with n_jobs > 1 under OSX or Linux
 
