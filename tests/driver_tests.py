@@ -226,8 +226,6 @@ class ParserTest(TestCase):
         self.assertEqual(args.INPUT_FILE, 'tests/tests.csv')
         self.assertEqual(args.INPUT_SEPARATOR, '\t')
         self.assertEqual(args.MAX_EVAL_MINS, 5)
-        self.assertEqual(args.MAX_TIME_MINS, None)
-        self.assertEqual(args.MEMORY, None)
         self.assertEqual(args.MUTATION_RATE, 0.9)
         self.assertEqual(args.NUM_CV_FOLDS, 5)
         self.assertEqual(args.NUM_JOBS, 1)
@@ -252,7 +250,6 @@ class ParserTest(TestCase):
         with captured_output() as (out, err):
             _print_args(args)
         output = out.getvalue()
-        print(_sort_lines(output))
         expected_output = """
 TPOT settings:
 CHECKPOINT_FOLDER   =     None
@@ -279,6 +276,7 @@ TPOT_MODE           =     classification
 VERBOSITY           =     1
 
 """
+        print
 
         self.assertEqual(_sort_lines(expected_output), _sort_lines(output))
 
