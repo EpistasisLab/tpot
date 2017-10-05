@@ -138,7 +138,7 @@ def _get_arg_parser():
         '-o',
         action='store',
         dest='OUTPUT_FILE',
-        default='',
+        default=None,
         type=str,
         help='File to export the code for the final optimized pipeline.'
     )
@@ -541,7 +541,7 @@ def tpot_driver(args):
                 )
             )
 
-    if args.OUTPUT_FILE != '':
+    if args.OUTPUT_FILE:
         tpot_obj.export(args.OUTPUT_FILE)
 
 def main():
