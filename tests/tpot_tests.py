@@ -44,9 +44,12 @@ import os
 from re import search
 from datetime import datetime
 from time import sleep
+from tempfile import mkdtemp
+from shutil import rmtree
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
+from sklearn.externals.joblib import Memory
 from deap import creator
 from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
@@ -682,6 +685,28 @@ def test_fit_4():
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
+
+
+def test_memory():
+    """Assert that the TPOT fit function runs with memory=\"auto\"."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory="auto",
+        verbosity=0
+    )
+    tpot_obj.fit(training_features, training_target)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+    assert tpot_obj.memory is not None
+    assert tpot_obj._memory is None
+    assert tpot_obj._cachedir is not None
+    assert not os.path.isdir(tpot_obj._cachedir)
+
 
 
 def test_check_periodic_pipeline():
