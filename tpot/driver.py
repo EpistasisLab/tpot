@@ -351,6 +351,18 @@ def _get_arg_parser():
     )
 
 
+    parser.add_argument(
+        '-memory',
+        action='store',
+        dest='MEMORY',
+        default=None,
+        type=str,
+        help=(
+            'Path of a directory for memory caching or \"auto\" for using temporary '
+            'caching directory during optimization process.'
+        )
+    )
+
 
     parser.add_argument(
         '-cf',
@@ -503,6 +515,7 @@ def tpot_driver(args):
         max_eval_time_mins=args.MAX_EVAL_MINS,
         random_state=args.RANDOM_STATE,
         config_dict=args.CONFIG_FILE,
+        memory=args.MEMORY,
         periodic_checkpoint_folder=args.CHECKPOINT_FOLDER,
         early_stop=args.EARLY_STOP,
         verbosity=args.VERBOSITY,
