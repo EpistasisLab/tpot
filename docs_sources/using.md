@@ -280,6 +280,18 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 </td>
 </tr>
 <tr>
+<td>-memory</td>
+<td>MEMORY</td>
+<td>String or file path</td>
+<td>Memory caching mode in TPOT:
+<br /><br />
+<ul>
+<li>Path for a caching directory: TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown.</li>
+<li>string 'auto': TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.</li>
+</ul>
+</td>
+</tr>
+<tr>
 <td>-cf</td>
 <td>CHECKPOINT_FOLDER</td>
 <td>Folder path</td>

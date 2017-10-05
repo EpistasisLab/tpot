@@ -195,8 +195,7 @@ class TPOTBase(BaseEstimator):
             previous calls to fit().
         memory: a Memory object or string, optional (default: None)
             String 'auto':
-                TPOT uses memory caching with a temporary directory and TPOT creates
-                the temporary directory and cleans it up upon shutdown.
+                TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.
             String path of a caching directory
                 TPOT uses memory caching with the provided directory and TPOT does NOT clean
                 the caching directory up upon shutdown.

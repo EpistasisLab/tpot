@@ -154,7 +154,7 @@ If supplied, TPOT uses memory caching while optimizing.
 <br /><br />
 Possible inputs are:
 <ul>
-<li>String 'auto': TPOT uses memory caching with a temporary directory and TPOT creates the temporary directory and cleans it up upon shutdown, or</li>
+<li>String 'auto': TPOT uses memory caching with a temporary directory and cleans it up upon shutdown, or</li>
 <li>Path of a caching directory, TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown, or</li>
 <li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
 <li>None, TPOT does not use memory caching.</li>
@@ -623,7 +623,7 @@ If supplied, TPOT uses memory caching while optimizing.
 <br /><br />
 Possible inputs are:
 <ul>
-<li>String 'auto': TPOT uses memory caching with a temporary directory and TPOT creates the temporary directory and cleans it up upon shutdown, or</li>
+<li>String 'auto': TPOT uses memory caching with a temporary directory and cleans it up upon shutdown, or</li>
 <li>Path of a caching directory, TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown, or</li>
 <li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
 <li>None, TPOT does not use memory caching.</li>
