@@ -8,6 +8,7 @@
                           <strong>max_time_mins</strong>=None, <strong>max_eval_time_mins</strong>=5,
                           <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                           <strong>warm_start</strong>=False,
+                          <strong>memory</strong>=None,
                           <strong>periodic_checkpoint_folder</strong>=None,
                           <strong>verbosity</strong>=0,
                           <strong>disable_update_check</strong>=False</em>)</pre>
@@ -145,6 +146,19 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 Flag indicating whether the TPOT instance will reuse the population from previous calls to <em>fit()</em>.
 <br /><br />
 Setting <em>warm_start</em>=True can be useful for running TPOT for a short time on a dataset, checking the results, then resuming the TPOT run from where it left off.
+</blockquote>
+
+<strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
+<blockquote>
+If supplied, TPOT uses memory caching while optimizing.
+<br /><br />
+Possible inputs are:
+<ul>
+<li>String 'auto': TPOT uses memory caching with a temporary directory and TPOT creates the temporary directory and cleans it up upon shutdown, or</li>
+<li>Path of a caching directory, TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown, or</li>
+<li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
+<li>None, TPOT does not use memory caching.</li>
+</ul>
 </blockquote>
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
@@ -461,6 +475,7 @@ Does not return anything
                          <strong>max_time_mins</strong>=None, <strong>max_eval_time_mins</strong>=5,
                          <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                          <strong>warm_start</strong>=False,
+                         <strong>memory</strong>=None,
                          <strong>periodic_checkpoint_folder</strong>=None,
                          <strong>verbosity</strong>=0,
                          <strong>disable_update_check</strong>=False</em>)</pre>
@@ -600,6 +615,19 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 Flag indicating whether the TPOT instance will reuse the population from previous calls to <em>fit()</em>.
 <br /><br />
 Setting <em>warm_start</em>=True can be useful for running TPOT for a short time on a dataset, checking the results, then resuming the TPOT run from where it left off.
+</blockquote>
+
+<strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
+<blockquote>
+If supplied, TPOT uses memory caching while optimizing.
+<br /><br />
+Possible inputs are:
+<ul>
+<li>String 'auto': TPOT uses memory caching with a temporary directory and TPOT creates the temporary directory and cleans it up upon shutdown, or</li>
+<li>Path of a caching directory, TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown, or</li>
+<li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
+<li>None, TPOT does not use memory caching.</li>
+</ul>
 </blockquote>
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)

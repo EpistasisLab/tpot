@@ -226,6 +226,8 @@ class ParserTest(TestCase):
         self.assertEqual(args.INPUT_FILE, 'tests/tests.csv')
         self.assertEqual(args.INPUT_SEPARATOR, '\t')
         self.assertEqual(args.MAX_EVAL_MINS, 5)
+        self.assertEqual(args.MAX_TIME_MINS, None)
+        self.assertEqual(args.MEMORY, None)
         self.assertEqual(args.MUTATION_RATE, 0.9)
         self.assertEqual(args.NUM_CV_FOLDS, 5)
         self.assertEqual(args.NUM_JOBS, 1)

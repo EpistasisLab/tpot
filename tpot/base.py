@@ -194,8 +194,6 @@ class TPOTBase(BaseEstimator):
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
         memory: a Memory object or string, optional (default: None)
-            None:
-                No memory caching in sklearn.pipeline.Pipeline
             String 'auto':
                 TPOT uses memory caching with a temporary directory and TPOT creates
                 the temporary directory and cleans it up upon shutdown.
@@ -205,6 +203,8 @@ class TPOTBase(BaseEstimator):
             Memory object:
                 TPOT uses the instance of sklearn.external.joblib.Memory for memory caching,
                 and TPOT does NOT clean the caching directory up upon shutdown.
+            None:
+                TPOT does not use memory caching.
         periodic_checkpoint_folder: path string, optional (default: None)
             If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.
             Currently once per generation but not more often than once per 30 seconds.
