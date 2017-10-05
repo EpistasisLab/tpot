@@ -254,6 +254,7 @@ class TPOTBase(BaseEstimator):
         self._last_optimized_pareto_front = None
         self._last_optimized_pareto_front_n_gens = 0
         self.memory = memory
+        self._memory = None # initial Memory setting for sklearn pipeline
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -660,8 +661,6 @@ class TPOTBase(BaseEstimator):
                     'Please use an instance of sklearn.external.joblib.Memory'
                     ' or path of caching directory or \"auto\".'
                 )
-        else:
-            self._memory = None
 
 
     def _cleanup_memory(self):
