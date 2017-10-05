@@ -656,7 +656,7 @@ class TPOTBase(BaseEstimator):
                 self._memory = self.memory
             else:
                 raise ValueError(
-                    'Could not recognize Memory object for memory caching.'
+                    'Could not recognize Memory object for memory caching. '
                     'Please use an instance of sklearn.external.joblib.Memory'
                     ' or path of caching directory or \"auto\".'
                 )

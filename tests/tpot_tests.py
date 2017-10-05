@@ -688,7 +688,7 @@ def test_fit_4():
 
 
 def test_memory():
-    """Assert that the TPOT fit function runs with memory=\"auto\"."""
+    """Assert that the TPOT fit function runs normally with memory=\"auto\"."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -707,6 +707,94 @@ def test_memory():
     assert tpot_obj._cachedir is not None
     assert not os.path.isdir(tpot_obj._cachedir)
 
+
+def test_memory_2():
+    """Assert that the TPOT _setup_memory function runs normally with a valid path."""
+    cachedir = mkdtemp()
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory=cachedir,
+        verbosity=0
+    )
+    tpot_obj._setup_memory()
+    rmtree(cachedir)
+
+    assert tpot_obj._cachedir == cachedir
+    assert isinstance(tpot_obj._memory, Memory)
+
+
+def test_memory_3():
+    """Assert that the TPOT fit function does not clean up caching directory when memory is a valid path."""
+    cachedir = mkdtemp()
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory=cachedir,
+        verbosity=0
+    )
+    tpot_obj.fit(training_features, training_target)
+
+    assert tpot_obj._cachedir == cachedir
+    assert os.path.isdir(tpot_obj._cachedir)
+    assert isinstance(tpot_obj._memory, Memory)
+    rmtree(cachedir)
+
+
+def test_memory_4():
+    """Assert that the TPOT _setup_memory function rasies ValueError with a invalid path."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory="./fake_temp_dir",
+        verbosity=0
+    )
+
+    assert_raises(ValueError, tpot_obj._setup_memory)
+
+
+def test_memory_5():
+    """Assert that the TPOT _setup_memory function runs normally with a Memory object."""
+    cachedir = mkdtemp()
+    memory = Memory(cachedir=cachedir, verbose=0)
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory=memory,
+        verbosity=0
+    )
+
+    tpot_obj._setup_memory()
+    rmtree(cachedir)
+    assert tpot_obj.memory == memory
+    assert tpot_obj._memory == memory
+
+
+def test_memory_6():
+    """Assert that the TPOT _setup_memory function rasies ValueError with a invalid object."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory=str,
+        verbosity=0
+    )
+
+    assert_raises(ValueError, tpot_obj._setup_memory)
 
 
 def test_check_periodic_pipeline():
