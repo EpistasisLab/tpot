@@ -688,14 +688,14 @@ def test_fit_4():
 
 
 def test_memory():
-    """Assert that the TPOT fit function runs normally with memory=\"auto\"."""
+    """Assert that the TPOT fit function runs normally with memory=\'auto\'."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
         offspring_size=2,
         generations=1,
         config_dict='TPOT light',
-        memory="auto",
+        memory='auto',
         verbosity=0
     )
     tpot_obj.fit(training_features, training_target)

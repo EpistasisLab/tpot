@@ -516,7 +516,7 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
-# Enabling memory caching in TPOT
+# Pipeline caching in TPOT
 With `memory` parameter, TPOT allows users to specify a custom directory path or [`sklearn.external.joblib.Memory`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/externals/joblib/memory.py#L847) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run) even if the speedup for regular TPOT is fairly minor with this option.
 
 There are three methods for enabling memory caching in TPOT:
