@@ -149,6 +149,17 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
     return offspring
 
+def initialize_stats_dict(individual):
+    '''
+    Initializes the stats dict for individual
+    :param individual:
+    :return:
+    '''
+    individual.statistics['generation'] = 0
+    individual.statistics['mutation_count'] = 0
+    individual.statistics['crossover_count'] = 0
+    individual.statistics['predecessor'] = 'ROOT',
+
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                    stats=None, halloffame=None, verbose=0, per_generation_function=None):
@@ -199,6 +210,10 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 
+    # Initialize statistics dict
+    for ind in population:
+        initialize_stats_dict(ind)
+
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
 
@@ -217,6 +232,10 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         # after each population save a periodic pipeline
         if per_generation_function is not None:
             per_generation_function()
+
+        # Update generation statistic for all individuals
+        for ind in population:
+            ind.statistics['generation'] = gen
 
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)

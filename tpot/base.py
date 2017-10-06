@@ -35,7 +35,7 @@ from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
 from tqdm import tqdm
-from copy import copy
+from copy import copy, deepcopy
 
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
@@ -439,7 +439,7 @@ class TPOTBase(BaseEstimator):
 
     def _setup_toolbox(self):
         creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
-        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti)
+        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti, statistics=dict)
 
         self._toolbox = base.Toolbox()
         self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
@@ -1001,6 +1001,13 @@ class TPOTBase(BaseEstimator):
             if total_mins_elapsed >= self.max_time_mins:
                 raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
 
+    def _final_stats(self, operator_count, cv_score, individual_stats):
+        """Combine the stats with operator count and cv score and preprare to be written to _evaluated_individuals"""
+        stats = deepcopy(individual_stats) # Deepcopy, since the string reference to predecessor should be cloned
+        stats['operator_count'] = operator_count
+        stats['internal_cv_score'] = cv_score
+        return stats
+
 
     def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
@@ -1027,7 +1034,7 @@ class TPOTBase(BaseEstimator):
 
         """
 
-        operator_counts, eval_individuals_str, sklearn_pipeline_list = self._preprocess_individuals(individuals)
+        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals)
 
         # Make the partial function that will be called below
         partial_wrapped_cross_val_score = partial(
@@ -1059,9 +1066,14 @@ class TPOTBase(BaseEstimator):
                 for val in tmp_result_scores:
                     result_score_list = self._update_val(val, result_score_list)
 
-        self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts)
+        self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
 
-        return [self.evaluated_individuals_[str(individual)] for individual in individuals]
+        def get_optimization_values(individual):
+            """Look up the operator count and cross validation score to use in the optimization"""
+            return (self.evaluated_individuals_[str(individual)]['operator_count'],
+                    self.evaluated_individuals_[str(individual)]['internal_cv_score'])
+
+        return [get_optimization_values(individual) for individual in individuals]
 
 
     def _preprocess_individuals(self, individuals):
@@ -1093,6 +1105,7 @@ class TPOTBase(BaseEstimator):
 
         # a dictionary for storing operator counts
         operator_counts = {}
+        stats_dicts = {}
         # 2 lists of DEAP individuals' string, their sklearn pipelines for parallel computing
         eval_individuals_str = []
         sklearn_pipeline_list = []
@@ -1103,7 +1116,7 @@ class TPOTBase(BaseEstimator):
             individual_str = str(individual)
             sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
             if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
-                self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
+                self.evaluated_individuals_[individual_str] = self._final_stats(5000., -float('inf'), individual.statistics)
                 self._update_pbar(pbar_msg='Invalid pipeline encountered. Skipping its evaluation.')
             # Check if the individual was evaluated before
             elif individual_str in self.evaluated_individuals_:
@@ -1125,17 +1138,21 @@ class TPOTBase(BaseEstimator):
                     # Count the number of pipeline operators as a measure of pipeline complexity
                     operator_count = self._operator_count(individual)
                     operator_counts[individual_str] = max(1, operator_count)
+
+                    stats_dicts[individual_str] = individual.statistics
                 except Exception:
-                    self.evaluated_individuals_[individual_str] = (5000., -float('inf'))
+                    self.evaluated_individuals_[individual_str] = self._final_stats(5000.,
+                                                                                    -float('inf'),
+                                                                                    individual.statistics)
                     self._update_pbar()
                     continue
                 eval_individuals_str.append(individual_str)
                 sklearn_pipeline_list.append(sklearn_pipeline)
 
-        return operator_counts, eval_individuals_str, sklearn_pipeline_list
+        return operator_counts, eval_individuals_str, sklearn_pipeline_list , stats_dicts
 
 
-    def _update_evaluated_individuals_(self, result_score_list, eval_individuals_str, operator_counts):
+    def _update_evaluated_individuals_(self, result_score_list, eval_individuals_str, operator_counts, stats_dicts):
         """Update self.evaluated_individuals_ and error message during pipeline evaluation.
 
         Parameters
@@ -1153,7 +1170,9 @@ class TPOTBase(BaseEstimator):
         """
         for result_score, individual_str in zip(result_score_list, eval_individuals_str):
             if type(result_score) in [float, np.float64, np.float32]:
-                self.evaluated_individuals_[individual_str] = (operator_counts[individual_str], result_score)
+                self.evaluated_individuals_[individual_str] = self._final_stats(operator_counts[individual_str],
+                                                                                result_score,
+                                                                                stats_dicts[individual_str])
             else:
                 raise ValueError('Scoring function does not return a float.')
 
@@ -1184,8 +1203,16 @@ class TPOTBase(BaseEstimator):
         for _ in range(self._max_mut_loops):
             ind1_copy, ind2_copy = self._toolbox.clone(ind1),self._toolbox.clone(ind2)
             offspring, offspring2 = cxOnePoint(ind1_copy, ind2_copy)
+
             if str(offspring) not in self.evaluated_individuals_:
                 # We only use the first offspring, so we do not care to check uniqueness of the second.
+
+                # update statistics
+                offspring.statistics['predecessor'] = (str(ind1), str(ind2))
+                offspring.statistics['mutation_count'] = ind1.statistics['mutation_count'] + ind2.statistics[
+                    'mutation_count']
+                offspring.statistics['crossover_count'] = ind1.statistics['crossover_count'] + ind2.statistics[
+                    'crossover_count'] + 1
                 break
 
         return offspring, offspring2
@@ -1230,6 +1257,10 @@ class TPOTBase(BaseEstimator):
             ind = self._toolbox.clone(individual)
             offspring, = mutator(ind)
             if str(offspring) not in self.evaluated_individuals_:
+                # Update statistics
+                offspring.statistics['crossover_count'] = individual.statistics['crossover_count']
+                offspring.statistics['mutation_count'] = individual.statistics['mutation_count'] + 1
+                offspring.statistics['predecessor'] = (str(individual),)
                 break
             else:
                 unsuccesful_mutations += 1

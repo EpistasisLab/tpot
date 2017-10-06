@@ -23,7 +23,7 @@ from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
-from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr
+from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
 from tpot.metrics import balanced_accuracy
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 
@@ -956,8 +956,8 @@ def test_evaluated_individuals_():
             mean_cv_scores = np.mean(cv_scores)
         except Exception as e:
             mean_cv_scores = -float('inf')
-        assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string][1], mean_cv_scores)
-        assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string][0], operator_count)
+        assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string]['internal_cv_score'], mean_cv_scores)
+        assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string]['operator_count'], operator_count)
 
 
 def test_stop_by_max_time_mins():
@@ -972,7 +972,7 @@ def test_stop_by_max_time_mins():
 def test_update_evaluated_individuals_():
     """Assert that _update_evaluated_individuals_ raises ValueError when scoring function does not return a float."""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
-    assert_raises(ValueError, tpot_obj._update_evaluated_individuals_, ['Non-Float-Score'], ['Test_Pipeline'], [1])
+    assert_raises(ValueError, tpot_obj._update_evaluated_individuals_, ['Non-Float-Score'], ['Test_Pipeline'], [1], [dict])
 
 
 def test_evaluate_individuals():
@@ -1108,7 +1108,7 @@ def test_preprocess_individuals():
     with closing(StringIO()) as our_file:
         tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
-        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \
                                 tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
         assert_in("Pipeline encountered that has previously been evaluated", our_file.read())
@@ -1153,7 +1153,7 @@ def test_preprocess_individuals_2():
     with closing(StringIO()) as our_file:
         tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=3, disable=False, file=our_file)
-        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \
                                 tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
 
@@ -1200,7 +1200,7 @@ def test_preprocess_individuals_3():
         tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
         tpot_obj._pbar.n = 2
-        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \
                                 tpot_obj._preprocess_individuals(individuals)
         assert tpot_obj._pbar.total == 6
 
@@ -1391,8 +1391,15 @@ def test_PolynomialFeatures_exception():
     pipelines = []
     pipelines.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
     pipelines.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
+
+    for pipeline in pipelines:
+        initialize_stats_dict(pipeline)
+
     fitness_scores = tpot_obj._evaluate_individuals(pipelines, training_features, training_target)
     known_scores = [(2, 0.98068077235290885), (5000.0, -float('inf'))]
+
+
+
     assert np.allclose(known_scores, fitness_scores)
 
 
@@ -1482,6 +1489,11 @@ def test_mate_operator():
         ')',
         tpot_obj._pset
     )
+
+    # Initialize stats
+    initialize_stats_dict(ind1)
+    initialize_stats_dict(ind2)
+
 
     # set as evaluated pipelines in tpot_obj.evaluated_individuals_
     tpot_obj.evaluated_individuals_[str(ind1)] = (2, 0.99)
@@ -1578,7 +1590,9 @@ def test_varOr():
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pop = tpot_obj._toolbox.population(n=5)
     for ind in pop:
+        initialize_stats_dict(ind)
         ind.fitness.values = (2, 1.0)
+
 
     offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=1.0, mutpb=0.0)
     invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -1598,7 +1612,9 @@ def test_varOr_2():
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pop = tpot_obj._toolbox.population(n=5)
     for ind in pop:
+        initialize_stats_dict(ind)
         ind.fitness.values = (2, 1.0)
+
 
     offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=0.0, mutpb=1.0)
     invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
