@@ -538,7 +538,6 @@ memory = Memory(cachedir=cachedir, verbose=0)
 tpot = TPOTClassifier(memory=memory)
 ```
 
-
 **Note: TPOT does NOT clean up memory caches if users set a custom directory path or Memory object. Please clean up the memory caches when these caches are not necessary.**
 
 # Crash/freeze issue with n_jobs > 1 under OSX or Linux
