@@ -527,10 +527,10 @@ from tempfile import mkdtemp
 from sklearn.externals.joblib import Memory
 
 # Method 1, auto mode: TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.
-tpot = TPOTClassifier(memory="auto")
+tpot = TPOTClassifier(memory='auto')
 
 # Method 2, with a custom directory for memory caching
-tpot = TPOTClassifier(memory="/to/your/path")
+tpot = TPOTClassifier(memory='/to/your/path')
 
 # Method 3, with a Memory object
 cachedir = mkdtemp() # Create a temporary folder
