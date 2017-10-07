@@ -1210,7 +1210,10 @@ class TPOTBase(BaseEstimator):
             if str(offspring) not in self.evaluated_individuals_:
                 # We only use the first offspring, so we do not care to check uniqueness of the second.
 
-                # update statistics
+                # update statistics:
+                # mutation_count is set equal to the sum of mutation_count's of the predecessors
+                # crossover_count is set equal to the sum of the crossover_counts of the predecessor +1, corresponding to the current crossover operations
+                # predecessor is taken as tuple string representation of two predecessor individuals
                 offspring.statistics['predecessor'] = (str(ind1), str(ind2))
                 offspring.statistics['mutation_count'] = ind1.statistics['mutation_count'] + ind2.statistics['mutation_count']
                 offspring.statistics['crossover_count'] = ind1.statistics['crossover_count'] + ind2.statistics['crossover_count'] + 1
@@ -1258,6 +1261,9 @@ class TPOTBase(BaseEstimator):
             offspring, = mutator(ind)
             if str(offspring) not in self.evaluated_individuals_:
                 # Update statistics
+                # crossover_count is kept the same as for the predecessor
+                # mutation count is increased by 1
+                # predecessor is set to the string representation of the individual before mutation
                 offspring.statistics['crossover_count'] = individual.statistics['crossover_count']
                 offspring.statistics['mutation_count'] = individual.statistics['mutation_count'] + 1
                 offspring.statistics['predecessor'] = (str(individual),)
