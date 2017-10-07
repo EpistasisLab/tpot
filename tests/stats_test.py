@@ -52,8 +52,8 @@ def test_mate_operator_stats_update():
     ind2.statistics["mutation_count"] = random.randint(0, 10)
 
     # set as evaluated pipelines in tpot_obj.evaluated_individuals_
-    tpot_obj.evaluated_individuals_[str(ind1)] = tpot_obj._final_stats(2, 0.99, ind1.statistics)
-    tpot_obj.evaluated_individuals_[str(ind2)] = tpot_obj._final_stats(2, 0.99, ind2.statistics)
+    tpot_obj.evaluated_individuals_[str(ind1)] = tpot_obj._combine_individual_stats(2, 0.99, ind1.statistics)
+    tpot_obj.evaluated_individuals_[str(ind2)] = tpot_obj._combine_individual_stats(2, 0.99, ind2.statistics)
 
     # Doing 10 tests
     for _ in range(10):
@@ -90,7 +90,7 @@ def test_mut_operator_stats_update():
     ind.statistics["mutation_count"] = random.randint(0, 10)
 
     # set as evaluated pipelines in tpot_obj.evaluated_individuals_
-    tpot_obj.evaluated_individuals_[str(ind)] = tpot_obj._final_stats(2, 0.99, ind.statistics)
+    tpot_obj.evaluated_individuals_[str(ind)] = tpot_obj._combine_individual_stats(2, 0.99, ind.statistics)
 
     for _ in range(10):
         offspring, = tpot_obj._random_mutation_operator(ind)
