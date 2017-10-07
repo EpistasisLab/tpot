@@ -744,7 +744,9 @@ def test_memory_3():
     assert tpot_obj._cachedir == cachedir
     assert os.path.isdir(tpot_obj._cachedir)
     assert isinstance(tpot_obj._memory, Memory)
+    # clean up
     rmtree(cachedir)
+    tpot_obj._memory = None
 
 
 def test_memory_4():
@@ -780,6 +782,9 @@ def test_memory_5():
     rmtree(cachedir)
     assert tpot_obj.memory == memory
     assert tpot_obj._memory == memory
+    # clean up
+    tpot_obj._memory = None
+    memory = None
 
 
 def test_memory_6():
