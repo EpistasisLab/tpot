@@ -152,8 +152,19 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 def initialize_stats_dict(individual):
     '''
     Initializes the stats dict for individual
-    :param individual:
-    :return:
+    The statistics initialized are:
+        'generation': generation in which the individual was evaluated. Initialized as: 0
+        'mutation_count': number of mutation operations applied to the individual and its predecessor cumulatively. Initialized as: 0
+        'crossover_count': number of crossover operations applied to the individual and its predecessor cumulatively. Initialized as: 0
+        'predecessor': string representation of the individual. Initialized as: ('ROOT',)
+
+    Parameters
+    ----------
+    individual: deap individual
+
+    Returns
+    -------
+    object
     '''
     individual.statistics['generation'] = 0
     individual.statistics['mutation_count'] = 0
@@ -210,7 +221,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 
-    # Initialize statistics dict
+    # Initialize statistics dict for the individuals in the population, to keep track of mutation/crossover operations and predecessor relations
     for ind in population:
         initialize_stats_dict(ind)
 
