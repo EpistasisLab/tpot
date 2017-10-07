@@ -26,6 +26,7 @@ from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr
 from tpot.metrics import balanced_accuracy
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
+from tpot.decorators import pretest_X, pretest_y
 
 from tpot.config.classifier import classifier_config_dict
 from tpot.config.classifier_light import classifier_config_dict_light
@@ -1509,8 +1510,8 @@ def test_PolynomialFeatures_exception():
     pipelines = []
     pipelines.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
     pipelines.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
-    fitness_scores = tpot_obj._evaluate_individuals(pipelines, training_features, training_target)
-    known_scores = [(2, 0.98068077235290885), (5000.0, -float('inf'))]
+    fitness_scores = tpot_obj._evaluate_individuals(pipelines, pretest_X, pretest_y)
+    known_scores = [(2, 0.94000000000000006), (5000.0, -float('inf'))]
     assert np.allclose(known_scores, fitness_scores)
 
 
