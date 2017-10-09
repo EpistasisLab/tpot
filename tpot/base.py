@@ -302,20 +302,14 @@ class TPOTBase(BaseEstimator):
 
         # If the user passed a custom scoring function, store it in the sklearn
         # SCORERS dictionary
-        if scoring:
-            if hasattr(scoring, '__call__'):
-                scoring_name = scoring.__name__
-                greater_is_better = 'loss' not in scoring_name and 'error' not in scoring_name
-                SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
-                self.scoring_function = scoring_name
-            else:
-                if scoring not in SCORERS:
-                    raise ValueError(
-                        'The scoring function {} is not available. Please '
-                        'choose a valid scoring function from the TPOT '
-                        'documentation.'.format(scoring)
-                    )
-                self.scoring_function = scoring
+        if isinstance(scoring, str):
+            if scoring not in SCORERS:
+                raise ValueError(
+                    'The scoring function {} is not available. Please '
+                    'choose a valid scoring function from the TPOT '
+                    'documentation.'.format(scoring)
+                )
+        self.scoring_function = scoring
 
         self.cv = cv
         self.subsample = subsample

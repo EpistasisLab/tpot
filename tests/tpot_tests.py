@@ -136,7 +136,7 @@ def test_init_default_scoring():
 def test_init_default_scoring_2():
     """Assert that TPOT intitializes with the correct customized scoring function."""
     tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
-    assert tpot_obj.scoring_function == 'balanced_accuracy'
+    assert tpot_obj.scoring_function == balanced_accuracy
 
 
 def test_invalid_score_warning():
