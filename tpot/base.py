@@ -194,6 +194,9 @@ class TPOTBase(BaseEstimator):
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
         memory: a Memory object or string, optional (default: None)
+            If supplied, pipeline will cache each transformer after calling fit. This feature
+            is used to avoid computing the fit transformers within a pipeline if the parameters
+            and input data are identical with another fitted pipeline during optimization process.
             String 'auto':
                 TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.
             String path of a caching directory

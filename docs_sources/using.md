@@ -283,10 +283,10 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 <td>-memory</td>
 <td>MEMORY</td>
 <td>String or file path</td>
-<td>Memory caching mode in TPOT:
+<td>If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. Memory caching mode in TPOT:
 <br /><br />
 <ul>
-<li>Path for a caching directory: TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown.</li>
+<li>Path for a caching directory: TPOT uses memory caching  with the provided directory and TPOT does NOT clean the caching directory up upon shutdown.</li>
 <li>string 'auto': TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.</li>
 </ul>
 </td>
@@ -517,7 +517,7 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
 # Pipeline caching in TPOT
-With `memory` parameter, TPOT allows users to specify a custom directory path or [`sklearn.external.joblib.Memory`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/externals/joblib/memory.py#L847) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run) even if the speedup for regular TPOT is fairly minor with this option.
+With `memory` parameter, pipeline can cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. TPOT allows users to specify a custom directory path or [`sklearn.external.joblib.Memory`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/externals/joblib/memory.py#L847) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run) even if the speedup for regular TPOT is fairly minor with this option.
 
 There are three methods for enabling memory caching in TPOT:
 
@@ -525,7 +525,7 @@ There are three methods for enabling memory caching in TPOT:
 from tpot import TPOTClassifier
 from tempfile import mkdtemp
 from sklearn.externals.joblib import Memory
-
+from shutil import rmtree
 # Method 1, auto mode: TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.
 tpot = TPOTClassifier(memory='auto')
 
@@ -536,9 +536,12 @@ tpot = TPOTClassifier(memory='/to/your/path')
 cachedir = mkdtemp() # Create a temporary folder
 memory = Memory(cachedir=cachedir, verbose=0)
 tpot = TPOTClassifier(memory=memory)
+
+# Clear the cache directory when you don't need it anymore
+rmtree(cachedir)
 ```
 
-**Note: TPOT does NOT clean up memory caches if users set a custom directory path or Memory object. Please clean up the memory caches when these caches are not necessary.**
+**Note: TPOT does NOT clean up memory caches if users set a custom directory path or Memory object. We recommend that you clean up the memory caches when you don't need it anymore.**
 
 # Crash/freeze issue with n_jobs > 1 under OSX or Linux
 

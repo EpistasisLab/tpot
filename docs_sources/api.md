@@ -150,7 +150,7 @@ Setting <em>warm_start</em>=True can be useful for running TPOT for a short time
 
 <strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
 <blockquote>
-If supplied, TPOT uses memory caching while optimizing.
+If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in [scikit-learn documentation](http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation)
 <br /><br />
 Possible inputs are:
 <ul>
@@ -619,7 +619,7 @@ Setting <em>warm_start</em>=True can be useful for running TPOT for a short time
 
 <strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
 <blockquote>
-If supplied, TPOT uses memory caching while optimizing.
+If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in [scikit-learn documentation](http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation)
 <br /><br />
 Possible inputs are:
 <ul>

@@ -359,7 +359,10 @@ def _get_arg_parser():
         type=str,
         help=(
             'Path of a directory for memory caching or \"auto\" for using temporary '
-            'caching directory during optimization process.'
+            'caching directory during optimization process. If supplied, pipeline will '
+            'cache each transformer after calling fit. This feature is used to avoid '
+            'computing the fit transformers within a pipeline if the parameters and '
+            'input data are identical with another fitted pipeline during optimization process.''
         )
     )
 
