@@ -517,7 +517,8 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
 # Pipeline caching in TPOT
-With `memory` parameter, pipeline can cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. TPOT allows users to specify a custom directory path or [`sklearn.external.joblib.Memory`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/externals/joblib/memory.py#L847) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run) even if the speedup for regular TPOT is fairly minor with this option.
+
+With the `memory` parameter, pipelines can cache the results of each transformer after fitting them. This feature is used to avoid repeated computation by transformers within a pipeline if the parameters and input data are identical to another fitted pipeline during optimization process. TPOT allows users to specify a custom directory path or [`sklearn.external.joblib.Memory`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/externals/joblib/memory.py#L847) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run).
 
 There are three methods for enabling memory caching in TPOT:
 
@@ -526,7 +527,8 @@ from tpot import TPOTClassifier
 from tempfile import mkdtemp
 from sklearn.externals.joblib import Memory
 from shutil import rmtree
-# Method 1, auto mode: TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.
+
+# Method 1, auto mode: TPOT uses memory caching with a temporary directory and cleans it up upon shutdown
 tpot = TPOTClassifier(memory='auto')
 
 # Method 2, with a custom directory for memory caching
