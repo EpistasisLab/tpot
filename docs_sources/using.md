@@ -286,7 +286,7 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 <td>If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. Memory caching mode in TPOT:
 <br /><br />
 <ul>
-<li>Path for a caching directory: TPOT uses memory caching  with the provided directory and TPOT does NOT clean the caching directory up upon shutdown.</li>
+<li>Path for a caching directory: TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown.</li>
 <li>string 'auto': TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.</li>
 </ul>
 </td>
