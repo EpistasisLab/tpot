@@ -377,8 +377,8 @@ class TPOTBase(BaseEstimator):
                 else:
                     raise ValueError(
                                     'Could not find "tpot_config" in configuration file {}. '
-                                    'When using a custom config file for customizing operators '
-                                    'dictionary, the file must have a python dictionary with '
+                                    'When using a custom config file for customizing the TPOT operators, '
+                                    'the file must have a Python dictionary with '
                                     'the standardized name of "tpot_config"'.format(config_dict)
                                     )
         else:
@@ -651,31 +651,28 @@ class TPOTBase(BaseEstimator):
                     self._cachedir = self.memory
                 else:
                     raise ValueError(
-                        'Could not find directory for memory caching: '
-                        '{}'.format(self.memory)
+                        'Could not find directory for memory caching: {}'.format(self.memory)
                     )
                 self._memory = Memory(cachedir=self._cachedir, verbose=0)
             elif isinstance(self.memory, Memory):
                 self._memory = self.memory
             else:
                 raise ValueError(
-                    'Could not recognize Memory object for memory caching. '
-                    'Please use an instance of sklearn.external.joblib.Memory'
-                    ' or path of caching directory or \"auto\".'
+                    'Could not recognize Memory object for pipeline caching. '
+                    'Please provide an instance of sklearn.external.joblib.Memory,'
+                    ' a path to a directory on your system, or \"auto\".'
                 )
 
 
     def _cleanup_memory(self):
-        """Clean up caching directory at the end of optimization process only when memory="auto"
-        """
+        """Clean up caching directory at the end of optimization process only when memory='auto'"""
         if self.memory == "auto":
             rmtree(self._cachedir)
             self._memory = None
 
 
     def _update_top_pipeline(self):
-        """Helper function to update the _optimized_pipeline field.
-        """
+        """Helper function to update the _optimized_pipeline field."""
         # Store the pipeline with the highest internal testing score
         if self._pareto_front:
             self._optimized_pipeline_score = -float('inf')
