@@ -1514,8 +1514,8 @@ def test_PolynomialFeatures_exception():
     for pipeline in pipelines:
         initialize_stats_dict(pipeline)
 
-    fitness_scores = tpot_obj._evaluate_individuals(pipelines, training_features, training_target)
-    known_scores = [(2, 0.98068077235290885), (5000.0, -float('inf'))]
+    fitness_scores = tpot_obj._evaluate_individuals(pipelines, pretest_X, pretest_y)
+    known_scores = [(2, 0.94000000000000006), (5000.0, -float('inf'))]
     assert np.allclose(known_scores, fitness_scores)
 
 
