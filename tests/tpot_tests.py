@@ -24,7 +24,7 @@ from tpot.base import TPOTBase
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr
-from tpot.metrics import balanced_accuracy
+from tpot.metrics import balanced_accuracy, SCORERS
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.decorators import pretest_X, pretest_y
 
@@ -40,6 +40,7 @@ import numpy as np
 from scipy import sparse
 import inspect
 import random
+import warnings
 from multiprocessing import cpu_count
 import os
 from re import search
@@ -134,9 +135,21 @@ def test_init_default_scoring():
 
 
 def test_init_default_scoring_2():
-    """Assert that TPOT intitializes with the correct customized scoring function."""
-    tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
-    assert tpot_obj.scoring_function == balanced_accuracy
+    """Assert that TPOT intitializes with a valid customized metric function."""
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
+    assert len(w) == 1
+    assert issubclass(w[-1].category, DeprecationWarning)
+    assert "This scoring type was deprecated" in str(w[-1].message)
+    assert tpot_obj.scoring_function == 'balanced_accuracy'
+
+
+def test_init_default_scoring_3():
+    """Assert that TPOT intitializes with a valid scorer."""
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=SCORERS['balanced_accuracy'])
+    assert len(w) == 0
+    assert tpot_obj.scoring_function == SCORERS['balanced_accuracy']
 
 
 def test_invalid_score_warning():
