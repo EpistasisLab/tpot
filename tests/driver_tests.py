@@ -226,11 +226,13 @@ class ParserTest(TestCase):
         self.assertEqual(args.INPUT_FILE, 'tests/tests.csv')
         self.assertEqual(args.INPUT_SEPARATOR, '\t')
         self.assertEqual(args.MAX_EVAL_MINS, 5)
+        self.assertEqual(args.MAX_TIME_MINS, None)
+        self.assertEqual(args.MEMORY, None)
         self.assertEqual(args.MUTATION_RATE, 0.9)
         self.assertEqual(args.NUM_CV_FOLDS, 5)
         self.assertEqual(args.NUM_JOBS, 1)
         self.assertEqual(args.OFFSPRING_SIZE, None)
-        self.assertEqual(args.OUTPUT_FILE, '')
+        self.assertEqual(args.OUTPUT_FILE, None)
         self.assertEqual(args.POPULATION_SIZE, 100)
         self.assertEqual(args.RANDOM_STATE, None)
         self.assertEqual(args.SUBSAMPLE, 1.0)
@@ -261,11 +263,12 @@ INPUT_FILE          =     tests/tests.csv
 INPUT_SEPARATOR     =     ,
 MAX_EVAL_MINS       =     5
 MAX_TIME_MINS       =     None
+MEMORY              =     None
 MUTATION_RATE       =     0.9
 NUM_CV_FOLDS        =     5
 NUM_JOBS            =     1
 OFFSPRING_SIZE      =     100
-OUTPUT_FILE         =     
+OUTPUT_FILE         =     None
 POPULATION_SIZE     =     100
 RANDOM_STATE        =     None
 SCORING_FN          =     accuracy
@@ -302,11 +305,12 @@ INPUT_FILE          =     tests/tests.csv
 INPUT_SEPARATOR     =     ,
 MAX_EVAL_MINS       =     5
 MAX_TIME_MINS       =     None
+MEMORY              =     None
 MUTATION_RATE       =     0.9
 NUM_CV_FOLDS        =     5
 NUM_JOBS            =     1
 OFFSPRING_SIZE      =     100
-OUTPUT_FILE         =     
+OUTPUT_FILE         =     None
 POPULATION_SIZE     =     100
 RANDOM_STATE        =     None
 SCORING_FN          =     neg_mean_squared_error

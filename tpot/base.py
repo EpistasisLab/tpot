@@ -29,6 +29,8 @@ from datetime import datetime
 from multiprocessing import cpu_count
 import os
 import re
+from tempfile import mkdtemp
+from shutil import rmtree
 
 import numpy as np
 from scipy import sparse
@@ -39,7 +41,7 @@ from copy import copy
 
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
-from sklearn.externals.joblib import Parallel, delayed
+from sklearn.externals.joblib import Parallel, delayed, Memory
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
 from sklearn.model_selection import train_test_split
@@ -91,7 +93,8 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None,
-                 warm_start=False, periodic_checkpoint_folder=None, early_stop=None,
+                 warm_start=False, memory=None,
+                 periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False):
         """Set up the genetic programming algorithm for pipeline optimization.
 
@@ -190,6 +193,20 @@ class TPOTBase(BaseEstimator):
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
+        memory: a Memory object or string, optional (default: None)
+            If supplied, pipeline will cache each transformer after calling fit. This feature
+            is used to avoid computing the fit transformers within a pipeline if the parameters
+            and input data are identical with another fitted pipeline during optimization process.
+            String 'auto':
+                TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.
+            String path of a caching directory
+                TPOT uses memory caching with the provided directory and TPOT does NOT clean
+                the caching directory up upon shutdown.
+            Memory object:
+                TPOT uses the instance of sklearn.external.joblib.Memory for memory caching,
+                and TPOT does NOT clean the caching directory up upon shutdown.
+            None:
+                TPOT does not use memory caching.
         periodic_checkpoint_folder: path string, optional (default: None)
             If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.
             Currently once per generation but not more often than once per 30 seconds.
@@ -238,6 +255,8 @@ class TPOTBase(BaseEstimator):
         self.early_stop = early_stop
         self._last_optimized_pareto_front = None
         self._last_optimized_pareto_front_n_gens = 0
+        self.memory = memory
+        self._memory = None # initial Memory setting for sklearn pipeline
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -372,8 +391,8 @@ class TPOTBase(BaseEstimator):
                 else:
                     raise ValueError(
                                     'Could not find "tpot_config" in configuration file {}. '
-                                    'When using a custom config file for customizing operators '
-                                    'dictionary, the file must have a python dictionary with '
+                                    'When using a custom config file for customizing the TPOT operators, '
+                                    'the file must have a Python dictionary with '
                                     'the standardized name of "tpot_config"'.format(config_dict)
                                     )
         else:
@@ -585,6 +604,7 @@ class TPOTBase(BaseEstimator):
 
         try:
             with warnings.catch_warnings():
+                self._setup_memory()
                 warnings.simplefilter('ignore')
                 pop, _ = eaMuPlusLambda(
                     population=pop,
@@ -622,6 +642,8 @@ class TPOTBase(BaseEstimator):
 
                     self._update_top_pipeline()
                     self._summary_of_best_pipeline(features, target)
+                    # Delete the temporary cache before exiting
+                    self._cleanup_memory()
                     break
 
                 except (KeyboardInterrupt, SystemExit, Exception) as e:
@@ -631,9 +653,40 @@ class TPOTBase(BaseEstimator):
             return self
 
 
-    def _update_top_pipeline(self):
-        """Helper function to update the _optimized_pipeline field.
+    def _setup_memory(self):
+        """Setup Memory object for memory caching.
         """
+        if self.memory:
+            if isinstance(self.memory, str):
+                if self.memory == "auto":
+                    # Create a temporary folder to store the transformers of the pipeline
+                    self._cachedir = mkdtemp()
+                elif os.path.isdir(self.memory):
+                    self._cachedir = self.memory
+                else:
+                    raise ValueError(
+                        'Could not find directory for memory caching: {}'.format(self.memory)
+                    )
+                self._memory = Memory(cachedir=self._cachedir, verbose=0)
+            elif isinstance(self.memory, Memory):
+                self._memory = self.memory
+            else:
+                raise ValueError(
+                    'Could not recognize Memory object for pipeline caching. '
+                    'Please provide an instance of sklearn.external.joblib.Memory,'
+                    ' a path to a directory on your system, or \"auto\".'
+                )
+
+
+    def _cleanup_memory(self):
+        """Clean up caching directory at the end of optimization process only when memory='auto'"""
+        if self.memory == "auto":
+            rmtree(self._cachedir)
+            self._memory = None
+
+
+    def _update_top_pipeline(self):
+        """Helper function to update the _optimized_pipeline field."""
         # Store the pipeline with the highest internal testing score
         if self._pareto_front:
             self._optimized_pipeline_score = -float('inf')
@@ -975,8 +1028,10 @@ class TPOTBase(BaseEstimator):
         -------
         sklearn_pipeline: sklearn.pipeline.Pipeline
         """
-        sklearn_pipeline = generate_pipeline_code(expr_to_tree(expr, self._pset), self.operators)
-        return eval(sklearn_pipeline, self.operators_context)
+        sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(expr, self._pset), self.operators)
+        sklearn_pipeline = eval(sklearn_pipeline_str, self.operators_context)
+        sklearn_pipeline.memory = self._memory
+        return sklearn_pipeline
 
 
     def _set_param_recursive(self, pipeline_steps, parameter, value):

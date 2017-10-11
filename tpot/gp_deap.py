@@ -62,13 +62,13 @@ def pick_two_individuals_eligible_for_crossover(population):
                                     pop_as_str[i] != pop_as_str[i+1+j]]
 
     # Pairs are eligible in both orders, this ensures that both orders are considered
-    eligible_pairs += [(j, i) for (i,j) in eligible_pairs]
+    eligible_pairs += [(j, i) for (i, j) in eligible_pairs]
 
     if not eligible_pairs:
         # If there are no eligible pairs, the caller should decide what to do
         return None, None
 
-    pair = np.random.randint(0,len(eligible_pairs))
+    pair = np.random.randint(0, len(eligible_pairs))
     idx1, idx2 = eligible_pairs[pair]
 
     return population[idx1], population[idx2]

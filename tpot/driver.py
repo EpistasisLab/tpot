@@ -138,7 +138,7 @@ def _get_arg_parser():
         '-o',
         action='store',
         dest='OUTPUT_FILE',
-        default='',
+        default=None,
         type=str,
         help='File to export the code for the final optimized pipeline.'
     )
@@ -351,6 +351,21 @@ def _get_arg_parser():
     )
 
 
+    parser.add_argument(
+        '-memory',
+        action='store',
+        dest='MEMORY',
+        default=None,
+        type=str,
+        help=(
+            'Path of a directory for pipeline caching or \"auto\" for using a temporary '
+            'caching directory during the optimization process. If supplied, pipelines will '
+            'cache each transformer after fitting them. This feature is used to avoid '
+            'repeated computation by transformers within a pipeline if the parameters and '
+            'input data are identical with another fitted pipeline during optimization process.'
+        )
+    )
+
 
     parser.add_argument(
         '-cf',
@@ -503,6 +518,7 @@ def tpot_driver(args):
         max_eval_time_mins=args.MAX_EVAL_MINS,
         random_state=args.RANDOM_STATE,
         config_dict=args.CONFIG_FILE,
+        memory=args.MEMORY,
         periodic_checkpoint_folder=args.CHECKPOINT_FOLDER,
         early_stop=args.EARLY_STOP,
         verbosity=args.VERBOSITY,
@@ -528,7 +544,7 @@ def tpot_driver(args):
                 )
             )
 
-    if args.OUTPUT_FILE != '':
+    if args.OUTPUT_FILE:
         tpot_obj.export(args.OUTPUT_FILE)
 
 def main():
