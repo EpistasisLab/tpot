@@ -309,6 +309,19 @@ class TPOTBase(BaseEstimator):
                     'choose a valid scoring function from the TPOT '
                     'documentation.'.format(scoring)
                 )
+        """elif callable(scoring):
+            # Heuristic to ensure user has not passed a metric
+            module = getattr(scoring, '__module__', None)
+            if hasattr(module, 'startswith') and \
+               module.startswith('sklearn.metrics.') and \
+               not module.startswith('sklearn.metrics.scorer') and \
+               not module.startswith('sklearn.metrics.tests.'):
+                raise ValueError('scoring value %r looks like it is a metric '
+                                 'function rather than a scorer. A scorer should '
+                                 'require an estimator as its first parameter. '
+                                 'Please use `make_scorer` to convert a metric '
+                                 'to a scorer.' % scoring)"""
+
         self.scoring_function = scoring
 
         self.cv = cv
