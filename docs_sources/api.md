@@ -75,9 +75,12 @@ Function used to evaluate the quality of a given pipeline for the classification
 'accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'neg_log_loss','precision',
 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc'
 <br /><br/>
-If you would like to use a custom scoring function, you can pass a callable function to this parameter with the signature <em>scorer(y_true, y_pred)</em>. See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
-<br /><br />
-TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized.
+If you would like to use a custom scorer, you can pass the callable object/function with signature <em>scorer(estimator, X, y)</em>.
+<br /><br/>
+If you would like to use a metric function, you can pass the callable function to this parameter with the signature <em>score_func(y_true, y_pred)</em>. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
+<br /><br/>
+See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
+
 </blockquote>
 
 <strong>cv</strong>: int, cross-validation generator, or an iterable, optional (default=5)
@@ -543,9 +546,11 @@ Function used to evaluate the quality of a given pipeline for the regression pro
 <br /><br/>
 Note that we recommend using the <em>neg</em> version of mean squared error and related metrics so TPOT will minimize (instead of maximize) the metric.
 <br /><br/>
-If you would like to use a custom scoring function, you can pass a callable function to this parameter with the signature <em>scorer(y_true, y_pred)</em>. See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
-<br /><br />
-TPOT assumes that any custom scoring function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized.
+If you would like to use a custom scorer, you can pass the callable object/function with signature <em>scorer(estimator, X, y)</em>.
+<br /><br/>
+If you would like to use a metric function, you can pass the callable function to this parameter with the signature <em>score_func(y_true, y_pred)</em>. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
+<br /><br/>
+See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
 </blockquote>
 
 <strong>cv</strong>: int, cross-validation generator, or an iterable, optional (default=5)

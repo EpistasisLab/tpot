@@ -45,7 +45,7 @@ from sklearn.externals.joblib import Parallel, delayed, Memory
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
 from sklearn.model_selection import train_test_split
-from sklearn.metrics.scorer import make_scorer
+from sklearn.metrics.scorer import make_scorer, _BaseScorer
 
 from update_checker import update_check
 
@@ -322,22 +322,7 @@ class TPOTBase(BaseEstimator):
         self.evaluated_individuals_ = {}
         self.random_state = random_state
 
-        # If the user passed a custom scoring function, store it in the sklearn
-        # SCORERS dictionary
-        if scoring:
-            if hasattr(scoring, '__call__'):
-                scoring_name = scoring.__name__
-                greater_is_better = 'loss' not in scoring_name and 'error' not in scoring_name
-                SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
-                self.scoring_function = scoring_name
-            else:
-                if scoring not in SCORERS:
-                    raise ValueError(
-                        'The scoring function {} is not available. Please '
-                        'choose a valid scoring function from the TPOT '
-                        'documentation.'.format(scoring)
-                    )
-                self.scoring_function = scoring
+        self._setup_scoring_function(scoring)
 
         self.cv = cv
         self.subsample = subsample
@@ -352,6 +337,35 @@ class TPOTBase(BaseEstimator):
 
         self._setup_pset()
         self._setup_toolbox()
+
+
+    def _setup_scoring_function(self, scoring):
+        if scoring:
+            if isinstance(scoring, str):
+                if scoring not in SCORERS:
+                    raise ValueError(
+                        'The scoring function {} is not available. Please '
+                        'choose a valid scoring function from the TPOT '
+                        'documentation.'.format(scoring)
+                    )
+            elif callable(scoring):
+                if not isinstance(scoring, _BaseScorer):
+                    # If the user passed a custom metric function, store it in the sklearn
+                    # SCORERS dictionary
+                    scoring_name = scoring.__name__
+                    greater_is_better = 'loss' not in scoring_name and 'error' not in scoring_name
+                    SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
+                    warnings.simplefilter('always', DeprecationWarning)
+                    warnings.warn('Scoring function {} looks like it is a metric function '
+                                  'rather than a scikit-learn scorer. This scoring type was deprecated '
+                                  'in version TPOT 0.9.1 and will be removed in version 0.11. '
+                                  'Please update your custom scoring function.'.format(scoring), DeprecationWarning)
+                else:
+                    scoring_name = scoring._score_func.__name__
+                    SCORERS[scoring_name] = scoring
+                scoring = scoring_name
+
+            self.scoring_function = scoring
 
     def _setup_config(self, config_dict):
         if config_dict:
@@ -383,7 +397,6 @@ class TPOTBase(BaseEstimator):
                         'dictionary, the file must have a python dictionary with '
                         'the standardized name of "tpot_config"'.format(config_dict)
                     )
-
         else:
             self.config_dict = self.default_config_dict
 

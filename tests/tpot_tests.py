@@ -24,7 +24,7 @@ from tpot.base import TPOTBase
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
-from tpot.metrics import balanced_accuracy
+from tpot.metrics import balanced_accuracy, SCORERS
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
 from tpot.decorators import pretest_X, pretest_y
 
@@ -40,6 +40,7 @@ import numpy as np
 from scipy import sparse
 import inspect
 import random
+import warnings
 from multiprocessing import cpu_count
 import os
 from re import search
@@ -51,6 +52,7 @@ from shutil import rmtree
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from sklearn.externals.joblib import Memory
+from sklearn.metrics import make_scorer
 from deap import creator
 from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
@@ -137,8 +139,20 @@ def test_init_default_scoring():
 
 
 def test_init_default_scoring_2():
-    """Assert that TPOT intitializes with the correct customized scoring function."""
-    tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
+    """Assert that TPOT intitializes with a valid customized metric function."""
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
+    assert len(w) == 1
+    assert issubclass(w[-1].category, DeprecationWarning)
+    assert "This scoring type was deprecated" in str(w[-1].message)
+    assert tpot_obj.scoring_function == 'balanced_accuracy'
+
+
+def test_init_default_scoring_3():
+    """Assert that TPOT intitializes with a valid scorer."""
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=make_scorer(balanced_accuracy))
+    assert len(w) == 0
     assert tpot_obj.scoring_function == 'balanced_accuracy'
 
 
