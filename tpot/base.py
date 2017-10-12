@@ -356,21 +356,16 @@ class TPOTBase(BaseEstimator):
                     greater_is_better = 'loss' not in scoring_name and 'error' not in scoring_name
                     SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
                     warnings.simplefilter('always', DeprecationWarning)
-                    warnings.warn('Scoring value {} looks like it is a metric function '
-                                    'rather than a scorer. This scoring type was deprecated '
-                                    'in version 0.9.1 and will be removed in version 0.11. '
-                                    'TPOT uses `make_scorer` to convert this metric function'
-                                    'to a scorer which requires an estimator as its first '
-                                    'parameter'.format(scoring), DeprecationWarning)
-
+                    warnings.warn('Scoring function {} looks like it is a metric function '
+                                  'rather than a scikit-learn scorer. This scoring type was deprecated '
+                                  'in version TPOT 0.9.1 and will be removed in version 0.11. '
+                                  'Please update your custom scoring function.'.format(scoring), DeprecationWarning)
                 else:
                     scoring_name = scoring._score_func.__name__
                     SCORERS[scoring_name] = scoring
-
                 scoring = scoring_name
 
             self.scoring_function = scoring
-
 
     def _setup_config(self, config_dict):
         if config_dict:
@@ -402,7 +397,6 @@ class TPOTBase(BaseEstimator):
                         'dictionary, the file must have a python dictionary with '
                         'the standardized name of "tpot_config"'.format(config_dict)
                     )
-
         else:
             self.config_dict = self.default_config_dict
 
