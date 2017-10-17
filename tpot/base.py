@@ -457,7 +457,8 @@ class TPOTBase(BaseEstimator):
 
         Uses genetic programming to optimize a machine learning pipeline that
         maximizes score on the provided features and target. Performs internal
-        k-fold cross-validaton to avoid overfitting on the training data.
+        k-fold cross-validaton to avoid overfitting on the provided data. The
+        best pipeline is then trained on the entire set of passed samples.
 
         Parameters
         ----------

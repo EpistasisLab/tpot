@@ -74,8 +74,8 @@ Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize 
 pipeline_optimizer.fit(X_train, y_train)
 ```
 
-The `fit` function takes in a training data set and uses k-fold cross-validation when evaluating pipelines. It then
-initializes the genetic programming algoritm to find the best pipeline based on average k-fold score.
+The `fit` function initializes the genetic programming algorithm to find the highest-scoring pipeline based on average k-fold cross-validation
+Then, the pipeline is trained on the entire set of passed samples, and the TPOT instance can be used as a fitted model.
 
 You can then proceed to evaluate the final pipeline on the testing set with the `score` function:
 
