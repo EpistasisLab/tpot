@@ -270,7 +270,7 @@ fit(features, classes, sample_weight=None, groups=None)
 <div style="padding-left:5%" width="100%">
 Run the TPOT optimization process on the given training data.
 <br /><br />
-Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and classes. Performs internal stratified k-fold cross-validaton to avoid overfitting on the provided data.
+Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and target. This pipeline optimization procedure uses internal k-fold cross-validaton to avoid overfitting on the provided data. At the end of the pipeline optimization procedure, the best pipeline is then trained on the entire set of provided samples.
 <br /><br />
 <table width="100%">
 <tr>
@@ -720,7 +720,7 @@ fit(features, target, sample_weight=None, groups=None)
 <div style="padding-left:5%" width="100%">
 Run the TPOT optimization process on the given training data.
 <br /><br />
-Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and target. Performs internal k-fold cross-validaton to avoid overfitting on the provided data.
+Uses genetic programming to optimize a machine learning pipeline that maximizes the score on the provided features and target. This pipeline optimization procedure uses internal k-fold cross-validaton to avoid overfitting on the provided data. At the end of the pipeline optimization procedure, the best pipeline is then trained on the entire set of provided samples.
 <br /><br />
 <table width="100%">
 <tr>
