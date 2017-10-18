@@ -212,8 +212,8 @@ a <code>TPOTRegressor</code> is used the same way as a <code>TPOTClassifier</cod
 <pre><code class="Python">pipeline_optimizer.fit(X_train, y_train)
 </code></pre>
 
-<p>The <code>fit</code> function takes in a training data set and uses k-fold cross-validation when evaluating pipelines. It then
-initializes the genetic programming algoritm to find the best pipeline based on average k-fold score.</p>
+<p>The <code>fit</code> function initializes the genetic programming algorithm to find the highest-scoring pipeline based on average k-fold cross-validation
+Then, the pipeline is trained on the entire set of provided samples, and the TPOT instance can be used as a fitted model.</p>
 <p>You can then proceed to evaluate the final pipeline on the testing set with the <code>score</code> function:</p>
 <pre><code class="Python">print(pipeline_optimizer.score(X_test, y_test))
 </code></pre>
