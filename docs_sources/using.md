@@ -75,7 +75,7 @@ pipeline_optimizer.fit(X_train, y_train)
 ```
 
 The `fit` function initializes the genetic programming algorithm to find the highest-scoring pipeline based on average k-fold cross-validation
-Then, the pipeline is trained on the entire set of passed samples, and the TPOT instance can be used as a fitted model.
+Then, the pipeline is trained on the entire set of provided samples, and the TPOT instance can be used as a fitted model.
 
 You can then proceed to evaluate the final pipeline on the testing set with the `score` function:
 
