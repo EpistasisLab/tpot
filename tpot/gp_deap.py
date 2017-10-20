@@ -44,7 +44,7 @@ import threading
 import redis
 import uuid
 import pickle
-import pipeline_exports as pe
+from .pipeline_exports import collect_feature_list, serialize_to_js
 import re
 import traceback
 
@@ -372,8 +372,8 @@ def mutNodeReplacement(individual, pset):
 # DeepLearn code
 def _format_pipeline_json(pipeline,features,target):
     json = {'pipeline_list':[],'func_dict':{}}
-    json['feature_matrix'] = pe.collect_feature_list(pipeline,features,target)
-    pe.serialize_to_js(pipeline,json['pipeline_list'],json['func_dict'])
+    json['feature_matrix'] = collect_feature_list(pipeline,features,target)
+    serialize_to_js(pipeline,json['pipeline_list'],json['func_dict'])
     return json
 # DeepLearn code
 
