@@ -44,7 +44,7 @@ import threading
 import redis
 import uuid
 import pickle
-import .pipeline_exports as pe
+import pipeline_exports as pe
 import re
 import traceback
 
