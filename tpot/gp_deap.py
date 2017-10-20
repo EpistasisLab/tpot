@@ -419,7 +419,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             uid = uuid.uuid4().hex[:15].upper()
             sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
             r = redis.StrictRedis(host='redis', port=6379, db=0)
+
             r.hset(output_file, uid + '-fold', cv_num)
+
         # DeepLearn code
 
         with warnings.catch_warnings():
