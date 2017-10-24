@@ -53,7 +53,7 @@ from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from sklearn.externals.joblib import Memory
 from sklearn.metrics import make_scorer
-from deap import creator
+from deap import creator, gp
 from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
 from driver_tests import captured_output
@@ -1710,6 +1710,44 @@ def test_mutNodeReplacement():
         if new_prims_list == old_prims_list:  # Terminal mutated
             assert new_ret_type_list == old_ret_type_list
         else:  # Primitive mutated
+            diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
+            if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
+                assert diff_prims[0].ret == diff_prims[1].ret
+        assert mut_ind[0][0].ret == Output_Array
+
+
+def test_mutNodeReplacement_2():
+    """Assert that mutNodeReplacement() returns the correct type of mutation node in a complex pipeline."""
+    tpot_obj = TPOTClassifier()
+    # a pipeline with 4 operators
+    pipeline_string = (
+        "LogisticRegression("
+        "KNeighborsClassifier(BernoulliNB(PolynomialFeatures"
+        "(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, "
+        "PolynomialFeatures__interaction_only=False), BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False), "
+        "KNeighborsClassifier__n_neighbors=10, KNeighborsClassifier__p=1, KNeighborsClassifier__weights=uniform),"
+        "LogisticRegression__C=10.0, LogisticRegression__dual=False, LogisticRegression__penalty=l2)"
+    )
+
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    pipeline[0].ret = Output_Array
+
+    old_ret_type_list = [node.ret for node in pipeline]
+    old_prims_list = [node for node in pipeline if node.arity != 0]
+
+    # test 30 times
+    for _ in range(30):
+        mut_ind = mutNodeReplacement(tpot_obj._toolbox.clone(pipeline), pset=tpot_obj._pset)
+        new_ret_type_list = [node.ret for node in mut_ind[0]]
+        new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
+        if new_prims_list == old_prims_list:  # Terminal mutated
+            assert new_ret_type_list == old_ret_type_list
+        else:  # Primitive mutated
+            Primitive_Count = 0
+            for node in mut_ind[0]:
+                if isinstance(node, gp.Primitive):
+                    Primitive_Count += 1
+            assert Primitive_Count == 4
             diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
             if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
                 assert diff_prims[0].ret == diff_prims[1].ret

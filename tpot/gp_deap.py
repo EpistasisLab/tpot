@@ -363,6 +363,7 @@ def mutNodeReplacement(individual, pset):
             for i, tmpnode in enumerate(individual[index + 1:], index + 1):
                 if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in tmpnode.args:
                     rindex = i
+                    break
 
         # pset.primitives[node.ret] can get a list of the type of node
         # for example: if op.root is True then the node.ret is Output_DF object
