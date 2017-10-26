@@ -351,7 +351,6 @@ class TPOTBase(BaseEstimator):
             elif callable(scoring):
                 # Heuristic to ensure user has not passed a metric
                 module = getattr(scoring, '__module__', None)
-                print(module)
                 if hasattr(module, 'startswith') and \
                     (module.startswith('sklearn.metrics.') or module.startswith('tpot.metrics')) and \
                     not module.startswith('sklearn.metrics.scorer') and \
@@ -369,7 +368,7 @@ class TPOTBase(BaseEstimator):
                         scoring_name = scoring._score_func.__name__
                     else:
                         scoring_name = scoring.__name__
-                    SCORERS[scoring_name] = scoring            
+                    SCORERS[scoring_name] = scoring
                 scoring = scoring_name
 
             self.scoring_function = scoring
