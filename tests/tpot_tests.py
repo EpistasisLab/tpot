@@ -149,11 +149,22 @@ def test_init_default_scoring_2():
 
 
 def test_init_default_scoring_3():
-    """Assert that TPOT intitializes with a valid scorer."""
+    """Assert that TPOT intitializes with a valid _BaseScorer."""
     with warnings.catch_warnings(record=True) as w:
         tpot_obj = TPOTClassifier(scoring=make_scorer(balanced_accuracy))
     assert len(w) == 0
     assert tpot_obj.scoring_function == 'balanced_accuracy'
+
+
+def test_init_default_scoring_4():
+    """Assert that TPOT intitializes with a valid scorer."""
+    def my_scorer(clf, X, y):
+        return 0.9
+
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=my_scorer)
+    assert len(w) == 0
+    assert tpot_obj.scoring_function == 'my_scorer'
 
 
 def test_invalid_score_warning():
