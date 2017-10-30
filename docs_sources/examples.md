@@ -18,7 +18,7 @@ belonging to a typical class of machine learning tasks.
 
 ## Iris flower classification
 
-The following code illustrates how TPOT can be employed for performing a simple _classification task_ over the Iris data set.
+The following code illustrates how TPOT can be employed for performing a simple _classification task_ over the Iris dataset.
 
 ```Python
 from tpot import TPOTClassifier
@@ -64,7 +64,7 @@ results = exported_pipeline.predict(testing_features)
 
 ## MNIST digit recognition
 
-Below is a minimal working example with the practice MNIST data set, which is an _image classification problem_.
+Below is a minimal working example with the practice MNIST dataset, which is an _image classification problem_.
 
 ```Python
 from tpot import TPOTClassifier
@@ -104,7 +104,7 @@ results = exported_pipeline.predict(testing_features)
 
 ## Boston housing prices modeling
 
-The following code illustrates how TPOT can be employed for performing a _regression task_ over the Boston housing prices data set.
+The following code illustrates how TPOT can be employed for performing a _regression task_ over the Boston housing prices dataset.
 
 ```Python
 from tpot import TPOTRegressor
