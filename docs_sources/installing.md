@@ -30,10 +30,13 @@ DEAP, update_checker, tqdm and stopit can be installed with `pip` via the comman
 pip install deap update_checker tqdm stopit
 ```
 
-**For the Windows users**, the pywin32 module is required if Python is NOT installed via the [Anaconda Python distribution](https://www.continuum.io/downloads) and can be installed with `pip`:
+**For the Windows users**, the pywin32 module is required if Python is NOT installed via the [Anaconda Python distribution](https://www.continuum.io/downloads) and can be installed with `pip` for Python verion <=3.3 or `conda` (e.g. miniconda) for any Python version:
 
 ```Shell
+# For Python version <=3.3
 pip install pywin32
+# For Any python version
+conda install pywin32
 ```
 
 **Optionally**, you can install [XGBoost](https://github.com/dmlc/xgboost) if you would like TPOT to use the eXtreme Gradient Boosting models. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.
