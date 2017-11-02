@@ -80,16 +80,16 @@ Running this code should discover a pipeline that achieves about 98% testing acc
 
 ```python
 import numpy as np
-
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
-                     tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
+training_features, testing_features, training_target, testing_target = \
+            train_test_split(features, tpot_data['target'].values, random_state=42)
+
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=6, weights="distance")
 
@@ -120,16 +120,15 @@ which should result in a pipeline that achieves about 12.77 mean squared error (
 
 ```python
 import numpy as np
-
+import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
 
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
-                     tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
+training_features, testing_features, training_target, testing_target = \
+            train_test_split(features, tpot_data['target'].values, random_state=42)
 
 exported_pipeline = GradientBoostingRegressor(alpha=0.85, learning_rate=0.1, loss="ls",
                                               max_features=0.9, min_samples_leaf=5,
