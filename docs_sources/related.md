@@ -26,10 +26,10 @@ Other Automated Machine Learning (AutoML) tools and related projects:
 <td>Automated machine learning for analytics & production. Supports manual feature type declarations.</td>
 </tr>
 <tr>
-<td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html">H2O.ai AutoML</a></td>
-<td>Java with Python wrappers</td>
+<td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html">H2O AutoML</a></td>
+<td>Java with Python, Scala & R APIs and web GUI</td>
 <td>Apache 2.0</td>
-<td>Automated model selection and hyperparameter tuning in a distributed ML platform.</td>
+<td>Automated: data prep, hyperparameter tuning, random grid search and stacked ensembles in a distributed ML platform.</td>
 </tr>
 <tr>
 <td><a href="https://github.com/joeddav/devol">devol</a></td>
