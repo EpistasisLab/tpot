@@ -34,6 +34,8 @@ from datetime import datetime
 from multiprocessing import cpu_count
 import os
 import re
+import errno
+
 from tempfile import mkdtemp
 from shutil import rmtree
 
