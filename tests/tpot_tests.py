@@ -934,6 +934,36 @@ def test_save_periodic_pipeline():
             if search('pipeline_', f):
                 os.remove(os.path.join('./', f))
 
+def test_save_periodic_pipeline_2():
+    """Assert that _save_periodic_pipeline creates the checkpoint folder and exports to it if it didn't exist"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.11)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './tmp'
+        tpot_obj._save_periodic_pipeline()
+        our_file.seek(0)
+
+        expected_filepath_prefix = os.path.join('./tmp', 'pipeline_')
+        assert_in('Saving best periodic pipeline to ' + expected_filepath_prefix, our_file.read())
+
+        # clean up
+        for f in os.listdir('./tmp'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./tmp', f))
+        os.rmdir('./tmp')
+
 
 def test_fit_predict():
     """Assert that the TPOT fit_predict function provides an optimized pipeline and correct output."""
