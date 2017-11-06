@@ -34,7 +34,6 @@ from datetime import datetime
 from multiprocessing import cpu_count
 import os
 import re
-import errno
 from tempfile import mkdtemp
 from shutil import rmtree
 
@@ -398,11 +397,11 @@ class TPOTBase(BaseEstimator):
                     self.config_dict = config.tpot_config
                 else:
                     raise ValueError(
-                                    'Could not find "tpot_config" in configuration file {}. '
-                                    'When using a custom config file for customizing operators '
-                                    'dictionary, the file must have a python dictionary with '
-                                    'the standardized name of "tpot_config"'.format(config_dict)
-                                    )
+                        'Could not find "tpot_config" in configuration file {}. '
+                        'When using a custom config file for customizing operators '
+                        'dictionary, the file must have a python dictionary with '
+                        'the standardized name of "tpot_config"'.format(config_dict)
+                    )
         else:
             self.config_dict = self.default_config_dict
 
@@ -531,14 +530,14 @@ class TPOTBase(BaseEstimator):
         if sparse.issparse(features):
             if self.config_dict_params in [None, "TPOT light", "TPOT MDR"]:
                 raise ValueError(
-                                'Not all operators in {} supports sparse matrix. '
-                                'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict_params)
-                                )
+                    'Not all operators in {} supports sparse matrix. '
+                    'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict_params)
+                )
             elif self.config_dict_params != "TPOT sparse":
                 print(
                     'Warning: Since the input matrix is a sparse matrix, please makes sure all the operators in the '
                     'customized config dictionary supports sparse matriies.'
-                    )
+                )
         else:
             if np.any(np.isnan(features)):
                 self._imputed = True
@@ -556,7 +555,7 @@ class TPOTBase(BaseEstimator):
                     'too small training sample size may cause unpredictable effect on maximizing '
                     'score in pipeline optimization process. Increasing subsample ratio may get '
                     'a more reasonable outcome from optimization process in TPOT.'
-                    )
+                )
 
         # Set the seed for the GP run
         if self.random_state is not None:
@@ -632,7 +631,7 @@ class TPOTBase(BaseEstimator):
             if self.verbosity > 0:
                 self._pbar.write('', file=self._file)
                 self._pbar.write('{}\nTPOT closed prematurely. Will use the current best pipeline.'.format(e),
-                                    file=self._file)
+                                 file=self._file)
         finally:
             # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
             attempts = 10
@@ -700,11 +699,11 @@ class TPOTBase(BaseEstimator):
 
             if not self._optimized_pipeline:
                 raise RuntimeError('There was an error in the TPOT optimization '
-                                  'process. This could be because the data was '
-                                  'not formatted properly, or because data for '
-                                  'a regression problem was provided to the '
-                                  'TPOTClassifier object. Please make sure you '
-                                  'passed the data to TPOT correctly.')
+                                   'process. This could be because the data was '
+                                   'not formatted properly, or because data for '
+                                   'a regression problem was provided to the '
+                                   'TPOTClassifier object. Please make sure you '
+                                   'passed the data to TPOT correctly.')
             else:
                 pareto_front_wvalues = [pipeline_scores.wvalues[1] for pipeline_scores in self._pareto_front.keys]
                 if not self._last_optimized_pareto_front:
@@ -737,11 +736,11 @@ class TPOTBase(BaseEstimator):
         """
         if not self._optimized_pipeline:
             raise RuntimeError('There was an error in the TPOT optimization '
-                              'process. This could be because the data was '
-                              'not formatted properly, or because data for '
-                              'a regression problem was provided to the '
-                              'TPOTClassifier object. Please make sure you '
-                              'passed the data to TPOT correctly.')
+                               'process. This could be because the data was '
+                               'not formatted properly, or because data for '
+                               'a regression problem was provided to the '
+                               'TPOTClassifier object. Please make sure you '
+                               'passed the data to TPOT correctly.')
         else:
             self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
 
@@ -917,7 +916,7 @@ class TPOTBase(BaseEstimator):
         if self.early_stop is not None:
             if self._last_optimized_pareto_front_n_gens >= self.early_stop:
                 raise StopIteration("The optimized pipeline was not improved after evaluating {} more generations. "
-                                        "Will end the optimization process.\n".format(self.early_stop))
+                                    "Will end the optimization process.\n".format(self.early_stop))
 
     def _save_periodic_pipeline(self):
         try:
@@ -939,7 +938,6 @@ class TPOTBase(BaseEstimator):
                 pass
             else:
                 raise
-
 
     def export(self, output_file_name, skip_if_repeated=False):
         """Export the optimized pipeline as Python code.
@@ -1056,7 +1054,7 @@ class TPOTBase(BaseEstimator):
             for attr in recursive_attrs:
                 if hasattr(obj, attr):
                     self._set_param_recursive(getattr(obj, attr), parameter, value)
-            if hasattr(obj, 'estimator'): # nested estimator
+            if hasattr(obj, 'estimator'):  # nested estimator
                 est = getattr(obj, 'estimator')
                 if hasattr(est, parameter):
                     setattr(est, parameter, value)
@@ -1212,7 +1210,7 @@ class TPOTBase(BaseEstimator):
             # Check if the individual was evaluated before
             elif individual_str in self.evaluated_individuals_:
                 self._update_pbar(pbar_msg=('Pipeline encountered that has previously been evaluated during the '
-                                 'optimization process. Using the score from the previous evaluation.'))
+                                            'optimization process. Using the score from the previous evaluation.'))
             else:
                 try:
                     # Transform the tree expression into an sklearn pipeline
@@ -1366,7 +1364,7 @@ class TPOTBase(BaseEstimator):
         # Sometimes you have pipelines for which every shrunk version has already been explored too.
         # To still mutate the individual, one of the two other mutators should be applied instead.
         if ((unsuccesful_mutations == 50) and
-           (type(mutator) is partial and mutator.func is gp.mutShrink)):
+                (type(mutator) is partial and mutator.func is gp.mutShrink)):
             offspring, = self._random_mutation_operator(individual, allow_shrink=False)
 
         return offspring,
@@ -1437,7 +1435,7 @@ class TPOTBase(BaseEstimator):
         self._update_pbar()
         if val == 'Timeout':
             self._update_pbar(pbar_msg=('Skipped pipeline #{0} due to time out. '
-                             'Continuing to the next pipeline.'.format(self._pbar.n)))
+                                        'Continuing to the next pipeline.'.format(self._pbar.n)))
             result_score_list.append(-float('inf'))
         else:
             result_score_list.append(val)
@@ -1490,7 +1488,7 @@ class TPOTBase(BaseEstimator):
                         'The gp.generate function tried to add '
                         'a terminal of type {}, but there is'
                         'none available. {}'.format(type_, traceback)
-                        )
+                    )
                 if inspect.isclass(term):
                     term = term()
                 expr.append(term)
@@ -1503,7 +1501,7 @@ class TPOTBase(BaseEstimator):
                         'The gp.generate function tried to add '
                         'a primitive of type {}, but there is'
                         'none available. {}'.format(type_, traceback)
-                        )
+                    )
                 expr.append(prim)
                 for arg in reversed(prim.args):
                     stack.append((depth + 1, arg))
