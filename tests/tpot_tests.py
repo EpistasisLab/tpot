@@ -955,8 +955,10 @@ def test_save_periodic_pipeline_2():
         tpot_obj._save_periodic_pipeline()
         our_file.seek(0)
 
+        msg = our_file.read()
         expected_filepath_prefix = os.path.join('./tmp', 'pipeline_')
-        assert_in('Saving best periodic pipeline to ' + expected_filepath_prefix, our_file.read())
+        assert_in('Saving best periodic pipeline to ' + expected_filepath_prefix, msg)
+        assert_in('Created new folder to save periodic pipeline: ./tmp', msg)
 
         # clean up
         for f in os.listdir('./tmp'):

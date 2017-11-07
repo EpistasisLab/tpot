@@ -935,11 +935,12 @@ class TPOTBase(BaseEstimator):
     def _create_periodic_checkpoint_folder(self):
         try:
             os.makedirs(self.periodic_checkpoint_folder)
+            self._update_pbar(pbar_msg='Created new folder to save periodic pipeline: {}'.format(self.periodic_checkpoint_folder))
         except OSError as e:
             if e.errno == errno.EEXIST and os.path.isdir(self.periodic_checkpoint_folder):
-                pass
+                pass # Folder already exists. User probably created it.
             else:
-                raise
+                raise ValueError('Failed creating the periodic_checkpoint_folder:\n{}'.format(e))     
 
     def export(self, output_file_name, skip_if_repeated=False):
         """Export the optimized pipeline as Python code.
