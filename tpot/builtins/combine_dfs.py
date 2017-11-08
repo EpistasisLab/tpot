@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""Copyright 2015-Present Randal S. Olson.
+"""This file is part of the TPOT library.
 
-This file is part of the TPOT library.
+TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - and many more generous open source contributors
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -18,7 +22,6 @@ You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
-
 
 class CombineDFs(object):
     """Combine two DataFrames."""

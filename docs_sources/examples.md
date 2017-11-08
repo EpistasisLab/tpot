@@ -1,6 +1,24 @@
+## Overview
+
+The following sections illustrate the usage of TPOT with various datasets, each
+belonging to a typical class of machine learning tasks.
+
+| Dataset | Task                    | Task class             | Dataset description | Jupyter notebook                                                                           |
+| ------- | ----------------------- | ---------------------- |:-------------------:|:------------------------------------------------------------------------------------------:|
+| Iris                  | flower classification   | classification         | [link](https://archive.ics.uci.edu/ml/datasets/iris) | [link](https://github.com/rhiever/tpot/blob/master/tutorials/IRIS.ipynb) |
+| MNIST                 | digit recognition       | (image) classification | [link](https://yann.lecun.com/exdb/mnist/) | [link](https://github.com/rhiever/tpot/blob/master/tutorials/MNIST.ipynb) |
+| Boston                | housing prices modeling | regression             | [link](https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html) | N/A    |
+| Titanic               | survival analysis       | classification         | [link](https://www.kaggle.com/c/titanic/data) | [link](https://github.com/rhiever/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb) |
+| Bank Marketing        | subscription prediction | classification         | [link](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing) | [link](https://github.com/rhiever/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb) |
+| MAGIC Gamma Telescope | event detection         | classification         | [link](https://archive.ics.uci.edu/ml/datasets/MAGIC+Gamma+Telescope) | [link](https://github.com/rhiever/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb) |
+
+**Notes:**
+- For details on how the `fit()`, `score()` and `export()` methods work, refer to the [usage documentation](/using/).
+- Upon re-running the experiments, your resulting pipelines _may_ differ (to some extent) from the ones demonstrated here.
+
 ## Iris flower classification
 
-The following code illustrates the usage of TPOT with the Iris data set, which is a simple supervised classification problem.
+The following code illustrates how TPOT can be employed for performing a simple _classification task_ over the Iris dataset.
 
 ```Python
 from tpot import TPOTClassifier
@@ -18,11 +36,7 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_iris_pipeline.py')
 ```
 
-Running this code should discover a pipeline that achieves about 97% testing accuracy.
-
-For details on how the `fit()`, `score()` and `export()` functions work, see the [usage documentation](/using/).
-
-After running the above code, the corresponding Python code should be exported to the `tpot_iris_pipeline.py` file and look similar to the following:
+Running this code should discover a pipeline (expored as `tpot_iris_pipeline.py`) that achieves about 97% test accuracy:
 
 ```Python
 import numpy as np
@@ -50,7 +64,7 @@ results = exported_pipeline.predict(testing_features)
 
 ## MNIST digit recognition
 
-Below is a minimal working example with the practice MNIST data set, which is an image classification problem.
+Below is a minimal working example with the practice MNIST dataset, which is an _image classification problem_.
 
 ```Python
 from tpot import TPOTClassifier
@@ -67,9 +81,7 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 ```
 
-For details on how the `fit()`, `score()` and `export()` functions work, see the [usage documentation](/using/).
-
-Running this code should discover a pipeline that achieves about 98% testing accuracy, and the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file and look similar to the following:
+Running this code should discover a pipeline (expored as `tpot_mnist_pipeline.py`) that achieves about 98% test accuracy:
 
 ```Python
 import numpy as np
@@ -92,7 +104,7 @@ results = exported_pipeline.predict(testing_features)
 
 ## Boston housing prices modeling
 
-The following code illustrates the usage of TPOT with the Boston housing prices data set, which is a regression problem.
+The following code illustrates how TPOT can be employed for performing a _regression task_ over the Boston housing prices dataset.
 
 ```Python
 from tpot import TPOTRegressor
@@ -109,11 +121,7 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_boston_pipeline.py')
 ```
 
-Running this code should discover a pipeline that achieves at least 10 mean squared error (MSE) on the test set.
-
-For details on how the `fit()`, `score()` and `export()` functions work, see the [usage documentation](/using/).
-
-After running the above code, the corresponding Python code should be exported to the `tpot_boston_pipeline.py` file and look similar to the following:
+Running this code should discover a pipeline (exported as `tpot_boston_pipeline.py`) that achieves at least 10 mean squared error (MSE) on the test set:
 
 ```Python
 import numpy as np
@@ -139,3 +147,10 @@ results = exported_pipeline.predict(testing_features)
 ## Titanic survival analysis
 
 To see the TPOT applied the Titanic Kaggle dataset, see the Jupyter notebook [here](https://github.com/rhiever/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb). This example shows how to take a messy dataset and preprocess it such that it can be used in scikit-learn and TPOT.
+
+## Portuguese Bank Marketing
+
+The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found [here](https://github.com/rhiever/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb).
+
+## MAGIC Gamma Telescope
+The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found [here](https://github.com/rhiever/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb).
