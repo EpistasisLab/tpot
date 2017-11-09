@@ -1057,7 +1057,8 @@ class TPOTBase(BaseEstimator):
               scoring_function=self.scoring_function,
               sample_weight=sample_weight,
               groups=groups,
-              timeout=self.max_eval_time_seconds
+              timeout=self.max_eval_time_seconds,
+              output_file=self.output_file
           )
 
           result_score_list = []
