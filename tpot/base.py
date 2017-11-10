@@ -356,9 +356,12 @@ class TPOTBase(BaseEstimator):
                         'documentation.'.format(scoring)
                     )
             elif callable(scoring):
-                if not isinstance(scoring, _BaseScorer):
-                    # If the user passed a custom metric function, store it in the sklearn
-                    # SCORERS dictionary
+                # Heuristic to ensure user has not passed a metric
+                module = getattr(scoring, '__module__', None)
+                if hasattr(module, 'startswith') and \
+                    (module.startswith('sklearn.metrics.') or module.startswith('tpot.metrics')) and \
+                    not module.startswith('sklearn.metrics.scorer') and \
+                    not module.startswith('sklearn.metrics.tests.'):
                     scoring_name = scoring.__name__
                     greater_is_better = 'loss' not in scoring_name and 'error' not in scoring_name
                     SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
@@ -368,7 +371,10 @@ class TPOTBase(BaseEstimator):
                                   'in version TPOT 0.9.1 and will be removed in version 0.11. '
                                   'Please update your custom scoring function.'.format(scoring), DeprecationWarning)
                 else:
-                    scoring_name = scoring._score_func.__name__
+                    if isinstance(scoring, _BaseScorer):
+                        scoring_name = scoring._score_func.__name__
+                    else:
+                        scoring_name = scoring.__name__
                     SCORERS[scoring_name] = scoring
                 scoring = scoring_name
 
