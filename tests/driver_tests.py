@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""Copyright 2015-Present Randal S. Olson.
+"""This file is part of the TPOT library.
 
-This file is part of the TPOT library.
+TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - and many more generous open source contributors
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -226,11 +230,13 @@ class ParserTest(TestCase):
         self.assertEqual(args.INPUT_FILE, 'tests/tests.csv')
         self.assertEqual(args.INPUT_SEPARATOR, '\t')
         self.assertEqual(args.MAX_EVAL_MINS, 5)
+        self.assertEqual(args.MAX_TIME_MINS, None)
+        self.assertEqual(args.MEMORY, None)
         self.assertEqual(args.MUTATION_RATE, 0.9)
         self.assertEqual(args.NUM_CV_FOLDS, 5)
         self.assertEqual(args.NUM_JOBS, 1)
         self.assertEqual(args.OFFSPRING_SIZE, None)
-        self.assertEqual(args.OUTPUT_FILE, '')
+        self.assertEqual(args.OUTPUT_FILE, None)
         self.assertEqual(args.POPULATION_SIZE, 100)
         self.assertEqual(args.RANDOM_STATE, None)
         self.assertEqual(args.SUBSAMPLE, 1.0)
@@ -261,11 +267,12 @@ INPUT_FILE          =     tests/tests.csv
 INPUT_SEPARATOR     =     ,
 MAX_EVAL_MINS       =     5
 MAX_TIME_MINS       =     None
+MEMORY              =     None
 MUTATION_RATE       =     0.9
 NUM_CV_FOLDS        =     5
 NUM_JOBS            =     1
 OFFSPRING_SIZE      =     100
-OUTPUT_FILE         =     
+OUTPUT_FILE         =     None
 POPULATION_SIZE     =     100
 RANDOM_STATE        =     None
 SCORING_FN          =     accuracy
@@ -302,11 +309,12 @@ INPUT_FILE          =     tests/tests.csv
 INPUT_SEPARATOR     =     ,
 MAX_EVAL_MINS       =     5
 MAX_TIME_MINS       =     None
+MEMORY              =     None
 MUTATION_RATE       =     0.9
 NUM_CV_FOLDS        =     5
 NUM_JOBS            =     1
 OFFSPRING_SIZE      =     100
-OUTPUT_FILE         =     
+OUTPUT_FILE         =     None
 POPULATION_SIZE     =     100
 RANDOM_STATE        =     None
 SCORING_FN          =     neg_mean_squared_error

@@ -8,6 +8,7 @@
                           <strong>max_time_mins</strong>=None, <strong>max_eval_time_mins</strong>=5,
                           <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                           <strong>warm_start</strong>=False,
+                          <strong>memory</strong>=None,
                           <strong>periodic_checkpoint_folder</strong>=None,
                           <strong>verbosity</strong>=0,
                           <strong>disable_update_check</strong>=False</em>)</pre>
@@ -74,9 +75,12 @@ Function used to evaluate the quality of a given pipeline for the classification
 'accuracy', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'neg_log_loss','precision',
 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc'
 <br /><br/>
-If you would like to use a custom scoring function, you can pass a callable function to this parameter with the signature <em>scorer(y_true, y_pred)</em>. See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
-<br /><br />
-TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized.
+If you would like to use a custom scorer, you can pass the callable object/function with signature <em>scorer(estimator, X, y)</em>.
+<br /><br/>
+If you would like to use a metric function, you can pass the callable function to this parameter with the signature <em>score_func(y_true, y_pred)</em>. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
+<br /><br/>
+See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
+
 </blockquote>
 
 <strong>cv</strong>: int, cross-validation generator, or an iterable, optional (default=5)
@@ -145,6 +149,19 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 Flag indicating whether the TPOT instance will reuse the population from previous calls to <em>fit()</em>.
 <br /><br />
 Setting <em>warm_start</em>=True can be useful for running TPOT for a short time on a dataset, checking the results, then resuming the TPOT run from where it left off.
+</blockquote>
+
+<strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
+<blockquote>
+If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in [scikit-learn documentation](http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation)
+<br /><br />
+Possible inputs are:
+<ul>
+<li>String 'auto': TPOT uses memory caching with a temporary directory and cleans it up upon shutdown, or</li>
+<li>Path of a caching directory, TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown, or</li>
+<li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
+<li>None, TPOT does not use memory caching.</li>
+</ul>
 </blockquote>
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
@@ -461,6 +478,7 @@ Does not return anything
                          <strong>max_time_mins</strong>=None, <strong>max_eval_time_mins</strong>=5,
                          <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                          <strong>warm_start</strong>=False,
+                         <strong>memory</strong>=None,
                          <strong>periodic_checkpoint_folder</strong>=None,
                          <strong>verbosity</strong>=0,
                          <strong>disable_update_check</strong>=False</em>)</pre>
@@ -528,9 +546,11 @@ Function used to evaluate the quality of a given pipeline for the regression pro
 <br /><br/>
 Note that we recommend using the <em>neg</em> version of mean squared error and related metrics so TPOT will minimize (instead of maximize) the metric.
 <br /><br/>
-If you would like to use a custom scoring function, you can pass a callable function to this parameter with the signature <em>scorer(y_true, y_pred)</em>. See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
-<br /><br />
-TPOT assumes that any custom scoring function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized.
+If you would like to use a custom scorer, you can pass the callable object/function with signature <em>scorer(estimator, X, y)</em>.
+<br /><br/>
+If you would like to use a metric function, you can pass the callable function to this parameter with the signature <em>score_func(y_true, y_pred)</em>. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
+<br /><br/>
+See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
 </blockquote>
 
 <strong>cv</strong>: int, cross-validation generator, or an iterable, optional (default=5)
@@ -600,6 +620,19 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 Flag indicating whether the TPOT instance will reuse the population from previous calls to <em>fit()</em>.
 <br /><br />
 Setting <em>warm_start</em>=True can be useful for running TPOT for a short time on a dataset, checking the results, then resuming the TPOT run from where it left off.
+</blockquote>
+
+<strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
+<blockquote>
+If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in [scikit-learn documentation](http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation)
+<br /><br />
+Possible inputs are:
+<ul>
+<li>String 'auto': TPOT uses memory caching with a temporary directory and cleans it up upon shutdown, or</li>
+<li>Path of a caching directory, TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown, or</li>
+<li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
+<li>None, TPOT does not use memory caching.</li>
+</ul>
 </blockquote>
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
