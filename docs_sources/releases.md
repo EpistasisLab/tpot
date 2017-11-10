@@ -1,6 +1,6 @@
 # Version 0.9
 
-* **TPOT now supports sparse matrices** with a new built-in TPOT configurations, "TPOT sparse". We are using a custom OneHotEncoder implementation that supports missing values and continuous features.
+* **TPOT now supports sparse matrices** with a new built-in TPOT configuration, "TPOT sparse". We are using a custom OneHotEncoder implementation that supports missing values and continuous features.
 
 * We have added an "early stopping" option for stopping the optimization process if no improvement is made within a set number of generations. Look up the `early_stop` parameter to access this functionality.
 
@@ -21,6 +21,8 @@
 * Fixed a bug in the missing value imputation function in TPOT to impute along columns instead rows.
 
 * Refined input checking for sparse matrices in TPOT.
+
+* Refined the TPOT pipeline mutation operator.
 
 
 # Version 0.8
