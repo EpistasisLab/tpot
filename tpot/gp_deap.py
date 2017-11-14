@@ -44,9 +44,10 @@ import threading
 import redis
 import uuid
 import pickle
-import pipeline_exports as pe
+from .pipeline_exports import collect_feature_list, serialize_to_js
 import re
 import traceback
+import time
 
 def pick_two_individuals_eligible_for_crossover(population):
     """Pick two individuals from the population which can do crossover, that is, they share a primitive.
@@ -372,8 +373,8 @@ def mutNodeReplacement(individual, pset):
 # DeepLearn code
 def _format_pipeline_json(pipeline,features,target):
     json = {'pipeline_list':[],'func_dict':{}}
-    json['feature_matrix'] = pe.collect_feature_list(pipeline,features,target)
-    pe.serialize_to_js(pipeline,json['pipeline_list'],json['func_dict'])
+    json['feature_matrix'] = collect_feature_list(pipeline,features,target)
+    serialize_to_js(pipeline,json['pipeline_list'],json['func_dict'])
     return json
 # DeepLearn code
 
@@ -413,13 +414,16 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         cv.random_state = cv_num
         cv_iter = list(cv.split(features, target, groups))
         scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
-
         # DeepLearn code
         if output_file is not None:
             uid = uuid.uuid4().hex[:15].upper()
             sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
             r = redis.StrictRedis(host='redis', port=6379, db=0)
+            time.sleep(1.0)
+            json = {'started': 1}
+            r.publish(output_file,pickle.dumps(json))
             r.hset(output_file, uid + '-fold', cv_num)
+
         # DeepLearn code
 
         with warnings.catch_warnings():
@@ -435,9 +439,8 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                                     fit_params=sample_weight_dict)
                                 for train, test in cv_iter]
             CV_score = np.array(scores)[:, 0]
-
+            
             # DeepLearn code
-            print("cv score is {}".format(np.nanmean(CV_score)))
             if output_file is not None:
                 sklearn_pipeline_json['score'] = np.nanmean(CV_score)
                 json = {uid: sklearn_pipeline_json}
