@@ -24,8 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-from sklearn.base import RegressorMixin
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
 import inspect
 
 
@@ -197,11 +196,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                     else:
                         import_hash[dep_import_str] = [dep_op_str]
                     dep_op_list[pname] = dep_op_str
-                    # check if nested function/class is a BaseEstimator:
-                    if isinstance(dep_op_obj, BaseEstimator):
-                        dep_op_type[pname] = 'BaseEstimator'
-                    else:
-                        dep_op_type[pname] = 'Callable'
+                    dep_op_type[pname] = dep_op_obj
                     if dval:
                         for dpname in sorted(dval.keys()):
                             dprange = dval[dpname]
@@ -271,11 +266,14 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 # To make sure the inital operators is the first parameter just
                 # for better persentation
                 for dep_op_pname, dep_op_str in dep_op_list.items():
+                    arg_value = dep_op_str # a callable function, e.g scoring function
                     doptype = dep_op_type[dep_op_pname]
-                    if doptype == 'BaseEstimator':
-                        arg_value = "{}({})".format(dep_op_str, ", ".join(dep_op_arguments[dep_op_str]))
-                    else:
-                        arg_value = dep_op_str
+                    if inspect.isclass(doptype): # a estimator
+                        if issubclass(doptype, BaseEstimator) or \
+                            issubclass(doptype, ClassifierMixin) or \
+                            issubclass(doptype, RegressorMixin) or \
+                            issubclass(doptype, TransformerMixin):
+                            arg_value = "{}({})".format(dep_op_str, ", ".join(dep_op_arguments[dep_op_str]))
                     tmp_op_args.append("{}={}".format(dep_op_pname, arg_value))
             op_arguments = tmp_op_args + op_arguments
             return "{}({})".format(op_obj.__name__, ", ".join(op_arguments))
