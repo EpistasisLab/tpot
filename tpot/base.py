@@ -1117,7 +1117,7 @@ class TPOTBase(BaseEstimator):
 
           return [self.evaluated_individuals_[str(individual)] for individual in individuals]
         except Exception as e:
-          print("Error while running _wrapped_cross_val_score : %s" % str(e))
+          print("Error while running _evaluate_individuals : %s" % str(e))
           print(traceback.format_exc())
           raise e
 

@@ -419,7 +419,6 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             uid = uuid.uuid4().hex[:15].upper()
             sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
             r = redis.StrictRedis(host='redis', port=6379, db=0)
-            time.sleep(1)
             json = {'started': 1}
             r.publish(output_file,pickle.dumps(json))
             r.hset(output_file, uid + '-fold', cv_num)
@@ -442,9 +441,6 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
 
             # DeepLearn code
             if output_file is not None:
-                json1 = {'test456': 1}
-                r.publish(output_file,pickle.dumps(json1))
-
                 sklearn_pipeline_json['score'] = np.nanmean(CV_score)
                 json = {uid: sklearn_pipeline_json}
                 r.publish(output_file,pickle.dumps(json))
