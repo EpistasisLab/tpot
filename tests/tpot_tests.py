@@ -144,8 +144,8 @@ def test_init_default_scoring():
 
 def test_init_default_scoring_2():
     """Assert that TPOT intitializes with a valid customized metric function."""
-    #with warnings.catch_warnings(record=True) as w:
-    tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
     assert len(w) == 1 # deap 1.2.2 warning message made this unit test failed
     assert issubclass(w[-1].category, DeprecationWarning) # deap 1.2.2 warning message made this unit test failed
     assert "This scoring type was deprecated" in str(w[-1].message) # deap 1.2.2 warning message made this unit test failed
