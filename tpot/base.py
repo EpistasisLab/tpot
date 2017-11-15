@@ -481,8 +481,10 @@ class TPOTBase(BaseEstimator):
                 self._pset.addTerminal(val, _type, name=terminal_name)
 
     def _setup_toolbox(self):
-        creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
-        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti, statistics=dict)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
+            creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti, statistics=dict)
 
         self._toolbox = base.Toolbox()
         self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
@@ -946,7 +948,7 @@ class TPOTBase(BaseEstimator):
             if e.errno == errno.EEXIST and os.path.isdir(self.periodic_checkpoint_folder):
                 pass # Folder already exists. User probably created it.
             else:
-                raise ValueError('Failed creating the periodic_checkpoint_folder:\n{}'.format(e))     
+                raise ValueError('Failed creating the periodic_checkpoint_folder:\n{}'.format(e))
 
     def export(self, output_file_name, skip_if_repeated=False):
         """Export the optimized pipeline as Python code.
