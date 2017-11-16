@@ -1189,33 +1189,33 @@ class TPOTBase(BaseEstimator):
                     ))
             #DeepLearn code
 
-          # Don't use parallelization if n_jobs==1
-          if self.n_jobs == 1:
-              for sklearn_pipeline in sklearn_pipeline_list:
-                  self._stop_by_max_time_mins()
-                  val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
-                  result_score_list = self._update_val(val, result_score_list)
-          else:
+            # Don't use parallelization if n_jobs==1
+            if self.n_jobs == 1:
+                for sklearn_pipeline in sklearn_pipeline_list:
+                    self._stop_by_max_time_mins()
+                    val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                    result_score_list = self._update_val(val, result_score_list)
+            else:
               # chunk size for pbar update
-              for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
-                  self._stop_by_max_time_mins()
-                  #DeepLearn code
-                  if self.sc is not None:
-                      arPipelines = []
-                      arParams = []
-                      for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
-                          arParams.append(len(arPipelines))
-                          arPipelines.append(sklearn_pipeline)
-                      rddParams = self.sc.parallelize(arParams)
-                      indexed_result_score = dict(rddParams.map(mapFunc).collect())
-                      tmp_result_scores = [indexed_result_score[idx] for idx in range(len(indexed_result_score))]
-                  else:
-                  #DeepLearn code
-                      parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                      tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
+                for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
+                    self._stop_by_max_time_mins()
+                    #DeepLearn code
+                    if self.sc is not None:
+                        arPipelines = []
+                        arParams = []
+                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4]:
+                            arParams.append(len(arPipelines))
+                            arPipelines.append(sklearn_pipeline)
+                        rddParams = self.sc.parallelize(arParams)
+                        indexed_result_score = dict(rddParams.map(mapFunc).collect())
+                        tmp_result_scores = [indexed_result_score[idx] for idx in range(len(indexed_result_score))]
+                    else:
+                    #DeepLearn code
+                        parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                        tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
                                                    for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
-                  # update pbar
-                  for val in tmp_result_scores:
+                    # update pbar
+                    for val in tmp_result_scores:
                       result_score_list = self._update_val(val, result_score_list)
 
             self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
