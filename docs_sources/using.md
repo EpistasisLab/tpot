@@ -6,7 +6,9 @@ so we've gathered a handful of guidelines on what to expect when running AutoML 
 <h5>AutoML algorithms aren't intended to run for only a few minutes</h5>
 
 Of course, you *can* run TPOT for only a few minutes and it will find a reasonably good pipeline for your dataset.
-However, if you don't run TPOT for very long, it may not find the best pipeline possible for your dataset.
+However, if you don't run TPOT for long enough, it may not find the best possible pipeline for your dataset. It may even not
+find any suitable pipeline at all, in which case a `RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')`
+will be raised.
 Often it is worthwhile to run multiple instances of TPOT in parallel for a long time (hours to days) to allow TPOT to thoroughly search
 the pipeline space for your dataset.
 
@@ -74,8 +76,8 @@ Now TPOT is ready to optimize a pipeline for you. You can tell TPOT to optimize 
 pipeline_optimizer.fit(X_train, y_train)
 ```
 
-The `fit` function takes in a training data set and uses k-fold cross-validation when evaluating pipelines. It then
-initializes the genetic programming algoritm to find the best pipeline based on average k-fold score.
+The `fit` function initializes the genetic programming algorithm to find the highest-scoring pipeline based on average k-fold cross-validation
+Then, the pipeline is trained on the entire set of provided samples, and the TPOT instance can be used as a fitted model.
 
 You can then proceed to evaluate the final pipeline on the testing set with the `score` function:
 
@@ -280,6 +282,18 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 </td>
 </tr>
 <tr>
+<td>-memory</td>
+<td>MEMORY</td>
+<td>String or file path</td>
+<td>If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. Memory caching mode in TPOT:
+<br /><br />
+<ul>
+<li>Path for a caching directory: TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown.</li>
+<li>string 'auto': TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.</li>
+</ul>
+</td>
+</tr>
+<tr>
 <td>-cf</td>
 <td>CHECKPOINT_FOLDER</td>
 <td>Folder path</td>
@@ -338,28 +352,36 @@ TPOT makes use of `sklearn.model_selection.cross_val_score` for evaluating pipel
 
 1. You can pass in a string to the `scoring` parameter from the list above. Any other strings will cause TPOT to throw an exception.
 
-2. You can pass a function with the signature `scorer(y_true, y_pred)`, where `y_true` are the true target values and `y_pred` are the predicted target values from an estimator. To do this, you should implement your own function. See the example below for further explanation.
+2. You can pass the callable object/function with signature `scorer(estimator, X, y)`, where `estimator` is trained estimator to use for scoring, `X` are features that will be passed to `estimator.predict` and `y` are target values for `X`. To do this, you should implement your own function. See the example below for further explanation.
 
-```Python
-from tpot import TPOTClassifier
-from sklearn.datasets import load_digits
-from sklearn.model_selection import train_test_split
+  ```Python
+  from tpot import TPOTClassifier
+  from sklearn.datasets import load_digits
+  from sklearn.model_selection import train_test_split
+  from sklearn.metrics.scorer import make_scorer
 
-digits = load_digits()
-X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
-                                                    train_size=0.75, test_size=0.25)
+  digits = load_digits()
+  X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                      train_size=0.75, test_size=0.25)
+  # Make a custom metric function
+  def my_custom_accuracy(y_true, y_pred):
+      return float(sum(y_pred == y_true)) / len(y_true)
 
-def my_custom_accuracy(y_true, y_pred):
-    return float(sum(y_pred == y_true)) / len(y_true)
+  # Make a custom a scorer from the custom metric function
+  # Note: greater_is_better=False in make_scorer below would mean that the scoring function should be minimized.
+  my_custom_scorer = make_scorer(my_custom_accuracy, greater_is_better=True)
 
-tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                      scoring=my_custom_accuracy)
-tpot.fit(X_train, y_train)
-print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
-```
+  tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
+                        scoring=my_custom_scorer)
+  tpot.fit(X_train, y_train)
+  print(tpot.score(X_test, y_test))
+  tpot.export('tpot_mnist_pipeline.py')
+  ```
 
-* **my_module.scorer_name**: you can also use your manual  `scorer(y_true, y_pred)` function through the command line, just add an argument `-scoring my_module.scorer` and TPOT will import your module and take the function from there. TPOT will also include current workdir when importing the module, so you can just put it in the same folder where you are going to run.
+3. You can pass a metric function with the signature `score_func(y_true, y_pred)` (e.g. `my_custom_accuracy` in the example above), where `y_true` are the true target values and `y_pred` are the predicted target values from an estimator. To do this, you should implement your own function. See the example above for further explanation. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized (`greater_is_better=False` in [`make_scorer`](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html)), whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
+
+
+* **my_module.scorer_name**: You can also use a custom `score_func(y_true, y_pred)` or `scorer(estimator, X, y)` function through the command line by adding the argument `-scoring my_module.scorer` to your command-line call. TPOT will import your module and use the custom scoring function from there. TPOT will include your current working directory when importing the module, so you can place it in the same directory where you are going to run TPOT.
 Example: `-scoring sklearn.metrics.auc` will use the function auc from sklearn.metrics module.
 
 # Built-in TPOT configurations
@@ -504,6 +526,34 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
+# Pipeline caching in TPOT
+
+With the `memory` parameter, pipelines can cache the results of each transformer after fitting them. This feature is used to avoid repeated computation by transformers within a pipeline if the parameters and input data are identical to another fitted pipeline during optimization process. TPOT allows users to specify a custom directory path or [`sklearn.external.joblib.Memory`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/externals/joblib/memory.py#L847) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run).
+
+There are three methods for enabling memory caching in TPOT:
+
+```Python
+from tpot import TPOTClassifier
+from tempfile import mkdtemp
+from sklearn.externals.joblib import Memory
+from shutil import rmtree
+
+# Method 1, auto mode: TPOT uses memory caching with a temporary directory and cleans it up upon shutdown
+tpot = TPOTClassifier(memory='auto')
+
+# Method 2, with a custom directory for memory caching
+tpot = TPOTClassifier(memory='/to/your/path')
+
+# Method 3, with a Memory object
+cachedir = mkdtemp() # Create a temporary folder
+memory = Memory(cachedir=cachedir, verbose=0)
+tpot = TPOTClassifier(memory=memory)
+
+# Clear the cache directory when you don't need it anymore
+rmtree(cachedir)
+```
+
+**Note: TPOT does NOT clean up memory caches if users set a custom directory path or Memory object. We recommend that you clean up the memory caches when you don't need it anymore.**
 
 # Crash/freeze issue with n_jobs > 1 under OSX or Linux
 

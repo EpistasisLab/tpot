@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""Copyright 2015-Present Randal S. Olson.
+"""This file is part of the TPOT library.
 
-This file is part of the TPOT library.
+TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - and many more generous open source contributors
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -16,11 +20,6 @@ GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
-
-Most of the code in this file was copied from the DEAP project, which
-can be found on GitHub at https://github.com/DEAP/deap. We copied these
-functions into TPOT to customize or fix portions of the code for our
-own purposes in TPOT.
 
 """
 
@@ -72,13 +71,13 @@ def pick_two_individuals_eligible_for_crossover(population):
                                     pop_as_str[i] != pop_as_str[i+1+j]]
 
     # Pairs are eligible in both orders, this ensures that both orders are considered
-    eligible_pairs += [(j, i) for (i,j) in eligible_pairs]
+    eligible_pairs += [(j, i) for (i, j) in eligible_pairs]
 
     if not eligible_pairs:
         # If there are no eligible pairs, the caller should decide what to do
         return None, None
 
-    pair = np.random.randint(0,len(eligible_pairs))
+    pair = np.random.randint(0, len(eligible_pairs))
     idx1, idx2 = eligible_pairs[pair]
 
     return population[idx1], population[idx2]
@@ -159,6 +158,28 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
     return offspring
 
+def initialize_stats_dict(individual):
+    '''
+    Initializes the stats dict for individual
+    The statistics initialized are:
+        'generation': generation in which the individual was evaluated. Initialized as: 0
+        'mutation_count': number of mutation operations applied to the individual and its predecessor cumulatively. Initialized as: 0
+        'crossover_count': number of crossover operations applied to the individual and its predecessor cumulatively. Initialized as: 0
+        'predecessor': string representation of the individual. Initialized as: ('ROOT',)
+
+    Parameters
+    ----------
+    individual: deap individual
+
+    Returns
+    -------
+    object
+    '''
+    individual.statistics['generation'] = 0
+    individual.statistics['mutation_count'] = 0
+    individual.statistics['crossover_count'] = 0
+    individual.statistics['predecessor'] = 'ROOT',
+
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                    stats=None, halloffame=None, verbose=0, per_generation_function=None):
@@ -209,6 +230,10 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 
+    # Initialize statistics dict for the individuals in the population, to keep track of mutation/crossover operations and predecessor relations
+    for ind in population:
+        initialize_stats_dict(ind)
+
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
 
@@ -230,6 +255,12 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+
+        # Update generation statistic for all individuals which have invalid 'generation' stats
+        # This hold for individuals that have been altered in the varOr function
+        for ind in population:
+            if ind.statistics['generation'] == 'INVALID':
+                ind.statistics['generation'] = gen
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -341,6 +372,7 @@ def mutNodeReplacement(individual, pset):
             for i, tmpnode in enumerate(individual[index + 1:], index + 1):
                 if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in tmpnode.args:
                     rindex = i
+                    break
 
         # pset.primitives[node.ret] can get a list of the type of node
         # for example: if op.root is True then the node.ret is Output_DF object

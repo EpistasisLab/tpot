@@ -86,9 +86,6 @@
     <li class="toctree-l2"><a href="#before-submitting-your-pull-request">Before submitting your pull request</a></li>
     
 
-    <li class="toctree-l2"><a href="#updating-the-documentation">Updating the documentation</a></li>
-    
-
     <li class="toctree-l2"><a href="#after-submitting-your-pull-request">After submitting your pull request</a></li>
     
 
@@ -163,7 +160,7 @@
 </ul>
 <p>Make sure to familiarize yourself with the project layout before making any major contributions, and especially make sure to send all code changes to the <code>development</code> branch.</p>
 <h2 id="how-to-contribute">How to contribute</h2>
-<p>The preferred way to contribute to TPOT is to fork the 
+<p>The preferred way to contribute to TPOT is to fork the
 <a href="https://github.com/rhiever/tpot/">main repository</a> on
 GitHub:</p>
 <ol>
@@ -213,7 +210,7 @@ GitHub:</p>
 <pre><code>      $ git push -u origin my-contribution
 </code></pre>
 <p>Finally, go to the web page of your fork of the TPOT repo, and click 'Pull Request' (PR) to send your changes to the maintainers for review. Make sure that you send your PR to the <code>development</code> branch, as the <code>master</code> branch is reserved for the latest stable release. This will start the CI server to check all the project's unit tests run and send an email to the maintainers.</p>
-<p>(If any of the above seems like magic to you, then look up the 
+<p>(If any of the above seems like magic to you, then look up the
 <a href="http://git-scm.com/documentation">Git documentation</a> on the web.)</p>
 <h2 id="before-submitting-your-pull-request">Before submitting your pull request</h2>
 <p>Before you submit a pull request for your contribution, please work through this checklist to make sure that you have done everything necessary so we can efficiently review and accept your changes.</p>
@@ -256,16 +253,6 @@ GitHub:</p>
 <p>Similarly add a line to print the version of the library to <a href="https://github.com/rhiever/tpot/blob/master/ci/.travis_test.sh#L13">.travis_test.sh</a></p>
 </li>
 </ul>
-<h2 id="updating-the-documentation">Updating the documentation</h2>
-<p>We use <a href="http://www.mkdocs.org/">mkdocs</a> to manage our <a href="http://rhiever.github.io/tpot/">project documentation</a>. This allows us to write the documentation in Markdown and compile them to HTML as needed. Below are a couple useful commands to know when updating the documentation. Make sure that you are running these commands in the base directory of the TPOT project.</p>
-<ul>
-<li>
-<p><code>mkdocs serve</code>: Hosts of a local version of the documentation that you can access at the provided URL. The local version will update automatically as you save changes to the documentation.</p>
-</li>
-<li>
-<p><code>mkdocs build --clean</code>: Creates a fresh build of the documentation in HTML in the <code>docs</code> directory. Always run this before pushing the documentation to GitHub.</p>
-</li>
-</ul>
 <h2 id="after-submitting-your-pull-request">After submitting your pull request</h2>
 <p>After submitting your pull request, <a href="https://travis-ci.com/">Travis-CI</a> will automatically run unit tests on your changes and make sure that your updated code builds and runs on Python 2 and 3. We also use services that automatically check code quality and test coverage.</p>
 <p>Check back shortly after submitting your pull request to make sure that your code passes these checks. If any of the checks come back with a red X, then do your best to address the errors.</p>
@@ -289,7 +276,7 @@ GitHub:</p>
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright &copy; 2015-Present <a href="http://www.randalolson.com">Randal S. Olson</a></p>
+      <p>Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania</p>
     
   </div>
 

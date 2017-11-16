@@ -72,6 +72,9 @@
     <a class="current" href="./">Examples</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#overview">Overview</a></li>
+    
+
     <li class="toctree-l2"><a href="#iris-flower-classification">Iris flower classification</a></li>
     
 
@@ -82,6 +85,12 @@
     
 
     <li class="toctree-l2"><a href="#titanic-survival-analysis">Titanic survival analysis</a></li>
+    
+
+    <li class="toctree-l2"><a href="#portuguese-bank-marketing">Portuguese Bank Marketing</a></li>
+    
+
+    <li class="toctree-l2"><a href="#magic-gamma-telescope">MAGIC Gamma Telescope</a></li>
     
 
     </ul>
@@ -147,8 +156,69 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="iris-flower-classification">Iris flower classification</h2>
-<p>The following code illustrates the usage of TPOT with the Iris data set, which is a simple supervised classification problem.</p>
+                <h2 id="overview">Overview</h2>
+<p>The following sections illustrate the usage of TPOT with various datasets, each
+belonging to a typical class of machine learning tasks.</p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Task</th>
+<th>Task class</th>
+<th align="center">Dataset description</th>
+<th align="center">Jupyter notebook</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Iris</td>
+<td>flower classification</td>
+<td>classification</td>
+<td align="center"><a href="https://archive.ics.uci.edu/ml/datasets/iris">link</a></td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tutorials/IRIS.ipynb">link</a></td>
+</tr>
+<tr>
+<td>MNIST</td>
+<td>digit recognition</td>
+<td>(image) classification</td>
+<td align="center"><a href="https://yann.lecun.com/exdb/mnist/">link</a></td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tutorials/MNIST.ipynb">link</a></td>
+</tr>
+<tr>
+<td>Boston</td>
+<td>housing prices modeling</td>
+<td>regression</td>
+<td align="center"><a href="https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html">link</a></td>
+<td align="center">N/A</td>
+</tr>
+<tr>
+<td>Titanic</td>
+<td>survival analysis</td>
+<td>classification</td>
+<td align="center"><a href="https://www.kaggle.com/c/titanic/data">link</a></td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb">link</a></td>
+</tr>
+<tr>
+<td>Bank Marketing</td>
+<td>subscription prediction</td>
+<td>classification</td>
+<td align="center"><a href="https://archive.ics.uci.edu/ml/datasets/Bank+Marketing">link</a></td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb">link</a></td>
+</tr>
+<tr>
+<td>MAGIC Gamma Telescope</td>
+<td>event detection</td>
+<td>classification</td>
+<td align="center"><a href="https://archive.ics.uci.edu/ml/datasets/MAGIC+Gamma+Telescope">link</a></td>
+<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb">link</a></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Notes:</strong>
+- For details on how the <code>fit()</code>, <code>score()</code> and <code>export()</code> methods work, refer to the <a href="../using/">usage documentation</a>.
+- Upon re-running the experiments, your resulting pipelines <em>may</em> differ (to some extent) from the ones demonstrated here.</p>
+<h2 id="iris-flower-classification">Iris flower classification</h2>
+<p>The following code illustrates how TPOT can be employed for performing a simple <em>classification task</em> over the Iris dataset.</p>
 <pre><code class="Python">from tpot import TPOTClassifier
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
@@ -164,9 +234,7 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_iris_pipeline.py')
 </code></pre>
 
-<p>Running this code should discover a pipeline that achieves about 97% testing accuracy.</p>
-<p>For details on how the <code>fit()</code>, <code>score()</code> and <code>export()</code> functions work, see the <a href="../using/">usage documentation</a>.</p>
-<p>After running the above code, the corresponding Python code should be exported to the <code>tpot_iris_pipeline.py</code> file and look similar to the following:</p>
+<p>Running this code should discover a pipeline (expored as <code>tpot_iris_pipeline.py</code>) that achieves about 97% test accuracy:</p>
 <pre><code class="Python">import numpy as np
 
 from sklearn.model_selection import train_test_split
@@ -191,7 +259,7 @@ results = exported_pipeline.predict(testing_features)
 </code></pre>
 
 <h2 id="mnist-digit-recognition">MNIST digit recognition</h2>
-<p>Below is a minimal working example with the practice MNIST data set, which is an image classification problem.</p>
+<p>Below is a minimal working example with the practice MNIST dataset, which is an <em>image classification problem</em>.</p>
 <pre><code class="Python">from tpot import TPOTClassifier
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
@@ -206,8 +274,7 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 </code></pre>
 
-<p>For details on how the <code>fit()</code>, <code>score()</code> and <code>export()</code> functions work, see the <a href="../using/">usage documentation</a>.</p>
-<p>Running this code should discover a pipeline that achieves about 98% testing accuracy, and the corresponding Python code should be exported to the <code>tpot_mnist_pipeline.py</code> file and look similar to the following:</p>
+<p>Running this code should discover a pipeline (expored as <code>tpot_mnist_pipeline.py</code>) that achieves about 98% test accuracy:</p>
 <pre><code class="Python">import numpy as np
 
 from sklearn.model_selection import train_test_split
@@ -227,7 +294,7 @@ results = exported_pipeline.predict(testing_features)
 </code></pre>
 
 <h2 id="boston-housing-prices-modeling">Boston housing prices modeling</h2>
-<p>The following code illustrates the usage of TPOT with the Boston housing prices data set, which is a regression problem.</p>
+<p>The following code illustrates how TPOT can be employed for performing a <em>regression task</em> over the Boston housing prices dataset.</p>
 <pre><code class="Python">from tpot import TPOTRegressor
 from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
@@ -242,9 +309,7 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_boston_pipeline.py')
 </code></pre>
 
-<p>Running this code should discover a pipeline that achieves at least 10 mean squared error (MSE) on the test set.</p>
-<p>For details on how the <code>fit()</code>, <code>score()</code> and <code>export()</code> functions work, see the <a href="../using/">usage documentation</a>.</p>
-<p>After running the above code, the corresponding Python code should be exported to the <code>tpot_boston_pipeline.py</code> file and look similar to the following:</p>
+<p>Running this code should discover a pipeline (exported as <code>tpot_boston_pipeline.py</code>) that achieves at least 10 mean squared error (MSE) on the test set:</p>
 <pre><code class="Python">import numpy as np
 
 from sklearn.ensemble import GradientBoostingRegressor
@@ -267,6 +332,10 @@ results = exported_pipeline.predict(testing_features)
 
 <h2 id="titanic-survival-analysis">Titanic survival analysis</h2>
 <p>To see the TPOT applied the Titanic Kaggle dataset, see the Jupyter notebook <a href="https://github.com/rhiever/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb">here</a>. This example shows how to take a messy dataset and preprocess it such that it can be used in scikit-learn and TPOT.</p>
+<h2 id="portuguese-bank-marketing">Portuguese Bank Marketing</h2>
+<p>The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found <a href="https://github.com/rhiever/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb">here</a>.</p>
+<h2 id="magic-gamma-telescope">MAGIC Gamma Telescope</h2>
+<p>The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found <a href="https://github.com/rhiever/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb">here</a>.</p>
               
             </div>
           </div>
@@ -287,7 +356,7 @@ results = exported_pipeline.predict(testing_features)
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright &copy; 2015-Present <a href="http://www.randalolson.com">Randal S. Olson</a></p>
+      <p>Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania</p>
     
   </div>
 
