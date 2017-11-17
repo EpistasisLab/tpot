@@ -358,10 +358,14 @@ class TPOTBase(BaseEstimator):
             elif callable(scoring):
                 # Heuristic to ensure user has not passed a metric
                 module = getattr(scoring, '__module__', None)
-                if hasattr(module, 'startswith') and \
+                if sys.version_info[0] < 3:
+                    args_list = inspect.getargspec(scoring)[0]
+                else:
+                    args_list = inspect.getfullargspec(scoring)[0]
+                if args_list == ["y_true", "y_pred"] or (hasattr(module, 'startswith') and \
                     (module.startswith('sklearn.metrics.') or module.startswith('tpot.metrics')) and \
                     not module.startswith('sklearn.metrics.scorer') and \
-                    not module.startswith('sklearn.metrics.tests.'):
+                    not module.startswith('sklearn.metrics.tests.')):
                     scoring_name = scoring.__name__
                     greater_is_better = 'loss' not in scoring_name and 'error' not in scoring_name
                     SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
@@ -946,7 +950,7 @@ class TPOTBase(BaseEstimator):
             if e.errno == errno.EEXIST and os.path.isdir(self.periodic_checkpoint_folder):
                 pass # Folder already exists. User probably created it.
             else:
-                raise ValueError('Failed creating the periodic_checkpoint_folder:\n{}'.format(e))     
+                raise ValueError('Failed creating the periodic_checkpoint_folder:\n{}'.format(e))
 
     def export(self, output_file_name, skip_if_repeated=False):
         """Export the optimized pipeline as Python code.
