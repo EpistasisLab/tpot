@@ -170,6 +170,7 @@ def test_init_default_scoring_4():
     assert len(w) == 0
     assert tpot_obj.scoring_function == 'my_scorer'
 
+
 def test_init_default_scoring_5():
     """Assert that TPOT intitializes with a valid sklearn metric function roc_auc_score."""
     with warnings.catch_warnings(record=True) as w:
@@ -178,6 +179,19 @@ def test_init_default_scoring_5():
     assert issubclass(w[-1].category, DeprecationWarning)
     assert "This scoring type was deprecated" in str(w[-1].message)
     assert tpot_obj.scoring_function == 'roc_auc_score'
+
+
+def test_init_default_scoring_6():
+    """Assert that TPOT intitializes with a valid customized metric function in __main__"""
+    def my_scorer(y_true, y_pred):
+        return roc_auc_score(y_true, y_pred)
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=my_scorer)
+    assert len(w) == 1
+    assert issubclass(w[-1].category, DeprecationWarning)
+    assert "This scoring type was deprecated" in str(w[-1].message)
+    print(tpot_obj.scoring_function)
+    assert tpot_obj.scoring_function == 'my_scorer'
 
 
 def test_invalid_score_warning():
