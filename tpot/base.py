@@ -359,7 +359,10 @@ class TPOTBase(BaseEstimator):
                 # Heuristic to ensure user has not passed a metric
                 module = getattr(scoring, '__module__', None)
                 if sys.version_info[0] < 3:
-                    args_list = inspect.getargspec(scoring)[0]
+                    if not inspect.isclass(scoring)
+                        args_list = inspect.getargspec(scoring)[0]
+                    else:
+                        args_list = ['NA', 'NA']
                 else:
                     args_list = inspect.getfullargspec(scoring)[0]
                 if args_list == ["y_true", "y_pred"] or (hasattr(module, 'startswith') and \
