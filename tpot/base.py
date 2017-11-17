@@ -485,8 +485,10 @@ class TPOTBase(BaseEstimator):
                 self._pset.addTerminal(val, _type, name=terminal_name)
 
     def _setup_toolbox(self):
-        creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
-        creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti, statistics=dict)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            creator.create('FitnessMulti', base.Fitness, weights=(-1.0, 1.0))
+            creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti, statistics=dict)
 
         self._toolbox = base.Toolbox()
         self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)

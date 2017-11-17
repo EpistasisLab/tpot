@@ -76,7 +76,6 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
-    print(export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset))
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 

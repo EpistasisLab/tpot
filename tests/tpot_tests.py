@@ -1766,7 +1766,8 @@ def test_mutNodeReplacement():
         if new_prims_list == old_prims_list:  # Terminal mutated
             assert new_ret_type_list == old_ret_type_list
         else:  # Primitive mutated
-            diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
+            diff_prims = [x for x in new_prims_list if x not in old_prims_list]
+            diff_prims += [x for x in old_prims_list if x not in new_prims_list]
             if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
                 assert diff_prims[0].ret == diff_prims[1].ret
         assert mut_ind[0][0].ret == Output_Array
@@ -1804,7 +1805,8 @@ def test_mutNodeReplacement_2():
                 if isinstance(node, gp.Primitive):
                     Primitive_Count += 1
             assert Primitive_Count == 4
-            diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
+            diff_prims = [x for x in new_prims_list if x not in old_prims_list]
+            diff_prims += [x for x in old_prims_list if x not in new_prims_list]
             if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
                 assert diff_prims[0].ret == diff_prims[1].ret
         assert mut_ind[0][0].ret == Output_Array
