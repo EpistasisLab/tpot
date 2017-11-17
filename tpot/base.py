@@ -244,7 +244,7 @@ class TPOTBase(BaseEstimator):
 
         """
         if self.__class__.__name__ == 'TPOTBase':
-            raise RuntimeError('Do not instantiate the TPOTBase class directly; use TPOTRegressor or TPOTClassifier instead.')
+            raise Exception('Do not instantiate the TPOTBase class directly; use TPOTRegressor or TPOTClassifier instead.')
 
         # Prompt the user if their version is out of date
         self.disable_update_check = disable_update_check
@@ -350,7 +350,10 @@ class TPOTBase(BaseEstimator):
                 'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
             )
         if n_jobs == -1:
-            self.n_jobs = cpu_count()
+            if self.sc:
+                self.n_jobs = sc.defaultParallelism
+            else:    
+                self.n_jobs = cpu_count()
         else:
             self.n_jobs = n_jobs
 
@@ -656,6 +659,10 @@ class TPOTBase(BaseEstimator):
                 self._pbar.write('', file=self._file)
                 self._pbar.write('{}\nTPOT closed prematurely. Will use the current best pipeline.'.format(e),
                                  file=self._file)
+        except Exception as exc:
+            print("Error while running eaMuPlusLambda : %s" % str(exc))
+            print(traceback.format_exc())
+            raise e
         finally:
             # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
             attempts = 10
@@ -725,7 +732,7 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
             if not self._optimized_pipeline:
-                raise RuntimeError('There was an error in the TPOT optimization '
+                raise Exception('There was an error in the TPOT optimization '
                                    'process. This could be because the data was '
                                    'not formatted properly, or because data for '
                                    'a regression problem was provided to the '
@@ -742,8 +749,8 @@ class TPOTBase(BaseEstimator):
                     self._last_optimized_pareto_front_n_gens = 0
         else:
             # If user passes CTRL+C in initial generation, self._pareto_front (halloffame) shoule be not updated yet.
-            # need raise RuntimeError because no pipeline has been optimized
-            raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
+            # need raise Exception because no pipeline has been optimized
+            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
 
     def _summary_of_best_pipeline(self, features, target):
         """Print out best pipeline at the end of optimization process.
@@ -762,7 +769,7 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
         """
         if not self._optimized_pipeline:
-            raise RuntimeError('There was an error in the TPOT optimization '
+            raise Exception('There was an error in the TPOT optimization '
                                'process. This could be because the data was '
                                'not formatted properly, or because data for '
                                'a regression problem was provided to the '
@@ -807,7 +814,7 @@ class TPOTBase(BaseEstimator):
 
         """
         if not self.fitted_pipeline_:
-            raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
+            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
 
         features = features.astype(np.float64)
 
@@ -861,7 +868,7 @@ class TPOTBase(BaseEstimator):
 
         """
         if self.fitted_pipeline_ is None:
-            raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
+            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
@@ -887,10 +894,10 @@ class TPOTBase(BaseEstimator):
 
         """
         if not self.fitted_pipeline_:
-            raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
+            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
         else:
             if not (hasattr(self.fitted_pipeline_, 'predict_proba')):
-                raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
+                raise Exception('The fitted pipeline does not have the predict_proba() function.')
             return self.fitted_pipeline_.predict_proba(features.astype(np.float64))
 
     def set_params(self, **params):
@@ -985,7 +992,7 @@ class TPOTBase(BaseEstimator):
 
         """
         if self._optimized_pipeline is None:
-            raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
+            raise Exception('A pipeline has not yet been optimized. Please call fit() first.')
 
         to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._imputed, self._optimized_pipeline_score)
 
