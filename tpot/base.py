@@ -247,8 +247,6 @@ class TPOTBase(BaseEstimator):
         if not self.disable_update_check:
             update_check('tpot', __version__)
 
-        print("I added this in Spyder")
-
         self._pareto_front = None
         self._optimized_pipeline = None
         self._optimized_pipeline_score = None
