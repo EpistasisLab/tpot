@@ -109,7 +109,7 @@ class TPOTBase(BaseEstimator):
                  warm_start=False, memory=None,
                  periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False,
-                 output_file=None, sc=None):
+                 redis_info=None, sc=None):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -265,12 +265,11 @@ class TPOTBase(BaseEstimator):
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
 
-        self.output_file = None
+        self.redis_info = redis_info
         self.sc = sc
         self.r = None
-        if output_file:
-            self.r = redis.StrictRedis(host='redis', port=6379, db=0)
-            self.output_file = output_file
+        if self.redis_info:
+            self.r = redis.StrictRedis(host=self.redis_info['host'], port=self.redis_info['port'], db=self.redis_info['db'])
 
         self.max_eval_time_seconds = max(int(self.max_eval_time_mins * 60), 1)
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
@@ -629,7 +628,7 @@ class TPOTBase(BaseEstimator):
 
         if self.r is not None:
             total_eval_str = pickle.dumps({'total_evaluation': total_evals})
-            self.r.publish(self.output_file,total_eval_str)
+            self.r.publish(self.redis_info['channel'], total_eval_str)
 
         try:
             with warnings.catch_warnings():
@@ -686,7 +685,7 @@ class TPOTBase(BaseEstimator):
 
             if self.r is not None:
                 status = pickle.dumps({'evaluation_status': 'complete'})
-                self.r.publish(self.output_file,status)
+                self.r.publish(self.redis_info['channel'],status)
             return self
 
     def _setup_memory(self):
@@ -1170,14 +1169,14 @@ class TPOTBase(BaseEstimator):
                 sample_weight=sample_weight,
                 groups=groups,
                 timeout=self.max_eval_time_seconds,
-                output_file=self.output_file
+                redis_info=self.redis_info
             )
 
             result_score_list = []
             #DeepLearn code
             if self.sc is not None:
                 arPipelines = []
-                output_file = self.output_file
+                redis_info = self.redis_info
                 max_eval_time_mins = self.max_eval_time_mins
                 scoring_function = self.scoring_function
                 cv = self.cv
@@ -1192,7 +1191,7 @@ class TPOTBase(BaseEstimator):
                         sample_weight=sample_weight,
                         groups=groups,
                         timeout=max_eval_time_mins, #self.max_eval_time_mins,
-                        output_file=output_file #self.output_file,
+                        redis_info=redis_info #self.redis_info,
                     ))
             #DeepLearn code
 
@@ -1512,8 +1511,14 @@ class TPOTBase(BaseEstimator):
             self._update_pbar(pbar_msg=('Skipped pipeline #{0} due to time out. '
                                         'Continuing to the next pipeline.'.format(self._pbar.n)))
             result_score_list.append(-float('inf'))
-        else:
+        elif isinstance(val, float):
             result_score_list.append(val)
+        else: #Error
+            print("Pipeline error:\n%s"%val)
+            self._update_pbar(pbar_msg=('Skipped pipeline #{0} due to error. '
+                                        'Continuing to the next pipeline.'.format(self._pbar.n)))
+            result_score_list.append(-float('inf'))
+
         return result_score_list
 
     @_pre_test

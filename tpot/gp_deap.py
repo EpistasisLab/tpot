@@ -413,7 +413,7 @@ def _format_pipeline_json(pipeline,features,target):
 @threading_timeoutable(default="Timeout")
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight=None, groups=None,
-                             output_file = None):
+                             redis_info = None):
     """Fit estimator and compute scores for a given dataset split.
     Parameters
     ----------
@@ -447,13 +447,13 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         cv_iter = list(cv.split(features, target, groups))
         scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
         # DeepLearn code
-        if output_file is not None:
+        if redis_info is not None:
             uid = uuid.uuid4().hex[:15].upper()
             sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
-            r = redis.StrictRedis(host='redis', port=6379, db=0)
+            r = redis.StrictRedis(host=redis_info['host'], port=redis_info['port'], db=redis_info['db'])
             json = {'started': 1}
-            r.publish(output_file,pickle.dumps(json))
-            r.hset(output_file, uid + '-fold', cv_num)
+            r.publish(redis_info['channel'], pickle.dumps(json))
+            r.hset(redis_info['channel'], uid + '-fold', cv_num)
 
         # DeepLearn code
 
@@ -472,16 +472,19 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             CV_score = np.array(scores)[:, 0]
 
             # DeepLearn code
-            if output_file is not None:
+            if redis_info is not None:
                 sklearn_pipeline_json['score'] = np.nanmean(CV_score)
                 json = {uid: sklearn_pipeline_json}
-                r.publish(output_file,pickle.dumps(json))
+                r.publish(redis_info['channel'], pickle.dumps(json))
             # DeepLearn code
 
             return np.nanmean(CV_score)
     except TimeoutException:
         return "Timeout"
     except Exception as e:
-        print("Error while running _wrapped_cross_val_score : %s" % str(e))
-        print(traceback.format_exc())
-        return -float('inf')
+        str_error = "Error: while running _wrapped_cross_val_score : %s\nTrace:\n%s" % (str(e), traceback.format_exc()) 
+        print(str_error)
+        return str_error
+        #print("Error while running _wrapped_cross_val_score : %s" % str(e))
+        #print(traceback.format_exc())
+        #return -float('inf')
