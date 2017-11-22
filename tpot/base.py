@@ -269,6 +269,7 @@ class TPOTBase(BaseEstimator):
         self.sc = sc
         self.r = None
         if self.redis_info:
+            print("Redis init.")
             self.r = redis.StrictRedis(host=self.redis_info['host'], port=self.redis_info['port'], db=self.redis_info['db'])
 
         self.max_eval_time_seconds = max(int(self.max_eval_time_mins * 60), 1)
