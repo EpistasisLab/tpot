@@ -224,28 +224,15 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     for ind in population:
         initialize_stats_dict(ind)
 
-    # Evaluate the individuals with an invalid fitness
-    invalid_ind = [ind for ind in population if not ind.fitness.valid]
-
-    fitnesses = toolbox.evaluate(invalid_ind)
-    for ind, fit in zip(invalid_ind, fitnesses):
-        ind.fitness.values = fit
-
-    if halloffame is not None:
-        halloffame.update(population)
-
-    record = stats.compile(population) if stats is not None else {}
-    logbook.record(gen=0, nevals=len(invalid_ind), **record)
-
     # Begin the generational process
-    for gen in range(1, ngen + 1):
-        # after each population save a periodic pipeline
-        if per_generation_function is not None:
-            per_generation_function()
-
-        # Vary the population
-        offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
-
+    for gen in range(ngen + 1):
+        
+        if gen == 0:
+            offspring, population = population, []
+        else:
+            # Vary the population
+            offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+    
         # Update generation statistic for all individuals which have invalid 'generation' stats
         # This hold for individuals that have been altered in the varOr function
         for ind in population:
@@ -288,7 +275,11 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                         )
                     )
                 pbar.write('')
-
+                
+        # after each population save a periodic pipeline
+        if per_generation_function is not None:
+            per_generation_function()
+            
         # Update the statistics with the new population
         record = stats.compile(population) if stats is not None else {}
         logbook.record(gen=gen, nevals=len(invalid_ind), **record)
