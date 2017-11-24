@@ -225,6 +225,11 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar, la
     else:
         age_gap = 2
         
+    
+    if len(layers)*age_gap >= ngen:
+        raise Exception('With {} layers and {} generations between each layer \
+                        the minimum number of generations should be greater than \
+                        {}'.format(len(layers),age_gap,age_gap*len(layers)))
     # TODO: Reduce verbosity by using an OrderedDict,
     # alternatively wait for ordering in dict to become a language specification..
     # Might be from Python 3.7 (CPython already has the implementation in 3.6)
@@ -246,7 +251,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar, la
         transfers_left = nr_transfers - transfers_had
         
         #last_layer_not_active = (transfers_had < (len(layers) - 1))
-        #current_layer_highest_acitve = min(transfers_had, len(layers))
+        current_layer_highest_active = min(transfers_had, len(layers))
         current_layer_lowest_active = max(len(layers)-transfers_left - 1, 0)
         
         for layer_size in layer_sizes:
@@ -257,6 +262,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar, la
             
             # Early termination of layers if new individuals won't have time to get to last layer
             current_layer = layer_sizes.index(layer_size)
+            
             if current_layer < current_layer_lowest_active:
                 continue 
 
@@ -287,17 +293,34 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar, la
             fitnesses = toolbox.evaluate(invalid_ind, sample_size=layer_size, timeout_seconds = layer_timeout)
             for ind, fit in zip(invalid_ind, fitnesses):
                 ind.fitness.values = fit
-    
+            
             if layer_size == layer_sizes[-1] :
                 if halloffame is not None:
                     # Update the hall of fame with the generated individuals if evaluated on the whole dataset
                     halloffame.update(offspring)
-                # after each population save a periodic pipeline
+                
+                # If an individual proved infeasible in the top layer (e.g. had a timeout),
+                # we remove it from all layers so does not re-appear/spawn similar offspring again later
+                # TODO: Evaluate if this actually is beneficial
+                for ind1 in layer_pop:
+                    for size in layer_sizes[:-1]:
+                        layers[size] = [ind2 for ind2 in layers[size] if not str(ind2) == str(ind1)]
+                
                 if per_generation_function is not None:
                     per_generation_function()
     
             # Select the next generation population
             layer_pop[:] = toolbox.select(layer_pop + offspring, mu)
+            
+            if (current_layer == current_layer_highest_active 
+               and current_layer != (len(layers) -1)):
+                # LTPOT only recommends pipelines evaluated in the highesy layer
+                # To be able to interrupt TPOT before a final layer is fully evaluated,
+                # we transfer (one of) the best individual of the highest active layer to the final layer
+                best_ind_copy = toolbox.clone(layer_pop[0])
+                if str(best_ind_copy) not in [str(ind) for ind in layers[layer_sizes[-1]]]:
+                    del best_ind_copy.fitness.values
+                    layers[layer_sizes[-1]].append(best_ind_copy)
     
         '''
         # pbar process
@@ -330,7 +353,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar, la
             for current_size, next_size in reversed(list(zip(layer_sizes, layer_sizes[1:]))):
                 if not layers[current_size]:
                     continue
-                print('transfering from', current_size,'to',next_size)
+                #print('transfering from', current_size,'to',next_size)
                 top_n = layers[current_size][:n_transfer]
                 layers[current_size] = layers[current_size][n_transfer:]
                 layers[next_size] = layers[next_size] + top_n
