@@ -253,7 +253,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar, la
             layer_pop = layers[layer_size]
             if not layer_pop:
                 continue
-            print('at', gen, layer_size)
+            #print('at', gen, layer_size)
             
             # Early termination of layers if new individuals won't have time to get to last layer
             current_layer = layer_sizes.index(layer_size)
