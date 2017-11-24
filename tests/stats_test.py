@@ -82,7 +82,8 @@ def test_mate_operator_stats_update():
 
     # Doing 10 tests
     for _ in range(10):
-        offspring1, offspring2 = tpot_obj._mate_operator(ind1, ind2)
+    # sample size doesn't matter here, so it's just for caching
+        offspring1, offspring2 = tpot_obj._mate_operator(ind1, ind2, sample_size=1)
 
         assert offspring1.statistics['crossover_count'] == ind1.statistics['crossover_count'] + ind2.statistics['crossover_count'] + 1
         assert offspring1.statistics['mutation_count'] == ind1.statistics['mutation_count'] + ind2.statistics['mutation_count']
@@ -118,7 +119,7 @@ def test_mut_operator_stats_update():
     tpot_obj.evaluated_individuals_[str(ind)] = tpot_obj._combine_individual_stats(2, 0.99, ind.statistics)
 
     for _ in range(10):
-        offspring, = tpot_obj._random_mutation_operator(ind)
+        offspring, = tpot_obj._random_mutation_operator(ind, sample_size=1)
 
         assert offspring.statistics['crossover_count'] == ind.statistics['crossover_count']
         assert offspring.statistics['mutation_count'] == ind.statistics['mutation_count'] + 1
