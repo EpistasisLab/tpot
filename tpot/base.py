@@ -620,31 +620,30 @@ class TPOTBase(BaseEstimator):
         layers = { int(N/2**i) : [] for i in range(self.n_layers)}
         
         
-        #try:
-        with warnings.catch_warnings():
-            self._setup_memory()
-            warnings.simplefilter('ignore')
-            pop, _ = eaMuPlusLambda(
-                population=pop,
-                toolbox=self._toolbox,
-                mu=self.population_size,
-                lambda_=self.offspring_size,
-                cxpb=self.crossover_rate,
-                mutpb=self.mutation_rate,
-                ngen=self.generations,
-                pbar=self._pbar,
-                layers = layers,
-                timeout_seconds = self.max_eval_time_seconds,
-                halloffame=self._pareto_front,
-                verbose=self.verbosity,
-                per_generation_function=self._check_periodic_pipeline
-            )
-
-        # store population for the next call
-        if self.warm_start:
-            self._pop = pop
+        
         try:
-                a =3
+            with warnings.catch_warnings():
+                self._setup_memory()
+                warnings.simplefilter('ignore')
+                pop, _ = eaMuPlusLambda(
+                    population=pop,
+                    toolbox=self._toolbox,
+                    mu=self.population_size,
+                    lambda_=self.offspring_size,
+                    cxpb=self.crossover_rate,
+                    mutpb=self.mutation_rate,
+                    ngen=self.generations,
+                    pbar=self._pbar,
+                    layers = layers,
+                    timeout_seconds = self.max_eval_time_seconds,
+                    halloffame=self._pareto_front,
+                    verbose=self.verbosity,
+                    per_generation_function=self._check_periodic_pipeline
+                )
+    
+            # store population for the next call
+            if self.warm_start:
+                self._pop = pop
         # Allow for certain exceptions to signal a premature fit() cancellation
         except Exception as e:
             print(e.message)
