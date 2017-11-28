@@ -56,7 +56,7 @@ from shutil import rmtree
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from sklearn.externals.joblib import Memory
-from sklearn.metrics import make_scorer
+from sklearn.metrics import make_scorer, roc_auc_score
 from deap import creator, gp
 from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
@@ -168,6 +168,29 @@ def test_init_default_scoring_4():
     with warnings.catch_warnings(record=True) as w:
         tpot_obj = TPOTClassifier(scoring=my_scorer)
     assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
+    assert tpot_obj.scoring_function == 'my_scorer'
+
+
+def test_init_default_scoring_5():
+    """Assert that TPOT intitializes with a valid sklearn metric function roc_auc_score."""
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=roc_auc_score)
+    assert len(w) == 1
+    assert issubclass(w[-1].category, DeprecationWarning)
+    assert "This scoring type was deprecated" in str(w[-1].message)
+    assert tpot_obj.scoring_function == 'roc_auc_score'
+
+
+def test_init_default_scoring_6():
+    """Assert that TPOT intitializes with a valid customized metric function in __main__"""
+    def my_scorer(y_true, y_pred):
+        return roc_auc_score(y_true, y_pred)
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=my_scorer)
+    assert len(w) == 1
+    assert issubclass(w[-1].category, DeprecationWarning)
+    assert "This scoring type was deprecated" in str(w[-1].message)
+    print(tpot_obj.scoring_function)
     assert tpot_obj.scoring_function == 'my_scorer'
 
 

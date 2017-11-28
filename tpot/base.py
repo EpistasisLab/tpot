@@ -358,10 +358,17 @@ class TPOTBase(BaseEstimator):
             elif callable(scoring):
                 # Heuristic to ensure user has not passed a metric
                 module = getattr(scoring, '__module__', None)
-                if hasattr(module, 'startswith') and \
+                if sys.version_info[0] < 3:
+                    if inspect.isfunction(scoring):
+                        args_list = inspect.getargspec(scoring)[0]
+                    else:
+                        args_list = inspect.getargspec(scoring.__call__)[0]
+                else:
+                    args_list = inspect.getfullargspec(scoring)[0]
+                if args_list == ["y_true", "y_pred"] or (hasattr(module, 'startswith') and \
                     (module.startswith('sklearn.metrics.') or module.startswith('tpot.metrics')) and \
                     not module.startswith('sklearn.metrics.scorer') and \
-                    not module.startswith('sklearn.metrics.tests.'):
+                    not module.startswith('sklearn.metrics.tests.')):
                     scoring_name = scoring.__name__
                     greater_is_better = 'loss' not in scoring_name and 'error' not in scoring_name
                     SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
