@@ -860,7 +860,7 @@ class TPOTBase(BaseEstimator):
             testing_features.astype(np.float64),
             testing_target.astype(np.float64)
         )
-        return abs(score)
+        return score
 
     def predict_proba(self, features):
         """Use the optimized pipeline to estimate the class probabilities for a feature set.
