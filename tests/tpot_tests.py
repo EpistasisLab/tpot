@@ -471,7 +471,7 @@ def test_score_2():
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
-    known_score = 12.1791953611
+    known_score = -12.1791953611
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -534,7 +534,7 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r, **training_target_r_weight_dict)
     # Get score from TPOT
-    known_score = 11.5790430757
+    known_score = -11.5790430757
     score = tpot_obj.score(testing_features_r, testing_target_r)
 
     assert np.allclose(cv_score1, cv_score2)

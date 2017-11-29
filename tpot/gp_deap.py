@@ -274,7 +274,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         if not pbar.disable:
             # Print only the best individual fitness
             if verbose == 2:
-                high_score = abs(max([halloffame.keys[x].wvalues[1] for x in range(len(halloffame.keys))]))
+                high_score = max([halloffame.keys[x].wvalues[1] for x in range(len(halloffame.keys))])
                 pbar.write('Generation {0} - Current best internal CV score: {1}'.format(gen, high_score))
 
             # Print the entire Pareto front
@@ -282,8 +282,8 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                 pbar.write('Generation {} - Current Pareto front scores:'.format(gen))
                 for pipeline, pipeline_scores in zip(halloffame.items, reversed(halloffame.keys)):
                     pbar.write('{}\t{}\t{}'.format(
-                            int(abs(pipeline_scores.wvalues[0])),
-                            abs(pipeline_scores.wvalues[1]),
+                            int(pipeline_scores.wvalues[0]),
+                            pipeline_scores.wvalues[1],
                             pipeline
                         )
                     )
