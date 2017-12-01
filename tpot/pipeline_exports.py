@@ -1,5 +1,8 @@
+#This is Deeplearn Inc file
+
 import uuid
 import re
+
 def build_pipeline_js(step,storage,func_dict):
     if type(step).__name__ == 'list':
         for item in step:
@@ -32,7 +35,10 @@ def build_pipeline_js(step,storage,func_dict):
                     tmp = re.sub(" at+\s+\w+>","",tmp)
                     tmp = re.sub("<function ","",tmp)
                     param_list[param] = tmp
-
+                elif 'dtype' in param:
+                    tmp = str(param_list[param])
+                    param_list[param] = tmp
+                    
             obj = {'name':step[0], 'obj_type':'algorithm', 'items':[], 'func':func_name, 'lib':lib}
             #look for estimator and format as tuple
             if 'estimator' in param_list.keys():
