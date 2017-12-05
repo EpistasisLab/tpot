@@ -1178,7 +1178,7 @@ class TPOTBase(BaseEstimator):
             if self.sc is not None:
                 arPipelines = []
                 redis_info = self.redis_info
-                max_eval_time_mins = self.max_eval_time_mins
+                max_eval_time_seconds = self.max_eval_time_seconds
                 scoring_function = self.scoring_function
                 cv = self.cv
                 br_features = self.sc.broadcast(features)
@@ -1191,7 +1191,7 @@ class TPOTBase(BaseEstimator):
                         scoring_function=scoring_function, #self.scoring_function,
                         sample_weight=sample_weight,
                         groups=groups,
-                        timeout=max_eval_time_mins, #self.max_eval_time_mins,
+                        timeout=max_eval_time_seconds, #self.max_eval_time_mins,
                         redis_info=redis_info #self.redis_info,
                     ))
             #DeepLearn code
