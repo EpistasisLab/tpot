@@ -72,6 +72,10 @@ docs/sources/examples/.Rhistory
 # PyCharm
 .idea
 
+# Spyder
+.spyproj*
+
+
 analyze-oj2-tpot-mdr.ipynb
 
 tpot-mdr-demo.ipynb

@@ -73,7 +73,7 @@ def pick_two_individuals_eligible_for_crossover(population):
     return population[idx1], population[idx2]
 
 
-def mutate_random_individual(population, toolbox):
+def mutate_random_individual(population, toolbox, sample_size):
     """Picks a random individual from the population, and performs mutation on a copy of it.
 
     Parameters
@@ -88,12 +88,12 @@ def mutate_random_individual(population, toolbox):
     """
     idx = np.random.randint(0,len(population))
     ind = population[idx]
-    ind, = toolbox.mutate(ind)
+    ind, = toolbox.mutate(ind, sample_size)
     del ind.fitness.values
     return ind
 
 
-def varOr(population, toolbox, lambda_, cxpb, mutpb):
+def varOr(population, toolbox, lambda_, cxpb, mutpb, sample_size):
     """Part of an evolutionary algorithm applying only the variation part
     (crossover, mutation **or** reproduction). The modified individuals have
     their fitness invalidated. The individuals are cloned so returned
@@ -132,15 +132,15 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
         if op_choice < cxpb:  # Apply crossover
             ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)
             if ind1 is not None:
-                ind1, _ = toolbox.mate(ind1, ind2)
+                ind1, _ = toolbox.mate(ind1, ind2, sample_size)
                 del ind1.fitness.values
             else:
                 # If there is no pair eligible for crossover, we still want to
                 # create diversity in the population, and do so by mutation instead.
-                ind1 = mutate_random_individual(population, toolbox)
+                ind1 = mutate_random_individual(population, toolbox, sample_size)
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
-            ind = mutate_random_individual(population, toolbox)
+            ind = mutate_random_individual(population, toolbox, sample_size)
             offspring.append(ind)
         else:  # Apply reproduction
             idx = np.random.randint(0, len(population))
@@ -171,7 +171,7 @@ def initialize_stats_dict(individual):
     individual.statistics['predecessor'] = 'ROOT',
 
 
-def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
+def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar, layers, timeout_seconds,
                    stats=None, halloffame=None, verbose=0, per_generation_function=None):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
@@ -220,56 +220,109 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 
+    if len(layers) == 1:
+        age_gap = ngen
+    else:
+        age_gap = 2
+        
+    
+    if len(layers)*age_gap >= ngen:
+        raise Exception('With {} layers and {} generations between each layer \
+                        the minimum number of generations should be greater than \
+                        {}'.format(len(layers),age_gap,age_gap*len(layers)))
+    # TODO: Reduce verbosity by using an OrderedDict,
+    # alternatively wait for ordering in dict to become a language specification..
+    # Might be from Python 3.7 (CPython already has the implementation in 3.6)
+    layer_sizes = list(sorted(layers))
+    #first_layer = layer_sizes[0]
+    #last_layer = layer_sizes[-1]
+    layers[layer_sizes[0]] = population
+    n_transfer = int(len(population)*0.5)
+    
+    nr_transfers = (ngen-1) // age_gap
+    
     # Initialize statistics dict for the individuals in the population, to keep track of mutation/crossover operations and predecessor relations
     for ind in population:
         initialize_stats_dict(ind)
 
-    # Evaluate the individuals with an invalid fitness
-    invalid_ind = [ind for ind in population if not ind.fitness.valid]
-
-    fitnesses = toolbox.evaluate(invalid_ind)
-    for ind, fit in zip(invalid_ind, fitnesses):
-        ind.fitness.values = fit
-
-    if halloffame is not None:
-        halloffame.update(population)
-
-    record = stats.compile(population) if stats is not None else {}
-    logbook.record(gen=0, nevals=len(invalid_ind), **record)
-
     # Begin the generational process
-    for gen in range(1, ngen + 1):
-        # after each population save a periodic pipeline
-        if per_generation_function is not None:
-            per_generation_function()
+    for gen in range(ngen):
+        transfers_had = gen // age_gap
+        transfers_left = nr_transfers - transfers_had
+        
+        #last_layer_not_active = (transfers_had < (len(layers) - 1))
+        current_layer_highest_active = min(transfers_had, len(layers))
+        current_layer_lowest_active = max(len(layers)-transfers_left - 1, 0)
+        
+        for layer_size in layer_sizes:
+            layer_pop = layers[layer_size]
+            if not layer_pop:
+                continue
+            #print('at', gen, layer_size)
+            
+            # Early termination of layers if new individuals won't have time to get to last layer
+            current_layer = layer_sizes.index(layer_size)
+            
+            if current_layer < current_layer_lowest_active:
+                continue 
 
-        # Vary the population
-        offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
-
-        # Update generation statistic for all individuals which have invalid 'generation' stats
-        # This hold for individuals that have been altered in the varOr function
-        for ind in population:
-            if ind.statistics['generation'] == 'INVALID':
-                ind.statistics['generation'] = gen
-
-        # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-
-        # update pbar for valid individuals (with fitness values)
-        if not pbar.disable:
-            pbar.update(len(offspring)-len(invalid_ind))
-
-        fitnesses = toolbox.evaluate(invalid_ind)
-        for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
-
-        # Update the hall of fame with the generated individuals
-        if halloffame is not None:
-            halloffame.update(offspring)
-
-        # Select the next generation population
-        population[:] = toolbox.select(population + offspring, mu)
-
+            if gen % age_gap == 0:
+                # Individuals new to this layer need to be evaluated before further optimization
+                offspring, layer_pop = layer_pop, []
+            else:
+                # Vary the population
+                offspring = varOr(layer_pop, toolbox, lambda_, cxpb, mutpb, layer_size)
+                
+            '''
+            # Update generation statistic for all individuals which have invalid 'generation' stats
+            # This hold for individuals that have been altered in the varOr function
+            for ind in population:
+                if ind.statistics['generation'] == 'INVALID':
+                    ind.statistics['generation'] = gen
+            '''
+            
+    
+            # Evaluate the individuals with an invalid fitness
+            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+    
+            # update pbar for valid individuals (with fitness values)
+            if not pbar.disable:
+                pbar.update(len(offspring)-len(invalid_ind))
+    
+            layer_timeout = timeout_seconds /2**(2*(len(layers) - current_layer - 1))
+            fitnesses = toolbox.evaluate(invalid_ind, sample_size=layer_size, timeout_seconds = layer_timeout)
+            for ind, fit in zip(invalid_ind, fitnesses):
+                ind.fitness.values = fit
+            
+            if layer_size == layer_sizes[-1] :
+                if halloffame is not None:
+                    # Update the hall of fame with the generated individuals if evaluated on the whole dataset
+                    halloffame.update(offspring)
+                
+                # If an individual proved infeasible in the top layer (e.g. had a timeout),
+                # we remove it from all layers so does not re-appear/spawn similar offspring again later
+                # TODO: Evaluate if this actually is beneficial
+                for ind1 in layer_pop:
+                    for size in layer_sizes[:-1]:
+                        layers[size] = [ind2 for ind2 in layers[size] if not str(ind2) == str(ind1)]
+                
+                if per_generation_function is not None:
+                    per_generation_function()
+    
+            # Select the next generation population
+            layer_pop[:] = toolbox.select(layer_pop + offspring, mu)
+            
+            if (current_layer == current_layer_highest_active 
+               and current_layer != (len(layers) -1)):
+                # LTPOT only recommends pipelines evaluated in the highesy layer
+                # To be able to interrupt TPOT before a final layer is fully evaluated,
+                # we transfer (one of) the best individual of the highest active layer to the final layer
+                best_ind_copy = toolbox.clone(layer_pop[0])
+                if str(best_ind_copy) not in [str(ind) for ind in layers[layer_sizes[-1]]]:
+                    del best_ind_copy.fitness.values
+                    layers[layer_sizes[-1]].append(best_ind_copy)
+    
+        '''
         # pbar process
         if not pbar.disable:
             # Print only the best individual fitness
@@ -288,10 +341,28 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                         )
                     )
                 pbar.write('')
-
+                
         # Update the statistics with the new population
         record = stats.compile(population) if stats is not None else {}
         logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+        '''
+            
+        # Every age_gap generations, we want to transfer the n best individuals
+        # of each layer to the next.
+        if (gen+1) % age_gap == 0:
+            for current_size, next_size in reversed(list(zip(layer_sizes, layer_sizes[1:]))):
+                if not layers[current_size]:
+                    continue
+                #print('transfering from', current_size,'to',next_size)
+                top_n = layers[current_size][:n_transfer]
+                layers[current_size] = layers[current_size][n_transfer:]
+                layers[next_size] = layers[next_size] + top_n
+            
+            # Completely renew the gene pool in the first layer
+            layers[layer_sizes[0]] = toolbox.population(n=mu)
+            for ind in layers[layer_sizes[0]]:
+                initialize_stats_dict(ind)
+            
 
     return population, logbook
 
