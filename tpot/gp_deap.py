@@ -31,7 +31,7 @@ from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
 from sklearn.base import clone
 from sklearn.utils import indexable
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection._validation import _fit_and_score
+from sklearn.model_selection._validation import _fit_and_score, _safe_split, _score
 from sklearn.model_selection._split import check_cv
 
 from sklearn.base import clone, is_classifier
@@ -413,7 +413,7 @@ def _format_pipeline_json(pipeline,features,target):
 @threading_timeoutable(default="Timeout")
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight=None, groups=None,
-                             redis_info = None):
+                             redis_info = None, over_sampler = None):
     """Fit estimator and compute scores for a given dataset split.
     Parameters
     ----------
@@ -456,21 +456,42 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             r.hset(redis_info['channel'], uid + '-fold', cv_num)
 
         # DeepLearn code
-
+        #print(over_sampler)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
-                                    X=features,
-                                    y=target,
-                                    scorer=scorer,
-                                    train=train,
-                                    test=test,
-                                    verbose=0,
-                                    parameters=None,
-                                    fit_params=sample_weight_dict)
-                                for train, test in cv_iter]
-            CV_score = np.array(scores)[:, 0]
+            scores = []
 
+            #for train, test in cv_iter:
+                # score = _fit_and_score(estimator=clone(sklearn_pipeline),
+                #                         X=features,
+                #                         y=target,
+                #                         scorer=scorer,
+                #                         train=train,
+                #                         test=test,
+                #                         verbose=0,
+                #                         parameters=None,
+                #                         fit_params=sample_weight_dict)
+                #scores.append(score)
+
+            #CV_score = np.array(scores)[:, 0]
+
+            for train_index, test_index in cv_iter:
+                estimator = clone(sklearn_pipeline)
+                fit_params=sample_weight_dict
+
+                X_train1, y_train1 = _safe_split(estimator, features, target, train_index)
+                X_test1, y_test1 = _safe_split(estimator, features, target, test_index, train_index)    
+
+                if over_sampler:
+                    X_resampled, y_resampled = over_sampler.fit_sample(X_train1, y_train1)
+                else:
+                    X_resampled, y_resampled = X_train1, y_train1
+
+                estimator.fit(X_resampled, y_resampled)
+                score = _score(estimator, X_test1, y_test1, scorer)
+                scores.append(score)
+
+            CV_score = scores        
             # DeepLearn code
             if redis_info is not None:
                 sklearn_pipeline_json['score'] = np.nanmean(CV_score)

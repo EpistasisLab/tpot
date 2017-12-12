@@ -109,7 +109,7 @@ class TPOTBase(BaseEstimator):
                  warm_start=False, memory=None,
                  periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False,
-                 redis_info=None, sc=None):
+                 redis_info=None, sc=None, over_sampler=None):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -267,6 +267,7 @@ class TPOTBase(BaseEstimator):
 
         self.redis_info = redis_info
         self.sc = sc
+        self.over_sampler = over_sampler
         self.r = None
         if self.redis_info:
             print("Redis init.")
@@ -1170,7 +1171,8 @@ class TPOTBase(BaseEstimator):
                 sample_weight=sample_weight,
                 groups=groups,
                 timeout=self.max_eval_time_seconds,
-                redis_info=self.redis_info
+                redis_info=self.redis_info,
+                over_sampler=self.over_sampler
             )
 
             result_score_list = []
@@ -1182,6 +1184,7 @@ class TPOTBase(BaseEstimator):
                 scoring_function = self.scoring_function
                 cv = self.cv
                 br_features = self.sc.broadcast(features)
+                over_sampler = self.over_sampler
                 def mapFunc(index):
                     return (index, _wrapped_cross_val_score(
                         sklearn_pipeline=arPipelines[index],
@@ -1192,7 +1195,8 @@ class TPOTBase(BaseEstimator):
                         sample_weight=sample_weight,
                         groups=groups,
                         timeout=max_eval_time_seconds, #self.max_eval_time_mins,
-                        redis_info=redis_info #self.redis_info,
+                        redis_info=redis_info, #self.redis_info,
+                        over_sampler=over_sampler
                     ))
             #DeepLearn code
 
