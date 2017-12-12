@@ -73,7 +73,7 @@ def pick_two_individuals_eligible_for_crossover(population):
     return population[idx1], population[idx2]
 
 
-def mutate_random_individual(population, toolbox, sample_size):
+def mutate_random_individual(population, toolbox):
     """Picks a random individual from the population, and performs mutation on a copy of it.
 
     Parameters
@@ -88,12 +88,12 @@ def mutate_random_individual(population, toolbox, sample_size):
     """
     idx = np.random.randint(0,len(population))
     ind = population[idx]
-    ind, = toolbox.mutate(ind, sample_size)
+    ind, = toolbox.mutate(ind)
     del ind.fitness.values
     return ind
 
 
-def varOr(population, toolbox, lambda_, cxpb, mutpb, sample_size=1):
+def varOr(population, toolbox, lambda_, cxpb, mutpb):
     """Part of an evolutionary algorithm applying only the variation part
     (crossover, mutation **or** reproduction). The modified individuals have
     their fitness invalidated. The individuals are cloned so returned
@@ -132,15 +132,15 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb, sample_size=1):
         if op_choice < cxpb:  # Apply crossover
             ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)
             if ind1 is not None:
-                ind1, _ = toolbox.mate(ind1, ind2, sample_size)
+                ind1, _ = toolbox.mate(ind1, ind2)
                 del ind1.fitness.values
             else:
                 # If there is no pair eligible for crossover, we still want to
                 # create diversity in the population, and do so by mutation instead.
-                ind1 = mutate_random_individual(population, toolbox, sample_size)
+                ind1 = mutate_random_individual(population, toolbox)
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
-            ind = mutate_random_individual(population, toolbox, sample_size)
+            ind = mutate_random_individual(population, toolbox)
             offspring.append(ind)
         else:  # Apply reproduction
             idx = np.random.randint(0, len(population))
@@ -271,7 +271,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar, la
                 offspring, layer_pop = layer_pop, []
             else:
                 # Vary the population
-                offspring = varOr(layer_pop, toolbox, lambda_, cxpb, mutpb, layer_size)
+                offspring = varOr(layer_pop, toolbox, lambda_, cxpb, mutpb)
                 
             '''
             # Update generation statistic for all individuals which have invalid 'generation' stats

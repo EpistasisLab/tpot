@@ -1132,7 +1132,7 @@ def test_evaluated_individuals_():
     )
     tpot_obj.fit(training_features, training_target)
     assert isinstance(tpot_obj.evaluated_individuals_, dict)
-    for (pipeline_string, sample_size) in sorted(tpot_obj.evaluated_individuals_.keys()):
+    for pipeline_string in sorted(tpot_obj.evaluated_individuals_.keys()):
         deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
         tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
@@ -1143,8 +1143,8 @@ def test_evaluated_individuals_():
             mean_cv_scores = np.mean(cv_scores)
         except Exception as e:
             mean_cv_scores = -float('inf')
-        assert np.allclose(tpot_obj.evaluated_individuals_[(pipeline_string, sample_size)]['internal_cv_score'], mean_cv_scores)
-        assert np.allclose(tpot_obj.evaluated_individuals_[(pipeline_string, sample_size)]['operator_count'], operator_count)
+        assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string]['internal_cv_score'], mean_cv_scores)
+        assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string]['operator_count'], operator_count)
 
 
 def test_stop_by_max_time_mins():
@@ -1289,7 +1289,7 @@ def test_preprocess_individuals():
     individuals.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
 
     # set pipeline 2 has been evaluated before
-    tpot_obj.evaluated_individuals_[(pipeline_string_2, default_sample_size)] = (1, 0.99999)
+    tpot_obj.evaluated_individuals_by_sample_size[(pipeline_string_2, default_sample_size)] = (1, 0.99999)
 
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
@@ -1681,8 +1681,8 @@ def test_mate_operator():
 
 
     # set as evaluated pipelines in tpot_obj.evaluated_individuals_
-    tpot_obj.evaluated_individuals_[(str(ind1),1)] = (2, 0.99)
-    tpot_obj.evaluated_individuals_[(str(ind2),1)] = (2, 0.99)
+    tpot_obj.evaluated_individuals_[str(ind1)] = (2, 0.99)
+    tpot_obj.evaluated_individuals_[str(ind2)] = (2, 0.99)
 
     offspring1, offspring2 = tpot_obj._mate_operator(ind1, ind2)
     expected_offspring1 = (
