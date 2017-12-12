@@ -1188,7 +1188,7 @@ class TPOTBase(BaseEstimator):
                  self.evaluated_individuals_[(str(individual), sample_size)]['internal_cv_score'])
                 for individual in individuals]
 
-    def _preprocess_individuals(self, individuals, sample_size):
+    def _preprocess_individuals(self, individuals, sample_size=1):
         """Preprocess DEAP individuals before pipeline evaluation.
 
         Parameters
@@ -1230,7 +1230,7 @@ class TPOTBase(BaseEstimator):
             individual_str = str(individual)
             sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
             if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
-                self.evaluated_individuals_[individual_str] = self._combine_individual_stats(5000.,
+                self.evaluated_individuals_[(individual_str, sample_size)] = self._combine_individual_stats(5000.,
                                                                                              -float('inf'),
                                                                                              individual.statistics)
                 self._update_pbar(pbar_msg='Invalid pipeline encountered. Skipping its evaluation.')
@@ -1267,7 +1267,7 @@ class TPOTBase(BaseEstimator):
 
         return operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts
 
-    def _update_evaluated_individuals_(self, result_score_list, eval_individuals_str, operator_counts, stats_dicts, sample_size):
+    def _update_evaluated_individuals_(self, result_score_list, eval_individuals_str, operator_counts, stats_dicts, sample_size=1):
         """Update self.evaluated_individuals_ and error message during pipeline evaluation.
 
         Parameters
@@ -1315,7 +1315,7 @@ class TPOTBase(BaseEstimator):
                 self._pbar.update(pbar_num)
 
     @_pre_test
-    def _mate_operator(self, ind1, ind2, sample_size):
+    def _mate_operator(self, ind1, ind2, sample_size=1):
         for _ in range(self._max_mut_loops):
             ind1_copy, ind2_copy = self._toolbox.clone(ind1), self._toolbox.clone(ind2)
             offspring, offspring2 = cxOnePoint(ind1_copy, ind2_copy)

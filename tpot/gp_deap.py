@@ -93,7 +93,7 @@ def mutate_random_individual(population, toolbox, sample_size):
     return ind
 
 
-def varOr(population, toolbox, lambda_, cxpb, mutpb, sample_size):
+def varOr(population, toolbox, lambda_, cxpb, mutpb, sample_size=1):
     """Part of an evolutionary algorithm applying only the variation part
     (crossover, mutation **or** reproduction). The modified individuals have
     their fitness invalidated. The individuals are cloned so returned
@@ -226,10 +226,10 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar, la
         age_gap = 2
         
     
-    if len(layers)*age_gap >= ngen:
+    if (len(layers)-1)*age_gap >= ngen:
         raise Exception('With {} layers and {} generations between each layer \
                         the minimum number of generations should be greater than \
-                        {}'.format(len(layers),age_gap,age_gap*len(layers)))
+                        {}'.format(len(layers),age_gap,age_gap*(len(layers)-1)))
     # TODO: Reduce verbosity by using an OrderedDict,
     # alternatively wait for ordering in dict to become a language specification..
     # Might be from Python 3.7 (CPython already has the implementation in 3.6)
