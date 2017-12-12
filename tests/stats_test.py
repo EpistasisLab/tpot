@@ -82,6 +82,7 @@ def test_mate_operator_stats_update():
 
     # Doing 10 tests
     for _ in range(10):
+    # sample size doesn't matter here, so it's just for caching
         offspring1, offspring2 = tpot_obj._mate_operator(ind1, ind2)
 
         assert offspring1.statistics['crossover_count'] == ind1.statistics['crossover_count'] + ind2.statistics['crossover_count'] + 1

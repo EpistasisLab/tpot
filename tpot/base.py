@@ -102,6 +102,7 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
+                 n_layers = 1,
                  random_state=None, config_dict=None,
                  warm_start=False, memory=None,
                  periodic_checkpoint_folder=None, early_stop=None,
@@ -178,6 +179,11 @@ class TPOTBase(BaseEstimator):
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
             complex pipelines, but will also allow TPOT to run longer.
+        n_layers: int, optional (default: 1)
+            Layered TPOT makes use of subsets gradually increasing in size when evaluating
+            individuals. If n_layers = 1, it will behave like TPOT, for n_layers>1, every
+            individual is first evaluated on at least one subset of the data, and only when
+            that performs well, evaluated on more data.
         random_state: int, optional (default: None)
             Random number generator seed for TPOT. Use this parameter to make sure
             that TPOT will give you the same results each time you run it against the
@@ -267,6 +273,7 @@ class TPOTBase(BaseEstimator):
         self._last_optimized_pareto_front_n_gens = 0
         self.memory = memory
         self._memory = None # initial Memory setting for sklearn pipeline
+        self.n_layers = n_layers
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -327,6 +334,7 @@ class TPOTBase(BaseEstimator):
         # Dictionary of individuals that have already been evaluated in previous
         # generations
         self.evaluated_individuals_ = {}
+        self.evaluated_individuals_by_sample_size = {}
         self.random_state = random_state
 
         self._setup_scoring_function(scoring)
@@ -621,6 +629,11 @@ class TPOTBase(BaseEstimator):
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
+        N = len(target)
+        layers = { int(N/2**i) : [] for i in range(self.n_layers)}
+        
+        
+        
         try:
             with warnings.catch_warnings():
                 self._setup_memory()
@@ -634,16 +647,19 @@ class TPOTBase(BaseEstimator):
                     mutpb=self.mutation_rate,
                     ngen=self.generations,
                     pbar=self._pbar,
+                    layers = layers,
+                    timeout_seconds = self.max_eval_time_seconds,
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
                     per_generation_function=self._check_periodic_pipeline
                 )
-
+    
             # store population for the next call
             if self.warm_start:
                 self._pop = pop
-
         # Allow for certain exceptions to signal a premature fit() cancellation
+        except Exception as e:
+            print(e.message)
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
                 self._pbar.write('', file=self._file)
@@ -1115,7 +1131,7 @@ class TPOTBase(BaseEstimator):
         stats['internal_cv_score'] = cv_score
         return stats
 
-    def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
+    def _evaluate_individuals(self, individuals, features, target, sample_size = None, timeout_seconds = None, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
 
         Parameters
@@ -1127,6 +1143,8 @@ class TPOTBase(BaseEstimator):
             A numpy matrix containing the training and testing features for the individual's evaluation
         target: numpy.ndarray {n_samples}
             A numpy matrix containing the training and testing target for the individual's evaluation
+        sample_size: integer
+            The number of instances to sample from the training set for the evaluation
         sample_weight: array-like {n_samples}, optional
             List of sample weights to balance (or un-balanace) the dataset target as needed
         groups: array-like {n_samples, }, optional
@@ -1139,8 +1157,14 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
-
-        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals)
+        if not sample_size:
+            sample_size = len(target)
+        if not timeout_seconds:
+            timeout_seconds = self.max_eval_time_seconds
+        if sample_size < len(target):
+            features,_,target,_ = train_test_split(features, target, stratify=target, train_size=sample_size, random_state=self.random_state)
+            
+        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals, sample_size)
 
         # Make the partial function that will be called below
         partial_wrapped_cross_val_score = partial(
@@ -1151,7 +1175,7 @@ class TPOTBase(BaseEstimator):
             scoring_function=self.scoring_function,
             sample_weight=sample_weight,
             groups=groups,
-            timeout=self.max_eval_time_seconds
+            timeout=timeout_seconds
         )
 
         result_score_list = []
@@ -1172,14 +1196,14 @@ class TPOTBase(BaseEstimator):
                 for val in tmp_result_scores:
                     result_score_list = self._update_val(val, result_score_list)
 
-        self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
+        self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts, sample_size)
 
         """Look up the operator count and cross validation score to use in the optimization"""
         return [(self.evaluated_individuals_[str(individual)]['operator_count'],
                  self.evaluated_individuals_[str(individual)]['internal_cv_score'])
                 for individual in individuals]
 
-    def _preprocess_individuals(self, individuals):
+    def _preprocess_individuals(self, individuals, sample_size = 1):
         """Preprocess DEAP individuals before pipeline evaluation.
 
         Parameters
@@ -1187,6 +1211,9 @@ class TPOTBase(BaseEstimator):
         individuals: a list of DEAP individual
             One individual is a list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
+        sample_size: integer
+            The sample size of the evaluation that the individual will be preprocessed for (
+            used when looking up if the evaluation has already been performed).
 
         Returns
         -------
@@ -1226,7 +1253,8 @@ class TPOTBase(BaseEstimator):
                                                                                              individual.statistics)
                 self._update_pbar(pbar_msg='Invalid pipeline encountered. Skipping its evaluation.')
             # Check if the individual was evaluated before
-            elif individual_str in self.evaluated_individuals_:
+            elif ((individual_str, sample_size) in self.evaluated_individuals_by_sample_size or
+                  individual_str in self.evaluated_individuals_):
                 self._update_pbar(pbar_msg=('Pipeline encountered that has previously been evaluated during the '
                                             'optimization process. Using the score from the previous evaluation.'))
             else:
@@ -1258,7 +1286,7 @@ class TPOTBase(BaseEstimator):
 
         return operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts
 
-    def _update_evaluated_individuals_(self, result_score_list, eval_individuals_str, operator_counts, stats_dicts):
+    def _update_evaluated_individuals_(self, result_score_list, eval_individuals_str, operator_counts, stats_dicts, sample_size=1):
         """Update self.evaluated_individuals_ and error message during pipeline evaluation.
 
         Parameters
@@ -1279,9 +1307,13 @@ class TPOTBase(BaseEstimator):
         """
         for result_score, individual_str in zip(result_score_list, eval_individuals_str):
             if type(result_score) in [float, np.float64, np.float32]:
-                self.evaluated_individuals_[individual_str] = self._combine_individual_stats(operator_counts[individual_str],
-                                                                                             result_score,
-                                                                                             stats_dicts[individual_str])
+                combined_stats = self._combine_individual_stats(operator_counts[individual_str], result_score, stats_dicts[individual_str])
+                self.evaluated_individuals_by_sample_size[(individual_str, sample_size)] = combined_stats
+                
+                # if the used sample size is biggest yet for the individual, we use that to represent the fitness
+                sample_sizes_used = [s for (ind_str, s) in self.evaluated_individuals_by_sample_size if ind_str == individual_str]
+                if max(sample_sizes_used) == sample_size:
+                    self.evaluated_individuals_[individual_str] = combined_stats
             else:
                 raise ValueError('Scoring function does not return a float.')
 
