@@ -179,6 +179,11 @@ class TPOTBase(BaseEstimator):
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
             complex pipelines, but will also allow TPOT to run longer.
+        n_layers: int, optional (default: 1)
+            Layered TPOT makes use of subsets gradually increasing in size when evaluating
+            individuals. If n_layers = 1, it will behave like TPOT, for n_layers>1, every
+            individual is first evaluated on at least one subset of the data, and only when
+            that performs well, evaluated on more data.
         random_state: int, optional (default: None)
             Random number generator seed for TPOT. Use this parameter to make sure
             that TPOT will give you the same results each time you run it against the
