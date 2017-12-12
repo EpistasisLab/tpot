@@ -1305,13 +1305,14 @@ def test_preprocess_individuals():
         'DecisionTreeClassifier__min_samples_leaf=5, '
         'DecisionTreeClassifier__min_samples_split=5)'
     )
-
+    default_sample_size = 1
+    
     individuals = []
     individuals.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
     individuals.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
 
     # set pipeline 2 has been evaluated before
-    tpot_obj.evaluated_individuals_[pipeline_string_2] = (1, 0.99999)
+    tpot_obj.evaluated_individuals_by_sample_size[(pipeline_string_2, default_sample_size)] = (1, 0.99999)
 
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
