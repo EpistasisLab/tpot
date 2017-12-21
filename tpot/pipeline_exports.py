@@ -30,15 +30,9 @@ def build_pipeline_js(step,storage,func_dict):
 
             #clean any func objects in params
             for param in param_list:
-                if 'func' in param:
-                    tmp = str(param_list[param])
-                    tmp = re.sub(" at+\s+\w+>","",tmp)
-                    tmp = re.sub("<function ","",tmp)
-                    param_list[param] = tmp
-                elif 'dtype' in param:
-                    tmp = str(param_list[param])
-                    param_list[param] = tmp
-                    
+                if callable(param_list[param]):
+                    param_list[param] = param_list[param].__name__
+
             obj = {'name':step[0], 'obj_type':'algorithm', 'items':[], 'func':func_name, 'lib':lib}
             #look for estimator and format as tuple
             if 'estimator' in param_list.keys():
