@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 
-"""This file is part of the TPOT library.
+"""Copyright 2015-Present Randal S. Olson.
 
-TPOT was primarily developed at the University of Pennsylvania by:
-    - Randal S. Olson (rso@randalolson.com)
-    - Weixuan Fu (weixuanf@upenn.edu)
-    - Daniel Angell (dpa34@drexel.edu)
-    - and many more generous open source contributors
+This file is part of the TPOT library.
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -21,6 +17,11 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
+Most of the code in this file was copied from the DEAP project, which
+can be found on GitHub at https://github.com/DEAP/deap. We copied these
+functions into TPOT to customize or fix portions of the code for our
+own purposes in TPOT.
+
 """
 
 import numpy as np
@@ -31,7 +32,7 @@ from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
 from sklearn.base import clone
 from sklearn.utils import indexable
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection._validation import _fit_and_score, _safe_split, _score
+from sklearn.model_selection._validation import _fit_and_score
 from sklearn.model_selection._split import check_cv
 
 from sklearn.base import clone, is_classifier
@@ -43,10 +44,9 @@ import threading
 import redis
 import uuid
 import pickle
-from .pipeline_exports import collect_feature_list, serialize_to_js
+import pipeline_exports as pe
 import re
 import traceback
-import time
 
 def pick_two_individuals_eligible_for_crossover(population):
     """Pick two individuals from the population which can do crossover, that is, they share a primitive.
@@ -71,13 +71,13 @@ def pick_two_individuals_eligible_for_crossover(population):
                                     pop_as_str[i] != pop_as_str[i+1+j]]
 
     # Pairs are eligible in both orders, this ensures that both orders are considered
-    eligible_pairs += [(j, i) for (i, j) in eligible_pairs]
+    eligible_pairs += [(j, i) for (i,j) in eligible_pairs]
 
     if not eligible_pairs:
         # If there are no eligible pairs, the caller should decide what to do
         return None, None
 
-    pair = np.random.randint(0, len(eligible_pairs))
+    pair = np.random.randint(0,len(eligible_pairs))
     idx1, idx2 = eligible_pairs[pair]
 
     return population[idx1], population[idx2]
@@ -158,28 +158,6 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
     return offspring
 
-def initialize_stats_dict(individual):
-    '''
-    Initializes the stats dict for individual
-    The statistics initialized are:
-        'generation': generation in which the individual was evaluated. Initialized as: 0
-        'mutation_count': number of mutation operations applied to the individual and its predecessor cumulatively. Initialized as: 0
-        'crossover_count': number of crossover operations applied to the individual and its predecessor cumulatively. Initialized as: 0
-        'predecessor': string representation of the individual. Initialized as: ('ROOT',)
-
-    Parameters
-    ----------
-    individual: deap individual
-
-    Returns
-    -------
-    object
-    '''
-    individual.statistics['generation'] = 0
-    individual.statistics['mutation_count'] = 0
-    individual.statistics['crossover_count'] = 0
-    individual.statistics['predecessor'] = 'ROOT',
-
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                    stats=None, halloffame=None, verbose=0, per_generation_function=None):
@@ -230,10 +208,6 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 
-    # Initialize statistics dict for the individuals in the population, to keep track of mutation/crossover operations and predecessor relations
-    for ind in population:
-        initialize_stats_dict(ind)
-
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
 
@@ -255,12 +229,6 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
-
-        # Update generation statistic for all individuals which have invalid 'generation' stats
-        # This hold for individuals that have been altered in the varOr function
-        for ind in population:
-            if ind.statistics['generation'] == 'INVALID':
-                ind.statistics['generation'] = gen
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -372,7 +340,6 @@ def mutNodeReplacement(individual, pset):
             for i, tmpnode in enumerate(individual[index + 1:], index + 1):
                 if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in tmpnode.args:
                     rindex = i
-                    break
 
         # pset.primitives[node.ret] can get a list of the type of node
         # for example: if op.root is True then the node.ret is Output_DF object
@@ -405,15 +372,15 @@ def mutNodeReplacement(individual, pset):
 # DeepLearn code
 def _format_pipeline_json(pipeline,features,target):
     json = {'pipeline_list':[],'func_dict':{}}
-    json['feature_matrix'] = collect_feature_list(pipeline,features,target)
-    serialize_to_js(pipeline,json['pipeline_list'],json['func_dict'])
+    json['feature_matrix'] = pe.collect_feature_list(pipeline,features,target)
+    pe.serialize_to_js(pipeline,json['pipeline_list'],json['func_dict'])
     return json
 # DeepLearn code
 
 @threading_timeoutable(default="Timeout")
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight=None, groups=None,
-                             redis_info = None, over_sampler = None):
+                             output_file = None):
     """Fit estimator and compute scores for a given dataset split.
     Parameters
     ----------
@@ -446,66 +413,45 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         cv.random_state = cv_num
         cv_iter = list(cv.split(features, target, groups))
         scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
+
         # DeepLearn code
-        if redis_info is not None:
+        if output_file is not None:
             uid = uuid.uuid4().hex[:15].upper()
             sklearn_pipeline_json = _format_pipeline_json(sklearn_pipeline.steps,features,target)
-            r = redis.StrictRedis(host=redis_info['host'], port=redis_info['port'], db=redis_info['db'])
-            json = {'started': 1}
-            r.publish(redis_info['channel'], pickle.dumps(json))
-            r.hset(redis_info['channel'], uid + '-fold', cv_num)
-
+            r = redis.StrictRedis(host='redis', port=6379, db=0)
+<<<<<<< HEAD
+            r.hset(output_file, uid + '-fold', cv_num)
+=======
+            r.hset(output_file, uid + '-fold', cv)
+>>>>>>> 6d7c8fac9b24f84dbc8df2a0c466936f0bfb9f98
         # DeepLearn code
-        #print(over_sampler)
+
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            scores = []
+            scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
+                                    X=features,
+                                    y=target,
+                                    scorer=scorer,
+                                    train=train,
+                                    test=test,
+                                    verbose=0,
+                                    parameters=None,
+                                    fit_params=sample_weight_dict)
+                                for train, test in cv_iter]
+            CV_score = np.array(scores)[:, 0]
 
-            #for train, test in cv_iter:
-                # score = _fit_and_score(estimator=clone(sklearn_pipeline),
-                #                         X=features,
-                #                         y=target,
-                #                         scorer=scorer,
-                #                         train=train,
-                #                         test=test,
-                #                         verbose=0,
-                #                         parameters=None,
-                #                         fit_params=sample_weight_dict)
-                #scores.append(score)
-
-            #CV_score = np.array(scores)[:, 0]
-
-            for train_index, test_index in cv_iter:
-                estimator = clone(sklearn_pipeline)
-                fit_params=sample_weight_dict
-
-                X_train1, y_train1 = _safe_split(estimator, features, target, train_index)
-                X_test1, y_test1 = _safe_split(estimator, features, target, test_index, train_index)    
-
-                if over_sampler:
-                    X_resampled, y_resampled = over_sampler.fit_sample(X_train1, y_train1)
-                else:
-                    X_resampled, y_resampled = X_train1, y_train1
-
-                estimator.fit(X_resampled, y_resampled)
-                score = _score(estimator, X_test1, y_test1, scorer)
-                scores.append(score)
-
-            CV_score = scores        
             # DeepLearn code
-            if redis_info is not None:
+            print("cv score is {}".format(np.nanmean(CV_score)))
+            if output_file is not None:
                 sklearn_pipeline_json['score'] = np.nanmean(CV_score)
                 json = {uid: sklearn_pipeline_json}
-                r.publish(redis_info['channel'], pickle.dumps(json))
+                r.publish(output_file,pickle.dumps(json))
             # DeepLearn code
 
             return np.nanmean(CV_score)
     except TimeoutException:
         return "Timeout"
     except Exception as e:
-        str_error = "Error: while running _wrapped_cross_val_score : %s\nTrace:\n%s" % (str(e), traceback.format_exc()) 
-        print(str_error)
-        return str_error
-        #print("Error while running _wrapped_cross_val_score : %s" % str(e))
-        #print(traceback.format_exc())
-        #return -float('inf')
+        print("Error while running _wrapped_cross_val_score : %s" % str(e))
+        print(traceback.format_exc())
+        return -float('inf')

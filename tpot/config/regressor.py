@@ -73,24 +73,12 @@ regressor_config_dict = {
         'p': [1, 2]
     },
 
-    'sklearn.linear_model.LassoLarsCV': {
-        'normalize': [True, False]
-    },
-
     'sklearn.svm.LinearSVR': {
         'loss': ["epsilon_insensitive", "squared_epsilon_insensitive"],
         'dual': [True, False],
         'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
         'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.],
         'epsilon': [1e-4, 1e-3, 1e-2, 1e-1, 1.]
-    },
-
-    'sklearn.ensemble.RandomForestRegressor': {
-        'n_estimators': [100],
-        'max_features': np.arange(0.05, 1.01, 0.05),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'bootstrap': [True, False]
     },
 
     'sklearn.linear_model.RidgeCV': {
