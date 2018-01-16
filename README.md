@@ -37,7 +37,7 @@ TPOT is built on top of scikit-learn, so all of the code it generates should loo
 
 **TPOT is still under active development** and we encourage you to check back on this repository regularly for updates.
 
-For further information about TPOT, please see the [project documentation](http://rhiever.github.io/tpot/).
+For further information about TPOT, please see the [project documentation](http://epistasislab.github.io/tpot/).
 
 ## License
 
@@ -47,11 +47,11 @@ Generally, we have licensed TPOT to make it as widely usable as possible.
 
 ## Installation
 
-We maintain the [TPOT installation instructions](http://rhiever.github.io/tpot/installing/) in the documentation. TPOT requires a working installation of Python.
+We maintain the [TPOT installation instructions](http://epistasislab.github.io/tpot/installing/) in the documentation. TPOT requires a working installation of Python.
 
 ## Usage
 
-TPOT can be used [on the command line](http://rhiever.github.io/tpot/using/#tpot-on-the-command-line) or [with Python code](http://rhiever.github.io/tpot/using/#tpot-with-code).
+TPOT can be used [on the command line](http://epistasislab.github.io/tpot/using/#tpot-on-the-command-line) or [with Python code](http://epistasislab.github.io/tpot/using/#tpot-with-code).
 
 Click on the corresponding links to find more information on TPOT usage in the documentation.
 
@@ -138,13 +138,13 @@ exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 ```
 
-Check the documentation for [more examples and tutorials](http://rhiever.github.io/tpot/examples/).
+Check the documentation for [more examples and tutorials](http://epistasislab.github.io/tpot/examples/).
 
 ## Contributing to TPOT
 
 We welcome you to [check the existing issues](https://github.com/EpistasisLab/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/EpistasisLab/tpot/issues/new) so we can discuss it.
 
-Before submitting any contributions, please review our [contribution guidelines](http://rhiever.github.io/tpot/contributing/).
+Before submitting any contributions, please review our [contribution guidelines](http://epistasislab.github.io/tpot/contributing/).
 
 ## Having problems or have questions about TPOT?
 
@@ -198,7 +198,7 @@ BibTeX entry:
 
 Alternatively, you can cite the repository directly with the following DOI:
 
-[![DOI](https://zenodo.org/badge/20747/EpistasisLab/tpot.svg)](https://zenodo.org/badge/latestdoi/20747/EpistasisLab/tpot)
+[![DOI](https://zenodo.org/badge/20747/rhiever/tpot.svg)](https://zenodo.org/badge/latestdoi/20747/rhiever/tpot)
 
 ## Support for TPOT
 
