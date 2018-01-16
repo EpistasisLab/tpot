@@ -400,9 +400,9 @@ TPOT comes with a handful of default operators and parameter configurations that
 <td>TPOT will search over a broad range of preprocessors, feature constructors, feature selectors, models, and parameters to find a series of operators that minimize the error of the model predictions. Some of these operators are complex and may take a long time to run, especially on larger datasets.
 <br /><br />
 <strong>Note: This is the default configuration for TPOT.</strong> To use this configuration, use the default value (None) for the config_dict parameter.</td>
-<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier.py">Classification</a>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier.py">Classification</a>
 <br /><br />
-<a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor.py">Regression</a></td>
+<a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor.py">Regression</a></td>
 </tr>
 
 <tr>
@@ -410,9 +410,9 @@ TPOT comes with a handful of default operators and parameter configurations that
 <td>TPOT will search over a restricted range of preprocessors, feature constructors, feature selectors, models, and parameters to find a series of operators that minimize the error of the model predictions. Only simpler and fast-running operators will be used in these pipelines, so TPOT light is useful for finding quick and simple pipelines for a classification or regression problem.
 <br /><br />
 This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
-<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier_light.py">Classification</a>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier_light.py">Classification</a>
 <br /><br />
-<a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_light.py">Regression</a></td>
+<a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor_light.py">Regression</a></td>
 </tr>
 
 <tr>
@@ -420,9 +420,9 @@ This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
 <td>TPOT will search over a series of feature selectors and <a href="https://en.wikipedia.org/wiki/Multifactor_dimensionality_reduction">Multifactor Dimensionality Reduction</a> models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for <a href="https://en.wikipedia.org/wiki/Genome-wide_association_study">genome-wide association studies (GWAS)</a>, and is described in detail online <a href="https://arxiv.org/abs/1702.01780">here</a>.
 <br /><br />
 Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets.</td>
-<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier_mdr.py">Classification</a>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier_mdr.py">Classification</a>
 <br /><br />
-<a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_mdr.py">Regression</a></td>
+<a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor_mdr.py">Regression</a></td>
 </tr>
 
 <tr>
@@ -430,9 +430,9 @@ Note that TPOT MDR may be slow to run because the feature selection routines are
 <td>TPOT uses a configuration dictionary with a one-hot encoder and the operators normally included in TPOT that also support sparse matrices.
 <br /><br />
 This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
-<td align="center"><a href="https://github.com/rhiever/tpot/blob/master/tpot/config/classifier_sparse.py">Classification</a>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier_sparse.py">Classification</a>
 <br /><br />
-<a href="https://github.com/rhiever/tpot/blob/master/tpot/config/regressor_sparse.py">Regression</a></td>
+<a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor_sparse.py">Regression</a></td>
 </tr>
 
 </table>
@@ -522,7 +522,7 @@ tpot data/mnist.csv -is , -target class -config tpot_classifier_config.py -g 5 -
 
 When using the command-line interface, the configuration file specified in the `-config` parameter *must* name its custom TPOT configuration `tpot_config`. Otherwise, TPOT will not be able to locate the configuration dictionary.
 
-For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/rhiever/tpot/blob/master/tpot/config/classifier.py) and [regression](https://github.com/rhiever/tpot/blob/master/tpot/config/regressor.py) in TPOT's source code.
+For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier.py) and [regression](https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor.py) in TPOT's source code.
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 

@@ -12,7 +12,7 @@
                           <strong>periodic_checkpoint_folder</strong>=None,
                           <strong>verbosity</strong>=0,
                           <strong>disable_update_check</strong>=False</em>)</pre>
-<div align="right"><a href="https://github.com/rhiever/tpot/blob/master/tpot/base.py">source</a></div>
+<div align="right"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/base.py">source</a></div>
 
 Automated machine learning for supervised classification tasks.
 
@@ -482,7 +482,7 @@ Does not return anything
                          <strong>periodic_checkpoint_folder</strong>=None,
                          <strong>verbosity</strong>=0,
                          <strong>disable_update_check</strong>=False</em>)</pre>
-<div align="right"><a href="https://github.com/rhiever/tpot/blob/master/tpot/base.py">source</a></div>
+<div align="right"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/base.py">source</a></div>
 
 Automated machine learning for supervised regression tasks.
 

@@ -147,9 +147,9 @@
           <div role="main">
             <div class="section">
               
-                <p>We welcome you to <a href="https://github.com/rhiever/tpot/issues/">check the existing issues</a> for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please <a href="https://github.com/rhiever/tpot/issues/new">file a new issue</a> so we can discuss it.</p>
+                <p>We welcome you to <a href="https://github.com/EpistasisLab/tpot/issues/">check the existing issues</a> for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please <a href="https://github.com/EpistasisLab/tpot/issues/new">file a new issue</a> so we can discuss it.</p>
 <h2 id="project-layout">Project layout</h2>
-<p>The latest stable release of TPOT is on the <a href="https://github.com/rhiever/tpot/tree/master">master branch</a>, whereas the latest version of TPOT in development is on the <a href="https://github.com/rhiever/tpot/tree/development">development branch</a>. Make sure you are looking at and working on the correct branch if you're looking to contribute code.</p>
+<p>The latest stable release of TPOT is on the <a href="https://github.com/EpistasisLab/tpot/tree/master">master branch</a>, whereas the latest version of TPOT in development is on the <a href="https://github.com/EpistasisLab/tpot/tree/development">development branch</a>. Make sure you are looking at and working on the correct branch if you're looking to contribute code.</p>
 <p>In terms of directory structure:</p>
 <ul>
 <li>All of TPOT's code sources are in the <code>tpot</code> directory</li>
@@ -161,11 +161,11 @@
 <p>Make sure to familiarize yourself with the project layout before making any major contributions, and especially make sure to send all code changes to the <code>development</code> branch.</p>
 <h2 id="how-to-contribute">How to contribute</h2>
 <p>The preferred way to contribute to TPOT is to fork the
-<a href="https://github.com/rhiever/tpot/">main repository</a> on
+<a href="https://github.com/EpistasisLab/tpot/">main repository</a> on
 GitHub:</p>
 <ol>
 <li>
-<p>Fork the <a href="https://github.com/rhiever/tpot">project repository</a>:
+<p>Fork the <a href="https://github.com/EpistasisLab/tpot">project repository</a>:
    click on the 'Fork' button near the top of the page. This creates
    a copy of the code under your account on the GitHub server.</p>
 </li>
@@ -217,22 +217,22 @@ GitHub:</p>
 <p>If your contribution changes TPOT in any way:</p>
 <ul>
 <li>
-<p>Update the <a href="https://github.com/rhiever/tpot/tree/master/docs_sources">documentation</a> so all of your changes are reflected there.</p>
+<p>Update the <a href="https://github.com/EpistasisLab/tpot/tree/master/docs_sources">documentation</a> so all of your changes are reflected there.</p>
 </li>
 <li>
-<p>Update the <a href="https://github.com/rhiever/tpot/blob/master/README.md">README</a> if anything there has changed.</p>
+<p>Update the <a href="https://github.com/EpistasisLab/tpot/blob/master/README.md">README</a> if anything there has changed.</p>
 </li>
 </ul>
 <p>If your contribution involves any code changes:</p>
 <ul>
 <li>
-<p>Update the <a href="https://github.com/rhiever/tpot/blob/master/tests.py">project unit tests</a> to test your code changes.</p>
+<p>Update the <a href="https://github.com/EpistasisLab/tpot/blob/master/tests.py">project unit tests</a> to test your code changes.</p>
 </li>
 <li>
 <p>Make sure that your code is properly commented with <a href="https://www.python.org/dev/peps/pep-0257/">docstrings</a> and comments explaining your rationale behind non-obvious coding practices.</p>
 </li>
 <li>
-<p>If your code affected any of the pipeline operators, make sure that the corresponding <a href="https://github.com/rhiever/tpot/blob/master/tpot/export_utils.py">export functionality</a> reflects those changes.</p>
+<p>If your code affected any of the pipeline operators, make sure that the corresponding <a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/export_utils.py">export functionality</a> reflects those changes.</p>
 </li>
 </ul>
 <p>If your contribution requires a new library dependency:</p>
@@ -241,16 +241,16 @@ GitHub:</p>
 <p>Double-check that the new dependency is easy to install via <code>pip</code> or Anaconda and supports both Python 2 and 3. If the dependency requires a complicated installation, then we most likely won't merge your changes because we want to keep TPOT easy to install.</p>
 </li>
 <li>
-<p>Add the required version of the library to <a href="https://github.com/rhiever/tpot/blob/master/.travis.yml#L7">.travis.yml</a></p>
+<p>Add the required version of the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/.travis.yml#L7">.travis.yml</a></p>
 </li>
 <li>
-<p>Add a line to pip install the library to <a href="https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L46">.travis_install.sh</a></p>
+<p>Add a line to pip install the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_install.sh#L46">.travis_install.sh</a></p>
 </li>
 <li>
-<p>Add a line to print the version of the library to <a href="https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L63">.travis_install.sh</a></p>
+<p>Add a line to print the version of the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_install.sh#L63">.travis_install.sh</a></p>
 </li>
 <li>
-<p>Similarly add a line to print the version of the library to <a href="https://github.com/rhiever/tpot/blob/master/ci/.travis_test.sh#L13">.travis_test.sh</a></p>
+<p>Similarly add a line to print the version of the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_test.sh#L13">.travis_test.sh</a></p>
 </li>
 </ul>
 <h2 id="after-submitting-your-pull-request">After submitting your pull request</h2>
@@ -282,18 +282,18 @@ GitHub:</p>
 
   Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
-	  
+      
         </div>
       </div>
 
     </section>
-    
+
   </div>
 
   <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/rhiever/tpot" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/rhiever/tpot/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../examples/" style="color: #fcfcfc;">&laquo; Previous</a></span>
@@ -303,7 +303,10 @@ GitHub:</p>
       
     </span>
 </div>
+    <script>var base_url = '..';</script>
     <script src="../js/theme.js"></script>
+      <script src="../search/require.js"></script>
+      <script src="../search/search.js"></script>
 
 </body>
 </html>

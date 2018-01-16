@@ -59,4 +59,4 @@ Finally to install TPOT itself, run the following command:
 pip install tpot
 ```
 
-Please [file a new issue](https://github.com/rhiever/tpot/issues/new) if you run into installation problems.
+Please [file a new issue](https://github.com/EpistasisLab/tpot/issues/new) if you run into installation problems.

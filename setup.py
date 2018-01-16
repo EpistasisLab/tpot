@@ -17,7 +17,7 @@ setup(
     author='Randal S. Olson',
     author_email='rso@randalolson.com',
     packages=find_packages(),
-    url='https://github.com/rhiever/tpot',
+    url='https://github.com/EpistasisLab/tpot',
     license='GNU/LGPLv3',
     entry_points={'console_scripts': ['tpot=tpot:main', ]},
     description=('Tree-based Pipeline Optimization Tool'),
@@ -32,7 +32,7 @@ E-mail: rso@randalolson.com
 
 or Twitter: https://twitter.com/randal_olson
 
-This project is hosted at https://github.com/rhiever/tpot
+This project is hosted at https://github.com/EpistasisLab/tpot
 ''',
     zip_safe=True,
     install_requires=['numpy>=1.12.1',

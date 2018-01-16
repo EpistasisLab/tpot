@@ -5,12 +5,12 @@ belonging to a typical class of machine learning tasks.
 
 | Dataset | Task                    | Task class             | Dataset description | Jupyter notebook                                                                           |
 | ------- | ----------------------- | ---------------------- |:-------------------:|:------------------------------------------------------------------------------------------:|
-| Iris                  | flower classification   | classification         | [link](https://archive.ics.uci.edu/ml/datasets/iris) | [link](https://github.com/rhiever/tpot/blob/master/tutorials/IRIS.ipynb) |
-| MNIST                 | digit recognition       | (image) classification | [link](https://yann.lecun.com/exdb/mnist/) | [link](https://github.com/rhiever/tpot/blob/master/tutorials/MNIST.ipynb) |
+| Iris                  | flower classification   | classification         | [link](https://archive.ics.uci.edu/ml/datasets/iris) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/IRIS.ipynb) |
+| MNIST                 | digit recognition       | (image) classification | [link](https://yann.lecun.com/exdb/mnist/) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/MNIST.ipynb) |
 | Boston                | housing prices modeling | regression             | [link](https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html) | N/A    |
-| Titanic               | survival analysis       | classification         | [link](https://www.kaggle.com/c/titanic/data) | [link](https://github.com/rhiever/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb) |
-| Bank Marketing        | subscription prediction | classification         | [link](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing) | [link](https://github.com/rhiever/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb) |
-| MAGIC Gamma Telescope | event detection         | classification         | [link](https://archive.ics.uci.edu/ml/datasets/MAGIC+Gamma+Telescope) | [link](https://github.com/rhiever/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb) |
+| Titanic               | survival analysis       | classification         | [link](https://www.kaggle.com/c/titanic/data) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb) |
+| Bank Marketing        | subscription prediction | classification         | [link](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb) |
+| MAGIC Gamma Telescope | event detection         | classification         | [link](https://archive.ics.uci.edu/ml/datasets/MAGIC+Gamma+Telescope) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb) |
 
 **Notes:**
 - For details on how the `fit()`, `score()` and `export()` methods work, refer to the [usage documentation](/using/).
@@ -146,11 +146,11 @@ results = exported_pipeline.predict(testing_features)
 
 ## Titanic survival analysis
 
-To see the TPOT applied the Titanic Kaggle dataset, see the Jupyter notebook [here](https://github.com/rhiever/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb). This example shows how to take a messy dataset and preprocess it such that it can be used in scikit-learn and TPOT.
+To see the TPOT applied the Titanic Kaggle dataset, see the Jupyter notebook [here](https://github.com/EpistasisLab/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb). This example shows how to take a messy dataset and preprocess it such that it can be used in scikit-learn and TPOT.
 
 ## Portuguese Bank Marketing
 
-The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found [here](https://github.com/rhiever/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb).
+The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found [here](https://github.com/EpistasisLab/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb).
 
 ## MAGIC Gamma Telescope
-The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found [here](https://github.com/rhiever/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb).
+The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found [here](https://github.com/EpistasisLab/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb).

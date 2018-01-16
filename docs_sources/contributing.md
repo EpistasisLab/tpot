@@ -1,8 +1,8 @@
-We welcome you to [check the existing issues](https://github.com/rhiever/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/rhiever/tpot/issues/new) so we can discuss it.
+We welcome you to [check the existing issues](https://github.com/EpistasisLab/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/EpistasisLab/tpot/issues/new) so we can discuss it.
 
 ## Project layout
 
-The latest stable release of TPOT is on the [master branch](https://github.com/rhiever/tpot/tree/master), whereas the latest version of TPOT in development is on the [development branch](https://github.com/rhiever/tpot/tree/development). Make sure you are looking at and working on the correct branch if you're looking to contribute code.
+The latest stable release of TPOT is on the [master branch](https://github.com/EpistasisLab/tpot/tree/master), whereas the latest version of TPOT in development is on the [development branch](https://github.com/EpistasisLab/tpot/tree/development). Make sure you are looking at and working on the correct branch if you're looking to contribute code.
 
 In terms of directory structure:
 
@@ -17,10 +17,10 @@ Make sure to familiarize yourself with the project layout before making any majo
 ## How to contribute
 
 The preferred way to contribute to TPOT is to fork the
-[main repository](https://github.com/rhiever/tpot/) on
+[main repository](https://github.com/EpistasisLab/tpot/) on
 GitHub:
 
-1. Fork the [project repository](https://github.com/rhiever/tpot):
+1. Fork the [project repository](https://github.com/EpistasisLab/tpot):
    click on the 'Fork' button near the top of the page. This creates
    a copy of the code under your account on the GitHub server.
 
@@ -69,29 +69,29 @@ Before you submit a pull request for your contribution, please work through this
 
 If your contribution changes TPOT in any way:
 
-* Update the [documentation](https://github.com/rhiever/tpot/tree/master/docs_sources) so all of your changes are reflected there.
+* Update the [documentation](https://github.com/EpistasisLab/tpot/tree/master/docs_sources) so all of your changes are reflected there.
 
-* Update the [README](https://github.com/rhiever/tpot/blob/master/README.md) if anything there has changed.
+* Update the [README](https://github.com/EpistasisLab/tpot/blob/master/README.md) if anything there has changed.
 
 If your contribution involves any code changes:
 
-* Update the [project unit tests](https://github.com/rhiever/tpot/blob/master/tests.py) to test your code changes.
+* Update the [project unit tests](https://github.com/EpistasisLab/tpot/blob/master/tests.py) to test your code changes.
 
 * Make sure that your code is properly commented with [docstrings](https://www.python.org/dev/peps/pep-0257/) and comments explaining your rationale behind non-obvious coding practices.
 
-* If your code affected any of the pipeline operators, make sure that the corresponding [export functionality](https://github.com/rhiever/tpot/blob/master/tpot/export_utils.py) reflects those changes.
+* If your code affected any of the pipeline operators, make sure that the corresponding [export functionality](https://github.com/EpistasisLab/tpot/blob/master/tpot/export_utils.py) reflects those changes.
 
 If your contribution requires a new library dependency:
 
 * Double-check that the new dependency is easy to install via `pip` or Anaconda and supports both Python 2 and 3. If the dependency requires a complicated installation, then we most likely won't merge your changes because we want to keep TPOT easy to install.
 
-* Add the required version of the library to [.travis.yml](https://github.com/rhiever/tpot/blob/master/.travis.yml#L7)
+* Add the required version of the library to [.travis.yml](https://github.com/EpistasisLab/tpot/blob/master/.travis.yml#L7)
 
-* Add a line to pip install the library to [.travis_install.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L46)
+* Add a line to pip install the library to [.travis_install.sh](https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_install.sh#L46)
 
-* Add a line to print the version of the library to [.travis_install.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L63)
+* Add a line to print the version of the library to [.travis_install.sh](https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_install.sh#L63)
 
-* Similarly add a line to print the version of the library to [.travis_test.sh](https://github.com/rhiever/tpot/blob/master/ci/.travis_test.sh#L13)
+* Similarly add a line to print the version of the library to [.travis_test.sh](https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_test.sh#L13)
 
 ## After submitting your pull request
 
