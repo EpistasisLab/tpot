@@ -56,7 +56,7 @@ from shutil import rmtree
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from sklearn.externals.joblib import Memory
-from sklearn.metrics import make_scorer
+from sklearn.metrics import make_scorer, roc_auc_score
 from deap import creator, gp
 from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
@@ -146,9 +146,9 @@ def test_init_default_scoring_2():
     """Assert that TPOT intitializes with a valid customized metric function."""
     with warnings.catch_warnings(record=True) as w:
         tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
-    assert len(w) == 1
-    assert issubclass(w[-1].category, DeprecationWarning)
-    assert "This scoring type was deprecated" in str(w[-1].message)
+    assert len(w) == 1 # deap 1.2.2 warning message made this unit test failed
+    assert issubclass(w[-1].category, DeprecationWarning) # deap 1.2.2 warning message made this unit test failed
+    assert "This scoring type was deprecated" in str(w[-1].message) # deap 1.2.2 warning message made this unit test failed
     assert tpot_obj.scoring_function == 'balanced_accuracy'
 
 
@@ -156,7 +156,7 @@ def test_init_default_scoring_3():
     """Assert that TPOT intitializes with a valid _BaseScorer."""
     with warnings.catch_warnings(record=True) as w:
         tpot_obj = TPOTClassifier(scoring=make_scorer(balanced_accuracy))
-    assert len(w) == 0
+    assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
     assert tpot_obj.scoring_function == 'balanced_accuracy'
 
 
@@ -167,7 +167,30 @@ def test_init_default_scoring_4():
 
     with warnings.catch_warnings(record=True) as w:
         tpot_obj = TPOTClassifier(scoring=my_scorer)
-    assert len(w) == 0
+    assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
+    assert tpot_obj.scoring_function == 'my_scorer'
+
+
+def test_init_default_scoring_5():
+    """Assert that TPOT intitializes with a valid sklearn metric function roc_auc_score."""
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=roc_auc_score)
+    assert len(w) == 1
+    assert issubclass(w[-1].category, DeprecationWarning)
+    assert "This scoring type was deprecated" in str(w[-1].message)
+    assert tpot_obj.scoring_function == 'roc_auc_score'
+
+
+def test_init_default_scoring_6():
+    """Assert that TPOT intitializes with a valid customized metric function in __main__"""
+    def my_scorer(y_true, y_pred):
+        return roc_auc_score(y_true, y_pred)
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=my_scorer)
+    assert len(w) == 1
+    assert issubclass(w[-1].category, DeprecationWarning)
+    assert "This scoring type was deprecated" in str(w[-1].message)
+    print(tpot_obj.scoring_function)
     assert tpot_obj.scoring_function == 'my_scorer'
 
 
@@ -448,7 +471,7 @@ def test_score_2():
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
-    known_score = 12.1791953611
+    known_score = -12.1791953611
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -511,7 +534,7 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r, **training_target_r_weight_dict)
     # Get score from TPOT
-    known_score = 11.5790430757
+    known_score = -11.5790430757
     score = tpot_obj.score(testing_features_r, testing_target_r)
 
     assert np.allclose(cv_score1, cv_score2)
@@ -1757,7 +1780,8 @@ def test_mutNodeReplacement():
         if new_prims_list == old_prims_list:  # Terminal mutated
             assert new_ret_type_list == old_ret_type_list
         else:  # Primitive mutated
-            diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
+            diff_prims = [x for x in new_prims_list if x not in old_prims_list]
+            diff_prims += [x for x in old_prims_list if x not in new_prims_list]
             if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
                 assert diff_prims[0].ret == diff_prims[1].ret
         assert mut_ind[0][0].ret == Output_Array
@@ -1795,7 +1819,8 @@ def test_mutNodeReplacement_2():
                 if isinstance(node, gp.Primitive):
                     Primitive_Count += 1
             assert Primitive_Count == 4
-            diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
+            diff_prims = [x for x in new_prims_list if x not in old_prims_list]
+            diff_prims += [x for x in old_prims_list if x not in new_prims_list]
             if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
                 assert diff_prims[0].ret == diff_prims[1].ret
         assert mut_ind[0][0].ret == Output_Array

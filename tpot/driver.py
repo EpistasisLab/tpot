@@ -533,7 +533,7 @@ def tpot_driver(args):
 
     if args.VERBOSITY in [1, 2] and tpot_obj._optimized_pipeline:
         training_score = max([x.wvalues[1] for x in tpot_obj._pareto_front.keys])
-        print('\nTraining score: {}'.format(abs(training_score)))
+        print('\nTraining score: {}'.format(training_score))
         print('Holdout score: {}'.format(tpot_obj.score(testing_features, testing_target)))
 
     elif args.VERBOSITY >= 3 and tpot_obj._pareto_front:
@@ -542,7 +542,7 @@ def tpot_driver(args):
         for pipeline, pipeline_scores in pipelines:
             tpot_obj._fitted_pipeline = tpot_obj.pareto_front_fitted_pipelines_[str(pipeline)]
             print('{TRAIN_SCORE}\t{TEST_SCORE}\t{PIPELINE}'.format(
-                    TRAIN_SCORE=int(abs(pipeline_scores.wvalues[0])),
+                    TRAIN_SCORE=int(pipeline_scores.wvalues[0]),
                     TEST_SCORE=tpot_obj.score(testing_features, testing_target),
                     PIPELINE=pipeline
                 )

@@ -38,11 +38,16 @@ from deap import creator
 
 from nose.tools import assert_raises, assert_equal
 
-test_operator_key = 'sklearn.feature_selection.SelectPercentile'
-
+test_operator_key_1 = 'sklearn.feature_selection.SelectPercentile'
+test_operator_key_2 = 'sklearn.feature_selection.SelectFromModel'
 TPOTSelectPercentile, TPOTSelectPercentile_args = TPOTOperatorClassFactory(
-    test_operator_key,
-    classifier_config_dict[test_operator_key]
+    test_operator_key_1,
+    classifier_config_dict[test_operator_key_1]
+)
+
+TPOTSelectFromModel, TPOTSelectFromModel_args = TPOTOperatorClassFactory(
+    test_operator_key_2,
+    classifier_config_dict[test_operator_key_2]
 )
 
 mnist_data = load_digits()
@@ -76,7 +81,6 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
-    print(export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset))
     assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 
@@ -443,15 +447,27 @@ results = exported_pipeline.predict(testing_features)
 
 
 def test_operator_export():
-    """Assert that a TPOT operator can export properly with a function as a parameter to a classifier."""
+    """Assert that a TPOT operator can export properly with a callable function as a parameter."""
+    assert list(TPOTSelectPercentile.arg_types) == TPOTSelectPercentile_args
     export_string = TPOTSelectPercentile.export(5)
     assert export_string == "SelectPercentile(score_func=f_classif, percentile=5)"
+
+
+def test_operator_export_2():
+    """Assert that a TPOT operator can export properly with a BaseEstimator as a parameter."""
+    assert list(TPOTSelectFromModel.arg_types) == TPOTSelectFromModel_args
+    export_string = TPOTSelectFromModel.export('gini', 0.10, 100, 0.10)
+    expected_string = ("SelectFromModel(estimator=ExtraTreesClassifier(criterion=\"gini\","
+        " max_features=0.1, n_estimators=100), threshold=0.1)")
+    print(export_string)
+    assert export_string == expected_string
 
 
 def test_get_by_name():
     """Assert that the Operator class returns operators by name appropriately."""
     tpot_obj = TPOTClassifier()
     assert get_by_name("SelectPercentile", tpot_obj.operators).__class__ == TPOTSelectPercentile.__class__
+    assert get_by_name("SelectFromModel", tpot_obj.operators).__class__ == TPOTSelectFromModel.__class__
 
 
 def test_get_by_name_2():
