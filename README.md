@@ -1,10 +1,10 @@
 Master status: [![Master Build Status - Mac/Linux](https://travis-ci.org/EpistasisLab/tpot.svg?branch=master)](https://travis-ci.org/EpistasisLab/tpot)
-[![Master Build Status - Windows](https://ci.appveyor.com/api/projects/status/fgylout0lxddt0my?svg=true)](https://ci.appveyor.com/project/EpistasisLab/tpot/branch/master)
+[![Master Build Status - Windows](https://ci.appveyor.com/api/projects/status/b7bmpwpkjhifrm7v/branch/master?svg=true)](https://ci.appveyor.com/project/weixuanfu/tpot?branch=master)
 [![Master Code Health](https://landscape.io/github/EpistasisLab/tpot/master/landscape.svg?style=flat)](https://landscape.io/github/EpistasisLab/tpot/master)
 [![Master Coverage Status](https://coveralls.io/repos/github/EpistasisLab/tpot/badge.svg?branch=master)](https://coveralls.io/github/EpistasisLab/tpot?branch=master)
 
 Development status: [![Development Build Status - Mac/Linux](https://travis-ci.org/EpistasisLab/tpot.svg?branch=development)](https://travis-ci.org/EpistasisLab/tpot/branches)
-[![Development Build Status - Windows](https://ci.appveyor.com/api/projects/status/fgylout0lxddt0my/branch/development?svg=true)](https://ci.appveyor.com/project/EpistasisLab/tpot?branch=development)
+[![Development Build Status - Windows](https://ci.appveyor.com/api/projects/status/b7bmpwpkjhifrm7v/branch/development?svg=true)](https://ci.appveyor.com/project/weixuanfu/tpot?branch=development)
 [![Development Code Health](https://landscape.io/github/EpistasisLab/tpot/development/landscape.svg?style=flat)](https://landscape.io/github/EpistasisLab/tpot/development)
 [![Development Coverage Status](https://coveralls.io/repos/github/EpistasisLab/tpot/badge.svg?branch=development)](https://coveralls.io/github/EpistasisLab/tpot?branch=development)
 
