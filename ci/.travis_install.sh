@@ -33,12 +33,11 @@ conda update --yes conda
 # provided versions
 if [[ "$LATEST" == "true" ]]; then
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
-        numpy scipy scikit-learn cython py-xgboost pandas
+        numpy scipy scikit-learn cython pandas
 else
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION \
         scikit-learn=$SKLEARN_VERSION \
-	py-xgboost=$XGBOOST_VERSION \
 	cython \
   pandas
 fi
@@ -54,6 +53,7 @@ fi
 pip install update_checker
 pip install tqdm
 pip install stopit
+pip install xgboost
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
