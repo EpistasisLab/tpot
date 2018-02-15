@@ -116,7 +116,7 @@ regressor_config_dict = {
 
     'sklearn.cluster.FeatureAgglomeration': {
         'linkage': ['ward', 'complete', 'average'],
-        'affinity': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed']
+        'affinity': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine']
     },
 
     'sklearn.preprocessing.MaxAbsScaler': {
@@ -180,7 +180,7 @@ regressor_config_dict = {
     },
 
     'sklearn.feature_selection.VarianceThreshold': {
-        'threshold': np.arange(0.05, 1.01, 0.05)
+        'threshold': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2]
     },
 
     'sklearn.feature_selection.SelectFromModel': {
