@@ -10,6 +10,7 @@
                           <strong>warm_start</strong>=False,
                           <strong>memory</strong>=None,
                           <strong>periodic_checkpoint_folder</strong>=None,
+                          <strong>early_stop</strong>=None,
                           <strong>verbosity</strong>=0,
                           <strong>disable_update_check</strong>=False</em>)</pre>
 <div align="right"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/base.py">source</a></div>
@@ -480,6 +481,7 @@ Does not return anything
                          <strong>warm_start</strong>=False,
                          <strong>memory</strong>=None,
                          <strong>periodic_checkpoint_folder</strong>=None,
+                         <strong>early_stop</strong>=None,
                          <strong>verbosity</strong>=0,
                          <strong>disable_update_check</strong>=False</em>)</pre>
 <div align="right"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/base.py">source</a></div>
