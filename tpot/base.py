@@ -1164,7 +1164,7 @@ class TPOTBase(BaseEstimator):
         else:
             # chunk size for pbar update
             # chunk size is minimal or cpu_count * 2 or n_jobs * 4
-            chunk_size = min(cpu_count()*2, self.n_jobs * 4)
+            chunk_size = min(cpu_count()*2, self.n_jobs*4)
             for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                 self._stop_by_max_time_mins()
                 parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
