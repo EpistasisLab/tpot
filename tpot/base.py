@@ -1163,11 +1163,13 @@ class TPOTBase(BaseEstimator):
                 result_score_list = self._update_val(val, result_score_list)
         else:
             # chunk size for pbar update
-            for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
+            # chunk size is min of cpu_count * 2 and n_jobs * 4
+            chunk_size = min(cpu_count()*2, self.n_jobs*4)
+            for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                 self._stop_by_max_time_mins()
                 parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
                 tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
-                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
+                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
                 # update pbar
                 for val in tmp_result_scores:
                     result_score_list = self._update_val(val, result_score_list)
