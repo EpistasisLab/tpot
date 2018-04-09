@@ -35,14 +35,14 @@ pip install deap update_checker tqdm stopit
 ```Shell
 # For Python version <=3.3
 pip install pywin32
-# For Any python version
+# For any python version
 conda install pywin32
 ```
 
-**Optionally**, you can install [XGBoost](https://github.com/dmlc/xgboost) if you would like TPOT to use the eXtreme Gradient Boosting models. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed.
+**Optionally**, you can install [XGBoost](https://github.com/dmlc/xgboost) if you would like TPOT to use the eXtreme Gradient Boosting models. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed. **Windows users: pip installation may not work on some Windows environments, and it may cause unexpected errors.**
 
 ```Shell
-conda install py-xgboost
+pip install xgboost
 ```
 
 If you have issues installing XGBoost, check the [XGBoost installation documentation](http://xgboost.readthedocs.io/en/latest/build.html).

@@ -538,29 +538,8 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
 
         """
-        features = features.astype(np.float64)
 
-        # Resets the imputer to be fit for the new dataset
-        self._fitted_imputer = None
-        self._imputed = False
-        # If features is a sparse matrix, do not apply imputation
-        if sparse.issparse(features):
-            if self.config_dict_params in [None, "TPOT light", "TPOT MDR"]:
-                raise ValueError(
-                    'Not all operators in {} supports sparse matrix. '
-                    'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict_params)
-                )
-            elif self.config_dict_params != "TPOT sparse":
-                print(
-                    'Warning: Since the input matrix is a sparse matrix, please makes sure all the operators in the '
-                    'customized config dictionary supports sparse matriies.'
-                )
-        else:
-            if np.any(np.isnan(features)):
-                self._imputed = True
-                features = self._impute_values(features)
-
-        self._check_dataset(features, target)
+        features, target = self._check_dataset(features, target)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
@@ -802,10 +781,7 @@ class TPOTBase(BaseEstimator):
         features = features.astype(np.float64)
 
         if np.any(np.isnan(features)):
-            self._imputed = True
             features = self._impute_values(features)
-        else:
-            self._imputed = False
 
         return self.fitted_pipeline_.predict(features)
 
@@ -852,6 +828,9 @@ class TPOTBase(BaseEstimator):
         """
         if self.fitted_pipeline_ is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
+
+        if np.any(np.isnan(testing_features)):
+            testing_features = self._impute_values(testing_features)
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
@@ -1024,8 +1003,28 @@ class TPOTBase(BaseEstimator):
         -------
         None
         """
+        # Resets the imputer to be fit for the new dataset
+        self._fitted_imputer = None
+        self._imputed = False
+        # If features is a sparse matrix, do not apply imputation
+        if sparse.issparse(features):
+            if self.config_dict_params in [None, "TPOT light", "TPOT MDR"]:
+                raise ValueError(
+                    'Not all operators in {} supports sparse matrix. '
+                    'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict_params)
+                )
+            elif self.config_dict_params != "TPOT sparse":
+                print(
+                    'Warning: Since the input matrix is a sparse matrix, please makes sure all the operators in the '
+                    'customized config dictionary supports sparse matriies.'
+                )
+        else:
+            if np.any(np.isnan(features)):
+                self._imputed = True
+                features = self._impute_values(features)
         try:
-            check_X_y(features, target, accept_sparse=True)
+            X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
+            return X, y
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
@@ -1033,6 +1032,7 @@ class TPOTBase(BaseEstimator):
                 'the features must be a 2-D array and target labels must be a '
                 '1-D array.'
             )
+
 
     def _compile_to_sklearn(self, expr):
         """Compile a DEAP pipeline into a sklearn pipeline.
@@ -1163,11 +1163,13 @@ class TPOTBase(BaseEstimator):
                 result_score_list = self._update_val(val, result_score_list)
         else:
             # chunk size for pbar update
-            for chunk_idx in range(0, len(sklearn_pipeline_list), self.n_jobs * 4):
+            # chunk size is min of cpu_count * 2 and n_jobs * 4
+            chunk_size = min(cpu_count()*2, self.n_jobs*4)
+            for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                 self._stop_by_max_time_mins()
                 parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
                 tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
-                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + self.n_jobs * 4])
+                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
                 # update pbar
                 for val in tmp_result_scores:
                     result_score_list = self._update_val(val, result_score_list)
