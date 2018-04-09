@@ -538,29 +538,8 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
 
         """
-        features = features.astype(np.float64)
 
-        # Resets the imputer to be fit for the new dataset
-        self._fitted_imputer = None
-        self._imputed = False
-        # If features is a sparse matrix, do not apply imputation
-        if sparse.issparse(features):
-            if self.config_dict_params in [None, "TPOT light", "TPOT MDR"]:
-                raise ValueError(
-                    'Not all operators in {} supports sparse matrix. '
-                    'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict_params)
-                )
-            elif self.config_dict_params != "TPOT sparse":
-                print(
-                    'Warning: Since the input matrix is a sparse matrix, please makes sure all the operators in the '
-                    'customized config dictionary supports sparse matriies.'
-                )
-        else:
-            if np.any(np.isnan(features)):
-                self._imputed = True
-                features = self._impute_values(features)
-
-        self._check_dataset(features, target)
+        features, target = self._check_dataset(features, target)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
@@ -1024,8 +1003,28 @@ class TPOTBase(BaseEstimator):
         -------
         None
         """
+        # Resets the imputer to be fit for the new dataset
+        self._fitted_imputer = None
+        self._imputed = False
+        # If features is a sparse matrix, do not apply imputation
+        if sparse.issparse(features):
+            if self.config_dict_params in [None, "TPOT light", "TPOT MDR"]:
+                raise ValueError(
+                    'Not all operators in {} supports sparse matrix. '
+                    'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict_params)
+                )
+            elif self.config_dict_params != "TPOT sparse":
+                print(
+                    'Warning: Since the input matrix is a sparse matrix, please makes sure all the operators in the '
+                    'customized config dictionary supports sparse matriies.'
+                )
+        else:
+            if np.any(np.isnan(features)):
+                self._imputed = True
+                features = self._impute_values(features)
         try:
-            check_X_y(features, target, accept_sparse=True)
+            X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
+            return X, y
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
@@ -1033,6 +1032,7 @@ class TPOTBase(BaseEstimator):
                 'the features must be a 2-D array and target labels must be a '
                 '1-D array.'
             )
+
 
     def _compile_to_sklearn(self, expr):
         """Compile a DEAP pipeline into a sklearn pipeline.
