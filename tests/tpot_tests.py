@@ -41,6 +41,7 @@ from tpot.config.regressor_sparse import regressor_config_sparse
 from tpot.config.classifier_sparse import classifier_config_sparse
 
 import numpy as np
+import pandas as pd
 from scipy import sparse
 import inspect
 import random
@@ -90,6 +91,16 @@ features_with_nan[0][0] = float('nan')
 boston_data = load_boston()
 training_features_r, testing_features_r, training_target_r, testing_target_r = \
     train_test_split(boston_data.data, boston_data.target, random_state=42)
+
+# Set up pandas DataFrame for testing
+
+input_data = pd.read_csv(
+    'tests/tests.csv',
+    sep=',',
+    dtype=np.float64,
+)
+pd_features = input_data.drop('class', axis=1)
+pd_target = input_data['class']
 
 # Set up the sparse matrix for testing
 sparse_features = sparse.csr_matrix(training_features)
@@ -747,6 +758,23 @@ def test_fit_4():
 
     tpot_obj.fit(training_features, training_target)
 
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+
+def test_fit_5():
+    """Assert that the TPOT fit function provides an optimized pipeline with pandas DataFrame"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0
+    )
+
+    tpot_obj.fit(pd_features, pd_target)
+
+    assert isinstance(pd_features, pd.DataFrame)
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
 
