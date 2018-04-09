@@ -499,10 +499,11 @@ def tpot_driver(args):
         _print_args(args)
 
     input_data = _read_data_file(args)
-    features = input_data.drop(args.TARGET_NAME, axis=1).values
+    features = input_data.drop(args.TARGET_NAME, axis=1)
 
     training_features, testing_features, training_target, testing_target = \
-        train_test_split(features, input_data[args.TARGET_NAME].values, random_state=args.RANDOM_STATE)
+        train_test_split(features, input_data[args.TARGET_NAME], random_state=args.RANDOM_STATE)
+
 
     tpot_type = TPOTClassifier if args.TPOT_MODE == 'classification' else TPOTRegressor
 
