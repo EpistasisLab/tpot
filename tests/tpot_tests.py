@@ -82,6 +82,10 @@ mnist_data = load_digits()
 training_features, testing_features, training_target, testing_target = \
     train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
 
+# Set up test data with missing value
+features_with_nan = np.copy(training_features)
+features_with_nan[0][0] = float('nan')
+
 # Set up the Boston data set for testing
 boston_data = load_boston()
 training_features_r, testing_features_r, training_target_r, testing_target_r = \
@@ -1425,8 +1429,6 @@ def test_imputer():
         verbosity=0,
         config_dict='TPOT light'
     )
-    features_with_nan = np.copy(training_features)
-    features_with_nan[0][0] = float('nan')
 
     tpot_obj.fit(features_with_nan, training_target)
 
@@ -1441,11 +1443,12 @@ def test_imputer_2():
         verbosity=0,
         config_dict='TPOT light'
     )
-    features_with_nan = np.copy(training_features)
-    features_with_nan[0][0] = float('nan')
 
-    tpot_obj.fit(features_with_nan, training_target)
+    tpot_obj.fit(training_features, training_target)
+    assert_equal(tpot_obj._fitted_imputer, None)
     tpot_obj.predict(features_with_nan)
+    assert_not_equal(tpot_obj._fitted_imputer, None)
+
 
 
 def test_imputer_3():
@@ -1458,13 +1461,29 @@ def test_imputer_3():
         verbosity=2,
         config_dict='TPOT light'
     )
-    features_with_nan = np.copy(training_features)
-    features_with_nan[0][0] = float('nan')
+
     with captured_output() as (out, err):
         imputed_features = tpot_obj._impute_values(features_with_nan)
         assert_in("Imputing missing values in feature set", out.getvalue())
 
     assert_not_equal(imputed_features[0][0], float('nan'))
+
+
+def test_imputer_4():
+    """Assert that the TPOT score function will not raise a ValueError in a dataset where NaNs are present."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj.fit(training_features, training_target)
+    assert_equal(tpot_obj._fitted_imputer, None)
+    tpot_obj.score(features_with_nan, training_target)
+    assert_not_equal(tpot_obj._fitted_imputer, None)
 
 
 def test_sparse_matrix():
