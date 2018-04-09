@@ -802,10 +802,7 @@ class TPOTBase(BaseEstimator):
         features = features.astype(np.float64)
 
         if np.any(np.isnan(features)):
-            self._imputed = True
             features = self._impute_values(features)
-        else:
-            self._imputed = False
 
         return self.fitted_pipeline_.predict(features)
 
@@ -852,6 +849,9 @@ class TPOTBase(BaseEstimator):
         """
         if self.fitted_pipeline_ is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
+
+        if np.any(np.isnan(testing_features)):
+            testing_features = self._impute_values(testing_features)
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
