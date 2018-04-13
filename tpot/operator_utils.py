@@ -25,6 +25,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
+from sklearn.feature_selection.base import SelectorMixin
 import inspect
 
 
@@ -157,23 +158,28 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
     dep_op_list = {} # list of nested estimator/callable function
     dep_op_type = {} # type of nested estimator/callable function
     import_str, op_str, op_obj = source_decode(opsourse)
-
+    class_profile['root'] = False
     if not op_obj:
         return None, None
     else:
         # define if the operator can be the root of a pipeline
-        if issubclass(op_obj, ClassifierMixin) or issubclass(op_obj, RegressorMixin):
+        if issubclass(op_obj, ClassifierMixin):
             class_profile['root'] = True
-            optype = "Classifier or Regressor"
-        else:
-            optype = "Preprocessor or Selector"
+            optype = "Classifier"
+        elif issubclass(op_obj, RegressorMixin):
+            class_profile['root'] = True
+            optype = "Regressor"
+        elif issubclass(op_obj, TransformerMixin):
+            optype = "Transformer"
+        elif issubclass(op_obj, SelectorMixin):
+            optype = "Selector"
 
         @classmethod
         def op_type(cls):
             """Return the operator type.
 
             Possible values:
-                "Classifier", "Regressor", "Selector", "Preprocessor"
+                "Classifier", "Regressor", "Selector", "Transformer"
             """
             return optype
 

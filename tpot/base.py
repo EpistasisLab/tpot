@@ -70,7 +70,7 @@ from .config.regressor_sparse import regressor_config_sparse
 from .config.classifier_sparse import classifier_config_sparse
 
 from .metrics import SCORERS
-from .gp_types import Output_Array
+from .gp_types import Output_Array, Transformed_Array, Selected_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
