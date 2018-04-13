@@ -158,7 +158,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
     dep_op_list = {} # list of nested estimator/callable function
     dep_op_type = {} # type of nested estimator/callable function
     import_str, op_str, op_obj = source_decode(opsourse)
-    class_profile['root'] = False
+
     if not op_obj:
         return None, None
     else:
