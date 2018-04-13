@@ -228,7 +228,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 operator
 
             """
-            return ([np.ndarray] + arg_types, np.ndarray)
+            return ([np.ndarray] + arg_types, np.ndarray) # (input types, return types)
 
         class_profile['parameter_types'] = parameter_types
 
