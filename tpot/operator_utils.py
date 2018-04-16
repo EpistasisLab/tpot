@@ -169,9 +169,9 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
         elif issubclass(op_obj, RegressorMixin):
             class_profile['root'] = True
             optype = "Regressor"
-        elif issubclass(op_obj, TransformerMixin):
+        if issubclass(op_obj, TransformerMixin):
             optype = "Transformer"
-        elif issubclass(op_obj, SelectorMixin):
+        if issubclass(op_obj, SelectorMixin):
             optype = "Selector"
 
         @classmethod

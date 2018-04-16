@@ -287,21 +287,21 @@ class TPOTBase(BaseEstimator):
         self._setup_config(self.config_dict_params)
 
         self.template = template
-        self.fixed_length = len(template.split('-').template)
-        # for now, the template is only a linear pipeline
-        # will add supports for more complex structure
-
-        if self.fixed_length:
-+            self._min = self.fixed_length
-+            self._max = self.fixed_length + 1
-+        else:
-+            self._min = 1
-+            self._max = 3
+        if template:
+            self.fixed_length = len(template.split('-'))
+            # for now, the template is only a linear pipeline
+            # will add supports for more complex structure
+            self._min = self.fixed_length
+            self._max = self.fixed_length + 1
+        else:
+            self.fixed_length = 0
+            self._min = 1
+            self._max = 3
 
         self.operators = []
-        self.arguments = []
+
         for key in sorted(self.config_dict.keys()):
-            op_class, arg_types = TPOTOperatorClassFactory(
+            op_class, _ = TPOTOperatorClassFactory(
                 key,
                 self.config_dict[key],
                 BaseClass=Operator,
@@ -309,7 +309,6 @@ class TPOTBase(BaseEstimator):
             )
             if op_class:
                 self.operators.append(op_class)
-                self.arguments += arg_types
 
         # Schedule TPOT to run for many generations if the user specifies a
         # run-time limit TPOT will automatically interrupt itself when the timer
@@ -462,7 +461,6 @@ class TPOTBase(BaseEstimator):
         self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_Array)
         self._pset.renameArguments(ARG0='input_matrix')
         self._add_operators()
-        self._add_terminals()
 
         if self.verbosity > 2:
             print('{} operators have been imported by TPOT.'.format(len(self.operators)))
@@ -470,9 +468,9 @@ class TPOTBase(BaseEstimator):
 
     def _add_operators(self):
         main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
+        ret_types = []
         if self.template:
             steps = self.template.split('-')
-            ret_types = []
             for idx, step in enumerate(steps):
                 if idx < self.fixed_length - 1:
                     # create an empty for returning class for strongly-type GP
@@ -483,21 +481,28 @@ class TPOTBase(BaseEstimator):
                     step_ret_type = Output_Array
                 # input class in each step
                 if idx:
-                    step_in_type = np.ndarray
-                else:
                     step_in_type = ret_types[idx-1]
+                else:
+                    step_in_type = np.ndarray
                 if main_type.count(step): # if the step is a main type
                     for operator in self.operators:
-                        if operator.optype() == step:
-                            p_types = ([step_in_type] + operator.parameter_types()[0][1:], step_ret_type)
+                        arg_types =  operator.parameter_types()[0][1:]
+                        if operator.type() == step:
+                            p_types = ([step_in_type] + arg_types, step_ret_type)
                             self._pset.addPrimitive(operator, *p_types)
+                            self._import_hash(operator)
+                            self._add_terminals(arg_types)
                 else: # is the step is a specific operator
                     for operator in self.operators:
+                        arg_types =  operator.parameter_types()[0][1:]
                         if operator.__name__ == step:
-                            p_types = ([step_in_type] + operator.parameter_types()[0][1:], step_ret_type)
+                            p_types = ([step_in_type] + arg_types, step_ret_type)
                             self._pset.addPrimitive(operator, *p_types)
+                            self._import_hash(operator)
+                            self._add_terminals(arg_types)
         else: # no template and randomly generated pipeline
             for operator in self.operators:
+                arg_types =  operator.parameter_types()[0][1:]
                 if operator.root:
                     # We need to add rooted primitives twice so that they can
                     # return both an Output_Array (and thus be the root of the tree),
@@ -509,22 +514,30 @@ class TPOTBase(BaseEstimator):
 
                 # Import required modules into local namespace so that pipelines
                 # may be evaluated directly
-                for key in sorted(operator.import_hash.keys()):
-                    module_list = ', '.join(sorted(operator.import_hash[key]))
+                self._import_hash(operator)
+                self._add_terminals(arg_types)
 
-                    if key.startswith('tpot.'):
-                        exec('from {} import {}'.format(key[4:], module_list))
-                    else:
-                        exec('from {} import {}'.format(key, module_list))
-
-                    for var in operator.import_hash[key]:
-                        self.operators_context[var] = eval(var)
 
             self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
+        self.ret_types = [np.ndarray, Output_Array] + ret_types
 
 
-    def _add_terminals(self):
-        for _type in self.arguments:
+    def _import_hash(self, operator):
+        # Import required modules into local namespace so that pipelines
+        # may be evaluated directly
+        for key in sorted(operator.import_hash.keys()):
+            module_list = ', '.join(sorted(operator.import_hash[key]))
+
+            if key.startswith('tpot.'):
+                exec('from {} import {}'.format(key[4:], module_list))
+            else:
+                exec('from {} import {}'.format(key, module_list))
+
+            for var in operator.import_hash[key]:
+                self.operators_context[var] = eval(var)
+
+    def _add_terminals(self, arg_types):
+        for _type in arg_types:
             type_values = list(_type.values)
 
             for val in type_values:
@@ -545,9 +558,9 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('select', tools.selNSGA2)
         self._toolbox.register('mate', self._mate_operator)
         if self.fixed_length:
-+            self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max)
-+        else:
-+            self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max + 1)
+            self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max)
+        else:
+            self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max + 1)
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
@@ -1453,7 +1466,7 @@ class TPOTBase(BaseEstimator):
 
         def condition(height, depth, type_):
             """Stop when the depth is equal to height or when a node should be a terminal."""
-            return type_ not in [np.ndarray, Output_Array] or depth == height
+            return type_ not in self.ret_types or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
 
