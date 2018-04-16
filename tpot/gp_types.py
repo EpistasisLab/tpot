@@ -26,11 +26,3 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 class Output_Array(object):
     """Final output data type of pipelines."""
     pass
-
-class Transformed_Array(object):
-    """Transformed data returned by Transformer."""
-    pass
-
-class Selected_Array(object):
-    """Transformed data returned by Selector."""
-    pass

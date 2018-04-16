@@ -70,7 +70,7 @@ from .config.regressor_sparse import regressor_config_sparse
 from .config.classifier_sparse import classifier_config_sparse
 
 from .metrics import SCORERS
-from .gp_types import Output_Array, Transformed_Array, Selected_Array
+from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
@@ -286,8 +286,8 @@ class TPOTBase(BaseEstimator):
         self.config_dict_params = config_dict
         self._setup_config(self.config_dict_params)
 
-        self.template = template.split('-')
-        self.fixed_length = len(self.template)
+        self.template = template
+        self.fixed_length = len(template.split('-').template)
         # for now, the template is only a linear pipeline
         # will add supports for more complex structure
 
@@ -467,31 +467,61 @@ class TPOTBase(BaseEstimator):
         if self.verbosity > 2:
             print('{} operators have been imported by TPOT.'.format(len(self.operators)))
 
+
     def _add_operators(self):
-        for operator in self.operators:
-            if operator.root:
-                # We need to add rooted primitives twice so that they can
-                # return both an Output_Array (and thus be the root of the tree),
-                # and return a np.ndarray so they can exist elsewhere in the tree.
-                p_types = (operator.parameter_types()[0], Output_Array)
-                self._pset.addPrimitive(operator, *p_types)
-
-            self._pset.addPrimitive(operator, *operator.parameter_types())
-
-            # Import required modules into local namespace so that pipelines
-            # may be evaluated directly
-            for key in sorted(operator.import_hash.keys()):
-                module_list = ', '.join(sorted(operator.import_hash[key]))
-
-                if key.startswith('tpot.'):
-                    exec('from {} import {}'.format(key[4:], module_list))
+        main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
+        if self.template:
+            steps = self.template.split('-')
+            ret_types = []
+            for idx, step in enumerate(steps):
+                if idx < self.fixed_length - 1:
+                    # create an empty for returning class for strongly-type GP
+                    step_ret_type_name = 'Ret_{}'.format(idx)
+                    step_ret_type = type(step_ret_type_name, (object,), {})
+                    ret_types.append(step_ret_type)
                 else:
-                    exec('from {} import {}'.format(key, module_list))
+                    step_ret_type = Output_Array
+                # input class in each step
+                if idx:
+                    step_in_type = np.ndarray
+                else:
+                    step_in_type = ret_types[idx-1]
+                if main_type.count(step): # if the step is a main type
+                    for operator in self.operators:
+                        if operator.optype() == step:
+                            p_types = ([step_in_type] + operator.parameter_types()[0][1:], step_ret_type)
+                            self._pset.addPrimitive(operator, *p_types)
+                else: # is the step is a specific operator
+                    for operator in self.operators:
+                        if operator.__name__ == step:
+                            p_types = ([step_in_type] + operator.parameter_types()[0][1:], step_ret_type)
+                            self._pset.addPrimitive(operator, *p_types)
+        else: # no template and randomly generated pipeline
+            for operator in self.operators:
+                if operator.root:
+                    # We need to add rooted primitives twice so that they can
+                    # return both an Output_Array (and thus be the root of the tree),
+                    # and return a np.ndarray so they can exist elsewhere in the tree.
+                    p_types = (operator.parameter_types()[0], Output_Array)
+                    self._pset.addPrimitive(operator, *p_types)
 
-                for var in operator.import_hash[key]:
-                    self.operators_context[var] = eval(var)
+                self._pset.addPrimitive(operator, *operator.parameter_types())
 
-        self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
+                # Import required modules into local namespace so that pipelines
+                # may be evaluated directly
+                for key in sorted(operator.import_hash.keys()):
+                    module_list = ', '.join(sorted(operator.import_hash[key]))
+
+                    if key.startswith('tpot.'):
+                        exec('from {} import {}'.format(key[4:], module_list))
+                    else:
+                        exec('from {} import {}'.format(key, module_list))
+
+                    for var in operator.import_hash[key]:
+                        self.operators_context[var] = eval(var)
+
+            self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
+
 
     def _add_terminals(self):
         for _type in self.arguments:
@@ -1368,15 +1398,17 @@ class TPOTBase(BaseEstimator):
             Returns the individual with one of the mutations applied to it
 
         """
-        mutation_techniques = [
-            partial(gp.mutInsert, pset=self._pset),
-            partial(mutNodeReplacement, pset=self._pset)
-        ]
-
-        # We can't shrink pipelines with only one primitive, so we only add it if we find more primitives.
-        number_of_primitives = sum([isinstance(node, deap.gp.Primitive) for node in individual])
-        if number_of_primitives > 1 and allow_shrink:
-            mutation_techniques.append(partial(gp.mutShrink))
+        if self.fixed_length:
+            mutation_techniques = [partial(mutNodeReplacement, pset=self._pset)]
+        else:
+            mutation_techniques = [
+                partial(gp.mutInsert, pset=self._pset),
+                partial(mutNodeReplacement, pset=self._pset)
+            ]
+            # We can't shrink pipelines with only one primitive, so we only add it if we find more primitives.
+            number_of_primitives = sum([isinstance(node, deap.gp.Primitive) for node in individual])
+            if number_of_primitives > 1 and allow_shrink:
+                mutation_techniques.append(partial(gp.mutShrink))
 
         mutator = np.random.choice(mutation_techniques)
 
@@ -1386,15 +1418,6 @@ class TPOTBase(BaseEstimator):
             ind = self._toolbox.clone(individual)
             offspring, = mutator(ind)
             if str(offspring) not in self.evaluated_individuals_:
-                # Update statistics
-                # crossover_count is kept the same as for the predecessor
-                # mutation count is increased by 1
-                # predecessor is set to the string representation of the individual before mutation
-                # generation is set to 'INVALID' such that we can recognize that it should be updated accordingly
-                offspring.statistics['crossover_count'] = individual.statistics['crossover_count']
-                offspring.statistics['mutation_count'] = individual.statistics['mutation_count'] + 1
-                offspring.statistics['predecessor'] = (str(individual),)
-                offspring.statistics['generation'] = 'INVALID'
                 break
             else:
                 unsuccesful_mutations += 1
@@ -1402,7 +1425,7 @@ class TPOTBase(BaseEstimator):
         # Sometimes you have pipelines for which every shrunk version has already been explored too.
         # To still mutate the individual, one of the two other mutators should be applied instead.
         if ((unsuccesful_mutations == 50) and
-                (type(mutator) is partial and mutator.func is gp.mutShrink)):
+           (type(mutator) is partial and mutator.func is gp.mutShrink)):
             offspring, = self._random_mutation_operator(individual, allow_shrink=False)
 
         return offspring,
