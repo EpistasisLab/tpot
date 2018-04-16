@@ -200,7 +200,7 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
-        template: (default: None)
+        template: Python list (default: None)
             A template for pipeline structure
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
@@ -285,6 +285,18 @@ class TPOTBase(BaseEstimator):
 
         self.config_dict_params = config_dict
         self._setup_config(self.config_dict_params)
+
+        self.template = template.split('-')
+        self.fixed_length = len(self.template)
+        # for now, the template is only a linear pipeline
+        # will add supports for more complex structure
+
+        if self.fixed_length:
++            self._min = self.fixed_length
++            self._max = self.fixed_length + 1
++        else:
++            self._min = 1
++            self._max = 3
 
         self.operators = []
         self.arguments = []
@@ -496,12 +508,16 @@ class TPOTBase(BaseEstimator):
             creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti, statistics=dict)
 
         self._toolbox = base.Toolbox()
-        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=self._min, max_=self._max)
         self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', self._compile_to_sklearn)
         self._toolbox.register('select', tools.selNSGA2)
         self._toolbox.register('mate', self._mate_operator)
+        if self.fixed_length:
++            self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max)
++        else:
++            self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max + 1)
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
