@@ -9,10 +9,9 @@ import numpy as np
 import pandas as pd
 import os, os.path
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.feature_selection.base import SelectorMixin
 
 
-class DatasetSelector(BaseEstimator, TransformerMixin, SelectorMixin):
+class DatasetSelector(BaseEstimator, TransformerMixin):
     """Select predefined data subsets."""
 
     def __init__(self, subset_dir=None, sel_subset_idx=0):
@@ -55,9 +54,9 @@ class DatasetSelector(BaseEstimator, TransformerMixin, SelectorMixin):
         self.feature_names = list(X.columns.values)
         subset_files = os.listdir(self.subset_dir)
         self.subset_i = self.subset_dir + "/" + subset_files[self.sel_subset_idx]
-        self.features_i_df = pd.read_csv(self.subset_i, sep='\t', header=0)
-        feature_i = set(features_i_df.values.flatten())
-        self.feat_list = list(feature_i.intersection(set(self.feature_names)))
+        features_i_df = pd.read_csv(self.subset_i, sep='\t', header=0)
+        feature_i = [str(val) for val in features_i_df.values.flatten()]
+        self.feat_list = list(set(feature_i).intersection(set(self.feature_names)))
 
         return self
 
