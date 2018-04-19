@@ -9,12 +9,13 @@ import numpy as np
 import pandas as pd
 import os, os.path
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.feature_selection.base import SelectorMixin
 
 
-class DatasetSelector(BaseEstimator):
+class DatasetSelector(BaseEstimator, TransformerMixin, SelectorMixin):
     """Select predefined data subsets."""
 
-    def __init__(self, subset_dir=None):
+    def __init__(self, subset_dir=None, sel_subset_idx=0):
         """Create a DatasetSelector object.
 
         Parameters
@@ -24,6 +25,8 @@ class DatasetSelector(BaseEstimator):
             each file needs to be a .csv with one header row. The feature
             names in these files must match those in the (training and
             testing) dataset.
+        sel_subset_idx: int, required
+            Index of subset
 
         Returns
         -------
@@ -31,45 +34,46 @@ class DatasetSelector(BaseEstimator):
 
         """
         self.subset_dir = subset_dir
+        self.sel_subset_idx = sel_subset_idx
 
-    def get_subset(self, input_data, input_target):
-        """Fit an optimized machine learning pipeline using TPOT.
-
-        Uses genetic programming to optimize a machine learning pipeline that
-        maximizes score on the provided features and target. Performs internal
-        k-fold cross-validaton to avoid overfitting on the provided data. The
-        best pipeline is then trained on the entire set of provided samples.
+    def fit(self, X, y=None):
+        """Fit DatasetSelector for feature selection
 
         Parameters
         ----------
-        input_data: array-like {n_samples, n_features}
-            Feature matrix
-
-        input_target: array-like {n_samples}
-            List of class labels for prediction
+        X: array-like of shape (n_samples, n_features)
+            The training input samples.
+        y: array-like, shape (n_samples,)
+            The target values (integers that correspond to classes in classification, real numbers in regression).
 
         Returns
         -------
-        self.data_subset: object
-            Returns a list of subsets of input_data
-
+        self: object
+            Returns a copy of the estimator
         """
 
-        self.input_data = input_data
-        self.input_target = input_target
-        self.feature_names = list(self.input_data.columns.values)
+        self.feature_names = list(X.columns.values)
+        subset_files = os.listdir(self.subset_dir)
+        self.subset_i = self.subset_dir + "/" + subset_files[self.sel_subset_idx]
+        self.features_i_df = pd.read_csv(self.subset_i, sep='\t', header=0)
+        feature_i = set(features_i_df.values.flatten())
+        self.feat_list = list(feature_i.intersection(set(self.feature_names)))
 
-        self.subset_files = os.listdir(self.subset_dir)
-        self.num_subset = len(self.subset_files)
-        self.feature_set = {}
-        self.data_subset = {}
-        self.population_size = population_size
+        return self
 
-        for i in range(self.num_subset):
-            self.subset_i = self.subset_dir + "/" + self.subset_files[i]
-            self.features_i_df = pd.read_csv(self.subset_i, sep='\t', header=0)
-            self.feature_i = set(features_i_df.values.flatten())
-            self.feature_set[i] = list(feature_i.intersection(set(self.feature_names)))
-            self.data_subset[i] = self.input_data[self.feature_set[i]]
+    def transform(self, X):
+        """Make subset after fit
 
-        return self.data_subset
+        Parameters
+        ----------
+        X: numpy ndarray, {n_samples, n_features}
+            New data, where n_samples is the number of samples and n_features is the number of features.
+
+        Returns
+        -------
+        X_transformed: array-like, shape (n_samples, n_features + 1) or (n_samples, n_features + 1 + n_classes) for classifier with predict_proba attribute
+            The transformed feature set.
+        """
+        X_transformed = X[self.feat_list].values
+
+        return X_transformed

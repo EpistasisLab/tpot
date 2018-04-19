@@ -27,3 +27,4 @@ from .zero_count import ZeroCount
 from .combine_dfs import CombineDFs
 from .stacking_estimator import StackingEstimator
 from .one_hot_encoder import OneHotEncoder
+from .dataset_selector import DatasetSelector
