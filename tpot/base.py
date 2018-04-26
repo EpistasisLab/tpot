@@ -469,6 +469,7 @@ class TPOTBase(BaseEstimator):
     def _add_operators(self):
         main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
         ret_types = []
+        op_list = []
         if self.template:
             steps = self.template.split('-')
             for idx, step in enumerate(steps):
@@ -490,16 +491,20 @@ class TPOTBase(BaseEstimator):
                         if operator.type() == step:
                             p_types = ([step_in_type] + arg_types, step_ret_type)
                             self._pset.addPrimitive(operator, *p_types)
-                            self._import_hash(operator)
-                            self._add_terminals(arg_types)
+                            if not op_list.count(operator.__name__):
+                                self._import_hash(operator)
+                                self._add_terminals(arg_types)
+                                op_list.append(operator.__name__)
                 else: # is the step is a specific operator
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]
                         if operator.__name__ == step:
                             p_types = ([step_in_type] + arg_types, step_ret_type)
                             self._pset.addPrimitive(operator, *p_types)
-                            self._import_hash(operator)
-                            self._add_terminals(arg_types)
+                            if not op_list.count(operator.__name__):
+                                self._import_hash(operator)
+                                self._add_terminals(arg_types)
+                                op_list.append(operator.__name__)
         else: # no template and randomly generated pipeline
             for operator in self.operators:
                 arg_types =  operator.parameter_types()[0][1:]
@@ -600,7 +605,7 @@ class TPOTBase(BaseEstimator):
 
         """
 
-        features, target = self._check_dataset(features, target)
+        self._check_dataset(features, target)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
