@@ -16,7 +16,7 @@ personal_config['tpot.builtins.DatasetSelector'] = {
 tpot_data = pd.read_csv(
     './tests/tests.csv')
 Xdata = tpot_data.loc[:, tpot_data.columns != 'class']
-Ydata = tpot_data[['class']]
+Ydata = tpot_data['class']
 
 X_train, X_test, y_train, y_test = train_test_split(Xdata, Ydata,
                                                     train_size=0.75, test_size=0.25)
@@ -29,4 +29,3 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
                       template='DatasetSelector-Transformer-Classifier')
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-                      
