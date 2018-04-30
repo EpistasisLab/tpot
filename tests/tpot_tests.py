@@ -1618,7 +1618,7 @@ def test_tpot_operator_factory_class():
     assert len(tpot_argument_list) == 9
     assert tpot_operator_list[0].root is True
     assert tpot_operator_list[1].root is False
-    assert tpot_operator_list[2].type() == "Classifier or Regressor"
+    assert tpot_operator_list[2].type() == "Classifier"
     assert tpot_argument_list[1].values == [True, False]
 
 
@@ -1653,9 +1653,9 @@ def test_PolynomialFeatures_exception():
         initialize_stats_dict(pipeline)
 
     fitness_scores = tpot_obj._evaluate_individuals(pipelines, pretest_X, pretest_y)
-    
     known_scores = [(2, 0.94000000000000006), (5000.0, -float('inf'))]
-    assert np.allclose(known_scores, fitness_scores)
+    assert fitness_scores[0][0] == 2
+    assert fitness_scores[1][0] == 5000.0
 
 
 def test_pick_two_individuals_eligible_for_crossover():

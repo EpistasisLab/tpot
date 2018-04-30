@@ -605,7 +605,7 @@ class TPOTBase(BaseEstimator):
 
         """
 
-        self._check_dataset(features, target)
+        features, target = self._check_dataset(features, target)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
@@ -1089,7 +1089,7 @@ class TPOTBase(BaseEstimator):
                 self._imputed = True
                 features = self._impute_values(features)
         try:
-            X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
+            X, y = check_X_y(features, target, accept_sparse=True, dtype=None)
             return X, y
         except (AssertionError, ValueError):
             raise ValueError(
