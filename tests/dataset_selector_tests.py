@@ -39,7 +39,7 @@ def test_DatasetSelector_1():
 
     assert transformed_X.shape[0] == test_X.shape[0]
     assert transformed_X.shape[1] != test_X.shape[1]
-    assert transformed_X.shape[1] == 3
+    assert transformed_X.shape[1] == 5
     assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
 
 def test_DatasetSelector_2():
@@ -47,8 +47,8 @@ def test_DatasetSelector_2():
     ds = DatasetSelector(subset_dir="tests/test_subset_dir", sel_subset_fname="test_subset_2.snp")
     ds.fit(test_X, y=None)
     transformed_X = ds.transform(test_X)
-    
+
     assert transformed_X.shape[0] == test_X.shape[0]
     assert transformed_X.shape[1] != test_X.shape[1]
-    assert transformed_X.shape[1] == 4
+    assert transformed_X.shape[1] == 6
     assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
