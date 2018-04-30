@@ -34,8 +34,8 @@ NUM_TESTS = 10
 
 # generate a small data set for a new pipeline, in order to check if the pipeline
 # has unsuppported combinations in params
-pretest_X, pretest_y = make_classification(n_samples=50, n_features=10, random_state=42)
-pretest_X_reg, pretest_y_reg = make_regression(n_samples=50, n_features=10, random_state=42)
+pretest_X, pretest_y = make_classification(n_samples=300, n_features=10, random_state=42)
+pretest_X_reg, pretest_y_reg = make_regression(n_samples=300, n_features=10, random_state=42)
 
 
 def _pre_test(func):
