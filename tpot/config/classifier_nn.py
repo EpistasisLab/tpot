@@ -27,7 +27,7 @@ import numpy as np
 
 # Check the TPOT documentation for information on the structure of config dicts
 
-classifier_config_dict = {
+classifier_config_nn = {
     # MLPClassifier for neural networks
     # TODO: revisit/tweak: alpha, momentum, learning rate_init
     'sklearn.neural_network.MLPClassifier': {
