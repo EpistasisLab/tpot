@@ -33,7 +33,7 @@ test_X = test_data.drop("class", axis=1)
 
 def test_DatasetSelector_1():
     """Assert that the StackingEstimator returns transformed X based on test feature list 1."""
-    ds = DatasetSelector(subset_dir="tests/test_subset_dir", sel_subset_idx=0)
+    ds = DatasetSelector(subset_dir="tests/test_subset_dir", sel_subset_fname="test_subset_1.snp")
     ds.fit(test_X, y=None)
     transformed_X = ds.transform(test_X)
 
@@ -44,10 +44,10 @@ def test_DatasetSelector_1():
 
 def test_DatasetSelector_2():
     """Assert that the StackingEstimator returns transformed X based on test feature list 2."""
-    ds = DatasetSelector(subset_dir="tests/test_subset_dir", sel_subset_idx=1)
+    ds = DatasetSelector(subset_dir="tests/test_subset_dir", sel_subset_fname="test_subset_2.snp")
     ds.fit(test_X, y=None)
     transformed_X = ds.transform(test_X)
-
+    
     assert transformed_X.shape[0] == test_X.shape[0]
     assert transformed_X.shape[1] != test_X.shape[1]
     assert transformed_X.shape[1] == 4
