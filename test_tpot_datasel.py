@@ -23,21 +23,6 @@ Ydata = tpot_data['class']
 
 X_train, X_test, y_train, y_test = train_test_split(Xdata, Ydata,
                                                     train_size=0.75, test_size=0.25)
-# X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
-#                                                     train_size=0.75, test_size=0.25)
-
-
-clf = make_pipeline(
-    DatasetSelector(sel_subset_fname="test_subset_2.snp", subset_dir="./tests/test_subset_dir/"),
-    KNeighborsClassifier(n_neighbors=74, p=1, weights="uniform")
-)
-for _ in range(1):
-    try:
-        cv_scores = cross_val_score(clf, X_train, y_train, cv=5, scoring='accuracy', verbose=0)
-        print('CV Score',cv_scores)
-    except Exception as e:
-        print(_,'# WARNING: ')
-        print(e)
 
 
 tpot = TPOTClassifier(generations=5, population_size=20, verbosity=3,
