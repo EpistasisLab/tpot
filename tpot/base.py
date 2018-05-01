@@ -566,7 +566,6 @@ class TPOTBase(BaseEstimator):
             self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max)
         else:
             self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max + 1)
-        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, target, sample_weight=None, groups=None):
