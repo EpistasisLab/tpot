@@ -1435,6 +1435,15 @@ class TPOTBase(BaseEstimator):
             ind = self._toolbox.clone(individual)
             offspring, = mutator(ind)
             if str(offspring) not in self.evaluated_individuals_:
+                # Update statistics
+                # crossover_count is kept the same as for the predecessor
+                # mutation count is increased by 1
+                # predecessor is set to the string representation of the individual before mutation
+                # generation is set to 'INVALID' such that we can recognize that it should be updated accordingly
+                offspring.statistics['crossover_count'] = individual.statistics['crossover_count']
+                offspring.statistics['mutation_count'] = individual.statistics['mutation_count'] + 1
+                offspring.statistics['predecessor'] = (str(individual),)
+                offspring.statistics['generation'] = 'INVALID'
                 break
             else:
                 unsuccesful_mutations += 1
