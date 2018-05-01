@@ -1,57 +1,57 @@
-Master status: [![Master Build Status - Mac/Linux](https://travis-ci.org/rhiever/tpot.svg?branch=master)](https://travis-ci.org/rhiever/tpot)
-[![Master Build Status - Windows](https://ci.appveyor.com/api/projects/status/fgylout0lxddt0my?svg=true)](https://ci.appveyor.com/project/rhiever/tpot/branch/master)
-[![Master Code Health](https://landscape.io/github/rhiever/tpot/master/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/master)
-[![Master Coverage Status](https://coveralls.io/repos/github/rhiever/tpot/badge.svg?branch=master)](https://coveralls.io/github/rhiever/tpot?branch=master)
+Master status: [![Master Build Status - Mac/Linux](https://travis-ci.org/EpistasisLab/tpot.svg?branch=master)](https://travis-ci.org/EpistasisLab/tpot)
+[![Master Build Status - Windows](https://ci.appveyor.com/api/projects/status/b7bmpwpkjhifrm7v/branch/master?svg=true)](https://ci.appveyor.com/project/weixuanfu/tpot?branch=master)
+[![Master Code Health](https://landscape.io/github/EpistasisLab/tpot/master/landscape.svg?style=flat)](https://landscape.io/github/EpistasisLab/tpot/master)
+[![Master Coverage Status](https://coveralls.io/repos/github/EpistasisLab/tpot/badge.svg?branch=master)](https://coveralls.io/github/EpistasisLab/tpot?branch=master)
 
-Development status: [![Development Build Status - Mac/Windows](https://travis-ci.org/rhiever/tpot.svg?branch=development)](https://travis-ci.org/rhiever/tpot/branches)
-[![Development Build Status - Windows](https://ci.appveyor.com/api/projects/status/fgylout0lxddt0my/branch/development?svg=true)](https://ci.appveyor.com/project/rhiever/tpot?branch=development)
-[![Development Code Health](https://landscape.io/github/rhiever/tpot/development/landscape.svg?style=flat)](https://landscape.io/github/rhiever/tpot/development)
-[![Development Coverage Status](https://coveralls.io/repos/github/rhiever/tpot/badge.svg?branch=development)](https://coveralls.io/github/rhiever/tpot?branch=development)
+Development status: [![Development Build Status - Mac/Linux](https://travis-ci.org/EpistasisLab/tpot.svg?branch=development)](https://travis-ci.org/EpistasisLab/tpot/branches)
+[![Development Build Status - Windows](https://ci.appveyor.com/api/projects/status/b7bmpwpkjhifrm7v/branch/development?svg=true)](https://ci.appveyor.com/project/weixuanfu/tpot?branch=development)
+[![Development Code Health](https://landscape.io/github/EpistasisLab/tpot/development/landscape.svg?style=flat)](https://landscape.io/github/EpistasisLab/tpot/development)
+[![Development Coverage Status](https://coveralls.io/repos/github/EpistasisLab/tpot/badge.svg?branch=development)](https://coveralls.io/github/EpistasisLab/tpot?branch=development)
 
 Package information: [![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)](https://www.python.org/download/releases/2.7/)
 [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
 [![License: LGPL v3](https://img.shields.io/badge/license-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
 [![PyPI version](https://badge.fury.io/py/TPOT.svg)](https://badge.fury.io/py/TPOT)
 
-[![Join the chat at https://gitter.im/rhiever/tpot](https://badges.gitter.im/rhiever/tpot.svg)](https://gitter.im/rhiever/tpot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/EpistasisLab/tpot](https://badges.gitter.im/EpistasisLab/tpot.svg)](https://gitter.im/EpistasisLab/tpot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/rhiever/tpot/master/images/tpot-logo.jpg" width=300 />
+<img src="https://raw.githubusercontent.com/EpistasisLab/tpot/master/images/tpot-logo.jpg" width=300 />
 </p>
 
 Consider TPOT your **Data Science Assistant**. TPOT is a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming.
 
-![TPOT Demo](https://github.com/rhiever/tpot/blob/master/images/tpot-demo.gif "TPOT Demo")
+![TPOT Demo](https://github.com/EpistasisLab/tpot/blob/master/images/tpot-demo.gif "TPOT Demo")
 
 TPOT will automate the most tedious part of machine learning by intelligently exploring thousands of possible pipelines to find the best one for your data.
 
-![An example Machine Learning pipeline](https://github.com/rhiever/tpot/blob/master/images/tpot-ml-pipeline.png "An example Machine Learning pipeline")
+![An example Machine Learning pipeline](https://github.com/EpistasisLab/tpot/blob/master/images/tpot-ml-pipeline.png "An example Machine Learning pipeline")
 
 <p align="center"><strong>An example Machine Learning pipeline</strong></p>
 
 Once TPOT is finished searching (or you get tired of waiting), it provides you with the Python code for the best pipeline it found so you can tinker with the pipeline from there.
 
-![An example TPOT pipeline](https://github.com/rhiever/tpot/blob/master/images/tpot-pipeline-example.png "An example TPOT pipeline")
+![An example TPOT pipeline](https://github.com/EpistasisLab/tpot/blob/master/images/tpot-pipeline-example.png "An example TPOT pipeline")
 
 TPOT is built on top of scikit-learn, so all of the code it generates should look familiar... if you're familiar with scikit-learn, anyway.
 
 **TPOT is still under active development** and we encourage you to check back on this repository regularly for updates.
 
-For further information about TPOT, please see the [project documentation](http://rhiever.github.io/tpot/).
+For further information about TPOT, please see the [project documentation](http://epistasislab.github.io/tpot/).
 
 ## License
 
-Please see the [repository license](https://github.com/rhiever/tpot/blob/master/LICENSE) for the licensing and usage information for TPOT.
+Please see the [repository license](https://github.com/EpistasisLab/tpot/blob/master/LICENSE) for the licensing and usage information for TPOT.
 
 Generally, we have licensed TPOT to make it as widely usable as possible.
 
 ## Installation
 
-We maintain the [TPOT installation instructions](http://rhiever.github.io/tpot/installing/) in the documentation. TPOT requires a working installation of Python.
+We maintain the [TPOT installation instructions](http://epistasislab.github.io/tpot/installing/) in the documentation. TPOT requires a working installation of Python.
 
 ## Usage
 
-TPOT can be used [on the command line](http://rhiever.github.io/tpot/using/#tpot-on-the-command-line) or [with Python code](http://rhiever.github.io/tpot/using/#tpot-with-code).
+TPOT can be used [on the command line](http://epistasislab.github.io/tpot/using/#tpot-on-the-command-line) or [with Python code](http://epistasislab.github.io/tpot/using/#tpot-with-code).
 
 Click on the corresponding links to find more information on TPOT usage in the documentation.
 
@@ -80,16 +80,16 @@ Running this code should discover a pipeline that achieves about 98% testing acc
 
 ```python
 import numpy as np
-
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
-                     tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
+training_features, testing_features, training_target, testing_target = \
+            train_test_split(features, tpot_data['target'].values, random_state=42)
+
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=6, weights="distance")
 
@@ -120,16 +120,15 @@ which should result in a pipeline that achieves about 12.77 mean squared error (
 
 ```python
 import numpy as np
-
+import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
 
-# NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
-features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
-                     tpot_data.dtype.names.index('class'), axis=1)
-training_features, testing_features, training_classes, testing_classes = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
+training_features, testing_features, training_target, testing_target = \
+            train_test_split(features, tpot_data['target'].values, random_state=42)
 
 exported_pipeline = GradientBoostingRegressor(alpha=0.85, learning_rate=0.1, loss="ls",
                                               max_features=0.9, min_samples_leaf=5,
@@ -139,17 +138,17 @@ exported_pipeline.fit(training_features, training_classes)
 results = exported_pipeline.predict(testing_features)
 ```
 
-Check the documentation for [more examples and tutorials](http://rhiever.github.io/tpot/examples/).
+Check the documentation for [more examples and tutorials](http://epistasislab.github.io/tpot/examples/).
 
 ## Contributing to TPOT
 
-We welcome you to [check the existing issues](https://github.com/rhiever/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/rhiever/tpot/issues/new) so we can discuss it.
+We welcome you to [check the existing issues](https://github.com/EpistasisLab/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/EpistasisLab/tpot/issues/new) so we can discuss it.
 
-Before submitting any contributions, please review our [contribution guidelines](http://rhiever.github.io/tpot/contributing/).
+Before submitting any contributions, please review our [contribution guidelines](http://epistasislab.github.io/tpot/contributing/).
 
 ## Having problems or have questions about TPOT?
 
-Please [check the existing open and closed issues](https://github.com/rhiever/tpot/issues?utf8=%E2%9C%93&q=is%3Aissue) to see if your issue has already been attended to. If it hasn't, [file a new issue](https://github.com/rhiever/tpot/issues/new) on this repository so we can review your issue.
+Please [check the existing open and closed issues](https://github.com/EpistasisLab/tpot/issues?utf8=%E2%9C%93&q=is%3Aissue) to see if your issue has already been attended to. If it hasn't, [file a new issue](https://github.com/EpistasisLab/tpot/issues/new) on this repository so we can review your issue.
 
 ## Citing TPOT
 
@@ -203,6 +202,6 @@ Alternatively, you can cite the repository directly with the following DOI:
 
 ## Support for TPOT
 
-TPOT was developed in the [Computational Genetics Lab](http://epistasis.org) with funding from the [NIH](http://www.nih.gov) under grant R01 AI117694. We're incredibly grateful for their support during the development of this project.
+TPOT was developed in the [Computational Genetics Lab](http://epistasis.org/) at the [University of Pennsylvania](https://www.upenn.edu/) with funding from the [NIH](http://www.nih.gov/) under grant R01 AI117694. We are incredibly grateful for the support of the NIH and the University of Pennsylvania during the development of this project.
 
 The TPOT logo was designed by Todd Newmuis, who generously donated his time to the project.

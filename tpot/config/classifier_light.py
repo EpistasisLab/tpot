@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""Copyright 2015-Present Randal S. Olson.
+"""This file is part of the TPOT library.
 
-This file is part of the TPOT library.
+TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - and many more generous open source contributors
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -16,6 +20,7 @@ GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
 """
 
 import numpy as np
@@ -65,7 +70,7 @@ classifier_config_dict_light = {
 
     'sklearn.cluster.FeatureAgglomeration': {
         'linkage': ['ward', 'complete', 'average'],
-        'affinity': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine', 'precomputed']
+        'affinity': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine']
     },
 
     'sklearn.preprocessing.MaxAbsScaler': {
@@ -112,7 +117,7 @@ classifier_config_dict_light = {
     },
 
     'sklearn.feature_selection.VarianceThreshold': {
-        'threshold': np.arange(0.05, 1.01, 0.05)
+        'threshold': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2]
     }
 
 }

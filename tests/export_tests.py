@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""Copyright 2015-Present Randal S. Olson.
+"""This file is part of the TPOT library.
 
-This file is part of the TPOT library.
+TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - and many more generous open source contributors
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -34,16 +38,50 @@ from deap import creator
 
 from nose.tools import assert_raises, assert_equal
 
-test_operator_key = 'sklearn.feature_selection.SelectPercentile'
-
+test_operator_key_1 = 'sklearn.feature_selection.SelectPercentile'
+test_operator_key_2 = 'sklearn.feature_selection.SelectFromModel'
 TPOTSelectPercentile, TPOTSelectPercentile_args = TPOTOperatorClassFactory(
-    test_operator_key,
-    classifier_config_dict[test_operator_key]
+    test_operator_key_1,
+    classifier_config_dict[test_operator_key_1]
+)
+
+TPOTSelectFromModel, TPOTSelectFromModel_args = TPOTOperatorClassFactory(
+    test_operator_key_2,
+    classifier_config_dict[test_operator_key_2]
 )
 
 mnist_data = load_digits()
 training_features, testing_features, training_target, testing_target = \
     train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
+
+
+def test_export_random_ind():
+    """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 39."""
+    tpot_obj = TPOTClassifier(random_state=39)
+    tpot_obj._pbar = tqdm(total=1, disable=True)
+    pipeline = tpot_obj._toolbox.individual()
+    expected_code = """import numpy as np
+import pandas as pd
+from sklearn.feature_selection import SelectPercentile, f_classif
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.tree import DecisionTreeClassifier
+
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
+training_features, testing_features, training_target, testing_target = \\
+            train_test_split(features, tpot_data['target'].values, random_state=42)
+
+exported_pipeline = make_pipeline(
+    SelectPercentile(score_func=f_classif, percentile=65),
+    DecisionTreeClassifier(criterion="gini", max_depth=7, min_samples_leaf=4, min_samples_split=18)
+)
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+"""
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
 
 
 def test_export():
@@ -409,15 +447,27 @@ results = exported_pipeline.predict(testing_features)
 
 
 def test_operator_export():
-    """Assert that a TPOT operator can export properly with a function as a parameter to a classifier."""
+    """Assert that a TPOT operator can export properly with a callable function as a parameter."""
+    assert list(TPOTSelectPercentile.arg_types) == TPOTSelectPercentile_args
     export_string = TPOTSelectPercentile.export(5)
     assert export_string == "SelectPercentile(score_func=f_classif, percentile=5)"
+
+
+def test_operator_export_2():
+    """Assert that a TPOT operator can export properly with a BaseEstimator as a parameter."""
+    assert list(TPOTSelectFromModel.arg_types) == TPOTSelectFromModel_args
+    export_string = TPOTSelectFromModel.export('gini', 0.10, 100, 0.10)
+    expected_string = ("SelectFromModel(estimator=ExtraTreesClassifier(criterion=\"gini\","
+        " max_features=0.1, n_estimators=100), threshold=0.1)")
+    print(export_string)
+    assert export_string == expected_string
 
 
 def test_get_by_name():
     """Assert that the Operator class returns operators by name appropriately."""
     tpot_obj = TPOTClassifier()
     assert get_by_name("SelectPercentile", tpot_obj.operators).__class__ == TPOTSelectPercentile.__class__
+    assert get_by_name("SelectFromModel", tpot_obj.operators).__class__ == TPOTSelectFromModel.__class__
 
 
 def test_get_by_name_2():
@@ -527,7 +577,7 @@ features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'].values, random_state=42)
 
-imputer = Imputer(strategy="median", axis=1)
+imputer = Imputer(strategy="median")
 imputer.fit(training_features)
 training_features = imputer.transform(training_features)
 testing_features = imputer.transform(testing_features)

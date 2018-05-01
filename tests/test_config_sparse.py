@@ -23,10 +23,21 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-class CombineDFs(object):
-    """Combine two DataFrames."""
+import numpy as np
 
-    @property
-    def __name__(self):
-        """Instance name is the same as the class name."""
-        return self.__class__.__name__
+tpot_config = {
+    'sklearn.neighbors.KNeighborsClassifier': {
+        'n_neighbors': range(1, 101),
+        'weights': ["uniform", "distance"],
+        'p': [1, 2]
+    },
+
+    'sklearn.ensemble.RandomForestClassifier': {
+        'n_estimators': [100],
+        'criterion': ["gini", "entropy"],
+        'max_features': np.arange(0.05, 1.01, 0.05),
+        'min_samples_split': range(2, 21),
+        'min_samples_leaf':  range(1, 21),
+        'bootstrap': [True, False]
+    }
+}

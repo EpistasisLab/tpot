@@ -13,7 +13,7 @@ markdown_extensions:
   - tables
   - fenced_code
 
-copyright: Copyright &copy; 2015-Present <a href="http://www.randalolson.com">Randal S. Olson</a>
+copyright: Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania
 
 pages:
 - Home: index.md

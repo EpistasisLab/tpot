@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""Copyright 2015-Present Randal S. Olson.
+"""This file is part of the TPOT library.
 
-This file is part of the TPOT library.
+TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - and many more generous open source contributors
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -138,7 +142,7 @@ def _get_arg_parser():
         '-o',
         action='store',
         dest='OUTPUT_FILE',
-        default='',
+        default=None,
         type=str,
         help='File to export the code for the final optimized pipeline.'
     )
@@ -335,6 +339,7 @@ def _get_arg_parser():
         )
     )
 
+
     parser.add_argument(
         '-config',
         action='store',
@@ -348,6 +353,23 @@ def _get_arg_parser():
             'built-in configuration.'
         )
     )
+
+
+    parser.add_argument(
+        '-memory',
+        action='store',
+        dest='MEMORY',
+        default=None,
+        type=str,
+        help=(
+            'Path of a directory for pipeline caching or \"auto\" for using a temporary '
+            'caching directory during the optimization process. If supplied, pipelines will '
+            'cache each transformer after fitting them. This feature is used to avoid '
+            'repeated computation by transformers within a pipeline if the parameters and '
+            'input data are identical with another fitted pipeline during optimization process.'
+        )
+    )
+
 
     parser.add_argument(
         '-cf',
@@ -423,7 +445,11 @@ def _print_args(args):
             arg_val = args.__dict__['POPULATION_SIZE']
         else:
             arg_val = args.__dict__[arg]
-        print('{}\t=\t{}'.format(arg, arg_val))
+
+        # Pad the outputs with an even amount of space
+        arg = (arg + (' ') * 100)[:20]
+        arg_val = ((' ') * 5 + str(arg_val))
+        print('{}={}'.format(arg, arg_val))
     print('')
 
 
@@ -473,10 +499,11 @@ def tpot_driver(args):
         _print_args(args)
 
     input_data = _read_data_file(args)
-    features = input_data.drop(args.TARGET_NAME, axis=1).values
+    features = input_data.drop(args.TARGET_NAME, axis=1)
 
     training_features, testing_features, training_target, testing_target = \
-        train_test_split(features, input_data[args.TARGET_NAME].values, random_state=args.RANDOM_STATE)
+        train_test_split(features, input_data[args.TARGET_NAME], random_state=args.RANDOM_STATE)
+
 
     tpot_type = TPOTClassifier if args.TPOT_MODE == 'classification' else TPOTRegressor
 
@@ -496,6 +523,7 @@ def tpot_driver(args):
         max_eval_time_mins=args.MAX_EVAL_MINS,
         random_state=args.RANDOM_STATE,
         config_dict=args.CONFIG_FILE,
+        memory=args.MEMORY,
         periodic_checkpoint_folder=args.CHECKPOINT_FOLDER,
         early_stop=args.EARLY_STOP,
         verbosity=args.VERBOSITY,
@@ -506,7 +534,7 @@ def tpot_driver(args):
 
     if args.VERBOSITY in [1, 2] and tpot_obj._optimized_pipeline:
         training_score = max([x.wvalues[1] for x in tpot_obj._pareto_front.keys])
-        print('\nTraining score: {}'.format(abs(training_score)))
+        print('\nTraining score: {}'.format(training_score))
         print('Holdout score: {}'.format(tpot_obj.score(testing_features, testing_target)))
 
     elif args.VERBOSITY >= 3 and tpot_obj._pareto_front:
@@ -515,13 +543,13 @@ def tpot_driver(args):
         for pipeline, pipeline_scores in pipelines:
             tpot_obj._fitted_pipeline = tpot_obj.pareto_front_fitted_pipelines_[str(pipeline)]
             print('{TRAIN_SCORE}\t{TEST_SCORE}\t{PIPELINE}'.format(
-                    TRAIN_SCORE=int(abs(pipeline_scores.wvalues[0])),
+                    TRAIN_SCORE=int(pipeline_scores.wvalues[0]),
                     TEST_SCORE=tpot_obj.score(testing_features, testing_target),
                     PIPELINE=pipeline
                 )
             )
 
-    if args.OUTPUT_FILE != '':
+    if args.OUTPUT_FILE:
         tpot_obj.export(args.OUTPUT_FILE)
 
 def main():

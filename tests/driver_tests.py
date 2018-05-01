@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""Copyright 2015-Present Randal S. Olson.
+"""This file is part of the TPOT library.
 
-This file is part of the TPOT library.
+TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - and many more generous open source contributors
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -69,7 +73,6 @@ def test_scoring_function_argument():
     assert_in("manual scoring function: <function test_scoring_function_argument", out)
     assert_in("taken from module: driver_tests", out)
     assert_equal(err, "")
-
 
 
 def test_driver():
@@ -227,11 +230,13 @@ class ParserTest(TestCase):
         self.assertEqual(args.INPUT_FILE, 'tests/tests.csv')
         self.assertEqual(args.INPUT_SEPARATOR, '\t')
         self.assertEqual(args.MAX_EVAL_MINS, 5)
+        self.assertEqual(args.MAX_TIME_MINS, None)
+        self.assertEqual(args.MEMORY, None)
         self.assertEqual(args.MUTATION_RATE, 0.9)
         self.assertEqual(args.NUM_CV_FOLDS, 5)
         self.assertEqual(args.NUM_JOBS, 1)
         self.assertEqual(args.OFFSPRING_SIZE, None)
-        self.assertEqual(args.OUTPUT_FILE, '')
+        self.assertEqual(args.OUTPUT_FILE, None)
         self.assertEqual(args.POPULATION_SIZE, 100)
         self.assertEqual(args.RANDOM_STATE, None)
         self.assertEqual(args.SUBSAMPLE, 1.0)
@@ -243,35 +248,41 @@ class ParserTest(TestCase):
 
     def test_print_args(self):
         """Assert that _print_args prints correct values for all parameters in default settings."""
-        args = self.parser.parse_args(['tests/tests.csv'])
+        args_list = [
+            'tests/tests.csv',
+            '-is', ','
+        ]
+        args = self.parser.parse_args(args_list)
         with captured_output() as (out, err):
             _print_args(args)
         output = out.getvalue()
         expected_output = """
 TPOT settings:
-CONFIG_FILE\t=\tNone
-CROSSOVER_RATE\t=\t0.1
-EARLY_STOP\t=\tNone
-GENERATIONS\t=\t100
-INPUT_FILE\t=\ttests/tests.csv
-INPUT_SEPARATOR\t=\t\t
-MAX_EVAL_MINS\t=\t5
-MAX_TIME_MINS\t=\tNone
-MUTATION_RATE\t=\t0.9
-NUM_CV_FOLDS\t=\t5
-NUM_JOBS\t=\t1
-OFFSPRING_SIZE\t=\t100
-CHECKPOINT_FOLDER\t=\tNone
-OUTPUT_FILE\t=\t
-POPULATION_SIZE\t=\t100
-RANDOM_STATE\t=\tNone
-SCORING_FN\t=\taccuracy
-SUBSAMPLE\t=\t1.0
-TARGET_NAME\t=\tclass
-TPOT_MODE\t=\tclassification
-VERBOSITY\t=\t1
+CHECKPOINT_FOLDER   =     None
+CONFIG_FILE         =     None
+CROSSOVER_RATE      =     0.1
+EARLY_STOP          =     None
+GENERATIONS         =     100
+INPUT_FILE          =     tests/tests.csv
+INPUT_SEPARATOR     =     ,
+MAX_EVAL_MINS       =     5
+MAX_TIME_MINS       =     None
+MEMORY              =     None
+MUTATION_RATE       =     0.9
+NUM_CV_FOLDS        =     5
+NUM_JOBS            =     1
+OFFSPRING_SIZE      =     100
+OUTPUT_FILE         =     None
+POPULATION_SIZE     =     100
+RANDOM_STATE        =     None
+SCORING_FN          =     accuracy
+SUBSAMPLE           =     1.0
+TARGET_NAME         =     class
+TPOT_MODE           =     classification
+VERBOSITY           =     1
 
 """
+        print
 
         self.assertEqual(_sort_lines(expected_output), _sort_lines(output))
 
@@ -281,6 +292,7 @@ VERBOSITY\t=\t1
         args_list = [
             'tests/tests.csv',
             '-mode', 'regression',
+            '-is', ','
         ]
         args = self.parser.parse_args(args_list)
         with captured_output() as (out, err):
@@ -288,27 +300,28 @@ VERBOSITY\t=\t1
         output = out.getvalue()
         expected_output = """
 TPOT settings:
-CONFIG_FILE\t=\tNone
-CROSSOVER_RATE\t=\t0.1
-EARLY_STOP\t=\tNone
-GENERATIONS\t=\t100
-INPUT_FILE\t=\ttests/tests.csv
-INPUT_SEPARATOR\t=\t\t
-MAX_EVAL_MINS\t=\t5
-MAX_TIME_MINS\t=\tNone
-MUTATION_RATE\t=\t0.9
-NUM_CV_FOLDS\t=\t5
-NUM_JOBS\t=\t1
-OFFSPRING_SIZE\t=\t100
-CHECKPOINT_FOLDER\t=\tNone
-OUTPUT_FILE\t=\t
-POPULATION_SIZE\t=\t100
-RANDOM_STATE\t=\tNone
-SCORING_FN\t=\tneg_mean_squared_error
-SUBSAMPLE\t=\t1.0
-TARGET_NAME\t=\tclass
-TPOT_MODE\t=\tregression
-VERBOSITY\t=\t1
+CHECKPOINT_FOLDER   =     None
+CONFIG_FILE         =     None
+CROSSOVER_RATE      =     0.1
+EARLY_STOP          =     None
+GENERATIONS         =     100
+INPUT_FILE          =     tests/tests.csv
+INPUT_SEPARATOR     =     ,
+MAX_EVAL_MINS       =     5
+MAX_TIME_MINS       =     None
+MEMORY              =     None
+MUTATION_RATE       =     0.9
+NUM_CV_FOLDS        =     5
+NUM_JOBS            =     1
+OFFSPRING_SIZE      =     100
+OUTPUT_FILE         =     None
+POPULATION_SIZE     =     100
+RANDOM_STATE        =     None
+SCORING_FN          =     neg_mean_squared_error
+SUBSAMPLE           =     1.0
+TARGET_NAME         =     class
+TPOT_MODE           =     regression
+VERBOSITY           =     1
 
 """
 

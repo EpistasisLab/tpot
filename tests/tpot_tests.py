@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""Copyright 2015-Present Randal S. Olson.
+"""This file is part of the TPOT library.
 
-This file is part of the TPOT library.
+TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - and many more generous open source contributors
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -23,9 +27,10 @@ from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
-from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr
-from tpot.metrics import balanced_accuracy
+from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
+from tpot.metrics import balanced_accuracy, SCORERS
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
+from tpot.decorators import pretest_X, pretest_y
 
 from tpot.config.classifier import classifier_config_dict
 from tpot.config.classifier_light import classifier_config_dict_light
@@ -36,17 +41,24 @@ from tpot.config.regressor_sparse import regressor_config_sparse
 from tpot.config.classifier_sparse import classifier_config_sparse
 
 import numpy as np
+import pandas as pd
+from scipy import sparse
 import inspect
 import random
+import warnings
 from multiprocessing import cpu_count
 import os
 from re import search
 from datetime import datetime
 from time import sleep
+from tempfile import mkdtemp
+from shutil import rmtree
 
 from sklearn.datasets import load_digits, load_boston
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
-from deap import creator
+from sklearn.externals.joblib import Memory
+from sklearn.metrics import make_scorer, roc_auc_score
+from deap import creator, gp
 from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
 from driver_tests import captured_output
@@ -71,10 +83,28 @@ mnist_data = load_digits()
 training_features, testing_features, training_target, testing_target = \
     train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
 
+# Set up test data with missing value
+features_with_nan = np.copy(training_features)
+features_with_nan[0][0] = float('nan')
+
 # Set up the Boston data set for testing
 boston_data = load_boston()
 training_features_r, testing_features_r, training_target_r, testing_target_r = \
     train_test_split(boston_data.data, boston_data.target, random_state=42)
+
+# Set up pandas DataFrame for testing
+
+input_data = pd.read_csv(
+    'tests/tests.csv',
+    sep=',',
+    dtype=np.float64,
+)
+pd_features = input_data.drop('class', axis=1)
+pd_target = input_data['class']
+
+# Set up the sparse matrix for testing
+sparse_features = sparse.csr_matrix(training_features)
+sparse_target = training_target
 
 np.random.seed(42)
 random.seed(42)
@@ -128,9 +158,55 @@ def test_init_default_scoring():
 
 
 def test_init_default_scoring_2():
-    """Assert that TPOT intitializes with the correct customized scoring function."""
-    tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
+    """Assert that TPOT intitializes with a valid customized metric function."""
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
+    assert len(w) == 1 # deap 1.2.2 warning message made this unit test failed
+    assert issubclass(w[-1].category, DeprecationWarning) # deap 1.2.2 warning message made this unit test failed
+    assert "This scoring type was deprecated" in str(w[-1].message) # deap 1.2.2 warning message made this unit test failed
     assert tpot_obj.scoring_function == 'balanced_accuracy'
+
+
+def test_init_default_scoring_3():
+    """Assert that TPOT intitializes with a valid _BaseScorer."""
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=make_scorer(balanced_accuracy))
+    assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
+    assert tpot_obj.scoring_function == 'balanced_accuracy'
+
+
+def test_init_default_scoring_4():
+    """Assert that TPOT intitializes with a valid scorer."""
+    def my_scorer(clf, X, y):
+        return 0.9
+
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=my_scorer)
+    assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
+    assert tpot_obj.scoring_function == 'my_scorer'
+
+
+def test_init_default_scoring_5():
+    """Assert that TPOT intitializes with a valid sklearn metric function roc_auc_score."""
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=roc_auc_score)
+    assert len(w) == 1
+    assert issubclass(w[-1].category, DeprecationWarning)
+    assert "This scoring type was deprecated" in str(w[-1].message)
+    assert tpot_obj.scoring_function == 'roc_auc_score'
+
+
+def test_init_default_scoring_6():
+    """Assert that TPOT intitializes with a valid customized metric function in __main__"""
+    def my_scorer(y_true, y_pred):
+        return roc_auc_score(y_true, y_pred)
+    with warnings.catch_warnings(record=True) as w:
+        tpot_obj = TPOTClassifier(scoring=my_scorer)
+    assert len(w) == 1
+    assert issubclass(w[-1].category, DeprecationWarning)
+    assert "This scoring type was deprecated" in str(w[-1].message)
+    print(tpot_obj.scoring_function)
+    assert tpot_obj.scoring_function == 'my_scorer'
 
 
 def test_invalid_score_warning():
@@ -338,33 +414,24 @@ def test_conf_dict_3():
     assert isinstance(tpot_obj.config_dict, dict)
     assert tpot_obj.config_dict == tested_config_dict
 
-def test_conf_dict_4():
-    """Assert that TPOT uses seeds from custom dictionary as the starting population."""
-    tpot_obj = TPOTRegressor(config_dict='tests/test_config.py', generations=1, population_size=10)
-
-    assert isinstance(tpot_obj._pop, list)
-    assert isinstance(tpot_obj._pop[0], creator.Individual)
-
-
-def test_conf_dict_5():
-    """Assert that TPOT has a _pop attribute of the same size as the number of seeds provided."""
-    tpot_obj = TPOTRegressor(config_dict='tests/test_config.py')
-    n_seeds = len(tpot_obj._read_config_file('tests/test_config.py').population_seeds)
-
-    assert len(tpot_obj._pop) == n_seeds
-
 
 def test_read_config_file():
-    """Assert that _read_config_file rasie FileNotFoundError with a wrong path."""
+    """Assert that _read_config_file rasies FileNotFoundError with a wrong path."""
     tpot_obj = TPOTRegressor()
     # typo for "tests/test_config.py"
     assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_confg.py")
 
 
 def test_read_config_file_2():
-    """Assert that _read_config_file rasie ValueError with wrong dictionary format"""
+    """Assert that _read_config_file rasies ValueError with wrong dictionary format"""
     tpot_obj = TPOTRegressor()
     assert_raises(ValueError, tpot_obj._read_config_file, "tests/test_config.py.bad")
+
+
+def test_read_config_file_3():
+    """Assert that _read_config_file rasies ValueError without a dictionary named 'tpot_config'."""
+    tpot_obj = TPOTRegressor()
+    assert_raises(ValueError, tpot_obj._setup_config, "tpot/config/regressor_sparse.py")
 
 
 def test_random_ind():
@@ -419,7 +486,7 @@ def test_score_2():
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
-    known_score = 12.1791953611
+    known_score = -12.1791953611
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -482,7 +549,7 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r, **training_target_r_weight_dict)
     # Get score from TPOT
-    known_score = 11.5790430757
+    known_score = -11.5790430757
     score = tpot_obj.score(testing_features_r, testing_target_r)
 
     assert np.allclose(cv_score1, cv_score2)
@@ -606,15 +673,22 @@ def test_predict_proba_4():
 
 def test_warm_start():
     """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run."""
-    tpot_obj = TPOTClassifier(random_state=42, population_size=1, offspring_size=2, generations=1, verbosity=0, warm_start=True)
-    tpot_obj.fit(training_features, training_target)
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light',
+        warm_start=True)
+    tpot_obj.fit(pretest_X, pretest_y)
 
     assert tpot_obj._pop is not None
     assert tpot_obj._pareto_front is not None
 
     first_pop = tpot_obj._pop
     tpot_obj.random_state = 21
-    tpot_obj.fit(training_features, training_target)
+    tpot_obj.fit(pretest_X, pretest_y)
 
     assert tpot_obj._pop == first_pop
 
@@ -628,7 +702,7 @@ def test_fit():
         generations=1,
         verbosity=0
     )
-    tpot_obj.fit(training_features, training_target)
+    tpot_obj.fit(pretest_X, pretest_y)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
@@ -686,6 +760,138 @@ def test_fit_4():
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
+
+
+def test_fit_5():
+    """Assert that the TPOT fit function provides an optimized pipeline with pandas DataFrame"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0
+    )
+
+    tpot_obj.fit(pd_features, pd_target)
+
+    assert isinstance(pd_features, pd.DataFrame)
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+
+def test_memory():
+    """Assert that the TPOT fit function runs normally with memory=\'auto\'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory='auto',
+        verbosity=0
+    )
+    tpot_obj.fit(training_features, training_target)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+    assert tpot_obj.memory is not None
+    assert tpot_obj._memory is None
+    assert tpot_obj._cachedir is not None
+    assert not os.path.isdir(tpot_obj._cachedir)
+
+
+def test_memory_2():
+    """Assert that the TPOT _setup_memory function runs normally with a valid path."""
+    cachedir = mkdtemp()
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory=cachedir,
+        verbosity=0
+    )
+    tpot_obj._setup_memory()
+    rmtree(cachedir)
+
+    assert tpot_obj._cachedir == cachedir
+    assert isinstance(tpot_obj._memory, Memory)
+
+
+def test_memory_3():
+    """Assert that the TPOT fit function does not clean up caching directory when memory is a valid path."""
+    cachedir = mkdtemp()
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory=cachedir,
+        verbosity=0
+    )
+    tpot_obj.fit(training_features, training_target)
+
+    assert tpot_obj._cachedir == cachedir
+    assert os.path.isdir(tpot_obj._cachedir)
+    assert isinstance(tpot_obj._memory, Memory)
+    # clean up
+    rmtree(cachedir)
+    tpot_obj._memory = None
+
+
+def test_memory_4():
+    """Assert that the TPOT _setup_memory function rasies ValueError with a invalid path."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory="./fake_temp_dir",
+        verbosity=0
+    )
+
+    assert_raises(ValueError, tpot_obj._setup_memory)
+
+
+def test_memory_5():
+    """Assert that the TPOT _setup_memory function runs normally with a Memory object."""
+    cachedir = mkdtemp()
+    memory = Memory(cachedir=cachedir, verbose=0)
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory=memory,
+        verbosity=0
+    )
+
+    tpot_obj._setup_memory()
+    rmtree(cachedir)
+    assert tpot_obj.memory == memory
+    assert tpot_obj._memory == memory
+    # clean up
+    tpot_obj._memory = None
+    memory = None
+
+
+def test_memory_6():
+    """Assert that the TPOT _setup_memory function rasies ValueError with a invalid object."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        config_dict='TPOT light',
+        memory=str,
+        verbosity=0
+    )
+
+    assert_raises(ValueError, tpot_obj._setup_memory)
 
 
 def test_check_periodic_pipeline():
@@ -793,6 +999,38 @@ def test_save_periodic_pipeline():
         for f in os.listdir('./'):
             if search('pipeline_', f):
                 os.remove(os.path.join('./', f))
+
+def test_save_periodic_pipeline_2():
+    """Assert that _save_periodic_pipeline creates the checkpoint folder and exports to it if it didn't exist"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.11)
+        tpot_obj._output_best_pipeline_period_seconds = 0.1
+        tpot_obj.periodic_checkpoint_folder = './tmp'
+        tpot_obj._save_periodic_pipeline()
+        our_file.seek(0)
+
+        msg = our_file.read()
+        expected_filepath_prefix = os.path.join('./tmp', 'pipeline_')
+        assert_in('Saving best periodic pipeline to ' + expected_filepath_prefix, msg)
+        assert_in('Created new folder to save periodic pipeline: ./tmp', msg)
+
+        # clean up
+        for f in os.listdir('./tmp'):
+            if search('pipeline_', f):
+                os.remove(os.path.join('./tmp', f))
+        os.rmdir('./tmp')
 
 
 def test_fit_predict():
@@ -960,8 +1198,8 @@ def test_evaluated_individuals_():
             mean_cv_scores = np.mean(cv_scores)
         except Exception as e:
             mean_cv_scores = -float('inf')
-        assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string][1], mean_cv_scores)
-        assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string][0], operator_count)
+        assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string]['internal_cv_score'], mean_cv_scores)
+        assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string]['operator_count'], operator_count)
 
 
 def test_stop_by_max_time_mins():
@@ -976,7 +1214,7 @@ def test_stop_by_max_time_mins():
 def test_update_evaluated_individuals_():
     """Assert that _update_evaluated_individuals_ raises ValueError when scoring function does not return a float."""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
-    assert_raises(ValueError, tpot_obj._update_evaluated_individuals_, ['Non-Float-Score'], ['Test_Pipeline'], [1])
+    assert_raises(ValueError, tpot_obj._update_evaluated_individuals_, ['Non-Float-Score'], ['Test_Pipeline'], [1], [dict])
 
 
 def test_evaluate_individuals():
@@ -1112,7 +1350,7 @@ def test_preprocess_individuals():
     with closing(StringIO()) as our_file:
         tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
-        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \
                                 tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
         assert_in("Pipeline encountered that has previously been evaluated", our_file.read())
@@ -1157,7 +1395,7 @@ def test_preprocess_individuals_2():
     with closing(StringIO()) as our_file:
         tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=3, disable=False, file=our_file)
-        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \
                                 tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
 
@@ -1204,7 +1442,7 @@ def test_preprocess_individuals_3():
         tpot_obj._file=our_file
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
         tpot_obj._pbar.n = 2
-        operator_counts, eval_individuals_str, sklearn_pipeline_list = \
+        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \
                                 tpot_obj._preprocess_individuals(individuals)
         assert tpot_obj._pbar.total == 6
 
@@ -1219,8 +1457,6 @@ def test_imputer():
         verbosity=0,
         config_dict='TPOT light'
     )
-    features_with_nan = np.copy(training_features)
-    features_with_nan[0][0] = float('nan')
 
     tpot_obj.fit(features_with_nan, training_target)
 
@@ -1235,11 +1471,12 @@ def test_imputer_2():
         verbosity=0,
         config_dict='TPOT light'
     )
-    features_with_nan = np.copy(training_features)
-    features_with_nan[0][0] = float('nan')
 
-    tpot_obj.fit(features_with_nan, training_target)
+    tpot_obj.fit(training_features, training_target)
+    assert_equal(tpot_obj._fitted_imputer, None)
     tpot_obj.predict(features_with_nan)
+    assert_not_equal(tpot_obj._fitted_imputer, None)
+
 
 
 def test_imputer_3():
@@ -1252,13 +1489,99 @@ def test_imputer_3():
         verbosity=2,
         config_dict='TPOT light'
     )
-    features_with_nan = np.copy(training_features)
-    features_with_nan[0][0] = float('nan')
+
     with captured_output() as (out, err):
         imputed_features = tpot_obj._impute_values(features_with_nan)
         assert_in("Imputing missing values in feature set", out.getvalue())
 
     assert_not_equal(imputed_features[0][0], float('nan'))
+
+
+def test_imputer_4():
+    """Assert that the TPOT score function will not raise a ValueError in a dataset where NaNs are present."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    tpot_obj.fit(training_features, training_target)
+    assert_equal(tpot_obj._fitted_imputer, None)
+    tpot_obj.score(features_with_nan, training_target)
+    assert_not_equal(tpot_obj._fitted_imputer, None)
+
+
+def test_sparse_matrix():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict='TPOT light'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_2():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict=None."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict=None
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_3():
+    """Assert that the TPOT fit function will raise a ValueError in a sparse matrix with config_dict='TPOT MDR'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT MDR'
+    )
+
+    assert_raises(ValueError, tpot_obj.fit, sparse_features, sparse_target)
+
+
+def test_sparse_matrix_4():
+    """Assert that the TPOT fit function will not raise a ValueError in a sparse matrix with config_dict='TPOT sparse'."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT sparse'
+    )
+
+    tpot_obj.fit(sparse_features, sparse_target)
+
+
+def test_sparse_matrix_5():
+    """Assert that the TPOT fit function will not raise a ValueError in a sparse matrix with a customized config dictionary."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='tests/test_config_sparse.py'
+    )
+
+    tpot_obj.fit(sparse_features, sparse_target)
 
 
 def test_tpot_operator_factory_class():
@@ -1325,8 +1648,12 @@ def test_PolynomialFeatures_exception():
     pipelines = []
     pipelines.append(creator.Individual.from_string(pipeline_string_1, tpot_obj._pset))
     pipelines.append(creator.Individual.from_string(pipeline_string_2, tpot_obj._pset))
-    fitness_scores = tpot_obj._evaluate_individuals(pipelines, training_features, training_target)
-    known_scores = [(2, 0.98068077235290885), (5000.0, -float('inf'))]
+
+    for pipeline in pipelines:
+        initialize_stats_dict(pipeline)
+
+    fitness_scores = tpot_obj._evaluate_individuals(pipelines, pretest_X, pretest_y)
+    known_scores = [(2, 0.94000000000000006), (5000.0, -float('inf'))]
     assert np.allclose(known_scores, fitness_scores)
 
 
@@ -1417,6 +1744,11 @@ def test_mate_operator():
         tpot_obj._pset
     )
 
+    # Initialize stats
+    initialize_stats_dict(ind1)
+    initialize_stats_dict(ind2)
+
+
     # set as evaluated pipelines in tpot_obj.evaluated_individuals_
     tpot_obj.evaluated_individuals_[str(ind1)] = (2, 0.99)
     tpot_obj.evaluated_individuals_[str(ind2)] = (2, 0.99)
@@ -1475,27 +1807,17 @@ def test_mutNodeReplacement():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a fixed pipeline."""
     tpot_obj = TPOTClassifier()
     pipeline_string = (
-        'KNeighborsClassifier(CombineDFs('
-        'DecisionTreeClassifier(input_matrix, '
-        'DecisionTreeClassifier__criterion=gini, '
-        'DecisionTreeClassifier__max_depth=8, '
-        'DecisionTreeClassifier__min_samples_leaf=5, '
-        'DecisionTreeClassifier__min_samples_split=5'
-        '), '
-        'SelectPercentile('
-        'input_matrix, '
-        'SelectPercentile__percentile=20'
-        ')'
-        'KNeighborsClassifier__n_neighbors=10, '
-        'KNeighborsClassifier__p=1, '
-        'KNeighborsClassifier__weights=uniform'
-        ')'
+        'LogisticRegression(PolynomialFeatures'
+        '(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, '
+        'PolynomialFeatures__interaction_only=False), LogisticRegression__C=10.0, '
+        'LogisticRegression__dual=False, LogisticRegression__penalty=l2)'
     )
 
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     pipeline[0].ret = Output_Array
     old_ret_type_list = [node.ret for node in pipeline]
     old_prims_list = [node for node in pipeline if node.arity != 0]
+
     # test 10 times
     for _ in range(10):
         mut_ind = mutNodeReplacement(tpot_obj._toolbox.clone(pipeline), pset=tpot_obj._pset)
@@ -1505,9 +1827,49 @@ def test_mutNodeReplacement():
         if new_prims_list == old_prims_list:  # Terminal mutated
             assert new_ret_type_list == old_ret_type_list
         else:  # Primitive mutated
-            diff_prims = list(set(new_prims_list).symmetric_difference(old_prims_list))
-            assert diff_prims[0].ret == diff_prims[1].ret
+            diff_prims = [x for x in new_prims_list if x not in old_prims_list]
+            diff_prims += [x for x in old_prims_list if x not in new_prims_list]
+            if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
+                assert diff_prims[0].ret == diff_prims[1].ret
+        assert mut_ind[0][0].ret == Output_Array
 
+
+def test_mutNodeReplacement_2():
+    """Assert that mutNodeReplacement() returns the correct type of mutation node in a complex pipeline."""
+    tpot_obj = TPOTClassifier()
+    # a pipeline with 4 operators
+    pipeline_string = (
+        "LogisticRegression("
+        "KNeighborsClassifier(BernoulliNB(PolynomialFeatures"
+        "(input_matrix, PolynomialFeatures__degree=2, PolynomialFeatures__include_bias=False, "
+        "PolynomialFeatures__interaction_only=False), BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False), "
+        "KNeighborsClassifier__n_neighbors=10, KNeighborsClassifier__p=1, KNeighborsClassifier__weights=uniform),"
+        "LogisticRegression__C=10.0, LogisticRegression__dual=False, LogisticRegression__penalty=l2)"
+    )
+
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    pipeline[0].ret = Output_Array
+
+    old_ret_type_list = [node.ret for node in pipeline]
+    old_prims_list = [node for node in pipeline if node.arity != 0]
+
+    # test 30 times
+    for _ in range(30):
+        mut_ind = mutNodeReplacement(tpot_obj._toolbox.clone(pipeline), pset=tpot_obj._pset)
+        new_ret_type_list = [node.ret for node in mut_ind[0]]
+        new_prims_list = [node for node in mut_ind[0] if node.arity != 0]
+        if new_prims_list == old_prims_list:  # Terminal mutated
+            assert new_ret_type_list == old_ret_type_list
+        else:  # Primitive mutated
+            Primitive_Count = 0
+            for node in mut_ind[0]:
+                if isinstance(node, gp.Primitive):
+                    Primitive_Count += 1
+            assert Primitive_Count == 4
+            diff_prims = [x for x in new_prims_list if x not in old_prims_list]
+            diff_prims += [x for x in old_prims_list if x not in new_prims_list]
+            if len(diff_prims) > 1: # Sometimes mutation randomly replaces an operator that already in the pipelines
+                assert diff_prims[0].ret == diff_prims[1].ret
         assert mut_ind[0][0].ret == Output_Array
 
 
@@ -1522,7 +1884,9 @@ def test_varOr():
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pop = tpot_obj._toolbox.population(n=5)
     for ind in pop:
+        initialize_stats_dict(ind)
         ind.fitness.values = (2, 1.0)
+
 
     offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=1.0, mutpb=0.0)
     invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -1542,7 +1906,9 @@ def test_varOr_2():
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pop = tpot_obj._toolbox.population(n=5)
     for ind in pop:
+        initialize_stats_dict(ind)
         ind.fitness.values = (2, 1.0)
+
 
     offspring = varOr(pop, tpot_obj._toolbox, 5, cxpb=0.0, mutpb=1.0)
     invalid_ind = [ind for ind in offspring if not ind.fitness.valid]

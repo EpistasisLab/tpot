@@ -11,7 +11,7 @@ Other Automated Machine Learning (AutoML) tools and related projects:
 <td><a href="http://www.cs.ubc.ca/labs/beta/Projects/autoweka/">Auto-WEKA</a></td>
 <td>Java</td>
 <td>GPL-v3</td>
-<td>Automated hyper-parameter tuning for WEKA models.</td>
+<td>Automated model selection and hyper-parameter tuning for Weka models.</td>
 </tr>
 <tr>
 <td><a href="https://github.com/automl/auto-sklearn">auto-sklearn</a></td>
@@ -24,6 +24,12 @@ Other Automated Machine Learning (AutoML) tools and related projects:
 <td>Python</td>
 <td>MIT</td>
 <td>Automated machine learning for analytics & production. Supports manual feature type declarations.</td>
+</tr>
+<tr>
+<td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html">H2O AutoML</a></td>
+<td>Java with Python, Scala & R APIs and web GUI</td>
+<td>Apache 2.0</td>
+<td>Automated: data prep, hyperparameter tuning, random grid search and stacked ensembles in a distributed ML platform.</td>
 </tr>
 <tr>
 <td><a href="https://github.com/joeddav/devol">devol</a></td>

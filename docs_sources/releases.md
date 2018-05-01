@@ -1,3 +1,30 @@
+# Version 0.9
+
+* **TPOT now supports sparse matrices** with a new built-in TPOT configuration, "TPOT sparse". We are using a custom OneHotEncoder implementation that supports missing values and continuous features.
+
+* We have added an "early stopping" option for stopping the optimization process if no improvement is made within a set number of generations. Look up the `early_stop` parameter to access this functionality.
+
+* TPOT now reduces the number of duplicated pipelines between generations, which saves you time during the optimization process.
+
+* TPOT now supports custom scoring functions via the command-line mode.
+
+* We have added a new optional argument, `periodic_checkpoint_folder`, that allows TPOT to periodically save the best pipeline so far to a local folder during optimization process.
+
+* TPOT no longer uses `sklearn.externals.joblib` when `n_jobs=1` to avoid the potential freezing issue [that scikit-learn suffers from](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux).
+
+* We have added `pandas` as a dependency to read input datasets instead of `numpy.recfromcsv`. NumPy's `recfromcsv` function is unable to parse datasets with complex data types.
+
+* Fixed a bug that `DEFAULT` in the parameter(s) of nested estimator raises `KeyError` when exporting pipelines.
+
+* Fixed a bug related to setting `random_state` in nested estimators. The issue would happen with pipeline with `SelectFromModel` (`ExtraTreesClassifier` as nested estimator) or `StackingEstimator` if nested estimator has `random_state` parameter.
+
+* Fixed a bug in the missing value imputation function in TPOT to impute along columns instead rows.
+
+* Refined input checking for sparse matrices in TPOT.
+
+* Refined the TPOT pipeline mutation operator.
+
+
 # Version 0.8
 
 * **TPOT now detects whether there are missing values in your dataset** and replaces them with the median value of the column.

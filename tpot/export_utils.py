@@ -93,7 +93,7 @@ training_features, testing_features, training_target, testing_target = \\
     # Add the imputation step if it was used by TPOT
     if impute:
         pipeline_text += """
-imputer = Imputer(strategy="median", axis=1)
+imputer = Imputer(strategy="median")
 imputer.fit(training_features)
 training_features = imputer.transform(training_features)
 testing_features = imputer.transform(testing_features)

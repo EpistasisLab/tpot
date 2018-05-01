@@ -86,9 +86,6 @@
     <li class="toctree-l2"><a href="#before-submitting-your-pull-request">Before submitting your pull request</a></li>
     
 
-    <li class="toctree-l2"><a href="#updating-the-documentation">Updating the documentation</a></li>
-    
-
     <li class="toctree-l2"><a href="#after-submitting-your-pull-request">After submitting your pull request</a></li>
     
 
@@ -150,9 +147,9 @@
           <div role="main">
             <div class="section">
               
-                <p>We welcome you to <a href="https://github.com/rhiever/tpot/issues/">check the existing issues</a> for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please <a href="https://github.com/rhiever/tpot/issues/new">file a new issue</a> so we can discuss it.</p>
+                <p>We welcome you to <a href="https://github.com/EpistasisLab/tpot/issues/">check the existing issues</a> for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please <a href="https://github.com/EpistasisLab/tpot/issues/new">file a new issue</a> so we can discuss it.</p>
 <h2 id="project-layout">Project layout</h2>
-<p>The latest stable release of TPOT is on the <a href="https://github.com/rhiever/tpot/tree/master">master branch</a>, whereas the latest version of TPOT in development is on the <a href="https://github.com/rhiever/tpot/tree/development">development branch</a>. Make sure you are looking at and working on the correct branch if you're looking to contribute code.</p>
+<p>The latest stable release of TPOT is on the <a href="https://github.com/EpistasisLab/tpot/tree/master">master branch</a>, whereas the latest version of TPOT in development is on the <a href="https://github.com/EpistasisLab/tpot/tree/development">development branch</a>. Make sure you are looking at and working on the correct branch if you're looking to contribute code.</p>
 <p>In terms of directory structure:</p>
 <ul>
 <li>All of TPOT's code sources are in the <code>tpot</code> directory</li>
@@ -163,12 +160,12 @@
 </ul>
 <p>Make sure to familiarize yourself with the project layout before making any major contributions, and especially make sure to send all code changes to the <code>development</code> branch.</p>
 <h2 id="how-to-contribute">How to contribute</h2>
-<p>The preferred way to contribute to TPOT is to fork the 
-<a href="https://github.com/rhiever/tpot/">main repository</a> on
+<p>The preferred way to contribute to TPOT is to fork the
+<a href="https://github.com/EpistasisLab/tpot/">main repository</a> on
 GitHub:</p>
 <ol>
 <li>
-<p>Fork the <a href="https://github.com/rhiever/tpot">project repository</a>:
+<p>Fork the <a href="https://github.com/EpistasisLab/tpot">project repository</a>:
    click on the 'Fork' button near the top of the page. This creates
    a copy of the code under your account on the GitHub server.</p>
 </li>
@@ -213,29 +210,29 @@ GitHub:</p>
 <pre><code>      $ git push -u origin my-contribution
 </code></pre>
 <p>Finally, go to the web page of your fork of the TPOT repo, and click 'Pull Request' (PR) to send your changes to the maintainers for review. Make sure that you send your PR to the <code>development</code> branch, as the <code>master</code> branch is reserved for the latest stable release. This will start the CI server to check all the project's unit tests run and send an email to the maintainers.</p>
-<p>(If any of the above seems like magic to you, then look up the 
+<p>(If any of the above seems like magic to you, then look up the
 <a href="http://git-scm.com/documentation">Git documentation</a> on the web.)</p>
 <h2 id="before-submitting-your-pull-request">Before submitting your pull request</h2>
 <p>Before you submit a pull request for your contribution, please work through this checklist to make sure that you have done everything necessary so we can efficiently review and accept your changes.</p>
 <p>If your contribution changes TPOT in any way:</p>
 <ul>
 <li>
-<p>Update the <a href="https://github.com/rhiever/tpot/tree/master/docs_sources">documentation</a> so all of your changes are reflected there.</p>
+<p>Update the <a href="https://github.com/EpistasisLab/tpot/tree/master/docs_sources">documentation</a> so all of your changes are reflected there.</p>
 </li>
 <li>
-<p>Update the <a href="https://github.com/rhiever/tpot/blob/master/README.md">README</a> if anything there has changed.</p>
+<p>Update the <a href="https://github.com/EpistasisLab/tpot/blob/master/README.md">README</a> if anything there has changed.</p>
 </li>
 </ul>
 <p>If your contribution involves any code changes:</p>
 <ul>
 <li>
-<p>Update the <a href="https://github.com/rhiever/tpot/blob/master/tests.py">project unit tests</a> to test your code changes.</p>
+<p>Update the <a href="https://github.com/EpistasisLab/tpot/blob/master/tests.py">project unit tests</a> to test your code changes.</p>
 </li>
 <li>
 <p>Make sure that your code is properly commented with <a href="https://www.python.org/dev/peps/pep-0257/">docstrings</a> and comments explaining your rationale behind non-obvious coding practices.</p>
 </li>
 <li>
-<p>If your code affected any of the pipeline operators, make sure that the corresponding <a href="https://github.com/rhiever/tpot/blob/master/tpot/export_utils.py">export functionality</a> reflects those changes.</p>
+<p>If your code affected any of the pipeline operators, make sure that the corresponding <a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/export_utils.py">export functionality</a> reflects those changes.</p>
 </li>
 </ul>
 <p>If your contribution requires a new library dependency:</p>
@@ -244,26 +241,16 @@ GitHub:</p>
 <p>Double-check that the new dependency is easy to install via <code>pip</code> or Anaconda and supports both Python 2 and 3. If the dependency requires a complicated installation, then we most likely won't merge your changes because we want to keep TPOT easy to install.</p>
 </li>
 <li>
-<p>Add the required version of the library to <a href="https://github.com/rhiever/tpot/blob/master/.travis.yml#L7">.travis.yml</a></p>
+<p>Add the required version of the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/.travis.yml#L7">.travis.yml</a></p>
 </li>
 <li>
-<p>Add a line to pip install the library to <a href="https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L46">.travis_install.sh</a></p>
+<p>Add a line to pip install the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_install.sh#L46">.travis_install.sh</a></p>
 </li>
 <li>
-<p>Add a line to print the version of the library to <a href="https://github.com/rhiever/tpot/blob/master/ci/.travis_install.sh#L63">.travis_install.sh</a></p>
+<p>Add a line to print the version of the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_install.sh#L63">.travis_install.sh</a></p>
 </li>
 <li>
-<p>Similarly add a line to print the version of the library to <a href="https://github.com/rhiever/tpot/blob/master/ci/.travis_test.sh#L13">.travis_test.sh</a></p>
-</li>
-</ul>
-<h2 id="updating-the-documentation">Updating the documentation</h2>
-<p>We use <a href="http://www.mkdocs.org/">mkdocs</a> to manage our <a href="http://rhiever.github.io/tpot/">project documentation</a>. This allows us to write the documentation in Markdown and compile them to HTML as needed. Below are a couple useful commands to know when updating the documentation. Make sure that you are running these commands in the base directory of the TPOT project.</p>
-<ul>
-<li>
-<p><code>mkdocs serve</code>: Hosts of a local version of the documentation that you can access at the provided URL. The local version will update automatically as you save changes to the documentation.</p>
-</li>
-<li>
-<p><code>mkdocs build --clean</code>: Creates a fresh build of the documentation in HTML in the <code>docs</code> directory. Always run this before pushing the documentation to GitHub.</p>
+<p>Similarly add a line to print the version of the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_test.sh#L13">.travis_test.sh</a></p>
 </li>
 </ul>
 <h2 id="after-submitting-your-pull-request">After submitting your pull request</h2>
@@ -289,7 +276,7 @@ GitHub:</p>
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright &copy; 2015-Present <a href="http://www.randalolson.com">Randal S. Olson</a></p>
+      <p>Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania</p>
     
   </div>
 
