@@ -1653,7 +1653,7 @@ def test_PolynomialFeatures_exception():
         initialize_stats_dict(pipeline)
 
     fitness_scores = tpot_obj._evaluate_individuals(pipelines, pretest_X, pretest_y)
-    known_scores = [(2, 0.94000000000000006), (5000.0, -float('inf'))]
+    
     assert fitness_scores[0][0] == 2
     assert fitness_scores[1][0] == 5000.0
 
