@@ -469,6 +469,7 @@ class TPOTBase(BaseEstimator):
     def _add_operators(self):
         main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
         ret_types = []
+        op_list = []
         if self.template:
             steps = self.template.split('-')
             for idx, step in enumerate(steps):
@@ -490,16 +491,20 @@ class TPOTBase(BaseEstimator):
                         if operator.type() == step:
                             p_types = ([step_in_type] + arg_types, step_ret_type)
                             self._pset.addPrimitive(operator, *p_types)
-                            self._import_hash(operator)
-                            self._add_terminals(arg_types)
+                            if not op_list.count(operator.__name__):
+                                self._import_hash(operator)
+                                self._add_terminals(arg_types)
+                                op_list.append(operator.__name__)
                 else: # is the step is a specific operator
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]
                         if operator.__name__ == step:
                             p_types = ([step_in_type] + arg_types, step_ret_type)
                             self._pset.addPrimitive(operator, *p_types)
-                            self._import_hash(operator)
-                            self._add_terminals(arg_types)
+                            if not op_list.count(operator.__name__):
+                                self._import_hash(operator)
+                                self._add_terminals(arg_types)
+                                op_list.append(operator.__name__)
         else: # no template and randomly generated pipeline
             for operator in self.operators:
                 arg_types =  operator.parameter_types()[0][1:]
@@ -561,7 +566,6 @@ class TPOTBase(BaseEstimator):
             self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max)
         else:
             self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max + 1)
-        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, target, sample_weight=None, groups=None):
@@ -1084,7 +1088,7 @@ class TPOTBase(BaseEstimator):
                 self._imputed = True
                 features = self._impute_values(features)
         try:
-            X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
+            X, y = check_X_y(features, target, accept_sparse=True, dtype=None)
             return X, y
         except (AssertionError, ValueError):
             raise ValueError(
@@ -1431,6 +1435,15 @@ class TPOTBase(BaseEstimator):
             ind = self._toolbox.clone(individual)
             offspring, = mutator(ind)
             if str(offspring) not in self.evaluated_individuals_:
+                # Update statistics
+                # crossover_count is kept the same as for the predecessor
+                # mutation count is increased by 1
+                # predecessor is set to the string representation of the individual before mutation
+                # generation is set to 'INVALID' such that we can recognize that it should be updated accordingly
+                offspring.statistics['crossover_count'] = individual.statistics['crossover_count']
+                offspring.statistics['mutation_count'] = individual.statistics['mutation_count'] + 1
+                offspring.statistics['predecessor'] = (str(individual),)
+                offspring.statistics['generation'] = 'INVALID'
                 break
             else:
                 unsuccesful_mutations += 1

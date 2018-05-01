@@ -119,7 +119,7 @@ def test_mut_operator_stats_update():
 
     for _ in range(10):
         offspring, = tpot_obj._random_mutation_operator(ind)
-
+        
         assert offspring.statistics['crossover_count'] == ind.statistics['crossover_count']
         assert offspring.statistics['mutation_count'] == ind.statistics['mutation_count'] + 1
         assert offspring.statistics['predecessor'] == (str(ind),)
