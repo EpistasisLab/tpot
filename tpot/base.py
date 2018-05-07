@@ -200,7 +200,7 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
-        template: Python list (default: None)
+        template: string (default: None)
             A template for pipeline structure
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
@@ -277,6 +277,8 @@ class TPOTBase(BaseEstimator):
         # any one given individual (or pair of individuals)
         self._max_mut_loops = 50
 
+        self._setup_template(template)
+
         # Set offspring_size equal to population_size by default
         if offspring_size:
             self.offspring_size = offspring_size
@@ -285,18 +287,6 @@ class TPOTBase(BaseEstimator):
 
         self.config_dict_params = config_dict
         self._setup_config(self.config_dict_params)
-
-        self.template = template
-        if template:
-            self.fixed_length = len(template.split('-'))
-            # for now, the template is only a linear pipeline
-            # will add supports for more complex structure
-            self._min = self.fixed_length
-            self._max = self.fixed_length + 1
-        else:
-            self.fixed_length = 0
-            self._min = 1
-            self._max = 3
 
         self.operators = []
 
@@ -357,6 +347,28 @@ class TPOTBase(BaseEstimator):
 
         self._setup_pset()
         self._setup_toolbox()
+
+    def _setup_template(self, template):
+        if tempfile:
+            self.template = template
+        else:
+            if self.classification:
+                self.template = 'RandomTree-Classifier'
+            else:
+                self.template = 'RandomTree-Regressor'
+        self.template_comp = self.template.split('-')
+        self._min = -1
+        self._max = 0
+        for comp in self.template_comp:
+            self._min += 1
+            if comp == 'RandomTree':
+                self._min += 2
+            else:
+                self._max += 1
+        if self._max - self._min == 1:
+            self.tree_structure = False
+        else:
+            self.tree_structure = True
 
 
     def _setup_scoring_function(self, scoring):
@@ -471,9 +483,8 @@ class TPOTBase(BaseEstimator):
         ret_types = []
         op_list = []
         if self.template:
-            steps = self.template.split('-')
-            for idx, step in enumerate(steps):
-                if idx < self.fixed_length - 1:
+            for idx, step in enumerate(self.template_comp):
+                if idx < len(self.template_comp) - 1:
                     # create an empty for returning class for strongly-type GP
                     step_ret_type_name = 'Ret_{}'.format(idx)
                     step_ret_type = type(step_ret_type_name, (object,), {})
@@ -485,7 +496,17 @@ class TPOTBase(BaseEstimator):
                     step_in_type = ret_types[idx-1]
                 else:
                     step_in_type = np.ndarray
-                if main_type.count(step): # if the step is a main type
+                if step == "RandomTree":
+                    for operator in self.operators:
+                        arg_types =  operator.parameter_types()[0][1:]
+                        p_types = ([step_in_type] + arg_types, step_ret_type)
+                        self._pset.addPrimitive(operator, *p_types)
+                        if not op_list.count(operator.__name__):
+                            self._import_hash(operator)
+                            self._add_terminals(arg_types)
+                            op_list.append(operator.__name__)
+                    self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
+                elif main_type.count(step): # if the step is a main type
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]
                         if operator.type() == step:
@@ -505,25 +526,6 @@ class TPOTBase(BaseEstimator):
                                 self._import_hash(operator)
                                 self._add_terminals(arg_types)
                                 op_list.append(operator.__name__)
-        else: # no template and randomly generated pipeline
-            for operator in self.operators:
-                arg_types =  operator.parameter_types()[0][1:]
-                if operator.root:
-                    # We need to add rooted primitives twice so that they can
-                    # return both an Output_Array (and thus be the root of the tree),
-                    # and return a np.ndarray so they can exist elsewhere in the tree.
-                    p_types = (operator.parameter_types()[0], Output_Array)
-                    self._pset.addPrimitive(operator, *p_types)
-
-                self._pset.addPrimitive(operator, *operator.parameter_types())
-
-                # Import required modules into local namespace so that pipelines
-                # may be evaluated directly
-                self._import_hash(operator)
-                self._add_terminals(arg_types)
-
-
-            self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
         self.ret_types = [np.ndarray, Output_Array] + ret_types
 
 
@@ -562,10 +564,10 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('compile', self._compile_to_sklearn)
         self._toolbox.register('select', tools.selNSGA2)
         self._toolbox.register('mate', self._mate_operator)
-        if self.fixed_length:
-            self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max)
-        else:
+        if self.tree_structure:
             self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max + 1)
+        else:
+            self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
     def fit(self, features, target, sample_weight=None, groups=None):
@@ -1415,9 +1417,7 @@ class TPOTBase(BaseEstimator):
             Returns the individual with one of the mutations applied to it
 
         """
-        if self.fixed_length:
-            mutation_techniques = [partial(mutNodeReplacement, pset=self._pset)]
-        else:
+        if self.tree_structure:
             mutation_techniques = [
                 partial(gp.mutInsert, pset=self._pset),
                 partial(mutNodeReplacement, pset=self._pset)
@@ -1426,6 +1426,8 @@ class TPOTBase(BaseEstimator):
             number_of_primitives = sum([isinstance(node, deap.gp.Primitive) for node in individual])
             if number_of_primitives > 1 and allow_shrink:
                 mutation_techniques.append(partial(gp.mutShrink))
+        else:
+            mutation_techniques = [partial(mutNodeReplacement, pset=self._pset)]
 
         mutator = np.random.choice(mutation_techniques)
 
