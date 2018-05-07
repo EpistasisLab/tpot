@@ -102,7 +102,7 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, config_dict=None, template=None,
+                 random_state=None, config_dict=None, template='RandomTree',
                  warm_start=False, memory=None,
                  periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False):
@@ -200,7 +200,7 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
-        template: string (default: None)
+        template: string (default: 'RandomTree')
             A template for pipeline structure
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
@@ -349,20 +349,14 @@ class TPOTBase(BaseEstimator):
         self._setup_toolbox()
 
     def _setup_template(self, template):
-        if tempfile:
-            self.template = template
-        else:
-            if self.classification:
-                self.template = 'RandomTree-Classifier'
-            else:
-                self.template = 'RandomTree-Regressor'
+        self.template = template
         self.template_comp = self.template.split('-')
-        self._min = -1
-        self._max = 0
+        self._min = 0
+        self._max = 1
         for comp in self.template_comp:
             self._min += 1
             if comp == 'RandomTree':
-                self._min += 2
+                self._max += 2
             else:
                 self._max += 1
         if self._max - self._min == 1:
@@ -500,7 +494,13 @@ class TPOTBase(BaseEstimator):
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]
                         p_types = ([step_in_type] + arg_types, step_ret_type)
-                        self._pset.addPrimitive(operator, *p_types)
+                        if operator.root:
+                            # We need to add rooted primitives twice so that they can
+                            # return both an Output_Array (and thus be the root of the tree),
+                            # and return a np.ndarray so they can exist elsewhere in the tree.
+                            self._pset.addPrimitive(operator, *p_types)
+                        tree_p_types = ([step_in_type] + arg_types, step_in_type)
+                        self._pset.addPrimitive(operator, *tree_p_types)
                         if not op_list.count(operator.__name__):
                             self._import_hash(operator)
                             self._add_terminals(arg_types)
