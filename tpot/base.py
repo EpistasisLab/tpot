@@ -476,7 +476,25 @@ class TPOTBase(BaseEstimator):
         main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
         ret_types = []
         op_list = []
-        if self.template:
+        if self.template == "RandomTree": # default
+            step_in_type = np.ndarray
+            step_ret_type = Output_Array
+            for operator in self.operators:
+                arg_types =  operator.parameter_types()[0][1:]
+                p_types = ([step_in_type] + arg_types, step_ret_type)
+                if operator.root:
+                    # We need to add rooted primitives twice so that they can
+                    # return both an Output_Array (and thus be the root of the tree),
+                    # and return a np.ndarray so they can exist elsewhere in the tree.
+                    self._pset.addPrimitive(operator, *p_types)
+                tree_p_types = ([step_in_type] + arg_types, step_in_type)
+                self._pset.addPrimitive(operator, *tree_p_types)
+                if not op_list.count(operator.__name__):
+                    self._import_hash(operator)
+                    self._add_terminals(arg_types)
+                    op_list.append(operator.__name__)
+            self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
+        else:
             for idx, step in enumerate(self.template_comp):
                 if idx < len(self.template_comp) - 1:
                     # create an empty for returning class for strongly-type GP
@@ -490,22 +508,8 @@ class TPOTBase(BaseEstimator):
                     step_in_type = ret_types[idx-1]
                 else:
                     step_in_type = np.ndarray
-                if step == "RandomTree":
-                    for operator in self.operators:
-                        arg_types =  operator.parameter_types()[0][1:]
-                        p_types = ([step_in_type] + arg_types, step_ret_type)
-                        if operator.root:
-                            # We need to add rooted primitives twice so that they can
-                            # return both an Output_Array (and thus be the root of the tree),
-                            # and return a np.ndarray so they can exist elsewhere in the tree.
-                            self._pset.addPrimitive(operator, *p_types)
-                        tree_p_types = ([step_in_type] + arg_types, step_in_type)
-                        self._pset.addPrimitive(operator, *tree_p_types)
-                        if not op_list.count(operator.__name__):
-                            self._import_hash(operator)
-                            self._add_terminals(arg_types)
-                            op_list.append(operator.__name__)
-                    self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
+                if step == 'CombineDFs':
+                    self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_ret_type)
                 elif main_type.count(step): # if the step is a main type
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]
