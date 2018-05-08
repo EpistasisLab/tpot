@@ -355,7 +355,7 @@ class TPOTBase(BaseEstimator):
         self._max = 1
         for comp in self.template_comp:
             self._min += 1
-            if comp == 'RandomTree':
+            if comp == 'RandomTree' or 'CombineDFs':
                 self._max += 2
             else:
                 self._max += 1
@@ -496,20 +496,22 @@ class TPOTBase(BaseEstimator):
             self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
         else:
             for idx, step in enumerate(self.template_comp):
-                if idx < len(self.template_comp) - 1:
-                    # create an empty for returning class for strongly-type GP
-                    step_ret_type_name = 'Ret_{}'.format(idx)
-                    step_ret_type = type(step_ret_type_name, (object,), {})
-                    ret_types.append(step_ret_type)
-                else:
-                    step_ret_type = Output_Array
                 # input class in each step
                 if idx:
-                    step_in_type = ret_types[idx-1]
+                    step_in_type = ret_types[-1]
                 else:
                     step_in_type = np.ndarray
-                if step == 'CombineDFs':
-                    self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_ret_type)
+                if step != 'CombineDFs':
+                    if idx < len(self.template_comp) - 1:
+                        # create an empty for returning class for strongly-type GP
+                        step_ret_type_name = 'Ret_{}'.format(idx)
+                        step_ret_type = type(step_ret_type_name, (np.ndarray,), {})
+                        ret_types.append(step_ret_type)
+                    else:
+                        step_ret_type = Output_Array
+
+                if step == 'CombineDFs': # somehows CombineDFs only accept np.ndarray as input/ret
+                    self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
                 elif main_type.count(step): # if the step is a main type
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]
