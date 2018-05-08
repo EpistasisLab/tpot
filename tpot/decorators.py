@@ -64,12 +64,17 @@ def _pre_test(func):
             # clone individual before each func call so it is not altered for
             # the possible next cycle loop
             args = [self._toolbox.clone(arg) if isinstance(arg, creator.Individual) else arg for arg in args]
-
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-
-                    expr = func(self, *args, **kwargs)
+                    expr = None
+                    num_test_expr = 0
+                    while not expr and num_test_expr < int(NUM_TESTS/2):
+                        try:
+                            expr = func(self, *args, **kwargs)
+                        except:
+                            num_test_expr += 1
+                            pass
                     # mutation operator returns tuple (ind,); crossover operator
                     # returns tuple of (ind1, ind2)
                     expr_tuple = expr if isinstance(expr, tuple) else (expr,)

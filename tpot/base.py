@@ -348,17 +348,22 @@ class TPOTBase(BaseEstimator):
         self._setup_pset()
         self._setup_toolbox()
 
+
     def _setup_template(self, template):
         self.template = template
-        self.template_comp = self.template.split('-')
-        self._min = 0
-        self._max = 1
-        for comp in self.template_comp:
-            self._min += 1
-            if comp == 'RandomTree' or 'CombineDFs':
-                self._max += 2
-            else:
-                self._max += 1
+        self.template_comp = template.split('-')
+        if self.template == 'RandomTree':
+            self._min = 1
+            self._max = 3
+        else:
+            self._min = 0
+            self._max = 1
+            for comp in self.template_comp:
+                if comp == 'CombineDFs':
+                    self._max += 2
+                else:
+                    self._max += 1
+                    self._min += 1
         if self._max - self._min == 1:
             self.tree_structure = False
         else:
@@ -439,6 +444,7 @@ class TPOTBase(BaseEstimator):
         else:
             self.config_dict = self.default_config_dict
 
+
     def _read_config_file(self, config_path):
         if os.path.isfile(config_path):
             try:
@@ -459,6 +465,7 @@ class TPOTBase(BaseEstimator):
                 '{}'.format(config_path)
             )
 
+
     def _setup_pset(self):
         if self.random_state is not None:
             random.seed(self.random_state)
@@ -475,7 +482,7 @@ class TPOTBase(BaseEstimator):
     def _add_operators(self):
         main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
         ret_types = []
-        op_list = []
+        self.op_list = []
         if self.template == "RandomTree": # default
             step_in_type = np.ndarray
             step_ret_type = Output_Array
@@ -489,12 +496,10 @@ class TPOTBase(BaseEstimator):
                     self._pset.addPrimitive(operator, *p_types)
                 tree_p_types = ([step_in_type] + arg_types, step_in_type)
                 self._pset.addPrimitive(operator, *tree_p_types)
-                if not op_list.count(operator.__name__):
-                    self._import_hash(operator)
-                    self._add_terminals(arg_types)
-                    op_list.append(operator.__name__)
+                self._import_hash_and_add_terminals(operator, arg_types)
             self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
         else:
+            gp_types = {}
             for idx, step in enumerate(self.template_comp):
                 # input class in each step
                 if idx:
@@ -509,8 +514,7 @@ class TPOTBase(BaseEstimator):
                         ret_types.append(step_ret_type)
                     else:
                         step_ret_type = Output_Array
-
-                if step == 'CombineDFs': # somehows CombineDFs only accept np.ndarray as input/ret
+                if step == 'CombineDFs':
                     self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
                 elif main_type.count(step): # if the step is a main type
                     for operator in self.operators:
@@ -518,21 +522,22 @@ class TPOTBase(BaseEstimator):
                         if operator.type() == step:
                             p_types = ([step_in_type] + arg_types, step_ret_type)
                             self._pset.addPrimitive(operator, *p_types)
-                            if not op_list.count(operator.__name__):
-                                self._import_hash(operator)
-                                self._add_terminals(arg_types)
-                                op_list.append(operator.__name__)
+                            self._import_hash_and_add_terminals(operator, arg_types)
                 else: # is the step is a specific operator
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]
                         if operator.__name__ == step:
                             p_types = ([step_in_type] + arg_types, step_ret_type)
                             self._pset.addPrimitive(operator, *p_types)
-                            if not op_list.count(operator.__name__):
-                                self._import_hash(operator)
-                                self._add_terminals(arg_types)
-                                op_list.append(operator.__name__)
+                            self._import_hash_and_add_terminals(operator, arg_types)
         self.ret_types = [np.ndarray, Output_Array] + ret_types
+
+
+    def _import_hash_and_add_terminals(self, operator, arg_types):
+        if not self.op_list.count(operator.__name__):
+            self._import_hash(operator)
+            self._add_terminals(arg_types)
+            self.op_list.append(operator.__name__)
 
 
     def _import_hash(self, operator):
