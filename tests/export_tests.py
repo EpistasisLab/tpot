@@ -526,7 +526,7 @@ features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'].values, random_state=42)
 
-# Score on the training set was:0.929813743
+# Average CV score on the training set was:0.929813743
 exported_pipeline = make_pipeline(
     SelectPercentile(score_func=f_classif, percentile=20),
     DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
