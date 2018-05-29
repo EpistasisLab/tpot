@@ -253,7 +253,7 @@ If provided, this setting will override the "generations" parameter and allow TP
 <tr>
 <td>-maxeval</td>
 <td>MAX_EVAL_MINS</td>
-<td>Any positive integer</td>
+<td>Any positive float</td>
 <td>How many minutes TPOT has to evaluate a single pipeline.
 <br /><br />
 Setting this parameter to higher values will allow TPOT to consider more complex pipelines but will also allow TPOT to run longer.</td>

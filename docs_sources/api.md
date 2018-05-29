@@ -116,7 +116,7 @@ How many minutes TPOT has to optimize the pipeline.
 If not None, this setting will override the <em>generations</em> parameter and allow TPOT to run until <em>max_time_mins</em> minutes elapse.
 </blockquote>
 
-<strong>max_eval_time_mins</strong>: integer, optional (default=5)
+<strong>max_eval_time_mins</strong>: float, optional (default=5)
 <blockquote>
 How many minutes TPOT has to evaluate a single pipeline.
 <br /><br />
@@ -588,7 +588,7 @@ How many minutes TPOT has to optimize the pipeline.
 If not None, this setting will override the <em>generations</em> parameter and allow TPOT to run until <em>max_time_mins</em> minutes elapse.
 </blockquote>
 
-<strong>max_eval_time_mins</strong>: integer, optional (default=5)
+<strong>max_eval_time_mins</strong>: float, optional (default=5)
 <blockquote>
 How many minutes TPOT has to evaluate a single pipeline.
 <br /><br />
