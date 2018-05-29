@@ -174,7 +174,7 @@ class TPOTBase(BaseEstimator):
             How many minutes TPOT has to optimize the pipeline.
             If provided, this setting will override the "generations" parameter and allow
             TPOT to run until it runs out of time.
-        max_eval_time_mins: int, optional (default: 5)
+        max_eval_time_mins: float, optional (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
             complex pipelines, but will also allow TPOT to run longer.
