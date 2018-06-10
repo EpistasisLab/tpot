@@ -253,8 +253,11 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
             if ind.statistics['generation'] == 'INVALID':
                 ind.statistics['generation'] = gen
 
-        # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in offspring if rescore or not ind.fitness.valid]
+        # Evaluate the individuals with an invalid or outdated fitness
+        if rescore:
+            invalid_ind = population + offspring
+        else:
+            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         # update pbar for valid individuals (with fitness values)
         if not pbar.disable:
