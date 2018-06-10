@@ -172,7 +172,7 @@ def initialize_stats_dict(individual):
 
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
-                   stats=None, halloffame=None, verbose=0, per_generation_function=None):
+                   stats=None, halloffame=None, verbose=0, per_generation_function=None, rescore=False):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
@@ -190,6 +190,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     :param verbose: Whether or not to log the statistics.
     :param per_generation_function: if supplied, call this function before each generation
                             used by tpot to save best pipeline before each new generation
+    :param rescore: Whether surviving pipelines should be re-evaluated every generation
     :returns: The final population
     :returns: A class:`~deap.tools.Logbook` with the statistics of the
               evolution.
@@ -225,7 +226,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         initialize_stats_dict(ind)
 
     # Evaluate the individuals with an invalid fitness
-    invalid_ind = [ind for ind in population if not ind.fitness.valid]
+    invalid_ind = [ind for ind in population if rescore or not ind.fitness.valid]
 
     fitnesses = toolbox.evaluate(invalid_ind)
     for ind, fit in zip(invalid_ind, fitnesses):
@@ -253,7 +254,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                 ind.statistics['generation'] = gen
 
         # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+        invalid_ind = [ind for ind in offspring if rescore or not ind.fitness.valid]
 
         # update pbar for valid individuals (with fitness values)
         if not pbar.disable:

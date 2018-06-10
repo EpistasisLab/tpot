@@ -100,7 +100,7 @@ class TPOTBase(BaseEstimator):
 
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
-                 scoring=None, cv=5, subsample=1.0, n_jobs=1,
+                 scoring=None, cv=5, subsample=1.0, n_jobs=1, rescore=False,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None,
                  warm_start=False, memory=None,
@@ -170,6 +170,10 @@ class TPOTBase(BaseEstimator):
             Number of CPUs for evaluating pipelines in parallel during the TPOT
             optimization process. Assigning this to -1 will use as many cores as available
             on the computer.
+        rescore: bool, optional (default: False)
+            Whether surviving pipelines should be re-evaluated every generation. This is only
+            necessary if your training data or scoring context changes from generation to
+            generation.
         max_time_mins: int, optional (default: None)
             How many minutes TPOT has to optimize the pipeline.
             If provided, this setting will override the "generations" parameter and allow
@@ -341,6 +345,8 @@ class TPOTBase(BaseEstimator):
             self.n_jobs = cpu_count()
         else:
             self.n_jobs = n_jobs
+
+        self.rescore = rescore
 
         self._setup_pset()
         self._setup_toolbox()
@@ -615,7 +621,8 @@ class TPOTBase(BaseEstimator):
                     pbar=self._pbar,
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
-                    per_generation_function=self._check_periodic_pipeline
+                    per_generation_function=self._check_periodic_pipeline,
+                    rescore=self.rescore
                 )
 
             # store population for the next call
