@@ -40,6 +40,7 @@ from tempfile import mkdtemp
 from shutil import rmtree
 
 import numpy as np
+from pandas import DataFrame
 from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
@@ -1102,7 +1103,11 @@ class TPOTBase(BaseEstimator):
                 features = self._impute_values(features)
         try:
             X, y = check_X_y(features, target, accept_sparse=True, dtype=None)
-            return X, y
+            if isinstance(features, DataFrame):
+                return features, target
+            else:
+                return X, y
+
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
