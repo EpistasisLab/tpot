@@ -312,7 +312,7 @@ List of class labels for prediction
 
 <strong>sample_weight</strong>: array-like {n_samples}, optional
 <blockquote>
-Per-sample weights. Higher weights force TPOT to put more emphasis on those points.
+Per-sample weights. Higher weights indicate more importance. If specified, sample_weight will be passed to any pipeline element whose fit() function accepts a sample_weight argument. By default, using sample_weight does not affect tpot's scoring functions, which determine preferences between pipelines.
 </blockquote>
 
 <strong>groups</strong>: array-like, with shape {n_samples, }, optional
@@ -779,7 +779,7 @@ List of target labels for prediction
 
 <strong>sample_weight</strong>: array-like {n_samples}, optional
 <blockquote>
-Per-sample weights. Higher weights force TPOT to put more emphasis on those points.
+Per-sample weights. Higher weights indicate more importance. If specified, sample_weight will be passed to any pipeline element whose fit() function accepts a sample_weight argument. By default, using sample_weight does not affect tpot's scoring functions, which determine preferences between pipelines.
 </blockquote>
 
 <strong>groups</strong>: array-like, with shape {n_samples, }, optional
