@@ -47,7 +47,7 @@ from tqdm import tqdm
 from copy import copy, deepcopy
 
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_X_y
+from sklearn.utils import check_X_y, check_consistent_length
 from sklearn.externals.joblib import Parallel, delayed, Memory
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
@@ -542,7 +542,7 @@ class TPOTBase(BaseEstimator):
 
         """
 
-        features, target = self._check_dataset(features, target)
+        features, target = self._check_dataset(features, target, sample_weight)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
@@ -1004,8 +1004,18 @@ class TPOTBase(BaseEstimator):
 
         Returns
         -------
-        None
+        (features, target)
         """
+        # Check sample_weight
+        if sample_weight is not None:
+            try: sample_weight = np.array(sample_weight).astype('float')
+            except ValueError as e:
+                raise ValueError('sample_weight could not be converted to float array: %s' % e)
+            if np.any(np.isnan(sample_weight)):
+                raise ValueError('sample_weight contained NaN values.')
+            try: check_consistent_length(sample_weight, target)
+            except ValueError as e:
+                raise ValueError('sample_weight dimensions did not match target: %s' % e)
         # Resets the imputer to be fit for the new dataset
         self._fitted_imputer = None
         self._imputed = False
