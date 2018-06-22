@@ -992,7 +992,7 @@ class TPOTBase(BaseEstimator):
 
         return self._fitted_imputer.transform(features)
 
-    def _check_dataset(self, features, target):
+    def _check_dataset(self, features, target, sample_weight=None):
         """Check if a dataset has a valid feature set and labels.
 
         Parameters
