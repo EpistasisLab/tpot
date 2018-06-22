@@ -1001,7 +1001,8 @@ class TPOTBase(BaseEstimator):
             Feature matrix
         target: array-like {n_samples}
             List of class labels for prediction
-
+        sample_weight: array-like {n_samples} (optional)
+            List of weights indicating relative importance
         Returns
         -------
         (features, target)
