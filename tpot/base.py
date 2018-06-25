@@ -860,6 +860,12 @@ class TPOTBase(BaseEstimator):
         else:
             if not (hasattr(self.fitted_pipeline_, 'predict_proba')):
                 raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
+
+            features = features.astype(np.float64)
+
+            if np.any(np.isnan(features)):
+                features = self._impute_values(features)
+
             return self.fitted_pipeline_.predict_proba(features.astype(np.float64))
 
     def set_params(self, **params):
