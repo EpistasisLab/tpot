@@ -282,6 +282,14 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 </td>
 </tr>
 <tr>
+<td>-template</td>
+<td>TEMPLATE</td>
+<td>String</td>
+<td>Template for pipeline structure.
+<br /><br />
+For example: -template 'Selector-Transformer-Classifier'</td>
+</tr>
+<tr>
 <td>-memory</td>
 <td>MEMORY</td>
 <td>String or file path</td>

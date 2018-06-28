@@ -242,6 +242,7 @@ class ParserTest(TestCase):
         self.assertEqual(args.SUBSAMPLE, 1.0)
         self.assertEqual(args.SCORING_FN, None)
         self.assertEqual(args.TARGET_NAME, 'class')
+        self.assertEqual(args.TEMPLATE, 'RandomTree')
         self.assertEqual(args.TPOT_MODE, 'classification')
         self.assertEqual(args.VERBOSITY, 1)
 
@@ -278,6 +279,7 @@ RANDOM_STATE        =     None
 SCORING_FN          =     accuracy
 SUBSAMPLE           =     1.0
 TARGET_NAME         =     class
+TEMPLATE            =     RandomTree
 TPOT_MODE           =     classification
 VERBOSITY           =     1
 
@@ -320,6 +322,7 @@ RANDOM_STATE        =     None
 SCORING_FN          =     neg_mean_squared_error
 SUBSAMPLE           =     1.0
 TARGET_NAME         =     class
+TEMPLATE            =     RandomTree
 TPOT_MODE           =     regression
 VERBOSITY           =     1
 

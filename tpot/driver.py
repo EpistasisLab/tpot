@@ -354,6 +354,17 @@ def _get_arg_parser():
         )
     )
 
+    parser.add_argument(
+        '-template',
+        action='store',
+        dest='TEMPLATE',
+        default='RandomTree',
+        type=str,
+        help=(
+             'Template for pipeline structure'
+        )
+    )
+
 
     parser.add_argument(
         '-memory',
@@ -523,6 +534,7 @@ def tpot_driver(args):
         max_eval_time_mins=args.MAX_EVAL_MINS,
         random_state=args.RANDOM_STATE,
         config_dict=args.CONFIG_FILE,
+        template=args.TEMPLATE,
         memory=args.MEMORY,
         periodic_checkpoint_folder=args.CHECKPOINT_FOLDER,
         early_stop=args.EARLY_STOP,
