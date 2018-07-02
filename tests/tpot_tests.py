@@ -1488,6 +1488,70 @@ def test_preprocess_individuals_3():
         assert tpot_obj._pbar.total == 6
 
 
+def test_check_dataset():
+    """Assert that the check_dataset function returns feature and target as expected."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target)
+    assert np.allclose(ret_features, training_features)
+    assert np.allclose(ret_target, training_target)
+
+
+def test_check_dataset_2():
+    """Assert that the check_dataset function raise ValueError when sample_weight can not be converted to float array"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    test_sample_weight = list(range(1, len(training_target)+1))
+    ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
+    test_sample_weight[0] = 'opps'
+
+    assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
+
+
+def test_check_dataset_3():
+    """Assert that the check_dataset function raise ValueError when sample_weight has NaN"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    test_sample_weight = list(range(1, len(training_target)+1))
+    ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
+    test_sample_weight[0] = np.nan
+
+    assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
+
+
+def test_check_dataset_4():
+    """Assert that the check_dataset function raise ValueError when sample_weight has a length different length"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    test_sample_weight = list(range(1, len(training_target)))
+    assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
+
+
 def test_imputer():
     """Assert that the TPOT fit function will not raise a ValueError in a dataset where NaNs are present."""
     tpot_obj = TPOTClassifier(
