@@ -604,6 +604,26 @@ def test_predict_2():
     assert result.shape == (testing_features.shape[0],)
 
 
+def test_predict_3():
+    """Assert that the TPOT predict function works on dataset with nan"""
+    tpot_obj = TPOTClassifier()
+    pipeline_string = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5'
+        ')'
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj.fitted_pipeline_.fit(training_features, training_target)
+    result = tpot_obj.predict(features_with_nan)
+
+    assert result.shape == (features_with_nan.shape[0],)
+
+
 def test_predict_proba():
     """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_target)."""
     tpot_obj = TPOTClassifier()
@@ -669,6 +689,27 @@ def test_predict_proba_4():
     tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r)
 
     assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
+
+
+def test_predict_proba_5():
+    """Assert that the TPOT predict_proba function works on dataset with nan."""
+    tpot_obj = TPOTClassifier()
+    pipeline_string = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5)'
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj.fitted_pipeline_.fit(training_features, training_target)
+
+    result = tpot_obj.predict_proba(features_with_nan)
+    num_labels = np.amax(training_target) + 1
+
+    assert result.shape == (features_with_nan.shape[0], num_labels)
 
 
 def test_warm_start():
