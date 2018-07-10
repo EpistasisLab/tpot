@@ -93,8 +93,13 @@ if sys.platform.startswith('win'):
 
     win32api.SetConsoleCtrlHandler(handler, 1)
 
-def isnotebook():
-    """Check if TPOT is running in Jupyter notebook."""
+def is_notebook():
+    """Check if TPOT is running in Jupyter notebook.
+    Returns
+    -------
+    True: TPOT is running in Jupyter notebook
+    False: TPOT is running in Default Terminal/IPython Terminal/Other type
+    """
     try:
         from IPython import get_ipython
         shell = get_ipython().__class__.__name__
@@ -107,7 +112,7 @@ def isnotebook():
     except:
         return False
 
-if isnotebook():
+if is_notebook():
     from tqdm import tqdm_notebook as tqdm
 else:
     from tqdm import tqdm
