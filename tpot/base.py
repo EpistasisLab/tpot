@@ -98,13 +98,13 @@ def is_notebook():
     Returns
     -------
     True: TPOT is running in Jupyter notebook
-    False: TPOT is running in Default Terminal/IPython Terminal/Other type
+    False: TPOT is running in other terminals
     """
     try:
         from IPython import get_ipython
         shell = get_ipython().__class__.__name__
         # if shell == 'TerminalInteractiveShell', then Terminal running IPython
-        return shell == 'ZMQInteractiveShell':
+        return shell == 'ZMQInteractiveShell'
     except:
         return False
 
