@@ -94,6 +94,7 @@ if sys.platform.startswith('win'):
     win32api.SetConsoleCtrlHandler(handler, 1)
 
 def isnotebook():
+    """Check if TPOT is running in Jupyter notebook."""
     try:
         from IPython import get_ipython
         shell = get_ipython().__class__.__name__
