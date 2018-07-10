@@ -24,7 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from tpot import TPOTClassifier, TPOTRegressor
-from tpot.base import TPOTBase
+from tpot.base import TPOTBase, isnotebook
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
@@ -146,6 +146,12 @@ def test_init_custom_parameters():
     assert tpot_obj.fitted_pipeline_ is None
     assert not (tpot_obj._pset is None)
     assert not (tpot_obj._toolbox is None)
+
+
+def test_isnotebook():
+    """Assert that isnotebook function works as expected."""
+    ret = isnotebook()
+    assert not ret
 
 
 def test_init_default_scoring():

@@ -102,13 +102,12 @@ def isnotebook():
         elif shell == 'TerminalInteractiveShell':
             return False  # Terminal running IPython
         else:
-            return False  # Other type (?)
+            return False  # Other type
     except NameError:
         return False
 
 if isnotebook():
     from tqdm import tqdm_notebook as tqdm
-    print('In Jupyter')
 else:
     from tqdm import tqdm
 
