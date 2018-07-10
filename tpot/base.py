@@ -104,7 +104,7 @@ def isnotebook():
             return False  # Terminal running IPython
         else:
             return False  # Other type
-    except NameError:
+    except:
         return False
 
 if isnotebook():
