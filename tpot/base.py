@@ -104,10 +104,7 @@ def is_notebook():
         from IPython import get_ipython
         shell = get_ipython().__class__.__name__
         # if shell == 'TerminalInteractiveShell', then Terminal running IPython
-        if shell == 'ZMQInteractiveShell':
-            return True   # Jupyter notebook or qtconsole
-        else:
-            return False  # Other type
+        return shell == 'ZMQInteractiveShell':
     except:
         return False
 
