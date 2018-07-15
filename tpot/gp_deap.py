@@ -23,6 +23,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+import dask
 import numpy as np
 from deap import tools, gp
 from inspect import isclass
@@ -395,7 +396,8 @@ def mutNodeReplacement(individual, pset):
 
 @threading_timeoutable(default="Timeout")
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
-                             cv, scoring_function, sample_weight=None, groups=None):
+                             cv, scoring_function, sample_weight=None,
+                             groups=None, delayed=lambda x: x):
     """Fit estimator and compute scores for a given dataset split.
     Parameters
     ----------
@@ -425,24 +427,28 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
 
     cv = check_cv(cv, target, classifier=is_classifier(sklearn_pipeline))
     cv_iter = list(cv.split(features, target, groups))
-    scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
+    scorer = delayed(check_scoring)(sklearn_pipeline, scoring=scoring_function)
 
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
-                                    X=features,
-                                    y=target,
-                                    scorer=scorer,
-                                    train=train,
-                                    test=test,
-                                    verbose=0,
-                                    parameters=None,
-                                    fit_params=sample_weight_dict)
-                                for train, test in cv_iter]
-            CV_score = np.array(scores)[:, 0]
-            return np.nanmean(CV_score)
-    except TimeoutException:
-        return "Timeout"
-    except Exception as e:
-        return -float('inf')
+    def safe_fit_and_score(*args, **kwargs):
+        try:
+            return _fit_and_score(*args, **kwargs)
+        except Exception:
+            return -float('inf')
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        # TODO: dive into and delay fit/transform calls on sklearn_pipeline.steps appropriately
+        # This will help with shared intermediate results, profiling, etc..
+        # It looks like the dask_ml.model_selection._search.do_fit_and_score might have good logic here
+        scores = [delayed(safe_fit_and_score)(estimator=delayed(clone)(sklearn_pipeline),
+                                X=features,
+                                y=target,
+                                scorer=scorer,
+                                train=train,
+                                test=test,
+                                verbose=0,
+                                parameters=None,
+                                fit_params=sample_weight_dict)
+                            for train, test in cv_iter]
+        CV_score = delayed(np.array)(scores)[:, 0]
+        return delayed(np.nanmean)(CV_score)
