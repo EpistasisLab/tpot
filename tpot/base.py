@@ -43,7 +43,6 @@ import numpy as np
 from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
-from tqdm import tqdm
 from copy import copy, deepcopy
 
 from sklearn.base import BaseEstimator
@@ -93,6 +92,26 @@ if sys.platform.startswith('win'):
 
 
     win32api.SetConsoleCtrlHandler(handler, 1)
+
+def is_notebook():
+    """Check if TPOT is running in Jupyter notebook.
+    Returns
+    -------
+    True: TPOT is running in Jupyter notebook
+    False: TPOT is running in other terminals
+    """
+    try:
+        from IPython import get_ipython
+        shell = get_ipython().__class__.__name__
+        # if shell == 'TerminalInteractiveShell', then Terminal running IPython
+        return shell == 'ZMQInteractiveShell'
+    except:
+        return False
+
+if is_notebook():
+    from tqdm import tqdm_notebook as tqdm
+else:
+    from tqdm import tqdm
 
 
 class TPOTBase(BaseEstimator):
@@ -526,9 +545,9 @@ class TPOTBase(BaseEstimator):
         target: array-like {n_samples}
             List of class labels for prediction
         sample_weight: array-like {n_samples}, optional
-            Per-sample weights. Higher weights indicate more importance. If specified, 
-            sample_weight will be passed to any pipeline element whose fit() function accepts 
-            a sample_weight argument. By default, using sample_weight does not affect tpot's 
+            Per-sample weights. Higher weights indicate more importance. If specified,
+            sample_weight will be passed to any pipeline element whose fit() function accepts
+            a sample_weight argument. By default, using sample_weight does not affect tpot's
             scoring functions, which determine preferences between pipelines.
         groups: array-like, with shape {n_samples, }, optional
             Group labels for the samples used when performing cross-validation.
