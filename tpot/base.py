@@ -801,7 +801,6 @@ class TPOTBase(BaseEstimator):
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
         features = self._check_dataset(features, target=None, sample_weight=None)
-        print(type(features))
 
         return self.fitted_pipeline_.predict(features)
 
