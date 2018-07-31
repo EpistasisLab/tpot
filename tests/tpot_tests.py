@@ -1558,6 +1558,21 @@ def test_check_dataset_4():
     assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
 
 
+def test_check_dataset_5():
+    """Assert that the check_dataset function returns feature and target as expected."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    ret_features = tpot_obj._check_dataset(training_features, target=None)
+    assert np.allclose(ret_features, training_features)
+
+
 def test_imputer():
     """Assert that the TPOT fit function will not raise a ValueError in a dataset where NaNs are present."""
     tpot_obj = TPOTClassifier(
