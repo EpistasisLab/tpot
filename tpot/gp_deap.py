@@ -431,9 +431,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
 
     def safe_fit_and_score(*args, **kwargs):
         try:
-            return _fit_and_score(*args, **kwargs)
+            return [], _fit_and_score(*args, **kwargs), []
         except Exception:
-            return [[-float('inf'), -float('inf')]]
+            return [], [[-float('inf'), -float('inf')]], []
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
