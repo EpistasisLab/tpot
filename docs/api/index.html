@@ -446,7 +446,7 @@ List of class labels for prediction
 
 <strong>sample_weight</strong>: array-like {n_samples}, optional
 <blockquote>
-Per-sample weights. Higher weights force TPOT to put more emphasis on those points.
+Per-sample weights. Higher weights indicate more importance. If specified, sample_weight will be passed to any pipeline element whose fit() function accepts a sample_weight argument. By default, using sample_weight does not affect tpot's scoring functions, which determine preferences between pipelines.
 </blockquote>
 
 <strong>groups</strong>: array-like, with shape {n_samples, }, optional
@@ -893,7 +893,7 @@ List of target labels for prediction
 
 <strong>sample_weight</strong>: array-like {n_samples}, optional
 <blockquote>
-Per-sample weights. Higher weights force TPOT to put more emphasis on those points.
+Per-sample weights. Higher weights indicate more importance. If specified, sample_weight will be passed to any pipeline element whose fit() function accepts a sample_weight argument. By default, using sample_weight does not affect tpot's scoring functions, which determine preferences between pipelines.
 </blockquote>
 
 <strong>groups</strong>: array-like, with shape {n_samples, }, optional
@@ -1033,18 +1033,18 @@ Does not return anything
 
   Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
-	  
+      
         </div>
       </div>
 
     </section>
-    
+
   </div>
 
   <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/rhiever/tpot" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/rhiever/tpot/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../using/" style="color: #fcfcfc;">&laquo; Previous</a></span>
@@ -1054,7 +1054,10 @@ Does not return anything
       
     </span>
 </div>
+    <script>var base_url = '..';</script>
     <script src="../js/theme.js"></script>
+      <script src="../search/require.js"></script>
+      <script src="../search/search.js"></script>
 
 </body>
 </html>

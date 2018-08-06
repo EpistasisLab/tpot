@@ -161,8 +161,10 @@ regressor_config_dict = {
 
     'tpot.builtins.OneHotEncoder': {
         'minimum_fraction': [0.05, 0.1, 0.15, 0.2, 0.25],
-        'sparse': [False]
+        'sparse': [False],
+        'threshold': [10]
     },
+
 
     # Selectors
     'sklearn.feature_selection.SelectFwe': {

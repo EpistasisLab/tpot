@@ -116,7 +116,7 @@ How many minutes TPOT has to optimize the pipeline.
 If not None, this setting will override the <em>generations</em> parameter and allow TPOT to run until <em>max_time_mins</em> minutes elapse.
 </blockquote>
 
-<strong>max_eval_time_mins</strong>: integer, optional (default=5)
+<strong>max_eval_time_mins</strong>: float, optional (default=5)
 <blockquote>
 How many minutes TPOT has to evaluate a single pipeline.
 <br /><br />
@@ -312,7 +312,7 @@ List of class labels for prediction
 
 <strong>sample_weight</strong>: array-like {n_samples}, optional
 <blockquote>
-Per-sample weights. Higher weights force TPOT to put more emphasis on those points.
+Per-sample weights. Higher weights indicate more importance. If specified, sample_weight will be passed to any pipeline element whose fit() function accepts a sample_weight argument. By default, using sample_weight does not affect tpot's scoring functions, which determine preferences between pipelines.
 </blockquote>
 
 <strong>groups</strong>: array-like, with shape {n_samples, }, optional
@@ -588,7 +588,7 @@ How many minutes TPOT has to optimize the pipeline.
 If not None, this setting will override the <em>generations</em> parameter and allow TPOT to run until <em>max_time_mins</em> minutes elapse.
 </blockquote>
 
-<strong>max_eval_time_mins</strong>: integer, optional (default=5)
+<strong>max_eval_time_mins</strong>: float, optional (default=5)
 <blockquote>
 How many minutes TPOT has to evaluate a single pipeline.
 <br /><br />
@@ -779,7 +779,7 @@ List of target labels for prediction
 
 <strong>sample_weight</strong>: array-like {n_samples}, optional
 <blockquote>
-Per-sample weights. Higher weights force TPOT to put more emphasis on those points.
+Per-sample weights. Higher weights indicate more importance. If specified, sample_weight will be passed to any pipeline element whose fit() function accepts a sample_weight argument. By default, using sample_weight does not affect tpot's scoring functions, which determine preferences between pipelines.
 </blockquote>
 
 <strong>groups</strong>: array-like, with shape {n_samples, }, optional

@@ -44,11 +44,10 @@ from pandas import DataFrame
 from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
-from tqdm import tqdm
 from copy import copy, deepcopy
 
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_X_y
+from sklearn.utils import check_X_y, check_consistent_length
 from sklearn.externals.joblib import Parallel, delayed, Memory
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
@@ -94,6 +93,26 @@ if sys.platform.startswith('win'):
 
 
     win32api.SetConsoleCtrlHandler(handler, 1)
+
+def is_notebook():
+    """Check if TPOT is running in Jupyter notebook.
+    Returns
+    -------
+    True: TPOT is running in Jupyter notebook
+    False: TPOT is running in other terminals
+    """
+    try:
+        from IPython import get_ipython
+        shell = get_ipython().__class__.__name__
+        # if shell == 'TerminalInteractiveShell', then Terminal running IPython
+        return shell == 'ZMQInteractiveShell'
+    except:
+        return False
+
+if is_notebook():
+    from tqdm import tqdm_notebook as tqdm
+else:
+    from tqdm import tqdm
 
 
 class TPOTBase(BaseEstimator):
@@ -175,7 +194,7 @@ class TPOTBase(BaseEstimator):
             How many minutes TPOT has to optimize the pipeline.
             If provided, this setting will override the "generations" parameter and allow
             TPOT to run until it runs out of time.
-        max_eval_time_mins: int, optional (default: 5)
+        max_eval_time_mins: float, optional (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
             complex pipelines, but will also allow TPOT to run longer.
@@ -605,7 +624,10 @@ class TPOTBase(BaseEstimator):
         target: array-like {n_samples}
             List of class labels for prediction
         sample_weight: array-like {n_samples}, optional
-            Per-sample weights. Higher weights force TPOT to put more emphasis on those points
+            Per-sample weights. Higher weights indicate more importance. If specified,
+            sample_weight will be passed to any pipeline element whose fit() function accepts
+            a sample_weight argument. By default, using sample_weight does not affect tpot's
+            scoring functions, which determine preferences between pipelines.
         groups: array-like, with shape {n_samples, }, optional
             Group labels for the samples used when performing cross-validation.
             This parameter should only be used in conjunction with sklearn's Group cross-validation
@@ -618,7 +640,7 @@ class TPOTBase(BaseEstimator):
 
         """
 
-        features, target = self._check_dataset(features, target)
+        features, target = self._check_dataset(features, target, sample_weight)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
@@ -939,6 +961,12 @@ class TPOTBase(BaseEstimator):
         else:
             if not (hasattr(self.fitted_pipeline_, 'predict_proba')):
                 raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
+
+            features = features.astype(np.float64)
+
+            if np.any(np.isnan(features)):
+                features = self._impute_values(features)
+
             return self.fitted_pipeline_.predict_proba(features.astype(np.float64))
 
     def set_params(self, **params):
@@ -1068,7 +1096,7 @@ class TPOTBase(BaseEstimator):
 
         return self._fitted_imputer.transform(features)
 
-    def _check_dataset(self, features, target):
+    def _check_dataset(self, features, target, sample_weight=None):
         """Check if a dataset has a valid feature set and labels.
 
         Parameters
@@ -1077,11 +1105,22 @@ class TPOTBase(BaseEstimator):
             Feature matrix
         target: array-like {n_samples}
             List of class labels for prediction
-
+        sample_weight: array-like {n_samples} (optional)
+            List of weights indicating relative importance
         Returns
         -------
-        None
+        (features, target)
         """
+        # Check sample_weight
+        if sample_weight is not None:
+            try: sample_weight = np.array(sample_weight).astype('float')
+            except ValueError as e:
+                raise ValueError('sample_weight could not be converted to float array: %s' % e)
+            if np.any(np.isnan(sample_weight)):
+                raise ValueError('sample_weight contained NaN values.')
+            try: check_consistent_length(sample_weight, target)
+            except ValueError as e:
+                raise ValueError('sample_weight dimensions did not match target: %s' % e)
         # Resets the imputer to be fit for the new dataset
         self._fitted_imputer = None
         self._imputed = False
