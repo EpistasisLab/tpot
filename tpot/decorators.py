@@ -63,7 +63,7 @@ def _pre_test(func):
                     expr = []
                     num_test_expr = 0
                     # to ensure a pipeline can be generated or mutated.
-                    while not expr and num_test_expr < NUM_TESTS/2:
+                    while not len(expr) and num_test_expr < int(NUM_TESTS/2):
                         try:
                             expr = func(self, *args, **kwargs)
                         except:
