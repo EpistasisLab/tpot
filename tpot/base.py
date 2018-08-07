@@ -1165,7 +1165,7 @@ class TPOTBase(BaseEstimator):
         if self.n_jobs == 1:
             for sklearn_pipeline in sklearn_pipeline_list:
                 self._stop_by_max_time_mins()
-                val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline, delaeyd=self.delayed)
+                val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline, delayed=self.delayed)
                 result_score_list = self._update_val(val, result_score_list)
         else:
             # chunk size for pbar update
