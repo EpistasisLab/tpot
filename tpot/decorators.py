@@ -26,17 +26,10 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
 from functools import wraps
 import warnings
-from sklearn.datasets import make_classification, make_regression
 from .export_utils import expr_to_tree, generate_pipeline_code
 from deap import creator
 
 NUM_TESTS = 10
-
-# generate a small data set for a new pipeline, in order to check if the pipeline
-# has unsuppported combinations in params
-pretest_X, pretest_y = make_classification(n_samples=100, n_features=10, random_state=42)
-pretest_X_reg, pretest_y_reg = make_regression(n_samples=100, n_features=10, random_state=42)
-
 
 def _pre_test(func):
     """Check if the wrapped function works with a pretest data set.
@@ -67,9 +60,10 @@ def _pre_test(func):
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-                    expr = None
+                    expr = []
                     num_test_expr = 0
-                    while not expr and num_test_expr < int(NUM_TESTS/2):
+                    # to ensure a pipeline can be generated or mutated.
+                    while not expr and num_test_expr < NUM_TESTS/2:
                         try:
                             expr = func(self, *args, **kwargs)
                         except:
@@ -86,10 +80,8 @@ def _pre_test(func):
                         )
                         sklearn_pipeline = eval(pipeline_code, self.operators_context)
 
-                        if self.classification:
-                            sklearn_pipeline.fit(pretest_X, pretest_y)
-                        else:
-                            sklearn_pipeline.fit(pretest_X_reg, pretest_y_reg)
+                        sklearn_pipeline.fit(self.pretest_X, self.pretest_y)
+
                         bad_pipeline = False
             except BaseException as e:
                 message = '_pre_test decorator: {fname}: num_test={n} {e}'.format(
@@ -101,7 +93,6 @@ def _pre_test(func):
                 self._update_pbar(pbar_num=0, pbar_msg=message)
             finally:
                 num_test += 1
-
         return expr
 
     return check_pipeline

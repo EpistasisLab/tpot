@@ -521,6 +521,7 @@ class TPOTBase(BaseEstimator):
         else:
             gp_types = {}
             for idx, step in enumerate(self.template_comp):
+
                 # input class in each step
                 if idx:
                     step_in_type = ret_types[-1]
@@ -641,6 +642,8 @@ class TPOTBase(BaseEstimator):
         """
 
         features, target = self._check_dataset(features, target, sample_weight)
+
+        self.pretest_X, _, self.pretest_y, _ = train_test_split(features, target, train_size=min(50, features.shape[0]), random_state=self.random_state)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
@@ -1343,6 +1346,12 @@ class TPOTBase(BaseEstimator):
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual_str = str(individual)
+            if not len(individual): # a pipeline cannot be randomly generated
+                self.evaluated_individuals_[individual_str] = self._combine_individual_stats(5000.,
+                                                                                             -float('inf'),
+                                                                                             individual.statistics)
+                self._update_pbar(pbar_msg='Invalid pipeline encountered. Skipping its evaluation.')
+                continue
             sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
             if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
                 self.evaluated_individuals_[individual_str] = self._combine_individual_stats(5000.,
@@ -1539,6 +1548,7 @@ class TPOTBase(BaseEstimator):
             return type_ not in self.ret_types or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
+
 
     def _operator_count(self, individual):
         """Count the number of pipeline operators as a measure of pipeline complexity.

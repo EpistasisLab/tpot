@@ -14,6 +14,11 @@ from sklearn.base import BaseEstimator, TransformerMixin
 class DatasetSelector(BaseEstimator, TransformerMixin):
     """Select predefined data subsets."""
 
+    @property
+    def __name__(self):
+        """Instance name is the same as the class name."""
+        return self.__class__.__name__
+
     def __init__(self, subset_dir, sel_subset_fname):
         """Create a DatasetSelector object.
 
