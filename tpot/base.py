@@ -106,7 +106,8 @@ class TPOTBase(BaseEstimator):
                  random_state=None, config_dict=None,
                  warm_start=False, memory=None,
                  periodic_checkpoint_folder=None, early_stop=None,
-                 verbosity=0, disable_update_check=False):
+                 verbosity=0, disable_update_check=False,
+                 delayed=lambda x: x):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -268,6 +269,7 @@ class TPOTBase(BaseEstimator):
         self._last_optimized_pareto_front_n_gens = 0
         self.memory = memory
         self._memory = None # initial Memory setting for sklearn pipeline
+        self.delayed = delayed
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -1163,7 +1165,7 @@ class TPOTBase(BaseEstimator):
         if self.n_jobs == 1:
             for sklearn_pipeline in sklearn_pipeline_list:
                 self._stop_by_max_time_mins()
-                val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline, delayed=lambda x: x)
+                val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline, delaeyd=self.delayed)
                 result_score_list = self._update_val(val, result_score_list)
         else:
             # chunk size for pbar update
@@ -1173,7 +1175,7 @@ class TPOTBase(BaseEstimator):
                 self._stop_by_max_time_mins()
                 parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
                 tmp_result_scores = [partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline,
-                                                                     delayed=dask.delayed)
+                                                                     delayed=self.delayed)
                                              for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size]]
                 result_score_list.extend(tmp_result_scores)
 
