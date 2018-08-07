@@ -43,12 +43,11 @@ import numpy as np
 from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
-from tqdm import tqdm
 from copy import copy, deepcopy
 
 import dask
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_X_y
+from sklearn.utils import check_X_y, check_consistent_length, check_array
 from sklearn.externals.joblib import Parallel, delayed, Memory
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
@@ -94,6 +93,26 @@ if sys.platform.startswith('win'):
 
 
     win32api.SetConsoleCtrlHandler(handler, 1)
+
+def is_notebook():
+    """Check if TPOT is running in Jupyter notebook.
+    Returns
+    -------
+    True: TPOT is running in Jupyter notebook
+    False: TPOT is running in other terminals
+    """
+    try:
+        from IPython import get_ipython
+        shell = get_ipython().__class__.__name__
+        # if shell == 'TerminalInteractiveShell', then Terminal running IPython
+        return shell == 'ZMQInteractiveShell'
+    except:
+        return False
+
+if is_notebook():
+    from tqdm import tqdm_notebook as tqdm
+else:
+    from tqdm import tqdm
 
 
 class TPOTBase(BaseEstimator):
@@ -176,7 +195,7 @@ class TPOTBase(BaseEstimator):
             How many minutes TPOT has to optimize the pipeline.
             If provided, this setting will override the "generations" parameter and allow
             TPOT to run until it runs out of time.
-        max_eval_time_mins: int, optional (default: 5)
+        max_eval_time_mins: float, optional (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
             complex pipelines, but will also allow TPOT to run longer.
@@ -545,7 +564,7 @@ class TPOTBase(BaseEstimator):
 
         """
 
-        features, target = self._check_dataset(features, target)
+        features, target = self._check_dataset(features, target, sample_weight)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
@@ -784,10 +803,7 @@ class TPOTBase(BaseEstimator):
         if not self.fitted_pipeline_:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        features = features.astype(np.float64)
-
-        if np.any(np.isnan(features)):
-            features = self._impute_values(features)
+        features = self._check_dataset(features, target=None, sample_weight=None)
 
         return self.fitted_pipeline_.predict(features)
 
@@ -814,6 +830,7 @@ class TPOTBase(BaseEstimator):
 
         """
         self.fit(features, target, sample_weight=sample_weight, groups=groups)
+
         return self.predict(features)
 
     def score(self, testing_features, testing_target):
@@ -835,8 +852,7 @@ class TPOTBase(BaseEstimator):
         if self.fitted_pipeline_ is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        if np.any(np.isnan(testing_features)):
-            testing_features = self._impute_values(testing_features)
+        testing_features, testing_target = self._check_dataset(testing_features, testing_target, sample_weight=None)
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
@@ -866,7 +882,11 @@ class TPOTBase(BaseEstimator):
         else:
             if not (hasattr(self.fitted_pipeline_, 'predict_proba')):
                 raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
-            return self.fitted_pipeline_.predict_proba(features.astype(np.float64))
+
+            #features = features.astype(np.float64)
+            features = self._check_dataset(features, target=None, sample_weight=None)
+
+            return self.fitted_pipeline_.predict_proba(features)
 
     def set_params(self, **params):
         """Set the parameters of TPOT.
@@ -995,20 +1015,31 @@ class TPOTBase(BaseEstimator):
 
         return self._fitted_imputer.transform(features)
 
-    def _check_dataset(self, features, target):
+    def _check_dataset(self, features, target, sample_weight=None):
         """Check if a dataset has a valid feature set and labels.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
-        target: array-like {n_samples}
+        target: array-like {n_samples} or None
             List of class labels for prediction
-
+        sample_weight: array-like {n_samples} (optional)
+            List of weights indicating relative importance
         Returns
         -------
-        None
+        (features, target)
         """
+        # Check sample_weight
+        if sample_weight is not None:
+            try: sample_weight = np.array(sample_weight).astype('float')
+            except ValueError as e:
+                raise ValueError('sample_weight could not be converted to float array: %s' % e)
+            if np.any(np.isnan(sample_weight)):
+                raise ValueError('sample_weight contained NaN values.')
+            try: check_consistent_length(sample_weight, target)
+            except ValueError as e:
+                raise ValueError('sample_weight dimensions did not match target: %s' % e)
         # Resets the imputer to be fit for the new dataset
         self._fitted_imputer = None
         self._imputed = False
@@ -1028,9 +1059,14 @@ class TPOTBase(BaseEstimator):
             if np.any(np.isnan(features)):
                 self._imputed = True
                 features = self._impute_values(features)
+
         try:
-            X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
-            return X, y
+            if target is not None:
+                X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
+                return X, y
+            else:
+                X = check_array(features, order="C",  accept_sparse=True, dtype=np.float64)
+                return X
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '

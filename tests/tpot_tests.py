@@ -24,7 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from tpot import TPOTClassifier, TPOTRegressor
-from tpot.base import TPOTBase
+from tpot.base import TPOTBase, is_notebook
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
@@ -146,6 +146,12 @@ def test_init_custom_parameters():
     assert tpot_obj.fitted_pipeline_ is None
     assert not (tpot_obj._pset is None)
     assert not (tpot_obj._toolbox is None)
+
+
+def test_is_notebook():
+    """Assert that isnotebook function works as expected."""
+    ret = is_notebook()
+    assert not ret
 
 
 def test_init_default_scoring():
@@ -604,6 +610,26 @@ def test_predict_2():
     assert result.shape == (testing_features.shape[0],)
 
 
+def test_predict_3():
+    """Assert that the TPOT predict function works on dataset with nan"""
+    tpot_obj = TPOTClassifier()
+    pipeline_string = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5'
+        ')'
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj.fitted_pipeline_.fit(training_features, training_target)
+    result = tpot_obj.predict(features_with_nan)
+
+    assert result.shape == (features_with_nan.shape[0],)
+
+
 def test_predict_proba():
     """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_target)."""
     tpot_obj = TPOTClassifier()
@@ -669,6 +695,27 @@ def test_predict_proba_4():
     tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r)
 
     assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
+
+
+def test_predict_proba_5():
+    """Assert that the TPOT predict_proba function works on dataset with nan."""
+    tpot_obj = TPOTClassifier()
+    pipeline_string = (
+        'DecisionTreeClassifier('
+        'input_matrix, '
+        'DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, '
+        'DecisionTreeClassifier__min_samples_split=5)'
+    )
+    tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
+    tpot_obj.fitted_pipeline_.fit(training_features, training_target)
+
+    result = tpot_obj.predict_proba(features_with_nan)
+    num_labels = np.amax(training_target) + 1
+
+    assert result.shape == (features_with_nan.shape[0], num_labels)
 
 
 def test_warm_start():
@@ -1445,6 +1492,85 @@ def test_preprocess_individuals_3():
         operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \
                                 tpot_obj._preprocess_individuals(individuals)
         assert tpot_obj._pbar.total == 6
+
+
+def test_check_dataset():
+    """Assert that the check_dataset function returns feature and target as expected."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target)
+    assert np.allclose(ret_features, training_features)
+    assert np.allclose(ret_target, training_target)
+
+
+def test_check_dataset_2():
+    """Assert that the check_dataset function raise ValueError when sample_weight can not be converted to float array"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    test_sample_weight = list(range(1, len(training_target)+1))
+    ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
+    test_sample_weight[0] = 'opps'
+
+    assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
+
+
+def test_check_dataset_3():
+    """Assert that the check_dataset function raise ValueError when sample_weight has NaN"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    test_sample_weight = list(range(1, len(training_target)+1))
+    ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
+    test_sample_weight[0] = np.nan
+
+    assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
+
+
+def test_check_dataset_4():
+    """Assert that the check_dataset function raise ValueError when sample_weight has a length different length"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    test_sample_weight = list(range(1, len(training_target)))
+    assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
+
+
+def test_check_dataset_5():
+    """Assert that the check_dataset function returns feature and target as expected."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+
+    ret_features = tpot_obj._check_dataset(training_features, target=None)
+    assert np.allclose(ret_features, training_features)
 
 
 def test_imputer():
