@@ -1177,7 +1177,10 @@ class TPOTBase(BaseEstimator):
                                              for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size]]
                 result_score_list.extend(tmp_result_scores)
 
-        result_score_list = dask.compute(*result_score_list)
+        self.dask_graphs = result_score_list
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            result_score_list = dask.compute(*result_score_list)
         self._update_pbar(len(result_score_list))
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
 
