@@ -30,7 +30,6 @@ from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
 from tpot.metrics import balanced_accuracy, SCORERS
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
-from tpot.decorators import pretest_X, pretest_y
 
 from tpot.config.classifier import classifier_config_dict
 from tpot.config.classifier_light import classifier_config_dict_light
@@ -54,7 +53,7 @@ from time import sleep
 from tempfile import mkdtemp
 from shutil import rmtree
 
-from sklearn.datasets import load_digits, load_boston
+from sklearn.datasets import load_digits, load_boston, make_classification
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from sklearn.externals.joblib import Memory
 from sklearn.metrics import make_scorer, roc_auc_score
@@ -92,6 +91,9 @@ boston_data = load_boston()
 training_features_r, testing_features_r, training_target_r, testing_target_r = \
     train_test_split(boston_data.data, boston_data.target, random_state=42)
 
+# Set up a small test dataset
+
+pretest_X, pretest_y = make_classification(n_samples=100, n_features=10, random_state=42)
 # Set up pandas DataFrame for testing
 
 input_data = pd.read_csv(
@@ -1764,7 +1766,7 @@ def test_PolynomialFeatures_exception():
         initialize_stats_dict(pipeline)
 
     fitness_scores = tpot_obj._evaluate_individuals(pipelines, pretest_X, pretest_y)
-    
+
     assert fitness_scores[0][0] == 2
     assert fitness_scores[1][0] == 5000.0
 
