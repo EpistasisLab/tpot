@@ -1192,7 +1192,8 @@ class TPOTBase(BaseEstimator):
             scoring_function=self.scoring_function,
             sample_weight=sample_weight,
             groups=groups,
-            timeout=self.max_eval_time_seconds
+            timeout=self.max_eval_time_seconds,
+            use_dask=self.use_dask,
         )
 
         result_score_list = []
@@ -1219,20 +1220,20 @@ class TPOTBase(BaseEstimator):
                         result_score_list = self._update_val(val, result_score_list)
 
                 else:
-                    tmp_result_scores = [partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline,
-                                                                         use_dask=self.use_dask)
-                                                 for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size]]
+                    import dask
+
+                    tmp_result_scores = [
+                        partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size]
+                    ]
                     result_score_list.extend(tmp_result_scores)
 
-        if self.use_dask:
-            import dask
+                    self.dask_graphs_ = result_score_list
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore')
+                        result_score_list = dask.compute(*result_score_list)
 
-            self.dask_graphs_ = result_score_list
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                result_score_list = dask.compute(*result_score_list)
-
-        self._update_pbar(len(result_score_list))
+                    self._update_pbar(len(result_score_list))
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
 
         """Look up the operator count and cross validation score to use in the optimization"""
