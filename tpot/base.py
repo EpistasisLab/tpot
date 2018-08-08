@@ -45,7 +45,6 @@ import deap
 from deap import base, creator, tools, gp
 from copy import copy, deepcopy
 
-import dask
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y, check_consistent_length, check_array
 from sklearn.externals.joblib import Parallel, delayed, Memory
@@ -126,7 +125,7 @@ class TPOTBase(BaseEstimator):
                  warm_start=False, memory=None,
                  periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False,
-                 delayed=lambda x: x):
+                 use_dask=False):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -288,7 +287,7 @@ class TPOTBase(BaseEstimator):
         self._last_optimized_pareto_front_n_gens = 0
         self.memory = memory
         self._memory = None # initial Memory setting for sklearn pipeline
-        self.delayed = delayed
+        self.use_dask = use_dask
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -1193,7 +1192,7 @@ class TPOTBase(BaseEstimator):
             scoring_function=self.scoring_function,
             sample_weight=sample_weight,
             groups=groups,
-            timeout=self.max_eval_time_seconds,
+            timeout=self.max_eval_time_seconds
         )
 
         result_score_list = []
@@ -1201,7 +1200,7 @@ class TPOTBase(BaseEstimator):
         if self.n_jobs == 1:
             for sklearn_pipeline in sklearn_pipeline_list:
                 self._stop_by_max_time_mins()
-                val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline, delayed=self.delayed)
+                val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline, use_dask=self.use_dask)
                 result_score_list = self._update_val(val, result_score_list)
         else:
             # chunk size for pbar update
@@ -1209,16 +1208,30 @@ class TPOTBase(BaseEstimator):
             chunk_size = min(cpu_count()*2, self.n_jobs*4)
             for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                 self._stop_by_max_time_mins()
-                parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                tmp_result_scores = [partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline,
-                                                                     delayed=self.delayed)
-                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size]]
-                result_score_list.extend(tmp_result_scores)
 
-        self.dask_graphs = result_score_list
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            result_score_list = dask.compute(*result_score_list)
+                if not self.use_dask:
+                    parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                    tmp_result_scores = parallel(
+                        delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
+                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
+                    # update pbar
+                    for val in tmp_result_scores:
+                        result_score_list = self._update_val(val, result_score_list)
+
+                else:
+                    tmp_result_scores = [partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline,
+                                                                         use_dask=self.use_dask)
+                                                 for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size]]
+                    result_score_list.extend(tmp_result_scores)
+
+        if self.use_dask:
+            import dask
+
+            self.dask_graphs_ = result_score_list
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                result_score_list = dask.compute(*result_score_list)
+
         self._update_pbar(len(result_score_list))
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
 

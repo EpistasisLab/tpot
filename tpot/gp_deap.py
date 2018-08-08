@@ -397,9 +397,9 @@ def mutNodeReplacement(individual, pset):
 @threading_timeoutable(default="Timeout")
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                              cv, scoring_function, sample_weight=None,
-                             groups=None, delayed=lambda x: x):
-    # type (...) -> Union[Delayed[ndarray], Callable[[Any], ndarray]]
+                             groups=None, use_dask=False):
     """Fit estimator and compute scores for a given dataset split.
+
     Parameters
     ----------
     sklearn_pipeline : pipeline object implementing 'fit'
@@ -421,11 +421,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         List of sample weights to balance (or un-balanace) the dataset target as needed
     groups: array-like {n_samples, }, optional
         Group labels for the samples used while splitting the dataset into train/test set
+    use_dask : bool, default False
+        Whether to use dask
     """
-    import dask_ml.model_selection
-    import dask
-    from dask.delayed import Delayed
-
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
 
     features, target, groups = indexable(features, target, groups)
@@ -434,7 +432,15 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     cv_iter = list(cv.split(features, target, groups))
     scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
 
-    if delayed is dask.delayed:
+    if use_dask:
+        try:
+            import dask_ml.model_selection
+            import dask
+            from dask.delayed import Delayed
+        except ImportError:
+            msg = "'use_dask' requires the optional dask and dask-ml depedencies."
+            raise ImportError(msg)
+
         dsk, keys, n_splits = dask_ml.model_selection._search.build_graph(
             estimator=sklearn_pipeline,
             cv=cv,
@@ -449,8 +455,8 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         )
         cv_results = Delayed(keys[0], dsk)
         scores = [cv_results['split{}_test_score'.format(i)] for i in range(n_splits)]
-        CV_score = delayed(np.array)(scores)[:, 0]
-        return delayed(np.nanmean)(CV_score)
+        CV_score = dask.delayed(np.array)(scores)[:, 0]
+        return dask.delayed(np.nanmean)(CV_score)
     else:
         try:
             with warnings.catch_warnings():
