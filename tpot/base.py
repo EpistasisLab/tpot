@@ -1217,7 +1217,7 @@ class TPOTBase(BaseEstimator):
                 self.dask_graphs_ = result_score_list
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-                    dask.compute(*result_score_list)
+                    result_score_list = list(dask.compute(*result_score_list))
 
                 self._update_pbar(len(result_score_list))
 
