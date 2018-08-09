@@ -276,6 +276,7 @@ class TPOTBase(BaseEstimator):
         self._pop = []
         self.warm_start = warm_start
         self.population_size = population_size
+        self.offspring_size = offspring_size
         self.generations = generations
         self.max_time_mins = max_time_mins
         self.max_eval_time_mins = max_eval_time_mins
@@ -293,12 +294,6 @@ class TPOTBase(BaseEstimator):
         # Try crossover and mutation at most this many times for
         # any one given individual (or pair of individuals)
         self._max_mut_loops = 50
-
-        # Set offspring_size equal to population_size by default
-        if offspring_size:
-            self.offspring_size = offspring_size
-        else:
-            self.offspring_size = population_size
 
         self.config_dict_params = config_dict
         self._setup_config(self.config_dict_params)
@@ -613,11 +608,17 @@ class TPOTBase(BaseEstimator):
         if not self.warm_start or not self._pareto_front:
             self._pareto_front = tools.ParetoFront(similar=pareto_eq)
 
+        # Set offspring_size equal to population_size by default
+        if not self.offspring_size:
+            self.lambda_ = population_size
+        else:
+            self.lambda_ = self.offspring_size
+
         # Start the progress bar
         if self.max_time_mins:
             total_evals = self.population_size
         else:
-            total_evals = self.offspring_size * self.generations + self.population_size
+            total_evals = lambda_ * self.generations + self.population_size
 
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
@@ -630,7 +631,7 @@ class TPOTBase(BaseEstimator):
                     population=pop,
                     toolbox=self._toolbox,
                     mu=self.population_size,
-                    lambda_=self.offspring_size,
+                    lambda_=self.lambda_,
                     cxpb=self.crossover_rate,
                     mutpb=self.mutation_rate,
                     ngen=self.generations,
@@ -1242,7 +1243,7 @@ class TPOTBase(BaseEstimator):
         """
         # update self._pbar.total
         if not (self.max_time_mins is None) and not self._pbar.disable and self._pbar.total <= self._pbar.n:
-            self._pbar.total += self.offspring_size
+            self._pbar.total += self.lambda_
         # Check we do not evaluate twice the same individual in one pass.
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
