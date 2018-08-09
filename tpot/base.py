@@ -608,9 +608,9 @@ class TPOTBase(BaseEstimator):
         if not self.warm_start or not self._pareto_front:
             self._pareto_front = tools.ParetoFront(similar=pareto_eq)
 
-        # Set offspring_size equal to population_size by default
+        # Set lambda_ (offspring size in GP) equal to population_size by default
         if not self.offspring_size:
-            self.lambda_ = population_size
+            self.lambda_ = self.population_size
         else:
             self.lambda_ = self.offspring_size
 
