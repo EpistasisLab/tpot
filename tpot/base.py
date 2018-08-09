@@ -442,16 +442,18 @@ class TPOTBase(BaseEstimator):
 
     def _fit_init(self):
         # initialization for fit function
-        self._pareto_front = None
+        if not self.warm_start or not hasattr(self, '_pareto_front'):
+            self._pop = []
+            self._pareto_front = None
+            self._last_optimized_pareto_front = None
+            self._last_optimized_pareto_front_n_gens = 0
+
         self._optimized_pipeline = None
         self._optimized_pipeline_score = None
         self._exported_pipeline_text = ""
         self.fitted_pipeline_ = None
         self._fitted_imputer = None
         self._imputed = False
-        self._pop = []
-        self._last_optimized_pareto_front = None
-        self._last_optimized_pareto_front_n_gens = 0
         self._memory = None # initial Memory setting for sklearn pipeline
 
         # dont save periodic pipelines more often than this
@@ -893,18 +895,6 @@ class TPOTBase(BaseEstimator):
             features = self._check_dataset(features, target=None, sample_weight=None)
 
             return self.fitted_pipeline_.predict_proba(features)
-
-
-    def set_params(self, **params):
-        """Set the parameters of TPOT.
-
-        Returns
-        -------
-        self
-        """
-        self.__init__(**params)
-
-        return self
 
 
     def clean_pipeline_string(self, individual):
