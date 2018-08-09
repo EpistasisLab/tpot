@@ -462,14 +462,14 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
-                                        X=features,
-                                        y=target,
-                                        scorer=scorer,
-                                        train=train,
-                                        test=test,
-                                        verbose=0,
-                                        parameters=None,
-                                        fit_params=sample_weight_dict)
+                                         X=features,
+                                         y=target,
+                                         scorer=scorer,
+                                         train=train,
+                                         test=test,
+                                         verbose=0,
+                                         parameters=None,
+                                         fit_params=sample_weight_dict)
                                     for train, test in cv_iter]
                 CV_score = np.array(scores)[:, 0]
                 return np.nanmean(CV_score)

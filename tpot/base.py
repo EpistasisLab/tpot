@@ -1181,6 +1181,7 @@ class TPOTBase(BaseEstimator):
 
         """
 
+        self._individuals = individuals
         operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals)
 
         # Make the partial function that will be called below
@@ -1227,14 +1228,19 @@ class TPOTBase(BaseEstimator):
                 for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                     self._stop_by_max_time_mins()
 
-                    if not self.use_dask:
-                        parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                        tmp_result_scores = parallel(
-                            delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
-                            for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
-                        # update pbar
-                        for val in tmp_result_scores:
-                            result_score_list = self._update_val(val, result_score_list)
+                    parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                    tmp_result_scores = parallel(
+                        delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
+                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
+                    # update pbar
+                    for val in tmp_result_scores:
+                        result_score_list = self._update_val(val, result_score_list)
+
+
+        self._result_score_list = result_score_list
+        self._eval_individuals_str = eval_individuals_str
+        self._operator_counts = operator_counts
+        self._stats_dicts = stats_dicts
 
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
 
