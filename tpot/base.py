@@ -439,45 +439,9 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
-    def fit(self, features, target, sample_weight=None, groups=None):
-        """Fit an optimized machine learning pipeline.
 
-        Uses genetic programming to optimize a machine learning pipeline that
-        maximizes score on the provided features and target. Performs internal
-        k-fold cross-validaton to avoid overfitting on the provided data. The
-        best pipeline is then trained on the entire set of provided samples.
-
-        Parameters
-        ----------
-        features: array-like {n_samples, n_features}
-            Feature matrix
-
-            TPOT and all scikit-learn algorithms assume that the features will be numerical
-            and there will be no missing values. As such, when a feature matrix is provided
-            to TPOT, all missing values will automatically be replaced (i.e., imputed) using
-            median value imputation.
-
-            If you wish to use a different imputation strategy than median imputation, please
-            make sure to apply imputation to your feature set prior to passing it to TPOT.
-        target: array-like {n_samples}
-            List of class labels for prediction
-        sample_weight: array-like {n_samples}, optional
-            Per-sample weights. Higher weights indicate more importance. If specified,
-            sample_weight will be passed to any pipeline element whose fit() function accepts
-            a sample_weight argument. By default, using sample_weight does not affect tpot's
-            scoring functions, which determine preferences between pipelines.
-        groups: array-like, with shape {n_samples, }, optional
-            Group labels for the samples used when performing cross-validation.
-            This parameter should only be used in conjunction with sklearn's Group cross-validation
-            functions, such as sklearn.model_selection.GroupKFold
-
-        Returns
-        -------
-        self: object
-            Returns a copy of the fitted TPOT object
-
-        """
-        # initialization
+    def _fit_init(self):
+        # initialization for fit function
         self._pareto_front = None
         self._optimized_pipeline = None
         self._optimized_pipeline_score = None
@@ -557,6 +521,48 @@ class TPOTBase(BaseEstimator):
 
         self._setup_pset()
         self._setup_toolbox()
+
+
+    def fit(self, features, target, sample_weight=None, groups=None):
+        """Fit an optimized machine learning pipeline.
+
+        Uses genetic programming to optimize a machine learning pipeline that
+        maximizes score on the provided features and target. Performs internal
+        k-fold cross-validaton to avoid overfitting on the provided data. The
+        best pipeline is then trained on the entire set of provided samples.
+
+        Parameters
+        ----------
+        features: array-like {n_samples, n_features}
+            Feature matrix
+
+            TPOT and all scikit-learn algorithms assume that the features will be numerical
+            and there will be no missing values. As such, when a feature matrix is provided
+            to TPOT, all missing values will automatically be replaced (i.e., imputed) using
+            median value imputation.
+
+            If you wish to use a different imputation strategy than median imputation, please
+            make sure to apply imputation to your feature set prior to passing it to TPOT.
+        target: array-like {n_samples}
+            List of class labels for prediction
+        sample_weight: array-like {n_samples}, optional
+            Per-sample weights. Higher weights indicate more importance. If specified,
+            sample_weight will be passed to any pipeline element whose fit() function accepts
+            a sample_weight argument. By default, using sample_weight does not affect tpot's
+            scoring functions, which determine preferences between pipelines.
+        groups: array-like, with shape {n_samples, }, optional
+            Group labels for the samples used when performing cross-validation.
+            This parameter should only be used in conjunction with sklearn's Group cross-validation
+            functions, such as sklearn.model_selection.GroupKFold
+
+        Returns
+        -------
+        self: object
+            Returns a copy of the fitted TPOT object
+
+        """
+        self._fit_init()
+
 
         features, target = self._check_dataset(features, target, sample_weight)
 

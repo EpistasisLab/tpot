@@ -86,7 +86,7 @@ results = exported_pipeline.predict(testing_features)
 
 def test_export():
     """Assert that TPOT's export function throws a RuntimeError when no optimized pipeline exists."""
-    tpot_obj = TPOTClassifier()
+
     assert_raises(RuntimeError, tpot_obj.export, "test_export.py")
     pipeline_string = (
         'KNeighborsClassifier(CombineDFs('

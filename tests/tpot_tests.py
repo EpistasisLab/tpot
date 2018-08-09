@@ -142,10 +142,6 @@ def test_init_custom_parameters():
     assert tpot_obj.max_time_mins is None
     assert tpot_obj.warm_start is True
     assert tpot_obj.verbosity == 1
-    assert tpot_obj._optimized_pipeline is None
-    assert tpot_obj.fitted_pipeline_ is None
-    assert not (tpot_obj._pset is None)
-    assert not (tpot_obj._toolbox is None)
 
 
 def test_is_notebook():
