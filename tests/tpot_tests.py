@@ -1487,6 +1487,7 @@ def test_preprocess_individuals_3():
 
     with closing(StringIO()) as our_file:
         tpot_obj._file=our_file
+        tpot_obj._lambda=4
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
         tpot_obj._pbar.n = 2
         operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \

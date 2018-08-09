@@ -610,15 +610,15 @@ class TPOTBase(BaseEstimator):
 
         # Set lambda_ (offspring size in GP) equal to population_size by default
         if not self.offspring_size:
-            self.lambda_ = self.population_size
+            self._lambda = self.population_size
         else:
-            self.lambda_ = self.offspring_size
+            self._lambda = self.offspring_size
 
         # Start the progress bar
         if self.max_time_mins:
             total_evals = self.population_size
         else:
-            total_evals = lambda_ * self.generations + self.population_size
+            total_evals = self._lambda * self.generations + self.population_size
 
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
@@ -631,7 +631,7 @@ class TPOTBase(BaseEstimator):
                     population=pop,
                     toolbox=self._toolbox,
                     mu=self.population_size,
-                    lambda_=self.lambda_,
+                    lambda_=self._lambda,
                     cxpb=self.crossover_rate,
                     mutpb=self.mutation_rate,
                     ngen=self.generations,
@@ -1243,7 +1243,7 @@ class TPOTBase(BaseEstimator):
         """
         # update self._pbar.total
         if not (self.max_time_mins is None) and not self._pbar.disable and self._pbar.total <= self._pbar.n:
-            self._pbar.total += self.lambda_
+            self._pbar.total += self._lambda
         # Check we do not evaluate twice the same individual in one pass.
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
