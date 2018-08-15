@@ -555,6 +555,47 @@ rmtree(cachedir)
 
 **Note: TPOT does NOT clean up memory caches if users set a custom directory path or Memory object. We recommend that you clean up the memory caches when you don't need it anymore.**
 
+# Parallel Training
+
+Internally, TPOT uses [joblib](http://joblib.readthedocs.io/) to fit estimators in parallel.
+This is the same parallelization framework used by scikit-learn.
+
+When you specify ``n_jobs``, TPOT will use ``n_jobs`` processes to fit models in parallel.
+For large problems, you can distribute the work on a [Dask](http://dask.pydata.org/en/latest/) cluster.
+There are two ways to achieve this.
+
+First, you can specify the ``use_dask`` keyword when you create the TPOT estimator.
+
+```python
+estimator = TPOTEstimator(n_jobs=-1, use_dask=True
+```
+
+This will use use all the workers on your cluster to do the training, and use [Dask-ML's pipeline rewriting](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) to avoid re-fitting estimators multiple times on the same set of data.
+It will provide fine-grained diagnostics in the [distributed scheduler UI](https://distributed.readthedocs.io/en/latest/web.html).
+
+Alternatively, Dask implements a joblib backend.
+You can instruct TPOT to use the distribued backend during training by specifying a ``joblib.parallel_backend``:
+
+```python
+from sklearn.externals import joblib
+import distributed.joblib
+from dask.distributed import Client
+
+# connect to the cluster
+client = Client('schedueler-address')
+
+# create the estimator normally
+estimator = TPOTClassifier(n_jobs=-1)
+
+# perform the fit in this context manager
+with joblib.parallel_backend("dask"):
+    estimator.fit(X, y)
+```
+
+See [dask's distributed joblib integration](https://distributed.readthedocs.io/en/latest/joblib.html) for more.
+
+We recommend using the `use_dask` keyword.
+
 # Crash/freeze issue with n_jobs > 1 under OSX or Linux
 
 TPOT supports parallel computing for speeding up the optimization process, but it may crash/freeze with n_jobs > 1 under OSX or Linux [as scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large datasets.

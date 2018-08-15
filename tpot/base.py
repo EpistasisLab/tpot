@@ -253,6 +253,14 @@ class TPOTBase(BaseEstimator):
             A setting of 2 or higher will add a progress bar during the optimization procedure.
         disable_update_check: bool, optional (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
+        use_dask : bool, default False
+            Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
+            the same estimator on the same split of data multiple times. It
+            will also provide more detailed diagnostics when using Dask's
+            distributed scheduler.
+
+            See `<avoid repeated work <https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work>`_
+            for more.
 
         Returns
         -------
