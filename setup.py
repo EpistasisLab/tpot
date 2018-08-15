@@ -46,7 +46,10 @@ This project is hosted at https://github.com/EpistasisLab/tpot
     extras_require={
         'xgboost': ['xgboost==0.6a2'],
         'skrebate': ['skrebate>=0.3.4'],
-        'mdr': ['scikit-mdr>=0.4.4']
+        'mdr': ['scikit-mdr>=0.4.4'],
+        'dask': ['dask>=0.18.2',
+                 'distributed>=1.22.1',
+                 'dask-ml>=0.7.0'],
     },
     classifiers=[
         'Intended Audience :: Science/Research',
