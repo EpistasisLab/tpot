@@ -1181,7 +1181,6 @@ class TPOTBase(BaseEstimator):
 
         """
 
-        self._individuals = individuals
         operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals)
 
         # Make the partial function that will be called below
@@ -1235,12 +1234,6 @@ class TPOTBase(BaseEstimator):
                     # update pbar
                     for val in tmp_result_scores:
                         result_score_list = self._update_val(val, result_score_list)
-
-
-        self._result_score_list = result_score_list
-        self._eval_individuals_str = eval_individuals_str
-        self._operator_counts = operator_counts
-        self._stats_dicts = stats_dicts
 
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
 
