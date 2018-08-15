@@ -49,7 +49,7 @@ This project is hosted at https://github.com/EpistasisLab/tpot
         'mdr': ['scikit-mdr>=0.4.4'],
         'dask': ['dask>=0.18.2',
                  'distributed>=1.22.1',
-                 'dask-ml>=0.7.0'],
+                 'dask-ml>=0.8.0'],
     },
     classifiers=[
         'Intended Audience :: Science/Research',
