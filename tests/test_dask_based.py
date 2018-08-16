@@ -17,6 +17,8 @@ except ImportError:
 
 
 class TestDaskMatches(unittest.TestCase):
+    maxDiff = None
+
     def test_dask_matches(self):
         for n_jobs in [1, -1]:
             X, y = make_classification(random_state=0)
