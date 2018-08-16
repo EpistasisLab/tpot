@@ -10,7 +10,8 @@ from sklearn.datasets import make_classification
 from tpot import TPOTClassifier
 
 try:
-    import dask
+    import dask  # noqa
+    import dask_ml  # noqa
 except ImportError:
     raise nose.SkipTest()
 
