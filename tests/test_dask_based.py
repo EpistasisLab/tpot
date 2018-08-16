@@ -11,7 +11,6 @@ from tpot import TPOTClassifier
 
 try:
     import dask
-    import dask_ml.utils
 except ImportError:
     raise nose.SkipTest()
 
@@ -27,7 +26,7 @@ class TestDaskMatches(unittest.TestCase):
                 population_size=5,
                 cv=3,
                 random_state=0,
-                n_jobs=-1,
+                n_jobs=n_jobs,
                 use_dask=False,
             )
             b = TPOTClassifier(
@@ -35,13 +34,14 @@ class TestDaskMatches(unittest.TestCase):
                 population_size=5,
                 cv=3,
                 random_state=0,
-                n_jobs=-1,
+                n_jobs=n_jobs,
                 use_dask=True,
             )
             b.fit(X, y)
             a.fit(X, y)
-            self.assertEqual(a.evaluated_individuals_,
-                             b.evaluated_individuals_)
+
+            self.assertEqual(a.score(X, y), b.score(X, y))
             self.assertEqual(a.pareto_front_fitted_pipelines_.keys(),
                              b.pareto_front_fitted_pipelines_.keys())
-            self.assertEqual(a.score(X, y), b.score(X, y))
+            self.assertEqual(a.evaluated_individuals_,
+                             b.evaluated_individuals_)
