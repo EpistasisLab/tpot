@@ -434,8 +434,8 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
 
     if use_dask:
         try:
-            import dask_ml.model_selection
-            import dask
+            import dask_ml.model_selection  # noqa
+            import dask  # noqa
             from dask.delayed import Delayed
         except ImportError:
             msg = "'use_dask' requires the optional dask and dask-ml depedencies."
@@ -453,8 +453,10 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             refit=False,
             error_score=float('-inf'),
         )
+
         cv_results = Delayed(keys[0], dsk)
-        scores = [cv_results['split{}_test_score'.format(i)] for i in range(n_splits)]
+        scores = [cv_results['split{}_test_score'.format(i)]
+                  for i in range(n_splits)]
         CV_score = dask.delayed(np.array)(scores)[:, 0]
         return dask.delayed(np.nanmean)(CV_score)
     else:
