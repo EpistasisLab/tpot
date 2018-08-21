@@ -2,6 +2,8 @@ language: python
 virtualenv:
   system_site_packages: true
 env:
+  global:
+    PYTHONHASHSEED: 0
   matrix:
     # let's start simple:
     - PYTHON_VERSION="2.7" LATEST="true"
