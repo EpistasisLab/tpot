@@ -81,7 +81,7 @@ class DatasetSelector(BaseEstimator, TransformerMixin):
             The transformed feature set.
         """
         if isinstance(X, pd.DataFrame):
-            X_transformed = X[self.feat_list].values
+            X_transformed = X[self.feat_list]
         elif isinstance(X, np.ndarray):
             X_transformed = X[:, self.feat_list]
 

@@ -531,7 +531,7 @@ class TPOTBase(BaseEstimator):
                     if idx < len(self.template_comp) - 1:
                         # create an empty for returning class for strongly-type GP
                         step_ret_type_name = 'Ret_{}'.format(idx)
-                        step_ret_type = type(step_ret_type_name, (np.ndarray,), {})
+                        step_ret_type = type(step_ret_type_name, (object,), {})
                         ret_types.append(step_ret_type)
                     else:
                         step_ret_type = Output_Array
