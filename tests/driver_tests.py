@@ -25,7 +25,6 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
 import sys
-import warnings
 from os import remove, path
 from contextlib import contextmanager
 from distutils.version import LooseVersion
@@ -34,6 +33,7 @@ try:
 except ImportError:
     from io import StringIO
 
+import nose
 import numpy as np
 import pandas as pd
 import sklearn
@@ -175,8 +175,9 @@ def test_driver_5():
     """Assert that the tpot_driver() in TPOT driver outputs normal result with exported python file and verbosity = 0."""
 
     # Catch FutureWarning https://github.com/scikit-learn/scikit-learn/issues/11785
-    handle_warning = (np.__version__ >= LooseVersion("1.15.0") and
-                      sklearn.__version__ <= LooseVersion("0.20.0"))
+    if (np.__version__ >= LooseVersion("1.15.0") and
+            sklearn.__version__ <= LooseVersion("0.20.0")):
+        raise nose.SkipTest("Warning raised by scikit-learn")
 
     args_list = [
                 'tests/tests.csv',
@@ -192,12 +193,7 @@ def test_driver_5():
                 ]
     args = _get_arg_parser().parse_args(args_list)
     with captured_output() as (out, err):
-        with warnings.catch_warnings():
-            if handle_warning:
-                warnings.filterwarnings("ignore",
-                                        category=FutureWarning,
-                                        module="numpy", append=True)
-            tpot_driver(args)
+        tpot_driver(args)
     ret_stdout = out.getvalue()
 
     assert ret_stdout == ""
