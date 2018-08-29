@@ -124,7 +124,8 @@ class TPOTBase(BaseEstimator):
                  random_state=None, config_dict=None,
                  warm_start=False, memory=None,
                  periodic_checkpoint_folder=None, early_stop=None,
-                 verbosity=0, disable_update_check=False):
+                 verbosity=0, disable_update_check=False,
+                 use_dask=False):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -252,6 +253,14 @@ class TPOTBase(BaseEstimator):
             A setting of 2 or higher will add a progress bar during the optimization procedure.
         disable_update_check: bool, optional (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
+        use_dask : bool, default False
+            Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
+            the same estimator on the same split of data multiple times. It
+            will also provide more detailed diagnostics when using Dask's
+            distributed scheduler.
+
+            See `avoid repeated work <https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work>`__
+            for more.
 
         Returns
         -------
@@ -286,6 +295,7 @@ class TPOTBase(BaseEstimator):
         self._last_optimized_pareto_front_n_gens = 0
         self.memory = memory
         self._memory = None # initial Memory setting for sklearn pipeline
+        self.use_dask = use_dask
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -1190,12 +1200,13 @@ class TPOTBase(BaseEstimator):
             scoring_function=self.scoring_function,
             sample_weight=sample_weight,
             groups=groups,
-            timeout=self.max_eval_time_seconds
+            timeout=self.max_eval_time_seconds,
+            use_dask=self.use_dask,
         )
 
         result_score_list = []
         # Don't use parallelization if n_jobs==1
-        if self.n_jobs == 1:
+        if self.n_jobs == 1 and not self.use_dask:
             for sklearn_pipeline in sklearn_pipeline_list:
                 self._stop_by_max_time_mins()
                 val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
@@ -1203,15 +1214,34 @@ class TPOTBase(BaseEstimator):
         else:
             # chunk size for pbar update
             # chunk size is min of cpu_count * 2 and n_jobs * 4
-            chunk_size = min(cpu_count()*2, self.n_jobs*4)
-            for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
-                self._stop_by_max_time_mins()
-                parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
-                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
-                # update pbar
-                for val in tmp_result_scores:
-                    result_score_list = self._update_val(val, result_score_list)
+            if self.use_dask:
+                import dask
+
+                result_score_list = [
+                    partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                    for sklearn_pipeline in sklearn_pipeline_list
+                ]
+
+                self.dask_graphs_ = result_score_list
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    result_score_list = list(dask.compute(*result_score_list))
+
+                self._update_pbar(len(result_score_list))
+
+            else:
+                chunk_size = min(cpu_count()*2, self.n_jobs*4)
+
+                for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
+                    self._stop_by_max_time_mins()
+
+                    parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                    tmp_result_scores = parallel(
+                        delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
+                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
+                    # update pbar
+                    for val in tmp_result_scores:
+                        result_score_list = self._update_val(val, result_score_list)
 
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
 
