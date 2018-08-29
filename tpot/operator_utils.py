@@ -247,6 +247,8 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
 
             if dep_op_list:
                 dep_op_arguments = {}
+                for dep_op_str in dep_op_list.values():
+                    dep_op_arguments[dep_op_str] = []
 
             for arg_class, arg_value in zip(arg_types, args):
                 aname_split = arg_class.__name__.split('__')
@@ -257,8 +259,6 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 # Parameter of internal operator as a parameter in the
                 # operator, usually in Selector
                 else:
-                    if aname_split[1] not in dep_op_arguments:
-                        dep_op_arguments[aname_split[1]] = []
                     dep_op_arguments[aname_split[1]].append("{}={}".format(aname_split[-1], arg_value))
 
             tmp_op_args = []
