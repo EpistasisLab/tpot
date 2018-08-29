@@ -17,7 +17,6 @@ except ImportError:
 
 
 class TestDaskMatches(unittest.TestCase):
-    maxDiff = None
 
     def test_dask_matches(self):
         with dask.config.set(scheduler='single-threaded'):
@@ -44,9 +43,9 @@ class TestDaskMatches(unittest.TestCase):
 
                 self.assertEqual(a.score(X, y), b.score(X, y))
                 self.assertEqual(a.pareto_front_fitted_pipelines_.keys(),
-                                b.pareto_front_fitted_pipelines_.keys())
+                                 b.pareto_front_fitted_pipelines_.keys())
                 self.assertEqual(a.evaluated_individuals_,
-                                b.evaluated_individuals_)
+                                 b.evaluated_individuals_)
 
     def test_handles_errors(self):
         X, y = make_classification(n_samples=5)
