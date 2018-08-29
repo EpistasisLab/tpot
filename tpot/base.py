@@ -259,7 +259,7 @@ class TPOTBase(BaseEstimator):
             will also provide more detailed diagnostics when using Dask's
             distributed scheduler.
 
-            See `<avoid repeated work <https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work>`_
+            See `avoid repeated work <https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work>`__
             for more.
 
         Returns
@@ -1162,7 +1162,6 @@ class TPOTBase(BaseEstimator):
         stats = deepcopy(individual_stats)  # Deepcopy, since the string reference to predecessor should be cloned
         stats['operator_count'] = operator_count
         stats['internal_cv_score'] = cv_score
-        print('combine_individual_stats', self.use_dask, stats)
         return stats
 
     def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
@@ -1349,7 +1348,6 @@ class TPOTBase(BaseEstimator):
         -------
         None
         """
-        print("update_evaluated_individuals", self.use_dask, eval_individuals_str, result_score_list)
         for result_score, individual_str in zip(result_score_list, eval_individuals_str):
             if type(result_score) in [float, np.float64, np.float32]:
                 self.evaluated_individuals_[individual_str] = self._combine_individual_stats(operator_counts[individual_str],
