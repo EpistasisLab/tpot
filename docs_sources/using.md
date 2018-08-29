@@ -253,7 +253,7 @@ If provided, this setting will override the "generations" parameter and allow TP
 <tr>
 <td>-maxeval</td>
 <td>MAX_EVAL_MINS</td>
-<td>Any positive integer</td>
+<td>Any positive float</td>
 <td>How many minutes TPOT has to evaluate a single pipeline.
 <br /><br />
 Setting this parameter to higher values will allow TPOT to consider more complex pipelines but will also allow TPOT to run longer.</td>
@@ -350,35 +350,35 @@ A setting of 2 or higher will add a progress bar during the optimization procedu
 
 TPOT makes use of `sklearn.model_selection.cross_val_score` for evaluating pipelines, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
 
-1. You can pass in a string to the `scoring` parameter from the list above. Any other strings will cause TPOT to throw an exception.
+- You can pass in a string to the `scoring` parameter from the list above. Any other strings will cause TPOT to throw an exception.
 
-2. You can pass the callable object/function with signature `scorer(estimator, X, y)`, where `estimator` is trained estimator to use for scoring, `X` are features that will be passed to `estimator.predict` and `y` are target values for `X`. To do this, you should implement your own function. See the example below for further explanation.
+- You can pass the callable object/function with signature `scorer(estimator, X, y)`, where `estimator` is trained estimator to use for scoring, `X` are features that will be passed to `estimator.predict` and `y` are target values for `X`. To do this, you should implement your own function. See the example below for further explanation.
 
-  ```Python
-  from tpot import TPOTClassifier
-  from sklearn.datasets import load_digits
-  from sklearn.model_selection import train_test_split
-  from sklearn.metrics.scorer import make_scorer
+```Python
+from tpot import TPOTClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+from sklearn.metrics.scorer import make_scorer
 
-  digits = load_digits()
-  X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
-                                                      train_size=0.75, test_size=0.25)
-  # Make a custom metric function
-  def my_custom_accuracy(y_true, y_pred):
-      return float(sum(y_pred == y_true)) / len(y_true)
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25)
+# Make a custom metric function
+def my_custom_accuracy(y_true, y_pred):
+    return float(sum(y_pred == y_true)) / len(y_true)
 
-  # Make a custom a scorer from the custom metric function
-  # Note: greater_is_better=False in make_scorer below would mean that the scoring function should be minimized.
-  my_custom_scorer = make_scorer(my_custom_accuracy, greater_is_better=True)
+# Make a custom a scorer from the custom metric function
+# Note: greater_is_better=False in make_scorer below would mean that the scoring function should be minimized.
+my_custom_scorer = make_scorer(my_custom_accuracy, greater_is_better=True)
 
-  tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                        scoring=my_custom_scorer)
-  tpot.fit(X_train, y_train)
-  print(tpot.score(X_test, y_test))
-  tpot.export('tpot_mnist_pipeline.py')
-  ```
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
+                      scoring=my_custom_scorer)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_mnist_pipeline.py')
+```
 
-3. You can pass a metric function with the signature `score_func(y_true, y_pred)` (e.g. `my_custom_accuracy` in the example above), where `y_true` are the true target values and `y_pred` are the predicted target values from an estimator. To do this, you should implement your own function. See the example above for further explanation. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized (`greater_is_better=False` in [`make_scorer`](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html)), whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
+- You can pass a metric function with the signature `score_func(y_true, y_pred)` (e.g. `my_custom_accuracy` in the example above), where `y_true` are the true target values and `y_pred` are the predicted target values from an estimator. To do this, you should implement your own function. See the example above for further explanation. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized (`greater_is_better=False` in [`make_scorer`](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html)), whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
 
 
 * **my_module.scorer_name**: You can also use a custom `score_func(y_true, y_pred)` or `scorer(estimator, X, y)` function through the command line by adding the argument `-scoring my_module.scorer` to your command-line call. TPOT will import your module and use the custom scoring function from there. TPOT will include your current working directory when importing the module, so you can place it in the same directory where you are going to run TPOT.
@@ -554,6 +554,47 @@ rmtree(cachedir)
 ```
 
 **Note: TPOT does NOT clean up memory caches if users set a custom directory path or Memory object. We recommend that you clean up the memory caches when you don't need it anymore.**
+
+# Parallel Training
+
+Internally, TPOT uses [joblib](http://joblib.readthedocs.io/) to fit estimators in parallel.
+This is the same parallelization framework used by scikit-learn.
+
+When you specify ``n_jobs``, TPOT will use ``n_jobs`` processes to fit models in parallel.
+For large problems, you can distribute the work on a [Dask](http://dask.pydata.org/en/latest/) cluster.
+There are two ways to achieve this.
+
+First, you can specify the ``use_dask`` keyword when you create the TPOT estimator.
+
+```python
+estimator = TPOTEstimator(n_jobs=-1, use_dask=True
+```
+
+This will use use all the workers on your cluster to do the training, and use [Dask-ML's pipeline rewriting](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) to avoid re-fitting estimators multiple times on the same set of data.
+It will provide fine-grained diagnostics in the [distributed scheduler UI](https://distributed.readthedocs.io/en/latest/web.html).
+
+Alternatively, Dask implements a joblib backend.
+You can instruct TPOT to use the distribued backend during training by specifying a ``joblib.parallel_backend``:
+
+```python
+from sklearn.externals import joblib
+import distributed.joblib
+from dask.distributed import Client
+
+# connect to the cluster
+client = Client('schedueler-address')
+
+# create the estimator normally
+estimator = TPOTClassifier(n_jobs=-1)
+
+# perform the fit in this context manager
+with joblib.parallel_backend("dask"):
+    estimator.fit(X, y)
+```
+
+See [dask's distributed joblib integration](https://distributed.readthedocs.io/en/latest/joblib.html) for more.
+
+We recommend using the `use_dask` keyword.
 
 # Crash/freeze issue with n_jobs > 1 under OSX or Linux
 

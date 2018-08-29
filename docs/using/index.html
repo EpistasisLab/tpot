@@ -472,35 +472,38 @@ A setting of 2 or higher will add a progress bar during the optimization procedu
 
 <h1 id="scoring-functions">Scoring functions</h1>
 <p>TPOT makes use of <code>sklearn.model_selection.cross_val_score</code> for evaluating pipelines, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:</p>
-<ol>
+<ul>
 <li>
 <p>You can pass in a string to the <code>scoring</code> parameter from the list above. Any other strings will cause TPOT to throw an exception.</p>
 </li>
 <li>
 <p>You can pass the callable object/function with signature <code>scorer(estimator, X, y)</code>, where <code>estimator</code> is trained estimator to use for scoring, <code>X</code> are features that will be passed to <code>estimator.predict</code> and <code>y</code> are target values for <code>X</code>. To do this, you should implement your own function. See the example below for further explanation.</p>
 </li>
-</ol>
-<p>```Python
-  from tpot import TPOTClassifier
-  from sklearn.datasets import load_digits
-  from sklearn.model_selection import train_test_split
-  from sklearn.metrics.scorer import make_scorer</p>
-<p>digits = load_digits()
-  X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
-                                                      train_size=0.75, test_size=0.25)
-  # Make a custom metric function
-  def my_custom_accuracy(y_true, y_pred):
-      return float(sum(y_pred == y_true)) / len(y_true)</p>
-<p># Make a custom a scorer from the custom metric function
-  # Note: greater_is_better=False in make_scorer below would mean that the scoring function should be minimized.
-  my_custom_scorer = make_scorer(my_custom_accuracy, greater_is_better=True)</p>
-<p>tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
-                        scoring=my_custom_scorer)
-  tpot.fit(X_train, y_train)
-  print(tpot.score(X_test, y_test))
-  tpot.export('tpot_mnist_pipeline.py')
-  ```</p>
-<ol>
+</ul>
+<pre><code class="Python">from tpot import TPOTClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+from sklearn.metrics.scorer import make_scorer
+
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25)
+# Make a custom metric function
+def my_custom_accuracy(y_true, y_pred):
+    return float(sum(y_pred == y_true)) / len(y_true)
+
+# Make a custom a scorer from the custom metric function
+# Note: greater_is_better=False in make_scorer below would mean that the scoring function should be minimized.
+my_custom_scorer = make_scorer(my_custom_accuracy, greater_is_better=True)
+
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
+                      scoring=my_custom_scorer)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_mnist_pipeline.py')
+</code></pre>
+
+<ul>
 <li>
 <p>You can pass a metric function with the signature <code>score_func(y_true, y_pred)</code> (e.g. <code>my_custom_accuracy</code> in the example above), where <code>y_true</code> are the true target values and <code>y_pred</code> are the predicted target values from an estimator. To do this, you should implement your own function. See the example above for further explanation. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized (<code>greater_is_better=False</code> in <a href="http://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html"><code>make_scorer</code></a>), whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.</p>
 </li>
@@ -508,7 +511,7 @@ A setting of 2 or higher will add a progress bar during the optimization procedu
 <p><strong>my_module.scorer_name</strong>: You can also use a custom <code>score_func(y_true, y_pred)</code> or <code>scorer(estimator, X, y)</code> function through the command line by adding the argument <code>-scoring my_module.scorer</code> to your command-line call. TPOT will import your module and use the custom scoring function from there. TPOT will include your current working directory when importing the module, so you can place it in the same directory where you are going to run TPOT.
 Example: <code>-scoring sklearn.metrics.auc</code> will use the function auc from sklearn.metrics module.</p>
 </li>
-</ol>
+</ul>
 <h1 id="built-in-tpot-configurations">Built-in TPOT configurations</h1>
 <p>TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. Below is a list of the current built-in configurations that come with TPOT.</p>
 <table>

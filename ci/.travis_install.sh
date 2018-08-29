@@ -54,6 +54,8 @@ pip install update_checker
 pip install tqdm
 pip install stopit
 pip install xgboost
+pip install dask[delayed]
+pip install git+https://github.com/dask/dask-ml  # TODO: Change to >=0.9 when released
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls

@@ -505,9 +505,14 @@ test3"""
 
 def test_pipeline_score_save():
     """Assert that the TPOTClassifier can generate a scored pipeline export correctly."""
-    tpot_obj = TPOTClassifier(random_state=39)
+    tpot_obj = TPOTClassifier()
     tpot_obj._pbar = tqdm(total=1, disable=True)
-    pipeline = tpot_obj._toolbox.individual()
+    pipeline_string = (
+        'DecisionTreeClassifier(SelectPercentile(input_matrix, SelectPercentile__percentile=20),'
+        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8,'
+        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
+    )
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
 import pandas as pd
 from sklearn.feature_selection import SelectPercentile, f_classif
@@ -521,16 +526,15 @@ features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'].values, random_state=42)
 
-# Score on the training set was:0.929813743
+# Average CV score on the training set was:0.929813743
 exported_pipeline = make_pipeline(
-    SelectPercentile(score_func=f_classif, percentile=65),
-    DecisionTreeClassifier(criterion="gini", max_depth=7, min_samples_leaf=4, min_samples_split=18)
+    SelectPercentile(score_func=f_classif, percentile=20),
+    DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
 )
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
-
     assert_equal(expected_code, export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset, pipeline_score=0.929813743))
 
 

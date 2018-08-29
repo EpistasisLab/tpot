@@ -43,11 +43,10 @@ import numpy as np
 from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
-from tqdm import tqdm
 from copy import copy, deepcopy
 
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_X_y
+from sklearn.utils import check_X_y, check_consistent_length, check_array
 from sklearn.externals.joblib import Parallel, delayed, Memory
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
@@ -94,6 +93,26 @@ if sys.platform.startswith('win'):
 
     win32api.SetConsoleCtrlHandler(handler, 1)
 
+def is_notebook():
+    """Check if TPOT is running in Jupyter notebook.
+    Returns
+    -------
+    True: TPOT is running in Jupyter notebook
+    False: TPOT is running in other terminals
+    """
+    try:
+        from IPython import get_ipython
+        shell = get_ipython().__class__.__name__
+        # if shell == 'TerminalInteractiveShell', then Terminal running IPython
+        return shell == 'ZMQInteractiveShell'
+    except:
+        return False
+
+if is_notebook():
+    from tqdm import tqdm_notebook as tqdm
+else:
+    from tqdm import tqdm
+
 
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
@@ -105,7 +124,8 @@ class TPOTBase(BaseEstimator):
                  random_state=None, config_dict=None,
                  warm_start=False, memory=None,
                  periodic_checkpoint_folder=None, early_stop=None,
-                 verbosity=0, disable_update_check=False):
+                 verbosity=0, disable_update_check=False,
+                 use_dask=False):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -174,7 +194,7 @@ class TPOTBase(BaseEstimator):
             How many minutes TPOT has to optimize the pipeline.
             If provided, this setting will override the "generations" parameter and allow
             TPOT to run until it runs out of time.
-        max_eval_time_mins: int, optional (default: 5)
+        max_eval_time_mins: float, optional (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
             complex pipelines, but will also allow TPOT to run longer.
@@ -233,6 +253,14 @@ class TPOTBase(BaseEstimator):
             A setting of 2 or higher will add a progress bar during the optimization procedure.
         disable_update_check: bool, optional (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
+        use_dask : bool, default False
+            Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
+            the same estimator on the same split of data multiple times. It
+            will also provide more detailed diagnostics when using Dask's
+            distributed scheduler.
+
+            See `avoid repeated work <https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work>`__
+            for more.
 
         Returns
         -------
@@ -267,6 +295,7 @@ class TPOTBase(BaseEstimator):
         self._last_optimized_pareto_front_n_gens = 0
         self.memory = memory
         self._memory = None # initial Memory setting for sklearn pipeline
+        self.use_dask = use_dask
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -526,9 +555,9 @@ class TPOTBase(BaseEstimator):
         target: array-like {n_samples}
             List of class labels for prediction
         sample_weight: array-like {n_samples}, optional
-            Per-sample weights. Higher weights indicate more importance. If specified, 
-            sample_weight will be passed to any pipeline element whose fit() function accepts 
-            a sample_weight argument. By default, using sample_weight does not affect tpot's 
+            Per-sample weights. Higher weights indicate more importance. If specified,
+            sample_weight will be passed to any pipeline element whose fit() function accepts
+            a sample_weight argument. By default, using sample_weight does not affect tpot's
             scoring functions, which determine preferences between pipelines.
         groups: array-like, with shape {n_samples, }, optional
             Group labels for the samples used when performing cross-validation.
@@ -542,7 +571,7 @@ class TPOTBase(BaseEstimator):
 
         """
 
-        features, target = self._check_dataset(features, target)
+        features, target = self._check_dataset(features, target, sample_weight)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
@@ -781,10 +810,7 @@ class TPOTBase(BaseEstimator):
         if not self.fitted_pipeline_:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        features = features.astype(np.float64)
-
-        if np.any(np.isnan(features)):
-            features = self._impute_values(features)
+        features = self._check_dataset(features, target=None, sample_weight=None)
 
         return self.fitted_pipeline_.predict(features)
 
@@ -811,6 +837,7 @@ class TPOTBase(BaseEstimator):
 
         """
         self.fit(features, target, sample_weight=sample_weight, groups=groups)
+
         return self.predict(features)
 
     def score(self, testing_features, testing_target):
@@ -832,8 +859,7 @@ class TPOTBase(BaseEstimator):
         if self.fitted_pipeline_ is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        if np.any(np.isnan(testing_features)):
-            testing_features = self._impute_values(testing_features)
+        testing_features, testing_target = self._check_dataset(testing_features, testing_target, sample_weight=None)
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
@@ -863,7 +889,11 @@ class TPOTBase(BaseEstimator):
         else:
             if not (hasattr(self.fitted_pipeline_, 'predict_proba')):
                 raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
-            return self.fitted_pipeline_.predict_proba(features.astype(np.float64))
+
+            #features = features.astype(np.float64)
+            features = self._check_dataset(features, target=None, sample_weight=None)
+
+            return self.fitted_pipeline_.predict_proba(features)
 
     def set_params(self, **params):
         """Set the parameters of TPOT.
@@ -992,20 +1022,31 @@ class TPOTBase(BaseEstimator):
 
         return self._fitted_imputer.transform(features)
 
-    def _check_dataset(self, features, target):
+    def _check_dataset(self, features, target, sample_weight=None):
         """Check if a dataset has a valid feature set and labels.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
-        target: array-like {n_samples}
+        target: array-like {n_samples} or None
             List of class labels for prediction
-
+        sample_weight: array-like {n_samples} (optional)
+            List of weights indicating relative importance
         Returns
         -------
-        None
+        (features, target)
         """
+        # Check sample_weight
+        if sample_weight is not None:
+            try: sample_weight = np.array(sample_weight).astype('float')
+            except ValueError as e:
+                raise ValueError('sample_weight could not be converted to float array: %s' % e)
+            if np.any(np.isnan(sample_weight)):
+                raise ValueError('sample_weight contained NaN values.')
+            try: check_consistent_length(sample_weight, target)
+            except ValueError as e:
+                raise ValueError('sample_weight dimensions did not match target: %s' % e)
         # Resets the imputer to be fit for the new dataset
         self._fitted_imputer = None
         self._imputed = False
@@ -1025,9 +1066,14 @@ class TPOTBase(BaseEstimator):
             if np.any(np.isnan(features)):
                 self._imputed = True
                 features = self._impute_values(features)
+
         try:
-            X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
-            return X, y
+            if target is not None:
+                X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
+                return X, y
+            else:
+                X = check_array(features, order="C",  accept_sparse=True, dtype=np.float64)
+                return X
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
@@ -1154,12 +1200,13 @@ class TPOTBase(BaseEstimator):
             scoring_function=self.scoring_function,
             sample_weight=sample_weight,
             groups=groups,
-            timeout=self.max_eval_time_seconds
+            timeout=self.max_eval_time_seconds,
+            use_dask=self.use_dask,
         )
 
         result_score_list = []
         # Don't use parallelization if n_jobs==1
-        if self.n_jobs == 1:
+        if self.n_jobs == 1 and not self.use_dask:
             for sklearn_pipeline in sklearn_pipeline_list:
                 self._stop_by_max_time_mins()
                 val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
@@ -1167,15 +1214,34 @@ class TPOTBase(BaseEstimator):
         else:
             # chunk size for pbar update
             # chunk size is min of cpu_count * 2 and n_jobs * 4
-            chunk_size = min(cpu_count()*2, self.n_jobs*4)
-            for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
-                self._stop_by_max_time_mins()
-                parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
-                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
-                # update pbar
-                for val in tmp_result_scores:
-                    result_score_list = self._update_val(val, result_score_list)
+            if self.use_dask:
+                import dask
+
+                result_score_list = [
+                    partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                    for sklearn_pipeline in sklearn_pipeline_list
+                ]
+
+                self.dask_graphs_ = result_score_list
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    result_score_list = list(dask.compute(*result_score_list))
+
+                self._update_pbar(len(result_score_list))
+
+            else:
+                chunk_size = min(cpu_count()*2, self.n_jobs*4)
+
+                for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
+                    self._stop_by_max_time_mins()
+
+                    parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                    tmp_result_scores = parallel(
+                        delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
+                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
+                    # update pbar
+                    for val in tmp_result_scores:
+                        result_score_list = self._update_val(val, result_score_list)
 
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
 
