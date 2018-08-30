@@ -527,10 +527,11 @@ class TPOTBase(BaseEstimator):
             raise ValueError(
                 'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
             )
+
         if self.n_jobs == -1:
-            self.n_jobs = cpu_count()
+            self._n_jobs = cpu_count()
         else:
-            self.n_jobs = self.n_jobs
+            self._n_jobs = self.n_jobs
 
         self._setup_pset()
         self._setup_toolbox()
@@ -1208,7 +1209,7 @@ class TPOTBase(BaseEstimator):
 
         result_score_list = []
         # Don't use parallelization if n_jobs==1
-        if self.n_jobs == 1 and not self.use_dask:
+        if self._n_jobs == 1 and not self.use_dask:
             for sklearn_pipeline in sklearn_pipeline_list:
                 self._stop_by_max_time_mins()
                 val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
@@ -1232,12 +1233,12 @@ class TPOTBase(BaseEstimator):
             else:
                 # chunk size for pbar update
                 # chunk size is min of cpu_count * 2 and n_jobs * 4
-                chunk_size = min(cpu_count()*2, self.n_jobs*4)
+                chunk_size = min(cpu_count()*2, self._n_jobs*4)
 
                 for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                     self._stop_by_max_time_mins()
 
-                    parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                    parallel = Parallel(n_jobs=self._n_jobs, verbose=0, pre_dispatch='2*n_jobs')
                     tmp_result_scores = parallel(
                         delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
                         for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])

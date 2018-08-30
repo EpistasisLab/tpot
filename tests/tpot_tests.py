@@ -287,7 +287,7 @@ def test_init_n_jobs():
     tpot_obj = TPOTClassifier(n_jobs=-1)
     assert tpot_obj.n_jobs == -1
     tpot_obj._fit_init()
-    assert tpot_obj.n_jobs == cpu_count()
+    assert tpot_obj._n_jobs == cpu_count()
 
 
 def test_timeout():
