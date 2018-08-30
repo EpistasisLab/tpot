@@ -155,7 +155,7 @@ Setting <em>warm_start</em>=True can be useful for running TPOT for a short time
 
 <strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
 <blockquote>
-If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in [scikit-learn documentation](http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation)
+If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in <a href="http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation">scikit-learn documentation</a>
 <br /><br />
 Possible inputs are:
 <ul>
@@ -173,7 +173,7 @@ the same estimator on the same split of data multiple times. It
 will also provide more detailed diagnostics when using Dask's
 distributed scheduler.
 <br /><br />
-See [avoid repeated work](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) for more details.
+See <a href="https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work">avoid repeated work</a> for more details.
 </blockquote>
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
@@ -638,7 +638,7 @@ Setting <em>warm_start</em>=True can be useful for running TPOT for a short time
 
 <strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
 <blockquote>
-If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in [scikit-learn documentation](http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation)
+If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in <a href="http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation">scikit-learn documentation</a>
 <br /><br />
 Possible inputs are:
 <ul>
@@ -656,7 +656,7 @@ the same estimator on the same split of data multiple times. It
 will also provide more detailed diagnostics when using Dask's
 distributed scheduler.
 <br /><br />
-See [avoid repeated work](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) for more details.
+See <a href="https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work">avoid repeated work</a> for more details.
 </blockquote>
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
