@@ -122,10 +122,9 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None,
-                 warm_start=False, memory=None,
+                 warm_start=False, memory=None, use_dask=False,
                  periodic_checkpoint_folder=None, early_stop=None,
-                 verbosity=0, disable_update_check=False,
-                 use_dask=False):
+                 verbosity=0, disable_update_check=False):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -237,14 +236,14 @@ class TPOTBase(BaseEstimator):
                 and TPOT does NOT clean the caching directory up upon shutdown.
             None:
                 TPOT does not use memory caching.
-        use_dask : bool, default False
+        use_dask: boolean, default False
             Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
             the same estimator on the same split of data multiple times. It
             will also provide more detailed diagnostics when using Dask's
             distributed scheduler.
 
             See `avoid repeated work <https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work>`__
-            for more.
+            for more details.
         periodic_checkpoint_folder: path string, optional (default: None)
             If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.
             Currently once per generation but not more often than once per 30 seconds.
@@ -527,10 +526,11 @@ class TPOTBase(BaseEstimator):
             raise ValueError(
                 'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
             )
+
         if self.n_jobs == -1:
-            self.n_jobs = cpu_count()
+            self._n_jobs = cpu_count()
         else:
-            self.n_jobs = self.n_jobs
+            self._n_jobs = self.n_jobs
 
         self._setup_pset()
         self._setup_toolbox()
@@ -991,7 +991,7 @@ class TPOTBase(BaseEstimator):
         if self._optimized_pipeline is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._imputed, self._optimized_pipeline_score)
+        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._imputed, self._optimized_pipeline_score, self.random_state)
 
         # dont export a pipeline you just had
         if skip_if_repeated and (self._exported_pipeline_text == to_write):
@@ -1208,7 +1208,7 @@ class TPOTBase(BaseEstimator):
 
         result_score_list = []
         # Don't use parallelization if n_jobs==1
-        if self.n_jobs == 1 and not self.use_dask:
+        if self._n_jobs == 1 and not self.use_dask:
             for sklearn_pipeline in sklearn_pipeline_list:
                 self._stop_by_max_time_mins()
                 val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
@@ -1232,12 +1232,12 @@ class TPOTBase(BaseEstimator):
             else:
                 # chunk size for pbar update
                 # chunk size is min of cpu_count * 2 and n_jobs * 4
-                chunk_size = min(cpu_count()*2, self.n_jobs*4)
+                chunk_size = min(cpu_count()*2, self._n_jobs*4)
 
                 for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                     self._stop_by_max_time_mins()
 
-                    parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                    parallel = Parallel(n_jobs=self._n_jobs, verbose=0, pre_dispatch='2*n_jobs')
                     tmp_result_scores = parallel(
                         delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
                         for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])

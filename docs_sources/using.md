@@ -555,21 +555,36 @@ rmtree(cachedir)
 
 **Note: TPOT does NOT clean up memory caches if users set a custom directory path or Memory object. We recommend that you clean up the memory caches when you don't need it anymore.**
 
-# Parallel Training
+# Crash/freeze issue with n_jobs > 1 under OSX or Linux
 
 Internally, TPOT uses [joblib](http://joblib.readthedocs.io/) to fit estimators in parallel.
-This is the same parallelization framework used by scikit-learn.
+This is the same parallelization framework used by scikit-learn. But it may crash/freeze with n_jobs > 1 under OSX or Linux [as scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large datasets.
 
-When you specify ``n_jobs``, TPOT will use ``n_jobs`` processes to fit models in parallel.
+One solution is to configure Python's `multiprocessing` module to use the `forkserver` start method (instead of the default `fork`) to manage the process pools. You can enable the `forkserver` mode globally for your program by putting the following codes into your main script:
 
-For large problems, you can distribute the work on a [Dask](http://dask.pydata.org/en/latest/) cluster.
+```Python
+import multiprocessing
+
+# other imports, custom code, load data, define model...
+
+if __name__ == '__main__':
+    multiprocessing.set_start_method('forkserver')
+
+    # call scikit-learn utils or tpot utils with n_jobs > 1 here
+```
+
+More information about these start methods can be found in the [multiprocessing documentation](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods).
+
+# Parallel Training with Dask
+
+For large problems or working on Jupyter notebook, we highly recommend that you can distribute the work on a [Dask](http://dask.pydata.org/en/latest/) cluster.
 The [dask-examples binder](https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=machine-learning%2Ftpot.ipynb) has a runnable example
 with a small dask cluster.
 
-To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator.
+To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator. **Note: if `use_dask=True`, TPOT will use as many cores as available on the your Dask cluster regardless of whether `n_jobs` is specified.**
 
 ```python
-estimator = TPOTEstimator(n_jobs=-1, use_dask=True)
+estimator = TPOTEstimator(use_dask=True)
 ```
 
 This will use use all the workers on your cluster to do the training, and use [Dask-ML's pipeline rewriting](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) to avoid re-fitting estimators multiple times on the same set of data.
@@ -595,22 +610,3 @@ with joblib.parallel_backend("dask"):
 ```
 
 See [dask's distributed joblib integration](https://distributed.readthedocs.io/en/latest/joblib.html) for more.
-
-# Crash/freeze issue with n_jobs > 1 under OSX or Linux
-
-TPOT supports parallel computing for speeding up the optimization process, but it may crash/freeze with n_jobs > 1 under OSX or Linux [as scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large datasets.
-
-One solution is to configure Python's `multiprocessing` module to use the `forkserver` start method (instead of the default `fork`) to manage the process pools. You can enable the `forkserver` mode globally for your program by putting the following codes into your main script:
-
-```Python
-import multiprocessing
-
-# other imports, custom code, load data, define model...
-
-if __name__ == '__main__':
-    multiprocessing.set_start_method('forkserver')
-
-    # call scikit-learn utils or tpot utils with n_jobs > 1 here
-```
-
-More information about these start methods can be found in the [multiprocessing documentation](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods).

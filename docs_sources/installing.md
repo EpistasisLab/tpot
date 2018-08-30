@@ -33,9 +33,6 @@ pip install deap update_checker tqdm stopit
 **For the Windows users**, the pywin32 module is required if Python is NOT installed via the [Anaconda Python distribution](https://www.continuum.io/downloads) and can be installed with `pip` for Python verion <=3.3 or `conda` (e.g. miniconda) for any Python version:
 
 ```Shell
-# For Python version <=3.3
-pip install pywin32
-# For any python version
 conda install pywin32
 ```
 
@@ -46,6 +43,12 @@ pip install xgboost
 ```
 
 If you have issues installing XGBoost, check the [XGBoost installation documentation](http://xgboost.readthedocs.io/en/latest/build.html).
+
+If you plan to use [Dask](http://dask.pydata.org/en/latest/) for parallel training, make sure to install [dask[delay]](http://dask.pydata.org/en/latest/install.html) and [dask_ml](https://dask-ml.readthedocs.io/en/latest/install.html).
+
+```Shell
+pip install dask[delayed] dask-ml
+```
 
 If you plan to use the [TPOT-MDR configuration](https://arxiv.org/abs/1702.01780), make sure to install [scikit-mdr](https://github.com/EpistasisLab/scikit-mdr) and [scikit-rebate](https://github.com/EpistasisLab/scikit-rebate):
 

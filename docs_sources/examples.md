@@ -51,7 +51,7 @@ tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dty
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_target, testing_target = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+    train_test_split(features, tpot_data['class'], random_state=None)
 
 exported_pipeline = make_pipeline(
     Normalizer(),
@@ -94,7 +94,7 @@ tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dty
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_target, testing_target = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+    train_test_split(features, tpot_data['class'], random_state=None)
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=6, weights="distance")
 
@@ -134,7 +134,7 @@ tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dty
 features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
                      tpot_data.dtype.names.index('class'), axis=1)
 training_features, testing_features, training_target, testing_target = \
-    train_test_split(features, tpot_data['class'], random_state=42)
+    train_test_split(features, tpot_data['class'], random_state=None)
 
 exported_pipeline = GradientBoostingRegressor(alpha=0.85, learning_rate=0.1, loss="ls",
                                               max_features=0.9, min_samples_leaf=5,

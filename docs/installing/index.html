@@ -172,10 +172,7 @@
 </code></pre>
 
 <p><strong>For the Windows users</strong>, the pywin32 module is required if Python is NOT installed via the <a href="https://www.continuum.io/downloads">Anaconda Python distribution</a> and can be installed with <code>pip</code> for Python verion &lt;=3.3 or <code>conda</code> (e.g. miniconda) for any Python version:</p>
-<pre><code class="Shell"># For Python version &lt;=3.3
-pip install pywin32
-# For any python version
-conda install pywin32
+<pre><code class="Shell">conda install pywin32
 </code></pre>
 
 <p><strong>Optionally</strong>, you can install <a href="https://github.com/dmlc/xgboost">XGBoost</a> if you would like TPOT to use the eXtreme Gradient Boosting models. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed. <strong>Windows users: pip installation may not work on some Windows environments, and it may cause unexpected errors.</strong></p>
@@ -183,6 +180,10 @@ conda install pywin32
 </code></pre>
 
 <p>If you have issues installing XGBoost, check the <a href="http://xgboost.readthedocs.io/en/latest/build.html">XGBoost installation documentation</a>.</p>
+<p>If you plan to use <a href="http://dask.pydata.org/en/latest/">Dask</a> for parallel training, make sure to install <a href="http://dask.pydata.org/en/latest/install.html">dask[delay]</a> and <a href="https://dask-ml.readthedocs.io/en/latest/install.html">dask_ml</a>.</p>
+<pre><code class="Shell">pip install dask[delayed] dask-ml
+</code></pre>
+
 <p>If you plan to use the <a href="https://arxiv.org/abs/1702.01780">TPOT-MDR configuration</a>, make sure to install <a href="https://github.com/EpistasisLab/scikit-mdr">scikit-mdr</a> and <a href="https://github.com/EpistasisLab/scikit-rebate">scikit-rebate</a>:</p>
 <pre><code class="Shell">pip install scikit-mdr skrebate
 </code></pre>
