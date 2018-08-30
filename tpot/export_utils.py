@@ -51,7 +51,7 @@ def get_by_name(opname, operators):
     return ret_op_class
 
 
-def export_pipeline(exported_pipeline, operators, pset, impute=False, pipeline_score=None):
+def export_pipeline(exported_pipeline, operators, pset, impute=False, pipeline_score=None, random_state=None):
     """Generate source code for a TPOT Pipeline.
 
     Parameters
@@ -87,8 +87,8 @@ from copy import copy
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
-"""
+            train_test_split(features, tpot_data['target'].values, random_state={})
+""".format(random_state)
 
     # Add the imputation step if it was used by TPOT
     if impute:
@@ -100,7 +100,7 @@ testing_features = imputer.transform(testing_features)
 """
 
     if pipeline_score is not None:
-        pipeline_text += '\n# Score on the training set was:{}'.format(pipeline_score)
+        pipeline_text += '\n# Average CV score on the training set was:{}'.format(pipeline_score)
     pipeline_text += '\n'
 
     # Replace the function calls with their corresponding Python code

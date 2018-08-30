@@ -27,17 +27,21 @@ import subprocess
 import sys
 from os import remove, path
 from contextlib import contextmanager
+from distutils.version import LooseVersion
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
 
+import nose
 import numpy as np
 import pandas as pd
+import sklearn
 
 from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, _read_data_file, load_scoring_function, tpot_driver
 from nose.tools import assert_raises, assert_equal, assert_in
 from unittest import TestCase
+
 
 
 @contextmanager
@@ -169,6 +173,12 @@ def test_driver_4():
 
 def test_driver_5():
     """Assert that the tpot_driver() in TPOT driver outputs normal result with exported python file and verbosity = 0."""
+
+    # Catch FutureWarning https://github.com/scikit-learn/scikit-learn/issues/11785
+    if (np.__version__ >= LooseVersion("1.15.0") and
+            sklearn.__version__ <= LooseVersion("0.20.0")):
+        raise nose.SkipTest("Warning raised by scikit-learn")
+
     args_list = [
                 'tests/tests.csv',
                 '-is', ',',

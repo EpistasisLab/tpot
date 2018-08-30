@@ -253,7 +253,7 @@ If provided, this setting will override the "generations" parameter and allow TP
 <tr>
 <td>-maxeval</td>
 <td>MAX_EVAL_MINS</td>
-<td>Any positive integer</td>
+<td>Any positive float</td>
 <td>How many minutes TPOT has to evaluate a single pipeline.
 <br /><br />
 Setting this parameter to higher values will allow TPOT to consider more complex pipelines but will also allow TPOT to run longer.</td>
@@ -557,7 +557,8 @@ rmtree(cachedir)
 
 # Crash/freeze issue with n_jobs > 1 under OSX or Linux
 
-TPOT supports parallel computing for speeding up the optimization process, but it may crash/freeze with n_jobs > 1 under OSX or Linux [as scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large datasets.
+Internally, TPOT uses [joblib](http://joblib.readthedocs.io/) to fit estimators in parallel.
+This is the same parallelization framework used by scikit-learn. But it may crash/freeze with n_jobs > 1 under OSX or Linux [as scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large datasets.
 
 One solution is to configure Python's `multiprocessing` module to use the `forkserver` start method (instead of the default `fork`) to manage the process pools. You can enable the `forkserver` mode globally for your program by putting the following codes into your main script:
 
@@ -573,3 +574,39 @@ if __name__ == '__main__':
 ```
 
 More information about these start methods can be found in the [multiprocessing documentation](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods).
+
+# Parallel Training with Dask
+
+For large problems or working on Jupyter notebook, we highly recommend that you can distribute the work on a [Dask](http://dask.pydata.org/en/latest/) cluster.
+The [dask-examples binder](https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=machine-learning%2Ftpot.ipynb) has a runnable example
+with a small dask cluster.
+
+To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator. **Note: if `use_dask=True`, TPOT will use as many cores as available on the your Dask cluster regardless of whether `n_jobs` is specified.**
+
+```python
+estimator = TPOTEstimator(use_dask=True)
+```
+
+This will use use all the workers on your cluster to do the training, and use [Dask-ML's pipeline rewriting](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) to avoid re-fitting estimators multiple times on the same set of data.
+It will also provide fine-grained diagnostics in the [distributed scheduler UI](https://distributed.readthedocs.io/en/latest/web.html).
+
+Alternatively, Dask implements a joblib backend.
+You can instruct TPOT to use the distribued backend during training by specifying a ``joblib.parallel_backend``:
+
+```python
+from sklearn.externals import joblib
+import distributed.joblib
+from dask.distributed import Client
+
+# connect to the cluster
+client = Client('schedueler-address')
+
+# create the estimator normally
+estimator = TPOTClassifier(n_jobs=-1)
+
+# perform the fit in this context manager
+with joblib.parallel_backend("dask"):
+    estimator.fit(X, y)
+```
+
+See [dask's distributed joblib integration](https://distributed.readthedocs.io/en/latest/joblib.html) for more.

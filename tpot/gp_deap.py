@@ -23,6 +23,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+import dask
 import numpy as np
 from deap import tools, gp
 from inspect import isclass
@@ -395,8 +396,10 @@ def mutNodeReplacement(individual, pset):
 
 @threading_timeoutable(default="Timeout")
 def _wrapped_cross_val_score(sklearn_pipeline, features, target,
-                             cv, scoring_function, sample_weight=None, groups=None):
+                             cv, scoring_function, sample_weight=None,
+                             groups=None, use_dask=False):
     """Fit estimator and compute scores for a given dataset split.
+
     Parameters
     ----------
     sklearn_pipeline : pipeline object implementing 'fit'
@@ -418,6 +421,8 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
         List of sample weights to balance (or un-balanace) the dataset target as needed
     groups: array-like {n_samples, }, optional
         Group labels for the samples used while splitting the dataset into train/test set
+    use_dask : bool, default False
+        Whether to use dask
     """
     sample_weight_dict = set_sample_weight(sklearn_pipeline.steps, sample_weight)
 
@@ -427,22 +432,50 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     cv_iter = list(cv.split(features, target, groups))
     scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
 
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
-                                    X=features,
-                                    y=target,
-                                    scorer=scorer,
-                                    train=train,
-                                    test=test,
-                                    verbose=0,
-                                    parameters=None,
-                                    fit_params=sample_weight_dict)
-                                for train, test in cv_iter]
-            CV_score = np.array(scores)[:, 0]
-            return np.nanmean(CV_score)
-    except TimeoutException:
-        return "Timeout"
-    except Exception as e:
-        return -float('inf')
+    if use_dask:
+        try:
+            import dask_ml.model_selection  # noqa
+            import dask  # noqa
+            from dask.delayed import Delayed
+        except ImportError:
+            msg = "'use_dask' requires the optional dask and dask-ml depedencies."
+            raise ImportError(msg)
+
+        dsk, keys, n_splits = dask_ml.model_selection._search.build_graph(
+            estimator=sklearn_pipeline,
+            cv=cv,
+            scorer=scorer,
+            candidate_params=[{}],
+            X=features,
+            y=target,
+            groups=groups,
+            fit_params=sample_weight_dict,
+            refit=False,
+            error_score=float('-inf'),
+        )
+
+        cv_results = Delayed(keys[0], dsk)
+        scores = [cv_results['split{}_test_score'.format(i)]
+                  for i in range(n_splits)]
+        CV_score = dask.delayed(np.array)(scores)[:, 0]
+        return dask.delayed(np.nanmean)(CV_score)
+    else:
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
+                                         X=features,
+                                         y=target,
+                                         scorer=scorer,
+                                         train=train,
+                                         test=test,
+                                         verbose=0,
+                                         parameters=None,
+                                         fit_params=sample_weight_dict)
+                                    for train, test in cv_iter]
+                CV_score = np.array(scores)[:, 0]
+                return np.nanmean(CV_score)
+        except TimeoutException:
+            return "Timeout"
+        except Exception as e:
+            return -float('inf')

@@ -43,11 +43,10 @@ import numpy as np
 from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
-from tqdm import tqdm
 from copy import copy, deepcopy
 
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_X_y
+from sklearn.utils import check_X_y, check_consistent_length, check_array
 from sklearn.externals.joblib import Parallel, delayed, Memory
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
@@ -94,6 +93,26 @@ if sys.platform.startswith('win'):
 
     win32api.SetConsoleCtrlHandler(handler, 1)
 
+def is_notebook():
+    """Check if TPOT is running in Jupyter notebook.
+    Returns
+    -------
+    True: TPOT is running in Jupyter notebook
+    False: TPOT is running in other terminals
+    """
+    try:
+        from IPython import get_ipython
+        shell = get_ipython().__class__.__name__
+        # if shell == 'TerminalInteractiveShell', then Terminal running IPython
+        return shell == 'ZMQInteractiveShell'
+    except:
+        return False
+
+if is_notebook():
+    from tqdm import tqdm_notebook as tqdm
+else:
+    from tqdm import tqdm
+
 
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
@@ -103,7 +122,7 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None,
-                 warm_start=False, memory=None,
+                 warm_start=False, memory=None, use_dask=False,
                  periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False):
         """Set up the genetic programming algorithm for pipeline optimization.
@@ -174,7 +193,7 @@ class TPOTBase(BaseEstimator):
             How many minutes TPOT has to optimize the pipeline.
             If provided, this setting will override the "generations" parameter and allow
             TPOT to run until it runs out of time.
-        max_eval_time_mins: int, optional (default: 5)
+        max_eval_time_mins: float, optional (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
             complex pipelines, but will also allow TPOT to run longer.
@@ -217,6 +236,14 @@ class TPOTBase(BaseEstimator):
                 and TPOT does NOT clean the caching directory up upon shutdown.
             None:
                 TPOT does not use memory caching.
+        use_dask: boolean, default False
+            Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
+            the same estimator on the same split of data multiple times. It
+            will also provide more detailed diagnostics when using Dask's
+            distributed scheduler.
+
+            See `avoid repeated work <https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work>`__
+            for more details.
         periodic_checkpoint_folder: path string, optional (default: None)
             If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.
             Currently once per generation but not more often than once per 30 seconds.
@@ -234,6 +261,7 @@ class TPOTBase(BaseEstimator):
         disable_update_check: bool, optional (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
 
+
         Returns
         -------
         None
@@ -242,108 +270,26 @@ class TPOTBase(BaseEstimator):
         if self.__class__.__name__ == 'TPOTBase':
             raise RuntimeError('Do not instantiate the TPOTBase class directly; use TPOTRegressor or TPOTClassifier instead.')
 
-        # Prompt the user if their version is out of date
-        self.disable_update_check = disable_update_check
-        if not self.disable_update_check:
-            update_check('tpot', __version__)
-
-        self._pareto_front = None
-        self._optimized_pipeline = None
-        self._optimized_pipeline_score = None
-        self._exported_pipeline_text = ""
-        self.fitted_pipeline_ = None
-        self._fitted_imputer = None
-        self._imputed = False
-        self._pop = []
-        self.warm_start = warm_start
         self.population_size = population_size
+        self.offspring_size = offspring_size
         self.generations = generations
-        self.max_time_mins = max_time_mins
-        self.max_eval_time_mins = max_eval_time_mins
-        self.max_eval_time_seconds = max(int(self.max_eval_time_mins * 60), 1)
-        self.periodic_checkpoint_folder = periodic_checkpoint_folder
-        self.early_stop = early_stop
-        self._last_optimized_pareto_front = None
-        self._last_optimized_pareto_front_n_gens = 0
-        self.memory = memory
-        self._memory = None # initial Memory setting for sklearn pipeline
-
-        # dont save periodic pipelines more often than this
-        self._output_best_pipeline_period_seconds = 30
-
-        # Try crossover and mutation at most this many times for
-        # any one given individual (or pair of individuals)
-        self._max_mut_loops = 50
-
-        # Set offspring_size equal to population_size by default
-        if offspring_size:
-            self.offspring_size = offspring_size
-        else:
-            self.offspring_size = population_size
-
-        self.config_dict_params = config_dict
-        self._setup_config(self.config_dict_params)
-
-        self.operators = []
-        self.arguments = []
-        for key in sorted(self.config_dict.keys()):
-            op_class, arg_types = TPOTOperatorClassFactory(
-                key,
-                self.config_dict[key],
-                BaseClass=Operator,
-                ArgBaseClass=ARGType
-            )
-            if op_class:
-                self.operators.append(op_class)
-                self.arguments += arg_types
-
-        # Schedule TPOT to run for many generations if the user specifies a
-        # run-time limit TPOT will automatically interrupt itself when the timer
-        # runs out
-        if max_time_mins is not None:
-            self.generations = 1000000
-
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
-
-        if self.mutation_rate + self.crossover_rate > 1:
-            raise ValueError(
-                'The sum of the crossover and mutation probabilities must be <= 1.0.'
-            )
-
-        self.verbosity = verbosity
-        self.operators_context = {
-            'make_pipeline': make_pipeline,
-            'make_union': make_union,
-            'StackingEstimator': StackingEstimator,
-            'FunctionTransformer': FunctionTransformer,
-            'copy': copy
-        }
-        self._pbar = None
-        # Specifies where to output the progress messages (default: sys.stdout).
-        # Maybe open this API in future version of TPOT.(io.TextIOWrapper or io.StringIO)
-        self._file = sys.stdout
-
-        # Dictionary of individuals that have already been evaluated in previous
-        # generations
-        self.evaluated_individuals_ = {}
-        self.random_state = random_state
-
-        self._setup_scoring_function(scoring)
-
+        self.scoring=scoring
         self.cv = cv
         self.subsample = subsample
-        if self.subsample <= 0.0 or self.subsample > 1.0:
-            raise ValueError(
-                'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
-            )
-        if n_jobs == -1:
-            self.n_jobs = cpu_count()
-        else:
-            self.n_jobs = n_jobs
-
-        self._setup_pset()
-        self._setup_toolbox()
+        self.n_jobs=n_jobs
+        self.max_time_mins = max_time_mins
+        self.max_eval_time_mins = max_eval_time_mins
+        self.periodic_checkpoint_folder = periodic_checkpoint_folder
+        self.early_stop = early_stop
+        self.config_dict = config_dict
+        self.warm_start = warm_start
+        self.memory = memory
+        self.use_dask = use_dask
+        self.verbosity = verbosity
+        self.disable_update_check = disable_update_check
+        self.random_state = random_state
 
 
     def _setup_scoring_function(self, scoring):
@@ -390,26 +336,26 @@ class TPOTBase(BaseEstimator):
     def _setup_config(self, config_dict):
         if config_dict:
             if isinstance(config_dict, dict):
-                self.config_dict = config_dict
+                self._config_dict = config_dict
             elif config_dict == 'TPOT light':
                 if self.classification:
-                    self.config_dict = classifier_config_dict_light
+                    self._config_dict = classifier_config_dict_light
                 else:
-                    self.config_dict = regressor_config_dict_light
+                    self._config_dict = regressor_config_dict_light
             elif config_dict == 'TPOT MDR':
                 if self.classification:
-                    self.config_dict = tpot_mdr_classifier_config_dict
+                    self._config_dict = tpot_mdr_classifier_config_dict
                 else:
-                    self.config_dict = tpot_mdr_regressor_config_dict
+                    self._config_dict = tpot_mdr_regressor_config_dict
             elif config_dict == 'TPOT sparse':
                 if self.classification:
-                    self.config_dict = classifier_config_sparse
+                    self._config_dict = classifier_config_sparse
                 else:
-                    self.config_dict = regressor_config_sparse
+                    self._config_dict = regressor_config_sparse
             else:
                 config = self._read_config_file(config_dict)
                 if hasattr(config, 'tpot_config'):
-                    self.config_dict = config.tpot_config
+                    self._config_dict = config.tpot_config
                 else:
                     raise ValueError(
                         'Could not find "tpot_config" in configuration file {}. '
@@ -418,7 +364,7 @@ class TPOTBase(BaseEstimator):
                         'the standardized name of "tpot_config"'.format(config_dict)
                     )
         else:
-            self.config_dict = self.default_config_dict
+            self._config_dict = self.default_config_dict
 
     def _read_config_file(self, config_path):
         if os.path.isfile(config_path):
@@ -503,6 +449,93 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
+
+    def _fit_init(self):
+        # initialization for fit function
+        if not self.warm_start or not hasattr(self, '_pareto_front'):
+            self._pop = []
+            self._pareto_front = None
+            self._last_optimized_pareto_front = None
+            self._last_optimized_pareto_front_n_gens = 0
+
+        self._optimized_pipeline = None
+        self._optimized_pipeline_score = None
+        self._exported_pipeline_text = ""
+        self.fitted_pipeline_ = None
+        self._fitted_imputer = None
+        self._imputed = False
+        self._memory = None # initial Memory setting for sklearn pipeline
+
+        # dont save periodic pipelines more often than this
+        self._output_best_pipeline_period_seconds = 30
+
+        # Try crossover and mutation at most this many times for
+        # any one given individual (or pair of individuals)
+        self._max_mut_loops = 50
+
+        self._setup_config(self.config_dict)
+
+        self.operators = []
+        self.arguments = []
+        for key in sorted(self._config_dict.keys()):
+            op_class, arg_types = TPOTOperatorClassFactory(
+                key,
+                self._config_dict[key],
+                BaseClass=Operator,
+                ArgBaseClass=ARGType
+            )
+            if op_class:
+                self.operators.append(op_class)
+                self.arguments += arg_types
+
+        # Schedule TPOT to run for many generations if the user specifies a
+        # run-time limit TPOT will automatically interrupt itself when the timer
+        # runs out
+        if self.max_time_mins is not None:
+            self.generations = 1000000
+
+        # Prompt the user if their version is out of date
+        if not self.disable_update_check:
+            update_check('tpot', __version__)
+
+        if self.mutation_rate + self.crossover_rate > 1:
+            raise ValueError(
+                'The sum of the crossover and mutation probabilities must be <= 1.0.'
+            )
+
+        self.operators_context = {
+            'make_pipeline': make_pipeline,
+            'make_union': make_union,
+            'StackingEstimator': StackingEstimator,
+            'FunctionTransformer': FunctionTransformer,
+            'copy': copy
+        }
+
+        self._pbar = None
+        # Specifies where to output the progress messages (default: sys.stdout).
+        # Maybe open this API in future version of TPOT.(io.TextIOWrapper or io.StringIO)
+        self._file = sys.stdout
+
+        # Dictionary of individuals that have already been evaluated in previous
+        # generations
+        self.evaluated_individuals_ = {}
+
+        self._setup_scoring_function(self.scoring)
+
+        if self.subsample <= 0.0 or self.subsample > 1.0:
+            raise ValueError(
+                'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
+            )
+
+        if self.n_jobs == -1:
+            self._n_jobs = cpu_count()
+        else:
+            self._n_jobs = self.n_jobs
+
+        self._setup_pset()
+        self._setup_toolbox()
+
+
     def fit(self, features, target, sample_weight=None, groups=None):
         """Fit an optimized machine learning pipeline.
 
@@ -526,9 +559,9 @@ class TPOTBase(BaseEstimator):
         target: array-like {n_samples}
             List of class labels for prediction
         sample_weight: array-like {n_samples}, optional
-            Per-sample weights. Higher weights indicate more importance. If specified, 
-            sample_weight will be passed to any pipeline element whose fit() function accepts 
-            a sample_weight argument. By default, using sample_weight does not affect tpot's 
+            Per-sample weights. Higher weights indicate more importance. If specified,
+            sample_weight will be passed to any pipeline element whose fit() function accepts
+            a sample_weight argument. By default, using sample_weight does not affect tpot's
             scoring functions, which determine preferences between pipelines.
         groups: array-like, with shape {n_samples, }, optional
             Group labels for the samples used when performing cross-validation.
@@ -541,8 +574,10 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
 
         """
+        self._fit_init()
 
-        features, target = self._check_dataset(features, target)
+
+        features, target = self._check_dataset(features, target, sample_weight)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
@@ -594,11 +629,17 @@ class TPOTBase(BaseEstimator):
         if not self.warm_start or not self._pareto_front:
             self._pareto_front = tools.ParetoFront(similar=pareto_eq)
 
+        # Set lambda_ (offspring size in GP) equal to population_size by default
+        if not self.offspring_size:
+            self._lambda = self.population_size
+        else:
+            self._lambda = self.offspring_size
+
         # Start the progress bar
         if self.max_time_mins:
             total_evals = self.population_size
         else:
-            total_evals = self.offspring_size * self.generations + self.population_size
+            total_evals = self._lambda * self.generations + self.population_size
 
         self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
@@ -611,7 +652,7 @@ class TPOTBase(BaseEstimator):
                     population=pop,
                     toolbox=self._toolbox,
                     mu=self.population_size,
-                    lambda_=self.offspring_size,
+                    lambda_=self._lambda,
                     cxpb=self.crossover_rate,
                     mutpb=self.mutation_rate,
                     ngen=self.generations,
@@ -781,10 +822,7 @@ class TPOTBase(BaseEstimator):
         if not self.fitted_pipeline_:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        features = features.astype(np.float64)
-
-        if np.any(np.isnan(features)):
-            features = self._impute_values(features)
+        features = self._check_dataset(features, target=None, sample_weight=None)
 
         return self.fitted_pipeline_.predict(features)
 
@@ -811,6 +849,7 @@ class TPOTBase(BaseEstimator):
 
         """
         self.fit(features, target, sample_weight=sample_weight, groups=groups)
+
         return self.predict(features)
 
     def score(self, testing_features, testing_target):
@@ -832,8 +871,7 @@ class TPOTBase(BaseEstimator):
         if self.fitted_pipeline_ is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        if np.any(np.isnan(testing_features)):
-            testing_features = self._impute_values(testing_features)
+        testing_features, testing_target = self._check_dataset(testing_features, testing_target, sample_weight=None)
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
@@ -863,18 +901,12 @@ class TPOTBase(BaseEstimator):
         else:
             if not (hasattr(self.fitted_pipeline_, 'predict_proba')):
                 raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
-            return self.fitted_pipeline_.predict_proba(features.astype(np.float64))
 
-    def set_params(self, **params):
-        """Set the parameters of TPOT.
+            #features = features.astype(np.float64)
+            features = self._check_dataset(features, target=None, sample_weight=None)
 
-        Returns
-        -------
-        self
-        """
-        self.__init__(**params)
+            return self.fitted_pipeline_.predict_proba(features)
 
-        return self
 
     def clean_pipeline_string(self, individual):
         """Provide a string of the individual without the parameter prefixes.
@@ -959,7 +991,7 @@ class TPOTBase(BaseEstimator):
         if self._optimized_pipeline is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._imputed, self._optimized_pipeline_score)
+        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._imputed, self._optimized_pipeline_score, self.random_state)
 
         # dont export a pipeline you just had
         if skip_if_repeated and (self._exported_pipeline_text == to_write):
@@ -992,31 +1024,42 @@ class TPOTBase(BaseEstimator):
 
         return self._fitted_imputer.transform(features)
 
-    def _check_dataset(self, features, target):
+    def _check_dataset(self, features, target, sample_weight=None):
         """Check if a dataset has a valid feature set and labels.
 
         Parameters
         ----------
         features: array-like {n_samples, n_features}
             Feature matrix
-        target: array-like {n_samples}
+        target: array-like {n_samples} or None
             List of class labels for prediction
-
+        sample_weight: array-like {n_samples} (optional)
+            List of weights indicating relative importance
         Returns
         -------
-        None
+        (features, target)
         """
+        # Check sample_weight
+        if sample_weight is not None:
+            try: sample_weight = np.array(sample_weight).astype('float')
+            except ValueError as e:
+                raise ValueError('sample_weight could not be converted to float array: %s' % e)
+            if np.any(np.isnan(sample_weight)):
+                raise ValueError('sample_weight contained NaN values.')
+            try: check_consistent_length(sample_weight, target)
+            except ValueError as e:
+                raise ValueError('sample_weight dimensions did not match target: %s' % e)
         # Resets the imputer to be fit for the new dataset
         self._fitted_imputer = None
         self._imputed = False
         # If features is a sparse matrix, do not apply imputation
         if sparse.issparse(features):
-            if self.config_dict_params in [None, "TPOT light", "TPOT MDR"]:
+            if self.config_dict in [None, "TPOT light", "TPOT MDR"]:
                 raise ValueError(
                     'Not all operators in {} supports sparse matrix. '
-                    'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict_params)
+                    'Please use \"TPOT sparse\" for sparse matrix.'.format(self.config_dict)
                 )
-            elif self.config_dict_params != "TPOT sparse":
+            elif self.config_dict != "TPOT sparse":
                 print(
                     'Warning: Since the input matrix is a sparse matrix, please makes sure all the operators in the '
                     'customized config dictionary supports sparse matriies.'
@@ -1025,9 +1068,14 @@ class TPOTBase(BaseEstimator):
             if np.any(np.isnan(features)):
                 self._imputed = True
                 features = self._impute_values(features)
+
         try:
-            X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
-            return X, y
+            if target is not None:
+                X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
+                return X, y
+            else:
+                X = check_array(features, order="C",  accept_sparse=True, dtype=np.float64)
+                return X
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
@@ -1154,28 +1202,48 @@ class TPOTBase(BaseEstimator):
             scoring_function=self.scoring_function,
             sample_weight=sample_weight,
             groups=groups,
-            timeout=self.max_eval_time_seconds
+            timeout=max(int(self.max_eval_time_mins * 60), 1),
+            use_dask=self.use_dask
         )
 
         result_score_list = []
         # Don't use parallelization if n_jobs==1
-        if self.n_jobs == 1:
+        if self._n_jobs == 1 and not self.use_dask:
             for sklearn_pipeline in sklearn_pipeline_list:
                 self._stop_by_max_time_mins()
                 val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
                 result_score_list = self._update_val(val, result_score_list)
         else:
-            # chunk size for pbar update
-            # chunk size is min of cpu_count * 2 and n_jobs * 4
-            chunk_size = min(cpu_count()*2, self.n_jobs*4)
-            for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
-                self._stop_by_max_time_mins()
-                parallel = Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                tmp_result_scores = parallel(delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
-                                             for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
-                # update pbar
-                for val in tmp_result_scores:
-                    result_score_list = self._update_val(val, result_score_list)
+            if self.use_dask:
+                import dask
+
+                result_score_list = [
+                    partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                    for sklearn_pipeline in sklearn_pipeline_list
+                ]
+
+                self.dask_graphs_ = result_score_list
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    result_score_list = list(dask.compute(*result_score_list))
+
+                self._update_pbar(len(result_score_list))
+
+            else:
+                # chunk size for pbar update
+                # chunk size is min of cpu_count * 2 and n_jobs * 4
+                chunk_size = min(cpu_count()*2, self._n_jobs*4)
+
+                for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
+                    self._stop_by_max_time_mins()
+
+                    parallel = Parallel(n_jobs=self._n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                    tmp_result_scores = parallel(
+                        delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
+                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
+                    # update pbar
+                    for val in tmp_result_scores:
+                        result_score_list = self._update_val(val, result_score_list)
 
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
 
@@ -1206,7 +1274,7 @@ class TPOTBase(BaseEstimator):
         """
         # update self._pbar.total
         if not (self.max_time_mins is None) and not self._pbar.disable and self._pbar.total <= self._pbar.n:
-            self._pbar.total += self.offspring_size
+            self._pbar.total += self._lambda
         # Check we do not evaluate twice the same individual in one pass.
         _, unique_individual_indices = np.unique([str(ind) for ind in individuals], return_index=True)
         unique_individuals = [ind for i, ind in enumerate(individuals) if i in unique_individual_indices]
