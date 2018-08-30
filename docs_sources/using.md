@@ -563,7 +563,7 @@ This is the same parallelization framework used by scikit-learn.
 When you specify ``n_jobs``, TPOT will use ``n_jobs`` processes to fit models in parallel.
 
 For large problems, you can distribute the work on a [Dask](http://dask.pydata.org/en/latest/) cluster.
-The [dask-examples binder](https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=%2Fmachine-learning%2Ftpot.ipynb) has a runnable example
+The [dask-examples binder](https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=machine-learning%2Ftpot.ipynb) has a runnable example
 with a small dask cluster.
 
 To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator.
