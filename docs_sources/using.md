@@ -561,17 +561,19 @@ Internally, TPOT uses [joblib](http://joblib.readthedocs.io/) to fit estimators 
 This is the same parallelization framework used by scikit-learn.
 
 When you specify ``n_jobs``, TPOT will use ``n_jobs`` processes to fit models in parallel.
-For large problems, you can distribute the work on a [Dask](http://dask.pydata.org/en/latest/) cluster.
-There are two ways to achieve this.
 
-First, you can specify the ``use_dask`` keyword when you create the TPOT estimator.
+For large problems, you can distribute the work on a [Dask](http://dask.pydata.org/en/latest/) cluster.
+The [dask-examples binder](https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=%2Fmachine-learning%2Ftpot.ipynb) has a runnable example
+with a small dask cluster.
+
+To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator.
 
 ```python
-estimator = TPOTEstimator(n_jobs=-1, use_dask=True
+estimator = TPOTEstimator(n_jobs=-1, use_dask=True)
 ```
 
 This will use use all the workers on your cluster to do the training, and use [Dask-ML's pipeline rewriting](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) to avoid re-fitting estimators multiple times on the same set of data.
-It will provide fine-grained diagnostics in the [distributed scheduler UI](https://distributed.readthedocs.io/en/latest/web.html).
+It will also provide fine-grained diagnostics in the [distributed scheduler UI](https://distributed.readthedocs.io/en/latest/web.html).
 
 Alternatively, Dask implements a joblib backend.
 You can instruct TPOT to use the distribued backend during training by specifying a ``joblib.parallel_backend``:
@@ -593,8 +595,6 @@ with joblib.parallel_backend("dask"):
 ```
 
 See [dask's distributed joblib integration](https://distributed.readthedocs.io/en/latest/joblib.html) for more.
-
-We recommend using the `use_dask` keyword.
 
 # Crash/freeze issue with n_jobs > 1 under OSX or Linux
 
