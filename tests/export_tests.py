@@ -77,7 +77,7 @@ from sklearn.tree import DecisionTreeClassifier
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=39)
 
 exported_pipeline = make_pipeline(
     SelectPercentile(score_func=f_classif, percentile=65),
@@ -87,7 +87,7 @@ exported_pipeline = make_pipeline(
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset)
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset, random_state=tpot_obj.random_state)
 
 
 def test_export():
@@ -292,7 +292,7 @@ from tpot.builtins import StackingEstimator
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=None)
 
 exported_pipeline = make_pipeline(
     make_union(
@@ -329,7 +329,7 @@ from sklearn.neighbors import KNeighborsClassifier
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=None)
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 
@@ -360,7 +360,7 @@ from sklearn.tree import DecisionTreeClassifier
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=None)
 
 exported_pipeline = make_pipeline(
     SelectPercentile(score_func=f_classif, percentile=20),
@@ -400,7 +400,7 @@ from copy import copy
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=None)
 
 exported_pipeline = make_pipeline(
     make_union(
@@ -437,7 +437,7 @@ from sklearn.tree import DecisionTreeRegressor
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=None)
 
 exported_pipeline = make_pipeline(
     SelectFromModel(estimator=ExtraTreesRegressor(max_features=0.05, n_estimators=100), threshold=0.05),
@@ -529,7 +529,7 @@ from sklearn.tree import DecisionTreeClassifier
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=None)
 
 # Average CV score on the training set was:0.929813743
 exported_pipeline = make_pipeline(
@@ -580,7 +580,7 @@ from sklearn.preprocessing import Imputer
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=None)
 
 imputer = Imputer(strategy="median")
 imputer.fit(training_features)

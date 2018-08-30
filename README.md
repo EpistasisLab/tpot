@@ -88,7 +88,7 @@ from sklearn.neighbors import KNeighborsClassifier
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=None)
 
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=6, weights="distance")
@@ -128,7 +128,7 @@ from sklearn.model_selection import train_test_split
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=None)
 
 exported_pipeline = GradientBoostingRegressor(alpha=0.85, learning_rate=0.1, loss="ls",
                                               max_features=0.9, min_samples_leaf=5,

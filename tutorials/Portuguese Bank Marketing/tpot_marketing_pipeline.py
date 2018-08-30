@@ -7,7 +7,7 @@ from sklearn.tree import DecisionTreeClassifier
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'].values, random_state=None)
 
 # Average CV score on the training set was:0.913728927925
 exported_pipeline = DecisionTreeClassifier(criterion="gini", max_depth=5, min_samples_leaf=16, min_samples_split=8)
