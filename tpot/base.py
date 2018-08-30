@@ -122,10 +122,9 @@ class TPOTBase(BaseEstimator):
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
                  random_state=None, config_dict=None,
-                 warm_start=False, memory=None,
+                 warm_start=False, memory=None, use_dask=False
                  periodic_checkpoint_folder=None, early_stop=None,
-                 verbosity=0, disable_update_check=False,
-                 use_dask=False):
+                 verbosity=0, disable_update_check=False):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -237,14 +236,14 @@ class TPOTBase(BaseEstimator):
                 and TPOT does NOT clean the caching directory up upon shutdown.
             None:
                 TPOT does not use memory caching.
-        use_dask : bool, default False
+        use_dask: boolean, default False
             Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
             the same estimator on the same split of data multiple times. It
             will also provide more detailed diagnostics when using Dask's
             distributed scheduler.
 
             See `avoid repeated work <https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work>`__
-            for more.
+            for more details.
         periodic_checkpoint_folder: path string, optional (default: None)
             If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.
             Currently once per generation but not more often than once per 30 seconds.

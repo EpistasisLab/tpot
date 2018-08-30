@@ -9,6 +9,7 @@
                           <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                           <strong>warm_start</strong>=False,
                           <strong>memory</strong>=None,
+                          <strong>use_dask</strong>=False,
                           <strong>periodic_checkpoint_folder</strong>=None,
                           <strong>early_stop</strong>=None,
                           <strong>verbosity</strong>=0,
@@ -163,6 +164,16 @@ Possible inputs are:
 <li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
 <li>None, TPOT does not use memory caching.</li>
 </ul>
+</blockquote>
+
+<strong>use_dask</strong>: boolean, optional (default: False)
+<blockquote>
+Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
+the same estimator on the same split of data multiple times. It
+will also provide more detailed diagnostics when using Dask's
+distributed scheduler.
+<br /><br />
+See [avoid repeated work](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) for more details.
 </blockquote>
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
@@ -480,6 +491,7 @@ Does not return anything
                          <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                          <strong>warm_start</strong>=False,
                          <strong>memory</strong>=None,
+                         <strong>use_dask</strong>=False,
                          <strong>periodic_checkpoint_folder</strong>=None,
                          <strong>early_stop</strong>=None,
                          <strong>verbosity</strong>=0,
@@ -635,6 +647,16 @@ Possible inputs are:
 <li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
 <li>None, TPOT does not use memory caching.</li>
 </ul>
+</blockquote>
+
+<strong>use_dask</strong>: boolean, optional (default: False)
+<blockquote>
+Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
+the same estimator on the same split of data multiple times. It
+will also provide more detailed diagnostics when using Dask's
+distributed scheduler.
+<br /><br />
+See [avoid repeated work](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) for more details.
 </blockquote>
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
