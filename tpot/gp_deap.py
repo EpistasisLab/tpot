@@ -23,7 +23,6 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-import dask
 import numpy as np
 from deap import tools, gp
 from inspect import isclass
