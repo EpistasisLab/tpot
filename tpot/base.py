@@ -576,7 +576,6 @@ class TPOTBase(BaseEstimator):
         """
         self._fit_init()
 
-
         features, target = self._check_dataset(features, target, sample_weight)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
@@ -902,7 +901,6 @@ class TPOTBase(BaseEstimator):
             if not (hasattr(self.fitted_pipeline_, 'predict_proba')):
                 raise RuntimeError('The fitted pipeline does not have the predict_proba() function.')
 
-            #features = features.astype(np.float64)
             features = self._check_dataset(features, target=None, sample_weight=None)
 
             return self.fitted_pipeline_.predict_proba(features)
@@ -1049,9 +1047,7 @@ class TPOTBase(BaseEstimator):
             try: check_consistent_length(sample_weight, target)
             except ValueError as e:
                 raise ValueError('sample_weight dimensions did not match target: %s' % e)
-        # Resets the imputer to be fit for the new dataset
-        self._fitted_imputer = None
-        self._imputed = False
+
         # If features is a sparse matrix, do not apply imputation
         if sparse.issparse(features):
             if self.config_dict in [None, "TPOT light", "TPOT MDR"]:
