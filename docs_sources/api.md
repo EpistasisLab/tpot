@@ -9,6 +9,7 @@
                           <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                           <strong>warm_start</strong>=False,
                           <strong>memory</strong>=None,
+                          <strong>use_dask</strong>=False,
                           <strong>periodic_checkpoint_folder</strong>=None,
                           <strong>early_stop</strong>=None,
                           <strong>verbosity</strong>=0,
@@ -154,7 +155,7 @@ Setting <em>warm_start</em>=True can be useful for running TPOT for a short time
 
 <strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
 <blockquote>
-If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in [scikit-learn documentation](http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation)
+If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in <a href="http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation">scikit-learn documentation</a>
 <br /><br />
 Possible inputs are:
 <ul>
@@ -163,6 +164,16 @@ Possible inputs are:
 <li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
 <li>None, TPOT does not use memory caching.</li>
 </ul>
+</blockquote>
+
+<strong>use_dask</strong>: boolean, optional (default: False)
+<blockquote>
+Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
+the same estimator on the same split of data multiple times. It
+will also provide more detailed diagnostics when using Dask's
+distributed scheduler.
+<br /><br />
+See <a href="https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work">avoid repeated work</a> for more details.
 </blockquote>
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
@@ -480,6 +491,7 @@ Does not return anything
                          <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                          <strong>warm_start</strong>=False,
                          <strong>memory</strong>=None,
+                         <strong>use_dask</strong>=False,
                          <strong>periodic_checkpoint_folder</strong>=None,
                          <strong>early_stop</strong>=None,
                          <strong>verbosity</strong>=0,
@@ -626,7 +638,7 @@ Setting <em>warm_start</em>=True can be useful for running TPOT for a short time
 
 <strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
 <blockquote>
-If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in [scikit-learn documentation](http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation)
+If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in <a href="http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation">scikit-learn documentation</a>
 <br /><br />
 Possible inputs are:
 <ul>
@@ -635,6 +647,16 @@ Possible inputs are:
 <li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
 <li>None, TPOT does not use memory caching.</li>
 </ul>
+</blockquote>
+
+<strong>use_dask</strong>: boolean, optional (default: False)
+<blockquote>
+Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
+the same estimator on the same split of data multiple times. It
+will also provide more detailed diagnostics when using Dask's
+distributed scheduler.
+<br /><br />
+See <a href="https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work">avoid repeated work</a> for more details.
 </blockquote>
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)

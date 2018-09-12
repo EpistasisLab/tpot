@@ -86,6 +86,9 @@
     <li class="toctree-l2"><a href="#crashfreeze-issue-with-n_jobs-1-under-osx-or-linux">Crash/freeze issue with n_jobs &gt; 1 under OSX or Linux</a></li>
     
 
+    <li class="toctree-l2"><a href="#parallel-training-with-dask">Parallel Training with Dask</a></li>
+    
+
     </ul>
 	    </li>
           
@@ -377,7 +380,7 @@ If provided, this setting will override the "generations" parameter and allow TP
 <tr>
 <td>-maxeval</td>
 <td>MAX_EVAL_MINS</td>
-<td>Any positive integer</td>
+<td>Any positive float</td>
 <td>How many minutes TPOT has to evaluate a single pipeline.
 <br /><br />
 Setting this parameter to higher values will allow TPOT to consider more complex pipelines but will also allow TPOT to run longer.</td>
@@ -663,7 +666,8 @@ rmtree(cachedir)
 
 <p><strong>Note: TPOT does NOT clean up memory caches if users set a custom directory path or Memory object. We recommend that you clean up the memory caches when you don't need it anymore.</strong></p>
 <h1 id="crashfreeze-issue-with-n_jobs-1-under-osx-or-linux">Crash/freeze issue with n_jobs &gt; 1 under OSX or Linux</h1>
-<p>TPOT supports parallel computing for speeding up the optimization process, but it may crash/freeze with n_jobs &gt; 1 under OSX or Linux <a href="http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux">as scikit-learn does</a>, especially with large datasets.</p>
+<p>Internally, TPOT uses <a href="http://joblib.readthedocs.io/">joblib</a> to fit estimators in parallel.
+This is the same parallelization framework used by scikit-learn. But it may crash/freeze with n_jobs &gt; 1 under OSX or Linux <a href="http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux">as scikit-learn does</a>, especially with large datasets.</p>
 <p>One solution is to configure Python's <code>multiprocessing</code> module to use the <code>forkserver</code> start method (instead of the default <code>fork</code>) to manage the process pools. You can enable the <code>forkserver</code> mode globally for your program by putting the following codes into your main script:</p>
 <pre><code class="Python">import multiprocessing
 
@@ -676,6 +680,34 @@ if __name__ == '__main__':
 </code></pre>
 
 <p>More information about these start methods can be found in the <a href="https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods">multiprocessing documentation</a>.</p>
+<h1 id="parallel-training-with-dask">Parallel Training with Dask</h1>
+<p>For large problems or working on Jupyter notebook, we highly recommend that you can distribute the work on a <a href="http://dask.pydata.org/en/latest/">Dask</a> cluster.
+The <a href="https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=machine-learning%2Ftpot.ipynb">dask-examples binder</a> has a runnable example
+with a small dask cluster.</p>
+<p>To use your Dask cluster to fit a TPOT model, specify the <code>use_dask</code> keyword when you create the TPOT estimator. <strong>Note: if <code>use_dask=True</code>, TPOT will use as many cores as available on the your Dask cluster regardless of whether <code>n_jobs</code> is specified.</strong></p>
+<pre><code class="python">estimator = TPOTEstimator(use_dask=True)
+</code></pre>
+
+<p>This will use use all the workers on your cluster to do the training, and use <a href="https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work">Dask-ML's pipeline rewriting</a> to avoid re-fitting estimators multiple times on the same set of data.
+It will also provide fine-grained diagnostics in the <a href="https://distributed.readthedocs.io/en/latest/web.html">distributed scheduler UI</a>.</p>
+<p>Alternatively, Dask implements a joblib backend.
+You can instruct TPOT to use the distribued backend during training by specifying a <code>joblib.parallel_backend</code>:</p>
+<pre><code class="python">from sklearn.externals import joblib
+import distributed.joblib
+from dask.distributed import Client
+
+# connect to the cluster
+client = Client('schedueler-address')
+
+# create the estimator normally
+estimator = TPOTClassifier(n_jobs=-1)
+
+# perform the fit in this context manager
+with joblib.parallel_backend(&quot;dask&quot;):
+    estimator.fit(X, y)
+</code></pre>
+
+<p>See <a href="https://distributed.readthedocs.io/en/latest/joblib.html">dask's distributed joblib integration</a> for more.</p>
               
             </div>
           </div>
