@@ -13,8 +13,6 @@ Package information: [![Python 2.7](https://img.shields.io/badge/python-2.7-blue
 [![License: LGPL v3](https://img.shields.io/badge/license-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
 [![PyPI version](https://badge.fury.io/py/TPOT.svg)](https://badge.fury.io/py/TPOT)
 
-[![Join the chat at https://gitter.im/EpistasisLab/tpot](https://badges.gitter.im/EpistasisLab/tpot.svg)](https://gitter.im/EpistasisLab/tpot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 <p align="center">
 <img src="https://raw.githubusercontent.com/EpistasisLab/tpot/master/images/tpot-logo.jpg" width=300 />
 </p>
