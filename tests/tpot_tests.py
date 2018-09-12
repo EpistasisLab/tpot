@@ -1563,6 +1563,7 @@ def test_check_dataset():
         verbosity=0,
         config_dict='TPOT light'
     )
+    tpot_obj._fit_init()
 
     ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target)
     assert np.allclose(ret_features, training_features)
@@ -1579,6 +1580,7 @@ def test_check_dataset_2():
         verbosity=0,
         config_dict='TPOT light'
     )
+    tpot_obj._fit_init()
     test_sample_weight = list(range(1, len(training_target)+1))
     ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
     test_sample_weight[0] = 'opps'
@@ -1596,6 +1598,7 @@ def test_check_dataset_3():
         verbosity=0,
         config_dict='TPOT light'
     )
+    tpot_obj._fit_init()
     test_sample_weight = list(range(1, len(training_target)+1))
     ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
     test_sample_weight[0] = np.nan
@@ -1613,6 +1616,7 @@ def test_check_dataset_4():
         verbosity=0,
         config_dict='TPOT light'
     )
+    tpot_obj._fit_init()
     test_sample_weight = list(range(1, len(training_target)))
     assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
 
@@ -1627,7 +1631,7 @@ def test_check_dataset_5():
         verbosity=0,
         config_dict='TPOT light'
     )
-
+    tpot_obj._fit_init()
     ret_features = tpot_obj._check_dataset(training_features, target=None)
     assert np.allclose(ret_features, training_features)
 

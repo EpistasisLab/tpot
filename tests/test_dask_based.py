@@ -28,7 +28,7 @@ class TestDaskMatches(unittest.TestCase):
                     cv=3,
                     random_state=0,
                     n_jobs=n_jobs,
-                    use_dask=False,
+                    use_dask=False
                 )
                 b = TPOTClassifier(
                     generations=2,
@@ -36,7 +36,7 @@ class TestDaskMatches(unittest.TestCase):
                     cv=3,
                     random_state=0,
                     n_jobs=n_jobs,
-                    use_dask=True,
+                    use_dask=True
                 )
                 b.fit(X, y)
                 a.fit(X, y)

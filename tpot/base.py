@@ -1145,8 +1145,14 @@ class TPOTBase(BaseEstimator):
                     'customized config dictionary supports sparse matriies.'
                 )
         else:
-            if np.any(np.isnan(features)):
-                self._imputed = True
+            if isinstance(features, np.ndarray):
+                if np.any(np.isnan(features)):
+                    self._imputed = True
+            elif isinstance(features, DataFrame):
+                if features.isnull().values.any():
+                    self._imputed = True
+            
+            if self._imputed:
                 features = self._impute_values(features)
 
         try:
