@@ -26,7 +26,7 @@ class TestDaskMatches(unittest.TestCase):
                     generations=2,
                     population_size=5,
                     cv=3,
-                    random_state=0,
+                    random_state=42,
                     n_jobs=n_jobs,
                     use_dask=False
                 )
@@ -34,7 +34,7 @@ class TestDaskMatches(unittest.TestCase):
                     generations=2,
                     population_size=5,
                     cv=3,
-                    random_state=0,
+                    random_state=42,
                     n_jobs=n_jobs,
                     use_dask=True
                 )
