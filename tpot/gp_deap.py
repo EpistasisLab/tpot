@@ -242,9 +242,9 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         # after each population save a periodic pipeline
         if per_generation_function is not None:
             per_generation_function()
-
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+
 
         # Update generation statistic for all individuals which have invalid 'generation' stats
         # This hold for individuals that have been altered in the varOr function
@@ -349,7 +349,7 @@ def mutNodeReplacement(individual, pset):
     index = np.random.randint(0, len(individual))
     node = individual[index]
     slice_ = individual.searchSubtree(index)
-
+    
     if node.arity == 0:  # Terminal
         term = np.random.choice(pset.terminals[node.ret])
         if isclass(term):

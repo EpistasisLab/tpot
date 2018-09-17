@@ -466,11 +466,12 @@ class TPOTBase(BaseEstimator):
                     self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
                 elif main_type.count(step): # if the step is a main type
                     for operator in self.operators:
-                        arg_types =  operator.parameter_types()[0][1:]
-                        if operator.type() == step:
-                            p_types = ([step_in_type] + arg_types, step_ret_type)
-                            self._pset.addPrimitive(operator, *p_types)
-                            self._import_hash_and_add_terminals(operator, arg_types)
+                        if operator.__name__ not in self.op_list:
+                            arg_types =  operator.parameter_types()[0][1:]
+                            if operator.type() == step:
+                                p_types = ([step_in_type] + arg_types, step_ret_type)
+                                self._pset.addPrimitive(operator, *p_types)
+                                self._import_hash_and_add_terminals(operator, arg_types)
                 else: # is the step is a specific operator
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]
@@ -657,8 +658,8 @@ class TPOTBase(BaseEstimator):
 
         """
         self._fit_init()
-
         features, target = self._check_dataset(features, target, sample_weight)
+
 
         self.pretest_X, _, self.pretest_y, _ = train_test_split(features, target, train_size=min(50, features.shape[0]), test_size=None, random_state=self.random_state)
 
@@ -1151,17 +1152,23 @@ class TPOTBase(BaseEstimator):
             elif isinstance(features, DataFrame):
                 if features.isnull().values.any():
                     self._imputed = True
-            
+
             if self._imputed:
                 features = self._impute_values(features)
 
         try:
             if target is not None:
                 X, y = check_X_y(features, target, accept_sparse=True, dtype=None)
-                return X, y
+                if self._imputed:
+                    return X, y
+                else:
+                    return features, target
             else:
                 X = check_array(features, accept_sparse=True, dtype=None)
-                return X
+                if self._imputed:
+                    return X
+                else:
+                    return features
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '

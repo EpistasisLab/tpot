@@ -65,6 +65,8 @@ class DatasetSelector(BaseEstimator, TransformerMixin):
             self.feature_names = list(range(X.shape[1]))
             feature_i = [int(val) for val in features_i_df.values.flatten()]
         self.feat_list = list(set(feature_i).intersection(set(self.feature_names)))
+        if not len(self.feat_list):
+            raise ValueError('No feature is found on the subset list!')
         return self
 
     def transform(self, X):
@@ -81,8 +83,8 @@ class DatasetSelector(BaseEstimator, TransformerMixin):
             The transformed feature set.
         """
         if isinstance(X, pd.DataFrame):
-            X_transformed = X[self.feat_list]
+            X_transformed = X[self.feat_list].values
         elif isinstance(X, np.ndarray):
             X_transformed = X[:, self.feat_list]
 
-        return X_transformed
+        return X_transformed.astype(np.float64)
