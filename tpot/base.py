@@ -71,6 +71,9 @@ from .config.classifier_sparse import classifier_config_sparse
 from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    from tqdm.autonotebook import tqdm
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 # https://github.com/ContinuumIO/anaconda-issues/issues/905
@@ -93,25 +96,6 @@ if sys.platform.startswith('win'):
 
     win32api.SetConsoleCtrlHandler(handler, 1)
 
-def is_notebook():
-    """Check if TPOT is running in Jupyter notebook.
-    Returns
-    -------
-    True: TPOT is running in Jupyter notebook
-    False: TPOT is running in other terminals
-    """
-    try:
-        from IPython import get_ipython
-        shell = get_ipython().__class__.__name__
-        # if shell == 'TerminalInteractiveShell', then Terminal running IPython
-        return shell == 'ZMQInteractiveShell'
-    except:
-        return False
-
-if is_notebook():
-    from tqdm import tqdm_notebook as tqdm
-else:
-    from tqdm import tqdm
 
 
 class TPOTBase(BaseEstimator):

@@ -24,7 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from tpot import TPOTClassifier, TPOTRegressor
-from tpot.base import TPOTBase, is_notebook
+from tpot.base import TPOTBase
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
@@ -63,7 +63,9 @@ from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
 from driver_tests import captured_output
 
-from tqdm import tqdm
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    from tqdm.autonotebook import tqdm
 
 try:
     from StringIO import StringIO
@@ -155,12 +157,6 @@ def test_init_custom_parameters():
     assert tpot_obj._optimized_pipeline_score == None
     assert tpot_obj.fitted_pipeline_ == None
     assert tpot_obj._exported_pipeline_text == ""
-
-
-def test_is_notebook():
-    """Assert that isnotebook function works as expected."""
-    ret = is_notebook()
-    assert not ret
 
 
 def test_init_default_scoring():
