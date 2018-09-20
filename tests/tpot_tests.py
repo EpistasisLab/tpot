@@ -1011,37 +1011,6 @@ def test_check_periodic_pipeline():
 
 
 def test_check_periodic_pipeline_2():
-    """Assert that the _check_periodic_pipeline does not export periodic pipeline if the pipeline has been saved before."""
-    tpot_obj = TPOTClassifier(
-        random_state=42,
-        population_size=1,
-        offspring_size=2,
-        generations=1,
-        verbosity=0,
-        config_dict='TPOT light'
-    )
-    tpot_obj.fit(training_features, training_target)
-    with closing(StringIO()) as our_file:
-        tpot_obj._file = our_file
-        tpot_obj.verbosity = 3
-        tpot_obj._exported_pipeline_text = []
-        tpot_obj._last_pipeline_write = datetime.now()
-        sleep(0.11)
-        tpot_obj._output_best_pipeline_period_seconds = 0
-        tmpdir = mkdtemp() + '/'
-        tpot_obj.periodic_checkpoint_folder = tmpdir
-        # export once before
-        tpot_obj._check_periodic_pipeline(1)
-
-        tpot_obj._check_periodic_pipeline(2)
-
-        our_file.seek(0)
-        assert_in('Periodic pipeline was not saved, probably saved before...', our_file.read())
-    #clean up
-    rmtree(tmpdir)
-
-
-def test_check_periodic_pipeline_3():
     """Assert that the _check_periodic_pipeline rasie StopIteration if self._last_optimized_pareto_front_n_gens >= self.early_stop."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -1118,6 +1087,37 @@ def test_save_periodic_pipeline_2():
 
         #clean up
         rmtree(tmpdir)
+
+
+def test_check_periodic_pipeline_3():
+    """Assert that the _save_periodic_pipeline does not export periodic pipeline if the pipeline has been saved before."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._exported_pipeline_text = []
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.11)
+        tpot_obj._output_best_pipeline_period_seconds = 0
+        tmpdir = mkdtemp() + '/'
+        tpot_obj.periodic_checkpoint_folder = tmpdir
+        # export once before
+        tpot_obj._save_periodic_pipeline(1)
+
+        tpot_obj._save_periodic_pipeline(2)
+
+        our_file.seek(0)
+        assert_in('Periodic pipeline was not saved, probably saved before...', our_file.read())
+    #clean up
+    rmtree(tmpdir)
 
 
 def test_fit_predict():
