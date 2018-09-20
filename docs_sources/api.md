@@ -178,7 +178,7 @@ See <a href="https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.htm
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
 <blockquote>
-If supplied, a folder in which TPOT will periodically save the best pipeline so far while optimizing.<br /><br />
+If supplied, a folder in which TPOT will periodically save pipelines in pareto front so far while optimizing.<br /><br />
 Currently once per generation but not more often than once per 30 seconds.<br /><br />
 Useful in multiple cases:
 <ul>
@@ -661,7 +661,7 @@ See <a href="https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.htm
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
 <blockquote>
-If supplied, a folder in which TPOT will periodically save the best pipeline so far while optimizing.<br /><br />
+If supplied, a folder in which TPOT will periodically save pipelines in pareto front so far while optimizing.<br /><br />
 Currently once per generation but not more often than once per 30 seconds.<br /><br />
 Useful in multiple cases:
 <ul>
