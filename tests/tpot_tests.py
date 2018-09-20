@@ -156,7 +156,7 @@ def test_init_custom_parameters():
     assert tpot_obj._optimized_pipeline == None
     assert tpot_obj._optimized_pipeline_score == None
     assert tpot_obj.fitted_pipeline_ == None
-    assert tpot_obj._exported_pipeline_text == ""
+    assert tpot_obj._exported_pipeline_text == []
 
 
 def test_init_default_scoring():
@@ -1001,15 +1001,13 @@ def test_check_periodic_pipeline():
         tpot_obj._last_pipeline_write = datetime.now()
         sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
-        tpot_obj.periodic_checkpoint_folder = './'
-        tpot_obj._check_periodic_pipeline()
+        tmpdir = mkdtemp() + '/'
+        tpot_obj.periodic_checkpoint_folder = tmpdir
+        tpot_obj._check_periodic_pipeline(1)
         our_file.seek(0)
-
-        assert_in('Saving best periodic pipeline to ./pipeline', our_file.read())
+        assert_in('Saving periodic pipeline from pareto front', our_file.read())
         # clean up
-        for f in os.listdir('./'):
-            if search('pipeline_', f):
-                os.remove(os.path.join('./', f))
+        rmtree(tmpdir)
 
 
 def test_check_periodic_pipeline_2():
@@ -1026,20 +1024,21 @@ def test_check_periodic_pipeline_2():
     with closing(StringIO()) as our_file:
         tpot_obj._file = our_file
         tpot_obj.verbosity = 3
+        tpot_obj._exported_pipeline_text = []
         tpot_obj._last_pipeline_write = datetime.now()
         sleep(0.11)
-        tpot_obj._output_best_pipeline_period_seconds = 0.1
-        tpot_obj.periodic_checkpoint_folder = './'
+        tpot_obj._output_best_pipeline_period_seconds = 0
+        tmpdir = mkdtemp() + '/'
+        tpot_obj.periodic_checkpoint_folder = tmpdir
         # export once before
-        tpot_obj.export('./pipeline_test.py')
-        tpot_obj._check_periodic_pipeline()
-        our_file.seek(0)
+        tpot_obj._check_periodic_pipeline(1)
 
+        tpot_obj._check_periodic_pipeline(2)
+
+        our_file.seek(0)
         assert_in('Periodic pipeline was not saved, probably saved before...', our_file.read())
-        # clean up
-        for f in os.listdir('./'):
-            if search('pipeline_', f):
-                os.remove(os.path.join('./', f))
+    #clean up
+    rmtree(tmpdir)
 
 
 def test_check_periodic_pipeline_3():
@@ -1055,9 +1054,9 @@ def test_check_periodic_pipeline_3():
     tpot_obj.fit(training_features, training_target)
     tpot_obj.early_stop = 3
     # will pass
-    tpot_obj._check_periodic_pipeline()
+    tpot_obj._check_periodic_pipeline(1)
     tpot_obj._last_optimized_pareto_front_n_gens = 3
-    assert_raises(StopIteration, tpot_obj._check_periodic_pipeline)
+    assert_raises(StopIteration, tpot_obj._check_periodic_pipeline, 1)
 
 
 def test_save_periodic_pipeline():
@@ -1077,18 +1076,18 @@ def test_save_periodic_pipeline():
         tpot_obj._last_pipeline_write = datetime.now()
         sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
-        tpot_obj.periodic_checkpoint_folder = './'
-        # reset _optimized_pipeline to rasie exception
-        tpot_obj._optimized_pipeline = None
+        tmpdir = mkdtemp() + '/'
+        tpot_obj.periodic_checkpoint_folder = tmpdir
+        # reset _pareto_front to rasie exception
+        tpot_obj._pareto_front = None
 
-        tpot_obj._save_periodic_pipeline()
+        tpot_obj._save_periodic_pipeline(1)
         our_file.seek(0)
 
         assert_in('Failed saving periodic pipeline, exception', our_file.read())
-        # clean up
-        for f in os.listdir('./'):
-            if search('pipeline_', f):
-                os.remove(os.path.join('./', f))
+        #clean up
+        rmtree(tmpdir)
+
 
 def test_save_periodic_pipeline_2():
     """Assert that _save_periodic_pipeline creates the checkpoint folder and exports to it if it didn't exist"""
@@ -1107,20 +1106,18 @@ def test_save_periodic_pipeline_2():
         tpot_obj._last_pipeline_write = datetime.now()
         sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
-        tpot_obj.periodic_checkpoint_folder = './tmp'
-        tpot_obj._save_periodic_pipeline()
+        tmpdir = mkdtemp() + '_test/'
+        tpot_obj.periodic_checkpoint_folder = tmpdir
+        tpot_obj._save_periodic_pipeline(1)
         our_file.seek(0)
 
         msg = our_file.read()
-        expected_filepath_prefix = os.path.join('./tmp', 'pipeline_')
-        assert_in('Saving best periodic pipeline to ' + expected_filepath_prefix, msg)
-        assert_in('Created new folder to save periodic pipeline: ./tmp', msg)
 
-        # clean up
-        for f in os.listdir('./tmp'):
-            if search('pipeline_', f):
-                os.remove(os.path.join('./tmp', f))
-        os.rmdir('./tmp')
+        assert_in('Saving periodic pipeline from pareto front to {}'.format(tmpdir), msg)
+        assert_in('Created new folder to save periodic pipeline: {}'.format(tmpdir), msg)
+
+        #clean up
+        rmtree(tmpdir)
 
 
 def test_fit_predict():

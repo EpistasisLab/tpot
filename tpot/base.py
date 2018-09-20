@@ -444,7 +444,7 @@ class TPOTBase(BaseEstimator):
 
         self._optimized_pipeline = None
         self._optimized_pipeline_score = None
-        self._exported_pipeline_text = ""
+        self._exported_pipeline_text = []
         self.fitted_pipeline_ = None
         self._fitted_imputer = None
         self._imputed = False
@@ -914,32 +914,47 @@ class TPOTBase(BaseEstimator):
 
         return pretty
 
-    def _check_periodic_pipeline(self):
-        """If enough time has passed, save a new optimized pipeline.
+    def _check_periodic_pipeline(self, gen):
+        """If enough time has passed, save a new optimized pipeline. Currently used in the per generation hook in the optimization loop.
+        Parameters
+        ----------
+        gen: int
+            Generation number
 
-        Currently used in the per generation hook in the optimization loop.
+        Returns
+        -------
+        None
         """
         self._update_top_pipeline()
         if self.periodic_checkpoint_folder is not None:
             total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
             if total_since_last_pipeline_save > self._output_best_pipeline_period_seconds:
                 self._last_pipeline_write = datetime.now()
-                self._save_periodic_pipeline()
+                self._save_periodic_pipeline(gen)
 
         if self.early_stop is not None:
             if self._last_optimized_pareto_front_n_gens >= self.early_stop:
                 raise StopIteration("The optimized pipeline was not improved after evaluating {} more generations. "
                                     "Will end the optimization process.\n".format(self.early_stop))
 
-    def _save_periodic_pipeline(self):
+    def _save_periodic_pipeline(self, gen):
         try:
             self._create_periodic_checkpoint_folder()
-            filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
-            did_export = self.export(filename, skip_if_repeated=True)
-            if not did_export:
-                self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
-            else:
-                self._update_pbar(pbar_num=0, pbar_msg='Saving best periodic pipeline to {}'.format(filename))
+            for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                idx = self._pareto_front.items.index(pipeline)
+                pareto_front_pipeline_score = pipeline_scores.wvalues[1]
+                sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(pipeline, self._pset), self.operators)
+                to_write = export_pipeline(pipeline, self.operators, self._pset, self._imputed, pareto_front_pipeline_score, self.random_state)
+                # dont export a pipeline you  had
+                if self._exported_pipeline_text.count(sklearn_pipeline_str):
+                    self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
+                else:
+                    filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_gen_{}_idx_{}_{}.py'.format(gen, idx , datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
+                    self._update_pbar(pbar_num=0, pbar_msg='Saving periodic pipeline from pareto front to {}'.format(filename))
+                    with open(filename, 'w') as output_file:
+                        output_file.write(to_write)
+                    self._exported_pipeline_text.append(sklearn_pipeline_str)
+
         except Exception as e:
             self._update_pbar(pbar_num=0, pbar_msg='Failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
 
@@ -953,16 +968,14 @@ class TPOTBase(BaseEstimator):
             else:
                 raise ValueError('Failed creating the periodic_checkpoint_folder:\n{}'.format(e))
 
-    def export(self, output_file_name, skip_if_repeated=False):
+
+    def export(self, output_file_name):
         """Export the optimized pipeline as Python code.
 
         Parameters
         ----------
         output_file_name: string
             String containing the path and file name of the desired output file
-        skip_if_repeated: boolean
-            If True, skip the actual writing if a pipeline
-            code would be identical to the last pipeline exported
 
         Returns
         -------
@@ -975,15 +988,9 @@ class TPOTBase(BaseEstimator):
 
         to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._imputed, self._optimized_pipeline_score, self.random_state)
 
-        # dont export a pipeline you just had
-        if skip_if_repeated and (self._exported_pipeline_text == to_write):
-            return False
-
         with open(output_file_name, 'w') as output_file:
             output_file.write(to_write)
-            self._exported_pipeline_text = to_write
 
-        return True
 
     def _impute_values(self, features):
         """Impute missing values in a feature set.
