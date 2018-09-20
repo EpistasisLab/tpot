@@ -229,7 +229,7 @@ class TPOTBase(BaseEstimator):
             See `avoid repeated work <https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work>`__
             for more details.
         periodic_checkpoint_folder: path string, optional (default: None)
-            If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.
+            If supplied, a folder in which tpot will periodically save pipelines in pareto front so far while optimizing.
             Currently once per generation but not more often than once per 30 seconds.
             Useful in multiple cases:
                 Sudden death before tpot could save optimized pipeline
@@ -944,12 +944,20 @@ class TPOTBase(BaseEstimator):
                 idx = self._pareto_front.items.index(pipeline)
                 pareto_front_pipeline_score = pipeline_scores.wvalues[1]
                 sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(pipeline, self._pset), self.operators)
-                to_write = export_pipeline(pipeline, self.operators, self._pset, self._imputed, pareto_front_pipeline_score, self.random_state)
+                to_write = export_pipeline(pipeline,
+                                            self.operators, self._pset,
+                                            self._imputed, pareto_front_pipeline_score,
+                                            self.random_state)
                 # dont export a pipeline you  had
                 if self._exported_pipeline_text.count(sklearn_pipeline_str):
                     self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
                 else:
-                    filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_gen_{}_idx_{}_{}.py'.format(gen, idx , datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
+                    filename = os.path.join(self.periodic_checkpoint_folder,
+                                            'pipeline_gen_{}_idx_{}_{}.py'.format(gen,
+                                                                                idx ,
+                                                                                datetime.now().strftime('%Y.%m.%d_%H-%M-%S')
+                                                                                )
+                                            )
                     self._update_pbar(pbar_num=0, pbar_msg='Saving periodic pipeline from pareto front to {}'.format(filename))
                     with open(filename, 'w') as output_file:
                         output_file.write(to_write)
@@ -986,7 +994,10 @@ class TPOTBase(BaseEstimator):
         if self._optimized_pipeline is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._imputed, self._optimized_pipeline_score, self.random_state)
+        to_write = export_pipeline(self._optimized_pipeline,
+                                    self.operators, self._pset,
+                                    self._imputed, self._optimized_pipeline_score,
+                                    self.random_state)
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(to_write)
