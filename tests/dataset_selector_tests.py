@@ -33,7 +33,7 @@ test_X = test_data.drop("class", axis=1)
 
 def test_DatasetSelector_1():
     """Assert that the StackingEstimator returns transformed X based on test feature list 1."""
-    ds = DatasetSelector(subset_dir="tests/test_subset_dir", sel_subset_fname="test_subset_1.snp")
+    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_1")
     ds.fit(test_X, y=None)
     transformed_X = ds.transform(test_X)
 
@@ -44,11 +44,44 @@ def test_DatasetSelector_1():
 
 def test_DatasetSelector_2():
     """Assert that the StackingEstimator returns transformed X based on test feature list 2."""
-    ds = DatasetSelector(subset_dir="tests/test_subset_dir", sel_subset_fname="test_subset_2.snp")
+    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_2")
     ds.fit(test_X, y=None)
     transformed_X = ds.transform(test_X)
 
     assert transformed_X.shape[0] == test_X.shape[0]
     assert transformed_X.shape[1] != test_X.shape[1]
     assert transformed_X.shape[1] == 6
+    assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
+
+def test_DatasetSelector_3():
+    """Assert that the StackingEstimator returns transformed X based on 2 subsets' names"""
+    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset=["test_subset_1", "test_subset_2"])
+    ds.fit(test_X, y=None)
+    transformed_X = ds.transform(test_X)
+
+    assert transformed_X.shape[0] == test_X.shape[0]
+    assert transformed_X.shape[1] != test_X.shape[1]
+    assert transformed_X.shape[1] == 7
+    assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
+
+def test_DatasetSelector_4():
+    """Assert that the StackingEstimator returns transformed X based on 2 subsets' indexs"""
+    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset=[0, 1])
+    ds.fit(test_X, y=None)
+    transformed_X = ds.transform(test_X)
+
+    assert transformed_X.shape[0] == test_X.shape[0]
+    assert transformed_X.shape[1] != test_X.shape[1]
+    assert transformed_X.shape[1] == 7
+    assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
+
+def test_DatasetSelector_5():
+    """Assert that the StackingEstimator returns transformed X seleced based on test feature list 1's index."""
+    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset=0)
+    ds.fit(test_X, y=None)
+    transformed_X = ds.transform(test_X)
+
+    assert transformed_X.shape[0] == test_X.shape[0]
+    assert transformed_X.shape[1] != test_X.shape[1]
+    assert transformed_X.shape[1] == 5
     assert np.array_equal(transformed_X, test_X[ds.feat_list].values)

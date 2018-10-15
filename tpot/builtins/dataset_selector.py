@@ -1,9 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Mar 23 2018
+"""This file is part of the TPOT library.
 
-@author: grixor
+TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - and many more generous open source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 import numpy as np
 import pandas as pd
@@ -19,26 +35,31 @@ class DatasetSelector(BaseEstimator, TransformerMixin):
         """Instance name is the same as the class name."""
         return self.__class__.__name__
 
-    def __init__(self, subset_dir, sel_subset_fname):
+    def __init__(self, subset_list, sel_subset):
         """Create a DatasetSelector object.
 
         Parameters
         ----------
-        subset_dir: directory, required
-            Path to folder that stores the feature list files. Currently,
-            each file needs to be a .csv with one header row. The feature
-            names in these files must match those in the (training and
+        subset_list: string, required
+            Path to a file that indicates all the subset lists. Currently,
+            this file needs to be a .csv with one header row.
+            There should be 3 columns on the table, including subset names (Subset),
+            number of features (Size) and features in the subset (Features).
+            The feature names or indexs of input features
+            should be seprated by ';' on the 3rd column of the file.
+            The feature names in the files must match those in the (training and
             testing) dataset.
-        sel_subset_fname: string, required
-            File name of subset
-
+        sel_subset: int or string or list
+            int: index of subset in subset file
+            string: subset name of subset
+            list: list of int or string for indexs or subset names
         Returns
         -------
         None
 
         """
-        self.subset_dir = subset_dir
-        self.sel_subset_fname = sel_subset_fname
+        self.subset_list = subset_list
+        self.sel_subset = sel_subset
 
     def fit(self, X, y=None):
         """Fit DatasetSelector for feature selection
@@ -55,16 +76,32 @@ class DatasetSelector(BaseEstimator, TransformerMixin):
         self: object
             Returns a copy of the estimator
         """
-        subset_files = os.listdir(self.subset_dir)
-        self.subset_i = self.subset_dir + "/" + self.sel_subset_fname
-        features_i_df = pd.read_csv(self.subset_i, sep='\t', header=0)
+        subset_df = pd.read_csv(self.subset_list, header=0, index_col=0)
+
+        if isinstance(self.sel_subset, int):
+            self.sel_subset_name = subset_df.index[self.sel_subset]
+        elif isinstance(self.sel_subset, list):
+            self.sel_subset_name = []
+            for s in self.sel_subset:
+                if isinstance(s, int):
+                    self.sel_subset_name.append(subset_df.index[s])
+                else:
+                    self.sel_subset_name.append(s)
+        else: # self.sel_subset is a string
+            self.sel_subset_name = self.sel_subset
+
+        sel_features = subset_df.loc[self.sel_subset_name, 'Features']
+        if not isinstance(sel_features, str):
+            sel_features = ";".join(sel_features.tolist())
+
+        sel_uniq_features = set(sel_features.split(';'))
+
         if isinstance(X, pd.DataFrame): # use columns' names
             self.feature_names = list(X.columns.values)
-            feature_i = [str(val) for val in features_i_df.values.flatten()]
         elif isinstance(X, np.ndarray): # use index
             self.feature_names = list(range(X.shape[1]))
-            feature_i = [int(val) for val in features_i_df.values.flatten()]
-        self.feat_list = list(set(feature_i).intersection(set(self.feature_names)))
+            sel_uniq_features = [int(val) for val in sel_uniq_features]
+        self.feat_list = list(set(sel_uniq_features).intersection(set(self.feature_names)))
         if not len(self.feat_list):
             raise ValueError('No feature is found on the subset list!')
         return self
