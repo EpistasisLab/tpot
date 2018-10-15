@@ -49,10 +49,10 @@ class DatasetSelector(BaseEstimator, TransformerMixin):
             should be seprated by ';' on the 3rd column of the file.
             The feature names in the files must match those in the (training and
             testing) dataset.
-        sel_subset: int or string or list
+        sel_subset: int or string or list or tuple
             int: index of subset in subset file
             string: subset name of subset
-            list: list of int or string for indexs or subset names
+            list or tuple: list of int or string for indexs or subset names
         Returns
         -------
         None
@@ -80,15 +80,16 @@ class DatasetSelector(BaseEstimator, TransformerMixin):
 
         if isinstance(self.sel_subset, int):
             self.sel_subset_name = subset_df.index[self.sel_subset]
-        elif isinstance(self.sel_subset, list):
+        elif isinstance(self.sel_subset, str):
+            self.sel_subset_name = self.sel_subset
+        else: # list or tuple
             self.sel_subset_name = []
             for s in self.sel_subset:
                 if isinstance(s, int):
                     self.sel_subset_name.append(subset_df.index[s])
                 else:
                     self.sel_subset_name.append(s)
-        else: # self.sel_subset is a string
-            self.sel_subset_name = self.sel_subset
+
 
         sel_features = subset_df.loc[self.sel_subset_name, 'Features']
         if not isinstance(sel_features, str):
