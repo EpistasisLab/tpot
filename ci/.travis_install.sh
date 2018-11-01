@@ -54,7 +54,7 @@ pip install update_checker
 pip install tqdm
 pip install stopit
 pip install xgboost
-pip install dask[delayed]==0.19.2
+pip install dask[delayed]
 pip install dask-ml
 pip install cloudpickle==0.5.6
 
