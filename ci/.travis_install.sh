@@ -56,6 +56,7 @@ pip install stopit
 pip install xgboost
 pip install dask[delayed]
 pip install dask-ml
+pip install cloudpickle==0.5.6
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
