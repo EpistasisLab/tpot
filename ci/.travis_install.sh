@@ -54,8 +54,8 @@ pip install update_checker
 pip install tqdm
 pip install stopit
 pip install xgboost
-pip install dask[delayed]==0.19.2
-pip install dask-ml==0.19.1
+pip install dask[delayed]
+pip install dask-ml==0.10.0
 pip install cloudpickle==0.5.6
 
 if [[ "$COVERAGE" == "true" ]]; then
