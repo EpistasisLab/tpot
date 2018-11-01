@@ -54,7 +54,6 @@ pip install update_checker
 pip install tqdm
 pip install stopit
 pip install xgboost
-pip install cloudpickle
 pip install dask[delayed]
 pip install dask-ml
 
