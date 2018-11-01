@@ -3,7 +3,8 @@
 https://github.com/DEAP/deap/issues/75
 """
 import unittest
-
+import warnings
+warnings.filterwarnings("ignore")
 import nose
 from sklearn.datasets import make_classification
 
