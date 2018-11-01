@@ -37,10 +37,8 @@ class TestDaskMatches(unittest.TestCase):
                     n_jobs=n_jobs,
                     use_dask=True,
                 )
-                print('use_dask')
-                b.fit(X, y)
-                print('use_dask=False')
                 a.fit(X, y)
+                b.fit(X, y)
 
                 self.assertEqual(a.score(X, y), b.score(X, y))
                 self.assertEqual(a.pareto_front_fitted_pipelines_.keys(),
