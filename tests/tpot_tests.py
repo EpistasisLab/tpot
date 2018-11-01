@@ -24,7 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from tpot import TPOTClassifier, TPOTRegressor
-from tpot.base import TPOTBase, is_notebook
+from tpot.base import TPOTBase
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
@@ -63,7 +63,9 @@ from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
 from driver_tests import captured_output
 
-from tqdm import tqdm
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    from tqdm.autonotebook import tqdm
 
 try:
     from StringIO import StringIO
@@ -154,13 +156,7 @@ def test_init_custom_parameters():
     assert tpot_obj._optimized_pipeline == None
     assert tpot_obj._optimized_pipeline_score == None
     assert tpot_obj.fitted_pipeline_ == None
-    assert tpot_obj._exported_pipeline_text == ""
-
-
-def test_is_notebook():
-    """Assert that isnotebook function works as expected."""
-    ret = is_notebook()
-    assert not ret
+    assert tpot_obj._exported_pipeline_text == []
 
 
 def test_init_default_scoring():
@@ -527,7 +523,7 @@ def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
     tpot_obj._fit_init()
-    known_score = -12.1791953611
+    known_score = -11.682841148312662
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -590,8 +586,9 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r, **training_target_r_weight_dict)
     # Get score from TPOT
-    known_score = -11.5790430757
+    known_score = -11.586816877933911
     score = tpot_obj.score(testing_features_r, testing_target_r)
+    print(score)
 
     assert np.allclose(cv_score1, cv_score2)
     assert not np.allclose(cv_score1, cv_score_weight)
@@ -1005,48 +1002,16 @@ def test_check_periodic_pipeline():
         tpot_obj._last_pipeline_write = datetime.now()
         sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
-        tpot_obj.periodic_checkpoint_folder = './'
-        tpot_obj._check_periodic_pipeline()
+        tmpdir = mkdtemp() + '/'
+        tpot_obj.periodic_checkpoint_folder = tmpdir
+        tpot_obj._check_periodic_pipeline(1)
         our_file.seek(0)
-
-        assert_in('Saving best periodic pipeline to ./pipeline', our_file.read())
+        assert_in('Saving periodic pipeline from pareto front', our_file.read())
         # clean up
-        for f in os.listdir('./'):
-            if search('pipeline_', f):
-                os.remove(os.path.join('./', f))
+        rmtree(tmpdir)
 
 
 def test_check_periodic_pipeline_2():
-    """Assert that the _check_periodic_pipeline does not export periodic pipeline if the pipeline has been saved before."""
-    tpot_obj = TPOTClassifier(
-        random_state=42,
-        population_size=1,
-        offspring_size=2,
-        generations=1,
-        verbosity=0,
-        config_dict='TPOT light'
-    )
-    tpot_obj.fit(training_features, training_target)
-    with closing(StringIO()) as our_file:
-        tpot_obj._file = our_file
-        tpot_obj.verbosity = 3
-        tpot_obj._last_pipeline_write = datetime.now()
-        sleep(0.11)
-        tpot_obj._output_best_pipeline_period_seconds = 0.1
-        tpot_obj.periodic_checkpoint_folder = './'
-        # export once before
-        tpot_obj.export('./pipeline_test.py')
-        tpot_obj._check_periodic_pipeline()
-        our_file.seek(0)
-
-        assert_in('Periodic pipeline was not saved, probably saved before...', our_file.read())
-        # clean up
-        for f in os.listdir('./'):
-            if search('pipeline_', f):
-                os.remove(os.path.join('./', f))
-
-
-def test_check_periodic_pipeline_3():
     """Assert that the _check_periodic_pipeline rasie StopIteration if self._last_optimized_pareto_front_n_gens >= self.early_stop."""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -1059,9 +1024,9 @@ def test_check_periodic_pipeline_3():
     tpot_obj.fit(training_features, training_target)
     tpot_obj.early_stop = 3
     # will pass
-    tpot_obj._check_periodic_pipeline()
+    tpot_obj._check_periodic_pipeline(1)
     tpot_obj._last_optimized_pareto_front_n_gens = 3
-    assert_raises(StopIteration, tpot_obj._check_periodic_pipeline)
+    assert_raises(StopIteration, tpot_obj._check_periodic_pipeline, 1)
 
 
 def test_save_periodic_pipeline():
@@ -1081,18 +1046,18 @@ def test_save_periodic_pipeline():
         tpot_obj._last_pipeline_write = datetime.now()
         sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
-        tpot_obj.periodic_checkpoint_folder = './'
-        # reset _optimized_pipeline to rasie exception
-        tpot_obj._optimized_pipeline = None
+        tmpdir = mkdtemp() + '/'
+        tpot_obj.periodic_checkpoint_folder = tmpdir
+        # reset _pareto_front to rasie exception
+        tpot_obj._pareto_front = None
 
-        tpot_obj._save_periodic_pipeline()
+        tpot_obj._save_periodic_pipeline(1)
         our_file.seek(0)
 
         assert_in('Failed saving periodic pipeline, exception', our_file.read())
-        # clean up
-        for f in os.listdir('./'):
-            if search('pipeline_', f):
-                os.remove(os.path.join('./', f))
+        #clean up
+        rmtree(tmpdir)
+
 
 def test_save_periodic_pipeline_2():
     """Assert that _save_periodic_pipeline creates the checkpoint folder and exports to it if it didn't exist"""
@@ -1111,20 +1076,49 @@ def test_save_periodic_pipeline_2():
         tpot_obj._last_pipeline_write = datetime.now()
         sleep(0.11)
         tpot_obj._output_best_pipeline_period_seconds = 0.1
-        tpot_obj.periodic_checkpoint_folder = './tmp'
-        tpot_obj._save_periodic_pipeline()
+        tmpdir = mkdtemp() + '_test/'
+        tpot_obj.periodic_checkpoint_folder = tmpdir
+        tpot_obj._save_periodic_pipeline(1)
         our_file.seek(0)
 
         msg = our_file.read()
-        expected_filepath_prefix = os.path.join('./tmp', 'pipeline_')
-        assert_in('Saving best periodic pipeline to ' + expected_filepath_prefix, msg)
-        assert_in('Created new folder to save periodic pipeline: ./tmp', msg)
 
-        # clean up
-        for f in os.listdir('./tmp'):
-            if search('pipeline_', f):
-                os.remove(os.path.join('./tmp', f))
-        os.rmdir('./tmp')
+        assert_in('Saving periodic pipeline from pareto front to {}'.format(tmpdir), msg)
+        assert_in('Created new folder to save periodic pipeline: {}'.format(tmpdir), msg)
+
+        #clean up
+        rmtree(tmpdir)
+
+
+def test_check_periodic_pipeline_3():
+    """Assert that the _save_periodic_pipeline does not export periodic pipeline if the pipeline has been saved before."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj.fit(training_features, training_target)
+    with closing(StringIO()) as our_file:
+        tpot_obj._file = our_file
+        tpot_obj.verbosity = 3
+        tpot_obj._exported_pipeline_text = []
+        tpot_obj._last_pipeline_write = datetime.now()
+        sleep(0.11)
+        tpot_obj._output_best_pipeline_period_seconds = 0
+        tmpdir = mkdtemp() + '/'
+        tpot_obj.periodic_checkpoint_folder = tmpdir
+        # export once before
+        tpot_obj._save_periodic_pipeline(1)
+
+        tpot_obj._save_periodic_pipeline(2)
+
+        our_file.seek(0)
+        assert_in('Periodic pipeline was not saved, probably saved before...', our_file.read())
+    #clean up
+    rmtree(tmpdir)
 
 
 def test_fit_predict():
