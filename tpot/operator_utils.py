@@ -26,6 +26,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
 import inspect
+import tpot
 
 
 class Operator(object):
@@ -71,8 +72,12 @@ def source_decode(sourcecode):
         else:
             exec('from {} import {}'.format(import_str, op_str))
         op_obj = eval(op_str)
-    except ImportError:
-        print('Warning: {} is not available and will not be used by TPOT.'.format(sourcecode))
+    except ImportError as e:
+        if tpot._RAISE_CONFIG_DICT_ERRORS:
+            print('Error: could not import {}.'.format(sourcecode))
+            raise e
+        else:
+            print('Warning: {} is not available and will not be used by TPOT.'.format(sourcecode))
         op_obj = None
 
     return import_str, op_str, op_obj
