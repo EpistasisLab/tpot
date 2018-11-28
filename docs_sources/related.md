@@ -52,7 +52,7 @@ Other Automated Machine Learning (AutoML) tools and related projects:
 <tr>
 <td><a href="https://github.com/reiinakano/xcessiv">Xcessiv</a></td>
 <td>Python</td>
-<td>Apache-2.0</td>
+<td>Apache 2.0</td>
 <td>A web-based application for quick, scalable, and automated hyper-parameter tuning and stacked ensembling in Python.</td>
 </tr>
 <tr>
