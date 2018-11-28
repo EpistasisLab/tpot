@@ -55,4 +55,10 @@ Other Automated Machine Learning (AutoML) tools and related projects:
 <td>Apache-2.0</td>
 <td>A web-based application for quick, scalable, and automated hyper-parameter tuning and stacked ensembling in Python.</td>
 </tr>
+<tr>
+<td><a href="https://github.com/PGijsbers/gama">GAMA</a></td>
+<td>Python</td>
+<td>Apache 2.0</td>
+<td>Machine-learning pipeline optimization through asynchronous evaluation based genetic programming. </td>
+</tr>
 </table>
