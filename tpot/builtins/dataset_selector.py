@@ -102,7 +102,7 @@ class DatasetSelector(BaseEstimator, TransformerMixin):
         elif isinstance(X, np.ndarray): # use index
             self.feature_names = list(range(X.shape[1]))
             sel_uniq_features = [int(val) for val in sel_uniq_features]
-        self.feat_list = list(set(sel_uniq_features).intersection(set(self.feature_names)))
+        self.feat_list = sorted(list(set(sel_uniq_features).intersection(set(self.feature_names))))
         if not len(self.feat_list):
             raise ValueError('No feature is found on the subset list!')
         return self
