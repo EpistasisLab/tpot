@@ -68,10 +68,8 @@ def test_export_random_ind():
     pipeline = tpot_obj._toolbox.individual()
     expected_code = """import numpy as np
 import pandas as pd
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.feature_selection import VarianceThreshold
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import make_pipeline
+from sklearn.naive_bayes import MultinomialNB
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
@@ -79,10 +77,7 @@ features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'].values, random_state=39)
 
-exported_pipeline = make_pipeline(
-    VarianceThreshold(threshold=0.05),
-    GradientBoostingClassifier(learning_rate=0.01, max_depth=5, max_features=0.9000000000000001, min_samples_leaf=11, min_samples_split=17, n_estimators=100, subsample=0.25)
-)
+exported_pipeline = MultinomialNB(alpha=0.1, fit_prior=True)
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
