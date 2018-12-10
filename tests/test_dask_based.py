@@ -20,25 +20,25 @@ class TestDaskMatches(unittest.TestCase):
     def test_dask_matches(self):
         with dask.config.set(scheduler='single-threaded'):
             for n_jobs in [-1]:
-                X, y = make_classification(random_state=0)
+                X, y = make_classification(random_state=42)
                 a = TPOTClassifier(
-                    generations=2,
+                    generations=0,
                     population_size=5,
                     cv=3,
-                    random_state=0,
+                    random_state=42,
                     n_jobs=n_jobs,
                     use_dask=False,
                 )
                 b = TPOTClassifier(
-                    generations=2,
+                    generations=0,
                     population_size=5,
                     cv=3,
-                    random_state=0,
+                    random_state=42,
                     n_jobs=n_jobs,
                     use_dask=True,
                 )
-                b.fit(X, y)
                 a.fit(X, y)
+                b.fit(X, y)
 
                 self.assertEqual(a.score(X, y), b.score(X, y))
                 self.assertEqual(a.pareto_front_fitted_pipelines_.keys(),

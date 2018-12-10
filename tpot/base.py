@@ -466,7 +466,8 @@ class TPOTBase(BaseEstimator):
                 key,
                 self._config_dict[key],
                 BaseClass=Operator,
-                ArgBaseClass=ARGType
+                ArgBaseClass=ARGType,
+                verbose=self.verbosity
             )
             if op_class:
                 self.operators.append(op_class)
@@ -1205,6 +1206,7 @@ class TPOTBase(BaseEstimator):
         )
 
         result_score_list = []
+
         # Don't use parallelization if n_jobs==1
         if self._n_jobs == 1 and not self.use_dask:
             for sklearn_pipeline in sklearn_pipeline_list:
@@ -1213,8 +1215,8 @@ class TPOTBase(BaseEstimator):
                 result_score_list = self._update_val(val, result_score_list)
         else:
             if self.use_dask:
+                self._stop_by_max_time_mins()
                 import dask
-
                 result_score_list = [
                     partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
                     for sklearn_pipeline in sklearn_pipeline_list

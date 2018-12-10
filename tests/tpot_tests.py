@@ -29,7 +29,7 @@ from tpot.driver import float_range
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
 from tpot.metrics import balanced_accuracy, SCORERS
-from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight
+from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight, source_decode
 from tpot.decorators import pretest_X, pretest_y
 
 from tpot.config.classifier import classifier_config_dict
@@ -1760,6 +1760,29 @@ def test_sparse_matrix_5():
     )
 
     tpot_obj.fit(sparse_features, sparse_target)
+
+
+def test_source_decode():
+    """Assert that the source_decode can decode operator source and import operator class."""
+    import_str, op_str, op_obj = source_decode("sklearn.linear_model.LogisticRegression")
+    from sklearn.linear_model import LogisticRegression
+    assert import_str == "sklearn.linear_model"
+    assert op_str == "LogisticRegression"
+    assert op_obj == LogisticRegression
+
+
+def test_source_decode_2():
+    """Assert that the source_decode return None when sourcecode is not available."""
+    import_str, op_str, op_obj = source_decode("sklearn.linear_model.LogisticReg")
+    from sklearn.linear_model import LogisticRegression
+    assert import_str == "sklearn.linear_model"
+    assert op_str == "LogisticReg"
+    assert op_obj is None
+
+
+def test_source_decode_3():
+    """Assert that the source_decode raise ImportError when sourcecode is not available and verbose=3."""
+    assert_raises(ImportError, source_decode, "sklearn.linear_model.LogisticReg", 3)
 
 
 def test_tpot_operator_factory_class():
