@@ -466,7 +466,8 @@ class TPOTBase(BaseEstimator):
                 key,
                 self._config_dict[key],
                 BaseClass=Operator,
-                ArgBaseClass=ARGType
+                ArgBaseClass=ARGType,
+                verbose=self.verbosity
             )
             if op_class:
                 self.operators.append(op_class)

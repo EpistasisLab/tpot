@@ -26,6 +26,3 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 from ._version import __version__
 from .tpot import TPOTClassifier, TPOTRegressor
 from .driver import main
-
-# should be in the TPOTBase but there are too many factory functions to pipe it through
-_RAISE_CONFIG_DICT_ERRORS = False
