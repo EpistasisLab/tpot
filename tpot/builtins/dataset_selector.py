@@ -99,10 +99,14 @@ class DatasetSelector(BaseEstimator, TransformerMixin):
 
         if isinstance(X, pd.DataFrame): # use columns' names
             self.feature_names = list(X.columns.values)
+            self.feat_list = sorted(list(set(sel_uniq_features).intersection(set(self.feature_names))))
+            self.feat_list_idx = [list(X.columns).index(feat_name) for feat_name in self.feat_list]
         elif isinstance(X, np.ndarray): # use index
             self.feature_names = list(range(X.shape[1]))
             sel_uniq_features = [int(val) for val in sel_uniq_features]
-        self.feat_list = sorted(list(set(sel_uniq_features).intersection(set(self.feature_names))))
+            self.feat_list = sorted(list(set(sel_uniq_features).intersection(set(self.feature_names))))
+            self.feat_list_idx = self.feat_list
+
         if not len(self.feat_list):
             raise ValueError('No feature is found on the subset list!')
         return self
@@ -123,6 +127,6 @@ class DatasetSelector(BaseEstimator, TransformerMixin):
         if isinstance(X, pd.DataFrame):
             X_transformed = X[self.feat_list].values
         elif isinstance(X, np.ndarray):
-            X_transformed = X[:, self.feat_list]
+            X_transformed = X[:, self.feat_list_idx]
 
         return X_transformed.astype(np.float64)
