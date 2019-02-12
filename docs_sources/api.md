@@ -47,9 +47,9 @@ Number of individuals to retain in the genetic programming population every gene
 Generally, TPOT will work better when you give it more individuals with which to optimize the pipeline.
 </blockquote>
 
-<strong>offspring_size</strong>: int, optional (default=100)
+<strong>offspring_size</strong>: int, optional (default=None)
 <blockquote>
-Number of offspring to produce in each genetic programming generation. Must be a positive number.
+Number of offspring to produce in each genetic programming generation. Must be a positive number. By default, the number of offspring is equal to the number of population size.
 </blockquote>
 
 <strong>mutation_rate</strong>: float, optional (default=0.9)
@@ -529,9 +529,9 @@ Number of individuals to retain in the genetic programming population every gene
 Generally, TPOT will work better when you give it more individuals with which to optimize the pipeline.
 </blockquote>
 
-<strong>offspring_size</strong>: int, optional (default=100)
+<strong>offspring_size</strong>: int, optional (default=None)
 <blockquote>
-Number of offspring to produce in each genetic programming generation. Must be a positive number.
+Number of offspring to produce in each genetic programming generation. Must be a positive number. By default, the number of offspring is equal to the number of population size.
 </blockquote>
 
 <strong>mutation_rate</strong>: float, optional (default=0.9)
