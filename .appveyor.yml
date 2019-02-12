@@ -21,7 +21,7 @@ install:
   - conda info -a
   - conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy scikit-learn nose cython pandas pywin32
   - activate test-environment
-  - pip install deap tqdm update_checker pypiwin32 stopit dask[delayed] dask-ml cloudpickle==0.5.6
+  - pip install deap tqdm update_checker stopit dask[delayed] dask-ml cloudpickle==0.5.6
 
 
 test_script:
