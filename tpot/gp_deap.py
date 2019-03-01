@@ -224,24 +224,14 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     for ind in population:
         initialize_stats_dict(ind)
 
-    # Evaluate the individuals with an invalid fitness
-    invalid_ind = [ind for ind in population if not ind.fitness.valid]
-
-    fitnesses = toolbox.evaluate(invalid_ind)
-    for ind, fit in zip(invalid_ind, fitnesses):
-        ind.fitness.values = fit
-
-    if halloffame is not None:
-        halloffame.update(population)
+    population = toolbox.evaluate(population)
 
     record = stats.compile(population) if stats is not None else {}
-    logbook.record(gen=0, nevals=len(invalid_ind), **record)
+    logbook.record(gen=0, nevals=len(population), **record)
 
     # Begin the generational process
     for gen in range(1, ngen + 1):
-        # after each population save a periodic pipeline
-        if per_generation_function is not None:
-            per_generation_function()
+
 
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
@@ -255,17 +245,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
-        # update pbar for valid individuals (with fitness values)
-        if not pbar.disable:
-            pbar.update(len(offspring)-len(invalid_ind))
-
-        fitnesses = toolbox.evaluate(invalid_ind)
-        for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
-
-        # Update the hall of fame with the generated individuals
-        if halloffame is not None:
-            halloffame.update(offspring)
+        offspring = toolbox.evaluate(offspring)
 
         # Select the next generation population
         population[:] = toolbox.select(population + offspring, mu)
@@ -288,6 +268,10 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                         )
                     )
                 pbar.write('')
+
+        # after each population save a periodic pipeline
+        if per_generation_function is not None:
+            per_generation_function(gen)
 
         # Update the statistics with the new population
         record = stats.compile(population) if stats is not None else {}

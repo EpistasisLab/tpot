@@ -71,6 +71,9 @@ from .config.classifier_sparse import classifier_config_sparse
 from .metrics import SCORERS
 from .gp_types import Output_Array
 from .gp_deap import eaMuPlusLambda, mutNodeReplacement, _wrapped_cross_val_score, cxOnePoint
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    from tqdm.autonotebook import tqdm
 
 # hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
 # https://github.com/ContinuumIO/anaconda-issues/issues/905
@@ -93,25 +96,6 @@ if sys.platform.startswith('win'):
 
     win32api.SetConsoleCtrlHandler(handler, 1)
 
-def is_notebook():
-    """Check if TPOT is running in Jupyter notebook.
-    Returns
-    -------
-    True: TPOT is running in Jupyter notebook
-    False: TPOT is running in other terminals
-    """
-    try:
-        from IPython import get_ipython
-        shell = get_ipython().__class__.__name__
-        # if shell == 'TerminalInteractiveShell', then Terminal running IPython
-        return shell == 'ZMQInteractiveShell'
-    except:
-        return False
-
-if is_notebook():
-    from tqdm import tqdm_notebook as tqdm
-else:
-    from tqdm import tqdm
 
 
 class TPOTBase(BaseEstimator):
@@ -245,7 +229,7 @@ class TPOTBase(BaseEstimator):
             See `avoid repeated work <https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work>`__
             for more details.
         periodic_checkpoint_folder: path string, optional (default: None)
-            If supplied, a folder in which tpot will periodically save the best pipeline so far while optimizing.
+            If supplied, a folder in which tpot will periodically save pipelines in pareto front so far while optimizing.
             Currently once per generation but not more often than once per 30 seconds.
             Useful in multiple cases:
                 Sudden death before tpot could save optimized pipeline
@@ -460,7 +444,7 @@ class TPOTBase(BaseEstimator):
 
         self._optimized_pipeline = None
         self._optimized_pipeline_score = None
-        self._exported_pipeline_text = ""
+        self._exported_pipeline_text = []
         self.fitted_pipeline_ = None
         self._fitted_imputer = None
         self._imputed = False
@@ -482,7 +466,8 @@ class TPOTBase(BaseEstimator):
                 key,
                 self._config_dict[key],
                 BaseClass=Operator,
-                ArgBaseClass=ARGType
+                ArgBaseClass=ARGType,
+                verbose=self.verbosity
             )
             if op_class:
                 self.operators.append(op_class)
@@ -930,32 +915,55 @@ class TPOTBase(BaseEstimator):
 
         return pretty
 
-    def _check_periodic_pipeline(self):
-        """If enough time has passed, save a new optimized pipeline.
+    def _check_periodic_pipeline(self, gen):
+        """If enough time has passed, save a new optimized pipeline. Currently used in the per generation hook in the optimization loop.
+        Parameters
+        ----------
+        gen: int
+            Generation number
 
-        Currently used in the per generation hook in the optimization loop.
+        Returns
+        -------
+        None
         """
         self._update_top_pipeline()
         if self.periodic_checkpoint_folder is not None:
             total_since_last_pipeline_save = (datetime.now() - self._last_pipeline_write).total_seconds()
             if total_since_last_pipeline_save > self._output_best_pipeline_period_seconds:
                 self._last_pipeline_write = datetime.now()
-                self._save_periodic_pipeline()
+                self._save_periodic_pipeline(gen)
 
         if self.early_stop is not None:
             if self._last_optimized_pareto_front_n_gens >= self.early_stop:
                 raise StopIteration("The optimized pipeline was not improved after evaluating {} more generations. "
                                     "Will end the optimization process.\n".format(self.early_stop))
 
-    def _save_periodic_pipeline(self):
+    def _save_periodic_pipeline(self, gen):
         try:
             self._create_periodic_checkpoint_folder()
-            filename = os.path.join(self.periodic_checkpoint_folder, 'pipeline_{}.py'.format(datetime.now().strftime('%Y.%m.%d_%H-%M-%S')))
-            did_export = self.export(filename, skip_if_repeated=True)
-            if not did_export:
-                self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
-            else:
-                self._update_pbar(pbar_num=0, pbar_msg='Saving best periodic pipeline to {}'.format(filename))
+            for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                idx = self._pareto_front.items.index(pipeline)
+                pareto_front_pipeline_score = pipeline_scores.wvalues[1]
+                sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(pipeline, self._pset), self.operators)
+                to_write = export_pipeline(pipeline,
+                                            self.operators, self._pset,
+                                            self._imputed, pareto_front_pipeline_score,
+                                            self.random_state)
+                # dont export a pipeline you  had
+                if self._exported_pipeline_text.count(sklearn_pipeline_str):
+                    self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
+                else:
+                    filename = os.path.join(self.periodic_checkpoint_folder,
+                                            'pipeline_gen_{}_idx_{}_{}.py'.format(gen,
+                                                                                idx ,
+                                                                                datetime.now().strftime('%Y.%m.%d_%H-%M-%S')
+                                                                                )
+                                            )
+                    self._update_pbar(pbar_num=0, pbar_msg='Saving periodic pipeline from pareto front to {}'.format(filename))
+                    with open(filename, 'w') as output_file:
+                        output_file.write(to_write)
+                    self._exported_pipeline_text.append(sklearn_pipeline_str)
+
         except Exception as e:
             self._update_pbar(pbar_num=0, pbar_msg='Failed saving periodic pipeline, exception:\n{}'.format(str(e)[:250]))
 
@@ -969,16 +977,14 @@ class TPOTBase(BaseEstimator):
             else:
                 raise ValueError('Failed creating the periodic_checkpoint_folder:\n{}'.format(e))
 
-    def export(self, output_file_name, skip_if_repeated=False):
+
+    def export(self, output_file_name):
         """Export the optimized pipeline as Python code.
 
         Parameters
         ----------
         output_file_name: string
             String containing the path and file name of the desired output file
-        skip_if_repeated: boolean
-            If True, skip the actual writing if a pipeline
-            code would be identical to the last pipeline exported
 
         Returns
         -------
@@ -989,17 +995,14 @@ class TPOTBase(BaseEstimator):
         if self._optimized_pipeline is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
 
-        to_write = export_pipeline(self._optimized_pipeline, self.operators, self._pset, self._imputed, self._optimized_pipeline_score, self.random_state)
-
-        # dont export a pipeline you just had
-        if skip_if_repeated and (self._exported_pipeline_text == to_write):
-            return False
+        to_write = export_pipeline(self._optimized_pipeline,
+                                    self.operators, self._pset,
+                                    self._imputed, self._optimized_pipeline_score,
+                                    self.random_state)
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(to_write)
-            self._exported_pipeline_text = to_write
 
-        return True
 
     def _impute_values(self, features):
         """Impute missing values in a feature set.
@@ -1162,12 +1165,12 @@ class TPOTBase(BaseEstimator):
         stats['internal_cv_score'] = cv_score
         return stats
 
-    def _evaluate_individuals(self, individuals, features, target, sample_weight=None, groups=None):
+    def _evaluate_individuals(self, population, features, target, sample_weight=None, groups=None):
         """Determine the fit of the provided individuals.
 
         Parameters
         ----------
-        individuals: a list of DEAP individual
+        population: a list of DEAP individual
             One individual is a list of pipeline operators and model parameters that can be
             compiled by DEAP into a callable function
         features: numpy.ndarray {n_samples, n_features}
@@ -1186,6 +1189,12 @@ class TPOTBase(BaseEstimator):
             according to its performance on the provided data
 
         """
+        # Evaluate the individuals with an invalid fitness
+        individuals = [ind for ind in population if not ind.fitness.valid]
+
+        # update pbar for valid individuals (with fitness values)
+        if self.verbosity > 0:
+            self._pbar.update(len(population)-len(individuals))
 
         operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals)
 
@@ -1203,50 +1212,74 @@ class TPOTBase(BaseEstimator):
         )
 
         result_score_list = []
-        # Don't use parallelization if n_jobs==1
-        if self._n_jobs == 1 and not self.use_dask:
-            for sklearn_pipeline in sklearn_pipeline_list:
-                self._stop_by_max_time_mins()
-                val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
-                result_score_list = self._update_val(val, result_score_list)
-        else:
-            if self.use_dask:
-                import dask
-
-                result_score_list = [
-                    partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
-                    for sklearn_pipeline in sklearn_pipeline_list
-                ]
-
-                self.dask_graphs_ = result_score_list
-                with warnings.catch_warnings():
-                    warnings.simplefilter('ignore')
-                    result_score_list = list(dask.compute(*result_score_list))
-
-                self._update_pbar(len(result_score_list))
-
+        try:
+            # Don't use parallelization if n_jobs==1
+            if self._n_jobs == 1 and not self.use_dask:
+                for sklearn_pipeline in sklearn_pipeline_list:
+                    self._stop_by_max_time_mins()
+                    val = partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                    result_score_list = self._update_val(val, result_score_list)
             else:
                 # chunk size for pbar update
                 # chunk size is min of cpu_count * 2 and n_jobs * 4
                 chunk_size = min(cpu_count()*2, self._n_jobs*4)
-
                 for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                     self._stop_by_max_time_mins()
+                    if self.use_dask:
+                        import dask
+                        tmp_result_scores = [
+                            partial_wrapped_cross_val_score(sklearn_pipeline=sklearn_pipeline)
+                            for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size]
+                        ]
 
-                    parallel = Parallel(n_jobs=self._n_jobs, verbose=0, pre_dispatch='2*n_jobs')
-                    tmp_result_scores = parallel(
-                        delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
-                        for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
+                        self.dask_graphs_ = tmp_result_scores
+                        with warnings.catch_warnings():
+                            warnings.simplefilter('ignore')
+                            tmp_result_scores = list(dask.compute(*tmp_result_scores))
+
+                    else:
+
+                        parallel = Parallel(n_jobs=self._n_jobs, verbose=0, pre_dispatch='2*n_jobs')
+                        tmp_result_scores = parallel(
+                            delayed(partial_wrapped_cross_val_score)(sklearn_pipeline=sklearn_pipeline)
+                            for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx + chunk_size])
                     # update pbar
                     for val in tmp_result_scores:
                         result_score_list = self._update_val(val, result_score_list)
 
+        except (KeyboardInterrupt, SystemExit, StopIteration) as e:
+            if self.verbosity > 0:
+                self._pbar.write('', file=self._file)
+                self._pbar.write('{}\nTPOT closed during evaluation in one generation.\n'
+                                    'WARNING: TPOT may not provide a good pipeline if TPOT is stopped/interrupted in a early generation.'.format(e),
+                                 file=self._file)
+            # number of individuals already evaluated in this generation
+            num_eval_ind = len(result_score_list)
+            self._update_evaluated_individuals_(result_score_list,
+                                                eval_individuals_str[:num_eval_ind],
+                                                operator_counts,
+                                                stats_dicts)
+            for ind in individuals[:num_eval_ind]:
+                ind_str = str(ind)
+                ind.fitness.values = (self.evaluated_individuals_[ind_str]['operator_count'],
+                                    self.evaluated_individuals_[ind_str]['internal_cv_score'])
+            # for individuals were not evaluated in this generation, TPOT will assign a bad fitness score
+            for ind in individuals[num_eval_ind:]:
+                ind.fitness.values = (5000.,-float('inf'))
+
+            self._pareto_front.update(population)
+            raise KeyboardInterrupt
+
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
 
-        """Look up the operator count and cross validation score to use in the optimization"""
-        return [(self.evaluated_individuals_[str(individual)]['operator_count'],
-                 self.evaluated_individuals_[str(individual)]['internal_cv_score'])
-                for individual in individuals]
+        for ind in individuals:
+            ind_str = str(ind)
+            ind.fitness.values = (self.evaluated_individuals_[ind_str]['operator_count'],
+                                self.evaluated_individuals_[ind_str]['internal_cv_score'])
+        individuals = [ind for ind in population if not ind.fitness.valid]
+        self._pareto_front.update(population)
+
+        return population
 
     def _preprocess_individuals(self, individuals):
         """Preprocess DEAP individuals before pipeline evaluation.
