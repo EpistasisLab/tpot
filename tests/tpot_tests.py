@@ -221,7 +221,7 @@ def test_init_default_scoring_6():
     assert len(w) == 1
     assert issubclass(w[-1].category, DeprecationWarning)
     assert "This scoring type was deprecated" in str(w[-1].message)
-    print(tpot_obj.scoring_function)
+
     assert tpot_obj.scoring_function == 'my_scorer'
 
 
@@ -588,7 +588,7 @@ def test_sample_weight_func():
     # Get score from TPOT
     known_score = -11.586816877933911
     score = tpot_obj.score(testing_features_r, testing_target_r)
-    print(score)
+
 
     assert np.allclose(cv_score1, cv_score2)
     assert not np.allclose(cv_score1, cv_score_weight)
@@ -1315,10 +1315,15 @@ def test_evaluate_individuals():
         config_dict='TPOT light'
     )
     tpot_obj._fit_init()
+    def pareto_eq(ind1, ind2):
+        return np.allclose(ind1.fitness.values, ind2.fitness.values)
+
+    tpot_obj._pareto_front = ParetoFront(similar=pareto_eq)
 
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pop = tpot_obj._toolbox.population(n=10)
-    fitness_scores = tpot_obj._evaluate_individuals(pop, training_features, training_target)
+    pop = tpot_obj._evaluate_individuals(pop, training_features, training_target)
+    fitness_scores = [ind.fitness.values for ind in pop]
 
     for deap_pipeline, fitness_score in zip(pop, fitness_scores):
         operator_count = tpot_obj._operator_count(deap_pipeline)
@@ -1345,10 +1350,15 @@ def test_evaluate_individuals_2():
         config_dict='TPOT light'
     )
     tpot_obj._fit_init()
+    def pareto_eq(ind1, ind2):
+        return np.allclose(ind1.fitness.values, ind2.fitness.values)
+
+    tpot_obj._pareto_front = ParetoFront(similar=pareto_eq)
 
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pop = tpot_obj._toolbox.population(n=10)
-    fitness_scores = tpot_obj._evaluate_individuals(pop, training_features, training_target)
+    pop = tpot_obj._evaluate_individuals(pop, training_features, training_target)
+    fitness_scores = [ind.fitness.values for ind in pop]
 
     for deap_pipeline, fitness_score in zip(pop, fitness_scores):
         operator_count = tpot_obj._operator_count(deap_pipeline)
@@ -1827,6 +1837,10 @@ def test_PolynomialFeatures_exception():
     """Assert that TPOT allows only one PolynomialFeatures operator in a pipeline."""
 
     tpot_obj._pbar = tqdm(total=1, disable=True)
+    def pareto_eq(ind1, ind2):
+        return np.allclose(ind1.fitness.values, ind2.fitness.values)
+
+    tpot_obj._pareto_front = ParetoFront(similar=pareto_eq)
     # pipeline with one PolynomialFeatures operator
     pipeline_string_1 = (
         'LogisticRegression(PolynomialFeatures'
@@ -1853,7 +1867,8 @@ def test_PolynomialFeatures_exception():
     for pipeline in pipelines:
         initialize_stats_dict(pipeline)
 
-    fitness_scores = tpot_obj._evaluate_individuals(pipelines, pretest_X, pretest_y)
+    pop = tpot_obj._evaluate_individuals(pipelines, pretest_X, pretest_y)
+    fitness_scores = [ind.fitness.values for ind in pop]
     known_scores = [(2, 0.94000000000000006), (5000.0, -float('inf'))]
     assert np.allclose(known_scores, fitness_scores)
 
