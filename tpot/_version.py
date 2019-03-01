@@ -23,4 +23,4 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-__version__ = '0.9.6'
+__version__ = '0.9.5'

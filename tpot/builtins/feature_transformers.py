@@ -138,7 +138,7 @@ class ContinuousSelector(BaseEstimator, TransformerMixin):
 
 
     def transform(self, X):
-        """Select continuous features and transform them using PCA.
+        """Select continuous features and transform them using OneHotEncoder.
 
         Parameters
         ----------

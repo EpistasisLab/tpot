@@ -40,7 +40,7 @@ This project is hosted at https://github.com/EpistasisLab/tpot
                     'scikit-learn>=0.18.1',
                     'deap>=1.0',
                     'update_checker>=0.16',
-                    'tqdm>=4.26.0',
+                    'tqdm>=4.11.2',
                     'stopit>=1.1.1',
                     'pandas>=0.20.2'],
     extras_require={

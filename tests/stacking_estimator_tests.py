@@ -30,8 +30,6 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.pipeline import make_pipeline
 from tpot_tests import training_features, training_target, training_features_r, training_target_r
 from sklearn.model_selection import cross_val_score
-import warnings
-warnings.filterwarnings("ignore")
 
 def test_StackingEstimator_1():
     """Assert that the StackingEstimator returns transformed X with synthetic features in classification."""
@@ -78,7 +76,8 @@ def test_StackingEstimator_3():
 
     # test cv score
     cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features, training_target, cv=3, scoring='accuracy'))
-    known_cv_score = 0.9472823753147593
+
+    known_cv_score = 0.947282375315
 
     assert np.allclose(known_cv_score, cv_score)
 
@@ -101,6 +100,6 @@ def test_StackingEstimator_4():
 
     # test cv score
     cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features_r, training_target_r, cv=3, scoring='r2'))
-    known_cv_score = 0.7989564328211737
+    known_cv_score = 0.795877470354
 
     assert np.allclose(known_cv_score, cv_score)

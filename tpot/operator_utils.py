@@ -43,17 +43,13 @@ class ARGType(object):
     pass
 
 
-def source_decode(sourcecode, verbose=0):
+def source_decode(sourcecode):
     """Decode operator source and import operator class.
 
     Parameters
     ----------
     sourcecode: string
         a string of operator source (e.g 'sklearn.feature_selection.RFE')
-    verbose: int, optional (default: 0)
-        How much information TPOT communicates while it's running.
-        0 = none, 1 = minimal, 2 = high, 3 = all.
-        if verbose > 2 then ImportError will rasie during initialization
 
 
     Returns
@@ -75,11 +71,8 @@ def source_decode(sourcecode, verbose=0):
         else:
             exec('from {} import {}'.format(import_str, op_str))
         op_obj = eval(op_str)
-    except Exception as e:
-        if verbose > 2:
-            raise ImportError('Error: could not import {}.\n{}'.format(sourcecode, e))
-        else:
-            print('Warning: {} is not available and will not be used by TPOT.'.format(sourcecode))
+    except ImportError:
+        print('Warning: {} is not available and will not be used by TPOT.'.format(sourcecode))
         op_obj = None
 
     return import_str, op_str, op_obj
@@ -134,7 +127,7 @@ def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
     return type(classname, (BaseClass,), {'values': prange})
 
 
-def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=ARGType, verbose=0):
+def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=ARGType):
     """Dynamically create operator class.
 
     Parameters
@@ -151,10 +144,6 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
         inherited BaseClass for operator
     ArgBaseClass: Class
         inherited BaseClass for parameter
-    verbose: int, optional (default: 0)
-        How much information TPOT communicates while it's running.
-        0 = none, 1 = minimal, 2 = high, 3 = all.
-        if verbose > 2 then ImportError will rasie during initialization
 
     Returns
     -------
@@ -167,7 +156,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
     class_profile = {}
     dep_op_list = {} # list of nested estimator/callable function
     dep_op_type = {} # type of nested estimator/callable function
-    import_str, op_str, op_obj = source_decode(opsourse, verbose=verbose)
+    import_str, op_str, op_obj = source_decode(opsourse)
 
     if not op_obj:
         return None, None
@@ -201,7 +190,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 arg_types.append(ARGTypeClassFactory(classname, prange, ArgBaseClass))
             else:
                 for dkey, dval in prange.items():
-                    dep_import_str, dep_op_str, dep_op_obj = source_decode(dkey, verbose=verbose)
+                    dep_import_str, dep_op_str, dep_op_obj = source_decode(dkey)
                     if dep_import_str in import_hash:
                         import_hash[import_str].append(dep_op_str)
                     else:

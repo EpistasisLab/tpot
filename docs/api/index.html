@@ -186,9 +186,9 @@ Number of individuals to retain in the genetic programming population every gene
 Generally, TPOT will work better when you give it more individuals with which to optimize the pipeline.
 </blockquote>
 
-<strong>offspring_size</strong>: int, optional (default=None)
+<strong>offspring_size</strong>: int, optional (default=100)
 <blockquote>
-Number of offspring to produce in each genetic programming generation. Must be a positive number. By default, the number of offspring is equal to the number of population size.
+Number of offspring to produce in each genetic programming generation. Must be a positive number.
 </blockquote>
 
 <strong>mutation_rate</strong>: float, optional (default=0.9)
@@ -317,7 +317,7 @@ See <a href="https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.htm
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
 <blockquote>
-If supplied, a folder in which TPOT will periodically save pipelines in pareto front so far while optimizing.<br /><br />
+If supplied, a folder in which TPOT will periodically save the best pipeline so far while optimizing.<br /><br />
 Currently once per generation but not more often than once per 30 seconds.<br /><br />
 Useful in multiple cases:
 <ul>
@@ -648,9 +648,9 @@ Number of individuals to retain in the genetic programming population every gene
 Generally, TPOT will work better when you give it more individuals with which to optimize the pipeline.
 </blockquote>
 
-<strong>offspring_size</strong>: int, optional (default=None)
+<strong>offspring_size</strong>: int, optional (default=100)
 <blockquote>
-Number of offspring to produce in each genetic programming generation. Must be a positive number. By default, the number of offspring is equal to the number of population size.
+Number of offspring to produce in each genetic programming generation. Must be a positive number.
 </blockquote>
 
 <strong>mutation_rate</strong>: float, optional (default=0.9)
@@ -780,7 +780,7 @@ See <a href="https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.htm
 
 <strong>periodic_checkpoint_folder</strong>: path string, optional (default: None)
 <blockquote>
-If supplied, a folder in which TPOT will periodically save pipelines in pareto front so far while optimizing.<br /><br />
+If supplied, a folder in which TPOT will periodically save the best pipeline so far while optimizing.<br /><br />
 Currently once per generation but not more often than once per 30 seconds.<br /><br />
 Useful in multiple cases:
 <ul>
