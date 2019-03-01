@@ -57,8 +57,7 @@ regressor_config_dict = {
     'sklearn.ensemble.AdaBoostRegressor': {
         'n_estimators': [100],
         'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-        'loss': ["linear", "square", "exponential"],
-        'max_depth': range(1, 11)
+        'loss': ["linear", "square", "exponential"]
     },
 
     'sklearn.tree.DecisionTreeRegressor': {

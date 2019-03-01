@@ -23,10 +23,10 @@ deactivate
 
 # Use the miniconda installer for faster download / install of conda
 # itself
-wget http://repo.continuum.io/miniconda/Miniconda-3.9.1-Linux-x86_64.sh \
+wget https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh \
     -O miniconda.sh
 chmod +x miniconda.sh && ./miniconda.sh -b
-export PATH=/home/travis/miniconda/bin:$PATH
+export PATH=/home/travis/miniconda3/bin:$PATH
 conda update --yes conda
 
 # Configure the conda environment and put it in the path using the
@@ -56,6 +56,7 @@ pip install stopit
 pip install xgboost
 pip install dask[delayed]
 pip install dask-ml
+pip install cloudpickle==0.5.6
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
