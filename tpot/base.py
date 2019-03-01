@@ -1251,7 +1251,7 @@ class TPOTBase(BaseEstimator):
             if self.verbosity > 0:
                 self._pbar.write('', file=self._file)
                 self._pbar.write('{}\nTPOT closed during evaluation in one generation.\n'
-                                    'WARNING: TPOT may not provide a good pipeline if TPOT close in a early generation.'.format(e),
+                                    'WARNING: TPOT may not provide a good pipeline if TPOT is stopped/interrupted in a early generation.'.format(e),
                                  file=self._file)
             # number of individuals already evaluated in this generation
             num_eval_ind = len(result_score_list)
