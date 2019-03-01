@@ -244,18 +244,6 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        """
-        # update pbar for valid individuals (with fitness values)
-        if not pbar.disable:
-            pbar.update(len(offspring)-len(invalid_ind))
-
-        fitnesses = toolbox.evaluate(invalid_ind)
-        for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
-
-        # Update the hall of fame with the generated individuals
-        if halloffame is not None:
-            halloffame.update(offspring)"""
 
         offspring = toolbox.evaluate(offspring)
 
