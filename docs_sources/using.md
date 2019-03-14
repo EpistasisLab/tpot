@@ -306,7 +306,7 @@ For example: -template Selector-Transformer-Classifier</td>
 <td>CHECKPOINT_FOLDER</td>
 <td>Folder path</td>
 <td>
-If supplied, a folder you created, in which tpot will periodically save the best pipeline so far while optimizing.
+If supplied, a folder you created, in which tpot will periodically save pipelines in pareto front so far while optimizing.
 <br /><br />
 This is useful in multiple cases:
 <ul>
