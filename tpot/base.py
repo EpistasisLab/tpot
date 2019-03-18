@@ -647,7 +647,9 @@ class TPOTBase(BaseEstimator):
         features, target = self._check_dataset(features, target, sample_weight)
 
 
-        self.pretest_X, _, self.pretest_y, _ = train_test_split(features, target, train_size=min(50, features.shape[0]), test_size=None, random_state=self.random_state)
+        self.pretest_X, _, self.pretest_y, _ = train_test_split(features,
+                                                target, train_size=min(50, int(0.9*features.shape[0])), 
+                                                test_size=None, random_state=self.random_state)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
