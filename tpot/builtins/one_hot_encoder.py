@@ -80,6 +80,8 @@ def _X_selected(X, selected):
     n_features = X.shape[1]
     ind = np.arange(n_features)
     sel = np.zeros(n_features, dtype=bool)
+    if len(sel) < len(selected):
+        selected = selected[:len(sel)]
     sel[np.asarray(selected)] = True
     non_sel = np.logical_not(sel)
     n_selected = np.sum(sel)
