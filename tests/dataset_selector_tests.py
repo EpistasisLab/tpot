@@ -85,3 +85,14 @@ def test_DatasetSelector_5():
     assert transformed_X.shape[1] != test_X.shape[1]
     assert transformed_X.shape[1] == 5
     assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
+
+def test_DatasetSelector_6():
+    """Assert that the _get_support_mask function returns correct mask."""
+    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_1")
+    ds.fit(test_X, y=None)
+    mask = ds._get_support_mask()
+    get_mask = ds.get_support()
+
+    assert mask.shape[0] == 30
+    assert np.count_nonzero(mask) == 5
+    assert np.array_equal(get_mask, mask)
