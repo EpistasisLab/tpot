@@ -57,6 +57,8 @@ from sklearn.datasets import load_digits, load_boston, make_classification
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from sklearn.externals.joblib import Memory
 from sklearn.metrics import make_scorer, roc_auc_score
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
+from sklearn.feature_selection.base import SelectorMixin
 from deap import creator, gp
 from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
@@ -595,6 +597,65 @@ def test_sample_weight_func():
     assert np.allclose(cv_score1, cv_score2)
     assert not np.allclose(cv_score1, cv_score_weight)
     assert np.allclose(known_score, score)
+
+
+def test_template_1():
+    """Assert that TPOT template option generates pipeline when each step is a type of operator."""
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        template='Selector-Transformer-Classifier'
+    )
+    tpot_obj._fit_init()
+    pop = tpot_obj._toolbox.population(n=10)
+    for deap_pipeline in pop:
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        assert operator_count == 3
+        assert issubclass(sklearn_pipeline.steps[0][1].__class__, SelectorMixin)
+        assert issubclass(sklearn_pipeline.steps[1][1].__class__, TransformerMixin)
+        assert issubclass(sklearn_pipeline.steps[2][1].__class__, ClassifierMixin)
+
+
+def test_template_2():
+    """Assert that TPOT template option generates pipeline when each step is operator type with a duplicate main type."""
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        template='Selector-Selector-Transformer-Classifier'
+    )
+    tpot_obj._fit_init()
+    pop = tpot_obj._toolbox.population(n=10)
+    for deap_pipeline in pop:
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        assert operator_count == 4
+        assert issubclass(sklearn_pipeline.steps[0][1].__class__, SelectorMixin)
+        assert issubclass(sklearn_pipeline.steps[1][1].__class__, SelectorMixin)
+        assert issubclass(sklearn_pipeline.steps[2][1].__class__, TransformerMixin)
+        assert issubclass(sklearn_pipeline.steps[3][1].__class__, ClassifierMixin)
+
+
+def test_template_3():
+    """Assert that TPOT template option generates pipeline when one of steps is a specific operator."""
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        template='SelectPercentile-Transformer-Classifier'
+    )
+    tpot_obj._fit_init()
+    pop = tpot_obj._toolbox.population(n=10)
+    for deap_pipeline in pop:
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        assert operator_count == 3
+        assert sklearn_pipeline.steps[0][0] == 'SelectPercentile'.lower()
+        assert issubclass(sklearn_pipeline.steps[0][1].__class__, SelectorMixin)
+        assert issubclass(sklearn_pipeline.steps[1][1].__class__, TransformerMixin)
+        assert issubclass(sklearn_pipeline.steps[2][1].__class__, ClassifierMixin)
 
 
 def test_fit_GroupKFold():
