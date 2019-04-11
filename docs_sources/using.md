@@ -285,7 +285,10 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 <td>-template</td>
 <td>TEMPLATE</td>
 <td>String</td>
-<td>Template of predefined pipeline structure. The option is for specifying a desired structure for the machine learning pipeline evaluated in TPOT. So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer, Classifier or Regressor) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html), [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html) or [`RegressorMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html) in scikit-learn) to that step. Steps in the template are splited by "-", e.g. "SelectPercentile-Transformer-Classifier". By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.</td>
+<td>Template of predefined pipeline structure. The option is for specifying a desired structure for the machine learning pipeline evaluated in TPOT. So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer, Classifier or Regressor) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html), [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html) or [`RegressorMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html) in scikit-learn) to that step. Steps in the template are splited by "-", e.g. "SelectPercentile-Transformer-Classifier". By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.
+
+See the <a href="../using/#template-option-in-tpot"> template option in tpot</a> section for more details.
+</td>
 </tr>
 <tr>
 <td>-memory</td>
@@ -535,7 +538,7 @@ Note that you must have all of the corresponding packages for the operators inst
 
 # Template option in TPOT
 
-Template option is added into TPOT since v0.10.0. It provides a way to specify a desired structure for machine learning pipeline, which may reduce TPOT computation time and potentially provide more interpretable results. Current implementation only supports linear pipelines.
+Template option is added into TPOT v0.10.0. It provides a way to specify a desired structure for machine learning pipeline, which may reduce TPOT computation time and potentially provide more interpretable results. Current implementation only supports linear pipelines.
 
 Below is a simple example to use `template` option. The pipelines generated/evaluated in TPOT will follow this structure: 1st step is a feature selector (a subclass of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17)), 2nd step is a feature transformer (a subclass of [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html)) and 3rd step is a classifier for classification (a subclass of [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html)). The last step must be `Classifier` for `TPOTClassifier`'s template but `Regressor` for `TPOTRegressor`. **Note: although `SelectorMixin` is subclass of `TransformerMixin` in scikit-leawrn, but `Transformer` in this option excludes those subclasses of `SelectorMixin`.**
 
@@ -546,6 +549,35 @@ tpot_obj = TPOTClassifier(
 ```
 
 If a specific operator, e.g. `SelectPercentile`, is prefered to used in the 1st step of pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.
+
+
+# FeatureSetSelector in TPOT
+
+`FeatureSetSelector` is a special new operator in TPOT. This operator enables feature selection based on *priori* export knowledge. For example, in RNA-seq gene expression analysis, this operator can be used to select one or more gene (feature) set based on GO (Gene Ontology) terms or annotated gene sets Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/index.jsp)) to reduce dimensions and saving computing time. Below is a example for using this operator in TPOT.
+
+```Python
+from tpot import TPOTClassifier
+import numpy as np
+import pandas as pd
+from tpot.config import classifier_config_dict
+test_data = pd.read_csv("https://raw.githubusercontent.com/weixuanfu/tpot/master/tests/tests.csv")
+test_X = test_data.drop("class", axis=1)
+test_y = test_data['class']
+
+# add FeatureSetSelector into tpot configuration
+classifier_config_dict['tpot.builtins.FeatureSetSelector'] = {
+    'subset_list': ['https://raw.githubusercontent.com/weixuanfu/tpot/master/tests/subset_test.csv'],
+    'sel_subset': [0,1] # select only one feature set, a list of index of subset in the list above
+    #'sel_subset': list(combinations(range(3), 2)) # select two feature sets
+}
+
+
+tpot = TPOTClassifier(generations=5,
+                           population_size=50, verbosity=2,
+                           template='FeatureSetSelector-Transformer-Classifier',
+                           config_dict=classifier_config_dict)
+tpot.fit(test_X, test_y)
+```
 
 
 # Pipeline caching in TPOT
