@@ -205,8 +205,16 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
-        template: string (default: 'RandomTree')
-            A template for predefined pipeline structure. 
+        template: string (default: "RandomTree")
+            Template of predefined pipeline structure. The option specify a desired structure
+            for the machine learning pipeline evaluated in tpot. So far this option only supports
+            linear pipeline structure. Each step in the pipeline should be a main class of operators
+            (Selector, Transformer, Classifier or Regressor) or a specific operator
+            (e.g. SelectPercentile) defined in TPOT operator configuration. If one step is a main class,
+            TPOT will randomly assign all subclass operators (subclasses of SelectorMixin,
+            TransformerMixin, ClassifierMixin or RegressorMixin in scikit-learn) to that step.
+            Steps in the template are splited by "-", e.g. "SelectPercentile-Transformer-Classifier".
+            By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -416,7 +424,7 @@ class TPOTBase(BaseEstimator):
         main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
         ret_types = []
         self.op_list = []
-        if self.template == "RandomTree": # default
+        if self.template == "RandomTree": # default pipeline structure
             step_in_type = np.ndarray
             step_ret_type = Output_Array
             for operator in self.operators:
@@ -452,12 +460,11 @@ class TPOTBase(BaseEstimator):
                     self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
                 elif main_type.count(step): # if the step is a main type
                     for operator in self.operators:
-                        if operator.__name__ != 'FeatureSetSelector': # dataset selector is not considered as a main type
-                            arg_types =  operator.parameter_types()[0][1:]
-                            if operator.type() == step:
-                                p_types = ([step_in_type] + arg_types, step_ret_type)
-                                self._pset.addPrimitive(operator, *p_types)
-                                self._import_hash_and_add_terminals(operator, arg_types)
+                        arg_types =  operator.parameter_types()[0][1:]
+                        if operator.type() == step:
+                            p_types = ([step_in_type] + arg_types, step_ret_type)
+                            self._pset.addPrimitive(operator, *p_types)
+                            self._import_hash_and_add_terminals(operator, arg_types)
                 else: # is the step is a specific operator
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]

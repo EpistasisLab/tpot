@@ -362,7 +362,15 @@ def _get_arg_parser():
         default='RandomTree',
         type=str,
         help=(
-             'Template for pipeline structure'
+             'Template of predefined pipeline structure. The option specify a desired structure'
+             'for the machine learning pipeline evaluated in tpot. So far this option only supports'
+             'linear pipeline structure. Each step in the pipeline should be a main class of operators'
+             '(Selector, Transformer, Classifier or Regressor) or a specific operator'
+             '(e.g. SelectPercentile) defined in TPOT operator configuration. If one step is a main class,'
+             'TPOT will randomly assign all subclass operators (subclasses of SelectorMixin,'
+             'TransformerMixin, ClassifierMixin or RegressorMixin in scikit-learn) to that step.'
+             'Steps in the template are splited by "-", e.g. "SelectPercentile-Transformer-Classifier".'
+             'By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.'
         )
     )
 
