@@ -451,7 +451,7 @@ class TPOTBase(BaseEstimator):
                     self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
                 elif main_type.count(step): # if the step is a main type
                     for operator in self.operators:
-                        if operator.__name__ != 'DatasetSelector': # dataset selector is not considered as a main type
+                        if operator.__name__ != 'FeatureSetSelector': # dataset selector is not considered as a main type
                             arg_types =  operator.parameter_types()[0][1:]
                             if operator.type() == step:
                                 p_types = ([step_in_type] + arg_types, step_ret_type)

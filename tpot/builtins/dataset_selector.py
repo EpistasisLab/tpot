@@ -29,8 +29,8 @@ from sklearn.feature_selection.base import SelectorMixin
 from sklearn.utils.validation import check_is_fitted
 
 
-class DatasetSelector(BaseEstimator, SelectorMixin):
-    """Select predefined data subsets."""
+class FeatureSetSelector(BaseEstimator, SelectorMixin):
+    """Select predefined feature subsets."""
 
     @property
     def __name__(self):
@@ -38,7 +38,7 @@ class DatasetSelector(BaseEstimator, SelectorMixin):
         return self.__class__.__name__
 
     def __init__(self, subset_list, sel_subset):
-        """Create a DatasetSelector object.
+        """Create a FeatureSetSelector object.
 
         Parameters
         ----------
@@ -64,7 +64,7 @@ class DatasetSelector(BaseEstimator, SelectorMixin):
         self.sel_subset = sel_subset
 
     def fit(self, X, y=None):
-        """Fit DatasetSelector for feature selection
+        """Fit FeatureSetSelector for feature selection
 
         Parameters
         ----------

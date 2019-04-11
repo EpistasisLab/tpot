@@ -25,15 +25,15 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 import pandas as pd
-from tpot.builtins import DatasetSelector
+from tpot.builtins import FeatureSetSelector
 
 test_data = pd.read_csv("tests/tests.csv")
 test_X = test_data.drop("class", axis=1)
 
 
-def test_DatasetSelector_1():
+def test_FeatureSetSelector_1():
     """Assert that the StackingEstimator returns transformed X based on test feature list 1."""
-    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_1")
+    ds = FeatureSetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_1")
     ds.fit(test_X, y=None)
     transformed_X = ds.transform(test_X)
 
@@ -42,9 +42,9 @@ def test_DatasetSelector_1():
     assert transformed_X.shape[1] == 5
     assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
 
-def test_DatasetSelector_2():
+def test_FeatureSetSelector_2():
     """Assert that the StackingEstimator returns transformed X based on test feature list 2."""
-    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_2")
+    ds = FeatureSetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_2")
     ds.fit(test_X, y=None)
     transformed_X = ds.transform(test_X)
 
@@ -53,9 +53,9 @@ def test_DatasetSelector_2():
     assert transformed_X.shape[1] == 6
     assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
 
-def test_DatasetSelector_3():
+def test_FeatureSetSelector_3():
     """Assert that the StackingEstimator returns transformed X based on 2 subsets' names"""
-    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset=["test_subset_1", "test_subset_2"])
+    ds = FeatureSetSelector(subset_list="tests/subset_test.csv", sel_subset=["test_subset_1", "test_subset_2"])
     ds.fit(test_X, y=None)
     transformed_X = ds.transform(test_X)
 
@@ -64,9 +64,9 @@ def test_DatasetSelector_3():
     assert transformed_X.shape[1] == 7
     assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
 
-def test_DatasetSelector_4():
+def test_FeatureSetSelector_4():
     """Assert that the StackingEstimator returns transformed X based on 2 subsets' indexs"""
-    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset=[0, 1])
+    ds = FeatureSetSelector(subset_list="tests/subset_test.csv", sel_subset=[0, 1])
     ds.fit(test_X, y=None)
     transformed_X = ds.transform(test_X)
 
@@ -75,9 +75,9 @@ def test_DatasetSelector_4():
     assert transformed_X.shape[1] == 7
     assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
 
-def test_DatasetSelector_5():
+def test_FeatureSetSelector_5():
     """Assert that the StackingEstimator returns transformed X seleced based on test feature list 1's index."""
-    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset=0)
+    ds = FeatureSetSelector(subset_list="tests/subset_test.csv", sel_subset=0)
     ds.fit(test_X, y=None)
     transformed_X = ds.transform(test_X)
 
@@ -86,9 +86,9 @@ def test_DatasetSelector_5():
     assert transformed_X.shape[1] == 5
     assert np.array_equal(transformed_X, test_X[ds.feat_list].values)
 
-def test_DatasetSelector_6():
+def test_FeatureSetSelector_6():
     """Assert that the _get_support_mask function returns correct mask."""
-    ds = DatasetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_1")
+    ds = FeatureSetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_1")
     ds.fit(test_X, y=None)
     mask = ds._get_support_mask()
     get_mask = ds.get_support()
