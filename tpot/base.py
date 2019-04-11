@@ -213,7 +213,7 @@ class TPOTBase(BaseEstimator):
             (e.g. SelectPercentile) defined in TPOT operator configuration. If one step is a main class,
             TPOT will randomly assign all subclass operators (subclasses of SelectorMixin,
             TransformerMixin, ClassifierMixin or RegressorMixin in scikit-learn) to that step.
-            Steps in the template are splited by "-", e.g. "SelectPercentile-Transformer-Classifier".
+            Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Classifier".
             By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from

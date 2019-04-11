@@ -96,3 +96,17 @@ def test_FeatureSetSelector_6():
     assert mask.shape[0] == 30
     assert np.count_nonzero(mask) == 5
     assert np.array_equal(get_mask, mask)
+
+def test_FeatureSetSelector_7():
+    """Assert that the StackingEstimator works as expected when input X is np.array."""
+    ds = FeatureSetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_1")
+    ds.fit(test_X.values, y=None)
+    transformed_X = ds.transform(test_X.values)
+    str_feat_list = [str(i+2) for i in ds.feat_list_idx]
+    
+
+    assert transformed_X.shape[0] == test_X.shape[0]
+    assert transformed_X.shape[1] != test_X.shape[1]
+    assert transformed_X.shape[1] == 5
+    assert np.array_equal(transformed_X, test_X.values[:, ds.feat_list_idx])
+    assert np.array_equal(transformed_X, test_X[str_feat_list].values)
