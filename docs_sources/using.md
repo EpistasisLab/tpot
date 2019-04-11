@@ -538,7 +538,7 @@ Note that you must have all of the corresponding packages for the operators inst
 
 # Template option in TPOT
 
-Template option is added into TPOT v0.10.0. It provides a way to specify a desired structure for machine learning pipeline, which may reduce TPOT computation time and potentially provide more interpretable results. Current implementation only supports linear pipelines.
+Template option provides a way to specify a desired structure for machine learning pipeline, which may reduce TPOT computation time and potentially provide more interpretable results. Current implementation only supports linear pipelines.
 
 Below is a simple example to use `template` option. The pipelines generated/evaluated in TPOT will follow this structure: 1st step is a feature selector (a subclass of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17)), 2nd step is a feature transformer (a subclass of [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html)) and 3rd step is a classifier for classification (a subclass of [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html)). The last step must be `Classifier` for `TPOTClassifier`'s template but `Regressor` for `TPOTRegressor`. **Note: although `SelectorMixin` is subclass of `TransformerMixin` in scikit-leawrn, but `Transformer` in this option excludes those subclasses of `SelectorMixin`.**
 
@@ -553,20 +553,20 @@ If a specific operator, e.g. `SelectPercentile`, is prefered to used in the 1st 
 
 # FeatureSetSelector in TPOT
 
-`FeatureSetSelector` is a special new operator in TPOT. This operator enables feature selection based on *priori* export knowledge. For example, in RNA-seq gene expression analysis, this operator can be used to select one or more gene (feature) set based on GO (Gene Ontology) terms or annotated gene sets Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/index.jsp)) to reduce dimensions and saving computing time. Below is a example for using this operator in TPOT.
+`FeatureSetSelector` is a special new operator in TPOT. This operator enables feature selection based on *priori* export knowledge. For example, in RNA-seq gene expression analysis, this operator can be used to select one or more gene (feature) set(s) based on GO (Gene Ontology) terms or annotated gene sets Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/index.jsp)) in the 1st step of pipeline via `template` option above, in order to reduce dimensions and TPOT computation time. Below is a example how to use this operator in TPOT.
 
 ```Python
 from tpot import TPOTClassifier
 import numpy as np
 import pandas as pd
 from tpot.config import classifier_config_dict
-test_data = pd.read_csv("https://raw.githubusercontent.com/weixuanfu/tpot/master/tests/tests.csv")
+test_data = pd.read_csv("https://raw.githubusercontent.com/EpistasisLab/tpot/master/tests/tests.csv")
 test_X = test_data.drop("class", axis=1)
 test_y = test_data['class']
 
 # add FeatureSetSelector into tpot configuration
 classifier_config_dict['tpot.builtins.FeatureSetSelector'] = {
-    'subset_list': ['https://raw.githubusercontent.com/weixuanfu/tpot/master/tests/subset_test.csv'],
+    'subset_list': ['https://raw.githubusercontent.com/EpistasisLab/tpot/master/tests/subset_test.csv'],
     'sel_subset': [0,1] # select only one feature set, a list of index of subset in the list above
     #'sel_subset': list(combinations(range(3), 2)) # select two feature sets
 }
