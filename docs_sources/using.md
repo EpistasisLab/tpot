@@ -285,9 +285,7 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 <td>-template</td>
 <td>TEMPLATE</td>
 <td>String</td>
-<td>Template for pipeline structure.
-<br /><br />
-For example: -template Selector-Transformer-Classifier</td>
+<td>Template of predefined pipeline structure. The option is for specifying a desired structure for the machine learning pipeline evaluated in TPOT. So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer, Classifier or Regressor) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html), [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html) or [`RegressorMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html) in scikit-learn) to that step. Steps in the template are splited by "-", e.g. "SelectPercentile-Transformer-Classifier". By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.</td>
 </tr>
 <tr>
 <td>-memory</td>
@@ -533,6 +531,22 @@ When using the command-line interface, the configuration file specified in the `
 For more detailed examples of how to customize TPOT's operator configuration, see the default configurations for [classification](https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier.py) and [regression](https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor.py) in TPOT's source code.
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
+
+
+# Template option in TPOT
+
+Template option is added into TPOT since v0.10.0. It provides a way to specify a desired structure for machine learning pipeline, which may reduce TPOT computation time and potentially provide more interpretable results. Current implementation only supports linear pipelines.
+
+Below is a simple example to use `template` option. The pipelines generated/evaluated in TPOT will follow this structure: 1st step is a feature selector (a subclass of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17)), 2nd step is a feature transformer (a subclass of [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html)) and 3rd step is a classifier for classification (a subclass of [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html)). The last step must be `Classifier` for `TPOTClassifier`'s template but `Regressor` for `TPOTRegressor`. **Note: although `SelectorMixin` is subclass of `TransformerMixin` in scikit-leawrn, but `Transformer` in this option excludes those subclasses of `SelectorMixin`.**
+
+```Python
+tpot_obj = TPOTClassifier(
+                template='Selector-Transformer-Classifier'
+                )
+```
+
+If a specific operator, e.g. `SelectPercentile`, is prefered to used in the 1st step of pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.
+
 
 # Pipeline caching in TPOT
 

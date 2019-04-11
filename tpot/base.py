@@ -206,8 +206,8 @@ class TPOTBase(BaseEstimator):
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
         template: string (default: "RandomTree")
-            Template of predefined pipeline structure. The option specify a desired structure
-            for the machine learning pipeline evaluated in tpot. So far this option only supports
+            Template of predefined pipeline structure. The option is for specifying a desired structure
+            for the machine learning pipeline evaluated in TPOT. So far this option only supports
             linear pipeline structure. Each step in the pipeline should be a main class of operators
             (Selector, Transformer, Classifier or Regressor) or a specific operator
             (e.g. SelectPercentile) defined in TPOT operator configuration. If one step is a main class,

@@ -362,8 +362,8 @@ def _get_arg_parser():
         default='RandomTree',
         type=str,
         help=(
-             'Template of predefined pipeline structure. The option specify a desired structure'
-             'for the machine learning pipeline evaluated in tpot. So far this option only supports'
+             'Template of predefined pipeline structure. The option is for specifying a desired structure'
+             'for the machine learning pipeline evaluated in TPOT. So far this option only supports'
              'linear pipeline structure. Each step in the pipeline should be a main class of operators'
              '(Selector, Transformer, Classifier or Regressor) or a specific operator'
              '(e.g. SelectPercentile) defined in TPOT operator configuration. If one step is a main class,'
