@@ -1015,18 +1015,23 @@ def test_memory_3():
 
 
 def test_memory_4():
-    """Assert that the TPOT _setup_memory function rasies ValueError with a invalid path."""
+    """Assert that the TPOT _setup_memory function create a directory which does not exist."""
+    cachedir = mkdtemp()
+    dir = cachedir + '/test'
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
         offspring_size=2,
         generations=1,
         config_dict='TPOT light',
-        memory="./fake_temp_dir",
+        memory=dir,
         verbosity=0
     )
+    tpot_obj._setup_memory()
+    assert os.path.isdir(dir)
+    rmtree(cachedir)
 
-    assert_raises(ValueError, tpot_obj._setup_memory)
+
 
 
 def test_memory_5():

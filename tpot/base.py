@@ -226,7 +226,8 @@ class TPOTBase(BaseEstimator):
                 TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.
             String path of a caching directory
                 TPOT uses memory caching with the provided directory and TPOT does NOT clean
-                the caching directory up upon shutdown.
+                the caching directory up upon shutdown. If the directory does not exist, TPOT will
+                create it.
             Memory object:
                 TPOT uses the instance of sklearn.external.joblib.Memory for memory caching,
                 and TPOT does NOT clean the caching directory up upon shutdown.
@@ -787,12 +788,16 @@ class TPOTBase(BaseEstimator):
                 if self.memory == "auto":
                     # Create a temporary folder to store the transformers of the pipeline
                     self._cachedir = mkdtemp()
-                elif os.path.isdir(self.memory):
-                    self._cachedir = self.memory
                 else:
-                    raise ValueError(
-                        'Could not find directory for memory caching: {}'.format(self.memory)
-                    )
+                    if not os.path.isdir(self.memory):
+                        try:
+                            os.makedirs(self.memory)
+                        except:
+                            raise ValueError(
+                                'Could not create directory for memory caching: {}'.format(self.memory)
+                            )
+                    self._cachedir = self.memory
+
                 self._memory = Memory(cachedir=self._cachedir, verbose=0)
             elif isinstance(self.memory, Memory):
                 self._memory = self.memory
