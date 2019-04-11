@@ -173,7 +173,8 @@ class TPOTBase(BaseEstimator):
         n_jobs: int, optional (default: 1)
             Number of CPUs for evaluating pipelines in parallel during the TPOT
             optimization process. Assigning this to -1 will use as many cores as available
-            on the computer.
+            on the computer. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
+            Thus for n_jobs = -2, all CPUs but one are used.
         max_time_mins: int, optional (default: None)
             How many minutes TPOT has to optimize the pipeline.
             If provided, this setting will override the "generations" parameter and allow
@@ -205,7 +206,7 @@ class TPOTBase(BaseEstimator):
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
         template: string (default: 'RandomTree')
-            A template for pipeline structure
+            A template for predefined pipeline structure. 
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -596,8 +597,12 @@ class TPOTBase(BaseEstimator):
                 'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
             )
 
-        if self.n_jobs == -1:
-            self._n_jobs = cpu_count()
+        if self.n_jobs == 0:
+            raise ValueError(
+                'The value 0 of n_jobs is invalid.'
+            )
+        elif self.n_jobs < 0:
+            self._n_jobs = cpu_count() + 1 + self.n_jobs
         else:
             self._n_jobs = self.n_jobs
 
@@ -1321,8 +1326,12 @@ class TPOTBase(BaseEstimator):
                     result_score_list = self._update_val(val, result_score_list)
             else:
                 # chunk size for pbar update
-                # chunk size is min of cpu_count * 2 and n_jobs * 4
-                chunk_size = min(cpu_count()*2, self._n_jobs*4)
+                if self.use_dask:
+                    # chunk size is min of _lambda and n_jobs * 10
+                    chunk_size = min(self._lambda, self._n_jobs*10)
+                else:
+                    # chunk size is min of cpu_count * 2 and n_jobs * 4
+                    chunk_size = min(cpu_count()*2, self._n_jobs*4)
                 for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                     self._stop_by_max_time_mins()
                     if self.use_dask:

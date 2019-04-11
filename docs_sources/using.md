@@ -240,7 +240,7 @@ See the section on <a href="#scoring-functions">scoring functions</a> for more d
 <td>Any positive integer or -1</td>
 <td>Number of CPUs for evaluating pipelines in parallel during the TPOT optimization process.
 <br /><br />
-Assigning this to -1 will use as many cores as available on the computer.</td>
+Assigning this to -1 will use as many cores as available on the computer. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used.</td>
 </tr>
 <tr>
 <td>-maxtime</td>
@@ -589,10 +589,10 @@ For large problems or working on Jupyter notebook, we highly recommend that you 
 The [dask-examples binder](https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=machine-learning%2Ftpot.ipynb) has a runnable example
 with a small dask cluster.
 
-To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator. **Note: if `use_dask=True`, TPOT will use as many cores as available on the your Dask cluster regardless of whether `n_jobs` is specified.**
+To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator. **Note: if `use_dask=True`, TPOT will use as many cores as available on the your Dask cluster. If `n_jobs` is specified, then it will control the chunk size (10*`n_jobs` if it is less then offspring size) of parallel training. **
 
 ```python
-estimator = TPOTEstimator(use_dask=True)
+estimator = TPOTEstimator(use_dask=True, n_jobs=-1)
 ```
 
 This will use use all the workers on your cluster to do the training, and use [Dask-ML's pipeline rewriting](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) to avoid re-fitting estimators multiple times on the same set of data.

@@ -283,11 +283,30 @@ def test_init_n_jobs():
     """Assert that the TPOT init stores current number of processes."""
     tpot_obj = TPOTClassifier(n_jobs=2)
     assert tpot_obj.n_jobs == 2
+    tpot_obj._fit_init()
+    assert tpot_obj._n_jobs == 2
 
     tpot_obj = TPOTClassifier(n_jobs=-1)
     assert tpot_obj.n_jobs == -1
     tpot_obj._fit_init()
     assert tpot_obj._n_jobs == cpu_count()
+
+
+def test_init_n_jobs_2():
+    """Assert that the TPOT init assign right"""
+    tpot_obj = TPOTClassifier(n_jobs=-2)
+    assert tpot_obj.n_jobs == -2
+
+    tpot_obj._fit_init()
+    assert tpot_obj._n_jobs == cpu_count() - 1
+
+
+def test_init_n_jobs_3():
+    """Assert that the TPOT init rasies ValueError if n_jobs=0."""
+    tpot_obj = TPOTClassifier(n_jobs=0)
+    assert tpot_obj.n_jobs == 0
+
+    assert_raises(ValueError, tpot_obj._fit_init)
 
 
 def test_timeout():

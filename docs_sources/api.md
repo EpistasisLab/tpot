@@ -107,7 +107,7 @@ Setting <em>subsample</em>=0.5 tells TPOT to use a random subsample of half of t
 <blockquote>
 Number of processes to use in parallel for evaluating pipelines during the TPOT optimization process.
 <br /><br />
-Setting <em>n_jobs</em>=-1 will use as many cores as available on the computer. Beware that using multiple processes on the same machine may cause memory issues for large datasets
+Setting <em>n_jobs</em>=-1 will use as many cores as available on the computer. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used. Beware that using multiple processes on the same machine may cause memory issues for large datasets.
 </blockquote>
 
 <strong>max_time_mins</strong>: integer or None, optional (default=None)
@@ -590,7 +590,7 @@ Setting <em>subsample</em>=0.5 tells TPOT to use a random subsample of half of t
 <blockquote>
 Number of processes to use in parallel for evaluating pipelines during the TPOT optimization process.
 <br /><br />
-Setting <em>n_jobs</em>=-1 will use as many cores as available on the computer. Beware that using multiple processes on the same machine may cause memory issues for large datasets
+Setting <em>n_jobs</em>=-1 will use as many cores as available on the computer. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used. Beware that using multiple processes on the same machine may cause memory issues for large datasets
 </blockquote>
 
 <strong>max_time_mins</strong>: integer or None, optional (default=None)

@@ -296,7 +296,8 @@ def _get_arg_parser():
         help=(
             'Number of CPUs for evaluating pipelines in parallel during the '
             'TPOT optimization process. Assigning this to -1 will use as many '
-            'cores as available on the computer.'
+            'cores as available on the computer. For n_jobs below -1, '
+            '(n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used.'
         )
     )
 
