@@ -555,6 +555,8 @@ If a specific operator, e.g. `SelectPercentile`, is prefered to used in the 1st 
 
 `FeatureSetSelector` is a special new operator in TPOT. This operator enables feature selection based on *priori* export knowledge. For example, in RNA-seq gene expression analysis, this operator can be used to select one or more gene (feature) set(s) based on GO (Gene Ontology) terms or annotated gene sets Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/index.jsp)) in the 1st step of pipeline via `template` option above, in order to reduce dimensions and TPOT computation time. Below is a example how to use this operator in TPOT.
 
+Please check our [preprint paper](https://www.biorxiv.org/content/10.1101/502484v1.article-info) for more details.
+
 ```Python
 from tpot import TPOTClassifier
 import numpy as np

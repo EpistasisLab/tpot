@@ -667,6 +667,7 @@ tpot.export('tpot_mnist_pipeline.py')
 <p>If a specific operator, e.g. <code>SelectPercentile</code>, is prefered to used in the 1st step of pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.</p>
 <h1 id="featuresetselector-in-tpot">FeatureSetSelector in TPOT</h1>
 <p><code>FeatureSetSelector</code> is a special new operator in TPOT. This operator enables feature selection based on <em>priori</em> export knowledge. For example, in RNA-seq gene expression analysis, this operator can be used to select one or more gene (feature) set(s) based on GO (Gene Ontology) terms or annotated gene sets Molecular Signatures Database (<a href="http://software.broadinstitute.org/gsea/msigdb/index.jsp">MSigDB</a>) in the 1st step of pipeline via <code>template</code> option above, in order to reduce dimensions and TPOT computation time. Below is a example how to use this operator in TPOT.</p>
+<p>Please check our <a href="https://www.biorxiv.org/content/10.1101/502484v1.article-info">preprint paper</a> for more details.</p>
 <pre><code class="Python">from tpot import TPOTClassifier
 import numpy as np
 import pandas as pd
