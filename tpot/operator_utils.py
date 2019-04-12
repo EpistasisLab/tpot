@@ -25,6 +25,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
+from sklearn.feature_selection.base import SelectorMixin
 import inspect
 
 
@@ -173,18 +174,23 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
         return None, None
     else:
         # define if the operator can be the root of a pipeline
-        if issubclass(op_obj, ClassifierMixin) or issubclass(op_obj, RegressorMixin):
+        if issubclass(op_obj, ClassifierMixin):
             class_profile['root'] = True
-            optype = "Classifier or Regressor"
-        else:
-            optype = "Preprocessor or Selector"
+            optype = "Classifier"
+        elif issubclass(op_obj, RegressorMixin):
+            class_profile['root'] = True
+            optype = "Regressor"
+        if issubclass(op_obj, TransformerMixin):
+            optype = "Transformer"
+        if issubclass(op_obj, SelectorMixin):
+            optype = "Selector"
 
         @classmethod
         def op_type(cls):
             """Return the operator type.
 
             Possible values:
-                "Classifier", "Regressor", "Selector", "Preprocessor"
+                "Classifier", "Regressor", "Selector", "Transformer"
             """
             return optype
 
@@ -233,7 +239,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 operator
 
             """
-            return ([np.ndarray] + arg_types, np.ndarray)
+            return ([np.ndarray] + arg_types, np.ndarray) # (input types, return types)
 
         class_profile['parameter_types'] = parameter_types
 

@@ -30,7 +30,6 @@ from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
 from tpot.metrics import balanced_accuracy, SCORERS
 from tpot.operator_utils import TPOTOperatorClassFactory, set_sample_weight, source_decode
-from tpot.decorators import pretest_X, pretest_y
 
 from tpot.config.classifier import classifier_config_dict
 from tpot.config.classifier_light import classifier_config_dict_light
@@ -54,10 +53,12 @@ from time import sleep
 from tempfile import mkdtemp
 from shutil import rmtree
 
-from sklearn.datasets import load_digits, load_boston
+from sklearn.datasets import load_digits, load_boston, make_classification
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
 from sklearn.externals.joblib import Memory
 from sklearn.metrics import make_scorer, roc_auc_score
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
+from sklearn.feature_selection.base import SelectorMixin
 from deap import creator, gp
 from deap.tools import ParetoFront
 from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
@@ -94,6 +95,9 @@ boston_data = load_boston()
 training_features_r, testing_features_r, training_target_r, testing_target_r = \
     train_test_split(boston_data.data, boston_data.target, random_state=42)
 
+# Set up a small test dataset
+
+pretest_X, pretest_y = make_classification(n_samples=100, n_features=10, random_state=42)
 # Set up pandas DataFrame for testing
 
 input_data = pd.read_csv(
@@ -279,11 +283,30 @@ def test_init_n_jobs():
     """Assert that the TPOT init stores current number of processes."""
     tpot_obj = TPOTClassifier(n_jobs=2)
     assert tpot_obj.n_jobs == 2
+    tpot_obj._fit_init()
+    assert tpot_obj._n_jobs == 2
 
     tpot_obj = TPOTClassifier(n_jobs=-1)
     assert tpot_obj.n_jobs == -1
     tpot_obj._fit_init()
     assert tpot_obj._n_jobs == cpu_count()
+
+
+def test_init_n_jobs_2():
+    """Assert that the TPOT init assign right"""
+    tpot_obj = TPOTClassifier(n_jobs=-2)
+    assert tpot_obj.n_jobs == -2
+
+    tpot_obj._fit_init()
+    assert tpot_obj._n_jobs == cpu_count() - 1
+
+
+def test_init_n_jobs_3():
+    """Assert that the TPOT init rasies ValueError if n_jobs=0."""
+    tpot_obj = TPOTClassifier(n_jobs=0)
+    assert tpot_obj.n_jobs == 0
+
+    assert_raises(ValueError, tpot_obj._fit_init)
 
 
 def test_timeout():
@@ -593,6 +616,90 @@ def test_sample_weight_func():
     assert np.allclose(cv_score1, cv_score2)
     assert not np.allclose(cv_score1, cv_score_weight)
     assert np.allclose(known_score, score)
+
+
+def test_template_1():
+    """Assert that TPOT template option generates pipeline when each step is a type of operator."""
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        template='Selector-Transformer-Classifier'
+    )
+    tpot_obj._fit_init()
+    pop = tpot_obj._toolbox.population(n=10)
+    for deap_pipeline in pop:
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        assert operator_count == 3
+        assert issubclass(sklearn_pipeline.steps[0][1].__class__, SelectorMixin)
+        assert issubclass(sklearn_pipeline.steps[1][1].__class__, TransformerMixin)
+        assert issubclass(sklearn_pipeline.steps[2][1].__class__, ClassifierMixin)
+
+
+def test_template_2():
+    """Assert that TPOT template option generates pipeline when each step is operator type with a duplicate main type."""
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        template='Selector-Selector-Transformer-Classifier'
+    )
+    tpot_obj._fit_init()
+    pop = tpot_obj._toolbox.population(n=10)
+    for deap_pipeline in pop:
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        assert operator_count == 4
+        assert issubclass(sklearn_pipeline.steps[0][1].__class__, SelectorMixin)
+        assert issubclass(sklearn_pipeline.steps[1][1].__class__, SelectorMixin)
+        assert issubclass(sklearn_pipeline.steps[2][1].__class__, TransformerMixin)
+        assert issubclass(sklearn_pipeline.steps[3][1].__class__, ClassifierMixin)
+
+
+def test_template_3():
+    """Assert that TPOT template option generates pipeline when one of steps is a specific operator."""
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        template='SelectPercentile-Transformer-Classifier'
+    )
+    tpot_obj._fit_init()
+    pop = tpot_obj._toolbox.population(n=10)
+    for deap_pipeline in pop:
+        operator_count = tpot_obj._operator_count(deap_pipeline)
+        sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+        assert operator_count == 3
+        assert sklearn_pipeline.steps[0][0] == 'SelectPercentile'.lower()
+        assert issubclass(sklearn_pipeline.steps[0][1].__class__, SelectorMixin)
+        assert issubclass(sklearn_pipeline.steps[1][1].__class__, TransformerMixin)
+        assert issubclass(sklearn_pipeline.steps[2][1].__class__, ClassifierMixin)
+
+
+def test_template_4():
+    """Assert that TPOT template option generates pipeline when one of steps is a specific operator."""
+
+    tpot_obj = TPOTClassifier(
+        population_size=5,
+        generations=2,
+        random_state=42,
+        verbosity=0,
+        config_dict = 'TPOT light',
+        template='SelectPercentile-Transformer-Classifier'
+    )
+    tpot_obj.fit(pretest_X, pretest_y)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+    sklearn_pipeline = tpot_obj.fitted_pipeline_
+    operator_count = tpot_obj._operator_count(tpot_obj._optimized_pipeline)
+    assert operator_count == 3
+    assert sklearn_pipeline.steps[0][0] == 'SelectPercentile'.lower()
+    assert issubclass(sklearn_pipeline.steps[0][1].__class__, SelectorMixin)
+    assert issubclass(sklearn_pipeline.steps[1][1].__class__, TransformerMixin)
+    assert issubclass(sklearn_pipeline.steps[2][1].__class__, ClassifierMixin)
 
 
 def test_fit_GroupKFold():
@@ -933,18 +1040,23 @@ def test_memory_3():
 
 
 def test_memory_4():
-    """Assert that the TPOT _setup_memory function rasies ValueError with a invalid path."""
+    """Assert that the TPOT _setup_memory function create a directory which does not exist."""
+    cachedir = mkdtemp()
+    dir = cachedir + '/test'
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
         offspring_size=2,
         generations=1,
         config_dict='TPOT light',
-        memory="./fake_temp_dir",
+        memory=dir,
         verbosity=0
     )
+    tpot_obj._setup_memory()
+    assert os.path.isdir(dir)
+    rmtree(cachedir)
 
-    assert_raises(ValueError, tpot_obj._setup_memory)
+
 
 
 def test_memory_5():
@@ -1565,6 +1677,7 @@ def test_check_dataset():
         verbosity=0,
         config_dict='TPOT light'
     )
+    tpot_obj._fit_init()
 
     ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target)
     assert np.allclose(ret_features, training_features)
@@ -1581,6 +1694,7 @@ def test_check_dataset_2():
         verbosity=0,
         config_dict='TPOT light'
     )
+    tpot_obj._fit_init()
     test_sample_weight = list(range(1, len(training_target)+1))
     ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
     test_sample_weight[0] = 'opps'
@@ -1598,6 +1712,7 @@ def test_check_dataset_3():
         verbosity=0,
         config_dict='TPOT light'
     )
+    tpot_obj._fit_init()
     test_sample_weight = list(range(1, len(training_target)+1))
     ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
     test_sample_weight[0] = np.nan
@@ -1615,6 +1730,7 @@ def test_check_dataset_4():
         verbosity=0,
         config_dict='TPOT light'
     )
+    tpot_obj._fit_init()
     test_sample_weight = list(range(1, len(training_target)))
     assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
 
@@ -1629,7 +1745,7 @@ def test_check_dataset_5():
         verbosity=0,
         config_dict='TPOT light'
     )
-
+    tpot_obj._fit_init()
     ret_features = tpot_obj._check_dataset(training_features, target=None)
     assert np.allclose(ret_features, training_features)
 
@@ -1829,7 +1945,7 @@ def test_tpot_operator_factory_class():
     assert len(tpot_argument_list) == 9
     assert tpot_operator_list[0].root is True
     assert tpot_operator_list[1].root is False
-    assert tpot_operator_list[2].type() == "Classifier or Regressor"
+    assert tpot_operator_list[2].type() == "Classifier"
     assert tpot_argument_list[1].values == [True, False]
 
 
@@ -1869,8 +1985,8 @@ def test_PolynomialFeatures_exception():
 
     pop = tpot_obj._evaluate_individuals(pipelines, pretest_X, pretest_y)
     fitness_scores = [ind.fitness.values for ind in pop]
-    known_scores = [(2, 0.94000000000000006), (5000.0, -float('inf'))]
-    assert np.allclose(known_scores, fitness_scores)
+    assert fitness_scores[0][0] == 2
+    assert fitness_scores[1][0] == 5000.0
 
 
 def test_pick_two_individuals_eligible_for_crossover():
@@ -2159,7 +2275,7 @@ def test_varOr_3():
 
 def test_operator_type():
     """Assert that TPOT operators return their type, e.g. 'Classifier', 'Preprocessor'."""
-    assert TPOTSelectPercentile.type() == "Preprocessor or Selector"
+    assert TPOTSelectPercentile.type() == "Selector"
 
 
 def test_gen():

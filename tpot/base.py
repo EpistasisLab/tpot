@@ -40,6 +40,7 @@ from tempfile import mkdtemp
 from shutil import rmtree
 
 import numpy as np
+from pandas import DataFrame
 from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
@@ -105,7 +106,7 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, config_dict=None,
+                 random_state=None, config_dict=None, template='RandomTree',
                  warm_start=False, memory=None, use_dask=False,
                  periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False):
@@ -172,7 +173,8 @@ class TPOTBase(BaseEstimator):
         n_jobs: int, optional (default: 1)
             Number of CPUs for evaluating pipelines in parallel during the TPOT
             optimization process. Assigning this to -1 will use as many cores as available
-            on the computer.
+            on the computer. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
+            Thus for n_jobs = -2, all CPUs but one are used.
         max_time_mins: int, optional (default: None)
             How many minutes TPOT has to optimize the pipeline.
             If provided, this setting will override the "generations" parameter and allow
@@ -203,6 +205,16 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
+        template: string (default: "RandomTree")
+            Template of predefined pipeline structure. The option is for specifying a desired structure
+            for the machine learning pipeline evaluated in TPOT. So far this option only supports
+            linear pipeline structure. Each step in the pipeline should be a main class of operators
+            (Selector, Transformer, Classifier or Regressor) or a specific operator
+            (e.g. SelectPercentile) defined in TPOT operator configuration. If one step is a main class,
+            TPOT will randomly assign all subclass operators (subclasses of SelectorMixin,
+            TransformerMixin, ClassifierMixin or RegressorMixin in scikit-learn) to that step.
+            Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Classifier".
+            By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -214,7 +226,8 @@ class TPOTBase(BaseEstimator):
                 TPOT uses memory caching with a temporary directory and cleans it up upon shutdown.
             String path of a caching directory
                 TPOT uses memory caching with the provided directory and TPOT does NOT clean
-                the caching directory up upon shutdown.
+                the caching directory up upon shutdown. If the directory does not exist, TPOT will
+                create it.
             Memory object:
                 TPOT uses the instance of sklearn.external.joblib.Memory for memory caching,
                 and TPOT does NOT clean the caching directory up upon shutdown.
@@ -268,12 +281,35 @@ class TPOTBase(BaseEstimator):
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
         self.early_stop = early_stop
         self.config_dict = config_dict
+        self.template = template
         self.warm_start = warm_start
         self.memory = memory
         self.use_dask = use_dask
         self.verbosity = verbosity
         self.disable_update_check = disable_update_check
         self.random_state = random_state
+
+
+    def _setup_template(self, template):
+        self.template = template
+        self.template_comp = template.split('-')
+        if self.template == 'RandomTree':
+            self._min = 1
+            self._max = 3
+        else:
+            self._min = 0
+            self._max = 1
+            for comp in self.template_comp:
+                if comp == 'CombineDFs':
+                    self._max += 2
+                    self._min += 1
+                else:
+                    self._max += 1
+                    self._min += 1
+        if self._max - self._min == 1:
+            self.tree_structure = False
+        else:
+            self.tree_structure = True
 
 
     def _setup_scoring_function(self, scoring):
@@ -350,6 +386,7 @@ class TPOTBase(BaseEstimator):
         else:
             self._config_dict = self.default_config_dict
 
+
     def _read_config_file(self, config_path):
         if os.path.isfile(config_path):
             try:
@@ -370,6 +407,7 @@ class TPOTBase(BaseEstimator):
                 '{}'.format(config_path)
             )
 
+
     def _setup_pset(self):
         if self.random_state is not None:
             random.seed(self.random_state)
@@ -378,39 +416,89 @@ class TPOTBase(BaseEstimator):
         self._pset = gp.PrimitiveSetTyped('MAIN', [np.ndarray], Output_Array)
         self._pset.renameArguments(ARG0='input_matrix')
         self._add_operators()
-        self._add_terminals()
 
         if self.verbosity > 2:
             print('{} operators have been imported by TPOT.'.format(len(self.operators)))
 
+
     def _add_operators(self):
-        for operator in self.operators:
-            if operator.root:
-                # We need to add rooted primitives twice so that they can
-                # return both an Output_Array (and thus be the root of the tree),
-                # and return a np.ndarray so they can exist elsewhere in the tree.
-                p_types = (operator.parameter_types()[0], Output_Array)
-                self._pset.addPrimitive(operator, *p_types)
+        main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
+        ret_types = []
+        self.op_list = []
+        if self.template == "RandomTree": # default pipeline structure
+            step_in_type = np.ndarray
+            step_ret_type = Output_Array
+            for operator in self.operators:
+                arg_types =  operator.parameter_types()[0][1:]
+                p_types = ([step_in_type] + arg_types, step_ret_type)
+                if operator.root:
+                    # We need to add rooted primitives twice so that they can
+                    # return both an Output_Array (and thus be the root of the tree),
+                    # and return a np.ndarray so they can exist elsewhere in the tree.
+                    self._pset.addPrimitive(operator, *p_types)
+                tree_p_types = ([step_in_type] + arg_types, step_in_type)
+                self._pset.addPrimitive(operator, *tree_p_types)
+                self._import_hash_and_add_terminals(operator, arg_types)
+            self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
+        else:
+            gp_types = {}
+            for idx, step in enumerate(self.template_comp):
 
-            self._pset.addPrimitive(operator, *operator.parameter_types())
-
-            # Import required modules into local namespace so that pipelines
-            # may be evaluated directly
-            for key in sorted(operator.import_hash.keys()):
-                module_list = ', '.join(sorted(operator.import_hash[key]))
-
-                if key.startswith('tpot.'):
-                    exec('from {} import {}'.format(key[4:], module_list))
+                # input class in each step
+                if idx:
+                    step_in_type = ret_types[-1]
                 else:
-                    exec('from {} import {}'.format(key, module_list))
+                    step_in_type = np.ndarray
+                if step != 'CombineDFs':
+                    if idx < len(self.template_comp) - 1:
+                        # create an empty for returning class for strongly-type GP
+                        step_ret_type_name = 'Ret_{}'.format(idx)
+                        step_ret_type = type(step_ret_type_name, (object,), {})
+                        ret_types.append(step_ret_type)
+                    else:
+                        step_ret_type = Output_Array
+                if step == 'CombineDFs':
+                    self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
+                elif main_type.count(step): # if the step is a main type
+                    for operator in self.operators:
+                        arg_types =  operator.parameter_types()[0][1:]
+                        if operator.type() == step:
+                            p_types = ([step_in_type] + arg_types, step_ret_type)
+                            self._pset.addPrimitive(operator, *p_types)
+                            self._import_hash_and_add_terminals(operator, arg_types)
+                else: # is the step is a specific operator
+                    for operator in self.operators:
+                        arg_types =  operator.parameter_types()[0][1:]
+                        if operator.__name__ == step:
+                            p_types = ([step_in_type] + arg_types, step_ret_type)
+                            self._pset.addPrimitive(operator, *p_types)
+                            self._import_hash_and_add_terminals(operator, arg_types)
+        self.ret_types = [np.ndarray, Output_Array] + ret_types
 
-                for var in operator.import_hash[key]:
-                    self.operators_context[var] = eval(var)
 
-        self._pset.addPrimitive(CombineDFs(), [np.ndarray, np.ndarray], np.ndarray)
+    def _import_hash_and_add_terminals(self, operator, arg_types):
+        if not self.op_list.count(operator.__name__):
+            self._import_hash(operator)
+            self._add_terminals(arg_types)
+            self.op_list.append(operator.__name__)
 
-    def _add_terminals(self):
-        for _type in self.arguments:
+
+    def _import_hash(self, operator):
+        # Import required modules into local namespace so that pipelines
+        # may be evaluated directly
+        for key in sorted(operator.import_hash.keys()):
+            module_list = ', '.join(sorted(operator.import_hash[key]))
+
+            if key.startswith('tpot.'):
+                exec('from {} import {}'.format(key[4:], module_list))
+            else:
+                exec('from {} import {}'.format(key, module_list))
+
+            for var in operator.import_hash[key]:
+                self.operators_context[var] = eval(var)
+
+    def _add_terminals(self, arg_types):
+        for _type in arg_types:
             type_values = list(_type.values)
 
             for val in type_values:
@@ -424,13 +512,16 @@ class TPOTBase(BaseEstimator):
             creator.create('Individual', gp.PrimitiveTree, fitness=creator.FitnessMulti, statistics=dict)
 
         self._toolbox = base.Toolbox()
-        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=1, max_=3)
+        self._toolbox.register('expr', self._gen_grow_safe, pset=self._pset, min_=self._min, max_=self._max)
         self._toolbox.register('individual', tools.initIterate, creator.Individual, self._toolbox.expr)
         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
         self._toolbox.register('compile', self._compile_to_sklearn)
         self._toolbox.register('select', tools.selNSGA2)
         self._toolbox.register('mate', self._mate_operator)
-        self._toolbox.register('expr_mut', self._gen_grow_safe, min_=1, max_=4)
+        if self.tree_structure:
+            self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max + 1)
+        else:
+            self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
 
@@ -458,6 +549,8 @@ class TPOTBase(BaseEstimator):
         self._max_mut_loops = 50
 
         self._setup_config(self.config_dict)
+
+        self._setup_template(self.template)
 
         self.operators = []
         self.arguments = []
@@ -512,8 +605,12 @@ class TPOTBase(BaseEstimator):
                 'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
             )
 
-        if self.n_jobs == -1:
-            self._n_jobs = cpu_count()
+        if self.n_jobs == 0:
+            raise ValueError(
+                'The value 0 of n_jobs is invalid.'
+            )
+        elif self.n_jobs < 0:
+            self._n_jobs = cpu_count() + 1 + self.n_jobs
         else:
             self._n_jobs = self.n_jobs
 
@@ -560,12 +657,16 @@ class TPOTBase(BaseEstimator):
 
         """
         self._fit_init()
-
         features, target = self._check_dataset(features, target, sample_weight)
+
+
+        self.pretest_X, _, self.pretest_y, _ = train_test_split(features,
+                                                target, train_size=min(50, int(0.9*features.shape[0])),
+                                                test_size=None, random_state=self.random_state)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
-            features, _, target, _ = train_test_split(features, target, train_size=self.subsample, random_state=self.random_state)
+            features, _, target, _ = train_test_split(features, target, train_size=self.subsample, test_size=None, random_state=self.random_state)
             # Raise a warning message if the training size is less than 1500 when subsample is not default value
             if features.shape[0] < 1500:
                 print(
@@ -687,12 +788,16 @@ class TPOTBase(BaseEstimator):
                 if self.memory == "auto":
                     # Create a temporary folder to store the transformers of the pipeline
                     self._cachedir = mkdtemp()
-                elif os.path.isdir(self.memory):
-                    self._cachedir = self.memory
                 else:
-                    raise ValueError(
-                        'Could not find directory for memory caching: {}'.format(self.memory)
-                    )
+                    if not os.path.isdir(self.memory):
+                        try:
+                            os.makedirs(self.memory)
+                        except:
+                            raise ValueError(
+                                'Could not create directory for memory caching: {}'.format(self.memory)
+                            )
+                    self._cachedir = self.memory
+
                 self._memory = Memory(cachedir=self._cachedir, verbose=0)
             elif isinstance(self.memory, Memory):
                 self._memory = self.memory
@@ -1064,17 +1169,29 @@ class TPOTBase(BaseEstimator):
                     'customized config dictionary supports sparse matriies.'
                 )
         else:
-            if np.any(np.isnan(features)):
-                self._imputed = True
+            if isinstance(features, np.ndarray):
+                if np.any(np.isnan(features)):
+                    self._imputed = True
+            elif isinstance(features, DataFrame):
+                if features.isnull().values.any():
+                    self._imputed = True
+
+            if self._imputed:
                 features = self._impute_values(features)
 
         try:
             if target is not None:
-                X, y = check_X_y(features, target, accept_sparse=True, dtype=np.float64)
-                return X, y
+                X, y = check_X_y(features, target, accept_sparse=True, dtype=None)
+                if self._imputed:
+                    return X, y
+                else:
+                    return features, target
             else:
-                X = check_array(features, order="C",  accept_sparse=True, dtype=np.float64)
-                return X
+                X = check_array(features, accept_sparse=True, dtype=None)
+                if self._imputed:
+                    return X
+                else:
+                    return features
         except (AssertionError, ValueError):
             raise ValueError(
                 'Error: Input data is not in a valid format. Please confirm '
@@ -1221,8 +1338,12 @@ class TPOTBase(BaseEstimator):
                     result_score_list = self._update_val(val, result_score_list)
             else:
                 # chunk size for pbar update
-                # chunk size is min of cpu_count * 2 and n_jobs * 4
-                chunk_size = min(cpu_count()*2, self._n_jobs*4)
+                if self.use_dask:
+                    # chunk size is min of _lambda and n_jobs * 10
+                    chunk_size = min(self._lambda, self._n_jobs*10)
+                else:
+                    # chunk size is min of cpu_count * 2 and n_jobs * 4
+                    chunk_size = min(cpu_count()*2, self._n_jobs*4)
                 for chunk_idx in range(0, len(sklearn_pipeline_list), chunk_size):
                     self._stop_by_max_time_mins()
                     if self.use_dask:
@@ -1321,6 +1442,12 @@ class TPOTBase(BaseEstimator):
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual_str = str(individual)
+            if not len(individual): # a pipeline cannot be randomly generated
+                self.evaluated_individuals_[individual_str] = self._combine_individual_stats(5000.,
+                                                                                             -float('inf'),
+                                                                                             individual.statistics)
+                self._update_pbar(pbar_msg='Invalid pipeline encountered. Skipping its evaluation.')
+                continue
             sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(individual, self._pset), self.operators)
             if sklearn_pipeline_str.count('PolynomialFeatures') > 1:
                 self.evaluated_individuals_[individual_str] = self._combine_individual_stats(5000.,
@@ -1450,15 +1577,17 @@ class TPOTBase(BaseEstimator):
             Returns the individual with one of the mutations applied to it
 
         """
-        mutation_techniques = [
-            partial(gp.mutInsert, pset=self._pset),
-            partial(mutNodeReplacement, pset=self._pset)
-        ]
-
-        # We can't shrink pipelines with only one primitive, so we only add it if we find more primitives.
-        number_of_primitives = sum([isinstance(node, deap.gp.Primitive) for node in individual])
-        if number_of_primitives > 1 and allow_shrink:
-            mutation_techniques.append(partial(gp.mutShrink))
+        if self.tree_structure:
+            mutation_techniques = [
+                partial(gp.mutInsert, pset=self._pset),
+                partial(mutNodeReplacement, pset=self._pset)
+            ]
+            # We can't shrink pipelines with only one primitive, so we only add it if we find more primitives.
+            number_of_primitives = sum([isinstance(node, deap.gp.Primitive) for node in individual])
+            if number_of_primitives > 1 and allow_shrink:
+                mutation_techniques.append(partial(gp.mutShrink))
+        else:
+            mutation_techniques = [partial(mutNodeReplacement, pset=self._pset)]
 
         mutator = np.random.choice(mutation_techniques)
 
@@ -1484,7 +1613,7 @@ class TPOTBase(BaseEstimator):
         # Sometimes you have pipelines for which every shrunk version has already been explored too.
         # To still mutate the individual, one of the two other mutators should be applied instead.
         if ((unsuccesful_mutations == 50) and
-                (type(mutator) is partial and mutator.func is gp.mutShrink)):
+           (type(mutator) is partial and mutator.func is gp.mutShrink)):
             offspring, = self._random_mutation_operator(individual, allow_shrink=False)
 
         return offspring,
@@ -1512,9 +1641,10 @@ class TPOTBase(BaseEstimator):
 
         def condition(height, depth, type_):
             """Stop when the depth is equal to height or when a node should be a terminal."""
-            return type_ not in [np.ndarray, Output_Array] or depth == height
+            return type_ not in self.ret_types or depth == height
 
         return self._generate(pset, min_, max_, condition, type_)
+
 
     def _operator_count(self, individual):
         """Count the number of pipeline operators as a measure of pipeline complexity.

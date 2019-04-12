@@ -296,7 +296,8 @@ def _get_arg_parser():
         help=(
             'Number of CPUs for evaluating pipelines in parallel during the '
             'TPOT optimization process. Assigning this to -1 will use as many '
-            'cores as available on the computer.'
+            'cores as available on the computer. For n_jobs below -1, '
+            '(n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used.'
         )
     )
 
@@ -351,6 +352,25 @@ def _get_arg_parser():
             'that TPOT uses in the optimization process. Must be a Python '
             'module containing a dict export named "tpot_config" or the name of '
             'built-in configuration.'
+        )
+    )
+
+    parser.add_argument(
+        '-template',
+        action='store',
+        dest='TEMPLATE',
+        default='RandomTree',
+        type=str,
+        help=(
+             'Template of predefined pipeline structure. The option is for specifying a desired structure'
+             'for the machine learning pipeline evaluated in TPOT. So far this option only supports'
+             'linear pipeline structure. Each step in the pipeline should be a main class of operators'
+             '(Selector, Transformer, Classifier or Regressor) or a specific operator'
+             '(e.g. SelectPercentile) defined in TPOT operator configuration. If one step is a main class,'
+             'TPOT will randomly assign all subclass operators (subclasses of SelectorMixin,'
+             'TransformerMixin, ClassifierMixin or RegressorMixin in scikit-learn) to that step.'
+             'Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Classifier".'
+             'By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.'
         )
     )
 
@@ -523,6 +543,7 @@ def tpot_driver(args):
         max_eval_time_mins=args.MAX_EVAL_MINS,
         random_state=args.RANDOM_STATE,
         config_dict=args.CONFIG_FILE,
+        template=args.TEMPLATE,
         memory=args.MEMORY,
         periodic_checkpoint_folder=args.CHECKPOINT_FOLDER,
         early_stop=args.EARLY_STOP,
