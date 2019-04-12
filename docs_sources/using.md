@@ -240,7 +240,7 @@ See the section on <a href="#scoring-functions">scoring functions</a> for more d
 <td>Any positive integer or -1</td>
 <td>Number of CPUs for evaluating pipelines in parallel during the TPOT optimization process.
 <br /><br />
-Assigning this to -1 will use as many cores as available on the computer.</td>
+Assigning this to -1 will use as many cores as available on the computer. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used.</td>
 </tr>
 <tr>
 <td>-maxtime</td>
@@ -279,6 +279,15 @@ Set this seed if you want your TPOT run to be reproducible with the same seed an
 <li>string 'TPOT sparse': TPOT will use a configuration dictionary with a one-hot encoder and the operators normally included in TPOT that also support sparse matrices.</li>
 </ul>
 See the <a href="../using/#built-in-tpot-configurations">built-in configurations</a> section for the list of configurations included with TPOT, and the <a href="../using/#customizing-tpots-operators-and-parameters">custom configuration</a> section for more information and examples of how to create your own TPOT configurations.
+</td>
+</tr>
+<tr>
+<td>-template</td>
+<td>TEMPLATE</td>
+<td>String</td>
+<td>Template of predefined pipeline structure. The option is for specifying a desired structure for the machine learning pipeline evaluated in TPOT. So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer, Classifier or Regressor) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html), [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html) or [`RegressorMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html) in scikit-learn) to that step. Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Classifier". By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.
+
+See the <a href="../using/#template-option-in-tpot"> template option in tpot</a> section for more details.
 </td>
 </tr>
 <tr>
@@ -526,6 +535,53 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
+
+# Template option in TPOT
+
+Template option provides a way to specify a desired structure for machine learning pipeline, which may reduce TPOT computation time and potentially provide more interpretable results. Current implementation only supports linear pipelines.
+
+Below is a simple example to use `template` option. The pipelines generated/evaluated in TPOT will follow this structure: 1st step is a feature selector (a subclass of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17)), 2nd step is a feature transformer (a subclass of [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html)) and 3rd step is a classifier for classification (a subclass of [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html)). The last step must be `Classifier` for `TPOTClassifier`'s template but `Regressor` for `TPOTRegressor`. **Note: although `SelectorMixin` is subclass of `TransformerMixin` in scikit-leawrn, but `Transformer` in this option excludes those subclasses of `SelectorMixin`.**
+
+```Python
+tpot_obj = TPOTClassifier(
+                template='Selector-Transformer-Classifier'
+                )
+```
+
+If a specific operator, e.g. `SelectPercentile`, is prefered to used in the 1st step of pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.
+
+
+# FeatureSetSelector in TPOT
+
+`FeatureSetSelector` is a special new operator in TPOT. This operator enables feature selection based on *priori* export knowledge. For example, in RNA-seq gene expression analysis, this operator can be used to select one or more gene (feature) set(s) based on GO (Gene Ontology) terms or annotated gene sets Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/index.jsp)) in the 1st step of pipeline via `template` option above, in order to reduce dimensions and TPOT computation time. This operator requires a dataset list in csv format. In this csv file, there are only three columns: 1st column is feature set names, 2nd column is the total number of features in one set and 3rd column is a list of feature names (if input X is pandas.DataFrame) or indexes (if input X is numpy.ndarray) delimited by ";". Below is a example how to use this operator in TPOT.
+
+Please check our [preprint paper](https://www.biorxiv.org/content/10.1101/502484v1.article-info) for more details.
+
+```Python
+from tpot import TPOTClassifier
+import numpy as np
+import pandas as pd
+from tpot.config import classifier_config_dict
+test_data = pd.read_csv("https://raw.githubusercontent.com/EpistasisLab/tpot/master/tests/tests.csv")
+test_X = test_data.drop("class", axis=1)
+test_y = test_data['class']
+
+# add FeatureSetSelector into tpot configuration
+classifier_config_dict['tpot.builtins.FeatureSetSelector'] = {
+    'subset_list': ['https://raw.githubusercontent.com/EpistasisLab/tpot/master/tests/subset_test.csv'],
+    'sel_subset': [0,1] # select only one feature set, a list of index of subset in the list above
+    #'sel_subset': list(combinations(range(3), 2)) # select two feature sets
+}
+
+
+tpot = TPOTClassifier(generations=5,
+                           population_size=50, verbosity=2,
+                           template='FeatureSetSelector-Transformer-Classifier',
+                           config_dict=classifier_config_dict)
+tpot.fit(test_X, test_y)
+```
+
+
 # Pipeline caching in TPOT
 
 With the `memory` parameter, pipelines can cache the results of each transformer after fitting them. This feature is used to avoid repeated computation by transformers within a pipeline if the parameters and input data are identical to another fitted pipeline during optimization process. TPOT allows users to specify a custom directory path or [`sklearn.external.joblib.Memory`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/externals/joblib/memory.py#L847) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run).
@@ -581,10 +637,10 @@ For large problems or working on Jupyter notebook, we highly recommend that you 
 The [dask-examples binder](https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=machine-learning%2Ftpot.ipynb) has a runnable example
 with a small dask cluster.
 
-To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator. **Note: if `use_dask=True`, TPOT will use as many cores as available on the your Dask cluster regardless of whether `n_jobs` is specified.**
+To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator. **Note: if `use_dask=True`, TPOT will use as many cores as available on the your Dask cluster. If `n_jobs` is specified, then it will control the chunk size (10*`n_jobs` if it is less then offspring size) of parallel training. **
 
 ```python
-estimator = TPOTEstimator(use_dask=True)
+estimator = TPOTEstimator(use_dask=True, n_jobs=-1)
 ```
 
 This will use use all the workers on your cluster to do the training, and use [Dask-ML's pipeline rewriting](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) to avoid re-fitting estimators multiple times on the same set of data.
