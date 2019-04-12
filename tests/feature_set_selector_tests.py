@@ -26,6 +26,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 import pandas as pd
 from tpot.builtins import FeatureSetSelector
+from nose.tools import assert_raises
 
 test_data = pd.read_csv("tests/tests.csv")
 test_X = test_data.drop("class", axis=1)
@@ -103,10 +104,22 @@ def test_FeatureSetSelector_7():
     ds.fit(test_X.values, y=None)
     transformed_X = ds.transform(test_X.values)
     str_feat_list = [str(i+2) for i in ds.feat_list_idx]
-    
+
 
     assert transformed_X.shape[0] == test_X.shape[0]
     assert transformed_X.shape[1] != test_X.shape[1]
     assert transformed_X.shape[1] == 5
     assert np.array_equal(transformed_X, test_X.values[:, ds.feat_list_idx])
     assert np.array_equal(transformed_X, test_X[str_feat_list].values)
+
+
+def test_FeatureSetSelector_8():
+    """Assert that the StackingEstimator rasies ValueError when features are not available."""
+    ds = FeatureSetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_4")
+    assert_raises(ValueError, ds.fit, test_X)
+
+
+def test_FeatureSetSelector_9():
+    """Assert that the StackingEstimator __name__ returns correct class name."""
+    ds = FeatureSetSelector(subset_list="tests/subset_test.csv", sel_subset="test_subset_4")
+    assert ds.__name__ == 'FeatureSetSelector'

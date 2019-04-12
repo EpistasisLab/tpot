@@ -677,6 +677,31 @@ def test_template_3():
         assert issubclass(sklearn_pipeline.steps[2][1].__class__, ClassifierMixin)
 
 
+def test_template_4():
+    """Assert that TPOT template option generates pipeline when one of steps is a specific operator."""
+
+    tpot_obj = TPOTClassifier(
+        population_size=5,
+        generations=2,
+        random_state=42,
+        verbosity=0,
+        config_dict = 'TPOT light',
+        template='SelectPercentile-Transformer-Classifier'
+    )
+    tpot_obj.fit(pretest_X, pretest_y)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+    sklearn_pipeline = tpot_obj.fitted_pipeline_
+    operator_count = tpot_obj._operator_count(tpot_obj._optimized_pipeline)
+    assert operator_count == 3
+    assert sklearn_pipeline.steps[0][0] == 'SelectPercentile'.lower()
+    assert issubclass(sklearn_pipeline.steps[0][1].__class__, SelectorMixin)
+    assert issubclass(sklearn_pipeline.steps[1][1].__class__, TransformerMixin)
+    assert issubclass(sklearn_pipeline.steps[2][1].__class__, ClassifierMixin)
+
+
 def test_fit_GroupKFold():
     """Assert that TPOT properly handles the group parameter when using GroupKFold."""
     # This check tests if the darker MNIST images would generalize to the lighter ones.
