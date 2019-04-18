@@ -1,35 +1,34 @@
 language: python
 virtualenv:
   system_site_packages: true
-env:
-  matrix:
-    # let's start simple:
-    include:
-    - name: "Python 3.7 on Xenial Linux"
-      python: 3.7           # this works for Linux but is ignored on macOS or Windows
-      dist: xenial        # required for Python >= 3.7
-      env: PYTHON_VERSION="3.7"
-    - name: "Python 3.7 on Xenial Linux with coverage"
-      python: 3.7           # this works for Linux but is ignored on macOS or Windows
-      dist: xenial        # required for Python >= 3.7
-      env: PYTHON_VERSION="3.7"  COVERAGE="true"
-    - name: "Python 2.7 on Xenial Linux"
-      python: 2.7           # this works for Linux but is ignored on macOS or Windows
-      dist: xenial
-      env: PYTHON_VERSION="2.7"
-    - name: "Python 3.7 on macOS"
-      os: osx
-      osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3
-      language: shell       # 'language: python' is an error on Travis CI macOS
-      env: PYTHON_VERSION="3.7"
-    - name: "Python 2.7 on macOS"
-      os: osx
-      osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3
-      language: shell       # 'language: python' is an error on Travis CI macOS
-      env: PYTHON_VERSION="2.7"
-    #- PYTHON_VERSION="2.7"
-    #- PYTHON_VERSION="3.7" COVERAGE="true"
-    #- PYTHON_VERSION="3.7"
+matrix:
+  # let's start simple:
+  include:
+  - name: "Python 3.7 on Xenial Linux"
+    python: 3.7           # this works for Linux but is ignored on macOS or Windows
+    dist: xenial        # required for Python >= 3.7
+    env: PYTHON_VERSION="3.7"
+  - name: "Python 3.7 on Xenial Linux with coverage"
+    python: 3.7           # this works for Linux but is ignored on macOS or Windows
+    dist: xenial        # required for Python >= 3.7
+    env: PYTHON_VERSION="3.7"  COVERAGE="true"
+  - name: "Python 2.7 on Xenial Linux"
+    python: 2.7           # this works for Linux but is ignored on macOS or Windows
+    dist: xenial
+    env: PYTHON_VERSION="2.7"
+  - name: "Python 3.7 on macOS"
+    os: osx
+    osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3
+    language: shell       # 'language: python' is an error on Travis CI macOS
+    env: PYTHON_VERSION="3.7"
+  - name: "Python 2.7 on macOS"
+    os: osx
+    osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3
+    language: shell       # 'language: python' is an error on Travis CI macOS
+    env: PYTHON_VERSION="2.7"
+  #- PYTHON_VERSION="2.7"
+  #- PYTHON_VERSION="3.7" COVERAGE="true"
+  #- PYTHON_VERSION="3.7"
 install: source ./ci/.travis_install.sh
 script: bash ./ci/.travis_test.sh
 after_success:
