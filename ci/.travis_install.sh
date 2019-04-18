@@ -37,12 +37,7 @@ conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
 
 source activate testenv
 
-if [[ "$LATEST" == "true" ]]; then
-    pip install deap
-else
-    pip install deap==$DEAP_VERSION
-fi
-
+pip install deap
 pip install update_checker
 pip install tqdm
 pip install stopit
