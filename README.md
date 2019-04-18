@@ -7,7 +7,7 @@ Development status: [![Development Build Status - Mac/Linux](https://travis-ci.o
 [![Development Coverage Status](https://coveralls.io/repos/github/EpistasisLab/tpot/badge.svg?branch=development)](https://coveralls.io/github/EpistasisLab/tpot?branch=development)
 
 Package information: [![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)](https://www.python.org/download/releases/2.7/)
-[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
 [![License: LGPL v3](https://img.shields.io/badge/license-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
 [![PyPI version](https://badge.fury.io/py/TPOT.svg)](https://badge.fury.io/py/TPOT)
 
