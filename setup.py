@@ -26,11 +26,11 @@ A Python tool that automatically creates and optimizes machine learning pipeline
 
 Contact
 =============
-If you have any questions or comments about TPOT, please feel free to contact me via:
+If you have any questions or comments about TPOT, please feel free to contact us via:
 
-E-mail: rso@randalolson.com
+E-mail: ttle@pennmedicine.upenn.edu or weixuanf@pennmedicine.upenn.edu
 
-or Twitter: https://twitter.com/randal_olson
+or Twitter: https://twitter.com/trang1618 or https://twitter.com/WeixuanFu
 
 This project is hosted at https://github.com/EpistasisLab/tpot
 ''',
@@ -60,6 +60,7 @@ This project is hosted at https://github.com/EpistasisLab/tpot
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Scientific/Engineering :: Artificial Intelligence'
     ],
     keywords=['pipeline optimization', 'hyperparameter optimization', 'data science', 'machine learning', 'genetic programming', 'evolutionary computation'],
