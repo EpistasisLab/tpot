@@ -19,7 +19,7 @@ export CXX=g++
 
 # Deactivate the travis-provided virtual environment and setup a
 # conda-based environment instead
-deactivate
+# deactivate
 
 # Use the miniconda installer for faster download / install of conda
 # itself
