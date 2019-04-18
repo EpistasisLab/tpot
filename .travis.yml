@@ -1,6 +1,6 @@
 language: python
-virtualenv:
-  system_site_packages: true
+#virtualenv:
+  #system_site_packages: true
 matrix:
   # let's start simple:
   include:
