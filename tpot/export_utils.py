@@ -51,7 +51,11 @@ def get_by_name(opname, operators):
     return ret_op_class
 
 
-def export_pipeline(exported_pipeline, operators, pset, impute=False, pipeline_score=None, random_state=None):
+def export_pipeline(exported_pipeline,
+                    operators, pset,
+                    impute=False, pipeline_score=None,
+                    random_state=None,
+                    data_file_path=''):
     """Generate source code for a TPOT Pipeline.
 
     Parameters
@@ -62,6 +66,13 @@ def export_pipeline(exported_pipeline, operators, pset, impute=False, pipeline_s
         List of operator classes from operator library
     pipeline_score:
         Optional pipeline score to be saved to the exported file
+    impute: bool (False):
+        If impute = True, then adda a imputation step.
+    random_state: integer
+        Random seed in train_test_split function.
+    data_file_path: string (default: '')
+        By default, the path of input dataset is 'PATH/TO/DATA/FILE' by default.
+        If data_file_path is another string, the path will be replaced.
 
     Returns
     -------
@@ -81,14 +92,16 @@ def export_pipeline(exported_pipeline, operators, pset, impute=False, pipeline_s
         pipeline_text += """from sklearn.preprocessing import FunctionTransformer
 from copy import copy
 """
+    if not data_file_path:
+        data_file_path = 'PATH/TO/DATA/FILE'
 
     pipeline_text += """
 # NOTE: Make sure that the class is labeled 'target' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+tpot_data = pd.read_csv('{}', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'].values, random_state={})
-""".format(random_state)
+""".format(data_file_path, random_state)
 
     # Add the imputation step if it was used by TPOT
     if impute:

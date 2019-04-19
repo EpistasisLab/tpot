@@ -445,6 +445,39 @@ results = exported_pipeline.predict(testing_features)
     assert expected_code == export_pipeline(pipeline, tpot_obj_reg.operators, tpot_obj_reg._pset)
 
 
+def test_export_pipeline_6():
+    """Assert that exported_pipeline() generated a compile source file with random_state and data_file_path."""
+
+    pipeline_string = (
+        'KNeighborsClassifier('
+        'input_matrix, '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    expected_code = """import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('test_path', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
+training_features, testing_features, training_target, testing_target = \\
+            train_test_split(features, tpot_data['target'].values, random_state=42)
+
+exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+"""
+    assert expected_code == export_pipeline(pipeline, tpot_obj.operators,
+                                            tpot_obj._pset, random_state=42,
+                                            data_file_path='test_path')
+
+
 def test_operator_export():
     """Assert that a TPOT operator can export properly with a callable function as a parameter."""
     assert list(TPOTSelectPercentile.arg_types) == TPOTSelectPercentile_args

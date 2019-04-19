@@ -1083,13 +1083,16 @@ class TPOTBase(BaseEstimator):
                 raise ValueError('Failed creating the periodic_checkpoint_folder:\n{}'.format(e))
 
 
-    def export(self, output_file_name):
+    def export(self, output_file_name, data_file_path=''):
         """Export the optimized pipeline as Python code.
 
         Parameters
         ----------
         output_file_name: string
             String containing the path and file name of the desired output file
+        data_file_path: string (default: '')
+            By default, the path of input dataset is 'PATH/TO/DATA/FILE' by default.
+            If data_file_path is another string, the path will be replaced.
 
         Returns
         -------
@@ -1103,7 +1106,8 @@ class TPOTBase(BaseEstimator):
         to_write = export_pipeline(self._optimized_pipeline,
                                     self.operators, self._pset,
                                     self._imputed, self._optimized_pipeline_score,
-                                    self.random_state)
+                                    self.random_state,
+                                    data_file_path=data_file_path)
 
         with open(output_file_name, 'w') as output_file:
             output_file.write(to_write)

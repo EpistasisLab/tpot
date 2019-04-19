@@ -19,37 +19,24 @@ export CXX=g++
 
 # Deactivate the travis-provided virtual environment and setup a
 # conda-based environment instead
-deactivate
+# deactivate
 
 # Use the miniconda installer for faster download / install of conda
 # itself
-wget https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh \
-    -O miniconda.sh
-chmod +x miniconda.sh && ./miniconda.sh -b
-export PATH=/home/travis/miniconda3/bin:$PATH
+
+chmod +x miniconda.sh && ./miniconda.sh -b -p $HOME/miniconda
+export PATH="$HOME/miniconda/bin:$PATH"
 conda update --yes conda
 
 # Configure the conda environment and put it in the path using the
 # provided versions
-if [[ "$LATEST" == "true" ]]; then
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
-        numpy scipy scikit-learn cython pandas
-else
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION \
-        scikit-learn=$SKLEARN_VERSION \
-	cython \
-  pandas
-fi
+
+conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
+    numpy scipy scikit-learn cython pandas
 
 source activate testenv
 
-if [[ "$LATEST" == "true" ]]; then
-    pip install deap
-else
-    pip install deap==$DEAP_VERSION
-fi
-
+pip install deap
 pip install update_checker
 pip install tqdm
 pip install stopit

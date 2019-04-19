@@ -1,12 +1,29 @@
 language: python
-virtualenv:
-  system_site_packages: true
-env:
-  matrix:
-    # let's start simple:
-    - PYTHON_VERSION="2.7" LATEST="true"
-    - PYTHON_VERSION="3.6" COVERAGE="true" LATEST="true"
-    - PYTHON_VERSION="3.6" LATEST="true"
+matrix:
+  # let's start simple:
+  include:
+  - name: "Python 3.7 on Xenial Linux"
+    dist: xenial        # required for Python >= 3.7
+    env: PYTHON_VERSION="3.7"
+    before_install:
+      - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - name: "Python 3.7 on Xenial Linux with coverage"
+    dist: xenial        # required for Python >= 3.7
+    env: PYTHON_VERSION="3.7"  COVERAGE="true"
+    before_install:
+      - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - name: "Python 2.7 on Xenial Linux"
+    dist: xenial
+    env: PYTHON_VERSION="2.7"
+    before_install:
+      - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - name: "Python 3.7 on macOS"
+    os: osx
+    osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3
+    language: shell       # 'language: python' is an error on Travis CI macOS
+    env: PYTHON_VERSION="3.7"
+    before_install:
+      - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
 install: source ./ci/.travis_install.sh
 script: bash ./ci/.travis_test.sh
 after_success:
