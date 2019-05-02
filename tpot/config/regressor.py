@@ -24,6 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
+import sys
 
 # Check the TPOT documentation for information on the structure of config dicts
 
@@ -195,3 +196,11 @@ regressor_config_dict = {
     }
 
 }
+
+if 'catboost' in sys.modules.keys():
+    from sklearn.base import RegressorMixin
+    from catboost import CatBoostRegressor
+    CatBoostRegressor.__bases__ += (RegressorMixin,)
+    regressor_config_dict['catboost.CatBoostRegressor'] = {
+        'logging_level': ['Silent']
+    }
