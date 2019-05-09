@@ -1,4 +1,4 @@
-[please review the [contribution guidelines](http://rhiever.github.io/tpot/contributing/) prior to submitting your pull request. go ahead and delete this line if you've already reviewed said guidelines.]
+[please review the [Contribution Guidelines](http://epistasislab.github.io/tpot/contributing/) prior to submitting your pull request. go ahead and delete this line if you've already reviewed said guidelines.]
 
 ## What does this PR do?
 
