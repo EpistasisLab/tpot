@@ -48,11 +48,12 @@ from copy import copy, deepcopy
 
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y, check_consistent_length, check_array
-from sklearn.externals.joblib import Parallel, delayed, Memory
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer, Imputer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.scorer import make_scorer, _BaseScorer
+
+from joblib import Parallel, delayed, Memory
 
 from update_checker import update_check
 
@@ -229,7 +230,7 @@ class TPOTBase(BaseEstimator):
                 the caching directory up upon shutdown. If the directory does not exist, TPOT will
                 create it.
             Memory object:
-                TPOT uses the instance of sklearn.external.joblib.Memory for memory caching,
+                TPOT uses the instance of joblib.Memory for memory caching,
                 and TPOT does NOT clean the caching directory up upon shutdown.
             None:
                 TPOT does not use memory caching.
@@ -804,7 +805,7 @@ class TPOTBase(BaseEstimator):
             else:
                 raise ValueError(
                     'Could not recognize Memory object for pipeline caching. '
-                    'Please provide an instance of sklearn.external.joblib.Memory,'
+                    'Please provide an instance of joblib.Memory,'
                     ' a path to a directory on your system, or \"auto\".'
                 )
 
