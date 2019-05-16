@@ -581,17 +581,16 @@ tpot = TPOTClassifier(generations=5,
 tpot.fit(test_X, test_y)
 ```
 
-
 # Pipeline caching in TPOT
 
-With the `memory` parameter, pipelines can cache the results of each transformer after fitting them. This feature is used to avoid repeated computation by transformers within a pipeline if the parameters and input data are identical to another fitted pipeline during optimization process. TPOT allows users to specify a custom directory path or [`sklearn.external.joblib.Memory`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/externals/joblib/memory.py#L847) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run).
+With the `memory` parameter, pipelines can cache the results of each transformer after fitting them. This feature is used to avoid repeated computation by transformers within a pipeline if the parameters and input data are identical to another fitted pipeline during optimization process. TPOT allows users to specify a custom directory path or [`joblib.Memory`](https://joblib.readthedocs.io/en/latest/generated/joblib.Memory.html) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run).
 
 There are three methods for enabling memory caching in TPOT:
 
 ```Python
 from tpot import TPOTClassifier
 from tempfile import mkdtemp
-from sklearn.externals.joblib import Memory
+from joblib import Memory
 from shutil import rmtree
 
 # Method 1, auto mode: TPOT uses memory caching with a temporary directory and cleans it up upon shutdown
@@ -647,10 +646,10 @@ This will use use all the workers on your cluster to do the training, and use [D
 It will also provide fine-grained diagnostics in the [distributed scheduler UI](https://distributed.readthedocs.io/en/latest/web.html).
 
 Alternatively, Dask implements a joblib backend.
-You can instruct TPOT to use the distribued backend during training by specifying a ``joblib.parallel_backend``:
+You can instruct TPOT to use the distributed backend during training by specifying a ``joblib.parallel_backend``:
 
 ```python
-from sklearn.externals import joblib
+import joblib
 import distributed.joblib
 from dask.distributed import Client
 
