@@ -55,7 +55,7 @@ from shutil import rmtree
 
 from sklearn.datasets import load_digits, load_boston, make_classification
 from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
-from sklearn.externals.joblib import Memory
+from joblib import Memory
 from sklearn.metrics import make_scorer, roc_auc_score
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
 from sklearn.feature_selection.base import SelectorMixin
