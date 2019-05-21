@@ -36,14 +36,8 @@ conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
 
 source activate testenv
 
-pip install deap
-pip install update_checker
-pip install tqdm
-pip install stopit
-pip install xgboost
-pip install dask[delayed]
-pip install dask-ml
-pip install cloudpickle==0.5.6
+conda install --yes -c conda-forge dask-ml
+pip install deap tqdm update_checker stopit dask[delayed] xgboost cloudpickle==0.5.6
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
