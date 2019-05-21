@@ -61,8 +61,10 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, Transfo
 from sklearn.feature_selection.base import SelectorMixin
 from deap import creator, gp
 from deap.tools import ParetoFront
-from nose.tools import assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
+from nose.tools import nottest, assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
 from driver_tests import captured_output
+
+train_test_split = nottest(train_test_split)
 
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')

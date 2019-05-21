@@ -36,8 +36,8 @@ from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from deap import creator
 
-from nose.tools import assert_raises, assert_equal
-
+from nose.tools import assert_raises, assert_equal, nottest
+train_test_split = nottest(train_test_split)
 test_operator_key_1 = 'sklearn.feature_selection.SelectPercentile'
 test_operator_key_2 = 'sklearn.feature_selection.SelectFromModel'
 TPOTSelectPercentile, TPOTSelectPercentile_args = TPOTOperatorClassFactory(
