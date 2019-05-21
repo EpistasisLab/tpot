@@ -4,8 +4,10 @@ environment:
   matrix:
     - PYTHON_VERSION: 3.7
       MINICONDA: C:/Miniconda36-x64
+      DASK_ML_VERSION: 0.13.0
     - PYTHON_VERSION: 2.7
       MINICONDA: C:/Miniconda-x64
+      DASK_ML_VERSION: 0.12.0
 
 platform:
   - x64
@@ -21,7 +23,8 @@ install:
   - conda info -a
   - conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy scikit-learn nose cython pandas pywin32 joblib
   - activate test-environment
-  - pip install deap tqdm update_checker stopit dask[delayed] dask-ml cloudpickle==0.5.6
+  - pip install deap tqdm update_checker stopit dask[delayed] cloudpickle==0.5.6
+  - pip install dask_ml==%DASK_ML_VERSION%
 
 
 test_script:
