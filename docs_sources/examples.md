@@ -36,7 +36,7 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_iris_pipeline.py')
 ```
 
-Running this code should discover a pipeline (expored as `tpot_iris_pipeline.py`) that achieves about 97% test accuracy:
+Running this code should discover a pipeline (exported as `tpot_iris_pipeline.py`) that achieves about 97% test accuracy:
 
 ```Python
 import numpy as np
@@ -81,7 +81,7 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 ```
 
-Running this code should discover a pipeline (expored as `tpot_mnist_pipeline.py`) that achieves about 98% test accuracy:
+Running this code should discover a pipeline (exported as `tpot_mnist_pipeline.py`) that achieves about 98% test accuracy:
 
 ```Python
 import numpy as np
