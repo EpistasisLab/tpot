@@ -302,7 +302,7 @@ Flag indicating whether the TPOT instance will reuse the population from previou
 Setting <em>warm_start</em>=True can be useful for running TPOT for a short time on a dataset, checking the results, then resuming the TPOT run from where it left off.
 </blockquote>
 
-<strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
+<strong>memory</strong>: a joblib.Memory object or string, optional (default=None)
 <blockquote>
 If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in <a href="http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation">scikit-learn documentation</a>
 <br /><br />
@@ -310,7 +310,7 @@ Possible inputs are:
 <ul>
 <li>String 'auto': TPOT uses memory caching with a temporary directory and cleans it up upon shutdown, or</li>
 <li>Path of a caching directory, TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown, or</li>
-<li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
+<li>Memory object, TPOT uses the instance of joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
 <li>None, TPOT does not use memory caching.</li>
 </ul>
 </blockquote>
@@ -775,7 +775,7 @@ Flag indicating whether the TPOT instance will reuse the population from previou
 Setting <em>warm_start</em>=True can be useful for running TPOT for a short time on a dataset, checking the results, then resuming the TPOT run from where it left off.
 </blockquote>
 
-<strong>memory</strong>: a sklearn.external.joblib.Memory object or string, optional (default=None)
+<strong>memory</strong>: a joblib.Memory object or string, optional (default=None)
 <blockquote>
 If supplied, pipeline will cache each transformer after calling fit. This feature is used to avoid computing the fit transformers within a pipeline if the parameters and input data are identical with another fitted pipeline during optimization process. More details about memory caching in <a href="http://scikit-learn.org/stable/modules/pipeline.html#caching-transformers-avoid-repeated-computation">scikit-learn documentation</a>
 <br /><br />
@@ -783,7 +783,7 @@ Possible inputs are:
 <ul>
 <li>String 'auto': TPOT uses memory caching with a temporary directory and cleans it up upon shutdown, or</li>
 <li>Path of a caching directory, TPOT uses memory caching with the provided directory and TPOT does NOT clean the caching directory up upon shutdown, or</li>
-<li>Memory object, TPOT uses the instance of sklearn.external.joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
+<li>Memory object, TPOT uses the instance of joblib.Memory for memory caching and TPOT does NOT clean the caching directory up upon shutdown, or</li>
 <li>None, TPOT does not use memory caching.</li>
 </ul>
 </blockquote>
