@@ -13,18 +13,19 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Using TPOT";
     var mkdocs_page_input_path = "using.md";
-    var mkdocs_page_url = "/using/";
+    var mkdocs_page_url = "/tpot/using/";
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -38,7 +39,7 @@
         <a href=".." class="icon icon-home"> TPOT</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -192,7 +193,7 @@ and how long that grid search will take. That is 10,000 model configurations to 
 which means that roughly 100,000 models are fit and evaluated on the training data in one grid search.
 That's a time-consuming procedure, even for simpler models like decision trees.</p>
 <p>Typical TPOT runs will take hours to days to finish (unless it's a small dataset), but you can always interrupt
-the run partway through and see the best results so far. TPOT also <a href="../api/">provides</a> a <code>warm_start</code> parameter that
+the run partway through and see the best results so far. TPOT also <a href="/api/">provides</a> a <code>warm_start</code> parameter that
 lets you restart a TPOT run from where it left off.</p>
 <h5>AutoML algorithms can recommend different solutions for the same dataset</h5>
 
@@ -216,7 +217,7 @@ as grid search.</p>
 </code></pre>
 
 <p>It's also possible to use TPOT for regression problems with the <code>TPOTRegressor</code> class. Other than the class name,
-a <code>TPOTRegressor</code> is used the same way as a <code>TPOTClassifier</code>. You can read more about the <code>TPOTClassifier</code> and <code>TPOTRegressor</code> classes in the <a href="../api/">API documentation</a>.</p>
+a <code>TPOTRegressor</code> is used the same way as a <code>TPOTClassifier</code>. You can read more about the <code>TPOTClassifier</code> and <code>TPOTRegressor</code> classes in the <a href="/api/">API documentation</a>.</p>
 <p>Some example code with custom TPOT parameters might look like:</p>
 <pre><code class="Python">pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
                                     random_state=42, verbosity=2)
@@ -253,7 +254,7 @@ print(pipeline_optimizer.score(X_test, y_test))
 pipeline_optimizer.export('tpot_exported_pipeline.py')
 </code></pre>
 
-<p>Check our <a href="../examples/">examples</a> to see TPOT applied to some specific data sets.</p>
+<p>Check our <a href="examples/">examples</a> to see TPOT applied to some specific data sets.</p>
 <h1 id="tpot-on-the-command-line">TPOT on the command line</h1>
 <p>To use TPOT via the command line, enter the following command with a path to the data file:</p>
 <pre><code class="Shell">tpot /path_to/data_file.csv
@@ -418,7 +419,7 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 <td>-template</td>
 <td>TEMPLATE</td>
 <td>String</td>
-<td>Template of predefined pipeline structure. The option is for specifying a desired structure for the machine learning pipeline evaluated in TPOT. So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer, Classifier or Regressor) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html), [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html) or [`RegressorMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html) in scikit-learn) to that step. Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Classifier". By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.
+<td>Template of predefined pipeline structure. The option is for specifying a desired structure for the machine learning pipeline evaluated in TPOT. So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer, Classifier or Regressor) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html), [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html) or [`RegressorMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html) in scikit-learn) to that step. Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Classifier". By default value of template is None, TPOT generates tree-based pipeline randomly.
 
 See the <a href="../using/#template-option-in-tpot"> template option in tpot</a> section for more details.
 </td>
@@ -806,9 +807,8 @@ with joblib.parallel_backend(&quot;dask&quot;):
     </span>
 </div>
     <script>var base_url = '..';</script>
-    <script src="../js/theme.js"></script>
-      <script src="../search/require.js"></script>
-      <script src="../search/search.js"></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>
