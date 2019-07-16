@@ -321,7 +321,7 @@ Feature matrix
 <br /><br />
 TPOT and all scikit-learn algorithms assume that the features will be numerical and there will be no missing values.
 As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed)
-using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html">median value imputation</a>.
+using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html">median value imputation</a>.
 <br /><br />
 If you wish to use a different imputation strategy than median imputation, please make sure to apply imputation to your feature set prior to passing it to TPOT.
 </blockquote>
@@ -809,7 +809,7 @@ Feature matrix
 <br /><br />
 TPOT and all scikit-learn algorithms assume that the features will be numerical and there will be no missing values.
 As such, when a feature matrix is provided to TPOT, all missing values will automatically be replaced (i.e., imputed)
-using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Imputer.html">median value imputation</a>.
+using <a href="http://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html">median value imputation</a>.
 <br /><br />
 If you wish to use a different imputation strategy than median imputation, please make sure to apply imputation to your feature set prior to passing it to TPOT.
 </blockquote>
