@@ -200,10 +200,6 @@ def generate_import_code(pipeline, operators, impute=False):
     # Build dict of import requirments from list of operators
     import_relations = {op.__name__: op.import_hash for op in operators}
 
-    # Add the imputer if necessary
-    if impute:
-        pipeline_imports['sklearn.preprocessing'] = ['Imputer']
-
     # Build import dict from operators used
     for op in operators_used:
         try:
@@ -216,6 +212,14 @@ def generate_import_code(pipeline, operators, impute=False):
     for key in sorted(pipeline_imports.keys()):
         module_list = ', '.join(sorted(pipeline_imports[key]))
         pipeline_text += 'from {} import {}\n'.format(key, module_list)
+
+    # Add the imputer if necessary
+    if impute:
+        pipeline_text += """try:
+    from sklearn.impute import SimpleImputer as Imputer
+except ImportError:
+    from sklearn.preprocessing import Imputer
+"""
 
     return pipeline_text
 

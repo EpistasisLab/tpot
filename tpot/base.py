@@ -49,7 +49,11 @@ from copy import copy, deepcopy
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y, check_consistent_length, check_array
 from sklearn.pipeline import make_pipeline, make_union
-from sklearn.preprocessing import FunctionTransformer, Imputer
+from sklearn.preprocessing import FunctionTransformer
+try:
+    from sklearn.impute import SimpleImputer as Imputer
+except ImportError:
+    from sklearn.preprocessing import Imputer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.scorer import make_scorer, _BaseScorer
 
