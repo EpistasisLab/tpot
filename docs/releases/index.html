@@ -13,18 +13,19 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Release Notes";
     var mkdocs_page_input_path = "releases.md";
-    var mkdocs_page_url = "/releases/";
+    var mkdocs_page_url = "/tpot/releases/";
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -38,7 +39,7 @@
         <a href=".." class="icon icon-home"> TPOT</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -213,13 +214,13 @@
 <p>TPOT now allows you to set a subsample ratio of the training instance with the <code>subsample</code> parameter. For example, setting <code>subsample</code>=0.5 tells TPOT to create a fixed subsample of half of the training data for the pipeline optimization process. This parameter can be useful for speeding up the pipeline optimization process, but may give less accurate performance estimates from cross-validation.</p>
 </li>
 <li>
-<p><strong>TPOT now has more <a href="../using/#built-in-tpot-configurations">built-in configurations</a></strong>, including TPOT MDR and TPOT light, for both classification and regression problems.</p>
+<p><strong>TPOT now has more <a href="/using/#built-in-tpot-configurations">built-in configurations</a></strong>, including TPOT MDR and TPOT light, for both classification and regression problems.</p>
 </li>
 <li>
-<p><code>TPOTClassifier</code> and <code>TPOTRegressor</code> now expose three useful internal attributes, <code>fitted_pipeline_</code>, <code>pareto_front_fitted_pipelines_</code>, and <code>evaluated_individuals_</code>. These attributes are described in the <a href="../api/">API documentation</a>.</p>
+<p><code>TPOTClassifier</code> and <code>TPOTRegressor</code> now expose three useful internal attributes, <code>fitted_pipeline_</code>, <code>pareto_front_fitted_pipelines_</code>, and <code>evaluated_individuals_</code>. These attributes are described in the <a href="/api/">API documentation</a>.</p>
 </li>
 <li>
-<p>Oh, <strong>TPOT now has <a href="../api/">thorough API documentation</a></strong>. Check it out!</p>
+<p>Oh, <strong>TPOT now has <a href="/api/">thorough API documentation</a></strong>. Check it out!</p>
 </li>
 <li>
 <p>Fixed a reproducibility issue where setting <code>random_seed</code> didn't necessarily result in the same results every time. This bug was present since TPOT v0.7.</p>
@@ -237,7 +238,7 @@
 <p><strong>TPOT now has multiprocessing support.</strong> TPOT allows you to use multiple processes in parallel to accelerate the pipeline optimization process in TPOT with the <code>n_jobs</code> parameter.</p>
 </li>
 <li>
-<p>TPOT now allows you to <strong>customize the operators and parameters considered during the optimization process</strong>, which can be accomplished with the new <code>config_dict</code> parameter. The format of this customized dictionary can be found in the <a href="../using/#customizing-tpots-operators-and-parameters">online documentation</a>, along with a list of <a href="../using/#built-in-tpot-configurations">built-in configurations</a>.</p>
+<p>TPOT now allows you to <strong>customize the operators and parameters considered during the optimization process</strong>, which can be accomplished with the new <code>config_dict</code> parameter. The format of this customized dictionary can be found in the <a href="/using/#customizing-tpots-operators-and-parameters">online documentation</a>, along with a list of <a href="/using/#built-in-tpot-configurations">built-in configurations</a>.</p>
 </li>
 <li>
 <p>TPOT now allows you to <strong>specify a time limit for evaluating a single pipeline</strong>  (default limit is 5 minutes) in optimization process with the <code>max_eval_time_mins</code> parameter, so TPOT won't spend hours evaluating overly-complex pipelines.</p>
@@ -258,7 +259,7 @@
 <h1 id="version-06">Version 0.6</h1>
 <ul>
 <li>
-<p><strong>TPOT now supports regression problems!</strong> We have created two separate <code>TPOTClassifier</code> and <code>TPOTRegressor</code> classes to support classification and regression problems, respectively. The <a href="../using/#tpot-on-the-command-line">command-line interface</a> also supports this feature through the <code>-mode</code> parameter.</p>
+<p><strong>TPOT now supports regression problems!</strong> We have created two separate <code>TPOTClassifier</code> and <code>TPOTRegressor</code> classes to support classification and regression problems, respectively. The <a href="/using/#tpot-on-the-command-line">command-line interface</a> also supports this feature through the <code>-mode</code> parameter.</p>
 </li>
 <li>
 <p>TPOT now allows you to <strong>specify a time limit</strong> for the optimization process with the <code>max_time_mins</code> parameter, so you don't need to guess how long TPOT will take any more to recommend a pipeline to you.</p>
@@ -402,9 +403,8 @@
     </span>
 </div>
     <script>var base_url = '..';</script>
-    <script src="../js/theme.js"></script>
-      <script src="../search/require.js"></script>
-      <script src="../search/search.js"></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>

@@ -111,7 +111,7 @@ class TPOTBase(BaseEstimator):
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
                  max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, config_dict=None, template='RandomTree',
+                 random_state=None, config_dict=None, template=None,
                  warm_start=False, memory=None, use_dask=False,
                  periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False):
@@ -210,7 +210,7 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
-        template: string (default: "RandomTree")
+        template: string (default: None)
             Template of predefined pipeline structure. The option is for specifying a desired structure
             for the machine learning pipeline evaluated in TPOT. So far this option only supports
             linear pipeline structure. Each step in the pipeline should be a main class of operators
@@ -219,7 +219,7 @@ class TPOTBase(BaseEstimator):
             TPOT will randomly assign all subclass operators (subclasses of SelectorMixin,
             TransformerMixin, ClassifierMixin or RegressorMixin in scikit-learn) to that step.
             Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Classifier".
-            By default value of template is "RandomTree", TPOT generates tree-based pipeline randomly.
+            By default value of template is None, TPOT generates tree-based pipeline randomly.
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
@@ -297,14 +297,14 @@ class TPOTBase(BaseEstimator):
 
     def _setup_template(self, template):
         self.template = template
-        self.template_comp = template.split('-')
-        if self.template == 'RandomTree':
+        if self.template is None:
             self._min = 1
             self._max = 3
         else:
+            self._template_comp = template.split('-')
             self._min = 0
             self._max = 1
-            for comp in self.template_comp:
+            for comp in self._template_comp:
                 if comp == 'CombineDFs':
                     self._max += 2
                     self._min += 1
@@ -430,7 +430,7 @@ class TPOTBase(BaseEstimator):
         main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
         ret_types = []
         self.op_list = []
-        if self.template == "RandomTree": # default pipeline structure
+        if self.template == None: # default pipeline structure
             step_in_type = np.ndarray
             step_ret_type = Output_Array
             for operator in self.operators:
@@ -447,7 +447,7 @@ class TPOTBase(BaseEstimator):
             self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
         else:
             gp_types = {}
-            for idx, step in enumerate(self.template_comp):
+            for idx, step in enumerate(self._template_comp):
 
                 # input class in each step
                 if idx:
@@ -455,7 +455,7 @@ class TPOTBase(BaseEstimator):
                 else:
                     step_in_type = np.ndarray
                 if step != 'CombineDFs':
-                    if idx < len(self.template_comp) - 1:
+                    if idx < len(self._template_comp) - 1:
                         # create an empty for returning class for strongly-type GP
                         step_ret_type_name = 'Ret_{}'.format(idx)
                         step_ret_type = type(step_ret_type_name, (object,), {})

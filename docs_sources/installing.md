@@ -16,6 +16,8 @@ TPOT is built on top of several existing Python libraries, including:
 
 * [pandas](http://pandas.pydata.org)
 
+* [joblib](https://joblib.readthedocs.io/en/latest/)
+
 Most of the necessary Python packages can be installed via the [Anaconda Python distribution](https://www.continuum.io/downloads), which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.
 
 NumPy, SciPy, scikit-learn, pandas and joblib can be installed in Anaconda via the command:
