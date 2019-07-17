@@ -282,7 +282,7 @@ def _get_arg_parser():
         type=float,
         help=(
             'Subsample ratio of the training instance. Setting it to 0.5 means that TPOT '
-            'use a random subsample of half of training data for the pipeline optimization process.'
+            'will use a random subsample of half of training data for the pipeline optimization process.'
         )
     )
 
