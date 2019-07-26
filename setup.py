@@ -46,6 +46,7 @@ This project is hosted at https://github.com/EpistasisLab/tpot
                     'joblib>=0.10.3'],
     extras_require={
         'xgboost': ['xgboost==0.6a2'],
+        'tensorflow': ['tensorflow>=1.12.0'],
         'skrebate': ['skrebate>=0.3.4'],
         'mdr': ['scikit-mdr>=0.4.4'],
         'dask': ['dask>=0.18.2',
