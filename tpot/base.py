@@ -481,8 +481,11 @@ class TPOTBase(BaseEstimator):
 
 
     def _add_operators(self):
-        def add_randomtree():
-            step_in_type = np.ndarray
+        def add_randomtree(ret_types=[]):
+            if len(ret_types) > 0:
+                step_in_type = ret_types[-1]
+            else:
+                step_in_type = np.ndarray
             step_ret_type = Output_Array
             for operator in self.operators:
                 arg_types =  operator.parameter_types()[0][1:]
@@ -522,7 +525,7 @@ class TPOTBase(BaseEstimator):
                 if step == 'CombineDFs':
                     self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
                 elif step == 'RandomTree':
-                    add_randomtree()
+                    add_randomtree(ret_types)
                 elif main_type.count(step): # if the step is a main type
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]
