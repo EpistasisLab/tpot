@@ -65,7 +65,7 @@ from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
 from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
 from .decorators import _pre_test
-from .builtins import CombineDFs, StackingEstimator
+from .builtins import CombineDFs, StackingEstimator, IdentityTransformer
 
 from .config.classifier_light import classifier_config_dict_light
 from .config.regressor_light import regressor_config_dict_light
@@ -110,8 +110,8 @@ class TPOTBase(BaseEstimator):
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
-                 max_time_mins=None, max_eval_time_mins=5,
-                 random_state=None, config_dict=None, template=None,
+                 max_time_mins=None, max_eval_time_mins=5, random_state=None,
+                 config_dict=None, preprocess_config_dict=None, template=None,
                  warm_start=False, memory=None, use_dask=False,
                  periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False):
@@ -210,6 +210,10 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
+        preprocess_config_dict: a Python dictionary, optional (default: None)
+            Python dictionary:
+                A dictionary containing metadata on features for mandatory preprocessing.
+                Examples coming soon.
         template: string (default: None)
             Template of predefined pipeline structure. The option is for specifying a desired structure
             for the machine learning pipeline evaluated in TPOT. So far this option only supports
@@ -286,6 +290,7 @@ class TPOTBase(BaseEstimator):
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
         self.early_stop = early_stop
         self.config_dict = config_dict
+        self.preprocess_config_dict = preprocess_config_dict
         self.template = template
         self.warm_start = warm_start
         self.memory = memory
@@ -390,6 +395,50 @@ class TPOTBase(BaseEstimator):
                     )
         else:
             self._config_dict = self.default_config_dict
+
+    def _setup_preprocess_config(self, config_dict):
+        if config_dict:
+            # check for valid keys...
+            preprocess_keys = ['text_columns', 'numeric_columns', 'categorical_columns', 'impute']
+            column_transform_keys = ['text_columns', 'numeric_columns', 'categorical_columns', 'text_transformer', 'categorical_transformer']
+            check_keys_ = []
+            column_transform_ = []
+            for k in config_dict.keys():
+                if k not in preprocess_keys:
+                    check_keys_.append(k)
+                if k in column_transform_keys:
+                    column_transform_.append(k)
+
+            if len(check_keys_) > 0:
+                raise Exception(
+                    'It appears preprocessing configuration contains invalid keys: {}.'
+                    'Valid keys are text_columns, numeric_columns,'
+                    'categorical_columns, impute.'.format(', '.join(check_keys_))
+                )
+
+            # override some settings...
+            if config_dict.get('impute', None) is False:
+                self._fitted_imputer = IdentityTransformer()
+            
+            if len(column_transform_) > 0:
+                column_transform_dict = {}
+                for k in ['text_columns', 'numeric_columns', 'categorical_columns']:
+                    if config_dict.get(k) is not None:
+                        column_transform_dict[k] = [config_dict[k]]
+                for k in ['text_transformer', 'categorical_transformer']:
+                    if k in config_dict:
+                        # force transformers to be a list
+                        if config_dict[k] is list:
+                            column_transform_dict[k] = config_dict[k]
+                        else:
+                            column_transform_dict[k] = [config_dict[k]]
+            self._config_dict['tpot.builtins.PreprocessTransformer'] = column_transform_dict
+            if self.template is None:
+                self.template = "PreprocessTransformer-RandomTree"
+            else:
+                self.template = "{}-{}".format(PreprocessTransformer, self.template)
+        else:
+            self._preprocess_config_dict = {}
 
 
     def _read_config_file(self, config_path):
@@ -559,6 +608,8 @@ class TPOTBase(BaseEstimator):
         self._max_mut_loops = 50
 
         self._setup_config(self.config_dict)
+
+        self._setup_preprocess_config(self.preprocess_config_dict)
 
         self._setup_template(self.template)
 
