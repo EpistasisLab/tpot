@@ -49,7 +49,7 @@ class IdentityTransformer(TransformerMixin, BaseEstimator):
 
 class PreprocessTransformer(TransformerMixin):
     def __init__(self, numeric_columns=[], categorical_columns=[], text_columns=[],
-    text_transformer = 'TfIdfVectorizer', categorical_transformer = 'OneHotEncoder'):
+    text_transformer = 'TfidfVectorizer', categorical_transformer = 'OneHotEncoder'):
         self.numeric_columns = numeric_columns
         self.categorical_columns = categorical_columns
         self.text_columns = text_columns
@@ -69,17 +69,19 @@ class PreprocessTransformer(TransformerMixin):
         column_list = []
         if len(self.text_columns) > 0:
             load_func = import_loader.get(self.text_transformer, self.text_transformer)
-            load_func = load_scoring_function(load_func)
+            if isinstance(load_func, str):
+                load_func = load_scoring_function(load_func)
             for idx, text in enumerate(self.text_columns):
-                column_list.append(('text' + str(idx), load_func, text))
+                column_list.append(('text' + str(idx), load_func(), text))
         
         if len(self.numeric_columns) > 0:
             column_list.append(('numeric', IdentityTransformer(), self.numeric_columns))
         
         if len(self.categorical_columns) > 0:
             load_func = import_loader.get(self.categorical_transformer, self.categorical_transformer)
-            load_func = load_scoring_function(load_func)
-            column_list.append(('categorical', load_func, self.categorical_columns))
+            if isinstance(load_func, str):
+                load_func = load_scoring_function(load_func)
+            column_list.append(('categorical', load_func(), self.categorical_columns))
         
         self.column_transformer = ColumnTransformer(column_list)
 

@@ -397,6 +397,10 @@ class TPOTBase(BaseEstimator):
             self._config_dict = self.default_config_dict
 
     def _setup_preprocess_config(self, config_dict):
+        if self.template is None:
+            self.template = 'RandomTree'
+        elif 'PreprocessTransformer' in self.template:
+            return
         if config_dict:
             # check for valid keys...
             preprocess_keys = ['text_columns', 'numeric_columns', 'categorical_columns', 'impute']
@@ -433,10 +437,11 @@ class TPOTBase(BaseEstimator):
                         else:
                             column_transform_dict[k] = [config_dict[k]]
             self._config_dict['tpot.builtins.PreprocessTransformer'] = column_transform_dict
+            self.config_dict = copy(self._config_dict)
             if self.template is None:
                 self.template = "PreprocessTransformer-RandomTree"
             else:
-                self.template = "{}-{}".format(PreprocessTransformer, self.template)
+                self.template = "{}-{}".format('PreprocessTransformer', self.template)
         else:
             self._preprocess_config_dict = {}
 
