@@ -427,10 +427,7 @@ class TPOTBase(BaseEstimator):
 
 
     def _add_operators(self):
-        main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
-        ret_types = []
-        self.op_list = []
-        if self.template == None: # default pipeline structure
+        def add_randomtree():
             step_in_type = np.ndarray
             step_ret_type = Output_Array
             for operator in self.operators:
@@ -445,6 +442,12 @@ class TPOTBase(BaseEstimator):
                 self._pset.addPrimitive(operator, *tree_p_types)
                 self._import_hash_and_add_terminals(operator, arg_types)
             self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
+            
+        main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
+        ret_types = []
+        self.op_list = []
+        if self.template == None or self.template == 'RandomTree': # default pipeline structure
+            add_randomtree()
         else:
             gp_types = {}
             for idx, step in enumerate(self._template_comp):
@@ -464,6 +467,8 @@ class TPOTBase(BaseEstimator):
                         step_ret_type = Output_Array
                 if step == 'CombineDFs':
                     self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
+                elif step == 'RandomTree':
+                    add_randomtree()
                 elif main_type.count(step): # if the step is a main type
                     for operator in self.operators:
                         arg_types =  operator.parameter_types()[0][1:]
