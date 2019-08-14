@@ -4,12 +4,12 @@ matrix:
   include:
   - name: "Python 3.7 on Xenial Linux"
     dist: xenial        # required for Python >= 3.7
-    env: PYTHON_VERSION="3.7"  DASK_ML_VERSION="0.13.0"
+    env: PYTHON_VERSION="3.7"  DASK_ML_VERSION="1.0.0"
     before_install:
       - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - name: "Python 3.7 on Xenial Linux with coverage"
     dist: xenial        # required for Python >= 3.7
-    env: PYTHON_VERSION="3.7"  COVERAGE="true"  DASK_ML_VERSION="0.13.0"
+    env: PYTHON_VERSION="3.7"  COVERAGE="true"  DASK_ML_VERSION="1.0.0"
     before_install:
       - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - name: "Python 2.7 on Xenial Linux"
@@ -21,7 +21,7 @@ matrix:
     os: osx
     osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3
     language: shell       # 'language: python' is an error on Travis CI macOS
-    env: PYTHON_VERSION="3.7"  DASK_ML_VERSION="0.13.0"
+    env: PYTHON_VERSION="3.7"  DASK_ML_VERSION="1.0.0"
     before_install:
       - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
 install: source ./ci/.travis_install.sh
