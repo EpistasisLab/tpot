@@ -182,7 +182,7 @@ def test_init_default_scoring_2():
     assert len(w) == 1 # deap 1.2.2 warning message made this unit test failed
     assert issubclass(w[-1].category, DeprecationWarning) # deap 1.2.2 warning message made this unit test failed
     assert "This scoring type was deprecated" in str(w[-1].message) # deap 1.2.2 warning message made this unit test failed
-    assert tpot_obj.scoring_function == 'balanced_accuracy'
+    assert tpot_obj.scoring_function._score_func == balanced_accuracy
 
 
 def test_init_default_scoring_3():
@@ -191,7 +191,7 @@ def test_init_default_scoring_3():
         tpot_obj = TPOTClassifier(scoring=make_scorer(balanced_accuracy))
         tpot_obj._fit_init()
     assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
-    assert tpot_obj.scoring_function == 'balanced_accuracy'
+    assert tpot_obj.scoring_function._score_func == balanced_accuracy
 
 
 def test_init_default_scoring_4():
@@ -203,7 +203,7 @@ def test_init_default_scoring_4():
         tpot_obj = TPOTClassifier(scoring=my_scorer)
         tpot_obj._fit_init()
     assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
-    assert tpot_obj.scoring_function == 'my_scorer'
+    assert tpot_obj.scoring_function == my_scorer
 
 
 def test_init_default_scoring_5():
@@ -214,7 +214,7 @@ def test_init_default_scoring_5():
     assert len(w) == 1
     assert issubclass(w[-1].category, DeprecationWarning)
     assert "This scoring type was deprecated" in str(w[-1].message)
-    assert tpot_obj.scoring_function == 'roc_auc_score'
+    assert tpot_obj.scoring_function._score_func == roc_auc_score
 
 
 def test_init_default_scoring_6():
@@ -228,7 +228,7 @@ def test_init_default_scoring_6():
     assert issubclass(w[-1].category, DeprecationWarning)
     assert "This scoring type was deprecated" in str(w[-1].message)
 
-    assert tpot_obj.scoring_function == 'my_scorer'
+    assert tpot_obj.scoring_function._score_func == my_scorer
 
 
 def test_invalid_score_warning():
