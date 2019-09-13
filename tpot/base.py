@@ -326,6 +326,7 @@ class TPOTBase(BaseEstimator):
                         'choose a valid scoring function from the TPOT '
                         'documentation.'.format(scoring)
                     )
+                self.scoring_function = scoring
             elif callable(scoring):
                 # Heuristic to ensure user has not passed a metric
                 module = getattr(scoring, '__module__', None)
@@ -342,21 +343,15 @@ class TPOTBase(BaseEstimator):
                     not module.startswith('sklearn.metrics.tests.')):
                     scoring_name = scoring.__name__
                     greater_is_better = 'loss' not in scoring_name and 'error' not in scoring_name
-                    SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
+                    self.scoring_function = make_scorer(scoring, greater_is_better=greater_is_better)
                     warnings.simplefilter('always', DeprecationWarning)
                     warnings.warn('Scoring function {} looks like it is a metric function '
                                   'rather than a scikit-learn scorer. This scoring type was deprecated '
                                   'in version TPOT 0.9.1 and will be removed in version 0.11. '
                                   'Please update your custom scoring function.'.format(scoring), DeprecationWarning)
                 else:
-                    if isinstance(scoring, _BaseScorer):
-                        scoring_name = scoring._score_func.__name__
-                    else:
-                        scoring_name = scoring.__name__
-                    SCORERS[scoring_name] = scoring
-                scoring = scoring_name
+                    self.scoring_function = scoring
 
-            self.scoring_function = scoring
 
     def _setup_config(self, config_dict):
         if config_dict:
@@ -969,7 +964,13 @@ class TPOTBase(BaseEstimator):
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
-        score = SCORERS[self.scoring_function](
+        if isinstance(self.scoring_function, str):
+            scorer = SCORERS[self.scoring_function]
+        elif callable(self.scoring_function):
+            scorer = self.scoring_function
+        else:
+            raise RuntimeError('The scoring function should either be the name of a scikit-learn scorer or a scorer object')
+        score = scorer(
             self.fitted_pipeline_,
             testing_features.astype(np.float64),
             testing_target.astype(np.float64)
