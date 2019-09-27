@@ -803,7 +803,7 @@ class TPOTBase(BaseEstimator):
                             )
                     self._cachedir = self.memory
 
-                self._memory = Memory(cachedir=self._cachedir, verbose=0)
+                self._memory = Memory(location=self._cachedir, verbose=0)
             elif isinstance(self.memory, Memory):
                 self._memory = self.memory
             else:
