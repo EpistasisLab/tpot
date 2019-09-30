@@ -1064,7 +1064,7 @@ def test_memory_4():
 def test_memory_5():
     """Assert that the TPOT _setup_memory function runs normally with a Memory object."""
     cachedir = mkdtemp()
-    memory = Memory(cachedir=cachedir, verbose=0)
+    memory = Memory(location=cachedir, verbose=0)
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
