@@ -15,7 +15,7 @@ Package information: [![Python 2.7](https://img.shields.io/badge/python-2.7-blue
 <img src="https://raw.githubusercontent.com/EpistasisLab/tpot/master/images/tpot-logo.jpg" width=300 />
 </p>
 
-Consider TPOT your **Data Science Assistant**. TPOT is a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming.
+**TPOT** stands for **T**ree-based **P**ipeline **O**ptimization **T**ool. Consider TPOT your **Data Science Assistant**. TPOT is a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming.
 
 ![TPOT Demo](https://github.com/EpistasisLab/tpot/blob/master/images/tpot-demo.gif "TPOT Demo")
 
