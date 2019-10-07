@@ -46,7 +46,7 @@ def balanced_accuracy(y_true, y_pred):
         Returns a float value indicating the individual's balanced accuracy
         0.5 is as good as chance, and 1.0 is perfect predictive accuracy
     """
-    all_classes = list(set(np.append(y_true, y_pred)))
+    all_classes = np.unique(np.append(y_true, y_pred))
     all_class_accuracies = []
     for this_class in all_classes:
         this_class_sensitivity = 0.
