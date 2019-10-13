@@ -548,7 +548,7 @@ tpot_obj = TPOTClassifier(
                 )
 ```
 
-If a specific operator, e.g. `SelectPercentile`, is preferred to used in the 1st step of pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.
+If a specific operator, e.g. `SelectPercentile`, is preferred for usage in the 1st step of the pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.
 
 
 # FeatureSetSelector in TPOT
