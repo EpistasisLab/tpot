@@ -1,3 +1,7 @@
+# TPOT
+
+_TPOT is a Tree-based Pipeline Optimization Tool_
+
 Master status: [![Master Build Status - Mac/Linux](https://travis-ci.org/EpistasisLab/tpot.svg?branch=master)](https://travis-ci.org/EpistasisLab/tpot)
 [![Master Build Status - Windows](https://ci.appveyor.com/api/projects/status/b7bmpwpkjhifrm7v/branch/master?svg=true)](https://ci.appveyor.com/project/weixuanfu/tpot?branch=master)
 [![Master Coverage Status](https://coveralls.io/repos/github/EpistasisLab/tpot/badge.svg?branch=master)](https://coveralls.io/github/EpistasisLab/tpot?branch=master)
