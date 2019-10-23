@@ -569,7 +569,7 @@ class TPOTBase(BaseEstimator):
         # Schedule TPOT to run for many generations if the user specifies a
         # run-time limit TPOT will automatically interrupt itself when the timer
         # runs out
-        if self.max_time_mins is not None:
+        if self.max_time_mins is not None and self.generations is None :
             self.generations = 1000000
 
         # Prompt the user if their version is out of date
