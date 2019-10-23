@@ -275,9 +275,17 @@ def test_invalid_mut_rate_plus_xo_rate():
 
 def test_init_max_time_mins():
     """Assert that the TPOT init stores max run time and sets generations to 1000000."""
-    tpot_obj = TPOTClassifier(max_time_mins=30, generations=1000)
+    tpot_obj = TPOTClassifier(max_time_mins=30, generations=None)
     tpot_obj._fit_init()
     assert tpot_obj.generations == 1000000
+    assert tpot_obj.max_time_mins == 30
+
+
+def test_init_max_time_mins_and_generations():
+    """Assert that the TPOT init stores max run time but keeps the generations at the user-supplied value."""
+    tpot_obj = TPOTClassifier(max_time_mins=30, generations=1000)
+    tpot_obj._fit_init()
+    assert tpot_obj.generations == 1000
     assert tpot_obj.max_time_mins == 30
 
 
@@ -945,7 +953,7 @@ def test_fit_4():
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=2,
-        generations=1,
+        generations=None,
         verbosity=0,
         max_time_mins=2/60.,
         config_dict='TPOT light'
