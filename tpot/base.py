@@ -1088,16 +1088,18 @@ class TPOTBase(BaseEstimator):
                 raise ValueError('Failed creating the periodic_checkpoint_folder:\n{}'.format(e))
 
 
-    def export(self, output_file_name, data_file_path=''):
+    def export(self, output_file_name='tpot_pipeline.py', data_file_path='', to_screen=False):
         """Export the optimized pipeline as Python code.
 
         Parameters
         ----------
-        output_file_name: string
+        output_file_name: string (default: 'tpot_pipeline.py')
             String containing the path and file name of the desired output file
         data_file_path: string (default: '')
             By default, the path of input dataset is 'PATH/TO/DATA/FILE' by default.
             If data_file_path is another string, the path will be replaced.
+        to_screen: boolean (default: False)
+            If set to True, the full text of the export is printed to screen instead of to file.
 
         Returns
         -------
@@ -1114,9 +1116,11 @@ class TPOTBase(BaseEstimator):
                                     self.random_state,
                                     data_file_path=data_file_path)
 
-        with open(output_file_name, 'w') as output_file:
-            output_file.write(to_write)
-
+        if to_screen:
+            print(to_write)
+        else:
+            with open(output_file_name, 'w') as output_file:
+                output_file.write(to_write)
 
     def _impute_values(self, features):
         """Impute missing values in a feature set.
