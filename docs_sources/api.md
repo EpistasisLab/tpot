@@ -115,7 +115,7 @@ Setting <em>n_jobs</em>=-1 will use as many cores as available on the computer. 
 <blockquote>
 How many minutes TPOT has to optimize the pipeline.
 <br /><br />
-If not None, this setting will override the <em>generations</em> parameter and allow TPOT to run until <em>max_time_mins</em> minutes elapse.
+If not None, this setting will allow TPOT to run until <em>max_time_mins</em> minutes elapsed and then stop. TPOT will stop earlier if <em>generations</em> is set and all generations are already evaluated.
 </blockquote>
 
 <strong>max_eval_time_mins</strong>: float, optional (default=5)
