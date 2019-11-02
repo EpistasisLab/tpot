@@ -34,7 +34,7 @@ Read more in the [User Guide](using/#tpot-with-code).
 <td width="80%" style="background:white;">
 <strong>generations</strong>: int, optional (default=100)
 <blockquote>
-Number of iterations to the run pipeline optimization process. Must be a positive number.
+Number of iterations to the run pipeline optimization process. Must be a positive number or None. If None, the parameter <em>max_time_mins</em> must be defined as the runtime limit.
 <br /><br />
 Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
 <br /><br />
