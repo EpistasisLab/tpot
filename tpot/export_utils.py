@@ -113,7 +113,7 @@ testing_features = imputer.transform(testing_features)
 """
 
     if pipeline_score is not None:
-        pipeline_text += '\n# Average CV score on the training set was:{}'.format(pipeline_score)
+        pipeline_text += '\n# Average CV score on the training set was: {}'.format(pipeline_score)
     pipeline_text += '\n'
 
     # Replace the function calls with their corresponding Python code
