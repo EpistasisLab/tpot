@@ -119,8 +119,10 @@ class TPOTBase(BaseEstimator):
 
         Parameters
         ----------
-        generations: int, optional (default: 100)
+        generations: int or None, optional (default: 100)
             Number of iterations to the run pipeline optimization process.
+            It must be a positive number or None. If None, the parameter 
+            max_time_mins must be defined as the runtime limit.
             Generally, TPOT will work better when you give it more generations (and
             therefore time) to optimize the pipeline. TPOT will evaluate
             POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.
@@ -182,8 +184,9 @@ class TPOTBase(BaseEstimator):
             Thus for n_jobs = -2, all CPUs but one are used.
         max_time_mins: int, optional (default: None)
             How many minutes TPOT has to optimize the pipeline.
-            If provided, this setting will override the "generations" parameter and allow
-            TPOT to run until it runs out of time.
+            If not None, this setting will allow TPOT to run until max_time_mins minutes
+            elapsed and then stop. TPOT will stop earlier if generationsis set and all
+            generations are already evaluated.
         max_eval_time_mins: float, optional (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
@@ -566,10 +569,12 @@ class TPOTBase(BaseEstimator):
                 self.operators.append(op_class)
                 self.arguments += arg_types
 
+        if self.max_time_mins is None and self.generations is None:
+            raise ValueError("Either the parameter generations should bet set or a maximum evaluation time should be defined via max_time_mins")
+
         # Schedule TPOT to run for many generations if the user specifies a
-        # run-time limit TPOT will automatically interrupt itself when the timer
-        # runs out
-        if self.max_time_mins is not None:
+        # run-time limit TPOT will automatically interrupt itself when the timer runs out
+        if self.max_time_mins is not None and self.generations is None :
             self.generations = 1000000
 
         # Prompt the user if their version is out of date
@@ -1262,7 +1267,7 @@ class TPOTBase(BaseEstimator):
         if self.max_time_mins:
             total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
             if total_mins_elapsed >= self.max_time_mins:
-                raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
+                raise KeyboardInterrupt('{:.2f} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
 
     def _combine_individual_stats(self, operator_count, cv_score, individual_stats):
         """Combine the stats with operator count and cv score and preprare to be written to _evaluated_individuals

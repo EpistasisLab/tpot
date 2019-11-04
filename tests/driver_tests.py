@@ -38,7 +38,9 @@ import numpy as np
 import pandas as pd
 import sklearn
 
-from tpot.driver import positive_integer, float_range, _get_arg_parser, _print_args, _read_data_file, load_scoring_function, tpot_driver
+from tpot.driver import positive_integer, float_range, _get_arg_parser, \
+    _print_args, _read_data_file, load_scoring_function, tpot_driver, \
+    positive_integer_or_none
 from nose.tools import assert_raises, assert_equal, assert_in
 from unittest import TestCase
 
@@ -358,6 +360,26 @@ def test_positive_integer_2():
 def test_positive_integer_3():
     """Assert that the TPOT CLI interface's integer parsing throws an exception when n is not an integer."""
     assert_raises(Exception, positive_integer, 'foobar')
+
+def test_positive_integer_or_none():
+    """Assert that the TPOT CLI interface's positive_integer_or_none parsing throws an exception when n < 0."""
+    assert_raises(Exception, positive_integer_or_none, '-1')
+
+
+def test_positive_integer_or_none_2():
+    """Assert that the TPOT CLI interface's positive_integer_or_none parsing returns the integer value of a string encoded integer when n > 0."""
+    assert 1 == positive_integer_or_none('1')
+
+
+def test_positive_integer_or_none_3():
+    """Assert that the TPOT CLI interface's positive_integer_or_none parsing throws an exception when n is not an integer and not None."""
+    assert_raises(Exception, positive_integer_or_none, 'foobar')
+
+
+def test_positive_integer_or_none_4():
+    """Assert that the TPOT CLI interface's positive_integer_or_none parsing return None when value is string 'None' or 'none'."""
+    assert positive_integer_or_none('none') is None
+    assert positive_integer_or_none('None') is None
 
 
 def test_float_range():

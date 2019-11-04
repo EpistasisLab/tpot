@@ -170,8 +170,8 @@ Detailed descriptions of the command-line arguments are below.
 <tr>
 <td>-g</td>
 <td>GENERATIONS</td>
-<td>Any positive integer</td>
-<td>Number of iterations to run the pipeline optimization process. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
+<td>Any positive integer or None</td>
+<td>Number of iterations to run the pipeline optimization process. It must be a positive number or None. If None, the parameter max_time_mins must be defined as the runtime limit. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
 <br /><br />
 TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
 </tr>
@@ -248,7 +248,7 @@ Assigning this to -1 will use as many cores as available on the computer. For n_
 <td>Any positive integer</td>
 <td>How many minutes TPOT has to optimize the pipeline.
 <br /><br />
-If provided, this setting will override the "generations" parameter and allow TPOT to run until it runs out of time.</td>
+How many minutes TPOT has to optimize the pipeline.If not None, this setting will allow TPOT to run until max_time_mins minutes elapsed and then stop. TPOT will stop earlier if generationsis set and all generations are already evaluated.</td>
 </tr>
 <tr>
 <td>-maxeval</td>
