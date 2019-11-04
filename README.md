@@ -55,7 +55,7 @@ Click on the corresponding links to find more information on TPOT usage in the d
 
 ### Classification
 
-Below is a minimal working example with the practice MNIST data set.
+Below is a minimal working example with the the optical recognition of handwritten digits dataset.
 
 ```python
 from tpot import TPOTClassifier
@@ -64,32 +64,43 @@ from sklearn.model_selection import train_test_split
 
 digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
-                                                    train_size=0.75, test_size=0.25)
+                                                    train_size=0.75, test_size=0.25, random_state=42)
 
-tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2)
+tpot = TPOTClassifier(generations=5, population_size=50, verbosity=2, random_state=42)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 ```
 
-Running this code should discover a pipeline that achieves about 98% testing accuracy, and the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file and look similar to the following:
+Running this code should discover a pipeline that achieves about 98% testing accuracy, and the corresponding Python code should be exported to the `tpot_digits_pipeline.py` file and look similar to the following:
 
 ```python
 import numpy as np
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import PolynomialFeatures
+from tpot.builtins import StackingEstimator
+from tpot.export_utils import set_param_recursive
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=42)
 
+# Average CV score on the training set was: 0.9799428471757372
+exported_pipeline = make_pipeline(
+    PolynomialFeatures(degree=2, include_bias=False, interaction_only=False),
+    StackingEstimator(estimator=LogisticRegression(C=0.1, dual=False, penalty="l1")),
+    RandomForestClassifier(bootstrap=True, criterion="entropy", max_features=0.35000000000000003, min_samples_leaf=20, min_samples_split=19, n_estimators=100)
+)
+# Fix random state for all the steps in exported pipeline
+set_param_recursive(exported_pipeline.steps, 'random_state', 42)
 
-exported_pipeline = KNeighborsClassifier(n_neighbors=6, weights="distance")
-
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 ```
 
@@ -104,9 +115,9 @@ from sklearn.model_selection import train_test_split
 
 housing = load_boston()
 X_train, X_test, y_train, y_test = train_test_split(housing.data, housing.target,
-                                                    train_size=0.75, test_size=0.25)
+                                                    train_size=0.75, test_size=0.25, random_state=42)
 
-tpot = TPOTRegressor(generations=5, population_size=20, verbosity=2)
+tpot = TPOTRegressor(generations=5, population_size=50, verbosity=2, random_state=42)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_boston_pipeline.py')
@@ -117,20 +128,27 @@ which should result in a pipeline that achieves about 12.77 mean squared error (
 ```python
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures
+from tpot.export_utils import set_param_recursive
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=42)
 
-exported_pipeline = GradientBoostingRegressor(alpha=0.85, learning_rate=0.1, loss="ls",
-                                              max_features=0.9, min_samples_leaf=5,
-                                              min_samples_split=6)
+# Average CV score on the training set was: -10.812040755234403
+exported_pipeline = make_pipeline(
+    PolynomialFeatures(degree=2, include_bias=False, interaction_only=False),
+    ExtraTreesRegressor(bootstrap=False, max_features=0.5, min_samples_leaf=2, min_samples_split=3, n_estimators=100)
+)
+# Fix random state for all the steps in exported pipeline
+set_param_recursive(exported_pipeline.steps, 'random_state', 42)
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 ```
 

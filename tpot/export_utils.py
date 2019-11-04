@@ -98,9 +98,9 @@ from copy import copy
     pipeline_text += """
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('{}', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state={})
+            train_test_split(features, tpot_data['target'], random_state={})
 """.format(data_file_path, random_state)
 
     # Add the imputation step if it was used by TPOT

@@ -272,10 +272,10 @@ X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
 tpot = TPOTClassifier(generations=5, population_size=50, verbosity=2)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 </code></pre>
 
-<p>Running this code should discover a pipeline (exported as <code>tpot_mnist_pipeline.py</code>) that achieves about 98% test accuracy:</p>
+<p>Running this code should discover a pipeline (exported as <code>tpot_digits_pipeline.py</code>) that achieves about 98% test accuracy:</p>
 <pre><code class="Python">import numpy as np
 
 from sklearn.model_selection import train_test_split

@@ -519,7 +519,7 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
                       scoring=my_custom_scorer)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 </code></pre>
 
 <ul>
@@ -595,7 +595,7 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
                       config_dict='TPOT light')
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 
 </code></pre>
 
@@ -647,7 +647,7 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
                       config_dict=tpot_config)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 </code></pre>
 
 <p>Command-line users must create a separate <code>.py</code> file with the custom configuration and provide the path to the file to the <code>tpot</code> call. For example, if the simple example configuration above is saved in <code>tpot_classifier_config.py</code>, that configuration could be used on the command line with the command:</p>

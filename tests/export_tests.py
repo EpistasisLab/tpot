@@ -51,9 +51,9 @@ TPOTSelectFromModel, TPOTSelectFromModel_args = TPOTOperatorClassFactory(
     classifier_config_dict[test_operator_key_2]
 )
 
-mnist_data = load_digits()
+digits_data = load_digits()
 training_features, testing_features, training_target, testing_target = \
-    train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
+    train_test_split(digits_data.data.astype(np.float64), digits_data.target.astype(np.float64), random_state=42)
 
 tpot_obj = TPOTClassifier()
 tpot_obj._fit_init()
@@ -75,9 +75,9 @@ from tpot.export_utils import set_param_recursive
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=39)
+            train_test_split(features, tpot_data['target'], random_state=39)
 
 exported_pipeline = BernoulliNB(alpha=1.0, fit_prior=False)
 # Fix random state for all the steps in exported pipeline
@@ -130,9 +130,9 @@ from sklearn.neighbors import KNeighborsClassifier
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=None)
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 
@@ -323,9 +323,9 @@ from tpot.builtins import StackingEstimator
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=None)
 
 exported_pipeline = make_pipeline(
     make_union(
@@ -360,9 +360,9 @@ from sklearn.neighbors import KNeighborsClassifier
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=None)
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 
@@ -391,9 +391,9 @@ from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=None)
 
 exported_pipeline = make_pipeline(
     SelectPercentile(score_func=f_classif, percentile=20),
@@ -431,9 +431,9 @@ from copy import copy
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=None)
 
 exported_pipeline = make_pipeline(
     make_union(
@@ -468,9 +468,9 @@ from sklearn.tree import DecisionTreeRegressor
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=None)
 
 exported_pipeline = make_pipeline(
     SelectFromModel(estimator=ExtraTreesRegressor(max_features=0.05, n_estimators=100), threshold=0.05),
@@ -503,9 +503,9 @@ from tpot.export_utils import set_param_recursive
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('test_path', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=42)
+            train_test_split(features, tpot_data['target'], random_state=42)
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
 # Fix random state for all the steps in exported pipeline
@@ -598,9 +598,9 @@ from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=None)
 
 # Average CV score on the training set was: 0.929813743
 exported_pipeline = make_pipeline(
@@ -652,9 +652,9 @@ except ImportError:
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=None)
 
 imputer = Imputer(strategy="median")
 imputer.fit(training_features)

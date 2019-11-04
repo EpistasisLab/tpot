@@ -83,10 +83,10 @@ if getattr(StringIO, '__exit__', False) and \
 else:
     from contextlib import closing
 
-# Set up the MNIST data set for testing
-mnist_data = load_digits()
+# Set up the digits data set for testing
+digits_data = load_digits()
 training_features, testing_features, training_target, testing_target = \
-    train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
+    train_test_split(digits_data.data.astype(np.float64), digits_data.target.astype(np.float64), random_state=42)
 
 # Set up test data with missing value
 features_with_nan = np.copy(training_features)
@@ -713,7 +713,7 @@ def test_template_4():
 
 def test_fit_GroupKFold():
     """Assert that TPOT properly handles the group parameter when using GroupKFold."""
-    # This check tests if the darker MNIST images would generalize to the lighter ones.
+    # This check tests if the darker digits images would generalize to the lighter ones.
     means = np.mean(training_features, axis=1)
     groups = means >= np.median(means)
 

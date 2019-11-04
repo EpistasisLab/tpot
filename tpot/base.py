@@ -1122,7 +1122,8 @@ class TPOTBase(BaseEstimator):
         if output_file_name is not '':
             with open(output_file_name, 'w') as output_file:
                 output_file.write(to_write)
-        return to_write
+        else:
+            return to_write
 
 
     def _impute_values(self, features):
