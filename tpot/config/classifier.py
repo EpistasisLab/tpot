@@ -107,6 +107,17 @@ classifier_config_dict = {
         'nthread': [1]
     },
 
+    'sklearn.linear_model.SGDClassifier': {
+        'loss': ['log', 'hinge', 'modified_huber', 'squared_hinge', 'perceptron'],
+        'penalty': ['elasticnet'],
+        'alpha': [0.0, 0.01, 0.001],
+        'learning_rate': ['invscaling', 'constant'],
+        'fit_intercept': [True, False],
+        'l1_ratio': [0.25, 0.0, 1.0, 0.75, 0.5],
+        'eta0': [0.1, 1.0, 0.01],
+        'power_t': [0.5, 0.0, 1.0, 0.1, 100.0, 10.0, 50.0]
+    },
+
     # Preprocesssors
     'sklearn.preprocessing.Binarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
