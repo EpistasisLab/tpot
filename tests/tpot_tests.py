@@ -556,7 +556,7 @@ def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
     tpot_obj._fit_init()
-    known_score = -11.682841148312662
+    known_score = -11.708199875921563
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -576,7 +576,6 @@ def test_score_3():
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features_r, testing_target_r)
-
     assert np.allclose(known_score, score)
 
 
@@ -1332,61 +1331,6 @@ def test_summary_of_best_pipeline():
     assert_raises(RuntimeError, tpot_obj._summary_of_best_pipeline, features=training_features, target=training_target)
 
 
-def test_set_param_recursive():
-    """Assert that _set_param_recursive sets \"random_state\" to 42 in all steps in a simple pipeline."""
-    pipeline_string = (
-        'DecisionTreeClassifier(PCA(input_matrix, PCA__iterated_power=5, PCA__svd_solver=randomized), '
-        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
-        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
-    )
-
-    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
-    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
-    # assert "random_state" of PCA at step 1
-    assert getattr(sklearn_pipeline.steps[0][1], 'random_state') == 42
-    # assert "random_state" of DecisionTreeClassifier at step 2
-    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
-
-
-def test_set_param_recursive_2():
-    """Assert that _set_param_recursive sets \"random_state\" to 42 in nested estimator in SelectFromModel."""
-    pipeline_string = (
-        'DecisionTreeRegressor(SelectFromModel(input_matrix, '
-        'SelectFromModel__ExtraTreesRegressor__max_features=0.05, SelectFromModel__ExtraTreesRegressor__n_estimators=100, '
-        'SelectFromModel__threshold=0.05), DecisionTreeRegressor__max_depth=8,'
-        'DecisionTreeRegressor__min_samples_leaf=5, DecisionTreeRegressor__min_samples_split=5)'
-    )
-    tpot_obj = TPOTRegressor()
-    tpot_obj._fit_init()
-    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
-    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
-
-    assert getattr(getattr(sklearn_pipeline.steps[0][1], 'estimator'), 'random_state') == 42
-    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
-
-
-def test_set_param_recursive_3():
-    """Assert that _set_param_recursive sets \"random_state\" to 42 in nested estimator in StackingEstimator in a complex pipeline."""
-    pipeline_string = (
-        'DecisionTreeClassifier(CombineDFs('
-        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
-        'DecisionTreeClassifier__max_depth=8, DecisionTreeClassifier__min_samples_leaf=5,'
-        'DecisionTreeClassifier__min_samples_split=5),input_matrix) '
-        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
-        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
-    )
-
-    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
-    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
-
-    # StackingEstimator under the transformer_list of FeatureUnion
-    assert getattr(getattr(sklearn_pipeline.steps[0][1].transformer_list[0][1], 'estimator'), 'random_state') == 42
-    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
-
-
 def test_evaluated_individuals_():
     """Assert that evaluated_individuals_ stores current pipelines and their CV scores."""
     tpot_obj = TPOTClassifier(
@@ -1402,7 +1346,6 @@ def test_evaluated_individuals_():
     for pipeline_string in sorted(tpot_obj.evaluated_individuals_.keys()):
         deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
         operator_count = tpot_obj._operator_count(deap_pipeline)
 
         try:
@@ -1450,7 +1393,6 @@ def test_evaluate_individuals():
     for deap_pipeline, fitness_score in zip(pop, fitness_scores):
         operator_count = tpot_obj._operator_count(deap_pipeline)
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
         try:
             cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
@@ -1485,7 +1427,6 @@ def test_evaluate_individuals_2():
     for deap_pipeline, fitness_score in zip(pop, fitness_scores):
         operator_count = tpot_obj._operator_count(deap_pipeline)
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
         try:
             cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)

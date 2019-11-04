@@ -69,7 +69,7 @@ def export_pipeline(exported_pipeline,
     impute: bool (False):
         If impute = True, then adda a imputation step.
     random_state: integer
-        Random seed in train_test_split function.
+        Random seed in train_test_split function and exported pipeline.
     data_file_path: string (default: '')
         By default, the path of input dataset is 'PATH/TO/DATA/FILE' by default.
         If data_file_path is another string, the path will be replaced.
@@ -84,9 +84,9 @@ def export_pipeline(exported_pipeline,
     pipeline_tree = expr_to_tree(exported_pipeline, pset)
 
     # Have the exported code import all of the necessary modules and functions
-    pipeline_text = generate_import_code(exported_pipeline, operators, impute)
+    pipeline_text = generate_import_code(exported_pipeline, operators, impute, random_state)
 
-    pipeline_code = pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators))
+    pipeline_code = pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators), random_state)
 
     if pipeline_code.count("FunctionTransformer(copy)"):
         pipeline_text += """from sklearn.preprocessing import FunctionTransformer
@@ -165,7 +165,7 @@ def expr_to_tree(ind, pset):
     return tree
 
 
-def generate_import_code(pipeline, operators, impute=False):
+def generate_import_code(pipeline, operators, impute=False, random_state=None):
     """Generate all library import calls for use in TPOT.export().
 
     Parameters
@@ -176,6 +176,8 @@ def generate_import_code(pipeline, operators, impute=False):
         List of operator class from operator library
     impute : bool
         Whether to impute new values in the feature set.
+    random_state: integer or None
+        Random seed in train_test_split function and exported pipeline.
 
     Returns
     -------
@@ -220,6 +222,9 @@ def generate_import_code(pipeline, operators, impute=False):
 except ImportError:
     from sklearn.preprocessing import Imputer
 """
+    if random_state is not None:
+        pipeline_text += """from tpot.export_utils import set_param_recursive
+"""
 
     return pipeline_text
 
@@ -256,24 +261,38 @@ def _starting_imports(operators, operators_used):
         }
 
 
-def pipeline_code_wrapper(pipeline_code):
+def pipeline_code_wrapper(pipeline_code, random_state=None):
     """Generate code specific to the execution of the sklearn pipeline.
 
     Parameters
     ----------
     pipeline_code: str
         Code that defines the final sklearn pipeline
+    random_state: integer or None
+        Random seed in train_test_split function and exported pipeline.
 
     Returns
     -------
-    Source code for the sklearn pipeline and calls to fit and predict
+    exported_code: str
+        Source code for the sklearn pipeline and calls to fit and predict
 
     """
-    return """exported_pipeline = {}
+    if random_state is None:
+        exported_code = """exported_pipeline = {}
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """.format(pipeline_code)
+    else:
+        exported_code = """exported_pipeline = {}
+# Fix random state for all the steps in exported pipeline
+set_param_recursive(exported_pipeline.steps, 'random_state', {})
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+""".format(pipeline_code, random_state)
+
+    return exported_code
 
 
 def generate_pipeline_code(pipeline_tree, operators):
@@ -390,3 +409,32 @@ def _combine_dfs(left, right, operators):
 
     return "make_union(\n{},\n{}\n)".\
         format(_indent(_make_branch(left), 4), _indent(_make_branch(right), 4))
+
+
+def set_param_recursive(pipeline_steps, parameter, value):
+    """Recursively iterate through all objects in the pipeline and set a given parameter.
+
+    Parameters
+    ----------
+    pipeline_steps: array-like
+        List of (str, obj) tuples from a scikit-learn pipeline or related object
+    parameter: str
+        The parameter to assign a value for in each pipeline object
+    value: any
+        The value to assign the parameter to in each pipeline object
+    Returns
+    -------
+    None
+
+    """
+    for (_, obj) in pipeline_steps:
+        recursive_attrs = ['steps', 'transformer_list', 'estimators']
+        for attr in recursive_attrs:
+            if hasattr(obj, attr):
+                set_param_recursive(getattr(obj, attr), parameter, value)
+        if hasattr(obj, 'estimator'):  # nested estimator
+            est = getattr(obj, 'estimator')
+            if hasattr(est, parameter):
+                setattr(est, parameter, value)
+        if hasattr(obj, parameter):
+            setattr(obj, parameter, value)

@@ -28,7 +28,8 @@ import numpy as np
 from os import remove, path
 
 from tpot import TPOTClassifier, TPOTRegressor
-from tpot.export_utils import export_pipeline, generate_import_code, _indent, generate_pipeline_code, get_by_name
+from tpot.export_utils import export_pipeline, generate_import_code, _indent, \
+    generate_pipeline_code, get_by_name, set_param_recursive
 from tpot.operator_utils import TPOTOperatorClassFactory
 from tpot.config.classifier import classifier_config_dict
 
@@ -70,6 +71,7 @@ def test_export_random_ind():
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import BernoulliNB
+from tpot.export_utils import set_param_recursive
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
@@ -78,11 +80,15 @@ training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'].values, random_state=39)
 
 exported_pipeline = BernoulliNB(alpha=1.0, fit_prior=False)
+# Fix random state for all the steps in exported pipeline
+set_param_recursive(exported_pipeline.steps, 'random_state', 39)
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset, random_state=tpot_obj.random_state)
+    exported_code = export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset, random_state=tpot_obj.random_state)
+
+    assert expected_code == exported_code
 
 
 def test_export():
@@ -493,6 +499,7 @@ def test_export_pipeline_6():
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
+from tpot.export_utils import set_param_recursive
 
 # NOTE: Make sure that the class is labeled 'target' in the data file
 tpot_data = pd.read_csv('test_path', sep='COLUMN_SEPARATOR', dtype=np.float64)
@@ -501,13 +508,17 @@ training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'].values, random_state=42)
 
 exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
+# Fix random state for all the steps in exported pipeline
+set_param_recursive(exported_pipeline.steps, 'random_state', 42)
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
-    assert expected_code == export_pipeline(pipeline, tpot_obj.operators,
-                                            tpot_obj._pset, random_state=42,
-                                            data_file_path='test_path')
+    exported_code = export_pipeline(pipeline, tpot_obj.operators,
+                                    tpot_obj._pset, random_state=42,
+                                    data_file_path='test_path')
+
+    assert expected_code == exported_code
 
 
 def test_operator_export():
@@ -657,3 +668,62 @@ results = exported_pipeline.predict(testing_features)
 """
 
     assert_equal(export_code, expected_code)
+
+
+def test_set_param_recursive():
+    tpot_obj = TPOTClassifier()
+    tpot_obj._fit_init()
+    """Assert that _set_param_recursive sets \"random_state\" to 42 in all steps in a simple pipeline."""
+    pipeline_string = (
+        'DecisionTreeClassifier(PCA(input_matrix, PCA__iterated_power=5, PCA__svd_solver=randomized), '
+        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
+    )
+
+    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+    set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+    # assert "random_state" of PCA at step 1
+    assert getattr(sklearn_pipeline.steps[0][1], 'random_state') == 42
+    # assert "random_state" of DecisionTreeClassifier at step 2
+    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
+
+
+def test_set_param_recursive_2():
+    """Assert that set_param_recursive sets \"random_state\" to 42 in nested estimator in SelectFromModel."""
+    pipeline_string = (
+        'DecisionTreeRegressor(SelectFromModel(input_matrix, '
+        'SelectFromModel__ExtraTreesRegressor__max_features=0.05, SelectFromModel__ExtraTreesRegressor__n_estimators=100, '
+        'SelectFromModel__threshold=0.05), DecisionTreeRegressor__max_depth=8,'
+        'DecisionTreeRegressor__min_samples_leaf=5, DecisionTreeRegressor__min_samples_split=5)'
+    )
+    tpot_obj = TPOTRegressor()
+    tpot_obj._fit_init()
+    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+    set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+
+    assert getattr(getattr(sklearn_pipeline.steps[0][1], 'estimator'), 'random_state') == 42
+    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
+
+
+def test_set_param_recursive_3():
+    """Assert that set_param_recursive sets \"random_state\" to 42 in nested estimator in StackingEstimator in a complex pipeline."""
+    pipeline_string = (
+        'DecisionTreeClassifier(CombineDFs('
+        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
+        'DecisionTreeClassifier__max_depth=8, DecisionTreeClassifier__min_samples_leaf=5,'
+        'DecisionTreeClassifier__min_samples_split=5),input_matrix) '
+        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
+        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
+    )
+    tpot_obj = TPOTClassifier()
+    tpot_obj._fit_init()
+
+    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
+    set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
+
+    # StackingEstimator under the transformer_list of FeatureUnion
+    assert getattr(getattr(sklearn_pipeline.steps[0][1].transformer_list[0][1], 'estimator'), 'random_state') == 42
+    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
