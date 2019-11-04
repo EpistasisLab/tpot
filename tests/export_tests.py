@@ -104,6 +104,38 @@ def test_export():
     remove("test_export.py") # clean up exported file
 
 
+def test_export_2():
+    """Assert that TPOT's export function returns the expected pipeline text as a string."""
+
+    pipeline_string = (
+        'KNeighborsClassifier('
+        'input_matrix, '
+        'KNeighborsClassifier__n_neighbors=10, '
+        'KNeighborsClassifier__p=1, '
+        'KNeighborsClassifier__weights=uniform'
+        ')'
+    )
+    pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
+    tpot_obj._optimized_pipeline = pipeline
+    expected_code = """import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+
+# NOTE: Make sure that the class is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1).values
+training_features, testing_features, training_target, testing_target = \\
+            train_test_split(features, tpot_data['target'].values, random_state=None)
+
+exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+"""
+    assert expected_code == tpot_obj.export()
+
+
 def test_generate_pipeline_code():
     """Assert that generate_pipeline_code() returns the correct code given a specific pipeline."""
 
@@ -559,7 +591,7 @@ features = tpot_data.drop('target', axis=1).values
 training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'].values, random_state=None)
 
-# Average CV score on the training set was:0.929813743
+# Average CV score on the training set was: 0.929813743
 exported_pipeline = make_pipeline(
     SelectPercentile(score_func=f_classif, percentile=20),
     DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
