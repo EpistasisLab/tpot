@@ -6,7 +6,7 @@ from sklearn.pipeline import make_pipeline, make_union
 from sklearn.tree import DecisionTreeClassifier
 from tpot.builtins import StackingEstimator
 
-# NOTE: Make sure that the class is labeled 'target' in the data file
+# NOTE: Make sure that the outcome column is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \
