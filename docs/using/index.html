@@ -13,19 +13,18 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link rel="stylesheet" href="../css/highlight.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Using TPOT";
     var mkdocs_page_input_path = "using.md";
-    var mkdocs_page_url = "/tpot/using/";
+    var mkdocs_page_url = "/using/";
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js" defer></script>
-  <script src="../js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-  <script>hljs.initHighlightingOnLoad();</script> 
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -39,7 +38,7 @@
         <a href=".." class="icon icon-home"> TPOT</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+    <input type="text" name="q" placeholder="Search docs" />
   </form>
 </div>
       </div>
@@ -193,7 +192,7 @@ and how long that grid search will take. That is 10,000 model configurations to 
 which means that roughly 100,000 models are fit and evaluated on the training data in one grid search.
 That's a time-consuming procedure, even for simpler models like decision trees.</p>
 <p>Typical TPOT runs will take hours to days to finish (unless it's a small dataset), but you can always interrupt
-the run partway through and see the best results so far. TPOT also <a href="/api/">provides</a> a <code>warm_start</code> parameter that
+the run partway through and see the best results so far. TPOT also <a href="../api/">provides</a> a <code>warm_start</code> parameter that
 lets you restart a TPOT run from where it left off.</p>
 <h5>AutoML algorithms can recommend different solutions for the same dataset</h5>
 
@@ -217,7 +216,7 @@ as grid search.</p>
 </code></pre>
 
 <p>It's also possible to use TPOT for regression problems with the <code>TPOTRegressor</code> class. Other than the class name,
-a <code>TPOTRegressor</code> is used the same way as a <code>TPOTClassifier</code>. You can read more about the <code>TPOTClassifier</code> and <code>TPOTRegressor</code> classes in the <a href="/api/">API documentation</a>.</p>
+a <code>TPOTRegressor</code> is used the same way as a <code>TPOTClassifier</code>. You can read more about the <code>TPOTClassifier</code> and <code>TPOTRegressor</code> classes in the <a href="../api/">API documentation</a>.</p>
 <p>Some example code with custom TPOT parameters might look like:</p>
 <pre><code class="Python">pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
                                     random_state=42, verbosity=2)
@@ -254,7 +253,7 @@ print(pipeline_optimizer.score(X_test, y_test))
 pipeline_optimizer.export('tpot_exported_pipeline.py')
 </code></pre>
 
-<p>Check our <a href="examples/">examples</a> to see TPOT applied to some specific data sets.</p>
+<p>Check our <a href="../examples/">examples</a> to see TPOT applied to some specific data sets.</p>
 <h1 id="tpot-on-the-command-line">TPOT on the command line</h1>
 <p>To use TPOT via the command line, enter the following command with a path to the data file:</p>
 <pre><code class="Shell">tpot /path_to/data_file.csv
@@ -304,8 +303,8 @@ enter the following command:</p>
 <tr>
 <td>-g</td>
 <td>GENERATIONS</td>
-<td>Any positive integer</td>
-<td>Number of iterations to run the pipeline optimization process. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
+<td>Any positive integer or None</td>
+<td>Number of iterations to run the pipeline optimization process. It must be a positive number or None. If None, the parameter max_time_mins must be defined as the runtime limit. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
 <br /><br />
 TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
 </tr>
@@ -382,7 +381,7 @@ Assigning this to -1 will use as many cores as available on the computer. For n_
 <td>Any positive integer</td>
 <td>How many minutes TPOT has to optimize the pipeline.
 <br /><br />
-If provided, this setting will override the "generations" parameter and allow TPOT to run until it runs out of time.</td>
+How many minutes TPOT has to optimize the pipeline.If not None, this setting will allow TPOT to run until max_time_mins minutes elapsed and then stop. TPOT will stop earlier if generationsis set and all generations are already evaluated.</td>
 </tr>
 <tr>
 <td>-maxeval</td>
@@ -523,13 +522,8 @@ tpot.export('tpot_digits_pipeline.py')
 </code></pre>
 
 <ul>
-<li>
-<p>You can pass a metric function with the signature <code>score_func(y_true, y_pred)</code> (e.g. <code>my_custom_accuracy</code> in the example above), where <code>y_true</code> are the true target values and <code>y_pred</code> are the predicted target values from an estimator. To do this, you should implement your own function. See the example above for further explanation. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized (<code>greater_is_better=False</code> in <a href="http://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html"><code>make_scorer</code></a>), whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.</p>
-</li>
-<li>
-<p><strong>my_module.scorer_name</strong>: You can also use a custom <code>score_func(y_true, y_pred)</code> or <code>scorer(estimator, X, y)</code> function through the command line by adding the argument <code>-scoring my_module.scorer</code> to your command-line call. TPOT will import your module and use the custom scoring function from there. TPOT will include your current working directory when importing the module, so you can place it in the same directory where you are going to run TPOT.
-Example: <code>-scoring sklearn.metrics.auc</code> will use the function auc from sklearn.metrics module.</p>
-</li>
+<li><strong>my_module.scorer_name</strong>: You can also use a custom <code>score_func(y_true, y_pred)</code> or <code>scorer(estimator, X, y)</code> function through the command line by adding the argument <code>-scoring my_module.scorer</code> to your command-line call. TPOT will import your module and use the custom scoring function from there. TPOT will include your current working directory when importing the module, so you can place it in the same directory where you are going to run TPOT.
+Example: <code>-scoring sklearn.metrics.auc</code> will use the function auc from sklearn.metrics module.</li>
 </ul>
 <h1 id="built-in-tpot-configurations">Built-in TPOT configurations</h1>
 <p>TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. Below is a list of the current built-in configurations that come with TPOT.</p>
@@ -659,13 +653,13 @@ tpot.export('tpot_digits_pipeline.py')
 <p>Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.</p>
 <h1 id="template-option-in-tpot">Template option in TPOT</h1>
 <p>Template option provides a way to specify a desired structure for machine learning pipeline, which may reduce TPOT computation time and potentially provide more interpretable results. Current implementation only supports linear pipelines.</p>
-<p>Below is a simple example to use <code>template</code> option. The pipelines generated/evaluated in TPOT will follow this structure: 1st step is a feature selector (a subclass of <a href="https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17"><code>SelectorMixin</code></a>), 2nd step is a feature transformer (a subclass of <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html"><code>TransformerMixin</code></a>) and 3rd step is a classifier for classification (a subclass of <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html"><code>ClassifierMixin</code></a>). The last step must be <code>Classifier</code> for <code>TPOTClassifier</code>'s template but <code>Regressor</code> for <code>TPOTRegressor</code>. <strong>Note: although <code>SelectorMixin</code> is subclass of <code>TransformerMixin</code> in scikit-leawrn, but <code>Transformer</code> in this option excludes those subclasses of <code>SelectorMixin</code>.</strong></p>
+<p>Below is a simple example to use <code>template</code> option. The pipelines generated/evaluated in TPOT will follow this structure: 1st step is a feature selector (a subclass of <a href="https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17"><code>SelectorMixin</code></a>), 2nd step is a feature transformer (a subclass of <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html"><code>TransformerMixin</code></a>) and 3rd step is a classifier for classification (a subclass of <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html"><code>ClassifierMixin</code></a>). The last step must be <code>Classifier</code> for <code>TPOTClassifier</code>'s template but <code>Regressor</code> for <code>TPOTRegressor</code>. <strong>Note: although <code>SelectorMixin</code> is subclass of <code>TransformerMixin</code> in scikit-learn, but <code>Transformer</code> in this option excludes those subclasses of <code>SelectorMixin</code>.</strong></p>
 <pre><code class="Python">tpot_obj = TPOTClassifier(
                 template='Selector-Transformer-Classifier'
                 )
 </code></pre>
 
-<p>If a specific operator, e.g. <code>SelectPercentile</code>, is prefered to used in the 1st step of pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.</p>
+<p>If a specific operator, e.g. <code>SelectPercentile</code>, is preferred for usage in the 1st step of the pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.</p>
 <h1 id="featuresetselector-in-tpot">FeatureSetSelector in TPOT</h1>
 <p><code>FeatureSetSelector</code> is a special new operator in TPOT. This operator enables feature selection based on <em>priori</em> export knowledge. For example, in RNA-seq gene expression analysis, this operator can be used to select one or more gene (feature) set(s) based on GO (Gene Ontology) terms or annotated gene sets Molecular Signatures Database (<a href="http://software.broadinstitute.org/gsea/msigdb/index.jsp">MSigDB</a>) in the 1st step of pipeline via <code>template</code> option above, in order to reduce dimensions and TPOT computation time. This operator requires a dataset list in csv format. In this csv file, there are only three columns: 1st column is feature set names, 2nd column is the total number of features in one set and 3rd column is a list of feature names (if input X is pandas.DataFrame) or indexes (if input X is numpy.ndarray) delimited by ";". Below is a example how to use this operator in TPOT.</p>
 <p>Please check our <a href="https://www.biorxiv.org/content/10.1101/502484v1.article-info">preprint paper</a> for more details.</p>
@@ -807,8 +801,9 @@ with joblib.parallel_backend(&quot;dask&quot;):
     </span>
 </div>
     <script>var base_url = '..';</script>
-    <script src="../js/theme.js" defer></script>
-      <script src="../search/main.js" defer></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/require.js"></script>
+      <script src="../search/search.js"></script>
 
 </body>
 </html>

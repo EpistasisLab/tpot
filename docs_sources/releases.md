@@ -1,15 +1,17 @@
 # Version 0.11.0
+
 - **Support for Python 3.4 and below has been officially dropped.** Also support for scikit-learn 0.20 or below has been dropped.
 - The support of a metric function with the signature `score_func(y_true, y_pred)` for `scoring parameter` has been dropped.
 - Refine `StackingEstimator` for not stacking NaN/Infinity predication probabilities.
 - Fix a bug that population doesn't persist by `warm_start=True` when `max_time_mins` is not default value.
-- Now the `random_state` parameter in TPOT is used for pipeline evaluation instead of using a fixed random seed of 42 before. The `set_param_recursive` function has been moved to export_utils.py and it can be used in exported codes for setting `random_state` recursively in scikit-learn Pipeline. It is used to set `random_state` in `fitted_pipeline_` attribute and exported pipelines.
+- Now the `random_state` parameter in TPOT is used for pipeline evaluation instead of using a fixed random seed of 42 before. The `set_param_recursive` function has been moved to `export_utils.py` and it can be used in exported codes for setting `random_state` recursively in scikit-learn Pipeline. It is used to set `random_state` in `fitted_pipeline_` attribute and exported pipelines.
 - TPOT can independently use `generations` and `max_time_mins` to limit the optimization process through using one of the parameters or both.
 - `.export()` function will return string of exported pipeline if output filename is not specified.
 - Add [`SGDClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html) and [`SGDRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html) into TPOT default configs.
-- Fix errors in documentation
+- Documentation has been updated.
 
 # Version 0.10.2
+
 - **TPOT v0.10.2 is the last version to support Python 2.7 and Python 3.4.**
 - Minor updates for fixing compatibility issues with the latest version of scikit-learn (version > 0.21) and xgboost (v0.90)
 - Default value of `template` parameter is changed to `None` instead.
