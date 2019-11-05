@@ -656,10 +656,8 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('evaluate', self._evaluate_individuals, features=features, target=target, sample_weight=sample_weight, groups=groups)
 
         # assign population, self._pop can only be not None if warm_start is enabled
-        if self._pop:
-            pop = self._pop
-        else:
-            pop = self._toolbox.population(n=self.population_size)
+        if not self._pop:
+            self._pop = self._toolbox.population(n=self.population_size)
 
         def pareto_eq(ind1, ind2):
             """Determine whether two individuals are equal on the Pareto front.
@@ -704,7 +702,7 @@ class TPOTBase(BaseEstimator):
                 self._setup_memory()
                 warnings.simplefilter('ignore')
                 pop, _ = eaMuPlusLambda(
-                    population=pop,
+                    population=self._pop,
                     toolbox=self._toolbox,
                     mu=self.population_size,
                     lambda_=self._lambda,
