@@ -63,7 +63,7 @@ from update_checker import update_check
 
 from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
-from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
+from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code, set_param_recursive
 from .decorators import _pre_test
 from .builtins import CombineDFs, StackingEstimator
 
@@ -121,7 +121,7 @@ class TPOTBase(BaseEstimator):
         ----------
         generations: int or None, optional (default: 100)
             Number of iterations to the run pipeline optimization process.
-            It must be a positive number or None. If None, the parameter 
+            It must be a positive number or None. If None, the parameter
             max_time_mins must be defined as the runtime limit.
             Generally, TPOT will work better when you give it more generations (and
             therefore time) to optimize the pipeline. TPOT will evaluate
@@ -1065,7 +1065,7 @@ class TPOTBase(BaseEstimator):
                                             self.operators, self._pset,
                                             self._imputed, pareto_front_pipeline_score,
                                             self.random_state)
-                # dont export a pipeline you  had
+                # dont export a pipeline you had
                 if self._exported_pipeline_text.count(sklearn_pipeline_str):
                     self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
                 else:
@@ -1122,7 +1122,8 @@ class TPOTBase(BaseEstimator):
         if output_file_name is not '':
             with open(output_file_name, 'w') as output_file:
                 output_file.write(to_write)
-        return to_write
+        else:
+            return to_write
 
 
     def _impute_values(self, features):
@@ -1145,6 +1146,7 @@ class TPOTBase(BaseEstimator):
             self._fitted_imputer.fit(features)
 
         return self._fitted_imputer.transform(features)
+
 
     def _check_dataset(self, features, target, sample_weight=None):
         """Check if a dataset has a valid feature set and labels.
@@ -1232,35 +1234,11 @@ class TPOTBase(BaseEstimator):
         sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(expr, self._pset), self.operators)
         sklearn_pipeline = eval(sklearn_pipeline_str, self.operators_context)
         sklearn_pipeline.memory = self._memory
+        if self.random_state:
+            # Fix random state when the operator allows
+            set_param_recursive(sklearn_pipeline.steps, 'random_state', self.random_state)
         return sklearn_pipeline
 
-    def _set_param_recursive(self, pipeline_steps, parameter, value):
-        """Recursively iterate through all objects in the pipeline and set a given parameter.
-
-        Parameters
-        ----------
-        pipeline_steps: array-like
-            List of (str, obj) tuples from a scikit-learn pipeline or related object
-        parameter: str
-            The parameter to assign a value for in each pipeline object
-        value: any
-            The value to assign the parameter to in each pipeline object
-        Returns
-        -------
-        None
-
-        """
-        for (_, obj) in pipeline_steps:
-            recursive_attrs = ['steps', 'transformer_list', 'estimators']
-            for attr in recursive_attrs:
-                if hasattr(obj, attr):
-                    self._set_param_recursive(getattr(obj, attr), parameter, value)
-            if hasattr(obj, 'estimator'):  # nested estimator
-                est = getattr(obj, 'estimator')
-                if hasattr(est, parameter):
-                    setattr(est, parameter, value)
-            if hasattr(obj, parameter):
-                setattr(obj, parameter, value)
 
     def _stop_by_max_time_mins(self):
         """Stop optimization process once maximum minutes have elapsed."""
@@ -1478,14 +1456,6 @@ class TPOTBase(BaseEstimator):
                 try:
                     # Transform the tree expression into an sklearn pipeline
                     sklearn_pipeline = self._toolbox.compile(expr=individual)
-
-                    # Fix random state when the operator allows
-                    self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
-                    # Setting the seed is needed for XGBoost support because XGBoost currently stores
-                    # both a seed and random_state, and they're not synced correctly.
-                    # XGBoost will raise an exception if random_state != seed.
-                    if 'XGB' in sklearn_pipeline_str:
-                        self._set_param_recursive(sklearn_pipeline.steps, 'seed', 42)
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
                     operator_count = self._operator_count(individual)

@@ -384,7 +384,7 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
                       scoring=my_custom_scorer)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 ```
 
 - You can pass a metric function with the signature `score_func(y_true, y_pred)` (e.g. `my_custom_accuracy` in the example above), where `y_true` are the true target values and `y_pred` are the predicted target values from an estimator. To do this, you should implement your own function. See the example above for further explanation. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized (`greater_is_better=False` in [`make_scorer`](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html)), whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
@@ -461,7 +461,7 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
                       config_dict='TPOT light')
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 
 ```
 
@@ -520,7 +520,7 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
                       config_dict=tpot_config)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 ```
 
 Command-line users must create a separate `.py` file with the custom configuration and provide the path to the file to the `tpot` call. For example, if the simple example configuration above is saved in `tpot_classifier_config.py`, that configuration could be used on the command line with the command:
