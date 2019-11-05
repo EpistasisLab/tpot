@@ -1,3 +1,61 @@
+# Version 0.11.0
+
+- **Support for Python 3.4 and below has been officially dropped.** Also support for scikit-learn 0.20 or below has been dropped.
+- The support of a metric function with the signature `score_func(y_true, y_pred)` for `scoring parameter` has been dropped.
+- Refine `StackingEstimator` for not stacking NaN/Infinity predication probabilities.
+- Fix a bug that population doesn't persist by `warm_start=True` when `max_time_mins` is not default value.
+- Now the `random_state` parameter in TPOT is used for pipeline evaluation instead of using a fixed random seed of 42 before. The `set_param_recursive` function has been moved to `export_utils.py` and it can be used in exported codes for setting `random_state` recursively in scikit-learn Pipeline. It is used to set `random_state` in `fitted_pipeline_` attribute and exported pipelines.
+- TPOT can independently use `generations` and `max_time_mins` to limit the optimization process through using one of the parameters or both.
+- `.export()` function will return string of exported pipeline if output filename is not specified.
+- Add [`SGDClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html) and [`SGDRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html) into TPOT default configs.
+- Documentation has been updated.
+
+# Version 0.10.2
+
+- **TPOT v0.10.2 is the last version to support Python 2.7 and Python 3.4.**
+- Minor updates for fixing compatibility issues with the latest version of scikit-learn (version > 0.21) and xgboost (v0.90)
+- Default value of `template` parameter is changed to `None` instead.
+- Fix errors in documentation
+
+# Version 0.10.1
+
+- Add `data_file_path` option into `expert` function for replacing `'PATH/TO/DATA/FILE'` to customized dataset path in exported scripts. (Related issue #838)
+- Change python version in CI tests to 3.7
+- Add CI tests for macOS.
+
+# Version 0.10.0
+
+- Add a new `template` option to specify a desired structure for machine learning pipeline in TPOT. Check [TPOT API](https://epistasislab.github.io/tpot/api/) (it will be updated once it is merge to master branch).
+- Add `FeatureSetSelector` operator into TPOT for feature selection based on *priori* export knowledge. Please check our [preprint paper](https://www.biorxiv.org/content/10.1101/502484v1.article-info) for more details (*Note: it was named `DatasetSelector` in 1st version paper but we will rename to FeatureSetSelector in next version of the paper*)
+- Refine `n_jobs` parameter to accept value below -1. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used.
+- Now `memory`  parameter can create memory cache directory if it does not exist.
+- Fix minor bugs.
+
+# Version 0.9.6
+
+- Fix a bug causing that `max_time_mins` parameter doesn't work when `use_dask=True` in TPOT 0.9.5
+- Now TPOT saves best pareto values best pareto pipeline s in checkpoint folder
+- TPOT raises `ImportError` if operators in the TPOT configuration are not available when `verbosity>2`
+- Thank @PGijsbers for the suggestions. Now TPOT can save scores of individuals already evaluated in any generation even the evaluation process of that generation is interrupted/stopped. But it is noted that, in this case, TPOT will raise this **warning message**: `WARNING: TPOT may not provide a good pipeline if TPOT is stopped/interrupted in a early generation.`, because the pipelines in early generation, e.g. 1st generation, are evolved/modified very limited times via evolutionary algorithm.
+- Fix bugs in configuration of `TPOTRegressor`
+- Error fixes in documentation
+
+# Version 0.9.5
+
+- **TPOT now supports integration with Dask for parallelization + smart caching**. Big thanks to the Dask dev team for making this happen!
+
+- TPOT now supports for imputation/sparse matrices into `predict` and `predict_proba` functions.
+
+- `TPOTClassifier` and `TPOTRegressor` now follows scikit-learn estimator API.
+
+- We refined scoring parameter in TPOT API for accepting [`Scorer` object](http://jaquesgrobler.github.io/online-sklearn-build/modules/generated/sklearn.metrics.Scorer.html).
+
+- We refined parameters in VarianceThreshold and FeatureAgglomeration.
+
+- TPOT now supports using memory caching within a Pipeline via a optional `memory` parameter.
+
+- We improved documentation of TPOT.
+
 # Version 0.9
 
 * **TPOT now supports sparse matrices** with a new built-in TPOT configuration, "TPOT sparse". We are using a custom OneHotEncoder implementation that supports missing values and continuous features.
