@@ -970,13 +970,13 @@ def test_fit_4():
 
 
 def test_fit_5():
-    """Assert that the TPOT fit function provides an optimized pipeline with max_time_mins of 2 second."""
+    """Assert that the TPOT fit function provides an optimized pipeline with max_time_mins of 2 second with warm_start=True."""
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=2,
         generations=None,
         verbosity=0,
-        max_time_mins=2/60.,
+        max_time_mins=3/60.,
         config_dict='TPOT light',
         warm_start=True
     )
@@ -990,6 +990,10 @@ def test_fit_5():
     assert tpot_obj._pop != []
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
+    # rerun it
+    tpot_obj.fit(training_features, training_target)
+    assert tpot_obj._pop != []
+
 
 
 def test_fit_6():
