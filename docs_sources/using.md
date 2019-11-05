@@ -387,9 +387,6 @@ print(tpot.score(X_test, y_test))
 tpot.export('tpot_digits_pipeline.py')
 ```
 
-- You can pass a metric function with the signature `score_func(y_true, y_pred)` (e.g. `my_custom_accuracy` in the example above), where `y_true` are the true target values and `y_pred` are the predicted target values from an estimator. To do this, you should implement your own function. See the example above for further explanation. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized (`greater_is_better=False` in [`make_scorer`](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html)), whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
-
-
 * **my_module.scorer_name**: You can also use a custom `score_func(y_true, y_pred)` or `scorer(estimator, X, y)` function through the command line by adding the argument `-scoring my_module.scorer` to your command-line call. TPOT will import your module and use the custom scoring function from there. TPOT will include your current working directory when importing the module, so you can place it in the same directory where you are going to run TPOT.
 Example: `-scoring sklearn.metrics.auc` will use the function auc from sklearn.metrics module.
 

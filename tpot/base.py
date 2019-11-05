@@ -52,7 +52,7 @@ from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
-from sklearn.metrics.scorer import make_scorer, _BaseScorer
+from sklearn.metrics.scorer import _BaseScorer
 
 from joblib import Parallel, delayed, Memory
 
@@ -137,13 +137,6 @@ class TPOTBase(BaseEstimator):
 
             ['neg_median_absolute_error', 'neg_mean_absolute_error',
             'neg_mean_squared_error', 'r2']
-
-            If you would like to use a custom scoring function, you can pass a callable
-            function to this parameter with the signature scorer(y_true, y_pred).
-            See the section on scoring functions in the documentation for more details.
-
-            TPOT assumes that any custom scoring function with "error" or "loss" in the
-            name is meant to be minimized, whereas any other functions will be maximized.
         cv: int or cross-validation generator, optional (default: 5)
             If CV is a number, then it is the number of folds to evaluate each
             pipeline over in k-fold cross-validation during the TPOT optimization
@@ -308,25 +301,16 @@ class TPOTBase(BaseEstimator):
             elif callable(scoring):
                 # Heuristic to ensure user has not passed a metric
                 module = getattr(scoring, '__module__', None)
-                if sys.version_info[0] < 3:
-                    if inspect.isfunction(scoring):
-                        args_list = inspect.getargspec(scoring)[0]
-                    else:
-                        args_list = inspect.getargspec(scoring.__call__)[0]
-                else:
-                    args_list = inspect.getfullargspec(scoring)[0]
+                args_list = inspect.getfullargspec(scoring)[0]
                 if args_list == ["y_true", "y_pred"] or (hasattr(module, 'startswith') and \
                     (module.startswith('sklearn.metrics.') or module.startswith('tpot.metrics')) and \
                     not module.startswith('sklearn.metrics.scorer') and \
                     not module.startswith('sklearn.metrics.tests.')):
-                    scoring_name = scoring.__name__
-                    greater_is_better = 'loss' not in scoring_name and 'error' not in scoring_name
-                    self.scoring_function = make_scorer(scoring, greater_is_better=greater_is_better)
-                    warnings.simplefilter('always', DeprecationWarning)
-                    warnings.warn('Scoring function {} looks like it is a metric function '
-                                  'rather than a scikit-learn scorer. This scoring type was deprecated '
-                                  'in version TPOT 0.9.1 and will be removed in version 0.11. '
-                                  'Please update your custom scoring function.'.format(scoring), DeprecationWarning)
+                    raise ValueError(
+                            'Scoring function {} looks like it is a metric function '
+                            'rather than a scikit-learn scorer. This scoring type was removed in version 0.11. '
+                            'Please update your custom scoring function.'.format(scoring)
+                            )
                 else:
                     self.scoring_function = scoring
 

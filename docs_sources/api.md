@@ -80,8 +80,6 @@ Function used to evaluate the quality of a given pipeline for the classification
 <br /><br/>
 If you would like to use a custom scorer, you can pass the callable object/function with signature <em>scorer(estimator, X, y)</em>.
 <br /><br/>
-If you would like to use a metric function, you can pass the callable function to this parameter with the signature <em>score_func(y_true, y_pred)</em>. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
-<br /><br/>
 See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
 
 </blockquote>
@@ -572,8 +570,6 @@ Function used to evaluate the quality of a given pipeline for the regression pro
 Note that we recommend using the <em>neg</em> version of mean squared error and related metrics so TPOT will minimize (instead of maximize) the metric.
 <br /><br/>
 If you would like to use a custom scorer, you can pass the callable object/function with signature <em>scorer(estimator, X, y)</em>.
-<br /><br/>
-If you would like to use a metric function, you can pass the callable function to this parameter with the signature <em>score_func(y_true, y_pred)</em>. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
 <br /><br/>
 See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
 </blockquote>

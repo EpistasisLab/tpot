@@ -175,14 +175,9 @@ def test_init_default_scoring():
 
 
 def test_init_default_scoring_2():
-    """Assert that TPOT intitializes with a valid customized metric function."""
-    with warnings.catch_warnings(record=True) as w:
-        tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
-        tpot_obj._fit_init()
-    assert len(w) == 1 # deap 1.2.2 warning message made this unit test failed
-    assert issubclass(w[-1].category, DeprecationWarning) # deap 1.2.2 warning message made this unit test failed
-    assert "This scoring type was deprecated" in str(w[-1].message) # deap 1.2.2 warning message made this unit test failed
-    assert tpot_obj.scoring_function._score_func == balanced_accuracy
+    """Assert that TPOT rasies ValueError with a invalid sklearn metric function."""
+    tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
+    assert_raises(ValueError, tpot_obj._fit_init)
 
 
 def test_init_default_scoring_3():
@@ -207,28 +202,27 @@ def test_init_default_scoring_4():
 
 
 def test_init_default_scoring_5():
-    """Assert that TPOT intitializes with a valid sklearn metric function roc_auc_score."""
-    with warnings.catch_warnings(record=True) as w:
-        tpot_obj = TPOTClassifier(scoring=roc_auc_score)
-        tpot_obj._fit_init()
-    assert len(w) == 1
-    assert issubclass(w[-1].category, DeprecationWarning)
-    assert "This scoring type was deprecated" in str(w[-1].message)
-    assert tpot_obj.scoring_function._score_func == roc_auc_score
+    """Assert that TPOT rasies ValueError with a invalid sklearn metric function roc_auc_score."""
+    tpot_obj = TPOTClassifier(scoring=roc_auc_score)
+    assert_raises(ValueError, tpot_obj._fit_init)
 
 
 def test_init_default_scoring_6():
-    """Assert that TPOT intitializes with a valid customized metric function in __main__"""
+    """Assert that TPOT rasies ValueError with a invalid sklearn metric function from __main__."""
     def my_scorer(y_true, y_pred):
         return roc_auc_score(y_true, y_pred)
-    with warnings.catch_warnings(record=True) as w:
-        tpot_obj = TPOTClassifier(scoring=my_scorer)
-        tpot_obj._fit_init()
-    assert len(w) == 1
-    assert issubclass(w[-1].category, DeprecationWarning)
-    assert "This scoring type was deprecated" in str(w[-1].message)
 
-    assert tpot_obj.scoring_function._score_func == my_scorer
+    tpot_obj = TPOTClassifier(scoring=my_scorer)
+    assert_raises(ValueError, tpot_obj._fit_init)
+
+
+def test_init_default_scoring_7():
+    """Assert that TPOT rasies ValueError with a valid sklearn metric function from __main__."""
+    def my_scorer(estimator, X, y):
+        return make_scorer(balanced_accuracy)
+
+    tpot_obj = TPOTClassifier(scoring=my_scorer)
+    tpot_obj._fit_init()
 
 
 def test_invalid_score_warning():
