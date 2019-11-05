@@ -460,22 +460,28 @@ class TPOTBase(BaseEstimator):
                         ret_types.append(step_ret_type)
                     else:
                         step_ret_type = Output_Array
+                check_template = True
                 if step == 'CombineDFs':
                     self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
                 elif main_type.count(step): # if the step is a main type
-                    for operator in self.operators:
+                    ops = [op for op in self.operators if op.type() == step]
+                    for operator in ops:
                         arg_types =  operator.parameter_types()[0][1:]
-                        if operator.type() == step:
-                            p_types = ([step_in_type] + arg_types, step_ret_type)
-                            self._pset.addPrimitive(operator, *p_types)
-                            self._import_hash_and_add_terminals(operator, arg_types)
-                else: # is the step is a specific operator
-                    for operator in self.operators:
-                        arg_types =  operator.parameter_types()[0][1:]
-                        if operator.__name__ == step:
-                            p_types = ([step_in_type] + arg_types, step_ret_type)
-                            self._pset.addPrimitive(operator, *p_types)
-                            self._import_hash_and_add_terminals(operator, arg_types)
+                        p_types = ([step_in_type] + arg_types, step_ret_type)
+                        self._pset.addPrimitive(operator, *p_types)
+                        self._import_hash_and_add_terminals(operator, arg_types)
+                else: # is the step is a specific operator or a wrong input
+                    try:
+                        operator = next(op for op in self.operators if op.__name__ == step)
+                    except:
+                        raise ValueError(
+                            'An error occured while attempting to read the specified '
+                            'template. Please check a step named {}'.format(step)
+                        )
+                    arg_types =  operator.parameter_types()[0][1:]
+                    p_types = ([step_in_type] + arg_types, step_ret_type)
+                    self._pset.addPrimitive(operator, *p_types)
+                    self._import_hash_and_add_terminals(operator, arg_types)
         self.ret_types = [np.ndarray, Output_Array] + ret_types
 
 
@@ -1382,7 +1388,7 @@ class TPOTBase(BaseEstimator):
                 ind.fitness.values = (5000.,-float('inf'))
 
             self._pareto_front.update(population)
-            
+
             self._pop = population
             raise KeyboardInterrupt
 

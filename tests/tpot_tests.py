@@ -711,6 +711,17 @@ def test_template_4():
     assert issubclass(sklearn_pipeline.steps[2][1].__class__, ClassifierMixin)
 
 
+def test_template_5():
+    """Assert that TPOT rasie ValueError when template parameter is invalid."""
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        template='SelectPercentile-Transformer-Classifie' # a typ in Classifier
+    )
+    assert_raises(ValueError, tpot_obj._fit_init)
+
+
 def test_fit_GroupKFold():
     """Assert that TPOT properly handles the group parameter when using GroupKFold."""
     # This check tests if the darker digits images would generalize to the lighter ones.
