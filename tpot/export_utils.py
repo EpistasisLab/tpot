@@ -106,7 +106,7 @@ training_features, testing_features, training_target, testing_target = \\
     # Add the imputation step if it was used by TPOT
     if impute:
         pipeline_text += """
-imputer = Imputer(strategy="median")
+imputer = SimpleImputer(strategy="median")
 imputer.fit(training_features)
 training_features = imputer.transform(training_features)
 testing_features = imputer.transform(testing_features)
@@ -217,10 +217,7 @@ def generate_import_code(pipeline, operators, impute=False, random_state=None):
 
     # Add the imputer if necessary
     if impute:
-        pipeline_text += """try:
-    from sklearn.impute import SimpleImputer as Imputer
-except ImportError:
-    from sklearn.preprocessing import Imputer
+        pipeline_text += """from sklearn.impute import SimpleImputer
 """
     if random_state is not None:
         pipeline_text += """from tpot.export_utils import set_param_recursive
