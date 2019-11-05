@@ -84,7 +84,10 @@ class StackingEstimator(BaseEstimator, TransformerMixin):
         X_transformed = np.copy(X)
         # add class probabilities as a synthetic feature
         if issubclass(self.estimator.__class__, ClassifierMixin) and hasattr(self.estimator, 'predict_proba'):
-            X_transformed = np.hstack((self.estimator.predict_proba(X), X))
+            y_pred_proba = self.estimator.predict_proba(X)
+            # check all values that should be not infinity or not NAN
+            if np.all(np.isfinite(y_pred_proba)):
+                X_transformed = np.hstack((y_pred_proba, X))
 
         # add class prodiction as a synthetic feature
         X_transformed = np.hstack((np.reshape(self.estimator.predict(X), (-1, 1)), X_transformed))
