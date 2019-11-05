@@ -900,8 +900,7 @@ def test_warm_start():
     tpot_obj.fit(pretest_X, pretest_y)
 
     assert tpot_obj._pop == first_pop
-    assert tpot_obj._pop == first_pop
-    assert tpot_obj._pop == first_pop
+
 
 
 def test_fit():
