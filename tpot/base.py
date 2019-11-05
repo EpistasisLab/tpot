@@ -1382,7 +1382,7 @@ class TPOTBase(BaseEstimator):
                 ind.fitness.values = (5000.,-float('inf'))
 
             self._pareto_front.update(population)
-            print(111)
+            
             self._pop = population
             raise KeyboardInterrupt
 
