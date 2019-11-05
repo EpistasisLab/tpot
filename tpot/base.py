@@ -81,28 +81,6 @@ with warnings.catch_warnings():
     warnings.simplefilter('ignore')
     from tqdm.autonotebook import tqdm
 
-# hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
-# https://github.com/ContinuumIO/anaconda-issues/issues/905
-if sys.platform.startswith('win'):
-    import win32api
-
-    try:
-        import _thread
-    except ImportError:
-        import thread as _thread
-
-
-    def handler(dwCtrlType, hook_sigint=_thread.interrupt_main):
-        """SIGINT handler function."""
-        if dwCtrlType == 0:  # CTRL_C_EVENT
-            hook_sigint()
-            return 1  # don't chain to the next handler
-        return 0
-
-
-    win32api.SetConsoleCtrlHandler(handler, 1)
-
-
 
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
