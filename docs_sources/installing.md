@@ -32,12 +32,6 @@ DEAP, update_checker, tqdm and stopit can be installed with `pip` via the comman
 pip install deap update_checker tqdm stopit
 ```
 
-**For the Windows users**, the pywin32 module is required if Python is NOT installed via the [Anaconda Python distribution](https://www.continuum.io/downloads) and can be installed with `pip` for Python verion <=3.3 or `conda` (e.g. miniconda) for any Python version:
-
-```Shell
-conda install pywin32
-```
-
 **Optionally**, you can install [XGBoost](https://github.com/dmlc/xgboost) if you would like TPOT to use the eXtreme Gradient Boosting models. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed. **Windows users: pip installation may not work on some Windows environments, and it may cause unexpected errors.**
 
 ```Shell
@@ -46,10 +40,10 @@ pip install xgboost
 
 If you have issues installing XGBoost, check the [XGBoost installation documentation](http://xgboost.readthedocs.io/en/latest/build.html).
 
-If you plan to use [Dask](http://dask.pydata.org/en/latest/) for parallel training, make sure to install [dask[delay]](http://dask.pydata.org/en/latest/install.html) and [dask_ml](https://dask-ml.readthedocs.io/en/latest/install.html).
+If you plan to use [Dask](http://dask.pydata.org/en/latest/) for parallel training, make sure to install [dask[delay] and dask[dataframe]](https://docs.dask.org/en/latest/install.html) and [dask_ml](https://dask-ml.readthedocs.io/en/latest/install.html).
 
 ```Shell
-pip install dask[delayed] dask-ml
+pip install dask[delayed] dask[dataframe] dask-ml fsspec>=0.3.3
 ```
 
 If you plan to use the [TPOT-MDR configuration](https://arxiv.org/abs/1702.01780), make sure to install [scikit-mdr](https://github.com/EpistasisLab/scikit-mdr) and [scikit-rebate](https://github.com/EpistasisLab/scikit-rebate):

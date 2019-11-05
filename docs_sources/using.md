@@ -170,8 +170,8 @@ Detailed descriptions of the command-line arguments are below.
 <tr>
 <td>-g</td>
 <td>GENERATIONS</td>
-<td>Any positive integer</td>
-<td>Number of iterations to run the pipeline optimization process. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
+<td>Any positive integer or None</td>
+<td>Number of iterations to run the pipeline optimization process. It must be a positive number or None. If None, the parameter max_time_mins must be defined as the runtime limit. Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
 <br /><br />
 TPOT will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.</td>
 </tr>
@@ -248,7 +248,7 @@ Assigning this to -1 will use as many cores as available on the computer. For n_
 <td>Any positive integer</td>
 <td>How many minutes TPOT has to optimize the pipeline.
 <br /><br />
-If provided, this setting will override the "generations" parameter and allow TPOT to run until it runs out of time.</td>
+How many minutes TPOT has to optimize the pipeline.If not None, this setting will allow TPOT to run until max_time_mins minutes elapsed and then stop. TPOT will stop earlier if generationsis set and all generations are already evaluated.</td>
 </tr>
 <tr>
 <td>-maxeval</td>
@@ -384,11 +384,8 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
                       scoring=my_custom_scorer)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 ```
-
-- You can pass a metric function with the signature `score_func(y_true, y_pred)` (e.g. `my_custom_accuracy` in the example above), where `y_true` are the true target values and `y_pred` are the predicted target values from an estimator. To do this, you should implement your own function. See the example above for further explanation. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized (`greater_is_better=False` in [`make_scorer`](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html)), whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
-
 
 * **my_module.scorer_name**: You can also use a custom `score_func(y_true, y_pred)` or `scorer(estimator, X, y)` function through the command line by adding the argument `-scoring my_module.scorer` to your command-line call. TPOT will import your module and use the custom scoring function from there. TPOT will include your current working directory when importing the module, so you can place it in the same directory where you are going to run TPOT.
 Example: `-scoring sklearn.metrics.auc` will use the function auc from sklearn.metrics module.
@@ -461,7 +458,7 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
                       config_dict='TPOT light')
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 
 ```
 
@@ -520,7 +517,7 @@ tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2,
                       config_dict=tpot_config)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 ```
 
 Command-line users must create a separate `.py` file with the custom configuration and provide the path to the file to the `tpot` call. For example, if the simple example configuration above is saved in `tpot_classifier_config.py`, that configuration could be used on the command line with the command:
@@ -540,7 +537,7 @@ Note that you must have all of the corresponding packages for the operators inst
 
 Template option provides a way to specify a desired structure for machine learning pipeline, which may reduce TPOT computation time and potentially provide more interpretable results. Current implementation only supports linear pipelines.
 
-Below is a simple example to use `template` option. The pipelines generated/evaluated in TPOT will follow this structure: 1st step is a feature selector (a subclass of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17)), 2nd step is a feature transformer (a subclass of [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html)) and 3rd step is a classifier for classification (a subclass of [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html)). The last step must be `Classifier` for `TPOTClassifier`'s template but `Regressor` for `TPOTRegressor`. **Note: although `SelectorMixin` is subclass of `TransformerMixin` in scikit-leawrn, but `Transformer` in this option excludes those subclasses of `SelectorMixin`.**
+Below is a simple example to use `template` option. The pipelines generated/evaluated in TPOT will follow this structure: 1st step is a feature selector (a subclass of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17)), 2nd step is a feature transformer (a subclass of [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html)) and 3rd step is a classifier for classification (a subclass of [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html)). The last step must be `Classifier` for `TPOTClassifier`'s template but `Regressor` for `TPOTRegressor`. **Note: although `SelectorMixin` is subclass of `TransformerMixin` in scikit-learn, but `Transformer` in this option excludes those subclasses of `SelectorMixin`.**
 
 ```Python
 tpot_obj = TPOTClassifier(
@@ -548,7 +545,7 @@ tpot_obj = TPOTClassifier(
                 )
 ```
 
-If a specific operator, e.g. `SelectPercentile`, is prefered to used in the 1st step of pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.
+If a specific operator, e.g. `SelectPercentile`, is preferred for usage in the 1st step of the pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.
 
 
 # FeatureSetSelector in TPOT

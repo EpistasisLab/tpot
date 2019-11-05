@@ -13,19 +13,18 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link rel="stylesheet" href="../css/highlight.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Citing";
     var mkdocs_page_input_path = "citing.md";
-    var mkdocs_page_url = "/tpot/citing/";
+    var mkdocs_page_url = "/citing/";
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js" defer></script>
-  <script src="../js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-  <script>hljs.initHighlightingOnLoad();</script> 
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -39,7 +38,7 @@
         <a href=".." class="icon icon-home"> TPOT</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+    <input type="text" name="q" placeholder="Search docs" />
   </form>
 </div>
       </div>
@@ -137,6 +136,16 @@
             <div class="section">
               
                 <p>If you use TPOT in a scientific publication, please consider citing at least one of the following papers:</p>
+<p>Trang T. Le, Weixuan Fu and Jason H. Moore (2019). <a href="https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btz470/5511404">Scaling tree-based automated machine learning to biomedical big data with a feature set selector</a>. <em>Bioinformatics</em>. 2019 Jun 4.</p>
+<p>BibTeX entry:</p>
+<pre><code class="bibtex">@article{le2019scaling,
+  title={Scaling tree-based automated machine learning to biomedical big data with a feature set selector.},
+  author={Le, TT and Fu, W and Moore, JH},
+  journal={Bioinformatics (Oxford, England)},
+  year={2019}
+}
+</code></pre>
+
 <p>Randal S. Olson, Ryan J. Urbanowicz, Peter C. Andrews, Nicole A. Lavender, La Creis Kidd, and Jason H. Moore (2016). <a href="http://link.springer.com/chapter/10.1007/978-3-319-31204-0_9">Automating biomedical data science through tree-based pipeline optimization</a>. <em>Applications of Evolutionary Computation</em>, pages 123-137.</p>
 <p>BibTeX entry:</p>
 <pre><code class="bibtex">@inbook{Olson2016EvoBio,
@@ -224,8 +233,9 @@
     </span>
 </div>
     <script>var base_url = '..';</script>
-    <script src="../js/theme.js" defer></script>
-      <script src="../search/main.js" defer></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/require.js"></script>
+      <script src="../search/search.js"></script>
 
 </body>
 </html>

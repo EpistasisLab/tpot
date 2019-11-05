@@ -224,7 +224,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     for ind in population:
         initialize_stats_dict(ind)
 
-    population = toolbox.evaluate(population)
+    population[:] = toolbox.evaluate(population)
 
     record = stats.compile(population) if stats is not None else {}
     logbook.record(gen=0, nevals=len(population), **record)
@@ -422,8 +422,8 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
             import dask_ml.model_selection  # noqa
             import dask  # noqa
             from dask.delayed import Delayed
-        except ImportError:
-            msg = "'use_dask' requires the optional dask and dask-ml depedencies."
+        except Exception as e:
+            msg = "'use_dask' requires the optional dask and dask-ml depedencies.\n{}".format(e)
             raise ImportError(msg)
 
         dsk, keys, n_splits = dask_ml.model_selection._search.build_graph(

@@ -42,7 +42,7 @@ def positive_integer(value):
 
     Parameters
     ----------
-    value: int
+    value: string
         The number to evaluate
 
     Returns
@@ -56,6 +56,31 @@ def positive_integer(value):
         raise argparse.ArgumentTypeError('Invalid int value: \'{}\''.format(value))
     if value < 0:
         raise argparse.ArgumentTypeError('Invalid positive int value: \'{}\''.format(value))
+    return value
+
+
+def positive_integer_or_none(value):
+    """Ensure that the provided value is a positive integer or None.
+
+    Parameters
+    ----------
+    value: string
+        The number to evaluate
+
+    Returns
+    -------
+    value: int or None
+        Returns a positive integer or None
+    """
+    if value.lower() == 'none':
+        value = None
+    else:
+        try:
+            value = int(value)
+        except Exception:
+            raise argparse.ArgumentTypeError('Invalid int value: \'{}\''.format(value))
+        if value < 0:
+            raise argparse.ArgumentTypeError('Invalid positive int value: \'{}\''.format(value))
     return value
 
 
@@ -152,9 +177,11 @@ def _get_arg_parser():
         action='store',
         dest='GENERATIONS',
         default=100,
-        type=positive_integer,
+        type=positive_integer_or_none,
         help=(
             'Number of iterations to run the pipeline optimization process. '
+            'It must be a positive number or None. If None, the parameter '
+            'max_time_mins must be defined as the runtime limit. '
             'Generally, TPOT will work better when you give it more '
             'generations (and therefore time) to optimize the pipeline. TPOT '
             'will evaluate POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE '
@@ -282,7 +309,7 @@ def _get_arg_parser():
         type=float,
         help=(
             'Subsample ratio of the training instance. Setting it to 0.5 means that TPOT '
-            'use a random subsample of half of training data for the pipeline optimization process.'
+            'will use a random subsample of half of training data for the pipeline optimization process.'
         )
     )
 
@@ -308,9 +335,10 @@ def _get_arg_parser():
         default=None,
         type=int,
         help=(
-            'How many minutes TPOT has to optimize the pipeline. This setting '
-            'will override the GENERATIONS parameter and allow TPOT to run '
-            'until it runs out of time.'
+            'How many minutes TPOT has to optimize the pipeline. '
+            'If not None, this setting will allow TPOT to run until max_time_mins minutes '
+            'elapsed and then stop. TPOT will stop earlier if generationsis set and all '
+            'generations are already evaluated. '
         )
     )
 

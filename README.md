@@ -6,8 +6,7 @@ Development status: [![Development Build Status - Mac/Linux](https://travis-ci.o
 [![Development Build Status - Windows](https://ci.appveyor.com/api/projects/status/b7bmpwpkjhifrm7v/branch/development?svg=true)](https://ci.appveyor.com/project/weixuanfu/tpot?branch=development)
 [![Development Coverage Status](https://coveralls.io/repos/github/EpistasisLab/tpot/badge.svg?branch=development)](https://coveralls.io/github/EpistasisLab/tpot?branch=development)
 
-Package information: [![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)](https://www.python.org/download/releases/2.7/)
-[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
+Package information: [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
 [![License: LGPL v3](https://img.shields.io/badge/license-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
 [![PyPI version](https://badge.fury.io/py/TPOT.svg)](https://badge.fury.io/py/TPOT)
 
@@ -15,7 +14,7 @@ Package information: [![Python 2.7](https://img.shields.io/badge/python-2.7-blue
 <img src="https://raw.githubusercontent.com/EpistasisLab/tpot/master/images/tpot-logo.jpg" width=300 />
 </p>
 
-Consider TPOT your **Data Science Assistant**. TPOT is a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming.
+**TPOT** stands for **T**ree-based **P**ipeline **O**ptimization **T**ool. Consider TPOT your **Data Science Assistant**. TPOT is a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming.
 
 ![TPOT Demo](https://github.com/EpistasisLab/tpot/blob/master/images/tpot-demo.gif "TPOT Demo")
 
@@ -55,7 +54,7 @@ Click on the corresponding links to find more information on TPOT usage in the d
 
 ### Classification
 
-Below is a minimal working example with the practice MNIST data set.
+Below is a minimal working example with the the optical recognition of handwritten digits dataset.
 
 ```python
 from tpot import TPOTClassifier
@@ -64,32 +63,43 @@ from sklearn.model_selection import train_test_split
 
 digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
-                                                    train_size=0.75, test_size=0.25)
+                                                    train_size=0.75, test_size=0.25, random_state=42)
 
-tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2)
+tpot = TPOTClassifier(generations=5, population_size=50, verbosity=2, random_state=42)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 ```
 
-Running this code should discover a pipeline that achieves about 98% testing accuracy, and the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file and look similar to the following:
+Running this code should discover a pipeline that achieves about 98% testing accuracy, and the corresponding Python code should be exported to the `tpot_digits_pipeline.py` file and look similar to the following:
 
 ```python
 import numpy as np
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import PolynomialFeatures
+from tpot.builtins import StackingEstimator
+from tpot.export_utils import set_param_recursive
 
-# NOTE: Make sure that the class is labeled 'target' in the data file
+# NOTE: Make sure that the outcome column is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=42)
 
+# Average CV score on the training set was: 0.9799428471757372
+exported_pipeline = make_pipeline(
+    PolynomialFeatures(degree=2, include_bias=False, interaction_only=False),
+    StackingEstimator(estimator=LogisticRegression(C=0.1, dual=False, penalty="l1")),
+    RandomForestClassifier(bootstrap=True, criterion="entropy", max_features=0.35000000000000003, min_samples_leaf=20, min_samples_split=19, n_estimators=100)
+)
+# Fix random state for all the steps in exported pipeline
+set_param_recursive(exported_pipeline.steps, 'random_state', 42)
 
-exported_pipeline = KNeighborsClassifier(n_neighbors=6, weights="distance")
-
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 ```
 
@@ -104,9 +114,9 @@ from sklearn.model_selection import train_test_split
 
 housing = load_boston()
 X_train, X_test, y_train, y_test = train_test_split(housing.data, housing.target,
-                                                    train_size=0.75, test_size=0.25)
+                                                    train_size=0.75, test_size=0.25, random_state=42)
 
-tpot = TPOTRegressor(generations=5, population_size=20, verbosity=2)
+tpot = TPOTRegressor(generations=5, population_size=50, verbosity=2, random_state=42)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_boston_pipeline.py')
@@ -117,20 +127,27 @@ which should result in a pipeline that achieves about 12.77 mean squared error (
 ```python
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures
+from tpot.export_utils import set_param_recursive
 
-# NOTE: Make sure that the class is labeled 'target' in the data file
+# NOTE: Make sure that the outcome column is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1).values
+features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \
-            train_test_split(features, tpot_data['target'].values, random_state=None)
+            train_test_split(features, tpot_data['target'], random_state=42)
 
-exported_pipeline = GradientBoostingRegressor(alpha=0.85, learning_rate=0.1, loss="ls",
-                                              max_features=0.9, min_samples_leaf=5,
-                                              min_samples_split=6)
+# Average CV score on the training set was: -10.812040755234403
+exported_pipeline = make_pipeline(
+    PolynomialFeatures(degree=2, include_bias=False, interaction_only=False),
+    ExtraTreesRegressor(bootstrap=False, max_features=0.5, min_samples_leaf=2, min_samples_split=3, n_estimators=100)
+)
+# Fix random state for all the steps in exported pipeline
+set_param_recursive(exported_pipeline.steps, 'random_state', 42)
 
-exported_pipeline.fit(training_features, training_classes)
+exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 ```
 
@@ -149,6 +166,20 @@ Please [check the existing open and closed issues](https://github.com/EpistasisL
 ## Citing TPOT
 
 If you use TPOT in a scientific publication, please consider citing at least one of the following papers:
+
+Trang T. Le, Weixuan Fu and Jason H. Moore (2019). [Scaling tree-based automated machine learning to biomedical big data with a feature set selector](https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btz470/5511404). *Bioinformatics*. 2019 Jun 4.
+
+BibTeX entry:
+
+```bibtex
+@article{le2019scaling,
+  title={Scaling tree-based automated machine learning to biomedical big data with a feature set selector.},
+  author={Le, TT and Fu, W and Moore, JH},
+  journal={Bioinformatics (Oxford, England)},
+  year={2019}
+}
+```
+
 
 Randal S. Olson, Ryan J. Urbanowicz, Peter C. Andrews, Nicole A. Lavender, La Creis Kidd, and Jason H. Moore (2016). [Automating biomedical data science through tree-based pipeline optimization](http://link.springer.com/chapter/10.1007/978-3-319-31204-0_9). *Applications of Evolutionary Computation*, pages 123-137.
 

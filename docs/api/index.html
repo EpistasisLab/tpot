@@ -13,19 +13,18 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link rel="stylesheet" href="../css/highlight.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "TPOT API";
     var mkdocs_page_input_path = "api.md";
-    var mkdocs_page_url = "/tpot/api/";
+    var mkdocs_page_url = "/api/";
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js" defer></script>
-  <script src="../js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-  <script>hljs.initHighlightingOnLoad();</script> 
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -39,7 +38,7 @@
         <a href=".." class="icon icon-home"> TPOT</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+    <input type="text" name="q" placeholder="Search docs" />
   </form>
 </div>
       </div>
@@ -167,14 +166,14 @@ preprocessors, feature selection techniques, and any other estimator or transfor
 The TPOTClassifier will also search over the hyperparameters of all objects in the pipeline.</p>
 <p>By default, TPOTClassifier will search over a broad range of supervised classification algorithms, transformers, and their parameters.
 However, the algorithms, transformers, and hyperparameters that the TPOTClassifier searches over can be fully customized using the <code>config_dict</code> parameter.</p>
-<p>Read more in the <a href="using/#tpot-with-code">User Guide</a>.</p>
+<p>Read more in the <a href="../using/#tpot-with-code">User Guide</a>.</p>
 <table>
 <tr>
 <td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
 <td width="80%" style="background:white;">
-<strong>generations</strong>: int, optional (default=100)
+<strong>generations</strong>: int or None optional (default=100)
 <blockquote>
-Number of iterations to the run pipeline optimization process. Must be a positive number.
+Number of iterations to the run pipeline optimization process. It must be a positive number or None. If None, the parameter <em>max_time_mins</em> must be defined as the runtime limit.
 <br /><br />
 Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
 <br /><br />
@@ -220,8 +219,6 @@ Function used to evaluate the quality of a given pipeline for the classification
 <br /><br/>
 If you would like to use a custom scorer, you can pass the callable object/function with signature <em>scorer(estimator, X, y)</em>.
 <br /><br/>
-If you would like to use a metric function, you can pass the callable function to this parameter with the signature <em>score_func(y_true, y_pred)</em>. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
-<br /><br/>
 See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
 
 </blockquote>
@@ -255,7 +252,7 @@ Setting <em>n_jobs</em>=-1 will use as many cores as available on the computer. 
 <blockquote>
 How many minutes TPOT has to optimize the pipeline.
 <br /><br />
-If not None, this setting will override the <em>generations</em> parameter and allow TPOT to run until <em>max_time_mins</em> minutes elapse.
+If not None, this setting will allow TPOT to run until <em>max_time_mins</em> minutes elapsed and then stop. TPOT will stop earlier if <em>generations</em> is set and all generations are already evaluated.
 </blockquote>
 
 <strong>max_eval_time_mins</strong>: float, optional (default=5)
@@ -406,7 +403,7 @@ X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
 tpot = TPOTClassifier(generations=5, population_size=50, verbosity=2)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
-tpot.export('tpot_mnist_pipeline.py')
+tpot.export('tpot_digits_pipeline.py')
 </code></pre>
 
 <p><strong>Functions</strong></p>
@@ -588,7 +585,7 @@ The estimated test set accuracy according to the user-specified scoring function
 </div>
 
 <p><a name="tpotclassifier-export"></a></p>
-<pre><code class="Python">export(output_file_name)
+<pre><code class="Python">export(output_file_name, data_file_path)
 </code></pre>
 
 <div style="padding-left:5%" width="100%">
@@ -604,11 +601,18 @@ See the <a href="../using/#tpot-with-code">usage documentation</a> for example u
 <blockquote>
 String containing the path and file name of the desired output file
 </blockquote>
+<strong>data_file_path</strong>: string
+<blockquote>
+By default, the path of input dataset is 'PATH/TO/DATA/FILE' by default. If data_file_path is another string, the path will be replaced.
+</blockquote>
 </tr>
 <tr>
 <td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Returns:</strong></td>
 <td width="80%" style="background:white;">
-Does not return anything
+<strong>exported_code_string</strong>: string
+<blockquote>
+The whole pipeline text as a string should be returned if output_file_name is not specified.
+</blockquote>
 </td>
 </tr>
 </table>
@@ -639,14 +643,14 @@ preprocessors, feature selection techniques, and any other estimator or transfor
 The TPOTRegressor will also search over the hyperparameters of all objects in the pipeline.</p>
 <p>By default, TPOTRegressor will search over a broad range of supervised regression models, transformers, and their hyperparameters.
 However, the models, transformers, and parameters that the TPOTRegressor searches over can be fully customized using the <code>config_dict</code> parameter.</p>
-<p>Read more in the <a href="using/#tpot-with-code">User Guide</a>.</p>
+<p>Read more in the <a href="../using/#tpot-with-code">User Guide</a>.</p>
 <table>
 <tr>
 <td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
 <td width="80%" style="background:white;">
-<strong>generations</strong>: int, optional (default=100)
+<strong>generations</strong>: int or None, optional (default=100)
 <blockquote>
-Number of iterations to the run pipeline optimization process. Must be a positive number.
+Number of iterations to the run pipeline optimization process. It must be a positive number or None. If None, the parameter <em>max_time_mins</em> must be defined as the runtime limit.
 <br /><br />
 Generally, TPOT will work better when you give it more generations (and therefore time) to optimize the pipeline.
 <br /><br />
@@ -693,8 +697,6 @@ Note that we recommend using the <em>neg</em> version of mean squared error and 
 <br /><br/>
 If you would like to use a custom scorer, you can pass the callable object/function with signature <em>scorer(estimator, X, y)</em>.
 <br /><br/>
-If you would like to use a metric function, you can pass the callable function to this parameter with the signature <em>score_func(y_true, y_pred)</em>. TPOT assumes that any function with "error" or "loss" in the function name is meant to be minimized, whereas any other functions will be maximized. This scoring type was deprecated in version 0.9.1 and will be removed in version 0.11.
-<br /><br/>
 See the section on <a href="../using/#scoring-functions">scoring functions</a> for more details.
 </blockquote>
 
@@ -728,7 +730,7 @@ Setting <em>n_jobs</em>=-1 will use as many cores as available on the computer. 
 <blockquote>
 How many minutes TPOT has to optimize the pipeline.
 <br /><br />
-If not None, this setting will override the <em>generations</em> parameter and allow TPOT to run until <em>max_time_mins</em> minutes elapse.
+If not None, this setting will allow TPOT to run until <em>max_time_mins</em> minutes elapsed and then stop. TPOT will stop earlier if <em>generations</em> is set and all generations are already evaluated.
 </blockquote>
 
 <strong>max_eval_time_mins</strong>: float, optional (default=5)
@@ -1041,11 +1043,18 @@ See the <a href="../using/#tpot-with-code">usage documentation</a> for example u
 <blockquote>
 String containing the path and file name of the desired output file
 </blockquote>
+<strong>data_file_path</strong>: string
+<blockquote>
+By default, the path of input dataset is 'PATH/TO/DATA/FILE' by default. If data_file_path is another string, the path will be replaced.
+</blockquote>
 </tr>
 <tr>
 <td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Returns:</strong></td>
 <td width="80%" style="background:white;">
-Does not return anything
+<strong>exported_code_string</strong>: string
+<blockquote>
+The whole pipeline text as a string should be returned if output_file_name is not specified.
+</blockquote>
 </td>
 </tr>
 </table>
@@ -1098,8 +1107,9 @@ Does not return anything
     </span>
 </div>
     <script>var base_url = '..';</script>
-    <script src="../js/theme.js" defer></script>
-      <script src="../search/main.js" defer></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/require.js"></script>
+      <script src="../search/search.js"></script>
 
 </body>
 </html>

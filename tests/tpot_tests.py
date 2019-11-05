@@ -83,10 +83,10 @@ if getattr(StringIO, '__exit__', False) and \
 else:
     from contextlib import closing
 
-# Set up the MNIST data set for testing
-mnist_data = load_digits()
+# Set up the digits data set for testing
+digits_data = load_digits()
 training_features, testing_features, training_target, testing_target = \
-    train_test_split(mnist_data.data.astype(np.float64), mnist_data.target.astype(np.float64), random_state=42)
+    train_test_split(digits_data.data.astype(np.float64), digits_data.target.astype(np.float64), random_state=42)
 
 # Set up test data with missing value
 features_with_nan = np.copy(training_features)
@@ -175,14 +175,9 @@ def test_init_default_scoring():
 
 
 def test_init_default_scoring_2():
-    """Assert that TPOT intitializes with a valid customized metric function."""
-    with warnings.catch_warnings(record=True) as w:
-        tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
-        tpot_obj._fit_init()
-    assert len(w) == 1 # deap 1.2.2 warning message made this unit test failed
-    assert issubclass(w[-1].category, DeprecationWarning) # deap 1.2.2 warning message made this unit test failed
-    assert "This scoring type was deprecated" in str(w[-1].message) # deap 1.2.2 warning message made this unit test failed
-    assert tpot_obj.scoring_function == 'balanced_accuracy'
+    """Assert that TPOT rasies ValueError with a invalid sklearn metric function."""
+    tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
+    assert_raises(ValueError, tpot_obj._fit_init)
 
 
 def test_init_default_scoring_3():
@@ -191,7 +186,7 @@ def test_init_default_scoring_3():
         tpot_obj = TPOTClassifier(scoring=make_scorer(balanced_accuracy))
         tpot_obj._fit_init()
     assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
-    assert tpot_obj.scoring_function == 'balanced_accuracy'
+    assert tpot_obj.scoring_function._score_func == balanced_accuracy
 
 
 def test_init_default_scoring_4():
@@ -203,32 +198,31 @@ def test_init_default_scoring_4():
         tpot_obj = TPOTClassifier(scoring=my_scorer)
         tpot_obj._fit_init()
     assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
-    assert tpot_obj.scoring_function == 'my_scorer'
+    assert tpot_obj.scoring_function == my_scorer
 
 
 def test_init_default_scoring_5():
-    """Assert that TPOT intitializes with a valid sklearn metric function roc_auc_score."""
-    with warnings.catch_warnings(record=True) as w:
-        tpot_obj = TPOTClassifier(scoring=roc_auc_score)
-        tpot_obj._fit_init()
-    assert len(w) == 1
-    assert issubclass(w[-1].category, DeprecationWarning)
-    assert "This scoring type was deprecated" in str(w[-1].message)
-    assert tpot_obj.scoring_function == 'roc_auc_score'
+    """Assert that TPOT rasies ValueError with a invalid sklearn metric function roc_auc_score."""
+    tpot_obj = TPOTClassifier(scoring=roc_auc_score)
+    assert_raises(ValueError, tpot_obj._fit_init)
 
 
 def test_init_default_scoring_6():
-    """Assert that TPOT intitializes with a valid customized metric function in __main__"""
+    """Assert that TPOT rasies ValueError with a invalid sklearn metric function from __main__."""
     def my_scorer(y_true, y_pred):
         return roc_auc_score(y_true, y_pred)
-    with warnings.catch_warnings(record=True) as w:
-        tpot_obj = TPOTClassifier(scoring=my_scorer)
-        tpot_obj._fit_init()
-    assert len(w) == 1
-    assert issubclass(w[-1].category, DeprecationWarning)
-    assert "This scoring type was deprecated" in str(w[-1].message)
 
-    assert tpot_obj.scoring_function == 'my_scorer'
+    tpot_obj = TPOTClassifier(scoring=my_scorer)
+    assert_raises(ValueError, tpot_obj._fit_init)
+
+
+def test_init_default_scoring_7():
+    """Assert that TPOT rasies ValueError with a valid sklearn metric function from __main__."""
+    def my_scorer(estimator, X, y):
+        return make_scorer(balanced_accuracy)
+
+    tpot_obj = TPOTClassifier(scoring=my_scorer)
+    tpot_obj._fit_init()
 
 
 def test_invalid_score_warning():
@@ -275,9 +269,17 @@ def test_invalid_mut_rate_plus_xo_rate():
 
 def test_init_max_time_mins():
     """Assert that the TPOT init stores max run time and sets generations to 1000000."""
-    tpot_obj = TPOTClassifier(max_time_mins=30, generations=1000)
+    tpot_obj = TPOTClassifier(max_time_mins=30, generations=None)
     tpot_obj._fit_init()
     assert tpot_obj.generations == 1000000
+    assert tpot_obj.max_time_mins == 30
+
+
+def test_init_max_time_mins_and_generations():
+    """Assert that the TPOT init stores max run time but keeps the generations at the user-supplied value."""
+    tpot_obj = TPOTClassifier(max_time_mins=30, generations=1000)
+    tpot_obj._fit_init()
+    assert tpot_obj.generations == 1000
     assert tpot_obj.max_time_mins == 30
 
 
@@ -548,7 +550,7 @@ def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
     tpot_obj._fit_init()
-    known_score = -11.682841148312662
+    known_score = -11.708199875921563
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -568,7 +570,6 @@ def test_score_3():
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features_r, testing_target_r)
-
     assert np.allclose(known_score, score)
 
 
@@ -704,9 +705,20 @@ def test_template_4():
     assert issubclass(sklearn_pipeline.steps[2][1].__class__, ClassifierMixin)
 
 
+def test_template_5():
+    """Assert that TPOT rasie ValueError when template parameter is invalid."""
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        verbosity=0,
+        template='SelectPercentile-Transformer-Classifie' # a typ in Classifier
+    )
+    assert_raises(ValueError, tpot_obj._fit_init)
+
+
 def test_fit_GroupKFold():
     """Assert that TPOT properly handles the group parameter when using GroupKFold."""
-    # This check tests if the darker MNIST images would generalize to the lighter ones.
+    # This check tests if the darker digits images would generalize to the lighter ones.
     means = np.mean(training_features, axis=1)
     groups = means >= np.median(means)
 
@@ -888,8 +900,7 @@ def test_warm_start():
     tpot_obj.fit(pretest_X, pretest_y)
 
     assert tpot_obj._pop == first_pop
-    assert tpot_obj._pop == first_pop
-    assert tpot_obj._pop == first_pop
+
 
 
 def test_fit():
@@ -945,7 +956,7 @@ def test_fit_4():
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=2,
-        generations=1,
+        generations=None,
         verbosity=0,
         max_time_mins=2/60.,
         config_dict='TPOT light'
@@ -957,12 +968,39 @@ def test_fit_4():
     tpot_obj.generations == 20
 
     tpot_obj.fit(training_features, training_target)
-
+    assert tpot_obj._pop == []
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
 
 
 def test_fit_5():
+    """Assert that the TPOT fit function provides an optimized pipeline with max_time_mins of 2 second with warm_start=True."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=2,
+        generations=None,
+        verbosity=0,
+        max_time_mins=3/60.,
+        config_dict='TPOT light',
+        warm_start=True
+    )
+    tpot_obj._fit_init()
+    assert tpot_obj.generations == 1000000
+
+    # reset generations to 20 just in case that the failed test may take too much time
+    tpot_obj.generations == 20
+
+    tpot_obj.fit(training_features, training_target)
+    assert tpot_obj._pop != []
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+    # rerun it
+    tpot_obj.fit(training_features, training_target)
+    assert tpot_obj._pop != []
+
+
+
+def test_fit_6():
     """Assert that the TPOT fit function provides an optimized pipeline with pandas DataFrame"""
     tpot_obj = TPOTClassifier(
         random_state=42,
@@ -1064,7 +1102,7 @@ def test_memory_4():
 def test_memory_5():
     """Assert that the TPOT _setup_memory function runs normally with a Memory object."""
     cachedir = mkdtemp()
-    memory = Memory(cachedir=cachedir, verbose=0)
+    memory = Memory(location=cachedir, verbose=0)
     tpot_obj = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -1324,61 +1362,6 @@ def test_summary_of_best_pipeline():
     assert_raises(RuntimeError, tpot_obj._summary_of_best_pipeline, features=training_features, target=training_target)
 
 
-def test_set_param_recursive():
-    """Assert that _set_param_recursive sets \"random_state\" to 42 in all steps in a simple pipeline."""
-    pipeline_string = (
-        'DecisionTreeClassifier(PCA(input_matrix, PCA__iterated_power=5, PCA__svd_solver=randomized), '
-        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
-        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
-    )
-
-    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
-    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
-    # assert "random_state" of PCA at step 1
-    assert getattr(sklearn_pipeline.steps[0][1], 'random_state') == 42
-    # assert "random_state" of DecisionTreeClassifier at step 2
-    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
-
-
-def test_set_param_recursive_2():
-    """Assert that _set_param_recursive sets \"random_state\" to 42 in nested estimator in SelectFromModel."""
-    pipeline_string = (
-        'DecisionTreeRegressor(SelectFromModel(input_matrix, '
-        'SelectFromModel__ExtraTreesRegressor__max_features=0.05, SelectFromModel__ExtraTreesRegressor__n_estimators=100, '
-        'SelectFromModel__threshold=0.05), DecisionTreeRegressor__max_depth=8,'
-        'DecisionTreeRegressor__min_samples_leaf=5, DecisionTreeRegressor__min_samples_split=5)'
-    )
-    tpot_obj = TPOTRegressor()
-    tpot_obj._fit_init()
-    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
-    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
-
-    assert getattr(getattr(sklearn_pipeline.steps[0][1], 'estimator'), 'random_state') == 42
-    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
-
-
-def test_set_param_recursive_3():
-    """Assert that _set_param_recursive sets \"random_state\" to 42 in nested estimator in StackingEstimator in a complex pipeline."""
-    pipeline_string = (
-        'DecisionTreeClassifier(CombineDFs('
-        'DecisionTreeClassifier(input_matrix, DecisionTreeClassifier__criterion=gini, '
-        'DecisionTreeClassifier__max_depth=8, DecisionTreeClassifier__min_samples_leaf=5,'
-        'DecisionTreeClassifier__min_samples_split=5),input_matrix) '
-        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8, '
-        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
-    )
-
-    deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
-    sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-    tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
-
-    # StackingEstimator under the transformer_list of FeatureUnion
-    assert getattr(getattr(sklearn_pipeline.steps[0][1].transformer_list[0][1], 'estimator'), 'random_state') == 42
-    assert getattr(sklearn_pipeline.steps[1][1], 'random_state') == 42
-
-
 def test_evaluated_individuals_():
     """Assert that evaluated_individuals_ stores current pipelines and their CV scores."""
     tpot_obj = TPOTClassifier(
@@ -1394,7 +1377,6 @@ def test_evaluated_individuals_():
     for pipeline_string in sorted(tpot_obj.evaluated_individuals_.keys()):
         deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
         operator_count = tpot_obj._operator_count(deap_pipeline)
 
         try:
@@ -1442,7 +1424,6 @@ def test_evaluate_individuals():
     for deap_pipeline, fitness_score in zip(pop, fitness_scores):
         operator_count = tpot_obj._operator_count(deap_pipeline)
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
         try:
             cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
@@ -1477,7 +1458,6 @@ def test_evaluate_individuals_2():
     for deap_pipeline, fitness_score in zip(pop, fitness_scores):
         operator_count = tpot_obj._operator_count(deap_pipeline)
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
-        tpot_obj._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
 
         try:
             cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)

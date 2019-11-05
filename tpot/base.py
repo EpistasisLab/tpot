@@ -50,12 +50,9 @@ from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y, check_consistent_length, check_array
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
-try:
-    from sklearn.impute import SimpleImputer as Imputer
-except ImportError:
-    from sklearn.preprocessing import Imputer
+from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
-from sklearn.metrics.scorer import make_scorer, _BaseScorer
+from sklearn.metrics.scorer import _BaseScorer
 
 from joblib import Parallel, delayed, Memory
 
@@ -63,7 +60,7 @@ from update_checker import update_check
 
 from ._version import __version__
 from .operator_utils import TPOTOperatorClassFactory, Operator, ARGType
-from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code
+from .export_utils import export_pipeline, expr_to_tree, generate_pipeline_code, set_param_recursive
 from .decorators import _pre_test
 from .builtins import CombineDFs, StackingEstimator
 
@@ -81,28 +78,6 @@ with warnings.catch_warnings():
     warnings.simplefilter('ignore')
     from tqdm.autonotebook import tqdm
 
-# hot patch for Windows: solve the problem of crashing python after Ctrl + C in Windows OS
-# https://github.com/ContinuumIO/anaconda-issues/issues/905
-if sys.platform.startswith('win'):
-    import win32api
-
-    try:
-        import _thread
-    except ImportError:
-        import thread as _thread
-
-
-    def handler(dwCtrlType, hook_sigint=_thread.interrupt_main):
-        """SIGINT handler function."""
-        if dwCtrlType == 0:  # CTRL_C_EVENT
-            hook_sigint()
-            return 1  # don't chain to the next handler
-        return 0
-
-
-    win32api.SetConsoleCtrlHandler(handler, 1)
-
-
 
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
@@ -119,8 +94,10 @@ class TPOTBase(BaseEstimator):
 
         Parameters
         ----------
-        generations: int, optional (default: 100)
+        generations: int or None, optional (default: 100)
             Number of iterations to the run pipeline optimization process.
+            It must be a positive number or None. If None, the parameter
+            max_time_mins must be defined as the runtime limit.
             Generally, TPOT will work better when you give it more generations (and
             therefore time) to optimize the pipeline. TPOT will evaluate
             POPULATION_SIZE + GENERATIONS x OFFSPRING_SIZE pipelines in total.
@@ -160,13 +137,6 @@ class TPOTBase(BaseEstimator):
 
             ['neg_median_absolute_error', 'neg_mean_absolute_error',
             'neg_mean_squared_error', 'r2']
-
-            If you would like to use a custom scoring function, you can pass a callable
-            function to this parameter with the signature scorer(y_true, y_pred).
-            See the section on scoring functions in the documentation for more details.
-
-            TPOT assumes that any custom scoring function with "error" or "loss" in the
-            name is meant to be minimized, whereas any other functions will be maximized.
         cv: int or cross-validation generator, optional (default: 5)
             If CV is a number, then it is the number of folds to evaluate each
             pipeline over in k-fold cross-validation during the TPOT optimization
@@ -182,8 +152,9 @@ class TPOTBase(BaseEstimator):
             Thus for n_jobs = -2, all CPUs but one are used.
         max_time_mins: int, optional (default: None)
             How many minutes TPOT has to optimize the pipeline.
-            If provided, this setting will override the "generations" parameter and allow
-            TPOT to run until it runs out of time.
+            If not None, this setting will allow TPOT to run until max_time_mins minutes
+            elapsed and then stop. TPOT will stop earlier if generationsis set and all
+            generations are already evaluated.
         max_eval_time_mins: float, optional (default: 5)
             How many minutes TPOT has to optimize a single pipeline.
             Setting this parameter to higher values will allow TPOT to explore more
@@ -326,37 +297,23 @@ class TPOTBase(BaseEstimator):
                         'choose a valid scoring function from the TPOT '
                         'documentation.'.format(scoring)
                     )
+                self.scoring_function = scoring
             elif callable(scoring):
                 # Heuristic to ensure user has not passed a metric
                 module = getattr(scoring, '__module__', None)
-                if sys.version_info[0] < 3:
-                    if inspect.isfunction(scoring):
-                        args_list = inspect.getargspec(scoring)[0]
-                    else:
-                        args_list = inspect.getargspec(scoring.__call__)[0]
-                else:
-                    args_list = inspect.getfullargspec(scoring)[0]
+                args_list = inspect.getfullargspec(scoring)[0]
                 if args_list == ["y_true", "y_pred"] or (hasattr(module, 'startswith') and \
                     (module.startswith('sklearn.metrics.') or module.startswith('tpot.metrics')) and \
                     not module.startswith('sklearn.metrics.scorer') and \
                     not module.startswith('sklearn.metrics.tests.')):
-                    scoring_name = scoring.__name__
-                    greater_is_better = 'loss' not in scoring_name and 'error' not in scoring_name
-                    SCORERS[scoring_name] = make_scorer(scoring, greater_is_better=greater_is_better)
-                    warnings.simplefilter('always', DeprecationWarning)
-                    warnings.warn('Scoring function {} looks like it is a metric function '
-                                  'rather than a scikit-learn scorer. This scoring type was deprecated '
-                                  'in version TPOT 0.9.1 and will be removed in version 0.11. '
-                                  'Please update your custom scoring function.'.format(scoring), DeprecationWarning)
+                    raise ValueError(
+                            'Scoring function {} looks like it is a metric function '
+                            'rather than a scikit-learn scorer. This scoring type was removed in version 0.11. '
+                            'Please update your custom scoring function.'.format(scoring)
+                            )
                 else:
-                    if isinstance(scoring, _BaseScorer):
-                        scoring_name = scoring._score_func.__name__
-                    else:
-                        scoring_name = scoring.__name__
-                    SCORERS[scoring_name] = scoring
-                scoring = scoring_name
+                    self.scoring_function = scoring
 
-            self.scoring_function = scoring
 
     def _setup_config(self, config_dict):
         if config_dict:
@@ -462,22 +419,28 @@ class TPOTBase(BaseEstimator):
                         ret_types.append(step_ret_type)
                     else:
                         step_ret_type = Output_Array
+                check_template = True
                 if step == 'CombineDFs':
                     self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
                 elif main_type.count(step): # if the step is a main type
-                    for operator in self.operators:
+                    ops = [op for op in self.operators if op.type() == step]
+                    for operator in ops:
                         arg_types =  operator.parameter_types()[0][1:]
-                        if operator.type() == step:
-                            p_types = ([step_in_type] + arg_types, step_ret_type)
-                            self._pset.addPrimitive(operator, *p_types)
-                            self._import_hash_and_add_terminals(operator, arg_types)
-                else: # is the step is a specific operator
-                    for operator in self.operators:
-                        arg_types =  operator.parameter_types()[0][1:]
-                        if operator.__name__ == step:
-                            p_types = ([step_in_type] + arg_types, step_ret_type)
-                            self._pset.addPrimitive(operator, *p_types)
-                            self._import_hash_and_add_terminals(operator, arg_types)
+                        p_types = ([step_in_type] + arg_types, step_ret_type)
+                        self._pset.addPrimitive(operator, *p_types)
+                        self._import_hash_and_add_terminals(operator, arg_types)
+                else: # is the step is a specific operator or a wrong input
+                    try:
+                        operator = next(op for op in self.operators if op.__name__ == step)
+                    except:
+                        raise ValueError(
+                            'An error occured while attempting to read the specified '
+                            'template. Please check a step named {}'.format(step)
+                        )
+                    arg_types =  operator.parameter_types()[0][1:]
+                    p_types = ([step_in_type] + arg_types, step_ret_type)
+                    self._pset.addPrimitive(operator, *p_types)
+                    self._import_hash_and_add_terminals(operator, arg_types)
         self.ret_types = [np.ndarray, Output_Array] + ret_types
 
 
@@ -571,10 +534,12 @@ class TPOTBase(BaseEstimator):
                 self.operators.append(op_class)
                 self.arguments += arg_types
 
+        if self.max_time_mins is None and self.generations is None:
+            raise ValueError("Either the parameter generations should bet set or a maximum evaluation time should be defined via max_time_mins")
+
         # Schedule TPOT to run for many generations if the user specifies a
-        # run-time limit TPOT will automatically interrupt itself when the timer
-        # runs out
-        if self.max_time_mins is not None:
+        # run-time limit TPOT will automatically interrupt itself when the timer runs out
+        if self.max_time_mins is not None and self.generations is None :
             self.generations = 1000000
 
         # Prompt the user if their version is out of date
@@ -691,10 +656,8 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('evaluate', self._evaluate_individuals, features=features, target=target, sample_weight=sample_weight, groups=groups)
 
         # assign population, self._pop can only be not None if warm_start is enabled
-        if self._pop:
-            pop = self._pop
-        else:
-            pop = self._toolbox.population(n=self.population_size)
+        if not self._pop:
+            self._pop = self._toolbox.population(n=self.population_size)
 
         def pareto_eq(ind1, ind2):
             """Determine whether two individuals are equal on the Pareto front.
@@ -738,8 +701,8 @@ class TPOTBase(BaseEstimator):
             with warnings.catch_warnings():
                 self._setup_memory()
                 warnings.simplefilter('ignore')
-                pop, _ = eaMuPlusLambda(
-                    population=pop,
+                self._pop, _ = eaMuPlusLambda(
+                    population=self._pop,
                     toolbox=self._toolbox,
                     mu=self.population_size,
                     lambda_=self._lambda,
@@ -752,10 +715,6 @@ class TPOTBase(BaseEstimator):
                     per_generation_function=self._check_periodic_pipeline
                 )
 
-            # store population for the next call
-            if self.warm_start:
-                self._pop = pop
-
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
@@ -763,6 +722,9 @@ class TPOTBase(BaseEstimator):
                 self._pbar.write('{}\nTPOT closed prematurely. Will use the current best pipeline.'.format(e),
                                  file=self._file)
         finally:
+            # clean population for the next call if warm_start=False
+            if not self.warm_start:
+                self._pop = []
             # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
             attempts = 10
             for attempt in range(attempts):
@@ -803,7 +765,7 @@ class TPOTBase(BaseEstimator):
                             )
                     self._cachedir = self.memory
 
-                self._memory = Memory(cachedir=self._cachedir, verbose=0)
+                self._memory = Memory(location=self._cachedir, verbose=0)
             elif isinstance(self.memory, Memory):
                 self._memory = self.memory
             else:
@@ -969,7 +931,13 @@ class TPOTBase(BaseEstimator):
 
         # If the scoring function is a string, we must adjust to use the sklearn
         # scoring interface
-        score = SCORERS[self.scoring_function](
+        if isinstance(self.scoring_function, str):
+            scorer = SCORERS[self.scoring_function]
+        elif callable(self.scoring_function):
+            scorer = self.scoring_function
+        else:
+            raise RuntimeError('The scoring function should either be the name of a scikit-learn scorer or a scorer object')
+        score = scorer(
             self.fitted_pipeline_,
             testing_features.astype(np.float64),
             testing_target.astype(np.float64)
@@ -1059,7 +1027,7 @@ class TPOTBase(BaseEstimator):
                                             self.operators, self._pset,
                                             self._imputed, pareto_front_pipeline_score,
                                             self.random_state)
-                # dont export a pipeline you  had
+                # dont export a pipeline you had
                 if self._exported_pipeline_text.count(sklearn_pipeline_str):
                     self._update_pbar(pbar_num=0, pbar_msg='Periodic pipeline was not saved, probably saved before...')
                 else:
@@ -1088,22 +1056,21 @@ class TPOTBase(BaseEstimator):
                 raise ValueError('Failed creating the periodic_checkpoint_folder:\n{}'.format(e))
 
 
-    def export(self, output_file_name, data_file_path=''):
+    def export(self, output_file_name='', data_file_path=''):
         """Export the optimized pipeline as Python code.
 
         Parameters
         ----------
-        output_file_name: string
-            String containing the path and file name of the desired output file
+        output_file_name: string (default: '')
+            String containing the path and file name of the desired output file. If left empty, writing to file will be skipped.
         data_file_path: string (default: '')
             By default, the path of input dataset is 'PATH/TO/DATA/FILE' by default.
             If data_file_path is another string, the path will be replaced.
 
         Returns
         -------
-        False if it skipped writing the pipeline to file
-        True if the pipeline was actually written
-
+        to_write: str
+            The whole pipeline text as a string.
         """
         if self._optimized_pipeline is None:
             raise RuntimeError('A pipeline has not yet been optimized. Please call fit() first.')
@@ -1114,8 +1081,11 @@ class TPOTBase(BaseEstimator):
                                     self.random_state,
                                     data_file_path=data_file_path)
 
-        with open(output_file_name, 'w') as output_file:
-            output_file.write(to_write)
+        if output_file_name is not '':
+            with open(output_file_name, 'w') as output_file:
+                output_file.write(to_write)
+        else:
+            return to_write
 
 
     def _impute_values(self, features):
@@ -1134,10 +1104,11 @@ class TPOTBase(BaseEstimator):
             print('Imputing missing values in feature set')
 
         if self._fitted_imputer is None:
-            self._fitted_imputer = Imputer(strategy="median")
+            self._fitted_imputer = SimpleImputer(strategy="median")
             self._fitted_imputer.fit(features)
 
         return self._fitted_imputer.transform(features)
+
 
     def _check_dataset(self, features, target, sample_weight=None):
         """Check if a dataset has a valid feature set and labels.
@@ -1225,42 +1196,18 @@ class TPOTBase(BaseEstimator):
         sklearn_pipeline_str = generate_pipeline_code(expr_to_tree(expr, self._pset), self.operators)
         sklearn_pipeline = eval(sklearn_pipeline_str, self.operators_context)
         sklearn_pipeline.memory = self._memory
+        if self.random_state:
+            # Fix random state when the operator allows
+            set_param_recursive(sklearn_pipeline.steps, 'random_state', self.random_state)
         return sklearn_pipeline
 
-    def _set_param_recursive(self, pipeline_steps, parameter, value):
-        """Recursively iterate through all objects in the pipeline and set a given parameter.
-
-        Parameters
-        ----------
-        pipeline_steps: array-like
-            List of (str, obj) tuples from a scikit-learn pipeline or related object
-        parameter: str
-            The parameter to assign a value for in each pipeline object
-        value: any
-            The value to assign the parameter to in each pipeline object
-        Returns
-        -------
-        None
-
-        """
-        for (_, obj) in pipeline_steps:
-            recursive_attrs = ['steps', 'transformer_list', 'estimators']
-            for attr in recursive_attrs:
-                if hasattr(obj, attr):
-                    self._set_param_recursive(getattr(obj, attr), parameter, value)
-            if hasattr(obj, 'estimator'):  # nested estimator
-                est = getattr(obj, 'estimator')
-                if hasattr(est, parameter):
-                    setattr(est, parameter, value)
-            if hasattr(obj, parameter):
-                setattr(obj, parameter, value)
 
     def _stop_by_max_time_mins(self):
         """Stop optimization process once maximum minutes have elapsed."""
         if self.max_time_mins:
             total_mins_elapsed = (datetime.now() - self._start_datetime).total_seconds() / 60.
             if total_mins_elapsed >= self.max_time_mins:
-                raise KeyboardInterrupt('{} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
+                raise KeyboardInterrupt('{:.2f} minutes have elapsed. TPOT will close down.'.format(total_mins_elapsed))
 
     def _combine_individual_stats(self, operator_count, cv_score, individual_stats):
         """Combine the stats with operator count and cv score and preprare to be written to _evaluated_individuals
@@ -1398,6 +1345,8 @@ class TPOTBase(BaseEstimator):
                 ind.fitness.values = (5000.,-float('inf'))
 
             self._pareto_front.update(population)
+
+            self._pop = population
             raise KeyboardInterrupt
 
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
@@ -1471,14 +1420,6 @@ class TPOTBase(BaseEstimator):
                 try:
                     # Transform the tree expression into an sklearn pipeline
                     sklearn_pipeline = self._toolbox.compile(expr=individual)
-
-                    # Fix random state when the operator allows
-                    self._set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
-                    # Setting the seed is needed for XGBoost support because XGBoost currently stores
-                    # both a seed and random_state, and they're not synced correctly.
-                    # XGBoost will raise an exception if random_state != seed.
-                    if 'XGB' in sklearn_pipeline_str:
-                        self._set_param_recursive(sklearn_pipeline.steps, 'seed', 42)
 
                     # Count the number of pipeline operators as a measure of pipeline complexity
                     operator_count = self._operator_count(individual)
