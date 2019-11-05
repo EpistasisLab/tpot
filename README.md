@@ -167,6 +167,20 @@ Please [check the existing open and closed issues](https://github.com/EpistasisL
 
 If you use TPOT in a scientific publication, please consider citing at least one of the following papers:
 
+Trang T. Le, Weixuan Fu and Jason H. Moore (2019). [Scaling tree-based automated machine learning to biomedical big data with a feature set selector](https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btz470/5511404). *Bioinformatics*. 2019 Jun 4.
+
+BibTeX entry:
+
+```bibtex
+@article{le2019scaling,
+  title={Scaling tree-based automated machine learning to biomedical big data with a feature set selector.},
+  author={Le, TT and Fu, W and Moore, JH},
+  journal={Bioinformatics (Oxford, England)},
+  year={2019}
+}
+```
+
+
 Randal S. Olson, Ryan J. Urbanowicz, Peter C. Andrews, Nicole A. Lavender, La Creis Kidd, and Jason H. Moore (2016). [Automating biomedical data science through tree-based pipeline optimization](http://link.springer.com/chapter/10.1007/978-3-319-31204-0_9). *Applications of Evolutionary Computation*, pages 123-137.
 
 BibTeX entry:

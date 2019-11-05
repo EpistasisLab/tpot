@@ -459,7 +459,7 @@ The estimated test set accuracy according to the user-specified scoring function
 
 <a name="tpotclassifier-export"></a>
 ```Python
-export(output_file_name)
+export(output_file_name, data_file_path)
 ```
 
 <div style="padding-left:5%" width="100%">
@@ -475,11 +475,18 @@ See the <a href="../using/#tpot-with-code">usage documentation</a> for example u
 <blockquote>
 String containing the path and file name of the desired output file
 </blockquote>
+<strong>data_file_path</strong>: string
+<blockquote>
+By default, the path of input dataset is 'PATH/TO/DATA/FILE' by default. If data_file_path is another string, the path will be replaced.
+</blockquote>
 </tr>
 <tr>
 <td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Returns:</strong></td>
 <td width="80%" style="background:white;">
-Does not return anything
+<strong>exported_code_string</strong>: string
+<blockquote>
+The whole pipeline text as a string should be returned if output_file_name is not specified.
+</blockquote>
 </td>
 </tr>
 </table>
@@ -928,11 +935,18 @@ See the <a href="../using/#tpot-with-code">usage documentation</a> for example u
 <blockquote>
 String containing the path and file name of the desired output file
 </blockquote>
+<strong>data_file_path</strong>: string
+<blockquote>
+By default, the path of input dataset is 'PATH/TO/DATA/FILE' by default. If data_file_path is another string, the path will be replaced.
+</blockquote>
 </tr>
 <tr>
 <td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Returns:</strong></td>
 <td width="80%" style="background:white;">
-Does not return anything
+<strong>exported_code_string</strong>: string
+<blockquote>
+The whole pipeline text as a string should be returned if output_file_name is not specified.
+</blockquote>
 </td>
 </tr>
 </table>
