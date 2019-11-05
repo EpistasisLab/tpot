@@ -701,7 +701,7 @@ class TPOTBase(BaseEstimator):
             with warnings.catch_warnings():
                 self._setup_memory()
                 warnings.simplefilter('ignore')
-                pop, _ = eaMuPlusLambda(
+                _, _ = eaMuPlusLambda(
                     population=self._pop,
                     toolbox=self._toolbox,
                     mu=self.population_size,
