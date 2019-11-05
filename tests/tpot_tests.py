@@ -964,12 +964,39 @@ def test_fit_4():
     tpot_obj.generations == 20
 
     tpot_obj.fit(training_features, training_target)
-
+    assert tpot_obj._pop == []
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
 
 
 def test_fit_5():
+    """Assert that the TPOT fit function provides an optimized pipeline with max_time_mins of 2 second with warm_start=True."""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=2,
+        generations=None,
+        verbosity=0,
+        max_time_mins=3/60.,
+        config_dict='TPOT light',
+        warm_start=True
+    )
+    tpot_obj._fit_init()
+    assert tpot_obj.generations == 1000000
+
+    # reset generations to 20 just in case that the failed test may take too much time
+    tpot_obj.generations == 20
+
+    tpot_obj.fit(training_features, training_target)
+    assert tpot_obj._pop != []
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+    # rerun it
+    tpot_obj.fit(training_features, training_target)
+    assert tpot_obj._pop != []
+
+
+
+def test_fit_6():
     """Assert that the TPOT fit function provides an optimized pipeline with pandas DataFrame"""
     tpot_obj = TPOTClassifier(
         random_state=42,
