@@ -752,10 +752,6 @@ class TPOTBase(BaseEstimator):
                     per_generation_function=self._check_periodic_pipeline
                 )
 
-            # store population for the next call
-            if self.warm_start:
-                self._pop = pop
-
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
@@ -763,6 +759,9 @@ class TPOTBase(BaseEstimator):
                 self._pbar.write('{}\nTPOT closed prematurely. Will use the current best pipeline.'.format(e),
                                  file=self._file)
         finally:
+            # clean population for the next call if warm_start=False
+            if not self.warm_start:
+                self._pop = []
             # keep trying 10 times in case weird things happened like multiple CTRL+C or exceptions
             attempts = 10
             for attempt in range(attempts):
@@ -1383,6 +1382,8 @@ class TPOTBase(BaseEstimator):
                 ind.fitness.values = (5000.,-float('inf'))
 
             self._pareto_front.update(population)
+            print(111)
+            self._pop = population
             raise KeyboardInterrupt
 
         self._update_evaluated_individuals_(result_score_list, eval_individuals_str, operator_counts, stats_dicts)
