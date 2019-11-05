@@ -9,6 +9,7 @@
 - `.export()` function will return string of exported pipeline if output filename is not specified.
 - Add [`SGDClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html) and [`SGDRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html) into TPOT default configs.
 - Documentation has been updated.
+- Fix minor bugs.
 
 # Version 0.10.2
 
