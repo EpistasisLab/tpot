@@ -209,7 +209,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 for dkey, dval in prange.items():
                     dep_import_str, dep_op_str, dep_op_obj = source_decode(dkey, verbose=verbose)
                     if dep_import_str in import_hash:
-                        import_hash[import_str].append(dep_op_str)
+                        import_hash[dep_import_str].append(dep_op_str)
                     else:
                         import_hash[dep_import_str] = [dep_op_str]
                     dep_op_list[pname] = dep_op_str
@@ -300,4 +300,5 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
         op_classname = 'TPOT_{}'.format(op_str)
         op_class = type(op_classname, (BaseClass,), class_profile)
         op_class.__name__ = op_str
+        print(op_class.__name__, arg_types)
         return op_class, arg_types
