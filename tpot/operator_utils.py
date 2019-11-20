@@ -300,5 +300,4 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
         op_classname = 'TPOT_{}'.format(op_str)
         op_class = type(op_classname, (BaseClass,), class_profile)
         op_class.__name__ = op_str
-        print(op_class.__name__, arg_types)
         return op_class, arg_types
