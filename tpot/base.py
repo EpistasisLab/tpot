@@ -1285,7 +1285,10 @@ class TPOTBase(BaseEstimator):
         )
 
         result_score_list = []
+
         try:
+            # check time limit before pipeline evaluation
+            self._stop_by_max_time_mins()
             # Don't use parallelization if n_jobs==1
             if self._n_jobs == 1 and not self.use_dask:
                 for sklearn_pipeline in sklearn_pipeline_list:
