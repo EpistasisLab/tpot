@@ -100,7 +100,6 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                 # here values was stored into self.values_list and can be used in predict
                 # function below for test dataset !!! need pre_provide
                 dosage = np.hstack((X_train_col!=0, X_train_col!=1, X_train_col!=2))
-                print
                 if X_train_col[np.all(dosage, axis=1).reshape((-1, 1))].shape[0]>0:
                     values = 'dosage'
                 else:
@@ -122,7 +121,8 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                     # clf.classes_ should return an array of genotypes in this column
                     # like array([0, 1, 2]) or array([0, 1])
                     for gt in clf.classes_:
-                        X_train_col_adj -= gt*clf_pred_proba[:, gt:gt+1]
+                        gt = int(gt)
+                        X_train_col_adj = X_train_col_adj - gt*clf_pred_proba[:, gt:gt+1]
                     X_train_adj[:, col:(col+1)] = X_train_col_adj
                     self.col_ests.append(clf)
         if self.A is not None:
@@ -175,9 +175,9 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                     clf_pred_proba = est.predict_proba(C_test)
                     X_test_col_adj = X_test_col
                     for gt in est.classes_:
-                        X_test_col_adj -= gt*clf_pred_proba[:, gt:gt+1]
+                        X_test_col_adj = X_test_col_adj - gt*clf_pred_proba[:, gt:gt+1]
                     X_test_adj[:, col:(col+1)] = X_test_col_adj
-                    
+
         if self.A is not None:
             A_test = X[self.A_list].values
         if self.A is None and self.C is None:
