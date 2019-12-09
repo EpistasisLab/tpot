@@ -98,7 +98,7 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                 # test information cannot be used in fit() function
                 # may be values should be provided as a parameter in __init__ above
                 # here values was stored into self.values_list and can be used in predict
-                # function below for test dataset
+                # function below for test dataset !!! need pre_provide
                 dosage = np.hstack((X_train_col!=0, X_train_col!=1, X_train_col!=2))
                 print
                 if X_train_col[np.all(dosage, axis=1).reshape((-1, 1))].shape[0]>0:
@@ -115,13 +115,15 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                     clf = LogisticRegression(penalty='none',
                                             solver='lbfgs',
                                             multi_class='auto')
-                    clf.fit(C_train, X_train_col.reshape((-1,)))
+                    clf.fit(C_train, X_train_col.reshape((-1,)).astype(np.int32))
                     clf_pred_proba = clf.predict_proba(C_train)
-                    if clf_pred_proba.shape[1] != 3: # for snp without all 0, 1, 2 genotypes
-                        # need work around for this part
-                        X_train_adj[:, col:(col+1)] = X_train_col
-                    else:
-                        X_train_adj[:, col:(col+1)] = X_train_col - clf_pred_proba[:, 1:2]-2*clf_pred_proba[:, 2:3]
+
+                    X_train_col_adj = X_train_col
+                    # clf.classes_ should return an array of genotypes in this column
+                    # like array([0, 1, 2]) or array([0, 1])
+                    for gt in clf.classes_:
+                        X_train_col_adj -= gt*clf_pred_proba[:, gt:gt+1]
+                    X_train_adj[:, col:(col+1)] = X_train_col_adj
                     self.col_ests.append(clf)
         if self.A is not None:
             A_train = X[self.A_list].values
@@ -171,11 +173,11 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                     X_test_adj[:, col:(col+1)] = X_test_adj - est.predict(C_test)
                 else:
                     clf_pred_proba = est.predict_proba(C_test)
-                    if clf_pred_proba.shape[1] != 3: # for snp without all 0, 1, 2 genotype
-                        # need work around for this part
-                        X_test_adj[:, col:(col+1)] = X_test_col
-                    else:
-                        X_test_adj[:, col:(col+1)] = X_test_col - clf_pred_proba[:, 1:2]-2*clf_pred_proba[:, 2:3]
+                    X_test_col_adj = X_test_col
+                    for gt in est.classes_:
+                        X_test_col_adj -= gt*clf_pred_proba[:, gt:gt+1]
+                    X_test_adj[:, col:(col+1)] = X_test_col_adj
+                    
         if self.A is not None:
             A_test = X[self.A_list].values
         if self.A is None and self.C is None:
