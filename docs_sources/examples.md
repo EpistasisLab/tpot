@@ -9,7 +9,7 @@ belonging to a typical class of machine learning tasks.
 | Optical Recognition of Handwritten Digits                 | digit recognition       | (image) classification | [link](https://scikit-learn.org/stable/datasets/index.html#digits-dataset) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/Digits.ipynb) |
 | Boston                | housing prices modeling | regression             | [link](https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html) | N/A    |
 | Titanic               | survival analysis       | classification         | [link](https://www.kaggle.com/c/titanic/data) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb) |
-| Bank Marketing        | subscription prediction | classification         | [link](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb) |
+| Bank Marketing        | subscription prediction | classification         | [link](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Strategy.ipynb) |
 | MAGIC Gamma Telescope | event detection         | classification         | [link](https://archive.ics.uci.edu/ml/datasets/MAGIC+Gamma+Telescope) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb) |
 
 **Notes:**

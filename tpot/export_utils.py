@@ -219,7 +219,7 @@ def generate_import_code(pipeline, operators, impute=False, random_state=None):
     if impute:
         pipeline_text += """from sklearn.impute import SimpleImputer
 """
-    if random_state is not None:
+    if random_state is not None and 'sklearn.pipeline' in pipeline_imports:
         pipeline_text += """from tpot.export_utils import set_param_recursive
 """
 
@@ -281,9 +281,19 @@ exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """.format(pipeline_code)
     else:
-        exported_code = """exported_pipeline = {}
+        if pipeline_code.startswith('make_pipeline'):
+            exported_code = """exported_pipeline = {}
 # Fix random state for all the steps in exported pipeline
 set_param_recursive(exported_pipeline.steps, 'random_state', {})
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+""".format(pipeline_code, random_state)
+        else:
+            exported_code = """exported_pipeline = {}
+# Fix random state in exported estimator
+if hasattr(exported_pipeline, 'random_state'):
+    setattr(exported_pipeline, 'random_state', {})
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
