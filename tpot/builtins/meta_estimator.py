@@ -91,7 +91,7 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
             C_train = X[self.C].values
 
             for col in range(X_train.shape[1]):
-                X_train_col = X_train.iloc[:, col].values.reshape((-1,1)) # np.ndarray
+                X_train_col = X_train.iloc[:, col].values.reshape((-1, 1)) # np.ndarray
 
                 # test information cannot be used in fit() function
                 # may be values should be provided as a parameter in __init__ above
@@ -104,9 +104,10 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                     values = 'ternary'
                 self.values_list.append(values)
                 if values == 'dosage':
-                    regr = LinearRegression(),
+                    regr = LinearRegression()
                     regr.fit(C_train, X_train_col.reshape((-1,)))
-                    X_train_adj[:, col:(col+1)] = X_train_col - regr.predict(C_train)
+                    est_pred = regr.predict(C_train).reshape((-1, 1))
+                    X_train_adj[:, col:(col+1)] = X_train_col - est_pred
                     self.col_ests.append(regr)
                 else:
                     clf = LogisticRegression(penalty='none',
@@ -168,7 +169,8 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
             for values, est, col in zip(self.values_list, self.col_ests, range(X_test.shape[1])):
                 X_test_col = X_test.iloc[:, col].values.reshape((-1,1))
                 if values == 'dosage':
-                    X_test_adj[:, col:(col+1)] = X_test_adj - est.predict(C_test)
+                    est_pred = est.predict(C_test).reshape((-1, 1))
+                    X_test_adj[:, col:(col+1)] = X_test_col - est_pred
                 else:
                     clf_pred_proba = est.predict_proba(C_test)
                     X_test_col_adj = X_test_col
