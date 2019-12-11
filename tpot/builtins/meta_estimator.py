@@ -46,9 +46,9 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
         ----------
         estimator: object with fit, predict, and predict_proba methods.
             The estimator to generate synthetic features from.
-        A: a string for a list of columns delimited by ";" for A, e.g "N1;N2"
+        A: a list of columns for A, e.g ["N1", "N2"]
             columns of A correspond to a non-confounding covariate.
-        C: a string for a list of columns delimited by ";" for C, e.g "N4;N5"
+        C:  a list of columns for C, e.g ["N4", "N5"]
             columns of C correspond correspond to a confounding covariate.
 
         """
@@ -78,11 +78,9 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
             rasie(ValueError, "At least one of A_train and C_train must be specified")
         X_train = pd.DataFrame.copy(X)
         if self.A is not None:
-            self.A_list = self.A.split(';')
-            X_train.drop(self.A_list, axis=1, inplace=True)
+            X_train.drop(self.A, axis=1, inplace=True)
         if self.C is not None:
-            self.C_list = self.C.split(';')
-            X_train.drop(self.C_list, axis=1, inplace=True)
+            X_train.drop(self.C, axis=1, inplace=True)
         if self.C is None:
             X_train_adj = X_train
             C_train = None
@@ -90,7 +88,7 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
             X_train_adj = np.zeros(X_train.shape)
             self.col_ests = [] # store estimator for each columns
             self.values_list = [] # store values for each columns
-            C_train = X[self.C_list].values
+            C_train = X[self.C].values
 
             for col in range(X_train.shape[1]):
                 X_train_col = X_train.iloc[:, col].values.reshape((-1,1)) # np.ndarray
@@ -98,7 +96,7 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                 # test information cannot be used in fit() function
                 # may be values should be provided as a parameter in __init__ above
                 # here values was stored into self.values_list and can be used in predict
-                # function below for test dataset !!! need pre_provide
+                # function below for test dataset
                 dosage = np.hstack((X_train_col!=0, X_train_col!=1, X_train_col!=2))
                 if X_train_col[np.all(dosage, axis=1).reshape((-1, 1))].shape[0]>0:
                     values = 'dosage'
@@ -126,7 +124,7 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                     X_train_adj[:, col:(col+1)] = X_train_col_adj
                     self.col_ests.append(clf)
         if self.A is not None:
-            A_train = X[self.A_list].values
+            A_train = X[self.A].values
 
 
         if C_train is None and A_train is not None:
@@ -158,15 +156,15 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
         """
         X_test = pd.DataFrame.copy(X)
         if self.A is not None:
-            X_test.drop(self.A_list, axis=1, inplace=True)
+            X_test.drop(self.A, axis=1, inplace=True)
         if self.C is not None:
-            X_test.drop(self.C_list, axis=1, inplace=True)
+            X_test.drop(self.C, axis=1, inplace=True)
         if self.C is None:
             X_test_adj = X_test
             C_test = None
         else:
             X_test_adj = np.zeros(X_test.shape)
-            C_test = X[self.C_list].values
+            C_test = X[self.C].values
             for values, est, col in zip(self.values_list, self.col_ests, range(X_test.shape[1])):
                 X_test_col = X_test.iloc[:, col].values.reshape((-1,1))
                 if values == 'dosage':
@@ -179,7 +177,7 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                     X_test_adj[:, col:(col+1)] = X_test_col_adj
 
         if self.A is not None:
-            A_test = X[self.A_list].values
+            A_test = X[self.A].values
         if self.A is None and self.C is None:
             rasie(ValueError, "At least one of A_train and C_train must be specified")
         elif C_test is None and A_test is not None:
