@@ -71,7 +71,6 @@ def test_export_random_ind():
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import BernoulliNB
-from tpot.export_utils import set_param_recursive
 
 # NOTE: Make sure that the outcome column is labeled 'target' in the data file
 tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
@@ -80,14 +79,14 @@ training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'], random_state=39)
 
 exported_pipeline = BernoulliNB(alpha=1.0, fit_prior=False)
-# Fix random state for all the steps in exported pipeline
-set_param_recursive(exported_pipeline.steps, 'random_state', 39)
+# Fix random state in exported estimator
+if hasattr(exported_pipeline, 'random_state'):
+    setattr(exported_pipeline, 'random_state', 39)
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 """
     exported_code = export_pipeline(pipeline, tpot_obj.operators, tpot_obj._pset, random_state=tpot_obj.random_state)
-
     assert expected_code == exported_code
 
 
@@ -487,18 +486,17 @@ def test_export_pipeline_6():
     """Assert that exported_pipeline() generated a compile source file with random_state and data_file_path."""
 
     pipeline_string = (
-        'KNeighborsClassifier('
-        'input_matrix, '
-        'KNeighborsClassifier__n_neighbors=10, '
-        'KNeighborsClassifier__p=1, '
-        'KNeighborsClassifier__weights=uniform'
-        ')'
+        'DecisionTreeClassifier(SelectPercentile(input_matrix, SelectPercentile__percentile=20),'
+        'DecisionTreeClassifier__criterion=gini, DecisionTreeClassifier__max_depth=8,'
+        'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
     )
     pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     expected_code = """import numpy as np
 import pandas as pd
+from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.tree import DecisionTreeClassifier
 from tpot.export_utils import set_param_recursive
 
 # NOTE: Make sure that the outcome column is labeled 'target' in the data file
@@ -507,7 +505,10 @@ features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'], random_state=42)
 
-exported_pipeline = KNeighborsClassifier(n_neighbors=10, p=1, weights="uniform")
+exported_pipeline = make_pipeline(
+    SelectPercentile(score_func=f_classif, percentile=20),
+    DecisionTreeClassifier(criterion="gini", max_depth=8, min_samples_leaf=5, min_samples_split=5)
+)
 # Fix random state for all the steps in exported pipeline
 set_param_recursive(exported_pipeline.steps, 'random_state', 42)
 
