@@ -296,8 +296,6 @@ TPOT_MODE           =     classification
 VERBOSITY           =     1
 
 """
-        print
-
         self.assertEqual(_sort_lines(expected_output), _sort_lines(output))
 
 

@@ -1536,7 +1536,7 @@ class TPOTBase(BaseEstimator):
                 partial(mutNodeReplacement, pset=self._pset)
             ]
             # We can't shrink pipelines with only one primitive, so we only add it if we find more primitives.
-            number_of_primitives = sum([isinstance(node, deap.gp.Primitive) for node in individual])
+            number_of_primitives = sum(isinstance(node, deap.gp.Primitive) for node in individual)
             if number_of_primitives > 1 and allow_shrink:
                 mutation_techniques.append(partial(gp.mutShrink))
         else:
@@ -1614,8 +1614,7 @@ class TPOTBase(BaseEstimator):
             How many operators in a pipeline
         """
         operator_count = 0
-        for i in range(len(individual)):
-            node = individual[i]
+        for node in individual:
             if type(node) is deap.gp.Primitive and node.name != 'CombineDFs':
                 operator_count += 1
         return operator_count

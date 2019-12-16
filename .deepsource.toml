@@ -1,0 +1,13 @@
+version = 1
+
+exclude_patterns = [
+  'tutorials/*'
+]
+
+test_patterns = [
+  'tests/**/*.py'
+]
+
+[[analyzers]]
+name = "python"
+enabled = true
