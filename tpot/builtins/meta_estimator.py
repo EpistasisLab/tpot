@@ -75,7 +75,7 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
             Returns a copy of the estimator
         """
         if self.A is None and self.C is None:
-            rasie(ValueError, "At least one of A_train and C_train must be specified")
+            raise(ValueError, "At least one of A_train and C_train must be specified")
         X_train = pd.DataFrame.copy(X)
         if self.A is not None:
             X_train.drop(self.A, axis=1, inplace=True)
@@ -181,7 +181,7 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
         if self.A is not None:
             A_test = X[self.A].values
         if self.A is None and self.C is None:
-            rasie(ValueError, "At least one of A_train and C_train must be specified")
+            raise(ValueError, "At least one of A_train and C_train must be specified")
         elif C_test is None and A_test is not None:
             B_test = A_test
         elif A_test is None and C_test is not None:
