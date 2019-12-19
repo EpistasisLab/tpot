@@ -119,9 +119,9 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                     X_train_col_adj = X_train_col
                     # clf.classes_ should return an array of genotypes in this column
                     # like array([0, 1, 2]) or array([0, 1])
-                    for gt in clf.classes_:
+                    for gt_idx, gt in enumerate(clf.classes_):
                         gt = int(gt)
-                        X_train_col_adj = X_train_col_adj - gt*clf_pred_proba[:, gt:gt+1]
+                        X_train_col_adj = X_train_col_adj - gt*clf_pred_proba[:, gt_idx:gt_idx+1]
                     X_train_adj[:, col:(col+1)] = X_train_col_adj
                     self.col_ests.append(clf)
         if self.A is not None:
@@ -174,8 +174,9 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
                 else:
                     clf_pred_proba = est.predict_proba(C_test)
                     X_test_col_adj = X_test_col
-                    for gt in est.classes_:
-                        X_test_col_adj = X_test_col_adj - gt*clf_pred_proba[:, gt:gt+1]
+                    for gt_idx, gt in enumerate(est.classes_):
+                        gt = int(gt)
+                        X_test_col_adj = X_test_col_adj - gt*clf_pred_proba[:, gt_idx:gt_idx+1]
                     X_test_adj[:, col:(col+1)] = X_test_col_adj
 
         if self.A is not None:
