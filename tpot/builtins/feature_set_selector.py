@@ -25,7 +25,10 @@ import numpy as np
 import pandas as pd
 import os, os.path
 from sklearn.base import BaseEstimator
-from sklearn.feature_selection._base import SelectorMixin
+try:
+    from sklearn.feature_selection._base import SelectorMixin
+except ImportError:
+    from sklearn.feature_selection.base import SelectorMixin
 
 
 class FeatureSetSelector(BaseEstimator, SelectorMixin):

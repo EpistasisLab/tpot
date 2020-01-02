@@ -58,7 +58,10 @@ from sklearn.model_selection import train_test_split, cross_val_score, GroupKFol
 from joblib import Memory
 from sklearn.metrics import make_scorer, roc_auc_score
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
-from sklearn.feature_selection._base import SelectorMixin
+try:
+    from sklearn.feature_selection._base import SelectorMixin
+except ImportError:
+    from sklearn.feature_selection.base import SelectorMixin
 from deap import creator, gp
 from deap.tools import ParetoFront
 from nose.tools import nottest, assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
