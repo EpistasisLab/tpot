@@ -25,8 +25,10 @@ import numpy as np
 import pandas as pd
 import os, os.path
 from sklearn.base import BaseEstimator
-from sklearn.feature_selection.base import SelectorMixin
-from sklearn.utils.validation import check_is_fitted
+try:
+    from sklearn.feature_selection._base import SelectorMixin
+except ImportError:
+    from sklearn.feature_selection.base import SelectorMixin
 
 
 class FeatureSetSelector(BaseEstimator, SelectorMixin):
@@ -142,7 +144,7 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
             An element is True iff its corresponding feature is selected for
             retention.
         """
-        check_is_fitted(self, 'feat_list_idx')
+
         n_features = len(self.feature_names)
         mask = np.zeros(n_features, dtype=bool)
         mask[np.asarray(self.feat_list_idx)] = True

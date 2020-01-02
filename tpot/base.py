@@ -52,7 +52,6 @@ from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
-from sklearn.metrics.scorer import _BaseScorer
 
 from joblib import Parallel, delayed, Memory
 
@@ -304,7 +303,7 @@ class TPOTBase(BaseEstimator):
                 args_list = inspect.getfullargspec(scoring)[0]
                 if args_list == ["y_true", "y_pred"] or (hasattr(module, 'startswith') and \
                     (module.startswith('sklearn.metrics.') or module.startswith('tpot.metrics')) and \
-                    not module.startswith('sklearn.metrics.scorer') and \
+                    not module.startswith('sklearn.metrics._scorer') and \
                     not module.startswith('sklearn.metrics.tests.')):
                     raise ValueError(
                             'Scoring function {} looks like it is a metric function '

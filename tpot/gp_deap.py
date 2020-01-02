@@ -28,7 +28,7 @@ from deap import tools, gp
 from inspect import isclass
 from .operator_utils import set_sample_weight
 from sklearn.utils import indexable
-from sklearn.metrics.scorer import check_scoring
+from sklearn.metrics import check_scoring
 from sklearn.model_selection._validation import _fit_and_score
 from sklearn.model_selection._split import check_cv
 
@@ -456,10 +456,11 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                                          test=test,
                                          verbose=0,
                                          parameters=None,
+                                         error_score='raise',
                                          fit_params=sample_weight_dict)
                                     for train, test in cv_iter]
-                CV_score = np.array(scores)[:, 0]
-                return np.nanmean(CV_score)
+            CV_score = np.array(scores)[:, 0]
+            return np.nanmean(CV_score)
         except TimeoutException:
             return "Timeout"
         except Exception as e:
