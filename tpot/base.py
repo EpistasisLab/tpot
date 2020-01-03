@@ -70,6 +70,7 @@ from .config.classifier_mdr import tpot_mdr_classifier_config_dict
 from .config.regressor_mdr import tpot_mdr_regressor_config_dict
 from .config.regressor_sparse import regressor_config_sparse
 from .config.classifier_sparse import classifier_config_sparse
+from .config.classifier_nn import classifier_config_nn
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -181,6 +182,9 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
+            String 'TPOT NN':
+                TPOT uses a configuration dictionary for PyTorch neural network classifiers
+                included in `tpot.nn`.
         template: string (default: None)
             Template of predefined pipeline structure. The option is for specifying a desired structure
             for the machine learning pipeline evaluated in TPOT. So far this option only supports
@@ -334,6 +338,8 @@ class TPOTBase(BaseEstimator):
                     self._config_dict = classifier_config_sparse
                 else:
                     self._config_dict = regressor_config_sparse
+            elif config_dict == 'TPOT NN':
+                self._config_dict = classifier_config_nn
             else:
                 config = self._read_config_file(config_dict)
                 if hasattr(config, 'tpot_config'):
