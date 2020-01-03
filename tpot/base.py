@@ -1260,10 +1260,10 @@ class TPOTBase(BaseEstimator):
         """
         # Evaluate the individuals with an invalid fitness
         individuals = [ind for ind in population if not ind.fitness.valid]
-
+        num_population = len(population)
         # update pbar for valid individuals (with fitness values)
         if self.verbosity > 0:
-            self._pbar.update(len(population)-len(individuals))
+            self._pbar.update(num_population-len(individuals))
 
         operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals)
 
@@ -1339,11 +1339,8 @@ class TPOTBase(BaseEstimator):
                 ind_str = str(ind)
                 ind.fitness.values = (self.evaluated_individuals_[ind_str]['operator_count'],
                                     self.evaluated_individuals_[ind_str]['internal_cv_score'])
-            # for individuals were not evaluated in this generation, TPOT will assign a bad fitness score
-            for ind in individuals[num_eval_ind:]:
-                ind.fitness.values = (5000.,-float('inf'))
 
-            self._pareto_front.update(population)
+            self._pareto_front.update(individuals[:num_eval_ind])
 
             self._pop = population
             raise KeyboardInterrupt
