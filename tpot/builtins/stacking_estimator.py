@@ -89,7 +89,7 @@ class StackingEstimator(BaseEstimator, TransformerMixin):
             if np.all(np.isfinite(y_pred_proba)):
                 X_transformed = np.hstack((y_pred_proba, X))
 
-        # add class prodiction as a synthetic feature
+        # add class prediction as a synthetic feature
         X_transformed = np.hstack((np.reshape(self.estimator.predict(X), (-1, 1)), X_transformed))
 
         return X_transformed
