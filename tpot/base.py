@@ -52,7 +52,6 @@ from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
-from sklearn.metrics.scorer import _BaseScorer
 
 from joblib import Parallel, delayed, Memory
 
@@ -304,7 +303,7 @@ class TPOTBase(BaseEstimator):
                 args_list = inspect.getfullargspec(scoring)[0]
                 if args_list == ["y_true", "y_pred"] or (hasattr(module, 'startswith') and \
                     (module.startswith('sklearn.metrics.') or module.startswith('tpot.metrics')) and \
-                    not module.startswith('sklearn.metrics.scorer') and \
+                    not module.startswith('sklearn.metrics._scorer') and \
                     not module.startswith('sklearn.metrics.tests.')):
                     raise ValueError(
                             'Scoring function {} looks like it is a metric function '
@@ -500,6 +499,35 @@ class TPOTBase(BaseEstimator):
             self._pareto_front = None
             self._last_optimized_pareto_front = None
             self._last_optimized_pareto_front_n_gens = 0
+            self._setup_config(self.config_dict)
+
+            self._setup_template(self.template)
+
+            self.operators = []
+            self.arguments = []
+            for key in sorted(self._config_dict.keys()):
+                op_class, arg_types = TPOTOperatorClassFactory(
+                    key,
+                    self._config_dict[key],
+                    BaseClass=Operator,
+                    ArgBaseClass=ARGType,
+                    verbose=self.verbosity
+                )
+                if op_class:
+                    self.operators.append(op_class)
+                    self.arguments += arg_types
+            self.operators_context = {
+                'make_pipeline': make_pipeline,
+                'make_union': make_union,
+                'StackingEstimator': StackingEstimator,
+                'FunctionTransformer': FunctionTransformer,
+                'copy': copy
+            }
+            self._setup_pset()
+            self._setup_toolbox()
+            # Dictionary of individuals that have already been evaluated in previous
+            # generations or previous runs
+            self.evaluated_individuals_ = {}
 
         self._optimized_pipeline = None
         self._optimized_pipeline_score = None
@@ -516,23 +544,6 @@ class TPOTBase(BaseEstimator):
         # any one given individual (or pair of individuals)
         self._max_mut_loops = 50
 
-        self._setup_config(self.config_dict)
-
-        self._setup_template(self.template)
-
-        self.operators = []
-        self.arguments = []
-        for key in sorted(self._config_dict.keys()):
-            op_class, arg_types = TPOTOperatorClassFactory(
-                key,
-                self._config_dict[key],
-                BaseClass=Operator,
-                ArgBaseClass=ARGType,
-                verbose=self.verbosity
-            )
-            if op_class:
-                self.operators.append(op_class)
-                self.arguments += arg_types
 
         if self.max_time_mins is None and self.generations is None:
             raise ValueError("Either the parameter generations should bet set or a maximum evaluation time should be defined via max_time_mins")
@@ -551,22 +562,10 @@ class TPOTBase(BaseEstimator):
                 'The sum of the crossover and mutation probabilities must be <= 1.0.'
             )
 
-        self.operators_context = {
-            'make_pipeline': make_pipeline,
-            'make_union': make_union,
-            'StackingEstimator': StackingEstimator,
-            'FunctionTransformer': FunctionTransformer,
-            'copy': copy
-        }
-
         self._pbar = None
         # Specifies where to output the progress messages (default: sys.stdout).
         # Maybe open this API in future version of TPOT.(io.TextIOWrapper or io.StringIO)
         self._file = sys.stdout
-
-        # Dictionary of individuals that have already been evaluated in previous
-        # generations
-        self.evaluated_individuals_ = {}
 
         self._setup_scoring_function(self.scoring)
 
@@ -583,9 +582,6 @@ class TPOTBase(BaseEstimator):
             self._n_jobs = cpu_count() + 1 + self.n_jobs
         else:
             self._n_jobs = self.n_jobs
-
-        self._setup_pset()
-        self._setup_toolbox()
 
 
     def fit(self, features, target, sample_weight=None, groups=None):
@@ -1264,10 +1260,10 @@ class TPOTBase(BaseEstimator):
         """
         # Evaluate the individuals with an invalid fitness
         individuals = [ind for ind in population if not ind.fitness.valid]
-
+        num_population = len(population)
         # update pbar for valid individuals (with fitness values)
         if self.verbosity > 0:
-            self._pbar.update(len(population)-len(individuals))
+            self._pbar.update(num_population-len(individuals))
 
         operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals)
 
@@ -1343,11 +1339,8 @@ class TPOTBase(BaseEstimator):
                 ind_str = str(ind)
                 ind.fitness.values = (self.evaluated_individuals_[ind_str]['operator_count'],
                                     self.evaluated_individuals_[ind_str]['internal_cv_score'])
-            # for individuals were not evaluated in this generation, TPOT will assign a bad fitness score
-            for ind in individuals[num_eval_ind:]:
-                ind.fitness.values = (5000.,-float('inf'))
 
-            self._pareto_front.update(population)
+            self._pareto_front.update(individuals[:num_eval_ind])
 
             self._pop = population
             raise KeyboardInterrupt
@@ -1536,7 +1529,7 @@ class TPOTBase(BaseEstimator):
                 partial(mutNodeReplacement, pset=self._pset)
             ]
             # We can't shrink pipelines with only one primitive, so we only add it if we find more primitives.
-            number_of_primitives = sum([isinstance(node, deap.gp.Primitive) for node in individual])
+            number_of_primitives = sum(isinstance(node, deap.gp.Primitive) for node in individual)
             if number_of_primitives > 1 and allow_shrink:
                 mutation_techniques.append(partial(gp.mutShrink))
         else:
@@ -1562,7 +1555,6 @@ class TPOTBase(BaseEstimator):
                 break
             else:
                 unsuccesful_mutations += 1
-
         # Sometimes you have pipelines for which every shrunk version has already been explored too.
         # To still mutate the individual, one of the two other mutators should be applied instead.
         if ((unsuccesful_mutations == 50) and
@@ -1614,8 +1606,7 @@ class TPOTBase(BaseEstimator):
             How many operators in a pipeline
         """
         operator_count = 0
-        for i in range(len(individual)):
-            node = individual[i]
+        for node in individual:
             if type(node) is deap.gp.Primitive and node.name != 'CombineDFs':
                 operator_count += 1
         return operator_count
