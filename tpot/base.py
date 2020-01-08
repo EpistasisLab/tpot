@@ -792,10 +792,11 @@ class TPOTBase(BaseEstimator):
             if not self._optimized_pipeline:
                 raise RuntimeError('There was an error in the TPOT optimization '
                                    'process. This could be because the data was '
-                                   'not formatted properly, or because data for '
+                                   'not formatted properly, because data for '
                                    'a regression problem was provided to the '
-                                   'TPOTClassifier object. Please make sure you '
-                                   'passed the data to TPOT correctly.')
+                                   'TPOTClassifier object, or an error in a '
+                                   'custom scoring function. Please make sure '
+                                   'you passed the data to TPOT correctly.')
             else:
                 pareto_front_wvalues = [pipeline_scores.wvalues[1] for pipeline_scores in self._pareto_front.keys]
                 if not self._last_optimized_pareto_front:
