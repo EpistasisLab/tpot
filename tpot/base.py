@@ -790,6 +790,20 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
             if not self._optimized_pipeline:
+                # pick one individual from evaluated pipeline for friendly reminder
+                eval_ind_list = list(self.evaluated_individuals_.keys())
+                for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                    if np.isinf(pipeline_scores.wvalues[1]):
+                        sklearn_pipeline = self._toolbox.compile(expr=pipeline)
+                        from sklearn.model_selection import cross_val_score
+                        cv_scores = cross_val_score(sklearn_pipeline,
+                                                    self.pretest_X,
+                                                    self.pretest_y,
+                                                    cv=self.cv,
+                                                    scoring=self.scoring_function,
+                                                    verbose=0,
+                                                    error_score="raise")
+                        break
                 raise RuntimeError('There was an error in the TPOT optimization '
                                    'process. This could be because the data was '
                                    'not formatted properly, or because data for '
