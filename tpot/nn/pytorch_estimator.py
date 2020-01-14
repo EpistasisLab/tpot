@@ -32,16 +32,17 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 import numpy as np
-
-from sklearn.base import ClassifierMixin
+from pandas import to_numeric
+from sklearn.base import ClassifierMixin, BaseEstimator
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import make_classification
+from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 
 import ipdb
 
 
-class PytorchEstimator(ClassifierMixin):
+class PytorchEstimator(ClassifierMixin, BaseEstimator):
     """Base class for Pytorch-based estimators (currently only classifiers) for
     use in TPOT.
 
@@ -99,9 +100,9 @@ class PytorchLRClassifier(PytorchClassifier):
     def __init__(
         self,
         penalty="l2",
-        num_epochs=5,
-        batch_size=8,
-        learning_rate=0.001,
+        num_epochs=10,
+        batch_size=2,
+        learning_rate=0.01,
         num_classes=2,
     ):
         super().__init__()
@@ -124,6 +125,23 @@ class PytorchLRClassifier(PytorchClassifier):
         """Based on code from
         https://www.kaggle.com/negation/pytorch-logistic-regression-tutorial
         """
+
+        X, y = check_X_y(X, y, accept_sparse=False)
+
+        if np.any(np.iscomplex(X)) or np.any(np.iscomplex(y)):
+            raise ValueError("Complex data not supported")
+
+        # if (not np.issubdtype(X.dtype, np.number)) or (not np.issubdtype(y.dtype, np.number)):
+        #     raise ValueError("Data must be numeric")
+        if np.issubdtype(X.dtype, np.object_) or np.issubdtype(y.dtype, np.object_):
+            try:
+                X = X.astype(float)
+                y = y.astype(int)
+            except TypeError:
+                raise TypeError("argument must be a string.* number")
+
+        if X.shape[0] != y.shape[0]:
+            raise ValueError("X and y are of incompatible lengths")
 
         self.input_size = X.shape[-1]
         num_classes = len(set(y))
@@ -169,6 +187,7 @@ class PytorchLRClassifier(PytorchClassifier):
                         )
                     )
 
+        self.is_fitted_ = True
         return self
 
 
@@ -177,6 +196,11 @@ class PytorchLRClassifier(PytorchClassifier):
         return out
 
     def predict(self, X):
+        X = check_array(X, accept_sparse=True)
+        check_is_fitted(self, 'is_fitted_')
+        # if np.issubdtype(X.dtype, np.object_):
+        #     X = X.astype(float)
+        
         X = torch.tensor(X, dtype=torch.float32)
         predictions = np.empty(len(X), dtype=int)
         for i, rows in enumerate(X):
@@ -189,6 +213,9 @@ class PytorchLRClassifier(PytorchClassifier):
 
     def transform(self, X):
         return self.predict(X)
+
+    def _more_tags(self):
+        return {'non_deterministic': True, 'binary_only': True}
 
 
 class PytorchMLP(PytorchEstimator):
