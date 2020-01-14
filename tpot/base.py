@@ -1158,7 +1158,7 @@ class TPOTBase(BaseEstimator):
 
         try:
             if target is not None:
-                X, y = check_X_y(features, target, accept_sparse=True, dtype=None)
+                X, y = check_X_y(features, target, accept_sparse=True, dtype=None, multi_output=len(target.shape) > 1 and target.shape[1] > 1)
                 if self._imputed:
                     return X, y
                 else:
