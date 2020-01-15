@@ -662,3 +662,33 @@ with joblib.parallel_backend("dask"):
 ```
 
 See [dask's distributed joblib integration](https://distributed.readthedocs.io/en/latest/joblib.html) for more.
+
+# Neural Networks in TPOT (`tpot.nn`)
+
+Support for neural network models and deep learning is an experimental feature newly added to TPOT. Available neural network architectures are provided by the `tpot.nn` module. Unlike regular `sklearn` estimators, these models need to be written by hand, and must also inherit the appropriate base classes provided by `sklearn` for all of their built-in modules. In other words, they need implement methods like `.fit()`, `fit_transform()`, `get_params()`, etc., as described in detail on [Developing scikit-learn estimators](https://scikit-learn.org/stable/developers/develop.html).
+
+## Telling TPOT to use `tpot.nn`
+
+Mainly due to the issues described below, TPOT won't use its neural network models unless you explicitly tell it to do so. This is done as follows:
+
+- Use `import tpot.nn` before instantiating any TPOT estimators.
+
+- Use a configuration dictionary that includes one or more `tpot.nn` estimators, either by writing one manually, including one from a file, or by importing the configuration in `tpot/config/classifier_nn.py`. A very simple example that will force TPOT to only use a PyTorch-based logistic regression classifier as its main estimator is as follows:
+
+```python
+tpot_config = {
+    'tpot.nn.PytorchLRClassifier': {
+        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.]
+    }
+}
+```
+
+Neural network models are notorious for being extremely sensitive to their initialization parameters, so you may need to heavily adjust `tpot.nn` configuration dictionaries in order to attain good performance on your dataset.
+
+## Important caveats
+
+- Neural network models (especially when they reach moderately large sizes) take a notoriously large amount of time and computing power to train. You should expect `tpot.nn` neural networks to train several orders of magnitude slower than their `sklearn` alternatives. This can be alleviated somewhat by training the models on computers with CUDA-enabled GPUs.
+
+- TPOT will occasionally learn pipelines that stack several `sklearn` estimators. Mathematically, these can be nearly identical to some deep learning models. For example, by stacking several `sklearn.linear_model.LogisticRegression`s, you end up with a very close approximation of a Multilayer Perceptron; one of the simplest and most well known deep learning architectures. TPOT's genetic programming algorithms generally optimize these 'networks' much faster than PyTorch, which typically uses a more brute-force convex optimization approach.
+
+- The problem of 'black box' model introspection is one of the most substantial criticisms and challenges of deep learning. This problem persists in `tpot.nn`, whereas TPOT's default estimators often are far easier to introspect.
