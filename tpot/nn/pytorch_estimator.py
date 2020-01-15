@@ -34,7 +34,7 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 import numpy as np
 from pandas import to_numeric
 from sklearn.base import ClassifierMixin, BaseEstimator
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import make_classification
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
@@ -98,13 +98,12 @@ class PytorchLRClassifier(PytorchClassifier):
             return self.X.shape[0]
 
     def __init__(
-        self,
-        penalty="l2",
-        num_epochs=10,
-        batch_size=2,
-        learning_rate=0.01,
-        num_classes=2,
-    ):
+            self,
+            penalty="l2",
+            num_epochs=10,
+            batch_size=2,
+            learning_rate=0.01,
+            num_classes=2):
         super().__init__()
         self.penalty = penalty
         self.num_epochs = num_epochs
@@ -118,7 +117,7 @@ class PytorchLRClassifier(PytorchClassifier):
             "num_epochs": self.num_epochs,
             "batch_size": self.batch_size,
             "learning_rate": self.learning_rate,
-            "num_classes": self.num_classes,
+            "num_classes": self.num_classes
         }
 
     def fit(self, X, y):
@@ -127,6 +126,10 @@ class PytorchLRClassifier(PytorchClassifier):
         """
 
         X, y = check_X_y(X, y, accept_sparse=False)
+
+        # Make sure all labels are between 0 and (n_classes - 1)
+        self.label_encoder = LabelEncoder()
+        y = self.label_encoder.fit_transform(y)
 
         if np.any(np.iscomplex(X)) or np.any(np.iscomplex(y)):
             raise ValueError("Complex data not supported")
@@ -159,16 +162,12 @@ class PytorchLRClassifier(PytorchClassifier):
         criterion = nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate)
 
-        #ipdb.set_trace()
-
         for epoch in range(self.num_epochs):
-            #print("Epoch: [%d/%d]" % (epoch+1, self.num_epochs))
             for i, (rows, labels) in enumerate(train_loader):
                 rows = Variable(rows)
                 labels = Variable(labels)
 
                 optimizer.zero_grad()
-                # ipdb.set_trace()
                 outputs = self.model(rows)
 
                 loss = criterion(outputs, labels)
@@ -190,7 +189,6 @@ class PytorchLRClassifier(PytorchClassifier):
         self.is_fitted_ = True
         return self
 
-
     def forward(self, x):
         out = self.linear(x)
         return out
@@ -209,6 +207,10 @@ class PytorchLRClassifier(PytorchClassifier):
             #ipdb.set_trace()
             _, predicted = torch.max(outputs.data, 1)
             predictions[i] = int(predicted)
+
+        # Convert class predictions back to their original integer labels
+        predictions = self.label_encoder.inverse_transform(predictions)
+        
         return predictions
 
     def transform(self, X):
