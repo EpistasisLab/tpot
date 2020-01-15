@@ -100,9 +100,9 @@ class PytorchLRClassifier(PytorchClassifier):
     def __init__(
             self,
             penalty="l2",
-            num_epochs=10,
-            batch_size=2,
-            learning_rate=0.01,
+            num_epochs=5,
+            batch_size=8,
+            learning_rate=0.001,
             num_classes=2):
         super().__init__()
         self.penalty = penalty
