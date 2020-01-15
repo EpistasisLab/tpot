@@ -23,40 +23,21 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from abc import abstractmethod
+from .pytorch_estimator import PytorchEstimator, PytorchClassifier, PytorchRegressor
 
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-
-
-class PytorchEstimator(BaseEstimator):
-    """Base class for Pytorch-based estimators (currently only classifiers) for
-    use in TPOT.
-
-    In the future, these will be merged into TPOT's main code base.
+class PytorchMLPClassifier(PytorchEstimator):
+    """Multilayer Perceptron, implemented in PyTorch, for use with TPOT.
     """
-    @abstractmethod
+    def __init__(self, num_epochs=5):
+        super().__init__()
+        self.num_epochs = num_epochs
+
     def fit(self, X, y):
         pass
 
-    @abstractmethod
     def transform(self, X):
         pass
-
-    def predict(self, X):
-        return self.transform(X)
 
     def fit_transform(self, X, y):
         self.fit(X, y)
         return self.transform(X)
-
-    def set_params(self, **parameters):
-        for parameter, value in parameters.items():
-            setattr(self, parameter, value)
-        return self
-
-
-class PytorchClassifier(PytorchEstimator, ClassifierMixin):
-    pass    
-
-class PytorchRegressor(PytorchEstimator, RegressorMixin):
-    pass

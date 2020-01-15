@@ -1,1 +1,2 @@
-from .pytorch_estimator import PytorchEstimator, PytorchLRClassifier
+from .pytorch_lr import PytorchLRClassifier
+from .pytorch_mlp import PytorchMLPClassifier

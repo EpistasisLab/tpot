@@ -25,12 +25,14 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.config.classifier_nn import classifier_config_nn
+import tpot.nn
 
 import numpy as np
 import scipy as sp
 import nose
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
+from sklearn.utils.estimator_checks import check_estimator
 from nose.tools import nottest
 
 train_test_split = nottest(train_test_split)
@@ -42,3 +44,4 @@ cancer_data = load_breast_cancer()
 def test_pytorch_lr_is_valid_estimator():
     """Ensure that PytorchLRClassifier passes scikit-learn's estimator validity
     checks."""
+    check_estimator(tpot.nn.PytorchLRClassifier)
