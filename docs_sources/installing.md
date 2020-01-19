@@ -22,7 +22,7 @@ Most of the necessary Python packages can be installed via the [Anaconda Python 
 
 You can install TPOP using `pip` or `conda-forge`.
 
-## Pip
+## pip
 
 NumPy, SciPy, scikit-learn, pandas and joblib can be installed in Anaconda via the command:
 
