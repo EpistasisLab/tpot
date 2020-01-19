@@ -20,6 +20,10 @@ TPOT is built on top of several existing Python libraries, including:
 
 Most of the necessary Python packages can be installed via the [Anaconda Python distribution](https://www.continuum.io/downloads), which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.
 
+You can install TPOP using `pip` or `conda-forge`.
+
+## Pip
+
 NumPy, SciPy, scikit-learn, pandas and joblib can be installed in Anaconda via the command:
 
 ```Shell
@@ -57,5 +61,21 @@ Finally to install TPOT itself, run the following command:
 ```Shell
 pip install tpot
 ```
+
+## conda-forge
+
+To install tpot and its core dependencies you can use:
+
+```Shell
+conda install -c conda-forge tpot
+```
+
+To install additional dependencies you can use:
+
+```Shell
+conda install -c conda-forge tpot xgboost dask dask-ml scikit-mdr skrebate
+```
+
+## Installation problems
 
 Please [file a new issue](https://github.com/EpistasisLab/tpot/issues/new) if you run into installation problems.
