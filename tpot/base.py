@@ -491,8 +491,7 @@ class TPOTBase(BaseEstimator):
             self._toolbox.register('expr_mut', self._gen_grow_safe, min_=self._min, max_=self._max)
         self._toolbox.register('mutate', self._random_mutation_operator)
 
-
-    def _fit_init(self):
+    def _fit_init(self, multi_output_target: bool = False):
         # initialization for fit function
         if not self.warm_start or not hasattr(self, '_pareto_front'):
             self._pop = []
@@ -500,6 +499,35 @@ class TPOTBase(BaseEstimator):
             self._last_optimized_pareto_front = None
             self._last_optimized_pareto_front_n_gens = 0
             self._setup_config(self.config_dict)
+
+            if multi_output_target:
+                single_output_classifiers = [
+                    'sklearn.naive_bayes.MultinomialNB',
+                    'sklearn.svm.LinearSVC',
+                    'xgboost.XGBClassifier'
+                ]
+                single_output_regressors = [
+                    'sklearn.ensemble.AdaBoostRegressor',
+                    'sklearn.linear_model.LassoLarsCV',
+                    'sklearn.linear_model.ElasticNetCV',
+                    'sklearn.svm.LinearSVR',
+                    'xgboost.XGBRegressor',
+                    'sklearn.linear_model.SGDRegressor'
+                ]
+                for model in list(self._config_dict.keys()):
+                    if model in single_output_classifiers:
+                        if 'sklearn.multioutput.MultiOutputClassifier' not in self._config_dict.keys():
+                            self._config_dict['sklearn.multioutput.MultiOutputClassifier'] = {"estimator": {}}
+                        self._config_dict['sklearn.multioutput.MultiOutputClassifier']['estimator'][model] = self._config_dict[model]
+                        self._config_dict.pop(model, None)
+                    elif model in single_output_regressors:
+                        if 'sklearn.multioutput.MultiOutputRegressor' not in self._config_dict.keys():
+                            self._config_dict['sklearn.multioutput.MultiOutputRegressor'] = {"estimator": {}}
+                        if model == 'sklearn.linear_model.ElasticNetCV':
+                            self._config_dict['sklearn.linear_model.MultiTaskElasticNetCV'] = self._config_dict[model]
+                        else:
+                            self._config_dict['sklearn.multioutput.MultiOutputRegressor']['estimator'][model] = self._config_dict[model]
+                        self._config_dict.pop(model, None)
 
             self._setup_template(self.template)
 
@@ -622,7 +650,7 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
 
         """
-        self._fit_init()
+        self._fit_init(multi_output_target=len(target.shape) > 1 and target.shape[1] > 1)
         features, target = self._check_dataset(features, target, sample_weight)
 
 
