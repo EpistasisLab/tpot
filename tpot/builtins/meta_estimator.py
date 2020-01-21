@@ -350,9 +350,9 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
             A_train = X[self.A].values
 
 
-        if C_train is None and A_train is not None:
+        if self.C is None and self.A is not None:
             B_train = A_train
-        elif A_train is None and C_train is not None:
+        elif self.A is None and self.C is not None:
             B_train = C_train
         else:
             B_train = np.hstack((A_train, C_train))
@@ -405,9 +405,9 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
             A_test = X[self.A].values
         if self.A is None and self.C is None:
             raise(ValueError, "At least one of A_train and C_train must be specified")
-        elif C_test is None and A_test is not None:
+        elif self.C is None and self.A is not None:
             B_test = A_test
-        elif A_test is None and C_test is not None:
+        elif self.A is None and self.C is not None:
             B_test = C_test
         else:
             B_test = np.hstack((A_test, C_test))
