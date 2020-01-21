@@ -415,5 +415,5 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
         pi_test = np.ravel(self.B_est.predict(B_test).reshape((-1, 1)))
         y_test_adj_pred = self.estimator.predict(X_test_adj)
         y_test_adj_pred_pi = y_test_adj_pred + pi_test
-        
+        y_pred = y_test_adj_pred_pi
         return y_pred
