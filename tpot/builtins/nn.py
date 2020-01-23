@@ -239,9 +239,9 @@ class _MLP(nn.Module):
 
         self.hidden_size = round((input_size+num_classes)/2)
 
-        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc1 = nn.Linear(input_size, self.hidden_size)
         self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, num_classes)
+        self.fc2 = nn.Linear(self.hidden_size, num_classes)
 
     def forward(self, x):
         hidden = self.fc1(x)
