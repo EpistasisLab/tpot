@@ -26,7 +26,17 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 
 classifier_config_nn = {
-    'tpot.nn.PytorchLRClassifier': {
-        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.]
+    'tpot.builtins.PytorchLRClassifier': {
+        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+        'batch_size': [4, 8, 16, 32],
+        'num_epochs': [5, 10, 15],
+        'weight_decay': [0, 1e-4, 1e-3, 1e-2]
+    },
+
+    'tpot.builtins.PytorchMLPClassifier': {
+        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+        'batch_size': [4, 8, 16, 32],
+        'num_epochs': [5, 10, 15],
+        'weight_decay': [0, 1e-4, 1e-3, 1e-2]
     }
 }

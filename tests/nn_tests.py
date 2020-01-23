@@ -42,6 +42,6 @@ train_test_split = nottest(train_test_split)
 cancer_data = load_breast_cancer()
 
 def test_pytorch_lr_is_valid_estimator():
-    """Ensure that PytorchLRClassifier passes scikit-learn's estimator validity
+    """Assert that PytorchLRClassifier passes scikit-learn's estimator validity
     checks."""
     check_estimator(tpot.nn.PytorchLRClassifier)
