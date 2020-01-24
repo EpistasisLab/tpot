@@ -203,10 +203,11 @@ class MetaEstimator(BaseEstimator, ClassifierMixin):
             pi_test = np.ravel(self.B_est.predict(B_test).reshape((-1, 1)))
         y_test_adj_pred = self.estimator.predict(X_test_adj)
         y_test_adj_pred_pi = y_test_adj_pred + pi_test
+
         # make a array of 0 for redefined prediction of y
         y_pred = np.zeros(y_test_adj_pred_pi.shape, dtype=int)
         # assume that y_adj_pred_pi > 0.5 then pred_y is 1 unless it is 0
-        y_pred[np.where(y_test_adj_pred_pi > 0.5)] = 1
+        y_pred[np.where(y_test_adj_pred_pi >= 0.5)] = 1
         return y_pred
 '''
 def score(self, X, y, sample_weight=None):
@@ -411,9 +412,196 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
             B_test = C_test
         else:
             B_test = np.hstack((A_test, C_test))
-
+        # check line 400 for multi-class classification)
         pi_test = np.ravel(self.B_est.predict(B_test).reshape((-1, 1)))
         y_test_adj_pred = self.estimator.predict(X_test_adj)
         y_test_adj_pred_pi = y_test_adj_pred + pi_test
         y_pred = y_test_adj_pred_pi
+        return y_pred
+
+
+class MetaClassifier(BaseEstimator, ClassifierMixin):
+    """Meta-transformer for adding predictions and/or class probabilities as synthetic feature(s).
+
+    Parameters
+    ----------
+    estimator : object
+        The base estimator from which the transformer is built.
+    """
+
+    def __init__(self, estimator, A=None, C=None):
+        """Create a StackingEstimator object.
+
+        Parameters
+        ----------
+        estimator: object with fit, predict, and predict_proba methods.
+            The estimator to generate synthetic features from.
+        A: a list of columns for A, e.g ["N1", "N2"]
+            columns of A correspond to a non-confounding covariate.
+        C:  a list of columns for C, e.g ["N4", "N5"]
+            columns of C correspond correspond to a confounding covariate.
+        """
+        self.estimator = estimator
+        self.A = A
+        self.C = C
+
+    def fit(self, X, y=None, **fit_params):
+        """Fit the StackingEstimator meta-transformer.
+
+        Parameters
+        ----------
+        X: pd.DataFrame of shape (n_samples, n_features)
+            The training input samples.
+        y: array-like, shape (n_samples,)
+            The target values (integers that correspond to classes in classification, real numbers in regression).
+        fit_params:
+            Other estimator-specific parameters.
+
+        Returns
+        -------
+        self: object
+            Returns a copy of the estimator
+        """
+        if self.A is None and self.C is None:
+            raise(ValueError, "At least one of A_train and C_train must be specified")
+        X_train = pd.DataFrame.copy(X)
+        if self.A is not None:
+            X_train.drop(self.A, axis=1, inplace=True)
+        if self.C is not None:
+            X_train.drop(self.C, axis=1, inplace=True)
+        if self.C is None:
+            X_train_adj = X_train
+            C_train = None
+        else:
+            X_train_adj = np.zeros(X_train.shape)
+            self.col_ests = [] # store estimator for each columns
+            self.values_list = [] # store values for each columns
+            C_train = X[self.C].values
+
+            for col in range(X_train.shape[1]):
+                X_train_col = X_train.iloc[:, col].values # np.ndarray
+
+                # test information cannot be used in fit() function
+                # may be values should be provided as a parameter in __init__ above
+                # here values was stored into self.values_list and can be used in predict
+                # function below for test dataset
+                index_123 = np.hstack((
+                                        np.where(X_train_col == 0),
+                                        np.where(X_train_col == 1),
+                                        np.where(X_train_col == 2),
+                                        ))
+                if index_123.size < X_train_col.size:
+                    values = 'dosage'
+                else:
+                    values = 'ternary'
+                self.values_list.append(values)
+                if values == 'dosage':
+                    regr = LinearRegression()
+                    regr.fit(C_train, X_train_col)
+                    est_pred = regr.predict(C_train)
+                    X_train_adj[:, col] = X_train_col - est_pred
+                    self.col_ests.append(regr)
+                else:
+                    clf = LogisticRegression(penalty='none',
+                                            solver='lbfgs',
+                                            multi_class='auto')
+                    clf.fit(C_train, X_train_col.astype(np.int32))
+                    clf_pred_proba = clf.predict_proba(C_train)
+
+                    X_train_col_adj = X_train_col
+                    # clf.classes_ should return an array of genotypes in this column
+                    # like array([0, 1, 2]) or array([0, 1])
+                    for gt_idx, gt in enumerate(clf.classes_):
+                        gt = int(gt)
+                        X_train_col_adj = X_train_col_adj - gt*clf_pred_proba[:, gt_idx]
+                    X_train_adj[:, col] = X_train_col_adj
+                    self.col_ests.append(clf)
+        if self.A is not None:
+            A_train = X[self.A].values
+
+
+        if self.C is None and self.A is not None:
+            B_train = A_train
+        elif self.A is None and self.C is not None:
+            B_train = C_train
+        else:
+            B_train = np.hstack((A_train, C_train))
+
+        # EM
+        self.B_est = LogisticRegression(penalty='none',
+                                        solver='lbfgs',
+                                        multi_class='auto')
+        self.B_est.fit(B_train, y)
+        B_est_pred_proba = self.B_est.predict_proba(B_train)
+        pi_train = np.zeros(y.shape)
+        for gt_idx, gt in enumerate(self.B_est.classes_):
+            gt = int(gt)
+            pi_train = pi_train + gt*B_est_pred_proba[:, gt_idx]
+        y_train_adj = y - pi_train
+
+        self.estimator.fit(X_train_adj, y_train_adj, **fit_params)
+        return self
+
+    def predict(self, X):
+        """Transform data by adding two synthetic feature(s).
+
+        Parameters
+        ----------
+        X: pd.DataFrame, {n_samples, n_components}
+            New data, where n_samples is the number of samples and n_components is the number of components.
+
+        Returns
+        -------
+        y_pred: array-like, shape (n_samples, )
+        """
+        X_test = pd.DataFrame.copy(X)
+        if self.A is not None:
+            X_test.drop(self.A, axis=1, inplace=True)
+        if self.C is not None:
+            X_test.drop(self.C, axis=1, inplace=True)
+        if self.C is None:
+            X_test_adj = X_test
+            C_test = None
+        else:
+            X_test_adj = np.zeros(X_test.shape)
+            C_test = X[self.C].values
+            for values, est, col in zip(self.values_list, self.col_ests, range(X_test.shape[1])):
+                X_test_col = X_test.iloc[:, col].values
+                if values == 'dosage':
+                    est_pred = est.predict(C_test)
+                    X_test_adj[:, col] = X_test_col - est_pred
+                else:
+                    clf_pred_proba = est.predict_proba(C_test)
+                    X_test_col_adj = X_test_col
+                    for gt_idx, gt in enumerate(est.classes_):
+                        gt = int(gt)
+                        X_test_col_adj = X_test_col_adj - gt*clf_pred_proba[:, gt_idx]
+                    X_test_adj[:, col] = X_test_col_adj
+
+        if self.A is not None:
+            A_test = X[self.A].values
+        if self.A is None and self.C is None:
+            raise(ValueError, "At least one of A_train and C_train must be specified")
+        elif self.C is None and self.A is not None:
+            B_test = A_test
+        elif self.A is None and self.C is not None:
+            B_test = C_test
+        else:
+            B_test = np.hstack((A_test, C_test))
+
+        pi_test = np.ravel(self.B_est.predict_proba(B_test)[:, 1])
+
+        y_test_adj_pred = self.estimator.predict(X_test_adj)
+        B_est_pred_proba = self.B_est.predict_proba(B_test)
+        pi_test = np.zeros(y_test_adj_pred.shape)
+        for gt_idx, gt in enumerate(self.B_est.classes_):
+            gt = int(gt)
+            pi_test = pi_test + gt*B_est_pred_proba[:, gt_idx]
+        y_test_adj_pred_pi = y_test_adj_pred + pi_test
+
+        # define min. max value in B_est.classes_
+        min_c, max_c = min(self.B_est.classes_), max(self.B_est.classes_)
+        y_pred = np.rint(y_test_adj_pred_pi)
+        y_pred[np.where(y_test_adj_pred_pi<min_c)] = min_c
+        y_pred[np.where(y_test_adj_pred_pi>max_c)] = max_c
         return y_pred
