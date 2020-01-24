@@ -27,6 +27,8 @@ from abc import abstractmethod
 
 import numpy as np
 
+import ipdb
+
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, assert_all_finite, check_array, check_is_fitted
 
@@ -138,7 +140,7 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
         self.is_fitted_ = True
         return self
 
-    def _validate_inputs(self, X, y):
+    def validate_inputs(self, X, y):
         X, y = check_X_y(X, y, accept_sparse=False)
 
         assert_all_finite(X, y)
@@ -183,6 +185,22 @@ class _LR(nn.Module):
         out = self.linear(x)
         return out
 
+class _MLP(nn.Module):
+    def __init__(self, input_size, num_classes):
+        super(_MLP, self).__init__()
+
+        self.hidden_size = round((input_size+num_classes)/2)
+
+        self.fc1 = nn.Linear(input_size, self.hidden_size)
+        self.relu = nn.Tanh()
+        self.fc2 = nn.Linear(self.hidden_size, num_classes)
+
+    def forward(self, x):
+        hidden = self.fc1(x)
+        r1 = self.relu(hidden)
+        out = self.fc2(r1)
+        return out
+
 
 class PytorchLRClassifier(PytorchClassifier):
     """Logistic Regression classifier, implemented in PyTorch, for use with
@@ -209,7 +227,7 @@ class PytorchLRClassifier(PytorchClassifier):
     def _init_model(self, X, y):
         device = _get_cuda_device_if_available()
 
-        X, y = self._validate_inputs(X, y)
+        X, y = self.validate_inputs(X, y)
 
         self.input_size = X.shape[-1]
         self.num_classes = len(set(y))
@@ -232,33 +250,16 @@ class PytorchLRClassifier(PytorchClassifier):
     def _more_tags(self):
         return {'non_deterministic': True, 'binary_only': True}
 
-
-class _MLP(nn.Module):
-    def __init__(self, input_size, num_classes):
-        super(_MLP, self).__init__()
-
-        self.hidden_size = round((input_size+num_classes)/2)
-
-        self.fc1 = nn.Linear(input_size, self.hidden_size)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(self.hidden_size, num_classes)
-
-    def forward(self, x):
-        hidden = self.fc1(x)
-        r1 = self.relu(hidden)
-        out = self.fc2(r1)
-        return out
-
-class PytorchMLPClassifier(PytorchEstimator):
+class PytorchMLPClassifier(PytorchClassifier):
     """Multilayer Perceptron, implemented in PyTorch, for use with TPOT.
     """
 
     def __init__(
         self,
         num_epochs=10,
-        batch_size=16,
-        learning_rate=0.02,
-        weight_decay=1e-4,
+        batch_size=8,
+        learning_rate=0.01,
+        weight_decay=0,
         verbose=False
     ):
         self.num_epochs = num_epochs
@@ -270,7 +271,7 @@ class PytorchMLPClassifier(PytorchEstimator):
     def _init_model(self, X, y):
         device = _get_cuda_device_if_available()
 
-        X, y = self._validate_inputs(X, y)
+        X, y = self.validate_inputs(X, y)
 
         self.input_size = X.shape[-1]
         self.num_classes = len(set(y))
@@ -281,7 +282,7 @@ class PytorchMLPClassifier(PytorchEstimator):
         train_dset = TensorDataset(X, y)
 
         # Set parameters of the network
-        self.network = _LR(self.input_size, self.num_classes).to(device)
+        self.network = _MLP(self.input_size, self.num_classes).to(device)
         self.loss_function = nn.CrossEntropyLoss()
         self.optimizer = Adam(self.network.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
         self.data_loader = DataLoader(
@@ -295,15 +296,19 @@ class PytorchMLPClassifier(PytorchEstimator):
 
 
 if __name__=="__main__":
-    print("Running templated example of PytorchLRClassifier...")
-    
     from pmlb import fetch_data
     from sklearn.model_selection import train_test_split
-
     from tpot import TPOTClassifier
 
     tpot_nn_test_config = {
         'tpot.builtins.PytorchLRClassifier': {
+            'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+            'batch_size': [4, 8, 16, 32],
+            'num_epochs': [5, 10, 15],
+            'weight_decay': [0, 1e-4, 1e-3, 1e-2]
+        },
+
+        'tpot.builtins.PytorchMLPClassifier': {
             'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
             'batch_size': [4, 8, 16, 32],
             'num_epochs': [5, 10, 15],
@@ -315,9 +320,34 @@ if __name__=="__main__":
     X, y = fetch_data('clean2', return_X_y=True)
     X = X[:,2:]
 
+    if True:
+        # Rescale data [-1., 1.]
+        X /= np.abs(X).max(axis=0)
+
     X_train, X_test, y_train, y_test = train_test_split(X, y)
-    tpot = TPOTClassifier(generations=5, population_size=50, template='PytorchLRClassifier', config_dict=tpot_nn_test_config, verbosity=2)
+        
 
-    tpot.fit(X_train, y_train)
+    if False:
+        print("Running templated example of PytorchLRClassifier...")
+        
+        tpot = TPOTClassifier(generations=5, population_size=50, template='PytorchLRClassifier', config_dict=tpot_nn_test_config, verbosity=2)
+        tpot.fit(X_train, y_train)
 
-    print("Accuracy score: {0:.3f}".format(tpot.score(X_test, y_test)))
+        print("Accuracy score: {0:.3f}".format(tpot.score(X_test, y_test)))
+        tpot.export('tpot_pytorch_lr_pipeline.py')
+
+    if False:
+        print("Running templated example of PytorchMLPClassifier...")
+
+        tpot = TPOTClassifier(generations=5, population_size=50, template='PytorchMLPClassifier', config_dict=tpot_nn_test_config, verbosity=2)
+        tpot.fit(X_train, y_train)
+
+        print("Accuracy score: {0:.3f}".format(tpot.score(X_test, y_test)))
+        tpot.export('tpot_pytorch_mlp_pipeline.py')
+
+    if True:
+        print("Running non TPOT example of PytorchMLPClassifier...")
+        clf = PytorchMLPClassifier(verbose=True, num_epochs=10)
+        #ipdb.set_trace()
+        clf.fit(X_train, y_train)
+        print(clf.score(X_test, y_test))
