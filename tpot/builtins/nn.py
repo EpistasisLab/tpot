@@ -336,7 +336,7 @@ if __name__=="__main__":
         print("Accuracy score: {0:.3f}".format(tpot.score(X_test, y_test)))
         tpot.export('tpot_pytorch_lr_pipeline.py')
 
-    if False:
+    if True:
         print("Running templated example of PytorchMLPClassifier...")
 
         tpot = TPOTClassifier(generations=5, population_size=50, template='PytorchMLPClassifier', config_dict=tpot_nn_test_config, verbosity=2)
@@ -345,7 +345,7 @@ if __name__=="__main__":
         print("Accuracy score: {0:.3f}".format(tpot.score(X_test, y_test)))
         tpot.export('tpot_pytorch_mlp_pipeline.py')
 
-    if True:
+    if False:
         print("Running non TPOT example of PytorchMLPClassifier...")
         clf = PytorchMLPClassifier(verbose=True, num_epochs=10)
         #ipdb.set_trace()
