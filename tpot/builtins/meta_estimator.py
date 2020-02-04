@@ -29,6 +29,27 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 from sklearn.utils import check_array
 from sklearn.linear_model import LinearRegression, LogisticRegression
 
+def check_if_impute(snp_array):
+    """Check if all genotypes in a SNP contain imputed genotypes or not
+
+    Parameters
+    ----------
+    snp_array : np.ndarray
+    1-D array for genotypes
+
+    Return
+    ----------
+    if_impute: boolean
+        True: the SNP has imputed genotypes
+    """
+    if_impute = False
+    for a in snp_array:
+        if int(a) != a: # a float was convert to int with different round value
+            if_impute = True
+            break
+    return
+
+
 
 class MetaEstimator(BaseEstimator, ClassifierMixin):
     """Meta-transformer for adding predictions and/or class probabilities as synthetic feature(s).
@@ -314,29 +335,30 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
             C_train = X[self.C].values
 
             for col in range(X_train.shape[1]):
-                X_train_col = X_train.iloc[:, col].values.reshape((-1, 1)) # np.ndarray
+                X_train_col = X_train.iloc[:, col].values # np.ndarray
 
                 # test information cannot be used in fit() function
                 # may be values should be provided as a parameter in __init__ above
                 # here values was stored into self.values_list and can be used in predict
                 # function below for test dataset
-                dosage = np.hstack((X_train_col!=0, X_train_col!=1, X_train_col!=2))
-                if X_train_col[np.all(dosage, axis=1).reshape((-1, 1))].shape[0]>0:
+                # if there are float values in the X_train_col
+                # then it is dosage else ternary
+                if check_if_impute(X_train_col):
                     values = 'dosage'
                 else:
                     values = 'ternary'
                 self.values_list.append(values)
                 if values == 'dosage':
                     regr = LinearRegression()
-                    regr.fit(C_train, X_train_col.reshape((-1,)))
-                    est_pred = regr.predict(C_train).reshape((-1, 1))
-                    X_train_adj[:, col:(col+1)] = X_train_col - est_pred
+                    regr.fit(C_train, X_train_col)
+                    est_pred = regr.predict(C_train)
+                    X_train_adj[:, col] = X_train_col - est_pred
                     self.col_ests.append(regr)
                 else:
                     clf = LogisticRegression(penalty='none',
                                             solver='lbfgs',
                                             multi_class='auto')
-                    clf.fit(C_train, X_train_col.reshape((-1,)).astype(np.int32))
+                    clf.fit(C_train, X_train_col.astype(np.int32))
                     clf_pred_proba = clf.predict_proba(C_train)
 
                     X_train_col_adj = X_train_col
@@ -344,8 +366,8 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
                     # like array([0, 1, 2]) or array([0, 1])
                     for gt_idx, gt in enumerate(clf.classes_):
                         gt = int(gt)
-                        X_train_col_adj = X_train_col_adj - gt*clf_pred_proba[:, gt_idx:gt_idx+1]
-                    X_train_adj[:, col:(col+1)] = X_train_col_adj
+                        X_train_col_adj = X_train_col_adj - gt*clf_pred_proba[:, gt_idx]
+                    X_train_adj[:, col] = X_train_col_adj
                     self.col_ests.append(clf)
         if self.A is not None:
             A_train = X[self.A].values
@@ -390,17 +412,17 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
             X_test_adj = np.zeros(X_test.shape)
             C_test = X[self.C].values
             for values, est, col in zip(self.values_list, self.col_ests, range(X_test.shape[1])):
-                X_test_col = X_test.iloc[:, col].values.reshape((-1,1))
+                X_test_col = X_test.iloc[:, col].values
                 if values == 'dosage':
-                    est_pred = est.predict(C_test).reshape((-1, 1))
-                    X_test_adj[:, col:(col+1)] = X_test_col - est_pred
+                    est_pred = est.predict(C_test)
+                    X_test_adj[:, col] = X_test_col - est_pred
                 else:
                     clf_pred_proba = est.predict_proba(C_test)
                     X_test_col_adj = X_test_col
                     for gt_idx, gt in enumerate(est.classes_):
                         gt = int(gt)
-                        X_test_col_adj = X_test_col_adj - gt*clf_pred_proba[:, gt_idx:gt_idx+1]
-                    X_test_adj[:, col:(col+1)] = X_test_col_adj
+                        X_test_col_adj = X_test_col_adj - gt*clf_pred_proba[:, gt_idx]
+                    X_test_adj[:, col] = X_test_col_adj
 
         if self.A is not None:
             A_test = X[self.A].values
@@ -485,12 +507,9 @@ class MetaClassifier(BaseEstimator, ClassifierMixin):
                 # may be values should be provided as a parameter in __init__ above
                 # here values was stored into self.values_list and can be used in predict
                 # function below for test dataset
-                index_123 = np.hstack((
-                                        np.where(X_train_col == 0),
-                                        np.where(X_train_col == 1),
-                                        np.where(X_train_col == 2),
-                                        ))
-                if index_123.size < X_train_col.size:
+                # if there are float values in the X_train_col
+                # then it is dosage else ternary
+                if check_if_impute(X_train_col):
                     values = 'dosage'
                 else:
                     values = 'ternary'
