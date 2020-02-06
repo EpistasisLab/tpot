@@ -29,23 +29,23 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 from sklearn.utils import check_array
 from sklearn.linear_model import LinearRegression, LogisticRegression
 
-def check_if_impute(snp_array):
-    """Check if all genotypes in a SNP contain imputed genotypes or not
+def check_if_any_float(snp_array):
+    """Check if any float in a feature.
 
     Parameters
     ----------
     snp_array : np.ndarray
-    1-D array for genotypes
+    1-D array for values in a feature
 
     Return
     ----------
-    if_impute: boolean
-        True: the SNP has imputed genotypes
+    if_any_float: boolean
+        True: This feature has at least one float number
     """
-    if_impute = False
+    if_any_float = False
     for a in snp_array:
         if int(a) != a: # a float was convert to int with different round value
-            if_impute = True
+            if_any_float = True
             break
     return
 
@@ -343,7 +343,7 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
                 # function below for test dataset
                 # if there are float values in the X_train_col
                 # then it is dosage else ternary
-                if check_if_impute(X_train_col):
+                if check_if_any_float(X_train_col):
                     values = 'dosage'
                 else:
                     values = 'ternary'
@@ -509,7 +509,7 @@ class MetaClassifier(BaseEstimator, ClassifierMixin):
                 # function below for test dataset
                 # if there are float values in the X_train_col
                 # then it is dosage else ternary
-                if check_if_impute(X_train_col):
+                if check_if_any_float(X_train_col):
                     values = 'dosage'
                 else:
                     values = 'ternary'
