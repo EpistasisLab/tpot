@@ -209,7 +209,7 @@ class TPOTBase(BaseEstimator):
             None:
                 TPOT does not use memory caching.
         use_dask: boolean, default False
-            Whether to use Dask-ML's pipeline optimiziations. This avoid re-fitting
+            Whether to use Dask-ML's pipeline optimizations. This avoid re-fitting
             the same estimator on the same split of data multiple times. It
             will also provide more detailed diagnostics when using Dask's
             distributed scheduler.
