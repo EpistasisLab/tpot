@@ -52,6 +52,7 @@ from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection._split import check_cv
 
 from joblib import Parallel, delayed, Memory
 
@@ -80,6 +81,8 @@ with warnings.catch_warnings():
 
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
+
+    classification = None  # set by child classes
 
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
@@ -1267,12 +1270,14 @@ class TPOTBase(BaseEstimator):
 
         operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals)
 
+        cv = check_cv(self.cv, target, classifier=self.classification)
+
         # Make the partial function that will be called below
         partial_wrapped_cross_val_score = partial(
             _wrapped_cross_val_score,
             features=features,
             target=target,
-            cv=self.cv,
+            cv=cv,
             scoring_function=self.scoring_function,
             sample_weight=sample_weight,
             groups=groups,
