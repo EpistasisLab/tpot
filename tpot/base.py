@@ -1077,7 +1077,7 @@ class TPOTBase(BaseEstimator):
                                     self.random_state,
                                     data_file_path=data_file_path)
 
-        if output_file_name is not '':
+        if output_file_name != '':
             with open(output_file_name, 'w') as output_file:
                 output_file.write(to_write)
         else:
