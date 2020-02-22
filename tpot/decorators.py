@@ -53,7 +53,7 @@ def _pre_test(func):
         A wrapper function around the func parameter
     """
     @threading_timeoutable(default="timeout")
-    def safe_fit(func, *args):
+    def time_limited_call(func, *args):
         func(*args)
 
     @wraps(func)
@@ -94,7 +94,7 @@ def _pre_test(func):
                     sklearn_pipeline = eval(pipeline_code, self.operators_context)
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
-                        safe_fit(
+                        time_limited_call(
                             sklearn_pipeline.fit,
                             self.pretest_X,
                             self.pretest_y,
