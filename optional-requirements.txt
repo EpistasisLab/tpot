@@ -1,3 +1,4 @@
 xgboost==0.90
 scikit-mdr==0.4.4
 skrebate==0.3.4
+tensorflow>=2.1.0
