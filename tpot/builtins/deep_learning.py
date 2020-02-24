@@ -45,10 +45,12 @@ except ImportError:
     HAS_TENSORFLOW = False
 
 
+DEFAULT_HIDDEN_LAYERS = (100,)  # same as sklearn.neural_net
+
 def _build_model(
         input_size,
         output_size, # num classes for classification or 1 for regression
-        hidden_layer_sizes=(100, ),
+        hidden_layer_sizes=DEFAULT_HIDDEN_LAYERS,
         optimizer='adam',
         loss='categorical_crossentropy',
         kernel_initializer='normal',
@@ -75,7 +77,7 @@ def _build_model(
         input_dim=input_size
     ))
     # add hidden layers
-    for layer_size in hidden_layer_sizes[1:-1]:
+    for layer_size in hidden_layer_sizes[1:]:
         model.add(Dense(
             layer_size,
             activation=hidden_layer_activation,
@@ -110,7 +112,7 @@ class DeepLearningClassifier(KerasClassifier):
             input_size=None,
             output_size=None
         )
-        super().__init__(build_fn=None, **sk_params)
+        super().__init__(**sk_params)
     
     def fit(self, X, y=None, **fit_params):
         self.__call__ = partial(
@@ -118,9 +120,36 @@ class DeepLearningClassifier(KerasClassifier):
             input_size=X.shape[1],
             output_size=np.unique(y).size
         )
-        super().fit(X, y, **fit_params)
+        self.history = super().fit(X, y, **fit_params)
         return self
 
+class DeepLearningRegressor(KerasRegressor):
+    _build_model = partial(
+        _build_model,
+        output_layer_activation='linear',
+        optimizer='adam',
+        loss='mean_squared_error',
+        metrics=['mean_squared_error'],
+    )
+
+    def __init__(self, **sk_params):
+        # crete a prototype with empty input/output sizes
+        # this is needed for sk_params to be processed correctly
+        self.__call__ = partial(
+            self._build_model,
+            input_size=None,
+            output_size=None
+        )
+        super().__init__(**sk_params)
+    
+    def fit(self, X, y=None, **fit_params):
+        self.__call__ = partial(
+            self._build_model,
+            input_size=X.shape[1],
+            output_size=1
+        )
+        self.history = super().fit(X, y, **fit_params)
+        return self
 
 class DeepLearningTransformer(TransformerMixin, DeepLearningClassifier):
     """Meta-transformer for creating neural network embeddings as features.
@@ -138,8 +167,26 @@ class DeepLearningTransformer(TransformerMixin, DeepLearningClassifier):
         backend: (optional), the backend we use to query the neural network. 
             Currently only supports keras-like interface (incl. tensorflow)
         """
-        assert embedding_layer != -1 # what other checks can we do?
-        self.embedding_layer = embedding_layer
+        # validate embedding_layer
+        if 'hidden_layer_sizes' in sk_params:
+            test_list = sk_params['hidden_layer_sizes']
+        else:
+            test_list = DEFAULT_HIDDEN_LAYERS
+        assert embedding_layer not in (-1, len(test_list)-1),\
+            "Can not use output layer for embedding"
+        assert embedding_layer not in (0, -len(test_list)),\
+            "Can not use input layer for embedding"
+        try:
+            test_list[embedding_layer]
+        except IndexError:
+            raise ValueError(
+                f"`embedding_layer` ({embedding_layer}) is not a valid index"
+                f" of `hidden_layer_sizes` ({test_list})"
+            )
+        if embedding_layer < 0:
+            self.embedding_layer = embedding_layer - 1  # adjust for output layer
+        else:
+            self.embedding_layer = embedding_layer
         super().__init__(**sk_params)
 
     def fit(self, *args, **kwargs):

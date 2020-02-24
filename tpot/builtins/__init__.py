@@ -29,4 +29,4 @@ from .stacking_estimator import StackingEstimator
 from .one_hot_encoder import OneHotEncoder, auto_select_categorical_features, _transform_selected
 from .feature_transformers import CategoricalSelector, ContinuousSelector
 from .feature_set_selector import FeatureSetSelector
-from .deep_learning import DeepLearningTransformer
+from .deep_learning import DeepLearningTransformer, DeepLearningClassifier, DeepLearningRegressor
