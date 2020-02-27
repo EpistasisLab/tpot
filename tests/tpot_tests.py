@@ -58,7 +58,10 @@ from sklearn.model_selection import train_test_split, cross_val_score, GroupKFol
 from joblib import Memory
 from sklearn.metrics import make_scorer, roc_auc_score
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
-from sklearn.feature_selection.base import SelectorMixin
+try:
+    from sklearn.feature_selection._base import SelectorMixin
+except ImportError:
+    from sklearn.feature_selection.base import SelectorMixin
 from deap import creator, gp
 from deap.tools import ParetoFront
 from nose.tools import nottest, assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
@@ -965,7 +968,7 @@ def test_fit_4():
     assert tpot_obj.generations == 1000000
 
     # reset generations to 20 just in case that the failed test may take too much time
-    tpot_obj.generations == 20
+    tpot_obj.generations = 20
 
     tpot_obj.fit(training_features, training_target)
     assert tpot_obj._pop == []
@@ -988,7 +991,7 @@ def test_fit_5():
     assert tpot_obj.generations == 1000000
 
     # reset generations to 20 just in case that the failed test may take too much time
-    tpot_obj.generations == 20
+    tpot_obj.generations = 20
 
     tpot_obj.fit(training_features, training_target)
     assert tpot_obj._pop != []
@@ -1426,7 +1429,15 @@ def test_evaluate_individuals():
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
 
         try:
-            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                cv_scores = cross_val_score(sklearn_pipeline,
+                                            training_features,
+                                            training_target,
+                                            cv=5,
+                                            scoring='accuracy',
+                                            verbose=0,
+                                            error_score='raise')
             mean_cv_scores = np.mean(cv_scores)
         except Exception as e:
             mean_cv_scores = -float('inf')
@@ -1460,7 +1471,15 @@ def test_evaluate_individuals_2():
         sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
 
         try:
-            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                cv_scores = cross_val_score(sklearn_pipeline,
+                                            training_features,
+                                            training_target,
+                                            cv=5,
+                                            scoring='accuracy',
+                                            verbose=0,
+                                            error_score='raise')
             mean_cv_scores = np.mean(cv_scores)
         except Exception as e:
             mean_cv_scores = -float('inf')
