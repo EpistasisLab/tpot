@@ -134,6 +134,11 @@ classifier_config_nn = {
         'power_t': [0.5, 0.0, 1.0, 0.1, 100.0, 10.0, 50.0]
     },
 
+    'sklearn.neural_network.MLPClassifier': {
+        'alpha': [1e-4, 1e-3, 1e-2, 1e-1],
+        'learning_rate_init': [1e-3, 1e-2, 1e-1, 0.5, 1.]
+    },
+
     # Preprocesssors
     'sklearn.preprocessing.Binarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
