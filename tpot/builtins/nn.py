@@ -27,8 +27,6 @@ from abc import abstractmethod
 
 import numpy as np
 
-import ipdb
-
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, assert_all_finite, check_array, check_is_fitted
 
@@ -114,7 +112,6 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
         
         for epoch in range(self.num_epochs):
             for i, (samples, labels) in enumerate(self.data_loader):
-                #ipdb.set_trace()
                 samples = samples.to(self.device)
                 labels = labels.to(self.device)
 
@@ -348,6 +345,5 @@ if __name__=="__main__":
     if False:
         print("Running non TPOT example of PytorchMLPClassifier...")
         clf = PytorchMLPClassifier(verbose=True, num_epochs=10)
-        #ipdb.set_trace()
         clf.fit(X_train, y_train)
         print(clf.score(X_test, y_test))

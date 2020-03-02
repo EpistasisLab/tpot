@@ -38,6 +38,7 @@ from tpot.config.classifier_mdr import tpot_mdr_classifier_config_dict
 from tpot.config.regressor_mdr import tpot_mdr_regressor_config_dict
 from tpot.config.regressor_sparse import regressor_config_sparse
 from tpot.config.classifier_sparse import classifier_config_sparse
+from tpot.config.classifier_nn import classifier_config_nn
 
 import numpy as np
 import pandas as pd

@@ -37,11 +37,27 @@ from nose.tools import nottest
 
 train_test_split = nottest(train_test_split)
 
-# For testing, we just use sklearn's small - but widely used - breast cancer
-# dataset
-cancer_data = load_breast_cancer()
+np.random.seed(42)
+random.seed(42)
 
-def test_pytorch_lr_is_valid_estimator():
-    """Assert that PytorchLRClassifier passes scikit-learn's estimator validity
-    checks."""
-    check_estimator(tpot.nn.PytorchLRClassifier)
+
+# Set up testing data
+
+input_data = pd.read_csv(
+    'tests/tests.csv',
+    sep=',',
+    dtype=np.float64,
+)
+pd_features = input_data.drop('class', axis=1)
+pd_target = input_data['class']
+
+
+# Tests
+
+def test_conf_dict_nn():
+    """Assert that TPOT can assign TPOT-NN config dictionary to a TPOTClassifier"""
+    tpot_obj = TPOTClassifier(config_dict='TPOT NN')
+    assert tpot_obj.config_dict == classifier_config_nn
+
+# We need to run tests on the TPOT-NN models directly, since they are
+# implemented natively.
