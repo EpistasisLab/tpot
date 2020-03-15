@@ -54,7 +54,7 @@ from tempfile import mkdtemp
 from shutil import rmtree
 
 from sklearn.datasets import load_digits, load_boston, make_classification
-from sklearn.model_selection import train_test_split, cross_val_score, GroupKFold
+from sklearn import model_selection
 from joblib import Memory
 from sklearn.metrics import make_scorer, roc_auc_score
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
@@ -67,7 +67,7 @@ from deap.tools import ParetoFront
 from nose.tools import nottest, assert_raises, assert_not_equal, assert_greater_equal, assert_equal, assert_in
 from driver_tests import captured_output
 
-train_test_split = nottest(train_test_split)
+train_test_split = nottest(model_selection.train_test_split)
 
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
@@ -103,8 +103,21 @@ training_features_r, testing_features_r, training_target_r, testing_target_r = \
 # Set up a small test dataset
 
 pretest_X, pretest_y = make_classification(n_samples=100, n_features=10, random_state=42)
-# Set up pandas DataFrame for testing
 
+# Set up artificial groups
+n_datapoints = pretest_y.shape[0]
+groups = np.random.randint(low=0, high=n_datapoints//2, size=n_datapoints)
+
+# Set up custom cv split generators
+custom_cvs = [
+    model_selection.LeaveOneGroupOut().split(X=pretest_X, y=pretest_y, groups=groups),
+    model_selection.LeavePGroupsOut(2).split(X=pretest_X, y=pretest_y, groups=groups),
+    model_selection.RepeatedStratifiedKFold(),
+    5,
+    10,
+    ]
+
+# Set up pandas DataFrame for testing
 input_data = pd.read_csv(
     'tests/tests.csv',
     sep=',',
@@ -335,16 +348,38 @@ def test_timeout():
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     # test _wrapped_cross_val_score with cv=20 so that it is impossible to finish in 1 second
+    cv = model_selection.KFold(n_splits=20).split(
+        X=training_features_r,
+        y=training_target_r,
+    )
+    cv = model_selection._split.check_cv(cv, training_target_r, classifier=False)
     return_value = _wrapped_cross_val_score(tpot_obj.fitted_pipeline_,
                                             training_features_r,
                                             training_target_r,
-                                            cv=20,
+                                            cv=cv,
                                             scoring_function='neg_mean_squared_error',
                                             sample_weight=None,
                                             groups=None,
                                             timeout=1)
     assert return_value == "Timeout"
 
+def test_custom_cv_test_generator():
+    """Check that custom cv generators processed correctly.
+    """
+    def check_custom_cv(_cv):
+        tpot_obj = TPOTClassifier(
+            random_state=42,
+            population_size=1,
+            offspring_size=2,
+            generations=1,
+            verbosity=0,
+            cv=_cv,
+            n_jobs=-1  # ensure pickling / parallelization
+        )
+        tpot_obj.fit(pretest_X, pretest_y)
+
+    for cv in custom_cvs:
+        yield check_custom_cv, cv
 
 def test_invalid_pipeline():
     """Assert that _wrapped_cross_val_score return -float(\'inf\') with a invalid_pipeline"""
@@ -357,11 +392,20 @@ def test_invalid_pipeline():
     )
     tpot_obj._optimized_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
-    # test _wrapped_cross_val_score with cv=20 so that it is impossible to finish in 1 second
+
+    cv = model_selection.KFold().split(
+        X=training_features,
+        y=training_target,
+    )
+    cv = model_selection._split.check_cv(
+        cv,
+        training_target,
+        classifier=False  # choice of classifier vs. regressor here is arbitrary
+    )
     return_value = _wrapped_cross_val_score(tpot_obj.fitted_pipeline_,
                                             training_features,
                                             training_target,
-                                            cv=5,
+                                            cv=cv,
                                             scoring_function='accuracy',
                                             sample_weight=None,
                                             groups=None,
@@ -604,13 +648,13 @@ def test_sample_weight_func():
     training_target_r_weight_dict = set_sample_weight(tpot_obj.fitted_pipeline_.steps, training_target_r_weight)
 
     np.random.seed(42)
-    cv_score1 = cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_target_r, cv=3, scoring='neg_mean_squared_error')
+    cv_score1 = model_selection.cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_target_r, cv=3, scoring='neg_mean_squared_error')
 
     np.random.seed(42)
-    cv_score2 = cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_target_r, cv=3, scoring='neg_mean_squared_error')
+    cv_score2 = model_selection.cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_target_r, cv=3, scoring='neg_mean_squared_error')
 
     np.random.seed(42)
-    cv_score_weight = cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_target_r, cv=3, scoring='neg_mean_squared_error', fit_params=training_target_r_weight_dict)
+    cv_score_weight = model_selection.cross_val_score(tpot_obj.fitted_pipeline_, training_features_r, training_target_r, cv=3, scoring='neg_mean_squared_error', fit_params=training_target_r_weight_dict)
 
     np.random.seed(42)
     tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r, **training_target_r_weight_dict)
@@ -732,7 +776,7 @@ def test_fit_GroupKFold():
         generations=1,
         verbosity=0,
         config_dict='TPOT light',
-        cv=GroupKFold(n_splits=2),
+        cv=model_selection.GroupKFold(n_splits=2),
     )
     tpot_obj.fit(training_features, training_target, groups=groups)
 
@@ -1383,7 +1427,7 @@ def test_evaluated_individuals_():
         operator_count = tpot_obj._operator_count(deap_pipeline)
 
         try:
-            cv_scores = cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
+            cv_scores = model_selection.cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
             mean_cv_scores = np.mean(cv_scores)
         except Exception as e:
             mean_cv_scores = -float('inf')
@@ -1431,13 +1475,13 @@ def test_evaluate_individuals():
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
-                cv_scores = cross_val_score(sklearn_pipeline,
-                                            training_features,
-                                            training_target,
-                                            cv=5,
-                                            scoring='accuracy',
-                                            verbose=0,
-                                            error_score='raise')
+                cv_scores = model_selection.cross_val_score(sklearn_pipeline,
+                                                            training_features,
+                                                            training_target,
+                                                            cv=5,
+                                                            scoring='accuracy',
+                                                            verbose=0,
+                                                            error_score='raise')
             mean_cv_scores = np.mean(cv_scores)
         except Exception as e:
             mean_cv_scores = -float('inf')
@@ -1473,13 +1517,13 @@ def test_evaluate_individuals_2():
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
-                cv_scores = cross_val_score(sklearn_pipeline,
-                                            training_features,
-                                            training_target,
-                                            cv=5,
-                                            scoring='accuracy',
-                                            verbose=0,
-                                            error_score='raise')
+                cv_scores = model_selection.cross_val_score(sklearn_pipeline,
+                                                            training_features,
+                                                            training_target,
+                                                            cv=5,
+                                                            scoring='accuracy',
+                                                            verbose=0,
+                                                            error_score='raise')
             mean_cv_scores = np.mean(cv_scores)
         except Exception as e:
             mean_cv_scores = -float('inf')

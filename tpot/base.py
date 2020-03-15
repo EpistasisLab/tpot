@@ -52,6 +52,7 @@ from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection._split import check_cv
 
 from joblib import Parallel, delayed, Memory
 
@@ -80,6 +81,8 @@ with warnings.catch_warnings():
 
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
+
+    classification = None  # set by child classes
 
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
@@ -796,6 +799,7 @@ class TPOTBase(BaseEstimator):
                                    'because data for a regression problem was provided '
                                    'to the TPOTClassifier object. Please make sure you '
                                    'passed the data to TPOT correctly.')
+
             else:
                 pareto_front_wvalues = [pipeline_scores.wvalues[1] for pipeline_scores in self._pareto_front.keys]
                 if not self._last_optimized_pareto_front:
@@ -1077,7 +1081,7 @@ class TPOTBase(BaseEstimator):
                                     self.random_state,
                                     data_file_path=data_file_path)
 
-        if output_file_name is not '':
+        if output_file_name != '':
             with open(output_file_name, 'w') as output_file:
                 output_file.write(to_write)
         else:
@@ -1267,12 +1271,14 @@ class TPOTBase(BaseEstimator):
 
         operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals)
 
+        cv = check_cv(self.cv, target, classifier=self.classification)
+
         # Make the partial function that will be called below
         partial_wrapped_cross_val_score = partial(
             _wrapped_cross_val_score,
             features=features,
             target=target,
-            cv=self.cv,
+            cv=cv,
             scoring_function=self.scoring_function,
             sample_weight=sample_weight,
             groups=groups,
@@ -1327,7 +1333,7 @@ class TPOTBase(BaseEstimator):
             if self.verbosity > 0:
                 self._pbar.write('', file=self._file)
                 self._pbar.write('{}\nTPOT closed during evaluation in one generation.\n'
-                                    'WARNING: TPOT may not provide a good pipeline if TPOT is stopped/interrupted in a early generation.'.format(e),
+                                    'WARNING: TPOT may not provide a good pipeline if TPOT is stopped/interrupted in an early generation.'.format(e),
                                  file=self._file)
             # number of individuals already evaluated in this generation
             num_eval_ind = len(result_score_list)
