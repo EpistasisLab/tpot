@@ -793,13 +793,13 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
             if not self._optimized_pipeline:
-                raise RuntimeError('There was an error in the TPOT optimization '
-                                   'process. This could be because the data was '
-                                   'not formatted properly, because data for '
-                                   'a regression problem was provided to the '
-                                   'TPOTClassifier object, or an error in a '
-                                   'custom scoring function. Please make sure '
-                                   'you passed the data to TPOT correctly.')
+                raise RuntimeError('There was an error in the TPOT optimization process. '
+                                   'This could be because the data was not formatted '
+                                   'properly (e.g. nan values became a third class) or '
+                                   'because data for a regression problem was provided '
+                                   'to the TPOTClassifier object. Please make sure you '
+                                   'passed the data to TPOT correctly.')
+
             else:
                 pareto_front_wvalues = [pipeline_scores.wvalues[1] for pipeline_scores in self._pareto_front.keys]
                 if not self._last_optimized_pareto_front:
@@ -831,11 +831,11 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
         """
         if not self._optimized_pipeline:
-            raise RuntimeError('There was an error in the TPOT optimization '
-                               'process. This could be because the data was '
-                               'not formatted properly, or because data for '
-                               'a regression problem was provided to the '
-                               'TPOTClassifier object. Please make sure you '
+            raise RuntimeError('There was an error in the TPOT optimization process. '
+                               'This could be because the data was not formatted '
+                               'properly (e.g. nan values became a third class), or '
+                               'because data for a regression problem was provided '
+                               'to the TPOTClassifier object. Please make sure you '
                                'passed the data to TPOT correctly.')
         else:
             self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
