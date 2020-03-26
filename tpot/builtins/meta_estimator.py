@@ -62,47 +62,84 @@ def X_adj_fit(X_train, C_train):
     ----------
     X_train_adj: transformed/adjusted X_train
     col_est: estimators for each columns
-    values_list: # type for each columns
+    values: # types for each columns
     """
-    X_train_adj = np.zeros(X_train.shape)
-    col_ests = [] # store estimator for each columns
-    values_list = [] # store values for each columns
 
-    for col in range(X_train.shape[1]):
-        X_train_col = X_train.iloc[:, col].values # np.ndarray
-        # test information cannot be used in fit() function
-        # may be values should be provided as a parameter in __init__ above
-        # here values was stored into self.values_list and can be used in predict
-        # function below for test dataset
-        # if there are float values in the X_train_col
-        # then it is dosage else ternary
-        if check_if_any_float(X_train_col):
-            values = 'dosage'
-        else:
-            values = 'ternary'
-        values_list.append(values)
-        if values == 'dosage':
-            regr = LinearRegression()
-            regr.fit(C_train, X_train_col)
-            est_pred = regr.predict(C_train)
-            X_train_adj[:, col] = X_train_col - est_pred
-            col_ests.append(regr)
-        else:
-            clf = LogisticRegression(penalty='none',
-                                    solver='lbfgs',
-                                    multi_class='auto')
-            clf.fit(C_train, X_train_col.astype(np.int32))
-            clf_pred_proba = clf.predict_proba(C_train)
 
-            X_train_col_adj = X_train_col
-            # clf.classes_ should return an array of genotypes in this column
-            # like array([0, 1, 2]) or array([0, 1])
-            for gt_idx, gt in enumerate(clf.classes_):
-                gt = int(gt)
-                X_train_col_adj = X_train_col_adj - gt*clf_pred_proba[:, gt_idx]
-            X_train_adj[:, col] = X_train_col_adj
-            col_ests.append(clf)
-    return X_train_adj, col_ests, values_list
+    col_est = [] # store estimator for each columns
+    values = [] # store values for each columns
+    if X_train.empty:
+        return X_train, col_est, values
+    else:
+        X_train_adj = np.zeros(X_train.shape)
+        for col in range(X_train.shape[1]):
+            X_train_col = X_train.iloc[:, col].values # np.ndarray
+            # test information cannot be used in fit() function
+            # may be values should be provided as a parameter in __init__ above
+            # here values was stored into self.values_list and can be used in predict
+            # function below for test dataset
+            # if there are float values in the X_train_col
+            # then it is dosage else ternary
+            if check_if_any_float(X_train_col):
+                value = 'dosage'
+            else:
+                value = 'ternary'
+            values.append(value)
+            if values == 'dosage':
+                regr = LinearRegression()
+                regr.fit(C_train, X_train_col)
+                est_pred = regr.predict(C_train)
+                X_train_adj[:, col] = X_train_col - est_pred
+                col_est.append(regr)
+            else:
+                clf = LogisticRegression(penalty='none',
+                                        solver='lbfgs',
+                                        multi_class='auto')
+                clf.fit(C_train, X_train_col.astype(np.int32))
+                clf_pred_proba = clf.predict_proba(C_train)
+
+                X_train_col_adj = X_train_col
+                # clf.classes_ should return an array of genotypes in this column
+                # like array([0, 1, 2]) or array([0, 1])
+                for gt_idx, gt in enumerate(clf.classes_):
+                    gt = int(gt)
+                    X_train_col_adj = X_train_col_adj - gt*clf_pred_proba[:, gt_idx]
+                X_train_adj[:, col] = X_train_col_adj
+                col_est.append(clf)
+        return X_train_adj, col_est, values
+
+def X_adj_predict(X_test, C_test, col_est, values):
+    """transform X_test by a list of confounding features.
+
+    Parameters
+    ----------
+    X_test : pd.DataFrame
+    C_test: pd.DataFrame for a confounding covariate
+    col_est: estimators for each columns
+    values: # types for each columns
+
+    Return
+    ----------
+    X_test_adj: transformed/adjusted X_train
+
+    """
+    if X_test.empty:
+        return X_test
+    else:
+        X_test_adj = np.zeros(X_test.shape)
+        for values, est, col in zip(values, col_est, range(X_test.shape[1])):
+            X_test_col = X_test.iloc[:, col].values
+            if values == 'dosage':
+                est_pred = est.predict(C_test)
+                X_test_adj[:, col] = X_test_col - est_pred
+            else:
+                clf_pred_proba = est.predict_proba(C_test)
+                X_test_col_adj = X_test_col
+                for gt_idx, gt in enumerate(est.classes_):
+                    gt = int(gt)
+                    X_test_col_adj = X_test_col_adj - gt*clf_pred_proba[:, gt_idx]
+                X_test_adj[:, col] = X_test_col_adj
+        return X_test_adj
 
 
 class MetaRegressor(BaseEstimator, RegressorMixin):
@@ -132,7 +169,6 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
                     features in C, the second element should be a list of feature
                     names should be transformed by feature in first element,
                     e.g. ((['N1'], ['N6', 'N7']), (['N2'], ['N8', 'N9']))
-
 
         """
         self.estimator = estimator
@@ -171,21 +207,40 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
         else:
             self.col_ests = []
             self.values_list = []
+            C_train = X[self.C].values
             if self.subset is None:
-                C_train = X[C].values
-                X_train_adj, col_ests, values_list = X_adj_fit(X_train, C_train)
-                self.col_ests = col_ests # !!!
-                self.values_list = values_list #!!!
+                X_train_adj, col_est, values = X_adj_fit(X_train, C_train)
+                self.col_ests.append(col_est)
+                self.values_list.append(values)
             elif isinstance(self.subset, list):
-                C_train = X[C].values
-                X_train = X[self.subset]
-                self.col_ests = col_ests #!!!
-                self.values_list = values_list #!!!
+                # overlap features
+                comm_features = [a for a in self.subset if a in X_train.columns]
+                X_train_subset = X_train[comm_features]
+                X_subset_adj, col_est, values = \
+                                            X_adj_fit(X_train_subset, C_train)
+                # X that has no need to transform
+                X_train_unsel = X_train.drop(comm_features, axis=1).values
+                X_train_adj = np.hstack((X_subset_adj, X_train_unsel))
+                self.col_ests.append(col_est)
+                self.values_list.append(values)
             elif isinstance(self.subset, tuple):
-                # not done
-
-
-
+                self.sel_subset = [] # collect all transformed features
+                X_subset_adj = np.array([]) # make a empty array
+                for subC, ssubset in self.subset:
+                    comm_features = [a for a in ssubset if a in X_train.columns]
+                    self.sel_subset += comm_features
+                    tmp_C_train = X[subC].values
+                    X_train_subset = X_train[comm_features]
+                    tmp_X_subset_adj, col_est, values = \
+                                            X_adj_fit(X_train_subset, tmp_C_train)
+                    if X_subset_adj.size == 0:
+                        X_subset_adj = tmp_X_subset_adj
+                    else:
+                        X_subset_adj = np.hstack((X_subset_adj, tmp_X_subset_adj))
+                    self.col_ests.append(col_est)
+                    self.values_list.append(values)
+                X_train_unsel = X_train.drop(self.sel_subset, axis=1).values
+                X_train_adj = np.hstack((X_subset_adj, X_train_unsel))
 
         if self.A is not None:
             A_train = X[self.A].values
@@ -225,20 +280,41 @@ class MetaRegressor(BaseEstimator, RegressorMixin):
             X_test_adj = X_test
             C_test = None
         else:
-            X_test_adj = np.zeros(X_test.shape)
             C_test = X[self.C].values
-            for values, est, col in zip(self.values_list, self.col_ests, range(X_test.shape[1])):
-                X_test_col = X_test.iloc[:, col].values
-                if values == 'dosage':
-                    est_pred = est.predict(C_test)
-                    X_test_adj[:, col] = X_test_col - est_pred
-                else:
-                    clf_pred_proba = est.predict_proba(C_test)
-                    X_test_col_adj = X_test_col
-                    for gt_idx, gt in enumerate(est.classes_):
-                        gt = int(gt)
-                        X_test_col_adj = X_test_col_adj - gt*clf_pred_proba[:, gt_idx]
-                    X_test_adj[:, col] = X_test_col_adj
+            if self.subset is None:
+
+                X_test_adj = X_adj_predict(X_test,
+                                            C_test,
+                                            self.col_ests[0],
+                                            self.values_list[0])
+            elif isinstance(self.subset, list):
+                comm_features = [a for a in self.subset if a in X_test.columns]
+                X_test_subset = X_test[comm_features]
+                # X that has no need to transform
+                X_test_unsel = X_test.drop(self.subset, axis=1).values
+                X_subset_adj =  X_adj_predict(X_test_subset,
+                                            C_test,
+                                            self.col_ests[0],
+                                            self.values_list[0])
+                X_test_adj = np.hstack((X_subset_adj, X_test_unsel))
+            elif isinstance(self.subset, tuple):
+                X_subset_adj = np.array([]) # make a empty array
+                for sub, col_est, values in zip(self.subset,
+                                                self.col_ests,
+                                                self.values_list):
+                    tmp_C_test = X[sub[0]].values
+                    comm_features = [a for a in sub[1] if a in X_test.columns]
+                    X_test_subset = X_test[comm_features]
+                    tmp_X_subset_adj = X_adj_predict(X_test_subset,
+                                                    tmp_C_test,
+                                                    col_est,
+                                                    values)
+                    if X_subset_adj.size == 0:
+                        X_subset_adj = tmp_X_subset_adj
+                    else:
+                        X_subset_adj = np.hstack((X_subset_adj, tmp_X_subset_adj))
+                X_test_unsel = X_test.drop(self.sel_subset, axis=1).values
+                X_test_adj = np.hstack((X_subset_adj, X_test_unsel))
 
         if self.A is not None:
             A_test = X[self.A].values
@@ -267,7 +343,7 @@ class MetaClassifier(BaseEstimator, ClassifierMixin):
         The base estimator from which the transformer is built.
     """
 
-    def __init__(self, estimator, A=None, C=None):
+    def __init__(self, estimator, A=None, C=None, subset=None):
         """Create a StackingEstimator object.
 
         Parameters
@@ -277,11 +353,19 @@ class MetaClassifier(BaseEstimator, ClassifierMixin):
         A: a list of columns for A, e.g ["N1", "N2"]
             columns of A correspond to a non-confounding covariate.
         C:  a list of columns for C, e.g ["N4", "N5"]
-            columns of C correspond correspond to a confounding covariate.
+            columns of C correspond to a confounding covariate.
+        subset: None: all the features should be transformed by C
+                list: a list of feature names should be transformed by C: e.g
+                      ["N6", "N7"]
+                tuples: the first element in a tuple should be a list of
+                    features in C, the second element should be a list of feature
+                    names should be transformed by feature in first element,
+                    e.g. ((['N1'], ['N6', 'N7']), (['N2'], ['N8', 'N9']))
         """
         self.estimator = estimator
         self.A = A
         self.C = C
+        self.subset = subset
 
     def fit(self, X, y=None, **fit_params):
         """Fit the StackingEstimator meta-transformer.
@@ -311,46 +395,43 @@ class MetaClassifier(BaseEstimator, ClassifierMixin):
             X_train_adj = X_train
             C_train = None
         else:
-            X_train_adj = np.zeros(X_train.shape)
-            self.col_ests = [] # store estimator for each columns
-            self.values_list = [] # store values for each columns
+            self.col_ests = []
+            self.values_list = []
             C_train = X[self.C].values
-
-            for col in range(X_train.shape[1]):
-                X_train_col = X_train.iloc[:, col].values # np.ndarray
-
-                # test information cannot be used in fit() function
-                # may be values should be provided as a parameter in __init__ above
-                # here values was stored into self.values_list and can be used in predict
-                # function below for test dataset
-                # if there are float values in the X_train_col
-                # then it is dosage else ternary
-                if check_if_any_float(X_train_col):
-                    values = 'dosage'
-                else:
-                    values = 'ternary'
+            if self.subset is None:
+                X_train_adj, col_est, values = X_adj_fit(X_train, C_train)
+                self.col_ests.append(col_est)
                 self.values_list.append(values)
-                if values == 'dosage':
-                    regr = LinearRegression()
-                    regr.fit(C_train, X_train_col)
-                    est_pred = regr.predict(C_train)
-                    X_train_adj[:, col] = X_train_col - est_pred
-                    self.col_ests.append(regr)
-                else:
-                    clf = LogisticRegression(penalty='none',
-                                            solver='lbfgs',
-                                            multi_class='auto')
-                    clf.fit(C_train, X_train_col.astype(np.int32))
-                    clf_pred_proba = clf.predict_proba(C_train)
+            elif isinstance(self.subset, list):
+                # overlap features
+                comm_features = [a for a in self.subset if a in X_train.columns]
+                X_train_subset = X_train[comm_features]
+                X_subset_adj, col_est, values = \
+                                            X_adj_fit(X_train_subset, C_train)
+                # X that has no need to transform
+                X_train_unsel = X_train.drop(comm_features, axis=1).values
+                X_train_adj = np.hstack((X_subset_adj, X_train_unsel))
+                self.col_ests.append(col_est)
+                self.values_list.append(values)
+            elif isinstance(self.subset, tuple):
+                self.sel_subset = [] # collect all transformed features
+                X_subset_adj = np.array([]) # make a empty array
+                for subC, ssubset in self.subset:
+                    comm_features = [a for a in ssubset if a in X_train.columns]
+                    self.sel_subset += comm_features
+                    tmp_C_train = X[subC].values
+                    X_train_subset = X_train[comm_features]
+                    tmp_X_subset_adj, col_est, values = \
+                                            X_adj_fit(X_train_subset, tmp_C_train)
+                    if X_subset_adj.size == 0:
+                        X_subset_adj = tmp_X_subset_adj
+                    else:
+                        X_subset_adj = np.hstack((X_subset_adj, tmp_X_subset_adj))
+                    self.col_ests.append(col_est)
+                    self.values_list.append(values)
+                X_train_unsel = X_train.drop(self.sel_subset, axis=1).values
+                X_train_adj = np.hstack((X_subset_adj, X_train_unsel))
 
-                    X_train_col_adj = X_train_col
-                    # clf.classes_ should return an array of genotypes in this column
-                    # like array([0, 1, 2]) or array([0, 1])
-                    for gt_idx, gt in enumerate(clf.classes_):
-                        gt = int(gt)
-                        X_train_col_adj = X_train_col_adj - gt*clf_pred_proba[:, gt_idx]
-                    X_train_adj[:, col] = X_train_col_adj
-                    self.col_ests.append(clf)
         if self.A is not None:
             A_train = X[self.A].values
 
@@ -398,20 +479,41 @@ class MetaClassifier(BaseEstimator, ClassifierMixin):
             X_test_adj = X_test
             C_test = None
         else:
-            X_test_adj = np.zeros(X_test.shape)
             C_test = X[self.C].values
-            for values, est, col in zip(self.values_list, self.col_ests, range(X_test.shape[1])):
-                X_test_col = X_test.iloc[:, col].values
-                if values == 'dosage':
-                    est_pred = est.predict(C_test)
-                    X_test_adj[:, col] = X_test_col - est_pred
-                else:
-                    clf_pred_proba = est.predict_proba(C_test)
-                    X_test_col_adj = X_test_col
-                    for gt_idx, gt in enumerate(est.classes_):
-                        gt = int(gt)
-                        X_test_col_adj = X_test_col_adj - gt*clf_pred_proba[:, gt_idx]
-                    X_test_adj[:, col] = X_test_col_adj
+            if self.subset is None:
+
+                X_test_adj = X_adj_predict(X_test,
+                                            C_test,
+                                            self.col_ests[0],
+                                            self.values_list[0])
+            elif isinstance(self.subset, list):
+                comm_features = [a for a in self.subset if a in X_test.columns]
+                X_test_subset = X_test[comm_features]
+                # X that has no need to transform
+                X_test_unsel = X_test.drop(self.subset, axis=1).values
+                X_subset_adj =  X_adj_predict(X_test_subset,
+                                            C_test,
+                                            self.col_ests[0],
+                                            self.values_list[0])
+                X_test_adj = np.hstack((X_subset_adj, X_test_unsel))
+            elif isinstance(self.subset, tuple):
+                X_subset_adj = np.array([]) # make a empty array
+                for sub, col_est, values in zip(self.subset,
+                                                self.col_ests,
+                                                self.values_list):
+                    tmp_C_test = X[sub[0]].values
+                    comm_features = [a for a in sub[1] if a in X_test.columns]
+                    X_test_subset = X_test[comm_features]
+                    tmp_X_subset_adj = X_adj_predict(X_test_subset,
+                                                    tmp_C_test,
+                                                    col_est,
+                                                    values)
+                    if X_subset_adj.size == 0:
+                        X_subset_adj = tmp_X_subset_adj
+                    else:
+                        X_subset_adj = np.hstack((X_subset_adj, tmp_X_subset_adj))
+                X_test_unsel = X_test.drop(self.sel_subset, axis=1).values
+                X_test_adj = np.hstack((X_subset_adj, X_test_unsel))
 
         if self.A is not None:
             A_test = X[self.A].values
