@@ -75,7 +75,7 @@ If your contribution changes TPOT in any way:
 
 If your contribution involves any code changes:
 
-* Update the [project unit tests](https://github.com/EpistasisLab/tpot/blob/master/tests.py) to test your code changes.
+* Update the [project unit tests](https://github.com/EpistasisLab/tpot/tree/master/tests) to test your code changes.
 
 * Make sure that your code is properly commented with [docstrings](https://www.python.org/dev/peps/pep-0257/) and comments explaining your rationale behind non-obvious coding practices.
 
