@@ -887,7 +887,7 @@ score(testing_features, testing_target)
 <div style="padding-left:5%" width="100%">
 Returns the optimized pipeline's score on the given testing data using the user-specified scoring function.
 <br /><br />
-The default scoring function for TPOTClassifier is 'mean_squared_error'.
+The default scoring function for TPOTRegressor is 'mean_squared_error'.
 <br /><br />
 <table width="100%">
 <tr>
