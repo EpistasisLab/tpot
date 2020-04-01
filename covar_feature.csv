@@ -1,0 +1,6 @@
+Feature,Type,Coavariates
+N1,logistic,N13;N14;N15
+N2,logistic,N13
+N3,logistic,N13
+N4,logistic,N14;N15
+N5,logistic,N14;N15
