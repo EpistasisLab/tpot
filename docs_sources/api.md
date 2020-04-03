@@ -227,6 +227,7 @@ The update checker will tell you when a new version of TPOT has been released.
 
 <strong>progress_file</strong>: io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
 <br /><br />
+<blockquote>
 Save progress content to a file.
 </blockquote>
 
