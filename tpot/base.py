@@ -89,7 +89,7 @@ class TPOTBase(BaseEstimator):
                  warm_start=False, memory=None, use_dask=False,
                  periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False,
-                 progress_file=sys.stdout):
+                 progress_file=None):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -566,6 +566,9 @@ class TPOTBase(BaseEstimator):
             )
 
         self._pbar = None
+        
+        if not self._file:
+            self._file = sys.stdout
 
         self._setup_scoring_function(self.scoring)
 

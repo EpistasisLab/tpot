@@ -47,6 +47,7 @@ import random
 import warnings
 from multiprocessing import cpu_count
 import os
+import sys
 from re import search
 from datetime import datetime
 from time import sleep
@@ -142,7 +143,8 @@ def test_init_custom_parameters():
         verbosity=1,
         random_state=42,
         disable_update_check=True,
-        warm_start=True
+        warm_start=True,
+        progress_file=None
     )
 
     assert tpot_obj.population_size == 500
@@ -155,6 +157,7 @@ def test_init_custom_parameters():
     assert tpot_obj.max_time_mins is None
     assert tpot_obj.warm_start is True
     assert tpot_obj.verbosity == 1
+    assert tpot_obj._file == None
 
     tpot_obj._fit_init()
 
@@ -166,7 +169,13 @@ def test_init_custom_parameters():
     assert tpot_obj._optimized_pipeline_score == None
     assert tpot_obj.fitted_pipeline_ == None
     assert tpot_obj._exported_pipeline_text == []
+    assert tpot_obj._file == sys.stdout
 
+def test_init_custom_progress_file():
+    file_name = "progress.txt"
+    file_handle = open(file_name, "w")
+    tpot_obj = TPOTClassifier(progress_file=file_handle)
+    assert tpot_obj._file == file_handle
 
 def test_init_default_scoring():
     """Assert that TPOT intitializes with the correct default scoring function."""
