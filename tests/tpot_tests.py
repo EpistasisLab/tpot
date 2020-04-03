@@ -172,6 +172,7 @@ def test_init_custom_parameters():
     assert tpot_obj._file == sys.stdout
 
 def test_init_custom_progress_file():
+    """ Assert that TPOT has right file handler to save progress. """
     file_name = "progress.txt"
     file_handle = open(file_name, "w")
     tpot_obj = TPOTClassifier(progress_file=file_handle)
