@@ -14,7 +14,9 @@
                           <strong>periodic_checkpoint_folder</strong>=None,
                           <strong>early_stop</strong>=None,
                           <strong>verbosity</strong>=0,
-                          <strong>disable_update_check</strong>=False</em>)</pre>
+                          <strong>disable_update_check</strong>=False,
+                          <strong>progress_file</strong>=None
+                          </em>)</pre>
 <div align="right"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/base.py">source</a></div>
 
 Automated machine learning for supervised classification tasks.
@@ -222,6 +224,13 @@ Flag indicating whether the TPOT version checker should be disabled.
 <br /><br />
 The update checker will tell you when a new version of TPOT has been released.
 </blockquote>
+
+<strong>progress_file</strong>: io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
+<br /><br />
+<blockquote>
+Save progress content to a file.
+</blockquote>
+
 </td>
 </tr>
 
