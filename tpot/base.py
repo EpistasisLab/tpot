@@ -89,7 +89,7 @@ class TPOTBase(BaseEstimator):
                  warm_start=False, memory=None, use_dask=False,
                  periodic_checkpoint_folder=None, early_stop=None,
                  verbosity=0, disable_update_check=False,
-                 progress_file=None):
+                 log_file=None):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -233,7 +233,7 @@ class TPOTBase(BaseEstimator):
             A setting of 2 or higher will add a progress bar during the optimization procedure.
         disable_update_check: bool, optional (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
-        progress_file: io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
+        log_file: io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
             Save progress content to a file.
 
         Returns
@@ -265,7 +265,7 @@ class TPOTBase(BaseEstimator):
         self.verbosity = verbosity
         self.disable_update_check = disable_update_check
         self.random_state = random_state
-        self._file = progress_file
+        self._file = log_file
 
 
     def _setup_template(self, template):
@@ -566,7 +566,7 @@ class TPOTBase(BaseEstimator):
             )
 
         self._pbar = None
-        
+
         if not self._file:
             self._file = sys.stdout
 

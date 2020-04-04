@@ -144,7 +144,7 @@ def test_init_custom_parameters():
         random_state=42,
         disable_update_check=True,
         warm_start=True,
-        progress_file=None
+        log_file=None
     )
 
     assert tpot_obj.population_size == 500
@@ -175,7 +175,7 @@ def test_init_custom_progress_file():
     """ Assert that TPOT has right file handler to save progress. """
     file_name = "progress.txt"
     file_handle = open(file_name, "w")
-    tpot_obj = TPOTClassifier(progress_file=file_handle)
+    tpot_obj = TPOTClassifier(log_file=file_handle)
     assert tpot_obj._file == file_handle
 
 def test_init_default_scoring():
