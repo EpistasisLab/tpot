@@ -58,18 +58,15 @@ def test_log_file_verbosity_2():
   tpot_obj.fit(X, y)
   assert_equal(os.path.getsize(file_name) > 0,  True)
 
-# def test_log_file_verbose_3():
-#   """ 
-#   Set verbosity as 1. Assert log_file parameter to generate log file. 
-#   This test will raises an exception about xgboost.
-#   """
-#   file_name = "progress_verbosity_3.log"
-#   tracking_progress_file = open(file_name, "w")
-#   tpot_obj = TPOTClassifier(
-#                 population_size=10,
-#                 generations=10,
-#                 verbosity=3, 
-#                 log_file=tracking_progress_file
-#             )
-#   tpot_obj.fit(X, y)
-#   assert_equal(os.path.getsize(file_name) > 0,  True)
+def test_log_file_verbose_3():
+  """ Set verbosity as 3. Assert log_file parameter to generate log file. """
+  file_name = "progress_verbosity_3.log"
+  tracking_progress_file = open(file_name, "w")
+  tpot_obj = TPOTClassifier(
+                population_size=10,
+                generations=10,
+                verbosity=3, 
+                log_file=tracking_progress_file
+            )
+  tpot_obj.fit(X, y)
+  assert_equal(os.path.getsize(file_name) > 0,  True)
