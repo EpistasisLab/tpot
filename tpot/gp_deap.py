@@ -30,9 +30,8 @@ from .operator_utils import set_sample_weight
 from sklearn.utils import indexable
 from sklearn.metrics import check_scoring
 from sklearn.model_selection._validation import _fit_and_score
-from sklearn.model_selection._split import check_cv
 
-from sklearn.base import clone, is_classifier
+from sklearn.base import clone
 from collections import defaultdict
 import warnings
 from stopit import threading_timeoutable, TimeoutException
@@ -394,11 +393,8 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     target : array-like, optional, default: None
         The target variable to try to predict in the case of
         supervised learning.
-    cv: int or cross-validation generator
-        If CV is a number, then it is the number of folds to evaluate each
-        pipeline over in k-fold cross-validation during the TPOT optimization
-         process. If it is an object then it is an object to be used as a
-         cross-validation generator.
+    cv: cross-validation generator
+        Object to be used as a cross-validation generator.
     scoring_function : callable
         A scorer callable object / function with signature
         ``scorer(estimator, X, y)``.
@@ -413,7 +409,6 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
 
     features, target, groups = indexable(features, target, groups)
 
-    cv = check_cv(cv, target, classifier=is_classifier(sklearn_pipeline))
     cv_iter = list(cv.split(features, target, groups))
     scorer = check_scoring(sklearn_pipeline, scoring=scoring_function)
 
