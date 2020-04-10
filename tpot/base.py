@@ -265,7 +265,7 @@ class TPOTBase(BaseEstimator):
         self.verbosity = verbosity
         self.disable_update_check = disable_update_check
         self.random_state = random_state
-        self._file = log_file
+        self.log_file = log_file
 
 
     def _setup_template(self, template):
@@ -567,8 +567,8 @@ class TPOTBase(BaseEstimator):
 
         self._pbar = None
 
-        if not self._file:
-            self._file = sys.stdout
+        if not self.log_file:
+            self.log_file = sys.stdout
 
         self._setup_scoring_function(self.scoring)
 
@@ -693,7 +693,7 @@ class TPOTBase(BaseEstimator):
         else:
             total_evals = self._lambda * self.generations + self.population_size
 
-        self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False, file=self._file,
+        self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False, file=self.log_file,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         try:
@@ -717,9 +717,9 @@ class TPOTBase(BaseEstimator):
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
-                self._pbar.write('', file=self._file)
+                self._pbar.write('', file=self.log_file)
                 self._pbar.write('{}\nTPOT closed prematurely. Will use the current best pipeline.'.format(e),
-                                 file=self._file)
+                                 file=self.log_file)
         finally:
             # clean population for the next call if warm_start=False
             if not self.warm_start:
@@ -1328,10 +1328,10 @@ class TPOTBase(BaseEstimator):
 
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
-                self._pbar.write('', file=self._file)
+                self._pbar.write('', file=self.log_file)
                 self._pbar.write('{}\nTPOT closed during evaluation in one generation.\n'
                                     'WARNING: TPOT may not provide a good pipeline if TPOT is stopped/interrupted in a early generation.'.format(e),
-                                 file=self._file)
+                                 file=self.log_file)
             # number of individuals already evaluated in this generation
             num_eval_ind = len(result_score_list)
             self._update_evaluated_individuals_(result_score_list,
@@ -1479,7 +1479,7 @@ class TPOTBase(BaseEstimator):
         """
         if not isinstance(self._pbar, type(None)):
             if self.verbosity > 2 and pbar_msg is not None:
-                self._pbar.write(pbar_msg, file=self._file)
+                self._pbar.write(pbar_msg, file=self.log_file)
             if not self._pbar.disable:
                 self._pbar.update(pbar_num)
 
