@@ -23,7 +23,8 @@ class resAdjFeatureAgglomeration(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None, **fit_params):
         X_train = pd.DataFrame.copy(X)
         for col in X_train.columns:
-            if re.match(r'^indicator', col) or re.match(r'^adjY', col):
+
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_train.drop(col, axis=1, inplace=True)
         est = FeatureAgglomeration(affinity=self.affinity, linkage=self.linkage)
         self.transformer = est.fit(X_train)
@@ -32,7 +33,7 @@ class resAdjFeatureAgglomeration(BaseEstimator, TransformerMixin):
     def transform(self, X):
         tmp_X = pd.DataFrame.copy(X)
         for col in tmp_X.columns:
-            if re.match(r'^indicator', col) or re.match(r'^adjY', col):
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 tmp_X.drop(col, axis=1, inplace=True)
         X_test_red = self.transformer.transform(tmp_X)
 
@@ -43,6 +44,8 @@ class resAdjFeatureAgglomeration(BaseEstimator, TransformerMixin):
         adjY = X.filter(regex='adjY')
         if (adjY.shape[1] == 0):
             raise ValueError("X has no adjY columns")
+
+        X_test_red = pd.DataFrame(X_test_red, index=indX.index)
 
         X_test = pd.concat([X_test_red, indX, adjY], axis = 1)
         return X_test

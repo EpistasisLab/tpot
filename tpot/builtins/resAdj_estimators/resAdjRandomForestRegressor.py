@@ -29,7 +29,8 @@ class resAdjRandomForestRegressor(BaseEstimator, RegressorMixin):
     def fit(self, X, y=None, **fit_params):
         X_train = pd.DataFrame.copy(X)
         for col in X_train.columns:
-            if re.match(r'^indicator', col) or re.match(r'^adjY', col):
+
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_train.drop(col, axis=1, inplace=True)
 
         indX = X.filter(regex='indicator')
@@ -43,13 +44,14 @@ class resAdjRandomForestRegressor(BaseEstimator, RegressorMixin):
                 i = col.split('_')[1]
                 y_train = X['adjY_' + i]
                 break
-        est = RandomForestRegressor(loss=self.loss,
+        est = RandomForestRegressor(
                                     n_estimators=self.n_estimators,
                                     min_samples_split=self.min_samples_split,
                                     min_samples_leaf=self.min_samples_leaf,
                                     max_features=self.max_features,
                                     bootstrap=self.bootstrap,
-                                    random_state=self.random_state)
+                                    random_state=self.random_state
+                                    )
         self.estimator = est.fit(X_train, y_train)
         return self
 
@@ -57,7 +59,7 @@ class resAdjRandomForestRegressor(BaseEstimator, RegressorMixin):
     def predict(self, X):
         X_test = pd.DataFrame.copy(X)
         for col in X_test.columns:
-            if re.match(r'^indicator', col) or re.match(r'^adjY', col):
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_test.drop(col, axis=1, inplace=True)
 
         return self.estimator.predict(X_test)

@@ -26,7 +26,8 @@ class resAdjDecisionTreeRegressor(BaseEstimator, RegressorMixin):
     def fit(self, X, y=None, **fit_params):
         X_train = pd.DataFrame.copy(X)
         for col in X_train.columns:
-            if re.match(r'^indicator', col) or re.match(r'^adjY', col):
+
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_train.drop(col, axis=1, inplace=True)
 
         indX = X.filter(regex='indicator')
@@ -40,7 +41,7 @@ class resAdjDecisionTreeRegressor(BaseEstimator, RegressorMixin):
                 i = col.split('_')[1]
                 y_train = X['adjY_' + i]
                 break
-        est = DecisionTreeRegressor(max_depth=self.max_depth, 
+        est = DecisionTreeRegressor(max_depth=self.max_depth,
                                     min_samples_split=self.min_samples_split,
                                     min_samples_leaf=self.min_samples_leaf,
                                     random_state=self.random_state)
@@ -51,7 +52,7 @@ class resAdjDecisionTreeRegressor(BaseEstimator, RegressorMixin):
     def predict(self, X):
         X_test = pd.DataFrame.copy(X)
         for col in X_test.columns:
-            if re.match(r'^indicator', col) or re.match(r'^adjY', col):
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_test.drop(col, axis=1, inplace=True)
 
         return self.estimator.predict(X_test)

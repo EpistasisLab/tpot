@@ -22,7 +22,8 @@ class resAdjRidgeCV(BaseEstimator, RegressorMixin):
     def fit(self, X, y=None, **fit_params):
         X_train = pd.DataFrame.copy(X)
         for col in X_train.columns:
-            if re.match(r'^indicator', col) or re.match(r'^adjY', col):
+
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_train.drop(col, axis=1, inplace=True)
 
         indX = X.filter(regex='indicator')
@@ -44,7 +45,7 @@ class resAdjRidgeCV(BaseEstimator, RegressorMixin):
     def predict(self, X):
         X_test = pd.DataFrame.copy(X)
         for col in X_test.columns:
-            if re.match(r'^indicator', col) or re.match(r'^adjY', col):
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_test.drop(col, axis=1, inplace=True)
 
         return self.estimator.predict(X_test)

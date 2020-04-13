@@ -17,7 +17,7 @@ import re
 
 class resAdjLinearSVR(BaseEstimator, RegressorMixin):
     def __init__(self, loss='epsilon_insensitive', dual=True,
-                 tol=1e-4, C=1., epsilon=None, random_state=None):
+                 tol=1e-4, C=1., epsilon=0.0, random_state=None):
         self.loss = loss
         self.dual = dual
         self.tol = tol
@@ -28,7 +28,8 @@ class resAdjLinearSVR(BaseEstimator, RegressorMixin):
     def fit(self, X, y=None, **fit_params):
         X_train = pd.DataFrame.copy(X)
         for col in X_train.columns:
-            if re.match(r'^indicator', col) or re.match(r'^adjY', col):
+
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_train.drop(col, axis=1, inplace=True)
 
         indX = X.filter(regex='indicator')
@@ -51,7 +52,7 @@ class resAdjLinearSVR(BaseEstimator, RegressorMixin):
     def predict(self, X):
         X_test = pd.DataFrame.copy(X)
         for col in X_test.columns:
-            if re.match(r'^indicator', col) or re.match(r'^adjY', col):
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_test.drop(col, axis=1, inplace=True)
 
         return self.estimator.predict(X_test)
