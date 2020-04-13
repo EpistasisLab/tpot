@@ -66,4 +66,4 @@ BibTeX entry:
 
 Alternatively, you can cite the repository directly with the following DOI:
 
-[![DOI](https://zenodo.org/badge/20747/EpistasisLab/tpot.svg)](https://zenodo.org/badge/latestdoi/20747/EpistasisLab/tpot)
+[DOI](https://zenodo.org/badge/latestdoi/20747/rhiever/tpot)

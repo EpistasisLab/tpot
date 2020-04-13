@@ -151,6 +151,7 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 <blockquote>
 Template of predefined pipeline structure. The option is for specifying a desired structure for the machine learning pipeline evaluated in TPOT.
 <br /><br />
+
 So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer, Classifier) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html), [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html) in scikit-learn) to that step. Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Classifier". By default value of template is None, TPOT generates tree-based pipeline randomly.
 
 See the <a href="../using/#template-option-in-tpot"> template option in tpot</a> section for more details.
@@ -656,6 +657,7 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 <blockquote>
 Template of predefined pipeline structure. The option is for specifying a desired structure for the machine learning pipeline evaluated in TPOT.
 <br /><br />
+
 So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer or Regressor) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html) or [`RegressorMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html) in scikit-learn) to that step. Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Regressor". By default value of template is None, TPOT generates tree-based pipeline randomly.
 
 See the <a href="../using/#template-option-in-tpot"> template option in tpot</a> section for more details.
@@ -896,7 +898,7 @@ score(testing_features, testing_target)
 <div style="padding-left:5%" width="100%">
 Returns the optimized pipeline's score on the given testing data using the user-specified scoring function.
 <br /><br />
-The default scoring function for TPOTClassifier is 'mean_squared_error'.
+The default scoring function for TPOTRegressor is 'mean_squared_error'.
 <br /><br />
 <table width="100%">
 <tr>
