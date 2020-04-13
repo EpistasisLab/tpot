@@ -12,7 +12,7 @@ Modification of OneHotEncoder which handles indicator and adjY columns.
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
-from tpot.builtins import OneHotEncoder
+from .. import OneHotEncoder
 import re
 
 class resAdjOneHotEncoder(BaseEstimator, TransformerMixin):

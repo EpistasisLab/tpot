@@ -15,7 +15,7 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.xgboost import XGBRegressor
 import re
 
-class resAdjSGDRegressor(BaseEstimator, RegressorMixin):
+class resAdjXGBRegressor(BaseEstimator, RegressorMixin):
     def __init__(self, n_estimators=100, max_depth=3,
                  learning_rate=1e-1, subsample=0.05,
                  min_child_weight=2, nthread=1,
@@ -47,7 +47,7 @@ class resAdjSGDRegressor(BaseEstimator, RegressorMixin):
                 i = col.split('_')[1]
                 y_train = X['adjY_' + i]
                 break
-        est = XGBRegressor(n_estimators=self.n_estimators, 
+        est = XGBRegressor(n_estimators=self.n_estimators,
                            max_depth=self.max_depth,
                            learning_rate=self.learning_rate,
                            subsample=self.subsample,
