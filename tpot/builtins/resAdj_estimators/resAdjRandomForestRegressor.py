@@ -1,22 +1,29 @@
+"""
+AUTHOR
+Elisabetta Manduchi
+
+DATE
+April 9, 2020
+
+SCOPE
+Modification of RandomForestRegressor which handles indicator and adjY columns.
+"""
+
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor
 import re
 
-class resAdjGradientBoostingRegressor(BaseEstimator, RegressorMixin):
-    def __init__(self, n_estimators=100, loss='ls', learning_rate=0.1,
-                 max_depth=3, min_samples_split=2, min_samples_leaf=1,
-                 subsample=0.05, max_features=None, alpha=0.9, random_state=None):
-        self.loss = loss
-        self.learning_rate = learning_rate
+class resAdjRandomForestRegressor(BaseEstimator, RegressorMixin):
+    def __init__(self, n_estimators=100, max_features='auto',
+                 min_samples_split=2, min_samples_leaf=1,
+                 bootstrap=True, random_state=None):
         self.n_estimators = n_estimators
-        self.subsample = subsample
         self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
-        self.max_depth = max_depth
         self.max_features = max_features
-        self.alpha = alpha
+        self.bootstrap = bootstrap
         self.random_state = random_state
 
     def fit(self, X, y=None, **fit_params):
@@ -36,15 +43,13 @@ class resAdjGradientBoostingRegressor(BaseEstimator, RegressorMixin):
                 i = col.split('_')[1]
                 y_train = X['adjY_' + i]
                 break
-        est = GradientBoostingRegressor(loss=self.loss,
-                                        learning_rate=self.learning_rate,
-                                        n_estimators=self.n_estimators,
-                                        subsample=self.subsample,
-                                        min_samples_split=self.min_samples_split,
-                                        min_samples_leaf=self.min_samples_leaf,
-                                        max_features=self.max_features,
-                                        alpha=self.alpha,
-                                        random_state=self.random_state)
+        est = RandomForestRegressor(loss=self.loss,
+                                    n_estimators=self.n_estimators,
+                                    min_samples_split=self.min_samples_split,
+                                    min_samples_leaf=self.min_samples_leaf,
+                                    max_features=self.max_features,
+                                    bootstrap=self.bootstrap,
+                                    random_state=self.random_state)
         self.estimator = est.fit(X_train, y_train)
         return self
 
