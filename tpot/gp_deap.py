@@ -239,7 +239,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
         # Update generation statistic for all individuals which have invalid 'generation' stats
         # This hold for individuals that have been altered in the varOr function
-        for ind in population:
+        for ind in offspring:
             if ind.statistics['generation'] == 'INVALID':
                 ind.statistics['generation'] = gen
 
