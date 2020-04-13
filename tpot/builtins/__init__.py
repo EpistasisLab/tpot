@@ -32,9 +32,12 @@ from .feature_set_selector import FeatureSetSelector
 from .resAdjPredefinedSplits import resAdjPredefinedSplits
 from .resAdjScorers import resAdjMseScorer, resAdjR2Scorer
 from .resAdjTransformer import resAdjTransformer
-from .resAdj_selectors import resAdjSelectFromModel, resAdjSelectFwe, \
-                            resAdjSelectPercentile, resAdjVarianceThreshold
-from .resAdj_preprocessors import resAdjBinarizer, resAdjFastICA, \
+from .resAdj_selectors import resAdjSelectFromModel, \
+                            resAdjSelectFwe, \
+                            resAdjSelectPercentile, \
+                            resAdjVarianceThreshold
+from .resAdj_preprocessors import resAdjBinarizer, \
+                            resAdjFastICA, \
                             resAdjFeatureAgglomeration, \
                             resAdjMaxAbsScaler, \
                             resAdjMinMaxScaler, \
