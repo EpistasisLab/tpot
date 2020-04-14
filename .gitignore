@@ -77,3 +77,6 @@ analyze-oj2-tpot-mdr.ipynb
 tpot-mdr-demo.ipynb
 
 github.com/
+
+# User-specific Visual Studio Code configuration
+.vscode
