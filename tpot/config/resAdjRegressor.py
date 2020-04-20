@@ -189,7 +189,7 @@ resAdj_regressor_config_dict = {
     },
 
     'tpot.builtins.resAdjSelectPercentile': {
-        'percentile': range(1, 101), # this range includes the identity transformation so to make a template including Transformer more flexible
+        'percentile': range(1, 101), # this range includes the identity transformation so to make a template including Selector more flexible
         'score_func': {
             'sklearn.feature_selection.f_regression': None
         }
