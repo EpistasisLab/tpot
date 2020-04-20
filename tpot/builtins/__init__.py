@@ -49,7 +49,8 @@ from .resAdj_preprocessors import resAdjBinarizer, \
                             resAdjRBFSampler, \
                             resAdjRobustScaler, \
                             resAdjStandardScaler, \
-                            resAdjZeroCount
+                            resAdjZeroCount, \
+                            resAdjCopy
 from .resAdj_estimators import resAdjAdaBoostRegressor, \
                             resAdjDecisionTreeRegressor, \
                             resAdjElasticNetCV, \

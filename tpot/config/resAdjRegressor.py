@@ -117,6 +117,9 @@ resAdj_regressor_config_dict = {
     },
 
     # Preprocessors
+    'tpot.builtins.resAdjCopy': {
+    },
+
     'tpot.builtins.resAdjBinarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
     },
