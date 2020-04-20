@@ -427,6 +427,8 @@ class TPOTBase(BaseEstimator):
                 elif main_type.count(step): # if the step is a main type
                     ops = [op for op in self.operators if op.type() == step]
                     for operator in ops:
+                        if operator.__name__ in ["resAdjTransformer", "FeatureSetSelector"]:
+                            continue
                         arg_types =  operator.parameter_types()[0][1:]
                         p_types = ([step_in_type] + arg_types, step_ret_type)
                         self._pset.addPrimitive(operator, *p_types)
@@ -442,6 +444,7 @@ class TPOTBase(BaseEstimator):
                     arg_types =  operator.parameter_types()[0][1:]
                     p_types = ([step_in_type] + arg_types, step_ret_type)
                     self._pset.addPrimitive(operator, *p_types)
+
                     self._import_hash_and_add_terminals(operator, arg_types)
         self.ret_types = [np.ndarray, Output_Array] + ret_types
 
@@ -575,6 +578,11 @@ class TPOTBase(BaseEstimator):
         if self.subsample <= 0.0 or self.subsample > 1.0:
             raise ValueError(
                 'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
+            )
+        if self.subsample != 1.0 and template.count('resAdjTransformer'):
+            raise ValueError(
+                'The subsample ratio of the training instance must be 1 if resAdjTransformer'
+                'is in template.'
             )
 
         if self.n_jobs == 0:
@@ -798,6 +806,7 @@ class TPOTBase(BaseEstimator):
                 for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
                     if np.isinf(pipeline_scores.wvalues[1]):
                         sklearn_pipeline = self._toolbox.compile(expr=pipeline)
+                        print(sklearn_pipeline)
                         from sklearn.model_selection import cross_val_score
                         cv_scores = cross_val_score(sklearn_pipeline,
                                                     self.pretest_X,

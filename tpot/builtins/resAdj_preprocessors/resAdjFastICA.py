@@ -20,7 +20,6 @@ class resAdjFastICA(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None, **fit_params):
         X_train = pd.DataFrame.copy(X)
         for col in X_train.columns:
-
             if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_train.drop(col, axis=1, inplace=True)
         est = FastICA(tol=self.tol, random_state=self.random_state)
@@ -30,7 +29,7 @@ class resAdjFastICA(BaseEstimator, TransformerMixin):
     def transform(self, X):
         tmp_X = pd.DataFrame.copy(X)
         for col in tmp_X.columns:
-            if re.match(r'^indicaotr', str(col)) or re.match(r'^adjY', str(col)):
+            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 tmp_X.drop(col, axis=1, inplace=True)
         X_test_red = self.transformer.transform(tmp_X)
 

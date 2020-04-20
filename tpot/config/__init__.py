@@ -31,3 +31,4 @@ from .regressor_light import regressor_config_dict_light
 from .regressor_mdr import tpot_mdr_regressor_config_dict
 from .regressor_sparse import regressor_config_sparse
 from .regressor import regressor_config_dict
+from .resAdjRegressor import resAdj_regressor_config_dict

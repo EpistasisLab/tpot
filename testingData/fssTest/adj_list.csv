@@ -1,3 +1,4 @@
+Feature,Type,Covariates
 ENSG00000000419.8,linear,CMC;LIBD_szControl
 ENSG00000000938.8,linear,CMC;LIBD_szControl
 ENSG00000000971.11,linear,CMC;LIBD_szControl
