@@ -386,7 +386,30 @@ class TPOTBase(BaseEstimator):
 
 
     def _add_operators(self):
-        main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
+        def add_step(step, step_in_type, step_ret_type):
+            main_type = ["Classifier", "Regressor", "Selector", "Transformer"]
+            if main_type.count(step): # if the step is a main type
+                ops = [op for op in self.operators if op.type() == step]
+                for operator in ops:
+                    if operator.__name__ in ["resAdjTransformer", "FeatureSetSelector"]:
+                        continue
+                    arg_types =  operator.parameter_types()[0][1:]
+                    p_types = ([step_in_type] + arg_types, step_ret_type)
+                    self._pset.addPrimitive(operator, *p_types)
+                    self._import_hash_and_add_terminals(operator, arg_types)
+            else: # is the step is a specific operator or a wrong input
+                try:
+                    operator = next(op for op in self.operators if op.__name__ == step)
+                except:
+                    raise ValueError(
+                        'An error occured while attempting to read the specified '
+                        'template. Please check a step named {}'.format(step)
+                    )
+                arg_types =  operator.parameter_types()[0][1:]
+                p_types = ([step_in_type] + arg_types, step_ret_type)
+                self._pset.addPrimitive(operator, *p_types)
+
+                self._import_hash_and_add_terminals(operator, arg_types)
         ret_types = []
         self.op_list = []
         if self.template == None: # default pipeline structure
@@ -424,28 +447,12 @@ class TPOTBase(BaseEstimator):
                 check_template = True
                 if step == 'CombineDFs':
                     self._pset.addPrimitive(CombineDFs(), [step_in_type, step_in_type], step_in_type)
-                elif main_type.count(step): # if the step is a main type
-                    ops = [op for op in self.operators if op.type() == step]
-                    for operator in ops:
-                        if operator.__name__ in ["resAdjTransformer", "FeatureSetSelector"]:
-                            continue
-                        arg_types =  operator.parameter_types()[0][1:]
-                        p_types = ([step_in_type] + arg_types, step_ret_type)
-                        self._pset.addPrimitive(operator, *p_types)
-                        self._import_hash_and_add_terminals(operator, arg_types)
-                else: # is the step is a specific operator or a wrong input
-                    try:
-                        operator = next(op for op in self.operators if op.__name__ == step)
-                    except:
-                        raise ValueError(
-                            'An error occured while attempting to read the specified '
-                            'template. Please check a step named {}'.format(step)
-                        )
-                    arg_types =  operator.parameter_types()[0][1:]
-                    p_types = ([step_in_type] + arg_types, step_ret_type)
-                    self._pset.addPrimitive(operator, *p_types)
+                elif step.count("|"):
+                    for s in step.split('|'):
+                        add_step(s, step_in_type, step_ret_type)
+                else:
+                    add_step(step, step_in_type, step_ret_type)
 
-                    self._import_hash_and_add_terminals(operator, arg_types)
         self.ret_types = [np.ndarray, Output_Array] + ret_types
 
 
