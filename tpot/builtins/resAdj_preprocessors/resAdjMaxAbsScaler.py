@@ -2,9 +2,6 @@
 AUTHOR
 Elisabetta Manduchi
 
-DATE
-April 9, 2020
-
 SCOPE
 Modification of MaxAbsScaler which handles indicator and adjY columns.
 """

@@ -2,9 +2,6 @@
 AUTHOR
 Elisabetta Manduchi
 
-DATE
-April 9, 2020
-
 SCOPE
 Modification of RobustScaler which handles indicator and adjY columns.
 """
@@ -38,7 +35,7 @@ class resAdjRobustScaler(BaseEstimator, TransformerMixin):
 
         indX = X.filter(regex='indicator')
         if indX.shape[1] == 0:
-            raise ValueError("X has no indicator columns")
+            raise ValueError("X has no indicator columns") 
 
         adjY = X.filter(regex='adjY')
         if (adjY.shape[1] == 0):

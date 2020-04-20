@@ -2,9 +2,6 @@
 AUTHOR
 Elisabetta Manduchi
 
-DATE
-April 9, 2020
-
 SCOPE
 Modification of VarianceThreshold which handles indicator and adjY columns.
 """
@@ -26,7 +23,6 @@ class resAdjVarianceThreshold(BaseEstimator, SelectorMixin):
     def fit(self, X, y=None, **fit_params):
         X_train = pd.DataFrame.copy(X)
         for col in X_train.columns:
-
             if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_train.drop(col, axis=1, inplace=True)
         est = VarianceThreshold(threshold=self.threshold)

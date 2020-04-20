@@ -2,9 +2,6 @@
 AUTHORS
 Weixuan Fu, Elisabetta Manduchi
 
-DATE
-April 7, 2020
-
 SCOPE
 Transforms features by residual covariate adjustment.
 Can specify which features should be adjusted by which covariates.

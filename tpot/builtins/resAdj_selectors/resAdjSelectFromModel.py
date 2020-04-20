@@ -2,9 +2,6 @@
 AUTHOR
 Elisabetta Manduchi
 
-DATE
-April 10, 2020
-
 SCOPE
 Modification of SelectFromModel which handles indicator and adjY columns.
 """
@@ -33,7 +30,6 @@ class resAdjSelectFromModel(BaseEstimator, SelectorMixin):
     def fit(self, X, y=None, **fit_params):
         X_train = pd.DataFrame.copy(X)
         for col in X_train.columns:
-
             if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
                 X_train.drop(col, axis=1, inplace=True)
 
@@ -43,6 +39,8 @@ class resAdjSelectFromModel(BaseEstimator, SelectorMixin):
         adjY = X.filter(regex='adjY')
         if (adjY.shape[1] == 0):
             raise ValueError("X has no adjY columns")
+
+        y_train = y
         for col in indX.columns:
             if sum(indX[col])==0:
                 i = col.split('_')[1]

@@ -2,9 +2,6 @@
 AUTHOR
 Elisabetta Manduchi
 
-DATE
-April 9, 2020
-
 SCOPE
 Modification of FastICA which handles indicator and adjY columns.
 """
@@ -33,7 +30,7 @@ class resAdjFastICA(BaseEstimator, TransformerMixin):
     def transform(self, X):
         tmp_X = pd.DataFrame.copy(X)
         for col in tmp_X.columns:
-            if re.match(r'^indicator', str(col)) or re.match(r'^adjY', str(col)):
+            if re.match(r'^indicaotr', str(col)) or re.match(r'^adjY', str(col)):
                 tmp_X.drop(col, axis=1, inplace=True)
         X_test_red = self.transformer.transform(tmp_X)
 

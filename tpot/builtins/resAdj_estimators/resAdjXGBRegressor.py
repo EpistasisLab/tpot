@@ -2,9 +2,6 @@
 AUTHOR
 Elisabetta Manduchi
 
-DATE
-April 9, 2020
-
 SCOPE
 Modification of XGBRegressor which handles indicator and adjY columns.
 """
@@ -42,6 +39,8 @@ class resAdjXGBRegressor(BaseEstimator, RegressorMixin):
         adjY = X.filter(regex='adjY')
         if (adjY.shape[1] == 0):
             raise ValueError("X has no adjY columns")
+
+        y_train = y
         for col in indX.columns:
             if sum(indX[col])==0:
                 i = col.split('_')[1]
