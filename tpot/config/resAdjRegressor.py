@@ -117,7 +117,7 @@ resAdj_regressor_config_dict = {
     },
 
     # Preprocessors
-    'tpot.builtins.resAdjCopy': {
+    'tpot.builtins.identity': {
     },
 
     'tpot.builtins.resAdjBinarizer': {

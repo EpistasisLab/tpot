@@ -12,4 +12,4 @@ from .resAdjRBFSampler import resAdjRBFSampler
 from .resAdjRobustScaler import resAdjRobustScaler
 from .resAdjStandardScaler import resAdjStandardScaler
 from .resAdjZeroCount import resAdjZeroCount
-from .resAdjCopy import resAdjCopy
+from .identity import identity

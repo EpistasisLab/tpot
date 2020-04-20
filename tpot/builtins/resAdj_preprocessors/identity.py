@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
-class resAdjCopy(BaseEstimator, TransformerMixin):
+class identity(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None, **fit_params):
         return self
 

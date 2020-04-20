@@ -50,7 +50,7 @@ from .resAdj_preprocessors import resAdjBinarizer, \
                             resAdjRobustScaler, \
                             resAdjStandardScaler, \
                             resAdjZeroCount, \
-                            resAdjCopy
+                            identity
 from .resAdj_estimators import resAdjAdaBoostRegressor, \
                             resAdjDecisionTreeRegressor, \
                             resAdjElasticNetCV, \
