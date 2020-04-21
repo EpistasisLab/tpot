@@ -116,7 +116,7 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
             sel_uniq_features = [int(val) for val in sel_uniq_features]
             self.feat_list = sorted(list(set(sel_uniq_features).intersection(set(self.feature_names))))
             if self.res_cols:
-                self.comm_res_feat = [a for a in self.res_cols if a in self.feature_names]
+                self.comm_res_feat = [a for a in self.res_cols if int(a) in self.feature_names]
                 self.feat_list = sorted(list(set(self.feat_list + self.comm_res_feat)))
             self.feat_list_idx = self.feat_list
 
