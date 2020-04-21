@@ -136,8 +136,7 @@ def test_FeatureSetSelector_10():
     assert transformed_X.shape[0] == test_X.shape[0]
     assert transformed_X.shape[1] != test_X.shape[1]
     assert transformed_X.shape[1] == 6
-    assert np.array_equal(transformed_X, test_X[ds.feat_list])
-    assert '10' in ds.feat_list
+    assert np.array_equal(transformed_X, test_X[ds.feat_list + ['10']])
 
 
 def test_FeatureSetSelector_11():
@@ -153,5 +152,18 @@ def test_FeatureSetSelector_11():
     assert transformed_X.shape[0] == test_X.shape[0]
     assert transformed_X.shape[1] != test_X.shape[1]
     assert transformed_X.shape[1] == 6
-    assert np.array_equal(transformed_X, test_X.values[:, ds.feat_list_idx])
-    assert 10 in ds.feat_list_idx
+    assert np.array_equal(transformed_X, test_X.values[:, ds.feat_list_idx + [10]])
+
+
+def test_FeatureSetSelector_12():
+    """Assert that the StackingEstimator returns transformed X based on test feature list 1 with a missing res_cols."""
+    ds = FeatureSetSelector(subset_list="tests/subset_test.csv",
+                            sel_subset="test_subset_1",
+                            res_cols=['100'])
+    ds.fit(test_X, y=None)
+    transformed_X = ds.transform(test_X)
+
+    assert transformed_X.shape[0] == test_X.shape[0]
+    assert transformed_X.shape[1] != test_X.shape[1]
+    assert transformed_X.shape[1] == 5
+    assert np.array_equal(transformed_X, test_X[ds.feat_list])

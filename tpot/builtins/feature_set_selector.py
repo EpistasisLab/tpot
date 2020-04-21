@@ -107,17 +107,11 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
         if isinstance(X, pd.DataFrame): # use columns' names
             self.feature_names = list(X.columns.values)
             self.feat_list = sorted(list(set(sel_uniq_features).intersection(set(self.feature_names))))
-            if self.res_cols:
-                self.comm_res_feat = [a for a in self.res_cols if a in X.columns]
-                self.feat_list = list(set(self.feat_list + self.comm_res_feat))
             self.feat_list_idx = [list(X.columns).index(feat_name) for feat_name in self.feat_list]
         elif isinstance(X, np.ndarray): # use index
             self.feature_names = list(range(X.shape[1]))
             sel_uniq_features = [int(val) for val in sel_uniq_features]
             self.feat_list = sorted(list(set(sel_uniq_features).intersection(set(self.feature_names))))
-            if self.res_cols:
-                self.comm_res_feat = [a for a in self.res_cols if int(a) in self.feature_names]
-                self.feat_list = sorted(list(set(self.feat_list + self.comm_res_feat)))
             self.feat_list_idx = self.feat_list
 
         if not len(self.feat_list):
@@ -138,9 +132,18 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
             The transformed feature set.
         """
         if isinstance(X, pd.DataFrame):
-            X_transformed = X[self.feat_list]
+            if self.res_cols:
+                comm_res_feat = [a for a in self.res_cols if a in X.columns]
+                X_transformed = X[self.feat_list + comm_res_feat]
+            else:
+                X_transformed = X[self.feat_list]
         elif isinstance(X, np.ndarray):
-            X_transformed = X[:, self.feat_list_idx]
+            if self.res_cols:
+                comm_res_feat = [int(a) for a in self.res_cols if int(a) in self.feature_names]
+                feat_list_idx = self.feat_list_idx + comm_res_feat
+                X_transformed = X[:, feat_list_idx]
+            else:
+                X_transformed = X[:, self.feat_list_idx]
 
         return X_transformed
 
