@@ -102,7 +102,12 @@ for i in range(numSplits+1):
                         Yadj_test = pd.Series(index=testData.index, dtype=float)
                         Yadj_test = Ydata_test - getPredictions(estimator, B_test)
                         Yadj_test.rename('adjY', inplace=True)
-                        testData = testData.join(Yadj_test)                        
+                        testData = testData.join(Yadj_test)      
+                        oneData = np.ones(len(Ydata_test), dtype=int)
+                        indicator1 = pd.Series(oneData, index=testData.index, name='indicator_1')
+                        adjY1 = Yadj_test.copy()
+                        adjY1.rename('adjY_1', inplace=True)
+                        testData = testData.join([indicator1, adjY1])  # Mock placeholder columns needed for the pipeline to run on the testing set
         else:
                 seed = 42 + i
                 if mode == 'regression':
