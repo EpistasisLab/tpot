@@ -136,7 +136,8 @@ def test_FeatureSetSelector_10():
     assert transformed_X.shape[0] == test_X.shape[0]
     assert transformed_X.shape[1] != test_X.shape[1]
     assert transformed_X.shape[1] == 6
-    assert np.array_equal(transformed_X, test_X[ds.feat_list + ['10']])
+    assert np.array_equal(transformed_X, test_X[ds.feat_list])
+    assert '10' in ds.feat_list
 
 
 def test_FeatureSetSelector_11():
@@ -152,4 +153,5 @@ def test_FeatureSetSelector_11():
     assert transformed_X.shape[0] == test_X.shape[0]
     assert transformed_X.shape[1] != test_X.shape[1]
     assert transformed_X.shape[1] == 6
-    assert np.array_equal(transformed_X, test_X.values[:, ds.feat_list_idx + [10]])
+    assert np.array_equal(transformed_X, test_X.values[:, ds.feat_list_idx])
+    assert 10 in ds.feat_list_idx
