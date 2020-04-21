@@ -72,7 +72,7 @@ def resAdjR2Scorer(estimator, X, y):
 
     y_pred = estimator.predict(X)
     y_true = getYtrue(X, y)
-    if len(y_true) != len(y_pred, y):
+    if len(y_true) != len(y_pred):
         raise ValueError("y_pred and y_true have different lengths")
 
     score = r2_score(y_true, y_pred)
