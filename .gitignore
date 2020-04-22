@@ -69,6 +69,8 @@ target/
 
 docs/sources/examples/.Rhistory
 
+testing*/
+
 # PyCharm
 .idea
 
