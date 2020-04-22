@@ -387,12 +387,14 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
             Feature labels
         """
         if self.categorical_features == "auto":
-            self.categorical_features = auto_select_categorical_features(X, threshold=self.threshold)
+            self.categorical_features_ = auto_select_categorical_features(X, threshold=self.threshold)
+        else:
+            self.categorical_features_ = self.categorical_features
 
         return _transform_selected(
             X,
             self._fit_transform,
-            self.categorical_features,
+            self.categorical_features_,
             copy=True
         )
 
@@ -493,6 +495,6 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         """
         return _transform_selected(
             X, self._transform,
-            self.categorical_features,
+            self.categorical_features_,
             copy=True
         )
