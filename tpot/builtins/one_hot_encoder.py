@@ -386,6 +386,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         y: array-like {n_samples,} (Optional, ignored)
             Feature labels
         """
+
         if self.categorical_features == "auto":
             self.categorical_features_ = auto_select_categorical_features(X, threshold=self.threshold)
         else:
