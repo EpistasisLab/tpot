@@ -367,7 +367,7 @@ TPOT makes use of `sklearn.model_selection.cross_val_score` for evaluating pipel
 from tpot import TPOTClassifier
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
-from sklearn.metrics.scorer import make_scorer
+from sklearn.metrics import make_scorer
 
 digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,

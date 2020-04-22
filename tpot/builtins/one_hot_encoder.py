@@ -220,8 +220,6 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         self.sparse = sparse
         self.minimum_fraction = minimum_fraction
         self.threshold = threshold
-        if categorical_features == 'auto':
-            self._is_auto = True
 
     def fit(self, X, y=None):
         """Fit OneHotEncoder to X.
@@ -388,13 +386,16 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         y: array-like {n_samples,} (Optional, ignored)
             Feature labels
         """
-        if self._is_auto:
-            self.categorical_features = auto_select_categorical_features(X, threshold=self.threshold)
+
+        if self.categorical_features == "auto":
+            self.categorical_features_ = auto_select_categorical_features(X, threshold=self.threshold)
+        else:
+            self.categorical_features_ = self.categorical_features
 
         return _transform_selected(
             X,
             self._fit_transform,
-            self.categorical_features,
+            self.categorical_features_,
             copy=True
         )
 
@@ -495,6 +496,6 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         """
         return _transform_selected(
             X, self._transform,
-            self.categorical_features,
+            self.categorical_features_,
             copy=True
         )
