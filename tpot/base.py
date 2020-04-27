@@ -586,11 +586,12 @@ class TPOTBase(BaseEstimator):
             raise ValueError(
                 'The subsample ratio of the training instance must be in the range (0.0, 1.0].'
             )
-        if self.subsample != 1.0 and template.count('resAdjTransformer'):
-            raise ValueError(
-                'The subsample ratio of the training instance must be 1 if resAdjTransformer'
-                'is in template.'
-            )
+        if self.template:
+            if self.subsample != 1.0 and self.template.count('resAdjTransformer'):
+                raise ValueError(
+                    'The subsample ratio of the training instance must be 1 if resAdjTransformer'
+                    'is in template.'
+                )
 
         if self.n_jobs == 0:
             raise ValueError(
@@ -813,7 +814,6 @@ class TPOTBase(BaseEstimator):
                 for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
                     if np.isinf(pipeline_scores.wvalues[1]):
                         sklearn_pipeline = self._toolbox.compile(expr=pipeline)
-                        print(sklearn_pipeline)
                         from sklearn.model_selection import cross_val_score
                         cv_scores = cross_val_score(sklearn_pipeline,
                                                     self.pretest_X,
@@ -1132,7 +1132,6 @@ class TPOTBase(BaseEstimator):
         """
         if self.verbosity > 1:
             print('Imputing missing values in feature set')
-
         if self._fitted_imputer is None:
             self._fitted_imputer = SimpleImputer(strategy="median")
             self._fitted_imputer.fit(features)
@@ -1179,10 +1178,14 @@ class TPOTBase(BaseEstimator):
                     'customized config dictionary supports sparse matriies.'
                 )
         else:
+            if_dataframe = False
             if isinstance(features, np.ndarray):
                 if np.any(np.isnan(features)):
                     self._imputed = True
             elif isinstance(features, DataFrame):
+                features_columns = features.columns
+                feature_index = features.index
+                if_dataframe = True
                 if features.isnull().values.any():
                     self._imputed = True
 
@@ -1193,12 +1196,16 @@ class TPOTBase(BaseEstimator):
             if target is not None:
                 X, y = check_X_y(features, target, accept_sparse=True, dtype=None)
                 if self._imputed:
-                    return X, y
+                    if if_dataframe:
+                        X = DataFrame(X, columns=features_columns, index=feature_index)
+                    return X, target
                 else:
                     return features, target
             else:
                 X = check_array(features, accept_sparse=True, dtype=None)
                 if self._imputed:
+                    if if_dataframe:
+                        X = DataFrame(X, columns=features_columns, index=feature_index)
                     return X
                 else:
                     return features

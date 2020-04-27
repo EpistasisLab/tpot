@@ -233,7 +233,6 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         -------
         self
         """
-        X = check_array(X, accept_sparse='csr')
         self.fit_transform(X)
         return self
 
@@ -492,7 +491,6 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         X_out : sparse matrix if sparse=True else a 2-d array, dtype=int
             Transformed input.
         """
-        X = check_array(X, accept_sparse='csr')
         return _transform_selected(
             X, self._transform,
             self.categorical_features,
