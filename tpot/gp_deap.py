@@ -230,9 +230,6 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
 
     # Begin the generational process
     for gen in range(1, ngen + 1):
-        # after each population save a periodic pipeline
-        if per_generation_function is not None:
-            per_generation_function(gen)
         # Vary the population
         offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
 
