@@ -51,14 +51,17 @@ def balanced_accuracy(y_true, y_pred):
     for this_class in all_classes:
         this_class_sensitivity = 0.
         this_class_specificity = 0.
+
         if sum(y_true == this_class) != 0:
             this_class_sensitivity = \
                 float(sum((y_pred == this_class) & (y_true == this_class))) /\
                 float(sum((y_true == this_class)))
-
+        if sum(y_true != this_class) != 0:
             this_class_specificity = \
                 float(sum((y_pred != this_class) & (y_true != this_class))) /\
                 float(sum((y_true != this_class)))
+        else: # in rase case, y_true has only 1 class then specificity should be 1
+            this_class_specificity = 1.
 
         this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
         all_class_accuracies.append(this_class_accuracy)
