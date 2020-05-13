@@ -23,6 +23,8 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+import platform
+
 import numpy as np
 from tpot.builtins import StackingEstimator
 from sklearn.linear_model import LogisticRegression, Lasso
@@ -103,4 +105,10 @@ def test_StackingEstimator_4():
     cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features_r, training_target_r, cv=3, scoring='r2'))
     known_cv_score = 0.8216045257587923
 
-    assert np.allclose(known_cv_score, cv_score)
+    # On some non-amd64 systems such as arm64, a resulting score of
+    # 0.8207525232725118 was observed, so we need to add a tolerance there
+    if platform.machine() != 'x86_64':
+        assert np.allclose(known_cv_score, cv_score, rtol=0.01)
+    else:
+        assert np.allclose(known_cv_score, cv_score)
+

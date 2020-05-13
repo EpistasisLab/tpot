@@ -7,24 +7,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="Randal S. Olson">
+  <link rel="canonical" href="http://epistasislab.github.io/tpot/using/">
   <link rel="shortcut icon" href="../img/favicon.ico">
   <title>Using TPOT - TPOT</title>
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
-  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
   
   <script>
     // Current page data
     var mkdocs_page_name = "Using TPOT";
     var mkdocs_page_input_path = "using.md";
-    var mkdocs_page_url = "/using/";
+    var mkdocs_page_url = "/tpot/using/";
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -34,108 +36,61 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
         <a href=".." class="icon icon-home"> TPOT</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	<ul class="current">
-	  
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="..">Home</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../installing/">Installation</a>
-	    </li>
-          
-            <li class="toctree-l1 current">
-		
-    <a class="current" href="./">Using TPOT</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l2"><a href="#what-to-expect-from-automl-software">What to expect from AutoML software</a></li>
-    
-
-    <li class="toctree-l2"><a href="#tpot-with-code">TPOT with code</a></li>
-    
-
-    <li class="toctree-l2"><a href="#tpot-on-the-command-line">TPOT on the command line</a></li>
-    
-
-    <li class="toctree-l2"><a href="#scoring-functions">Scoring functions</a></li>
-    
-
-    <li class="toctree-l2"><a href="#built-in-tpot-configurations">Built-in TPOT configurations</a></li>
-    
-
-    <li class="toctree-l2"><a href="#customizing-tpots-operators-and-parameters">Customizing TPOT's operators and parameters</a></li>
-    
-
-    <li class="toctree-l2"><a href="#template-option-in-tpot">Template option in TPOT</a></li>
-    
-
-    <li class="toctree-l2"><a href="#featuresetselector-in-tpot">FeatureSetSelector in TPOT</a></li>
-    
-
-    <li class="toctree-l2"><a href="#pipeline-caching-in-tpot">Pipeline caching in TPOT</a></li>
-    
-
-    <li class="toctree-l2"><a href="#crashfreeze-issue-with-n_jobs-1-under-osx-or-linux">Crash/freeze issue with n_jobs &gt; 1 under OSX or Linux</a></li>
-    
-
-    <li class="toctree-l2"><a href="#parallel-training-with-dask">Parallel Training with Dask</a></li>
-    
-
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../installing/">Installation</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Using TPOT</a>
+    <ul class="current">
     </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../api/">TPOT API</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../examples/">Examples</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../contributing/">Contributing</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../releases/">Release Notes</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../citing/">Citing</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../support/">Support</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../related/">Related</a>
-	    </li>
-          
-        </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../api/">TPOT API</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../examples/">Examples</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../releases/">Release Notes</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../citing/">Citing</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../support/">Support</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../related/">Related</a>
+                    </li>
+                </ul>
       </div>
-      &nbsp;
+    </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -163,6 +118,7 @@
       
     </li>
   </ul>
+  
   <hr/>
 </div>
           <div role="main">
@@ -192,7 +148,7 @@ and how long that grid search will take. That is 10,000 model configurations to 
 which means that roughly 100,000 models are fit and evaluated on the training data in one grid search.
 That's a time-consuming procedure, even for simpler models like decision trees.</p>
 <p>Typical TPOT runs will take hours to days to finish (unless it's a small dataset), but you can always interrupt
-the run partway through and see the best results so far. TPOT also <a href="../api/">provides</a> a <code>warm_start</code> parameter that
+the run partway through and see the best results so far. TPOT also <a href="/api/">provides</a> a <code>warm_start</code> parameter that
 lets you restart a TPOT run from where it left off.</p>
 <h5>AutoML algorithms can recommend different solutions for the same dataset</h5>
 
@@ -216,7 +172,7 @@ as grid search.</p>
 </code></pre>
 
 <p>It's also possible to use TPOT for regression problems with the <code>TPOTRegressor</code> class. Other than the class name,
-a <code>TPOTRegressor</code> is used the same way as a <code>TPOTClassifier</code>. You can read more about the <code>TPOTClassifier</code> and <code>TPOTRegressor</code> classes in the <a href="../api/">API documentation</a>.</p>
+a <code>TPOTRegressor</code> is used the same way as a <code>TPOTClassifier</code>. You can read more about the <code>TPOTClassifier</code> and <code>TPOTRegressor</code> classes in the <a href="/api/">API documentation</a>.</p>
 <p>Some example code with custom TPOT parameters might look like:</p>
 <pre><code class="Python">pipeline_optimizer = TPOTClassifier(generations=5, population_size=20, cv=5,
                                     random_state=42, verbosity=2)
@@ -253,7 +209,7 @@ print(pipeline_optimizer.score(X_test, y_test))
 pipeline_optimizer.export('tpot_exported_pipeline.py')
 </code></pre>
 
-<p>Check our <a href="../examples/">examples</a> to see TPOT applied to some specific data sets.</p>
+<p>Check our <a href="examples/">examples</a> to see TPOT applied to some specific data sets.</p>
 <h1 id="tpot-on-the-command-line">TPOT on the command line</h1>
 <p>To use TPOT via the command line, enter the following command with a path to the data file:</p>
 <pre><code class="Shell">tpot /path_to/data_file.csv
@@ -501,7 +457,7 @@ A setting of 2 or higher will add a progress bar during the optimization procedu
 <pre><code class="Python">from tpot import TPOTClassifier
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
-from sklearn.metrics.scorer import make_scorer
+from sklearn.metrics import make_scorer
 
 digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
@@ -777,7 +733,7 @@ with joblib.parallel_backend(&quot;dask&quot;):
     
   </div>
 
-  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
       
         </div>
@@ -787,7 +743,7 @@ with joblib.parallel_backend(&quot;dask&quot;):
 
   </div>
 
-  <div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/rhiever/tpot/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -801,9 +757,13 @@ with joblib.parallel_backend(&quot;dask&quot;):
     </span>
 </div>
     <script>var base_url = '..';</script>
-    <script src="../js/theme.js"></script>
-      <script src="../search/require.js"></script>
-      <script src="../search/search.js"></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
 
 </body>
 </html>

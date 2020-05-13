@@ -23,6 +23,11 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+from sklearn.model_selection import train_test_split
+from sklearn.utils import _safe_indexing
+
+import numpy as np
+
 from .base import TPOTBase
 from .config.classifier import classifier_config_dict
 from .config.regressor import regressor_config_dict
@@ -35,7 +40,17 @@ class TPOTClassifier(TPOTBase):
     default_config_dict = classifier_config_dict  # Classification dictionary
     classification = True
     regression = False
+    def _init_pretest(self, features,target):
+        """Set the sample of data used to verify pipelines work with the passed data set.
 
+        This is not intend for anything other than perfunctory dataset pipeline compatibility testing
+        """
+
+        self.pretest_X, _, self.pretest_y, _ = train_test_split(features, target, random_state=self.random_state,
+                                                                test_size=None, train_size=min(50,int(0.9*features.shape[0])))
+        #Make sure there is a least one example from each class for this evaluative test sample
+        if not np.array_equal(np.unique(target),np.unique(self.pretest_y)):
+            self.pretest_y[0:np.unique(target,return_index=True)[1].shape[0]] = _safe_indexing(target, np.unique(target,return_index=True)[1])
 
 class TPOTRegressor(TPOTBase):
     """TPOT estimator for regression problems."""
@@ -44,3 +59,10 @@ class TPOTRegressor(TPOTBase):
     default_config_dict = regressor_config_dict  # Regression dictionary
     classification = False
     regression = True
+
+    def _init_pretest(self, features,target):
+        """Set the sample of data used to verify pipelines work with the passed data set
+
+        """
+        self.pretest_X, _, self.pretest_y, _ = train_test_split(X, y, random_state=self.random_state,
+                                                                test_size=None, train_size=min(50,int(0.9*features.shape[0])))
