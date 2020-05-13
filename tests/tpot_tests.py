@@ -1732,6 +1732,24 @@ def test_preprocess_individuals_3():
                                 tpot_obj._preprocess_individuals(individuals)
         assert tpot_obj._pbar.total == 6
 
+def test__init_pretest():
+    """Assert that the init_pretest function produces a sample with all labels"""
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT light'
+    )
+    tpot_obj._fit_init()
+
+    np.random.seed(seed=42)
+    features = np.random.rand(10000,2)
+    target = np.random.binomial(1,0.01,(10000,1))
+
+    tpot_obj._init_pretest(features, target)
+    assert(np.unique(tpot_obj.pretest_y).size == np.unique(target).size)
 
 def test_check_dataset():
     """Assert that the check_dataset function returns feature and target as expected."""
