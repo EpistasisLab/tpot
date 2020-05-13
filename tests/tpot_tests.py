@@ -1450,7 +1450,7 @@ def test_evaluated_individuals_():
         try:
             cv_scores = model_selection.cross_val_score(sklearn_pipeline, training_features, training_target, cv=5, scoring='accuracy', verbose=0)
             mean_cv_scores = np.mean(cv_scores)
-        except Exception as e:
+        except Exception:
             mean_cv_scores = -float('inf')
         assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string]['internal_cv_score'], mean_cv_scores)
         assert np.allclose(tpot_obj.evaluated_individuals_[pipeline_string]['operator_count'], operator_count)
@@ -1504,7 +1504,7 @@ def test_evaluate_individuals():
                                                             verbose=0,
                                                             error_score='raise')
             mean_cv_scores = np.mean(cv_scores)
-        except Exception as e:
+        except Exception:
             mean_cv_scores = -float('inf')
 
         assert isinstance(deap_pipeline, creator.Individual)
@@ -1546,7 +1546,7 @@ def test_evaluate_individuals_2():
                                                             verbose=0,
                                                             error_score='raise')
             mean_cv_scores = np.mean(cv_scores)
-        except Exception as e:
+        except Exception:
             mean_cv_scores = -float('inf')
 
         assert isinstance(deap_pipeline, creator.Individual)
@@ -1633,7 +1633,7 @@ def test_preprocess_individuals():
     with closing(StringIO()) as our_file:
         tpot_obj.log_file=our_file
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
-        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \
+        operator_counts, eval_individuals_str, sklearn_pipeline_list, _ = \
                                 tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
         assert_in("Pipeline encountered that has previously been evaluated", our_file.read())
@@ -1679,7 +1679,7 @@ def test_preprocess_individuals_2():
     with closing(StringIO()) as our_file:
         tpot_obj.log_file=our_file
         tpot_obj._pbar = tqdm(total=3, disable=False, file=our_file)
-        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \
+        operator_counts, eval_individuals_str, sklearn_pipeline_list, _ = \
                                 tpot_obj._preprocess_individuals(individuals)
         our_file.seek(0)
 
@@ -1728,7 +1728,7 @@ def test_preprocess_individuals_3():
         tpot_obj._lambda=4
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
         tpot_obj._pbar.n = 2
-        operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = \
+        _, _, _, _ = \
                                 tpot_obj._preprocess_individuals(individuals)
         assert tpot_obj._pbar.total == 6
 
@@ -1762,7 +1762,7 @@ def test_check_dataset_2():
     )
     tpot_obj._fit_init()
     test_sample_weight = list(range(1, len(training_target)+1))
-    ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
+    _, _ = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
     test_sample_weight[0] = 'opps'
 
     assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
@@ -1780,7 +1780,7 @@ def test_check_dataset_3():
     )
     tpot_obj._fit_init()
     test_sample_weight = list(range(1, len(training_target)+1))
-    ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
+    _, _ = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
     test_sample_weight[0] = np.nan
 
     assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
@@ -2151,7 +2151,7 @@ def test_mate_operator():
     tpot_obj.evaluated_individuals_[str(ind1)] = (2, 0.99)
     tpot_obj.evaluated_individuals_[str(ind2)] = (2, 0.99)
 
-    offspring1, offspring2 = tpot_obj._mate_operator(ind1, ind2)
+    offspring1, _ = tpot_obj._mate_operator(ind1, ind2)
     expected_offspring1 = (
         'KNeighborsClassifier('
         'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False), '

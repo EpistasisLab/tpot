@@ -582,7 +582,7 @@ def tpot_driver(args):
     tpot_obj.fit(training_features, training_target)
 
     if args.VERBOSITY in [1, 2] and tpot_obj._optimized_pipeline:
-        training_score = max([x.wvalues[1] for x in tpot_obj._pareto_front.keys])
+        training_score = max(x.wvalues[1] for x in tpot_obj._pareto_front.keys)
         print('\nTraining score: {}'.format(training_score))
         print('Holdout score: {}'.format(tpot_obj.score(testing_features, testing_target)))
 

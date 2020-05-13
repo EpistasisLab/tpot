@@ -290,7 +290,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
 
         # Remember which values should not be replaced by the value 'other'
         if self.minimum_fraction is not None:
-            do_not_replace_by_other = list()
+            do_not_replace_by_other = []
             for column in range(X.shape[1]):
                 do_not_replace_by_other.append(list())
 
