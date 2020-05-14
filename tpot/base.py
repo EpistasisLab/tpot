@@ -591,9 +591,9 @@ class TPOTBase(BaseEstimator):
 
     def _init_pretest(self, features,target):
         """Set the sample of data used to verify pipelines work with the passed data set
- 
+
         """
-        raise NotImplemented("Use TPOTClassifier or TPOTRegressor")
+        raise ValueError("Use TPOTClassifier or TPOTRegressor")
 
     def fit(self, features, target, sample_weight=None, groups=None):
         """Fit an optimized machine learning pipeline.
