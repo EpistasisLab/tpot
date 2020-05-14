@@ -40,7 +40,7 @@ class TPOTClassifier(TPOTBase):
     default_config_dict = classifier_config_dict  # Classification dictionary
     classification = True
     regression = False
-    def _init_pretest(self, features,target):
+    def _init_pretest(self, features, target):
         """Set the sample of data used to verify pipelines work with the passed data set.
 
         This is not intend for anything other than perfunctory dataset pipeline compatibility testing
@@ -60,9 +60,9 @@ class TPOTRegressor(TPOTBase):
     classification = False
     regression = True
 
-    def _init_pretest(self, features,target):
+    def _init_pretest(self, features, target):
         """Set the sample of data used to verify pipelines work with the passed data set
 
         """
-        self.pretest_X, _, self.pretest_y, _ = train_test_split(X, y, random_state=self.random_state,
+        self.pretest_X, _, self.pretest_y, _ = train_test_split(features, target, random_state=self.random_state,
                                                                 test_size=None, train_size=min(50,int(0.9*features.shape[0])))
