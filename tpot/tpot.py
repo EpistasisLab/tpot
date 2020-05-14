@@ -40,6 +40,7 @@ class TPOTClassifier(TPOTBase):
     default_config_dict = classifier_config_dict  # Classification dictionary
     classification = True
     regression = False
+    
     def _init_pretest(self, features, target):
         """Set the sample of data used to verify pipelines work with the passed data set.
 
