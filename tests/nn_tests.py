@@ -44,42 +44,21 @@ pd_features = input_data.drop('class', axis=1)
 pd_target = input_data['class']
 
 multiclass_X, multiclass_y = make_classification(
-    n_samples=50,
-    n_features=20,
+    n_samples=25,
+    n_features=4,
     n_classes=3,
     n_clusters_per_class=1
 )
 
-
-clf = TPOTClassifier(
-    random_state=42,
-    population_size=1,
-    generations=1,
-    config_dict=classifier_config_nn,
-    template='PytorchLRClassifier'
-)
-assert_raises(ValueError, clf.fit(multiclass_X, multiclass_y))
-
 # Tests
 
 def test_nn_conf_dict():
-    """NN: Assert that we can instantiate a TPOT classifier with the NN config dict."""
+    """Assert that we can instantiate a TPOT classifier with the NN config dict. (NN)"""
     clf = TPOTClassifier(config_dict=classifier_config_nn)
     assert clf.config_dict == classifier_config_nn
 
 def test_nn_errors_on_multiclass():
-    """NN: Assert that TPOT-NN throws an error when you try to pass training data with > 2 classes."""
-clf = TPOTClassifier(
-    random_state=42,
-    population_size=1,
-    generations=1,
-    config_dict=classifier_config_nn,
-    template='PytorchLRClassifier'
-)
-assert_raises(ValueError, clf.fit(multiclass_X, multiclass_y))
-
-def test_pytorch_lr_classifier():
-    """"""
+    """Assert that TPOT-NN throws an error when you try to pass training data with > 2 classes. (NN)"""
     clf = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -87,10 +66,21 @@ def test_pytorch_lr_classifier():
         config_dict=classifier_config_nn,
         template='PytorchLRClassifier'
     )
-    clf.fit(pd_features, pd_target)
+    assert_raises(RuntimeError, clf.fit, multiclass_X, multiclass_y)
+
+def test_pytorch_lr_classifier():
+    """Assert that the PytorchLRClassifier model works. (NN)"""
+    clf = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        generations=1,
+        config_dict=classifier_config_nn,
+        template='PytorchLRClassifier'
+    )
+    clf._fit_init()
 
 def test_pytorch_mlp_classifier():
-    """"""
+    """Assert that the PytorchMLPClassifier model works. (NN)"""
     clf = TPOTClassifier(
         random_state=42,
         population_size=1,
@@ -98,4 +88,4 @@ def test_pytorch_mlp_classifier():
         config_dict=classifier_config_nn,
         template='PytorchMLPClassifier'
     )
-    clf.fit(pd_features, pd_target)
+    clf._fit_init()
