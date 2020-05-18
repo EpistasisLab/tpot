@@ -13,18 +13,19 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "TPOT API";
     var mkdocs_page_input_path = "api.md";
-    var mkdocs_page_url = "/api/";
+    var mkdocs_page_url = "/tpot/api/";
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -38,7 +39,7 @@
         <a href=".." class="icon icon-home"> TPOT</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -49,7 +50,7 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="..">Home</a>
+    <span class="caption-text">Home</span>
 	    </li>
           
             <li class="toctree-l1">
@@ -156,7 +157,9 @@
                           <strong>periodic_checkpoint_folder</strong>=None,
                           <strong>early_stop</strong>=None,
                           <strong>verbosity</strong>=0,
-                          <strong>disable_update_check</strong>=False</em>)</pre>
+                          <strong>disable_update_check</strong>=False,
+                          <strong>log_file</strong>=None
+                          </em>)</pre>
 
 <div align="right"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/base.py">source</a></div>
 
@@ -166,7 +169,7 @@ preprocessors, feature selection techniques, and any other estimator or transfor
 The TPOTClassifier will also search over the hyperparameters of all objects in the pipeline.</p>
 <p>By default, TPOTClassifier will search over a broad range of supervised classification algorithms, transformers, and their parameters.
 However, the algorithms, transformers, and hyperparameters that the TPOTClassifier searches over can be fully customized using the <code>config_dict</code> parameter.</p>
-<p>Read more in the <a href="../using/#tpot-with-code">User Guide</a>.</p>
+<p>Read more in the <a href="using/#tpot-with-code">User Guide</a>.</p>
 <table>
 <tr>
 <td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
@@ -288,6 +291,7 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 <blockquote>
 Template of predefined pipeline structure. The option is for specifying a desired structure for the machine learning pipeline evaluated in TPOT.
 <br /><br />
+
 So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer, Classifier) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html), [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html) in scikit-learn) to that step. Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Classifier". By default value of template is None, TPOT generates tree-based pipeline randomly.
 
 See the <a href="../using/#template-option-in-tpot"> template option in tpot</a> section for more details.
@@ -361,6 +365,13 @@ Flag indicating whether the TPOT version checker should be disabled.
 <br /><br />
 The update checker will tell you when a new version of TPOT has been released.
 </blockquote>
+
+<strong>log_file</strong>: io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
+<br /><br />
+<blockquote>
+Save progress content to a file.
+</blockquote>
+
 </td>
 </tr>
 
@@ -643,7 +654,7 @@ preprocessors, feature selection techniques, and any other estimator or transfor
 The TPOTRegressor will also search over the hyperparameters of all objects in the pipeline.</p>
 <p>By default, TPOTRegressor will search over a broad range of supervised regression models, transformers, and their hyperparameters.
 However, the models, transformers, and parameters that the TPOTRegressor searches over can be fully customized using the <code>config_dict</code> parameter.</p>
-<p>Read more in the <a href="../using/#tpot-with-code">User Guide</a>.</p>
+<p>Read more in the <a href="using/#tpot-with-code">User Guide</a>.</p>
 <table>
 <tr>
 <td width="20%" style="vertical-align:top; background:#F5F5F5;"><strong>Parameters:</strong></td>
@@ -766,6 +777,7 @@ See the <a href="../using/#built-in-tpot-configurations">built-in configurations
 <blockquote>
 Template of predefined pipeline structure. The option is for specifying a desired structure for the machine learning pipeline evaluated in TPOT.
 <br /><br />
+
 So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer or Regressor) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html) or [`RegressorMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html) in scikit-learn) to that step. Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Regressor". By default value of template is None, TPOT generates tree-based pipeline randomly.
 
 See the <a href="../using/#template-option-in-tpot"> template option in tpot</a> section for more details.
@@ -1107,9 +1119,8 @@ The whole pipeline text as a string should be returned if output_file_name is no
     </span>
 </div>
     <script>var base_url = '..';</script>
-    <script src="../js/theme.js"></script>
-      <script src="../search/require.js"></script>
-      <script src="../search/search.js"></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>

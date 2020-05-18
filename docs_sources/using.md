@@ -342,6 +342,12 @@ End optimization process if there is no improvement in the set number of generat
 A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
 </tr>
 <tr>
+<td>-log</td>
+<td>LOG</td>
+<td>Folder path</td>
+<td>Save progress content to a file.</td>
+</tr>
+<tr>
 <td colspan=3>--no-update-check</td>
 <td>Flag indicating whether the TPOT version checker should be disabled.</td>
 </tr>
@@ -367,7 +373,7 @@ TPOT makes use of `sklearn.model_selection.cross_val_score` for evaluating pipel
 from tpot import TPOTClassifier
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
-from sklearn.metrics.scorer import make_scorer
+from sklearn.metrics import make_scorer
 
 digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,

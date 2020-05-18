@@ -52,6 +52,7 @@ from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection._split import check_cv
 
 from joblib import Parallel, delayed, Memory
 
@@ -81,6 +82,8 @@ with warnings.catch_warnings():
 class TPOTBase(BaseEstimator):
     """Automatically creates and optimizes machine learning pipelines using GP."""
 
+    classification = None  # set by child classes
+
     def __init__(self, generations=100, population_size=100, offspring_size=None,
                  mutation_rate=0.9, crossover_rate=0.1,
                  scoring=None, cv=5, subsample=1.0, n_jobs=1,
@@ -88,7 +91,8 @@ class TPOTBase(BaseEstimator):
                  random_state=None, config_dict=None, template=None,
                  warm_start=False, memory=None, use_dask=False,
                  periodic_checkpoint_folder=None, early_stop=None,
-                 verbosity=0, disable_update_check=False):
+                 verbosity=0, disable_update_check=False,
+                 log_file=None):
         """Set up the genetic programming algorithm for pipeline optimization.
 
         Parameters
@@ -232,7 +236,8 @@ class TPOTBase(BaseEstimator):
             A setting of 2 or higher will add a progress bar during the optimization procedure.
         disable_update_check: bool, optional (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
-
+        log_file: io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
+            Save progress content to a file.
 
         Returns
         -------
@@ -263,6 +268,7 @@ class TPOTBase(BaseEstimator):
         self.verbosity = verbosity
         self.disable_update_check = disable_update_check
         self.random_state = random_state
+        self.log_file = log_file
 
 
     def _setup_template(self, template):
@@ -563,9 +569,9 @@ class TPOTBase(BaseEstimator):
             )
 
         self._pbar = None
-        # Specifies where to output the progress messages (default: sys.stdout).
-        # Maybe open this API in future version of TPOT.(io.TextIOWrapper or io.StringIO)
-        self._file = sys.stdout
+
+        if not self.log_file:
+            self.log_file = sys.stdout
 
         self._setup_scoring_function(self.scoring)
 
@@ -583,6 +589,11 @@ class TPOTBase(BaseEstimator):
         else:
             self._n_jobs = self.n_jobs
 
+    def _init_pretest(self, features,target):
+        """Set the sample of data used to verify pipelines work with the passed data set.
+
+        """
+        raise ValueError("Use TPOTClassifier or TPOTRegressor")
 
     def fit(self, features, target, sample_weight=None, groups=None):
         """Fit an optimized machine learning pipeline.
@@ -625,10 +636,7 @@ class TPOTBase(BaseEstimator):
         self._fit_init()
         features, target = self._check_dataset(features, target, sample_weight)
 
-
-        self.pretest_X, _, self.pretest_y, _ = train_test_split(features,
-                                                target, train_size=min(50, int(0.9*features.shape[0])),
-                                                test_size=None, random_state=self.random_state)
+        self._init_pretest(features, target)
 
         # Randomly collect a subsample of training samples for pipeline optimization process.
         if self.subsample < 1.0:
@@ -690,7 +698,7 @@ class TPOTBase(BaseEstimator):
         else:
             total_evals = self._lambda * self.generations + self.population_size
 
-        self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False,
+        self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False, file=self.log_file,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         try:
@@ -714,9 +722,9 @@ class TPOTBase(BaseEstimator):
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
-                self._pbar.write('', file=self._file)
+                self._pbar.write('', file=self.log_file)
                 self._pbar.write('{}\nTPOT closed prematurely. Will use the current best pipeline.'.format(e),
-                                 file=self._file)
+                                 file=self.log_file)
         finally:
             # clean population for the next call if warm_start=False
             if not self.warm_start:
@@ -790,12 +798,13 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
             if not self._optimized_pipeline:
-                raise RuntimeError('There was an error in the TPOT optimization '
-                                   'process. This could be because the data was '
-                                   'not formatted properly, or because data for '
-                                   'a regression problem was provided to the '
-                                   'TPOTClassifier object. Please make sure you '
+                raise RuntimeError('There was an error in the TPOT optimization process. '
+                                   'This could be because the data was not formatted '
+                                   'properly (e.g. nan values became a third class) or '
+                                   'because data for a regression problem was provided '
+                                   'to the TPOTClassifier object. Please make sure you '
                                    'passed the data to TPOT correctly.')
+
             else:
                 pareto_front_wvalues = [pipeline_scores.wvalues[1] for pipeline_scores in self._pareto_front.keys]
                 if not self._last_optimized_pareto_front:
@@ -827,11 +836,11 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
         """
         if not self._optimized_pipeline:
-            raise RuntimeError('There was an error in the TPOT optimization '
-                               'process. This could be because the data was '
-                               'not formatted properly, or because data for '
-                               'a regression problem was provided to the '
-                               'TPOTClassifier object. Please make sure you '
+            raise RuntimeError('There was an error in the TPOT optimization process. '
+                               'This could be because the data was not formatted '
+                               'properly (e.g. nan values became a third class), or '
+                               'because data for a regression problem was provided '
+                               'to the TPOTClassifier object. Please make sure you '
                                'passed the data to TPOT correctly.')
         else:
             self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
@@ -1077,7 +1086,7 @@ class TPOTBase(BaseEstimator):
                                     self.random_state,
                                     data_file_path=data_file_path)
 
-        if output_file_name is not '':
+        if output_file_name != '':
             with open(output_file_name, 'w') as output_file:
                 output_file.write(to_write)
         else:
@@ -1267,12 +1276,14 @@ class TPOTBase(BaseEstimator):
 
         operator_counts, eval_individuals_str, sklearn_pipeline_list, stats_dicts = self._preprocess_individuals(individuals)
 
+        cv = check_cv(self.cv, target, classifier=self.classification)
+
         # Make the partial function that will be called below
         partial_wrapped_cross_val_score = partial(
             _wrapped_cross_val_score,
             features=features,
             target=target,
-            cv=self.cv,
+            cv=cv,
             scoring_function=self.scoring_function,
             sample_weight=sample_weight,
             groups=groups,
@@ -1325,10 +1336,11 @@ class TPOTBase(BaseEstimator):
 
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
-                self._pbar.write('', file=self._file)
+                self._pbar.write('', file=self.log_file)
                 self._pbar.write('{}\nTPOT closed during evaluation in one generation.\n'
                                     'WARNING: TPOT may not provide a good pipeline if TPOT is stopped/interrupted in a early generation.'.format(e),
-                                 file=self._file)
+                                 file=self.log_file)
+
             # number of individuals already evaluated in this generation
             num_eval_ind = len(result_score_list)
             self._update_evaluated_individuals_(result_score_list,
@@ -1476,7 +1488,7 @@ class TPOTBase(BaseEstimator):
         """
         if not isinstance(self._pbar, type(None)):
             if self.verbosity > 2 and pbar_msg is not None:
-                self._pbar.write(pbar_msg, file=self._file)
+                self._pbar.write(pbar_msg, file=self.log_file)
             if not self._pbar.disable:
                 self._pbar.update(pbar_num)
 

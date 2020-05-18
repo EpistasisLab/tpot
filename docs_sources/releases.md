@@ -1,3 +1,23 @@
+# Version 0.11.2
+
+- Fix `early_stop` parameter does not work properly
+- TPOT built-in `OneHotEncoder` can refit to different datasets
+- Fix the issue that the attribute `evaluated_individuals_` cannot record correct generation info.
+- Add a new parameter `log_file` to output logs to a file instead of `sys.stdout`
+- Fix some code quality issues and mistakes in documentations
+- Fix minor bugs
+
+# Version 0.11.1
+
+- Fix compatibility issue with scikit-learn v0.22
+- `warm_start` now saves both Primitive Sets and evaluated_pipelines_ from previous runs;
+- Fix the error that TPOT assign wrong fitness scores to non-evaluated pipelines (interrupted by `max_min_mins` or `KeyboardInterrupt`) ;
+- Fix the bug that mutation operator cannot generate new pipeline when template is not default value and `warm_start` is True;
+- Fix the bug that `max_time_mins` cannot stop optimization process when search space is limited.  
+- Fix a bug in exported codes when the exported pipeline is only 1 estimator
+- Fix spelling mistakes in documentations
+- Fix some code quality issues
+
 # Version 0.11.0
 
 - **Support for Python 3.4 and below has been officially dropped.** Also support for scikit-learn 0.20 or below has been dropped.
@@ -8,7 +28,7 @@
 - TPOT can independently use `generations` and `max_time_mins` to limit the optimization process through using one of the parameters or both.
 - `.export()` function will return string of exported pipeline if output filename is not specified.
 - Add [`SGDClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html) and [`SGDRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html) into TPOT default configs.
-- Documentation has been updated.
+- Documentation has been updated
 - Fix minor bugs.
 
 # Version 0.10.2
