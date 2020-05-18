@@ -590,7 +590,7 @@ class TPOTBase(BaseEstimator):
             self._n_jobs = self.n_jobs
 
     def _init_pretest(self, features,target):
-        """Set the sample of data used to verify pipelines work with the passed data set
+        """Set the sample of data used to verify pipelines work with the passed data set.
 
         """
         raise ValueError("Use TPOTClassifier or TPOTRegressor")

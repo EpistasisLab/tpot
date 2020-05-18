@@ -55,7 +55,7 @@ from tempfile import mkdtemp
 from shutil import rmtree
 import platform
 
-from sklearn.datasets import load_digits, load_boston, make_classification
+from sklearn.datasets import load_digits, load_boston, make_classification, make_regression
 from sklearn import model_selection
 from joblib import Memory
 from sklearn.metrics import make_scorer, roc_auc_score
@@ -104,7 +104,16 @@ training_features_r, testing_features_r, training_target_r, testing_target_r = \
 
 # Set up a small test dataset
 
-pretest_X, pretest_y = make_classification(n_samples=100, n_features=10, random_state=42)
+pretest_X, pretest_y = make_classification(
+                                            n_samples=100,
+                                            n_features=10,
+                                            random_state=42)
+
+pretest_X_reg, pretest_y_reg = make_regression(
+                                            n_samples=100,
+                                            n_features=10,
+                                            random_state=42
+                                            )
 
 # Set up artificial groups
 n_datapoints = pretest_y.shape[0]
@@ -1081,6 +1090,21 @@ def test_fit_6():
     tpot_obj.fit(pd_features, pd_target)
 
     assert isinstance(pd_features, pd.DataFrame)
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)
+
+
+def test_fit_7():
+    """Assert that the TPOT fit function provides an optimized pipeline."""
+    tpot_obj = TPOTRegressor(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0
+    )
+    tpot_obj.fit(pretest_X_reg, pretest_y_reg)
+
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
 
