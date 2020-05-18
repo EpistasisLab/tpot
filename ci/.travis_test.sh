@@ -18,6 +18,7 @@ python -c "import deap; print('deap %s' % deap.__version__)"
 python -c "import xgboost; print('xgboost %s ' % xgboost.__version__)"
 python -c "import update_checker; print('update_checker %s ' % update_checker.__version__)"
 python -c "import tqdm; print('tqdm %s' % tqdm.__version__)"
+python -c "import torch; print('torch %s' % torch.__version__)"
 
 if [[ "$COVERAGE" == "true" ]]; then
     nosetests -s -v --with-coverage
