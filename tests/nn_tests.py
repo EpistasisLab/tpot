@@ -23,26 +23,18 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from tpot import TPOTClassifier, TPOTRegressor
-from tpot.config.classifier_nn import classifier_config_nn
-import tpot.nn
+from tpot import TPOTClassifier
+from tpot.config import classifier_config_nn
 
 import numpy as np
-import scipy as sp
-import nose
-from sklearn.datasets import load_breast_cancer
+import pandas as pd
+from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
-from sklearn.utils.estimator_checks import check_estimator
-from nose.tools import nottest
+from nose.tools import nottest, assert_raises
 
 train_test_split = nottest(train_test_split)
 
-np.random.seed(42)
-random.seed(42)
-
-
-# Set up testing data
-
+# Set up data used in tests
 input_data = pd.read_csv(
     'tests/tests.csv',
     sep=',',
@@ -51,13 +43,59 @@ input_data = pd.read_csv(
 pd_features = input_data.drop('class', axis=1)
 pd_target = input_data['class']
 
+multiclass_X, multiclass_y = make_classification(
+    n_samples=50,
+    n_features=20,
+    n_classes=3,
+    n_clusters_per_class=1
+)
+
+
+clf = TPOTClassifier(
+    random_state=42,
+    population_size=1,
+    generations=1,
+    config_dict=classifier_config_nn,
+    template='PytorchLRClassifier'
+)
+assert_raises(ValueError, clf.fit(multiclass_X, multiclass_y))
 
 # Tests
 
-def test_conf_dict_nn():
-    """Assert that TPOT can assign TPOT-NN config dictionary to a TPOTClassifier"""
-    tpot_obj = TPOTClassifier(config_dict='TPOT NN')
-    assert tpot_obj.config_dict == classifier_config_nn
+def test_nn_conf_dict():
+    """NN: Assert that we can instantiate a TPOT classifier with the NN config dict."""
+    clf = TPOTClassifier(config_dict=classifier_config_nn)
+    assert clf.config_dict == classifier_config_nn
 
-# We need to run tests on the TPOT-NN models directly, since they are
-# implemented natively.
+def test_nn_errors_on_multiclass():
+    """NN: Assert that TPOT-NN throws an error when you try to pass training data with > 2 classes."""
+clf = TPOTClassifier(
+    random_state=42,
+    population_size=1,
+    generations=1,
+    config_dict=classifier_config_nn,
+    template='PytorchLRClassifier'
+)
+assert_raises(ValueError, clf.fit(multiclass_X, multiclass_y))
+
+def test_pytorch_lr_classifier():
+    """"""
+    clf = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        generations=1,
+        config_dict=classifier_config_nn,
+        template='PytorchLRClassifier'
+    )
+    clf.fit(pd_features, pd_target)
+
+def test_pytorch_mlp_classifier():
+    """"""
+    clf = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        generations=1,
+        config_dict=classifier_config_nn,
+        template='PytorchMLPClassifier'
+    )
+    clf.fit(pd_features, pd_target)

@@ -23,18 +23,27 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+# Note: There are quite a few pylint messages disabled in this file. In
+# general, this usually should be avoided. However, in some cases it is
+# necessary: e.g., we use `X` and `y` to refer to data and labels in compliance
+# with the scikit-learn API, but pylint doesn't like short variable names.
+
+# pylint: disable=redefined-outer-name
+# pylint: disable=not-callable
+
 from abc import abstractmethod
 
 import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, assert_all_finite, check_array, check_is_fitted
+from sklearn.utils.multiclass import type_of_target
 
 import torch
 from torch import nn
 from torch.autograd import Variable
-from torch.optim import ASGD, SGD, Adam
-from torch.utils.data import Dataset, TensorDataset, DataLoader
+from torch.optim import Adam
+from torch.utils.data import TensorDataset, DataLoader
 
 def _pytorch_model_is_fully_initialized(clf: BaseEstimator):
     if all([
@@ -105,11 +114,12 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
         self
             Fitted estimator.
         """
-        
+        # pylint: disable=no-member
+
         self._init_model(X, y)
 
         assert _pytorch_model_is_fully_initialized(self)
-        
+
         for epoch in range(self.num_epochs):
             for i, (samples, labels) in enumerate(self.data_loader):
                 samples = samples.to(self.device)
@@ -134,13 +144,23 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
                         )
                     )
 
+        # pylint: disable=attribute-defined-outside-init
         self.is_fitted_ = True
         return self
 
     def validate_inputs(self, X, y):
-        X, y = check_X_y(X, y, accept_sparse=False)
+        # Things we don't want to allow until we've tested them:
+        # - Sparse inputs
+        # - Multiclass outputs (e.g., more than 2 classes in `y`)
+        # - Non-finite inputs
+        # - Complex inputs
+
+        X, y = check_X_y(X, y, accept_sparse=False, allow_nd=False)
 
         assert_all_finite(X, y)
+
+        if type_of_target(y) != 'binary':
+            raise ValueError("Non-binary targets not supported")
 
         if np.any(np.iscomplex(X)) or np.any(np.iscomplex(y)):
             raise ValueError("Complex data not supported")
@@ -152,12 +172,13 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
                 raise TypeError("argument must be a string.* number")
 
         return (X, y)
-        
+
     def predict(self, X):
+        # pylint: disable=no-member
 
         X = check_array(X, accept_sparse=True)
         check_is_fitted(self, 'is_fitted_')
-        
+
         X = torch.tensor(X, dtype=torch.float32).to(self.device)
         predictions = np.empty(len(X), dtype=int)
         for i, rows in enumerate(X):
@@ -174,6 +195,7 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
 
 
 class _LR(nn.Module):
+    # pylint: disable=arguments-differ
     def __init__(self, input_size, num_classes):
         super(_LR, self).__init__()
         self.linear = nn.Linear(input_size, num_classes)
@@ -183,6 +205,7 @@ class _LR(nn.Module):
         return out
 
 class _MLP(nn.Module):
+    # pylint: disable=arguments-differ
     def __init__(self, input_size, num_classes):
         super(_MLP, self).__init__()
 
@@ -220,6 +243,15 @@ class PytorchLRClassifier(PytorchClassifier):
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.verbose = verbose
+        
+        self.input_size = None
+        self.num_classes = None
+        self.network = None
+        self.loss_function = None
+        self.optimizer = None
+        self.data_loader = None
+        self.train_dset_len = None
+        self.device = None
 
     def _init_model(self, X, y):
         device = _get_cuda_device_if_available()
@@ -265,6 +297,15 @@ class PytorchMLPClassifier(PytorchClassifier):
         self.weight_decay = weight_decay
         self.verbose = verbose
 
+        self.input_size = None
+        self.num_classes = None
+        self.network = None
+        self.loss_function = None
+        self.optimizer = None
+        self.data_loader = None
+        self.train_dset_len = None
+        self.device = None
+
     def _init_model(self, X, y):
         device = _get_cuda_device_if_available()
 
@@ -290,60 +331,3 @@ class PytorchMLPClassifier(PytorchClassifier):
 
     def _more_tags(self):
         return {'non_deterministic': True, 'binary_only': True}
-
-
-if __name__=="__main__":
-    from pmlb import fetch_data
-    from sklearn.model_selection import train_test_split
-    from tpot import TPOTClassifier
-
-    tpot_nn_test_config = {
-        'tpot.builtins.PytorchLRClassifier': {
-            'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-            'batch_size': [4, 8, 16, 32],
-            'num_epochs': [5, 10, 15],
-            'weight_decay': [0, 1e-4, 1e-3, 1e-2]
-        },
-
-        'tpot.builtins.PytorchMLPClassifier': {
-            'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
-            'batch_size': [4, 8, 16, 32],
-            'num_epochs': [5, 10, 15],
-            'weight_decay': [0, 1e-4, 1e-3, 1e-2]
-        }
-    }
-
-    # Run this file as a python script to test Pytorch in TPOT
-    X, y = fetch_data('clean2', return_X_y=True)
-    X = X[:,2:]
-
-    if True:
-        # Rescale data [-1., 1.]
-        X /= np.abs(X).max(axis=0)
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
-        
-
-    if False:
-        print("Running templated example of PytorchLRClassifier...")
-        
-        tpot = TPOTClassifier(generations=5, population_size=50, template='PytorchLRClassifier', config_dict=tpot_nn_test_config, verbosity=2)
-        tpot.fit(X_train, y_train)
-
-        print("Accuracy score: {0:.3f}".format(tpot.score(X_test, y_test)))
-        tpot.export('tpot_pytorch_lr_pipeline.py')
-
-    if True:
-        print("Running templated example of PytorchMLPClassifier...")
-
-        tpot = TPOTClassifier(generations=5, population_size=50, template='PytorchMLPClassifier', config_dict=tpot_nn_test_config, verbosity=2)
-        tpot.fit(X_train, y_train)
-
-        print("Accuracy score: {0:.3f}".format(tpot.score(X_test, y_test)))
-        tpot.export('tpot_pytorch_mlp_pipeline.py')
-
-    if False:
-        print("Running non TPOT example of PytorchMLPClassifier...")
-        clf = PytorchMLPClassifier(verbose=True, num_epochs=10)
-        clf.fit(X_train, y_train)
-        print(clf.score(X_test, y_test))
