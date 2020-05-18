@@ -342,6 +342,12 @@ End optimization process if there is no improvement in the set number of generat
 A setting of 2 or higher will add a progress bar during the optimization procedure.</td>
 </tr>
 <tr>
+<td>-log</td>
+<td>LOG</td>
+<td>Folder path</td>
+<td>Save progress content to a file.</td>
+</tr>
+<tr>
 <td colspan=3>--no-update-check</td>
 <td>Flag indicating whether the TPOT version checker should be disabled.</td>
 </tr>
