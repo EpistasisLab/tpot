@@ -803,7 +803,11 @@ class TPOTBase(BaseEstimator):
                                    'not formatted properly, or because data for '
                                    'a regression problem was provided to the '
                                    'TPOTClassifier object. Please make sure you '
-                                   'passed the data to TPOT correctly.')
+                                   'passed the data to TPOT correctly. If you '
+                                   'enabled PyTorch estimators, please check '
+                                   'the special data requirements in the online '
+                                   'documentation: '
+                                   'https://epistasislab.github.io/tpot/using/')
             else:
                 pareto_front_wvalues = [pipeline_scores.wvalues[1] for pipeline_scores in self._pareto_front.keys]
                 if not self._last_optimized_pareto_front:
