@@ -805,7 +805,7 @@ class TPOTBase(BaseEstimator):
                                    'TPOTClassifier object. Please make sure you '
                                    'passed the data to TPOT correctly. If you '
                                    'enabled PyTorch estimators, please check '
-                                   'the special data requirements in the online '
+                                   'the data requirements in the online '
                                    'documentation: '
                                    'https://epistasislab.github.io/tpot/using/')
             else:
