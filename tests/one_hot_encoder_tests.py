@@ -333,3 +333,10 @@ def test_k_fold_cv():
     )
 
     cross_val_score(clf, boston.data, boston.target, cv=KFold(n_splits=10, shuffle=True))
+
+
+def test_refit_on_new_data():
+    """Test that OneHotEncoder can refit on two data sets."""
+    ohe = OneHotEncoder()
+    ohe.fit(dense1)
+    ohe.fit(dense2)

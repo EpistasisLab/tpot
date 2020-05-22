@@ -25,6 +25,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
+from sklearn.gaussian_process.kernels import Kernel
 try:
     from sklearn.feature_selection._base import SelectorMixin
 except ImportError:
@@ -212,7 +213,7 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 for dkey, dval in prange.items():
                     dep_import_str, dep_op_str, dep_op_obj = source_decode(dkey, verbose=verbose)
                     if dep_import_str in import_hash:
-                        import_hash[import_str].append(dep_op_str)
+                        import_hash[dep_import_str].append(dep_op_str)
                     else:
                         import_hash[dep_import_str] = [dep_op_str]
                     dep_op_list[pname] = dep_op_str
@@ -292,7 +293,8 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                         if issubclass(doptype, BaseEstimator) or \
                             issubclass(doptype, ClassifierMixin) or \
                             issubclass(doptype, RegressorMixin) or \
-                            issubclass(doptype, TransformerMixin):
+                            issubclass(doptype, TransformerMixin) or \
+                            issubclass(doptype, Kernel):
                             arg_value = "{}({})".format(dep_op_str, ", ".join(dep_op_arguments[dep_op_str]))
                     tmp_op_args.append("{}={}".format(dep_op_pname, arg_value))
             op_arguments = tmp_op_args + op_arguments

@@ -15,7 +15,7 @@ markdown_extensions:
 
 copyright: Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania
 
-pages:
+nav:
 - Home: index.md
 - Installation: installing.md
 - Using TPOT: using.md

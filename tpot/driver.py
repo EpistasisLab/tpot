@@ -462,6 +462,18 @@ def _get_arg_parser():
     )
 
     parser.add_argument(
+        '-log',
+        action='store',
+        dest='LOG',
+        default=None,
+        type=str,
+        help=(
+            'Save progress content to a file'
+        )
+    )
+
+
+    parser.add_argument(
         '--no-update-check',
         action='store_true',
         dest='DISABLE_UPDATE_CHECK',
@@ -576,13 +588,14 @@ def tpot_driver(args):
         periodic_checkpoint_folder=args.CHECKPOINT_FOLDER,
         early_stop=args.EARLY_STOP,
         verbosity=args.VERBOSITY,
-        disable_update_check=args.DISABLE_UPDATE_CHECK
+        disable_update_check=args.DISABLE_UPDATE_CHECK,
+        log_file=args.LOG
     )
 
     tpot_obj.fit(training_features, training_target)
 
     if args.VERBOSITY in [1, 2] and tpot_obj._optimized_pipeline:
-        training_score = max([x.wvalues[1] for x in tpot_obj._pareto_front.keys])
+        training_score = max(x.wvalues[1] for x in tpot_obj._pareto_front.keys)
         print('\nTraining score: {}'.format(training_score))
         print('Holdout score: {}'.format(tpot_obj.score(testing_features, testing_target)))
 
