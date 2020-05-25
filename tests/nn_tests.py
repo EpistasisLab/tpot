@@ -99,4 +99,4 @@ def test_nn_errors_on_invalid_input_types():
         num_epochs=1, batch_size=8
     )
     pd_target_str = pd.Series(repeat('foo', len(pd_target)))
-    assert_raises('ValueError', clf.fit(pd_features, pd_target_str)
+    assert_raises(ValueError, clf.fit, pd_features, pd_target_str)
