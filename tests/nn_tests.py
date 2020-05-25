@@ -32,6 +32,7 @@ import pandas as pd
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from nose.tools import nottest, assert_raises
+from itertools import repeat
 
 train_test_split = nottest(train_test_split)
 
@@ -75,6 +76,7 @@ def test_pytorch_lr_classifier():
         num_epochs=1, batch_size=8
     )
     pred = clf.fit_transform(pd_features, pd_target)
+    tags = clf._more_tags()
 
 def test_pytorch_mlp_classifier():
     """Assert that the PytorchMLPClassifier model works. (NN)"""
@@ -82,3 +84,19 @@ def test_pytorch_mlp_classifier():
         num_epochs=1, batch_size=8
     )
     pred = clf.fit_transform(pd_features, pd_target)
+    tags = clf._more_tags()
+
+def test_nn_estimators_have_settable_params():
+    """Assert that we can set the params of a TPOT-NN estimator. (NN)"""
+    clf = nn.PytorchLRClassifier(
+        num_epochs=1, batch_size=8
+    )
+    clf.set_params(foo='bar')
+
+def test_nn_errors_on_invalid_input_types():
+    """Assert that TPOT will error if you pass unsupported inputs to an NN estimator. (NN)"""
+    clf = nn.PytorchLRClassifier(
+        num_epochs=1, batch_size=8
+    )
+    pd_target_str = pd.Series(repeat('foo', len(pd_target)))
+    assert_raises('ValueError', clf.fit(pd_features, pd_target_str)

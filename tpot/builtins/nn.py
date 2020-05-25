@@ -72,11 +72,11 @@ class PytorchEstimator(BaseEstimator):
     """
 
     @abstractmethod
-    def fit(self, X, y):
+    def fit(self, X, y): # pragma: no cover
         pass
 
     @abstractmethod
-    def transform(self, X):
+    def transform(self, X): # pragma: no cover
         pass
 
     def predict(self, X):
@@ -94,7 +94,7 @@ class PytorchEstimator(BaseEstimator):
 
 class PytorchClassifier(PytorchEstimator, ClassifierMixin):
     @abstractmethod
-    def _init_model(self, X, y):
+    def _init_model(self, X, y): # pragma: no cover
         pass
 
     def fit(self, X, y):
@@ -168,8 +168,8 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
             try:
                 X = X.astype(float)
                 y = y.astype(int)
-            except TypeError:
-                raise TypeError("argument must be a string.* number")
+            except (TypeError, ValueError):
+                raise ValueError("argument must be a string.* number")
 
         return (X, y)
 
