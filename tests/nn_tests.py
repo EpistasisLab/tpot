@@ -25,6 +25,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tpot import TPOTClassifier
 from tpot.config import classifier_config_nn
+from tpot.builtins import nn as nn
 
 import numpy as np
 import pandas as pd
@@ -70,22 +71,14 @@ def test_nn_errors_on_multiclass():
 
 def test_pytorch_lr_classifier():
     """Assert that the PytorchLRClassifier model works. (NN)"""
-    clf = TPOTClassifier(
-        random_state=42,
-        population_size=1,
-        generations=1,
-        config_dict=classifier_config_nn,
-        template='PytorchLRClassifier'
+    clf = nn.PytorchLRClassifier(
+        num_epochs=1, batch_size=8
     )
-    clf._fit_init()
+    pred = clf.fit_transform(pd_features, pd_target)
 
 def test_pytorch_mlp_classifier():
     """Assert that the PytorchMLPClassifier model works. (NN)"""
-    clf = TPOTClassifier(
-        random_state=42,
-        population_size=1,
-        generations=1,
-        config_dict=classifier_config_nn,
-        template='PytorchMLPClassifier'
+    clf = nn.PytorchMLPClassifier(
+        num_epochs=1, batch_size=8
     )
-    clf._fit_init()
+    pred = clf.fit_transform(pd_features, pd_target)
