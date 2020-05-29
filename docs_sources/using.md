@@ -27,7 +27,7 @@ which means that roughly 100,000 models are fit and evaluated on the training da
 That's a time-consuming procedure, even for simpler models like decision trees.
 
 Typical TPOT runs will take hours to days to finish (unless it's a small dataset), but you can always interrupt
-the run partway through and see the best results so far. TPOT also [provides](/api/) a `warm_start` parameter that
+the run partway through and see the best results so far. TPOT also [provides](/tpot/api/) a `warm_start` parameter that
 lets you restart a TPOT run from where it left off.
 
 <h5>AutoML algorithms can recommend different solutions for the same dataset</h5>
@@ -61,7 +61,7 @@ pipeline_optimizer = TPOTClassifier()
 ```
 
 It's also possible to use TPOT for regression problems with the `TPOTRegressor` class. Other than the class name,
-a `TPOTRegressor` is used the same way as a `TPOTClassifier`. You can read more about the `TPOTClassifier` and `TPOTRegressor` classes in the [API documentation](/api/).
+a `TPOTRegressor` is used the same way as a `TPOTClassifier`. You can read more about the `TPOTClassifier` and `TPOTRegressor` classes in the [API documentation](/tpot/api/).
 
 Some example code with custom TPOT parameters might look like:
 
@@ -111,7 +111,7 @@ print(pipeline_optimizer.score(X_test, y_test))
 pipeline_optimizer.export('tpot_exported_pipeline.py')
 ```
 
-Check our [examples](examples/) to see TPOT applied to some specific data sets.
+Check our [examples](/tpot/examples/) to see TPOT applied to some specific data sets.
 
 # TPOT on the command line
 
@@ -447,6 +447,14 @@ This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
 <a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor_sparse.py">Regression</a></td>
 </tr>
 
+<tr>
+<td>TPOT-NN</td>
+<td>TPOT uses the same configuration as "Default TPOT" plus additional neural network estimators written in PyTorch (currently only `tpot.builtins.PytorchLRClassifier` and `tpot.builtins.PytorchMLPClassifier`).
+<br /><br />
+Currently only classification is supported, but future releases will include regression estimators.</td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier_nn.py">Classification</a></td>
+</tr>
+
 </table>
 
 To use any of these configurations, simply pass the string name of the configuration to the `config_dict` parameter (or `-config` on the command line). For example, to use the "TPOT light" configuration:
@@ -673,7 +681,7 @@ See [dask's distributed joblib integration](https://distributed.readthedocs.io/e
 
 Support for neural network models and deep learning is an experimental feature newly added to TPOT. Available neural network architectures are provided by the `tpot.nn` module. Unlike regular `sklearn` estimators, these models need to be written by hand, and must also inherit the appropriate base classes provided by `sklearn` for all of their built-in modules. In other words, they need implement methods like `.fit()`, `fit_transform()`, `get_params()`, etc., as described in detail on [Developing scikit-learn estimators](https://scikit-learn.org/stable/developers/develop.html).
 
-## Telling TPOT to use `tpot.nn`
+## Telling TPOT to use built-in PyTorch neural network models
 
 Mainly due to the issues described below, TPOT won't use its neural network models unless you explicitly tell it to do so. This is done as follows:
 
@@ -689,7 +697,11 @@ tpot_config = {
 }
 ```
 
+- Alternatively, use a template string including `PytorchLRClassifier` or `PytorchMLPClassifier` while loading the TPOT-NN configuration dictionary.
+
 Neural network models are notorious for being extremely sensitive to their initialization parameters, so you may need to heavily adjust `tpot.nn` configuration dictionaries in order to attain good performance on your dataset.
+
+A simple example of using TPOT-NN is shown in [examples](/tpot/examples/).
 
 ## Important caveats
 
