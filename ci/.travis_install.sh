@@ -38,7 +38,8 @@ conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
 source activate testenv
 
 pip install deap tqdm update_checker stopit \
-    dask[delayed] dask[dataframe] xgboost cloudpickle==0.5.6 dask_ml==$DASK_ML_VERSION fsspec>=0.3.3
+    dask[delayed] dask[dataframe] xgboost cloudpickle==0.5.6 \
+    dask_ml==$DASK_ML_VERSION fsspec>=0.3.3 torch
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
@@ -56,4 +57,5 @@ python -c "import update_checker; print('update_checker %s' % update_checker.__v
 python -c "import tqdm; print('tqdm %s' % tqdm.__version__)"
 python -c "import pandas; print('pandas %s' % pandas.__version__)"
 python -c "import stopit; print('stopit %s' % stopit.__version__)"
+python -c "import torch; print('torch %s' % torch.__version__)"
 python setup.py build_ext --inplace

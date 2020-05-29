@@ -25,9 +25,25 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 
-# Check the TPOT documentation for information on the structure of config dicts
+# This configuration is essentially the same thing as TPOT's default config
+# dict, but with the Pytorch classifiers prepended to the list of available
+# estimators.
 
-classifier_config_dict = {
+classifier_config_nn = {
+    
+    'tpot.builtins.PytorchLRClassifier': {
+        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+        'batch_size': [4, 8, 16, 32],
+        'num_epochs': [5, 10, 15],
+        'weight_decay': [0, 1e-4, 1e-3, 1e-2]
+    },
+
+    'tpot.builtins.PytorchMLPClassifier': {
+        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+        'batch_size': [4, 8, 16, 32],
+        'num_epochs': [5, 10, 15],
+        'weight_decay': [0, 1e-4, 1e-3, 1e-2]
+    },
 
     # Classifiers
     'sklearn.naive_bayes.GaussianNB': {
@@ -223,5 +239,4 @@ classifier_config_dict = {
             }
         }
     }
-
 }

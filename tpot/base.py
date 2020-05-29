@@ -70,6 +70,7 @@ from .config.classifier_mdr import tpot_mdr_classifier_config_dict
 from .config.regressor_mdr import tpot_mdr_regressor_config_dict
 from .config.regressor_sparse import regressor_config_sparse
 from .config.classifier_sparse import classifier_config_sparse
+from .config.classifier_nn import classifier_config_nn
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -184,6 +185,9 @@ class TPOTBase(BaseEstimator):
             String 'TPOT sparse':
                 TPOT uses a configuration dictionary with a one-hot-encoder and the
                 operators normally included in TPOT that also support sparse matrices.
+            String 'TPOT NN':
+                TPOT uses a configuration dictionary for PyTorch neural network classifiers
+                included in `tpot.nn`.
         template: string (default: None)
             Template of predefined pipeline structure. The option is for specifying a desired structure
             for the machine learning pipeline evaluated in TPOT. So far this option only supports
@@ -339,6 +343,8 @@ class TPOTBase(BaseEstimator):
                     self._config_dict = classifier_config_sparse
                 else:
                     self._config_dict = regressor_config_sparse
+            elif config_dict == 'TPOT NN':
+                self._config_dict = classifier_config_nn
             else:
                 config = self._read_config_file(config_dict)
                 if hasattr(config, 'tpot_config'):
@@ -798,13 +804,16 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
             if not self._optimized_pipeline:
-                raise RuntimeError('There was an error in the TPOT optimization process. '
-                                   'This could be because the data was not formatted '
-                                   'properly (e.g. nan values became a third class) or '
-                                   'because data for a regression problem was provided '
-                                   'to the TPOTClassifier object. Please make sure you '
-                                   'passed the data to TPOT correctly.')
-
+                raise RuntimeError('There was an error in the TPOT optimization '
+                                   'process. This could be because the data was '
+                                   'not formatted properly, or because data for '
+                                   'a regression problem was provided to the '
+                                   'TPOTClassifier object. Please make sure you '
+                                   'passed the data to TPOT correctly. If you '
+                                   'enabled PyTorch estimators, please check '
+                                   'the data requirements in the online '
+                                   'documentation: '
+                                   'https://epistasislab.github.io/tpot/using/')
             else:
                 pareto_front_wvalues = [pipeline_scores.wvalues[1] for pipeline_scores in self._pareto_front.keys]
                 if not self._last_optimized_pareto_front:
