@@ -94,6 +94,9 @@
     <li class="toctree-l2"><a href="#magic-gamma-telescope">MAGIC Gamma Telescope</a></li>
     
 
+    <li class="toctree-l2"><a href="#neural-network-classifier-using-tpot-nn">Neural network classifier using TPOT-NN</a></li>
+    
+
     </ul>
 	    </li>
           
@@ -357,6 +360,23 @@ results = exported_pipeline.predict(testing_features)
 <p>The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found <a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb">here</a>.</p>
 <h2 id="magic-gamma-telescope">MAGIC Gamma Telescope</h2>
 <p>The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found <a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb">here</a>.</p>
+<h2 id="neural-network-classifier-using-tpot-nn">Neural network classifier using TPOT-NN</h2>
+<p>By loading the <a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier_nn.py">TPOT-NN configuration dictionary</a>, PyTorch estimators will be included for classification. Users can also create their own NN configuration dictionary that includes <code>tpot.builtins.PytorchLRClassifier</code> and/or <code>tpot.builtins.PytorchMLPClassifier</code>, or they can specify them using a template string, as shown in the following example:</p>
+<pre><code class="Python">from tpot import TPOTClassifier
+from sklearn.datasets import make_blobs
+from sklearn.model_selection import train_test_split
+
+X, y = make_blobs(n_samples=100, centers=2, n_features=3, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.75, test_size=0.25)
+
+clf = TPOTClassifier(config_dict='TPOT NN', template='Selector-Transformer-PytorchLRClassifier', 
+                     verbosity=2, population_size=10, generations=10)
+clf.fit(X_train, y_train)
+print(clf.score(X_test, y_test))
+tpot.export('tpot_nn_demo_pipeline.py')
+</code></pre>
+
+<p>This example is somewhat trivial, but it should result in nearly 100% classification accuracy.</p>
               
             </div>
           </div>
