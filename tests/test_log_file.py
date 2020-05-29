@@ -25,21 +25,25 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tpot import TPOTClassifier
 from sklearn.datasets import load_iris
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_true
 import os
+import re
 
 data = load_iris()
 X = data['data']
 y = data['target']
+
+POP_SIZE = 2
+GEN_SIZE = 2
 
 def test_log_file_verbosity_1():
   """ Set verbosity as 1. Assert log_file parameter to generate log file. """
   file_name = "progress_verbose_1.log"
   tracking_progress_file = open(file_name, "w")
   tpot_obj = TPOTClassifier(
-                population_size=10,
-                generations=10,
-                verbosity=1, 
+                population_size=POP_SIZE,
+                generations=GEN_SIZE,
+                verbosity=1,
                 log_file=tracking_progress_file
             )
   tpot_obj.fit(X, y)
@@ -50,23 +54,32 @@ def test_log_file_verbosity_2():
   file_name = "progress_verbose_2.log"
   tracking_progress_file = open(file_name, "w")
   tpot_obj = TPOTClassifier(
-                population_size=10,
-                generations=10,
-                verbosity=2, 
+                population_size=POP_SIZE,
+                generations=GEN_SIZE,
+                verbosity=2,
                 log_file=tracking_progress_file
             )
   tpot_obj.fit(X, y)
   assert_equal(os.path.getsize(file_name) > 0,  True)
+  check_generations(file_name, GEN_SIZE)
 
 def test_log_file_verbose_3():
   """ Set verbosity as 3. Assert log_file parameter to generate log file. """
   file_name = "progress_verbosity_3.log"
   tracking_progress_file = open(file_name, "w")
   tpot_obj = TPOTClassifier(
-                population_size=10,
-                generations=10,
-                verbosity=3, 
+                population_size=POP_SIZE,
+                generations=GEN_SIZE,
+                verbosity=3,
                 log_file=tracking_progress_file
             )
   tpot_obj.fit(X, y)
   assert_equal(os.path.getsize(file_name) > 0,  True)
+  check_generations(file_name, GEN_SIZE)
+
+def check_generations(file_name, generations):
+    """ Assert generation log message is present in log_file. """
+    with open(file_name, "r") as file:
+        file_text = file.read()
+    for gen in range(generations):
+        assert_true(re.search("Generation {0} - .+".format(gen+1), file_text))
