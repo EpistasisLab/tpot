@@ -18,16 +18,18 @@ TPOT is built on top of several existing Python libraries, including:
 
 * [joblib](https://joblib.readthedocs.io/en/latest/)
 
+* [PyTorch](https://pytorch.org/)
+
 Most of the necessary Python packages can be installed via the [Anaconda Python distribution](https://www.continuum.io/downloads), which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.
 
-You can install TPOP using `pip` or `conda-forge`.
+You can install TPOT using `pip` or `conda-forge`.
 
 ## pip
 
-NumPy, SciPy, scikit-learn, pandas and joblib can be installed in Anaconda via the command:
+NumPy, SciPy, scikit-learn, pandas, joblib, and PyTorch can be installed in Anaconda via the command:
 
 ```Shell
-conda install numpy scipy scikit-learn pandas joblib
+conda install numpy scipy scikit-learn pandas joblib pytorch
 ```
 
 DEAP, update_checker, tqdm and stopit can be installed with `pip` via the command:
@@ -73,7 +75,7 @@ conda install -c conda-forge tpot
 To install additional dependencies you can use:
 
 ```Shell
-conda install -c conda-forge tpot xgboost dask dask-ml scikit-mdr skrebate
+conda install -c conda-forge tpot xgboost dask dask-ml scikit-mdr skrebate pytorch
 ```
 
 ## Installation problems

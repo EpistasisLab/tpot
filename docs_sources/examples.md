@@ -174,3 +174,23 @@ The corresponding Jupyter notebook, containing the associated data preprocessing
 
 ## MAGIC Gamma Telescope
 The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found [here](https://github.com/EpistasisLab/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb).
+
+## Neural network classifier using TPOT-NN
+By loading the <a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier_nn.py">TPOT-NN configuration dictionary</a>, PyTorch estimators will be included for classification. Users can also create their own NN configuration dictionary that includes `tpot.builtins.PytorchLRClassifier` and/or `tpot.builtins.PytorchMLPClassifier`, or they can specify them using a template string, as shown in the following example:
+
+```Python
+from tpot import TPOTClassifier
+from sklearn.datasets import make_blobs
+from sklearn.model_selection import train_test_split
+
+X, y = make_blobs(n_samples=100, centers=2, n_features=3, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.75, test_size=0.25)
+
+clf = TPOTClassifier(config_dict='TPOT NN', template='Selector-Transformer-PytorchLRClassifier', 
+                     verbosity=2, population_size=10, generations=10)
+clf.fit(X_train, y_train)
+print(clf.score(X_test, y_test))
+tpot.export('tpot_nn_demo_pipeline.py')
+```
+
+This example is somewhat trivial, but it should result in nearly 100% classification accuracy.
