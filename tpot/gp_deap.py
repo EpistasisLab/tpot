@@ -253,19 +253,18 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
             # Print only the best individual fitness
             if verbose == 2:
                 high_score = max(halloffame.keys[x].wvalues[1] for x in range(len(halloffame.keys)))
-                pbar.fp.write('Generation {0} - Current best internal CV score: {1}'.format(gen, high_score))
+                pbar.fp.write('\nGeneration {0} - Current best internal CV score: {1}'.format(gen, high_score))
 
             # Print the entire Pareto front
             elif verbose == 3:
-                pbar.fp.write('Generation {} - Current Pareto front scores:'.format(gen))
+                pbar.fp.write('\nGeneration {} - Current Pareto front scores:'.format(gen))
                 for pipeline, pipeline_scores in zip(halloffame.items, reversed(halloffame.keys)):
-                    pbar.fp.write('{}\t{}\t{}'.format(
+                    pbar.fp.write('\n{}\t{}\t{}'.format(
                             int(pipeline_scores.wvalues[0]),
                             pipeline_scores.wvalues[1],
                             pipeline
                         )
                     )
-                pbar.fp.write('')
 
         # after each population save a periodic pipeline
         if per_generation_function is not None:
