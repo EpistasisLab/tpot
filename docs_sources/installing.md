@@ -18,8 +18,6 @@ TPOT is built on top of several existing Python libraries, including:
 
 * [joblib](https://joblib.readthedocs.io/en/latest/)
 
-* [PyTorch](https://pytorch.org/)
-
 Most of the necessary Python packages can be installed via the [Anaconda Python distribution](https://www.continuum.io/downloads), which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.
 
 You can install TPOT using `pip` or `conda-forge`.
