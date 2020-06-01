@@ -77,8 +77,10 @@ conda install -c conda-forge tpot
 To install additional dependencies you can use:
 
 ```Shell
-conda install -c conda-forge tpot xgboost dask dask-ml scikit-mdr skrebate pytorch
+conda install -c conda-forge tpot xgboost dask dask-ml scikit-mdr skrebate
 ```
+
+As mentioned above, we recommend following [PyTorch's installation instructions](https://pytorch.org/get-started/locally/) for installing it to enable support for [PyTorch](https://pytorch.org/)-based neural networks (TPOT-NN).
 
 ## Installation problems
 
