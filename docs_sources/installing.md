@@ -58,6 +58,10 @@ If you plan to use the [TPOT-MDR configuration](https://arxiv.org/abs/1702.01780
 pip install scikit-mdr skrebate
 ```
 
+To enable support for [PyTorch](https://pytorch.org/)-based neural networks (TPOT-NN), you will need to install PyTorch. TPOT-NN will work with either CPU or GPU PyTorch, but we strongly recommend using a GPU version, if possible, as CPU PyTorch models tend to train very slowly.
+
+We recommend following [PyTorch's installation instructions](https://pytorch.org/get-started/locally/) customized for your operating system and Python distribution.
+
 Finally to install TPOT itself, run the following command:
 
 ```Shell
