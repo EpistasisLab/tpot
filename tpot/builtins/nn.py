@@ -39,18 +39,21 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, assert_all_finite, check_array, check_is_fitted
 from sklearn.utils.multiclass import type_of_target
 
-import torch
-from torch import nn
-from torch.autograd import Variable
-from torch.optim import Adam
-from torch.utils.data import TensorDataset, DataLoader
+try:
+    import torch
+    from torch import nn
+    from torch.autograd import Variable
+    from torch.optim import Adam
+    from torch.utils.data import TensorDataset, DataLoader
+except ModuleNotFoundError:
+    raise
 
 def _pytorch_model_is_fully_initialized(clf: BaseEstimator):
     if all([
         hasattr(clf, 'network'),
         hasattr(clf, 'loss_function'),
         hasattr(clf, 'optimizer'),
-        hasattr(clf, 'data_loader'), 
+        hasattr(clf, 'data_loader'),
         hasattr(clf, 'train_dset_len'),
         hasattr(clf, 'device')
     ]):
@@ -100,7 +103,7 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
     def fit(self, X, y):
         """Generalizable method for fitting a PyTorch estimator to a training
         set.
-        
+
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
@@ -108,7 +111,7 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
             n_features is the number of features.
         y : array-like of shape (n_samples,)
             Target vector relative to X.
-        
+
         Returns
         -------
         self
@@ -243,7 +246,7 @@ class PytorchLRClassifier(PytorchClassifier):
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.verbose = verbose
-        
+
         self.input_size = None
         self.num_classes = None
         self.network = None

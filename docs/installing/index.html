@@ -174,9 +174,6 @@
 <li>
 <p><a href="https://joblib.readthedocs.io/en/latest/">joblib</a></p>
 </li>
-<li>
-<p><a href="https://pytorch.org/">PyTorch</a></p>
-</li>
 </ul>
 <p>Most of the necessary Python packages can be installed via the <a href="https://www.continuum.io/downloads">Anaconda Python distribution</a>, which we strongly recommend that you use. We also strongly recommend that you use of Python 3 over Python 2 if you're given the choice.</p>
 <p>You can install TPOT using <code>pip</code> or <code>conda-forge</code>.</p>
@@ -202,6 +199,8 @@
 <pre><code class="Shell">pip install scikit-mdr skrebate
 </code></pre>
 
+<p>To enable support for <a href="https://pytorch.org/">PyTorch</a>-based neural networks (TPOT-NN), you will need to install PyTorch. TPOT-NN will work with either CPU or GPU PyTorch, but we strongly recommend using a GPU version, if possible, as CPU PyTorch models tend to train very slowly.</p>
+<p>We recommend following <a href="https://pytorch.org/get-started/locally/">PyTorch's installation instructions</a> customized for your operating system and Python distribution.</p>
 <p>Finally to install TPOT itself, run the following command:</p>
 <pre><code class="Shell">pip install tpot
 </code></pre>
@@ -212,9 +211,10 @@
 </code></pre>
 
 <p>To install additional dependencies you can use:</p>
-<pre><code class="Shell">conda install -c conda-forge tpot xgboost dask dask-ml scikit-mdr skrebate pytorch
+<pre><code class="Shell">conda install -c conda-forge tpot xgboost dask dask-ml scikit-mdr skrebate
 </code></pre>
 
+<p>As mentioned above, we recommend following <a href="https://pytorch.org/get-started/locally/">PyTorch's installation instructions</a> for installing it to enable support for <a href="https://pytorch.org/">PyTorch</a>-based neural networks (TPOT-NN).</p>
 <h2 id="installation-problems">Installation problems</h2>
 <p>Please <a href="https://github.com/EpistasisLab/tpot/issues/new">file a new issue</a> if you run into installation problems.</p>
               
