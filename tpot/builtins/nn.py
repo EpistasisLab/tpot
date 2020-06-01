@@ -39,11 +39,15 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, assert_all_finite, check_array, check_is_fitted
 from sklearn.utils.multiclass import type_of_target
 
-import torch
-from torch import nn
-from torch.autograd import Variable
-from torch.optim import Adam
-from torch.utils.data import TensorDataset, DataLoader
+try:
+    import torch
+    from torch import nn
+    from torch.autograd import Variable
+    from torch.optim import Adam
+    from torch.utils.data import TensorDataset, DataLoader
+except ModuleNotFoundError:
+    print("Error importing NN models - optional dependency `torch` is not available.")
+    raise
 
 def _pytorch_model_is_fully_initialized(clf: BaseEstimator):
     if all([

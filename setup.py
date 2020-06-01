@@ -51,6 +51,7 @@ This project is hosted at https://github.com/EpistasisLab/tpot
         'dask': ['dask>=0.18.2',
                  'distributed>=1.22.1',
                  'dask-ml>=1.0.0'],
+        'torch': ['torch==1.3.1'],
     },
     classifiers=[
         'Intended Audience :: Science/Research',
