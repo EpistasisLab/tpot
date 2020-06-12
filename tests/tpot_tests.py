@@ -202,6 +202,7 @@ def test_init_custom_progress_file():
     file_handle = open(file_name, "w")
     tpot_obj = TPOTClassifier(log_file=file_handle)
     assert tpot_obj.log_file == file_handle
+    file_handle.close()
     # clean up
     rmtree(cachedir)
 
