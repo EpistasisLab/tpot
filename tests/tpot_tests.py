@@ -197,10 +197,14 @@ def test_init_custom_parameters():
 
 def test_init_custom_progress_file():
     """ Assert that TPOT has right file handler to save progress. """
-    file_name = "progress.txt"
+    cachedir = mkdtemp()
+    file_name = cachedir + "/progress.log"
     file_handle = open(file_name, "w")
     tpot_obj = TPOTClassifier(log_file=file_handle)
     assert tpot_obj.log_file == file_handle
+    # clean up
+    rmtree(cachedir)
+
 
 def test_init_default_scoring():
     """Assert that TPOT intitializes with the correct default scoring function."""

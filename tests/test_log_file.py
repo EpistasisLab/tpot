@@ -28,6 +28,8 @@ from sklearn.datasets import load_iris
 from nose.tools import assert_equal, assert_true
 import os
 import re
+from tempfile import mkdtemp
+from shutil import rmtree
 
 data = load_iris()
 X = data['data']
@@ -38,7 +40,8 @@ GEN_SIZE = 2
 
 def test_log_file_verbosity_1():
   """ Set verbosity as 1. Assert log_file parameter to generate log file. """
-  file_name = "progress_verbose_1.log"
+  cachedir = mkdtemp()
+  file_name = cachedir + "progress_verbose_1.log"
   tracking_progress_file = open(file_name, "w")
   tpot_obj = TPOTClassifier(
                 population_size=POP_SIZE,
@@ -48,10 +51,12 @@ def test_log_file_verbosity_1():
             )
   tpot_obj.fit(X, y)
   assert_equal(os.path.getsize(file_name), 0)
+  rmtree(cachedir)
 
 def test_log_file_verbosity_2():
   """ Set verbosity as 2. Assert log_file parameter to generate log file. """
-  file_name = "progress_verbose_2.log"
+  cachedir = mkdtemp()
+  file_name = cachedir + "progress_verbose_2.log"
   tracking_progress_file = open(file_name, "w")
   tpot_obj = TPOTClassifier(
                 population_size=POP_SIZE,
@@ -62,10 +67,12 @@ def test_log_file_verbosity_2():
   tpot_obj.fit(X, y)
   assert_equal(os.path.getsize(file_name) > 0,  True)
   check_generations(file_name, GEN_SIZE)
+  rmtree(cachedir)
 
 def test_log_file_verbose_3():
   """ Set verbosity as 3. Assert log_file parameter to generate log file. """
-  file_name = "progress_verbosity_3.log"
+  cachedir = mkdtemp()
+  file_name = cachedir + "progress_verbosity_3.log"
   tracking_progress_file = open(file_name, "w")
   tpot_obj = TPOTClassifier(
                 population_size=POP_SIZE,
@@ -76,6 +83,7 @@ def test_log_file_verbose_3():
   tpot_obj.fit(X, y)
   assert_equal(os.path.getsize(file_name) > 0,  True)
   check_generations(file_name, GEN_SIZE)
+  rmtree(cachedir)
 
 def check_generations(file_name, generations):
     """ Assert generation log message is present in log_file. """
