@@ -256,7 +256,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
             if verbose == 2:
                 high_score = max(halloffame.keys[x].wvalues[1] \
                     for x in range(len(halloffame.keys)))
-                pbar.write('Generation {0} - Current '
+                pbar.write('\nGeneration {0} - Current '
                             'best internal CV score: {1}'.format(gen,
                                                         high_score),
 
