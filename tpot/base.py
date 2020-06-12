@@ -722,7 +722,8 @@ class TPOTBase(BaseEstimator):
                     pbar=self._pbar,
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
-                    per_generation_function=self._check_periodic_pipeline
+                    per_generation_function=self._check_periodic_pipeline,
+                    log_file=self.log_file
                 )
 
         # Allow for certain exceptions to signal a premature fit() cancellation
