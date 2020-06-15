@@ -190,7 +190,7 @@ clf = TPOTClassifier(config_dict='TPOT NN', template='Selector-Transformer-Pytor
                      verbosity=2, population_size=10, generations=10)
 clf.fit(X_train, y_train)
 print(clf.score(X_test, y_test))
-tpot.export('tpot_nn_demo_pipeline.py')
+clf.export('tpot_nn_demo_pipeline.py')
 ```
 
 This example is somewhat trivial, but it should result in nearly 100% classification accuracy.
