@@ -6,13 +6,13 @@ SCOPE
 Pre-processing script for resAdjTPOT
 
 DESCRIPTION
-This script prepares the training input for resAdjTPOT. The latter equals the 
-input file plus N additional column pairs (N=number of CV splits), where 
-each triplet corresponds to an indicator column for training and testing 
-(denoting  training and testing rows for that split) and a column holding the 
-adjusted response variable (via residuals). The adjustment uses a specified regressor 
-or classifier fitted on the training subset only. In addition, the 
-original target variable y is replaced by its adjstusment using the entire 
+This script prepares the training input for resAdjTPOT. The latter equals the
+input file plus N additional column pairs (N=number of CV splits), where
+each pair corresponds to an indicator column for training and testing
+(denoting  training and testing rows for that split) and a column holding the
+adjusted response variable (via residuals). The adjustment uses a specified regressor
+or classifier fitted on the training subset only. In addition, the
+original target variable y is replaced by its adjstusment using the entire
 training set. Moreover, columns no longer needed for future usage can be removed from the final output.
 The script also takes an optional hold-out testing file and preprocesses it
 so that it can be scored by resAdjTPOT fitted pipeline. If the testing file
@@ -29,8 +29,8 @@ ARGUMENTS
 7. Number of CV splits to generate.
 8. Output training file.
 9. Output testing file (file path or None).
-10. Comma-separated list (no spaces) of the columns to use to adjust y. 
-11. Optional comma-separated list (no spaces) of columns to remove from 
+10. Comma-separated list (no spaces) of the columns to use to adjust y.
+11. Optional comma-separated list (no spaces) of columns to remove from
 the output, as not needed for TPOT run.
 
 EXAMPLE USAGE
@@ -44,7 +44,7 @@ from sklearn.model_selection import train_test_split
 
 if len(sys.argv)<10:
         sys.exit("Insufficient number of arguments passed in")
-        
+
 inTrainFile = sys.argv[1]
 inTestFile = sys.argv[2]
 indexCol = sys.argv[3]
@@ -100,8 +100,8 @@ B = data[cov]
 if inTestFile != 'None':
         testData = pd.read_csv(inTestFile, sep='\t', index_col=indexCol)
         Ydata_test = testData[targetCol]
-        B_test = testData[cov] 
-        
+        B_test = testData[cov]
+
 for i in range(numSplits+1):
         estimator = eval(myEst) # GEN
         if i==0:
@@ -115,7 +115,7 @@ for i in range(numSplits+1):
                         Yadj_test = pd.Series(index=testData.index, dtype=float)
                         Yadj_test = Ydata_test - getPredictions(estimator, B_test)
                         Yadj_test.rename('adjY', inplace=True)
-                        testData = testData.join(Yadj_test)      
+                        testData = testData.join(Yadj_test)
                         oneData = np.ones(len(Ydata_test), dtype=int)
                         indicator1 = pd.Series(oneData, index=testData.index, name='indicator_1')
                         adjY1 = Yadj_test.copy()
@@ -127,7 +127,7 @@ for i in range(numSplits+1):
                         Xtrain, Xtest, Ytrain, Ytest = train_test_split(Xdata, Ydata, random_state=int(seed), train_size=0.75, test_size=0.25)
                 else:
                         Xtrain, Xtest, Ytrain, Ytest = train_test_split(Xdata, Ydata, random_state=int(seed), train_size=0.75, test_size=0.25, stratify=Ydata)
-                
+
 
                 zeroData = np.zeros(len(Ydata), dtype=int)
                 indicator = pd.Series(zeroData, index=data.index, name='indicator_' + str(i))
