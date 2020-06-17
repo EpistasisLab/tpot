@@ -1,0 +1,3 @@
+Feature,Type,Covariates
+rs660240,logistic,pc1;pc2;pc4
+rs17042102,logistic,pc5;pc6;pc7

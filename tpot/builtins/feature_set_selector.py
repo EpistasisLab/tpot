@@ -39,7 +39,7 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
         """Instance name is the same as the class name."""
         return self.__class__.__name__
 
-    def __init__(self, subset_list, sel_subset):
+    def __init__(self, subset_list, sel_subset, res_cols=None):
         """Create a FeatureSetSelector object.
 
         Parameters
@@ -57,6 +57,8 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
             int: index of subset in subset file
             string: subset name of subset
             list or tuple: list of int or string for indexs or subset names
+        res_cols: None or tuple of feature names or indexes
+            features should be reserved by this Selector
         Returns
         -------
         None
@@ -64,6 +66,7 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
         """
         self.subset_list = subset_list
         self.sel_subset = sel_subset
+        self.res_cols = res_cols
 
     def fit(self, X, y=None):
         """Fit FeatureSetSelector for feature selection
@@ -129,11 +132,20 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
             The transformed feature set.
         """
         if isinstance(X, pd.DataFrame):
-            X_transformed = X[self.feat_list].values
+            if self.res_cols:
+                comm_res_feat = [a for a in self.res_cols if a in X.columns]
+                X_transformed = X[self.feat_list + comm_res_feat]
+            else:
+                X_transformed = X[self.feat_list]
         elif isinstance(X, np.ndarray):
-            X_transformed = X[:, self.feat_list_idx]
+            if self.res_cols:
+                comm_res_feat = [int(a) for a in self.res_cols if int(a) in self.feature_names]
+                feat_list_idx = self.feat_list_idx + comm_res_feat
+                X_transformed = X[:, feat_list_idx]
+            else:
+                X_transformed = X[:, self.feat_list_idx]
 
-        return X_transformed.astype(np.float64)
+        return X_transformed
 
     def _get_support_mask(self):
         """
