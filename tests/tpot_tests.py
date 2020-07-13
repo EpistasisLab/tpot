@@ -638,12 +638,9 @@ def test_score_3():
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features_r, testing_target_r)
-    # On some non-amd64 systems such as arm64, a resulting score of
-    # 0.8207525232725118 was observed, so we need to add a tolerance there
-    if platform.machine() != 'amd64':
-        assert np.allclose(known_score, score, rtol=0.03)
-    else:
-        assert np.allclose(known_score, score)
+
+    assert np.allclose(known_score, score, rtol=0.03)
+
 
 
 def test_sample_weight_func():
@@ -685,18 +682,15 @@ def test_sample_weight_func():
     np.random.seed(42)
     tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r, **training_target_r_weight_dict)
     # Get score from TPOT
-    known_score = -11.586816877933911
+    known_score = -12.34832804790160
     score = tpot_obj.score(testing_features_r, testing_target_r)
 
 
     assert np.allclose(cv_score1, cv_score2)
     assert not np.allclose(cv_score1, cv_score_weight)
-    # On some non-amd64 systems such as arm64, a resulting score of
-    # 0.8207525232725118 was observed, so we need to add a tolerance there
-    if platform.machine() != 'amd64':
-        assert np.allclose(known_score, score, rtol=0.01)
-    else:
-        assert np.allclose(known_score, score)
+
+    assert np.allclose(known_score, score, rtol=0.01)
+    
 
 
 def test_template_1():
