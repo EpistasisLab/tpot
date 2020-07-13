@@ -103,7 +103,7 @@ def test_StackingEstimator_4():
 
     # test cv score
     cv_score = np.mean(cross_val_score(sklearn_pipeline, training_features_r, training_target_r, cv=3, scoring='r2'))
-    known_cv_score = 0.8216045257587923
+    known_cv_score = 0.819780677881384
 
     # On some non-amd64 systems such as arm64, a resulting score of
     # 0.8207525232725118 was observed, so we need to add a tolerance there
@@ -111,4 +111,3 @@ def test_StackingEstimator_4():
         assert np.allclose(known_cv_score, cv_score, rtol=0.01)
     else:
         assert np.allclose(known_cv_score, cv_score)
-
