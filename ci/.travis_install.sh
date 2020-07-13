@@ -32,7 +32,7 @@ conda update --yes conda
 # provided versions
 
 conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
-    numpy scipy scikit-learn cython pandas joblib
+    numpy scipy scikit-learn=0.22.1 cython pandas joblib
 
 
 source activate testenv
