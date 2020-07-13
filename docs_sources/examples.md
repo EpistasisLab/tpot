@@ -1,4 +1,4 @@
-## Overview
+# Overview
 
 The following sections illustrate the usage of TPOT with various datasets, each
 belonging to a typical class of machine learning tasks.
@@ -186,7 +186,7 @@ from sklearn.model_selection import train_test_split
 X, y = make_blobs(n_samples=100, centers=2, n_features=3, random_state=42)
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.75, test_size=0.25)
 
-clf = TPOTClassifier(config_dict='TPOT NN', template='Selector-Transformer-PytorchLRClassifier', 
+clf = TPOTClassifier(config_dict='TPOT NN', template='Selector-Transformer-PytorchLRClassifier',
                      verbosity=2, population_size=10, generations=10)
 clf.fit(X_train, y_train)
 print(clf.score(X_test, y_test))

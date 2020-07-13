@@ -1,3 +1,5 @@
+# Citing TPOT
+
 If you use TPOT in a scientific publication, please consider citing at least one of the following papers:
 
 
