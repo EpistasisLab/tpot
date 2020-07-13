@@ -1,4 +1,6 @@
-# Version 0.11.2
+# Release Notes
+
+## Version 0.11.2
 
 - Fix `early_stop` parameter does not work properly
 - TPOT built-in `OneHotEncoder` can refit to different datasets
@@ -7,7 +9,7 @@
 - Fix some code quality issues and mistakes in documentations
 - Fix minor bugs
 
-# Version 0.11.1
+## Version 0.11.1
 
 - Fix compatibility issue with scikit-learn v0.22
 - `warm_start` now saves both Primitive Sets and evaluated_pipelines_ from previous runs;
@@ -18,7 +20,7 @@
 - Fix spelling mistakes in documentations
 - Fix some code quality issues
 
-# Version 0.11.0
+## Version 0.11.0
 
 - **Support for Python 3.4 and below has been officially dropped.** Also support for scikit-learn 0.20 or below has been dropped.
 - The support of a metric function with the signature `score_func(y_true, y_pred)` for `scoring parameter` has been dropped.
@@ -31,20 +33,20 @@
 - Documentation has been updated
 - Fix minor bugs.
 
-# Version 0.10.2
+## Version 0.10.2
 
 - **TPOT v0.10.2 is the last version to support Python 2.7 and Python 3.4.**
 - Minor updates for fixing compatibility issues with the latest version of scikit-learn (version > 0.21) and xgboost (v0.90)
 - Default value of `template` parameter is changed to `None` instead.
 - Fix errors in documentation
 
-# Version 0.10.1
+## Version 0.10.1
 
 - Add `data_file_path` option into `expert` function for replacing `'PATH/TO/DATA/FILE'` to customized dataset path in exported scripts. (Related issue #838)
 - Change python version in CI tests to 3.7
 - Add CI tests for macOS.
 
-# Version 0.10.0
+## Version 0.10.0
 
 - Add a new `template` option to specify a desired structure for machine learning pipeline in TPOT. Check [TPOT API](https://epistasislab.github.io/tpot/api/) (it will be updated once it is merge to master branch).
 - Add `FeatureSetSelector` operator into TPOT for feature selection based on *priori* export knowledge. Please check our [preprint paper](https://www.biorxiv.org/content/10.1101/502484v1.article-info) for more details (*Note: it was named `DatasetSelector` in 1st version paper but we will rename to FeatureSetSelector in next version of the paper*)
@@ -52,7 +54,7 @@
 - Now `memory`  parameter can create memory cache directory if it does not exist.
 - Fix minor bugs.
 
-# Version 0.9.6
+## Version 0.9.6
 
 - Fix a bug causing that `max_time_mins` parameter doesn't work when `use_dask=True` in TPOT 0.9.5
 - Now TPOT saves best pareto values best pareto pipeline s in checkpoint folder
@@ -61,7 +63,7 @@
 - Fix bugs in configuration of `TPOTRegressor`
 - Error fixes in documentation
 
-# Version 0.9.5
+## Version 0.9.5
 
 - **TPOT now supports integration with Dask for parallelization + smart caching**. Big thanks to the Dask dev team for making this happen!
 
@@ -77,7 +79,7 @@
 
 - We improved documentation of TPOT.
 
-# Version 0.9
+## Version 0.9
 
 * **TPOT now supports sparse matrices** with a new built-in TPOT configuration, "TPOT sparse". We are using a custom OneHotEncoder implementation that supports missing values and continuous features.
 
@@ -104,7 +106,7 @@
 * Refined the TPOT pipeline mutation operator.
 
 
-# Version 0.8
+## Version 0.8
 
 * **TPOT now detects whether there are missing values in your dataset** and replaces them with the median value of the column.
 
@@ -125,7 +127,7 @@
 * Removed Python 2 uncompliant code.
 
 
-# Version 0.7
+## Version 0.7
 
 * **TPOT now has multiprocessing support.** TPOT allows you to use multiple processes in parallel to accelerate the pipeline optimization process in TPOT with the `n_jobs` parameter.
 
@@ -142,7 +144,7 @@
 * The default scoring metric in TPOT has been changed from balanced accuracy to accuracy, the same default metric for classification algorithms in scikit-learn. Balanced accuracy can still be used by setting `scoring='balanced_accuracy'` when creating a TPOT instance.
 
 
-# Version 0.6
+## Version 0.6
 
 * **TPOT now supports regression problems!** We have created two separate `TPOTClassifier` and `TPOTRegressor` classes to support classification and regression problems, respectively. The [command-line interface](/using/#tpot-on-the-command-line) also supports this feature through the `-mode` parameter.
 
@@ -154,7 +156,7 @@
 
 * TPOT now offers a verbosity level of 3 ("science mode"), which outputs the entire Pareto front instead of only the current best score. This feature may be useful for users looking to make a trade-off between pipeline complexity and score.
 
-# Version 0.5
+## Version 0.5
 
 * Major refactor: Each operator is defined in a separate class file. Hooray for easier-to-maintain code!
 * TPOT now **exports directly to scikit-learn Pipelines** instead of hacky code.
@@ -166,7 +168,7 @@
 * Added the scikit-learn [Normalizer](http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Normalizer.html) preprocessor.
 * [Minor text fixes.](http://knowyourmeme.com/memes/pokemon-go-updates-controversy)
 
-# Version 0.4
+## Version 0.4
 
 In TPOT 0.4, we've made some major changes to the internals of TPOT and added some convenience functions. We've summarized the changes below.
 
@@ -209,11 +211,11 @@ In TPOT 0.4, we've made some major changes to the internals of TPOT and added so
 <li>Added <code>get_params()</code> function so TPOT can operate in scikit-learn's <code>cross_val_score</code> & related functions</li>
 </ul>
 
-# Version 0.3
+## Version 0.3
 
 * We revised the internal optimization process of TPOT to make it more efficient, in particular in regards to the model parameters that TPOT optimizes over.
 
-# Version 0.2
+## Version 0.2
 
 * TPOT now has the ability to export the optimized pipelines to sklearn code.
 
@@ -223,7 +225,7 @@ In TPOT 0.4, we've made some major changes to the internals of TPOT and added so
 
 * TPOT now performs multi-objective Pareto optimization to balance model complexity (i.e., # of pipeline operators) and the score of the pipeline.
 
-# Version 0.1
+## Version 0.1
 
 * First public release of TPOT.
 

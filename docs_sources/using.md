@@ -1,4 +1,6 @@
-# What to expect from AutoML software
+# Using TPOT
+
+## What to expect from AutoML software
 
 Automated machine learning (AutoML) takes a higher-level approach to machine learning than most practitioners are used to,
 so we've gathered a handful of guidelines on what to expect when running AutoML software such as TPOT.
@@ -44,7 +46,7 @@ might have never considered, then leaves the fine-tuning to more constrained par
 as grid search.
 
 
-# TPOT with code
+## TPOT with code
 
 We've taken care to design the TPOT interface to be as similar as possible to scikit-learn.
 
@@ -113,7 +115,7 @@ pipeline_optimizer.export('tpot_exported_pipeline.py')
 
 Check our [examples](/tpot/examples/) to see TPOT applied to some specific data sets.
 
-# TPOT on the command line
+## TPOT on the command line
 
 To use TPOT via the command line, enter the following command with a path to the data file:
 
@@ -361,7 +363,7 @@ A setting of 2 or higher will add a progress bar during the optimization procedu
 </tr>
 </table>
 
-# Scoring functions
+## Scoring functions
 
 TPOT makes use of `sklearn.model_selection.cross_val_score` for evaluating pipelines, and as such offers the same support for scoring functions. There are two ways to make use of scoring functions with TPOT:
 
@@ -396,7 +398,7 @@ tpot.export('tpot_digits_pipeline.py')
 * **my_module.scorer_name**: You can also use a custom `score_func(y_true, y_pred)` or `scorer(estimator, X, y)` function through the command line by adding the argument `-scoring my_module.scorer` to your command-line call. TPOT will import your module and use the custom scoring function from there. TPOT will include your current working directory when importing the module, so you can place it in the same directory where you are going to run TPOT.
 Example: `-scoring sklearn.metrics.auc` will use the function auc from sklearn.metrics module.
 
-# Built-in TPOT configurations
+## Built-in TPOT configurations
 
 TPOT comes with a handful of default operators and parameter configurations that we believe work well for optimizing machine learning pipelines. Below is a list of the current built-in configurations that come with TPOT.
 
@@ -476,7 +478,7 @@ tpot.export('tpot_digits_pipeline.py')
 
 ```
 
-# Customizing TPOT's operators and parameters
+## Customizing TPOT's operators and parameters
 
 Beyond the default configurations that come with TPOT, in some cases it is useful to limit the algorithms and parameters that TPOT considers. For that reason, we allow users to provide TPOT with a custom configuration for its operators and parameters.
 
@@ -547,7 +549,7 @@ For more detailed examples of how to customize TPOT's operator configuration, se
 Note that you must have all of the corresponding packages for the operators installed on your computer, otherwise TPOT will not be able to use them. For example, if XGBoost is not installed on your computer, then TPOT will simply not import nor use XGBoost in the pipelines it considers.
 
 
-# Template option in TPOT
+## Template option in TPOT
 
 Template option provides a way to specify a desired structure for machine learning pipeline, which may reduce TPOT computation time and potentially provide more interpretable results. Current implementation only supports linear pipelines.
 
@@ -562,7 +564,7 @@ tpot_obj = TPOTClassifier(
 If a specific operator, e.g. `SelectPercentile`, is preferred for usage in the 1st step of the pipeline, the template can be defined like 'SelectPercentile-Transformer-Classifier'.
 
 
-# FeatureSetSelector in TPOT
+## FeatureSetSelector in TPOT
 
 `FeatureSetSelector` is a special new operator in TPOT. This operator enables feature selection based on *priori* expert knowledge. For example, in RNA-seq gene expression analysis, this operator can be used to select one or more gene (feature) set(s) based on GO (Gene Ontology) terms or annotated gene sets Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/index.jsp)) in the 1st step of pipeline via `template` option above, in order to reduce dimensions and TPOT computation time. This operator requires a dataset list in csv format. In this csv file, there are only three columns: 1st column is feature set names, 2nd column is the total number of features in one set and 3rd column is a list of feature names (if input X is pandas.DataFrame) or indexes (if input X is numpy.ndarray) delimited by ";". Below is a example how to use this operator in TPOT.
 
@@ -592,7 +594,7 @@ tpot = TPOTClassifier(generations=5,
 tpot.fit(test_X, test_y)
 ```
 
-# Pipeline caching in TPOT
+## Pipeline caching in TPOT
 
 With the `memory` parameter, pipelines can cache the results of each transformer after fitting them. This feature is used to avoid repeated computation by transformers within a pipeline if the parameters and input data are identical to another fitted pipeline during optimization process. TPOT allows users to specify a custom directory path or [`joblib.Memory`](https://joblib.readthedocs.io/en/latest/generated/joblib.Memory.html) in case they want to re-use the memory cache in future TPOT runs (or a `warm_start` run).
 
@@ -621,7 +623,7 @@ rmtree(cachedir)
 
 **Note: TPOT does NOT clean up memory caches if users set a custom directory path or Memory object. We recommend that you clean up the memory caches when you don't need it anymore.**
 
-# Crash/freeze issue with n_jobs > 1 under OSX or Linux
+## Crash/freeze issue with n_jobs > 1 under OSX or Linux
 
 Internally, TPOT uses [joblib](http://joblib.readthedocs.io/) to fit estimators in parallel.
 This is the same parallelization framework used by scikit-learn. But it may crash/freeze with n_jobs > 1 under OSX or Linux [as scikit-learn does](http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux), especially with large datasets.
@@ -641,13 +643,13 @@ if __name__ == '__main__':
 
 More information about these start methods can be found in the [multiprocessing documentation](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods).
 
-# Parallel Training with Dask
+## Parallel Training with Dask
 
 For large problems or working on Jupyter notebook, we highly recommend that you can distribute the work on a [Dask](http://dask.pydata.org/en/latest/) cluster.
 The [dask-examples binder](https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=machine-learning%2Ftpot.ipynb) has a runnable example
 with a small dask cluster.
 
-To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator. **Note: if `use_dask=True`, TPOT will use as many cores as available on the your Dask cluster. If `n_jobs` is specified, then it will control the chunk size (10*`n_jobs` if it is less then offspring size) of parallel training. **
+To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword when you create the TPOT estimator. **Note: if `use_dask=True`, TPOT will use as many cores as available on the your Dask cluster. If `n_jobs` is specified, then it will control the chunk size (10*`n_jobs` if it is less then offspring size) of parallel training.**
 
 ```python
 estimator = TPOTEstimator(use_dask=True, n_jobs=-1)
@@ -657,7 +659,7 @@ This will use use all the workers on your cluster to do the training, and use [D
 It will also provide fine-grained diagnostics in the [distributed scheduler UI](https://distributed.readthedocs.io/en/latest/web.html).
 
 Alternatively, Dask implements a joblib backend.
-You can instruct TPOT to use the distributed backend during training by specifying a ``joblib.parallel_backend``:
+You can instruct TPOT to use the distributed backend during training by specifying a `joblib.parallel_backend`:
 
 ```python
 import joblib
@@ -677,11 +679,11 @@ with joblib.parallel_backend("dask"):
 
 See [dask's distributed joblib integration](https://distributed.readthedocs.io/en/latest/joblib.html) for more.
 
-# Neural Networks in TPOT (`tpot.nn`)
+## Neural Networks in TPOT (`tpot.nn`)
 
 Support for neural network models and deep learning is an experimental feature newly added to TPOT. Available neural network architectures are provided by the `tpot.nn` module. Unlike regular `sklearn` estimators, these models need to be written by hand, and must also inherit the appropriate base classes provided by `sklearn` for all of their built-in modules. In other words, they need implement methods like `.fit()`, `fit_transform()`, `get_params()`, etc., as described in detail on [Developing scikit-learn estimators](https://scikit-learn.org/stable/developers/develop.html).
 
-## Telling TPOT to use built-in PyTorch neural network models
+### Telling TPOT to use built-in PyTorch neural network models
 
 Mainly due to the issues described below, TPOT won't use its neural network models unless you explicitly tell it to do so. This is done as follows:
 
@@ -703,7 +705,7 @@ Neural network models are notorious for being extremely sensitive to their initi
 
 A simple example of using TPOT-NN is shown in [examples](/tpot/examples/).
 
-## Important caveats
+### Important caveats
 
 - Neural network models (especially when they reach moderately large sizes) take a notoriously large amount of time and computing power to train. You should expect `tpot.nn` neural networks to train several orders of magnitude slower than their `sklearn` alternatives. This can be alleviated somewhat by training the models on computers with CUDA-enabled GPUs.
 

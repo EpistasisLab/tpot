@@ -7,13 +7,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="Randal S. Olson">
+  <link rel="canonical" href="http://epistasislab.github.io/tpot/examples/">
   <link rel="shortcut icon" href="../img/favicon.ico">
   <title>Examples - TPOT</title>
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
-  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
   
   <script>
     // Current page data
@@ -24,7 +25,7 @@
   
   <script src="../js/jquery-2.1.1.min.js" defer></script>
   <script src="../js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
@@ -35,6 +36,7 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
         <a href=".." class="icon icon-home"> TPOT</a>
         <div role="search">
@@ -45,89 +47,64 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	<ul class="current">
-	  
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Home</span>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../installing/">Installation</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../using/">Using TPOT</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../api/">TPOT API</a>
-	    </li>
-          
-            <li class="toctree-l1 current">
-		
-    <a class="current" href="./">Examples</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l2"><a href="#overview">Overview</a></li>
-    
-
-    <li class="toctree-l2"><a href="#iris-flower-classification">Iris flower classification</a></li>
-    
-
-    <li class="toctree-l2"><a href="#digits-dataset">Digits dataset</a></li>
-    
-
-    <li class="toctree-l2"><a href="#boston-housing-prices-modeling">Boston housing prices modeling</a></li>
-    
-
-    <li class="toctree-l2"><a href="#titanic-survival-analysis">Titanic survival analysis</a></li>
-    
-
-    <li class="toctree-l2"><a href="#portuguese-bank-marketing">Portuguese Bank Marketing</a></li>
-    
-
-    <li class="toctree-l2"><a href="#magic-gamma-telescope">MAGIC Gamma Telescope</a></li>
-    
-
-    <li class="toctree-l2"><a href="#neural-network-classifier-using-tpot-nn">Neural network classifier using TPOT-NN</a></li>
-    
-
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../installing/">Installation</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../using/">Using TPOT</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../api/">TPOT API</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Examples</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#iris-flower-classification">Iris flower classification</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#digits-dataset">Digits dataset</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#boston-housing-prices-modeling">Boston housing prices modeling</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#titanic-survival-analysis">Titanic survival analysis</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#portuguese-bank-marketing">Portuguese Bank Marketing</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#magic-gamma-telescope">MAGIC Gamma Telescope</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#neural-network-classifier-using-tpot-nn">Neural network classifier using TPOT-NN</a>
+    </li>
     </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../contributing/">Contributing</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../releases/">Release Notes</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../citing/">Citing</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../support/">Support</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../related/">Related</a>
-	    </li>
-          
-        </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../releases/">Release Notes</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../citing/">Citing TPOT</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../support/">Support</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../related/">Related</a>
+                    </li>
+                </ul>
       </div>
-      &nbsp;
+    </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -150,17 +127,18 @@
     <li>Examples</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/rhiever/tpot/edit/master/docs_sources/examples.md"
+        <a href="https://github.com/epistasislab/tpot/edit/master/docs_sources/examples.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
   </ul>
+  
   <hr/>
 </div>
           <div role="main">
             <div class="section">
               
-                <h2 id="overview">Overview</h2>
+                <h1 id="overview">Overview</h1>
 <p>The following sections illustrate the usage of TPOT with various datasets, each
 belonging to a typical class of machine learning tasks.</p>
 <table>
@@ -369,7 +347,7 @@ from sklearn.model_selection import train_test_split
 X, y = make_blobs(n_samples=100, centers=2, n_features=3, random_state=42)
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.75, test_size=0.25)
 
-clf = TPOTClassifier(config_dict='TPOT NN', template='Selector-Transformer-PytorchLRClassifier', 
+clf = TPOTClassifier(config_dict='TPOT NN', template='Selector-Transformer-PytorchLRClassifier',
                      verbosity=2, population_size=10, generations=10)
 clf.fit(X_train, y_train)
 print(clf.score(X_test, y_test))
@@ -401,7 +379,7 @@ clf.export('tpot_nn_demo_pipeline.py')
     
   </div>
 
-  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
       
         </div>
@@ -411,10 +389,10 @@ clf.export('tpot_nn_demo_pipeline.py')
 
   </div>
 
-  <div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/rhiever/tpot/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/epistasislab/tpot/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../api/" style="color: #fcfcfc;">&laquo; Previous</a></span>
@@ -427,6 +405,11 @@ clf.export('tpot_nn_demo_pipeline.py')
     <script>var base_url = '..';</script>
     <script src="../js/theme.js" defer></script>
       <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
 
 </body>
 </html>
