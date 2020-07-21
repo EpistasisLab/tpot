@@ -1,3 +1,5 @@
+# Installation
+
 TPOT is built on top of several existing Python libraries, including:
 
 * [NumPy](http://www.numpy.org/)

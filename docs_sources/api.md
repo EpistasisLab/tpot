@@ -1,4 +1,6 @@
-# Classification
+# TPOT API
+
+## Classification
 
 <pre><em>class</em> tpot.<strong style="color:#008AB8">TPOTClassifier</strong>(<em><strong>generations</strong>=100, <strong>population_size</strong>=100,
                           <strong>offspring_size</strong>=None, <strong>mutation_rate</strong>=0.9,
@@ -504,7 +506,7 @@ The whole pipeline text as a string should be returned if output_file_name is no
 
 
 
-# Regression
+## Regression
 
 <pre><em>class</em> tpot.<strong style="color:#008AB8">TPOTRegressor</strong>(<em><strong>generations</strong>=100, <strong>population_size</strong>=100,
                          <strong>offspring_size</strong>=None, <strong>mutation_rate</strong>=0.9,
