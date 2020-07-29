@@ -24,8 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator
-from sklearn.base import is_classifier, is_regressor
+from sklearn.base import BaseEstimator, is_classifier, is_regressor
 from sklearn.gaussian_process.kernels import Kernel
 import inspect
 
