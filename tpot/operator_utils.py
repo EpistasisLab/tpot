@@ -24,13 +24,9 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
+from sklearn.base import BaseEstimator
 from sklearn.base import is_classifier, is_regressor
 from sklearn.gaussian_process.kernels import Kernel
-try:
-    from sklearn.feature_selection._base import SelectorMixin
-except ImportError:
-    from sklearn.feature_selection.base import SelectorMixin
 import inspect
 
 
