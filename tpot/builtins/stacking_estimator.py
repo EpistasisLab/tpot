@@ -24,7 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin, is_classifier
+from sklearn.base import BaseEstimator, TransformerMixin, is_classifier
 from sklearn.utils import check_array
 
 
