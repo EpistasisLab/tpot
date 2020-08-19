@@ -33,7 +33,7 @@ from stopit import threading_timeoutable, TimeoutException
 
 
 NUM_TESTS = 10
-MAX_EVAL_SECS = 2
+MAX_EVAL_SECS = 10
 
 
 def _pre_test(func):
