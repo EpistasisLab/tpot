@@ -72,6 +72,7 @@ from .config.regressor_sparse import regressor_config_sparse
 from .config.classifier_sparse import classifier_config_sparse
 from .config.classifier_nn import classifier_config_nn
 from .config.classifier_cuml import classifier_config_cuml
+from .config.regressor_cuml import regressor_config_cuml
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -355,7 +356,7 @@ class TPOTBase(BaseEstimator):
                 if self.classification:
                     self._config_dict = classifier_config_cuml
                 else:
-                    pass
+                    self._config_dict = regressor_config_cuml
             else:
                 config = self._read_config_file(config_dict)
                 if hasattr(config, 'tpot_config'):
