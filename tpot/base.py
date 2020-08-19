@@ -71,6 +71,7 @@ from .config.regressor_mdr import tpot_mdr_regressor_config_dict
 from .config.regressor_sparse import regressor_config_sparse
 from .config.classifier_sparse import classifier_config_sparse
 from .config.classifier_nn import classifier_config_nn
+from .config.classifier_cuml import classifier_config_cuml
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -345,6 +346,16 @@ class TPOTBase(BaseEstimator):
                     self._config_dict = regressor_config_sparse
             elif config_dict == 'TPOT NN':
                 self._config_dict = classifier_config_nn
+            elif config_dict == 'TPOT cuML':
+                if not _has_cuml():
+                    raise ValueError(
+                        'The GPU machine library cuML is not available. '
+                        'To use cuML, please install cuML via conda.'
+                    )
+                if self.classification:
+                    self._config_dict = classifier_config_cuml
+                else:
+                    pass
             else:
                 config = self._read_config_file(config_dict)
                 if hasattr(config, 'tpot_config'):
@@ -1721,3 +1732,11 @@ class TPOTBase(BaseEstimator):
                 for arg in reversed(prim.args):
                     stack.append((depth + 1, arg))
         return expr
+
+
+def _has_cuml():
+        try:
+            import cuml
+            return True
+        except ImportError:
+            return False
