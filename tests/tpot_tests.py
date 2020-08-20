@@ -500,10 +500,6 @@ def test_conf_dict():
     tpot_obj._fit_init()
     assert tpot_obj._config_dict == classifier_config_sparse
 
-    tpot_obj = TPOTClassifier(config_dict='TPOT cuML')
-    tpot_obj._fit_init()
-    assert tpot_obj._config_dict == classifier_config_cuml
-
     tpot_obj = TPOTRegressor(config_dict='TPOT light')
     tpot_obj._fit_init()
     assert tpot_obj._config_dict == regressor_config_dict_light
@@ -515,10 +511,15 @@ def test_conf_dict():
     tpot_obj = TPOTRegressor(config_dict='TPOT sparse')
     tpot_obj._fit_init()
     assert tpot_obj._config_dict == regressor_config_sparse
-    
-    tpot_obj = TPOTRegressor(config_dict='TPOT cuML')
-    tpot_obj._fit_init()
-    assert tpot_obj._config_dict == regressor_config_cuml
+
+    if _has_cuml():
+        tpot_obj = TPOTClassifier(config_dict='TPOT cuML')
+        tpot_obj._fit_init()
+        assert tpot_obj._config_dict == classifier_config_cuml
+
+        tpot_obj = TPOTRegressor(config_dict='TPOT cuML')
+        tpot_obj._fit_init()
+        assert tpot_obj._config_dict == regressor_config_cuml
 
 
 def test_conf_dict_2():
