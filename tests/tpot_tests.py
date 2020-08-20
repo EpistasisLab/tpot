@@ -24,7 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from tpot import TPOTClassifier, TPOTRegressor
-from tpot.base import TPOTBase
+from tpot.base import TPOTBase, _has_cuml
 from tpot.driver import float_range
 from tpot.gp_types import Output_Array
 from tpot.gp_deap import mutNodeReplacement, _wrapped_cross_val_score, pick_two_individuals_eligible_for_crossover, cxOnePoint, varOr, initialize_stats_dict
@@ -1102,6 +1102,26 @@ def test_fit_7():
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
+
+
+def test_fit_cuml():
+    """Assert that the TPOT fit function provides an optimized pipeline when config_dict is 'TPOT cuML' if cuML is available. If not available, assert _fit_init raises a ValueError."""
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT cuML'
+    )
+
+    if _has_cuml():
+        tpot_obj.fit(training_features, training_target)
+        assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+        assert not (tpot_obj._start_datetime is None)
+    else:
+        assert_raises(ValueError, tpot_obj._fit_init)
 
 
 def test_memory():
