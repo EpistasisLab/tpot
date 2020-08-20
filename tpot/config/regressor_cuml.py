@@ -36,7 +36,7 @@ regressor_config_cuml = {
         'l1_ratio': np.arange(0.0, 1.01, 0.05),
         'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
     },
-    
+
     'cuml.neighbors.KNeighborsRegressor': {
         'n_neighbors': range(1, 101),
         'weights': ["uniform"],
@@ -52,17 +52,18 @@ regressor_config_cuml = {
     },
 
     'cuml.ensemble.RandomForestRegressor': {
-        'n_estimators': [100],
+        'n_estimators': [100, 300, 500,],
+        'split_algo': [0, 1,],
+        'max_depth': range(8, 20),
         'max_features': np.arange(0.05, 1.01, 0.05),
-        'min_samples_split': range(2, 21),
-        'min_samples_leaf': range(1, 21),
-        'bootstrap': [True, False]
+        'min_rows_per_node': range(2, 21),
+        'n_bins': [8, 64,]
     },
 
     'cuml.linear_model.Ridge': {
     },
 
-    # Sklearn Preprocesssors
+    # Sklearn + cuML Preprocesssors
     'sklearn.preprocessing.Binarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
     },
@@ -92,9 +93,9 @@ regressor_config_cuml = {
         'n_components': range(1, 11)
     },
 
-    'sklearn.decomposition.PCA': {
-        'svd_solver': ['randomized'],
-        'iterated_power': range(1, 11)
+    'cuml.decomposition.PCA': {
+        'svd_solver': ['jacobi'],
+        'iterated_power': range(1, 11),
     },
 
     'sklearn.preprocessing.PolynomialFeatures': {

@@ -31,16 +31,18 @@ import numpy as np
 
 classifier_config_cuml = {
     # cuML Classifiers
-    
+
     'cuml.neighbors.KNeighborsClassifier': {
         'n_neighbors': range(1, 101),
         'weights': ["uniform",],
     },
+
     'cuml.svm.SVC': {
         'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1,],
         'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.,]
     },
-    "cuml.ensemble.RandomForestClassifier": {
+
+    'cuml.ensemble.RandomForestClassifier': {
         'n_estimators': [100, 300, 500,],
         'split_algo': [0, 1,],
         'max_depth': range(8, 20),
@@ -48,13 +50,14 @@ classifier_config_cuml = {
         'min_rows_per_node': range(2, 21),
         'n_bins': [8, 64,]
     },
+
     'cuml.linear_model.LogisticRegression': {
         'penalty': ["l1", "l2", "elasticnet"],
         'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.,],
     },
-    
-    # Sklearn Preprocesssors
-    
+
+    # Sklearn + cuML Preprocesssors
+
     'sklearn.preprocessing.Binarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
     },
@@ -84,9 +87,9 @@ classifier_config_cuml = {
         'n_components': range(1, 11)
     },
 
-    'sklearn.decomposition.PCA': {
-        'svd_solver': ['randomized'],
-        'iterated_power': range(1, 11)
+    'cuml.decomposition.PCA': {
+        'svd_solver': ['jacobi'],
+        'iterated_power': range(1, 11),
     },
 
     'sklearn.preprocessing.PolynomialFeatures': {
