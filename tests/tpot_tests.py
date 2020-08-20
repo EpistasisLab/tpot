@@ -39,6 +39,8 @@ from tpot.config.regressor_mdr import tpot_mdr_regressor_config_dict
 from tpot.config.regressor_sparse import regressor_config_sparse
 from tpot.config.classifier_sparse import classifier_config_sparse
 from tpot.config.classifier_nn import classifier_config_nn
+from tpot.config.classifier_cuml import classifier_config_cuml
+from tpot.config.regressor_cuml import regressor_config_cuml
 
 import numpy as np
 import pandas as pd
@@ -498,6 +500,10 @@ def test_conf_dict():
     tpot_obj._fit_init()
     assert tpot_obj._config_dict == classifier_config_sparse
 
+    tpot_obj = TPOTClassifier(config_dict='TPOT cuML')
+    tpot_obj._fit_init()
+    assert tpot_obj._config_dict == classifier_config_cuml
+
     tpot_obj = TPOTRegressor(config_dict='TPOT light')
     tpot_obj._fit_init()
     assert tpot_obj._config_dict == regressor_config_dict_light
@@ -509,6 +515,10 @@ def test_conf_dict():
     tpot_obj = TPOTRegressor(config_dict='TPOT sparse')
     tpot_obj._fit_init()
     assert tpot_obj._config_dict == regressor_config_sparse
+    
+    tpot_obj = TPOTRegressor(config_dict='TPOT cuML')
+    tpot_obj._fit_init()
+    assert tpot_obj._config_dict == regressor_config_cuml
 
 
 def test_conf_dict_2():
