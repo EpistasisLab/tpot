@@ -1118,7 +1118,16 @@ def test_fit_7():
 def test_fit_cuml():
     """Assert that the TPOT fit function provides an optimized pipeline when config_dict is 'TPOT cuML' if cuML is available. If not available, assert _fit_init raises a ValueError."""
 
-    tpot_obj = TPOTClassifier(
+    tpot_clf_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict='TPOT cuML'
+    )
+    
+    tpot_regr_obj = TPOTRegressor(
         random_state=42,
         population_size=1,
         offspring_size=2,
@@ -1128,11 +1137,16 @@ def test_fit_cuml():
     )
 
     if _has_cuml():
-        tpot_obj.fit(training_features, training_target)
-        assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
-        assert not (tpot_obj._start_datetime is None)
+        tpot_clf_obj.fit(training_features, training_target)
+        assert isinstance(tpot_clf_obj._optimized_pipeline, creator.Individual)
+        assert not (tpot_clf_obj._start_datetime is None)
+        
+        tpot_regr_obj.fit(pretest_X_reg, pretest_y_reg)
+        assert isinstance(tpot_regr_obj._optimized_pipeline, creator.Individual)
+        assert not (tpot_regr_obj._start_datetime is None)
     else:
-        assert_raises(ValueError, tpot_obj._fit_init)
+        assert_raises(ValueError, tpot_clf_obj._fit_init)
+        assert_raises(ValueError, tpot_regr_obj._fit_init)
 
 
 def test_memory():
