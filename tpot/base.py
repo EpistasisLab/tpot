@@ -350,10 +350,10 @@ class TPOTBase(BaseEstimator):
             elif config_dict == 'TPOT cuML':
                 if not _has_cuml():
                     raise ValueError(
-                        'The GPU machine library cuML is not available. '
-                        'To use cuML, please install cuML via conda.'
+                        'The GPU machine learning library cuML is not '
+                        'available. To use cuML, please install cuML via conda.'
                     )
-                if self.classification:
+                elif self.classification:
                     self._config_dict = classifier_config_cuml
                 else:
                     self._config_dict = regressor_config_cuml
@@ -1736,8 +1736,8 @@ class TPOTBase(BaseEstimator):
 
 
 def _has_cuml():
-        try:
-            import cuml
-            return True
-        except ImportError:
-            return False
+    try:
+        import cuml
+        return True
+    except ImportError:
+        return False
