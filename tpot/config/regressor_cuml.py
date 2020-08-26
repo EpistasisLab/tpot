@@ -26,100 +26,122 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 
 # This configuration provides users with access to a GPU the ability to
-# use cuML regressors as estimators alongside the scikit-learn
-# preprocessors in the TPOT default configuration.
+# use RAPIDS cuML and DMLC/XGBoost regressors as estimators alongside
+# the scikit-learn preprocessors in the TPOT default configuration.
 
 regressor_config_cuml = {
-    # cuML Regressors
+    # cuML + DMLC/XGBoost Regressors
 
-    'cuml.linear_model.ElasticNet': {
-        'l1_ratio': np.arange(0.0, 1.01, 0.05),
-        'tol': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
+    "cuml.linear_model.ElasticNet": {
+        "l1_ratio": np.arange(0.0, 1.01, 0.05),
+        "tol": [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
     },
 
-    'cuml.neighbors.KNeighborsRegressor': {
-        'n_neighbors': range(1, 101),
-        'weights': ["uniform"],
+    "cuml.neighbors.KNeighborsRegressor": {
+        "n_neighbors": range(1, 101),
+        "weights": ["uniform"],
     },
 
-    'cuml.linear_model.Lasso': {
-        'normalize': [True, False]
+    "cuml.linear_model.Lasso": {
+        "normalize": [True, False]
     },
 
-    'cuml.svm.SVR': {
-        'tol': [1e-4, 1e-3, 1e-2, 1e-1,],
-        'C': [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.,]
+    "cuml.ensemble.RandomForestRegressor": {
+        "n_estimators": [100, 300, 500,],
+        "split_algo": [0, 1,],
+        "max_depth": range(8, 20),
+        "max_features": np.arange(0.05, 1.01, 0.05),
+        "min_rows_per_node": range(2, 21),
+        "n_bins": [64,]
     },
 
-    'cuml.ensemble.RandomForestRegressor': {
-        'n_estimators': [100, 300, 500,],
-        'split_algo': [0, 1,],
-        'max_depth': range(8, 20),
-        'max_features': np.arange(0.05, 1.01, 0.05),
-        'min_rows_per_node': range(2, 21),
-        'n_bins': [8, 64,]
+    "cuml.linear_model.Ridge": {
     },
 
-    'cuml.linear_model.Ridge': {
+    "xgboost.XGBRegressor": {
+        "n_estimators": [100],
+        "max_depth": range(3, 10),
+        "learning_rate": [1e-2, 1e-1, 0.5, 1.],
+        "subsample": np.arange(0.05, 1.01, 0.05),
+        "min_child_weight": range(1, 21),
+        "alpha": [1, 10],
+        "tree_method": ["gpu_hist"],
+        "nthread": [1],
+        "objective": ["reg:squarederror"]
     },
 
-    # Sklearn + cuML Preprocesssors
-    'sklearn.preprocessing.Binarizer': {
-        'threshold': np.arange(0.0, 1.01, 0.05)
+    # Sklearn Preprocesssors
+
+    "sklearn.preprocessing.Binarizer": {
+        "threshold": np.arange(0.0, 1.01, 0.05)
     },
 
-    'sklearn.decomposition.FastICA': {
-        'tol': np.arange(0.0, 1.01, 0.05)
+    "sklearn.decomposition.FastICA": {
+        "tol": np.arange(0.0, 1.01, 0.05)
     },
 
-    'sklearn.cluster.FeatureAgglomeration': {
-        'linkage': ['ward', 'complete', 'average'],
-        'affinity': ['euclidean', 'l1', 'l2', 'manhattan', 'cosine']
+    "sklearn.cluster.FeatureAgglomeration": {
+        "linkage": ["ward", "complete", "average"],
+        "affinity": ["euclidean", "l1", "l2", "manhattan", "cosine"]
     },
 
-    'sklearn.preprocessing.MaxAbsScaler': {
+    "sklearn.preprocessing.MaxAbsScaler": {
     },
 
-    'sklearn.preprocessing.MinMaxScaler': {
+    "sklearn.preprocessing.MinMaxScaler": {
     },
 
-    'sklearn.preprocessing.Normalizer': {
-        'norm': ['l1', 'l2', 'max']
+    "sklearn.preprocessing.Normalizer": {
+        "norm": ["l1", "l2", "max"]
     },
 
-    'sklearn.kernel_approximation.Nystroem': {
-        'kernel': ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid'],
-        'gamma': np.arange(0.0, 1.01, 0.05),
-        'n_components': range(1, 11)
+    "sklearn.kernel_approximation.Nystroem": {
+        "kernel": ["rbf", "cosine", "chi2", "laplacian", "polynomial", "poly", "linear", "additive_chi2", "sigmoid"],
+        "gamma": np.arange(0.0, 1.01, 0.05),
+        "n_components": range(1, 11)
     },
 
-    'cuml.decomposition.PCA': {
-        'svd_solver': ['jacobi'],
-        'iterated_power': range(1, 11),
+    "sklearn.decomposition.PCA": {
+        "svd_solver": ["randomized"],
+        "iterated_power": range(1, 11)
     },
 
-    'sklearn.preprocessing.PolynomialFeatures': {
-        'degree': [2],
-        'include_bias': [False],
-        'interaction_only': [False]
+    "sklearn.kernel_approximation.RBFSampler": {
+        "gamma": np.arange(0.0, 1.01, 0.05)
     },
 
-    'sklearn.kernel_approximation.RBFSampler': {
-        'gamma': np.arange(0.0, 1.01, 0.05)
+    "sklearn.preprocessing.RobustScaler": {
     },
 
-    'sklearn.preprocessing.RobustScaler': {
+    "sklearn.preprocessing.StandardScaler": {
     },
 
-    'sklearn.preprocessing.StandardScaler': {
+    "tpot.builtins.ZeroCount": {
     },
 
-    'tpot.builtins.ZeroCount': {
+    "tpot.builtins.OneHotEncoder": {
+        "minimum_fraction": [0.05, 0.1, 0.15, 0.2, 0.25],
+        "sparse": [False],
+        "threshold": [10]
     },
 
-    'tpot.builtins.OneHotEncoder': {
-        'minimum_fraction': [0.05, 0.1, 0.15, 0.2, 0.25],
-        'sparse': [False],
-        'threshold': [10]
+    # Selectors
+
+    "sklearn.feature_selection.SelectFwe": {
+        "alpha": np.arange(0, 0.05, 0.001),
+        "score_func": {
+            "sklearn.feature_selection.f_classif": None
+        }
     },
+
+    "sklearn.feature_selection.SelectPercentile": {
+        "percentile": range(1, 100),
+        "score_func": {
+            "sklearn.feature_selection.f_classif": None
+        }
+    },
+
+    "sklearn.feature_selection.VarianceThreshold": {
+        "threshold": [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2]
+    }
 }

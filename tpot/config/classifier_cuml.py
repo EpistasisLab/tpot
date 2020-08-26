@@ -30,7 +30,7 @@ import numpy as np
 # the scikit-learn preprocessors in the TPOT default configuration.
 
 classifier_config_cuml = {
-    # cuML + XGboost Classifiers
+    # cuML + DMLC/XGBoost Classifiers
 
     "cuml.neighbors.KNeighborsClassifier": {
         "n_neighbors": range(1, 101),
@@ -118,6 +118,7 @@ classifier_config_cuml = {
     },
 
     # Selectors
+
     "sklearn.feature_selection.SelectFwe": {
         "alpha": np.arange(0, 0.05, 0.001),
         "score_func": {
