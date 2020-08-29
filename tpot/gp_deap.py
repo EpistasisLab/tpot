@@ -447,7 +447,7 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
     else:
         try:
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
+                warnings.simplefilter('ignore', category=RuntimeWarning)
                 scores = [_fit_and_score(estimator=clone(sklearn_pipeline),
                                          X=features,
                                          y=target,
