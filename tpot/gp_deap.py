@@ -460,8 +460,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                                          error_score='raise',
                                          fit_params=sample_weight_dict)
                                     for train, test in cv_iter]
-            CV_score = np.array(scores)[:, 0]
-            return np.nanmean(CV_score)
+                CV_score = np.array(scores)[:, 0]
+                CV_score_mean = np.nanmean(CV_score)
+            return CV_score_mean
         except TimeoutException:
             return "Timeout"
         except Exception as e:
