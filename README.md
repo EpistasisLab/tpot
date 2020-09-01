@@ -165,14 +165,14 @@ This release of TPOT contains an extension of the original TPOT, named ‘resAdj
 
   _Figure 1. The three possible workflows for resAdj TPOT. From top to bottom the workflows when the needed adjustments are for features only, both features and target, and target only are displayed. The Feature Set Selector step is optional. ‘adjY’ denotes the no-leakage adjustment of the target for each predefined CV split._
   <p align="center">
-  <img src="images/ResAdj_Figure1.png" width=600 />
+  <img src="images/ResAdj_Figure1.png" width=800 />
   </p>
 
   For target covariate adjustment, we have added a pre-processor (resAdjTpotPreprocessor in builtins), which creates predefined CV splits and, for each split, adds 2 columns to the dataset; an indicator column to denote the training-testing rows and a column with precomputed no-leakage residuals for y using that split. In addition, y is fully replaced by the residuals (this is only used for the final Testing Score reported by TPOT, after the optimal pipeline has been determined via CV). The output of this pre-processor (whose structure is outlined in Figure 2) can then be passed on to TPOT, which must be run with the same CV splits. For each relevant scorer, selector, transformer, and estimator in the classic TPOT, we have added a corresponding scorer,  selector, transformer, and estimator which, by using the indicator and corresponding residual columns, enables the pipeline to flow utilizing the appropriately adjusted target at each CV split. The pre-processor can optionally also prepare a hold-out testing set to assess the optimized pipelines output by resAdj TPOT runs.
 
   _Figure 2. resAdj TPOT pre-processor output. Structure and column description of the output from this pre-processor._
   <p align="center">
-  <img src="images/ResAdj_Figure2.png" width=600 />
+  <img src="images/ResAdj_Figure2.png" width=800 />
   </p>
 
   Note that, when the only needed adjustments are for features, classic TPOT can be run as long as the resAdjTransformer is incorporated within every pipeline (using Template, see Figure 1 top row). If the only needed adjustment is for the target, then the pre-processor and the new scorer, selectors, transformers, and estimators must be used with predefined CV splits (Figure 1 bottom row). If both features and target need adjustment, then all the above can be used together (Figure 1 middle row).
