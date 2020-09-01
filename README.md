@@ -8,7 +8,6 @@ Development status: [![Development Build Status - Mac/Linux](https://travis-ci.o
 
 Package information: [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
 [![License: LGPL v3](https://img.shields.io/badge/license-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
-[![PyPI version](https://badge.fury.io/py/TPOT.svg)](https://badge.fury.io/py/TPOT)
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/EpistasisLab/tpot/master/images/tpot-logo.jpg" width=300 />
@@ -153,6 +152,36 @@ results = exported_pipeline.predict(testing_features)
 
 Check the documentation for [more examples and tutorials](http://epistasislab.github.io/tpot/examples/).
 
+## Notes on v0.11.1-resAdj
+
+This release of TPOT contains an extension of the original TPOT, named ‘resAdj TPOT’, which implements the no-leakage covariate adjustment approach described in [our new paper](https://www.biorxiv.org/content/10.1101/2020.08.24.265116v1). Target and/or features that are continuous, binary, or multiclass ordinal can be adjusted with resAdj TPOT. Moreover, any nominal feature can also be adjusted, after appropriate encoding into binary features.
+
+- resAdj TPOT workflows
+
+  Suppose that, for each of m subjects, we have values for a target variable (binary, multiclass ordinal, or continuous) and a collection of n features (binary, multiclass ordinal, or continuous). We represent the target values by an m-dimensional vector y and the feature values by an m×n matrix X. Suppose also that we have values for a collection of covariates that need to be adjusted for. Given a covariate, depending on the context of the data set, it may make sense to adjust only the target y by it, or only a subset of the features (columns in X), or both the target and a subset of the features (the latter is appropriate when the covariate is a confounder). We adjust the values of a variable v (which may be either the target or a feature)  by a collection of covariates by ‘regressing the covariates out’, with the typical approach of fitting an estimator to v on the covariates (e.g. linear regression if v is continuous, or logistic regression otherwise) then replacing the values of v  by the corresponding residuals. The latter are obtained by subtracting from the values of v the values predicted by the estimator (if v is continuous) or the expected values based on the estimator predicted class probabilities (if v is binary or multiclass ordinal). However, for each CV train-test split, to avoid leakage, the estimator must be fitted only using the training data for that split (see Box 1 for details). This can be easily achieved for feature covariate adjustments within the current TPOT/scikit-learn framework, but for target covariate (y) adjustment it is necessary to substantially extend the framework.
+
+  Box1
+  <p align="center">
+  <img src="images/ResAdj_Box1.png" width=300 />
+  </p>
+
+
+  For feature covariate adjustments, we have added a transformer (resAdjTransformer) to TPOT. This needs to be either the first step of any pipeline or the second step after a Feature Set Selector (TPOT Template can be used to specify these). The initial input to TPOT adds the covariate columns to X. One hyperparameter of this transformer is a file specifying which columns of X should be adjusted by which covariate columns. The transformer applies the no-leakage residual adjustments to these columns and removes the covariate columns before passing its output on to the other steps. If no covariate adjustment on the target is needed, classic TPOT can then be run as usual (Figure 1 top row).
+
+  _Figure 1. The three possible workflows for resAdj TPOT. From top to bottom the workflows when the needed adjustments are for features only, both features and target, and target only are displayed. The Feature Set Selector step is optional. ‘adjY’ denotes the no-leakage adjustment of the target for each predefined CV split._
+  <p align="center">
+  <img src="images/ResAdj_Figure1.png" width=300 />
+  </p>
+
+  For target covariate adjustment, we have added a pre-processor (resAdjTpotPreprocessor in builtins), which creates predefined CV splits and, for each split, adds 2 columns to the dataset; an indicator column to denote the training-testing rows and a column with precomputed no-leakage residuals for y using that split. In addition, y is fully replaced by the residuals (this is only used for the final Testing Score reported by TPOT, after the optimal pipeline has been determined via CV). The output of this pre-processor (whose structure is outlined in Figure 2) can then be passed on to TPOT, which must be run with the same CV splits. For each relevant scorer, selector, transformer, and estimator in the classic TPOT, we have added a corresponding scorer,  selector, transformer, and estimator which, by using the indicator and corresponding residual columns, enables the pipeline to flow utilizing the appropriately adjusted target at each CV split. The pre-processor can optionally also prepare a hold-out testing set to assess the optimized pipelines output by resAdj TPOT runs.
+
+  _Figure 2. resAdj TPOT pre-processor output. Structure and column description of the output from this pre-processor._
+  <p align="center">
+  <img src="images/ResAdj_Figure2.png" width=300 />
+  </p>
+
+  Note that, when the only needed adjustments are for features, classic TPOT can be run as long as the resAdjTransformer is incorporated within every pipeline (using Template, see Figure 1 top row). If the only needed adjustment is for the target, then the pre-processor and the new scorer, selectors, transformers, and estimators must be used with predefined CV splits (Figure 1 bottom row). If both features and target need adjustment, then all the above can be used together (Figure 1 middle row).
+
 ## Contributing to TPOT
 
 We welcome you to [check the existing issues](https://github.com/EpistasisLab/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/EpistasisLab/tpot/issues/new) so we can discuss it.
@@ -230,6 +259,7 @@ BibTeX entry:
 Alternatively, you can cite the repository directly with the following DOI:
 
 [![DOI](https://zenodo.org/badge/20747/rhiever/tpot.svg)](https://zenodo.org/badge/latestdoi/20747/rhiever/tpot)
+
 
 ## Support for TPOT
 
