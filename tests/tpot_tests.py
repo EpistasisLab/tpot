@@ -666,8 +666,9 @@ def test_sample_weight_func():
 
     assert np.allclose(cv_score1, cv_score2)
     assert not np.allclose(cv_score1, cv_score_weight)
-    assert np.allclose(known_score, score)
 
+    assert np.allclose(known_score, score, rtol=0.01)
+    
 
 
 def test_template_1():
