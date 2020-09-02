@@ -31,6 +31,7 @@ from sklearn.pipeline import make_pipeline
 from tpot_tests import training_features, training_target, training_features_r, training_target_r
 from sklearn.model_selection import cross_val_score
 import warnings
+import platform
 warnings.filterwarnings("ignore")
 
 def test_StackingEstimator_1():
