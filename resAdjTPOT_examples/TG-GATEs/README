@@ -1,0 +1,39 @@
+INPUT DATA AFTER ENCODING
+tpotInput_class_CRE.txt
+
+FILE SPECIFYING FEATURE ADJUSTMENTS
+adj_list_kidney.csv
+
+FEATURE SET FILE
+fsProbesets2orMoreGenes.csv
+
+SCRIPT TO PREPARE 100 TRAINING/HELD OUT TESTING DATA SETS FOR resAdj TPOT RUNS
+1. make directory to hold these 100 Training/Testing data sets:
+mkdir train_test_class_CRE
+
+2. Run:
+python makeResAdjSetsKidney.py tpotInput_class_CRE.txt BARCODE CRE train_test_class_CRE classification
+
+RUN resAdj TPOT
+1. Prepare output directory and its subdirectories:
+mkdir TPOT_adj_class_CRE_500-500
+mkdir TPOT_adj_class_CRE_500-500/pipelines
+mkdir TPOT_adj_class_CRE_500-500/scripts
+
+2. For each i=1, 2, ..., 100, to run resAdj TPOT on the ith Training/Testing data set, with an initial population of 500 and 500 generations, use:
+
+python tpot_adj_kidney.py <i> train_test_class_CRE/trainAdj_<i> testAdj_<i> TPOT_adj_class_CRE_500-500 500 500 kidney
+
+You may want to write a wrapper which launches the 100 runs, the specifics will depend on what type, if any, of computer cluster, you use.
+
+# RUN CLASSIC TPOT
+1. Prepare output directory and its subdirectories:
+mkdir TPOT_vanilla_class_CRE_500-500
+mkdir TPOT_vanilla_class_CRE_500-500/pipelines
+mkdir TPOT_vanilla_class_CRE_500-500/scripts
+
+2. For each i=1, 2, ..., 100, to run classic TPOT on a random ith split of the data set into Training/held out Testing parts, with an initial population of 500 and 500 generations, use:
+
+python tpot_vanilla_kidney.py <i> tpotInput_class_CRE.txt BARCODE CRE TPOT_vanilla_class_CRE_500-500 500 500
+
+You may want  to write a wrapper which launches the 100 runs, the specifics will depend on what type, if any, of computer cluster, you use.

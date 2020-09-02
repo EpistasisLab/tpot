@@ -1,0 +1,39 @@
+INPUT DATA AFTER ENCODING
+annotDataKeggCov.txt
+
+FILE SPECIFYING FEATURE ADJUSTMENTS
+adj_list.csv
+
+FEATURE SET FILE
+c2.cp.kegg.v7.0.ens.red.csv
+
+SCRIPT TO PREPARE 100 TRAINING/HELD OUT TESTING DATA SETS FOR resAdj TPOT RUNS
+1. make directory to hold these 100 Training/Testing data sets:
+mkdir resAdj_ySexEthn_xEthnLab_setsTrainTest
+
+2. Run:
+python makeResAdjSets.py annotDataKeggCov.txt gene_id diagnosis resAdj_ySexEthn_xEthnLab_setsTrainTest
+
+RUN resAdj TPOT
+1. Prepare output directory and its subdirectories:
+mkdir TPOT_adj_ySexEthn_xEthnLab_500-500
+mkdir TPOT_adj_ySexEthn_xEthnLab_500-500/pipelines
+mkdir TPOT_adj_ySexEthn_xEthnLab_500-500/scripts
+
+2. For each i=1, 2, ..., 100, to run resAdj TPOT on the ith Training/Testing data set, with an initial population of 500 and 500 generations, use:
+
+python tpot_adj.py <i> resAdj_ySexEthn_xEthnLab_setsTrainTest/trainAdj_<i> resAdj_ySexEthn_xEthnLab_setsTrainTest/testAdj_<i> TPOT_adj_ySexEthn_xEthnLab_500-500 500 500
+
+You may want to write a wrapper which launches the 100 runs, the specifics will depend on what type, if any, of computer cluster, you use.
+
+# RUN CLASSIC TPOT
+1. Prepare output directory and its subdirectories:
+mkdir TPOT_vanilla_500-500
+mkdir TPOT_vanilla_500-500/pipelines
+mkdir TPOT_vanilla_500-500/scripts
+
+2. For each i=1, 2, ..., 100, to run classic TPOT on a random ith split of the data set into Training/held out Testing parts, with an initial population of 500 and 500 generations, use:
+
+python tpot_vanilla.py <i> annotDataKeggCov.txt gene_id diagnosis TPOT_vanilla_500-500 500 500
+
+You may want  to write a wrapper which launches the 100 runs, the specifics will depend on what type, if any, of computer cluster, you use.

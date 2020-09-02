@@ -154,7 +154,7 @@ Check the documentation for [more examples and tutorials](http://epistasislab.gi
 
 ## Notes on v0.11.1-resAdj
 
-This release of TPOT contains an extension of the original TPOT, named ‘resAdj TPOT’, which implements the no-leakage covariate adjustment approach described in [our new paper](https://www.biorxiv.org/content/10.1101/2020.08.24.265116v1). Target and/or features that are continuous, binary, or multiclass ordinal can be adjusted with resAdj TPOT. Moreover, any nominal feature can also be adjusted, after appropriate encoding into binary features.
+This release of TPOT contains an extension of the original TPOT, named ‘resAdj TPOT’, which implements the no-leakage covariate adjustment approach described in [our paper](https://www.biorxiv.org/content/10.1101/2020.08.24.265116v1). Target and/or features that are continuous, binary, or multiclass ordinal can be adjusted with resAdj TPOT. Moreover, any nominal feature can also be adjusted, after appropriate encoding into binary features. Data and code for the examples discussed in our paper can be found under [resAdjTPOT_examples folder](resAdjTPOT_examples/).
 
 - resAdj TPOT workflows
 
