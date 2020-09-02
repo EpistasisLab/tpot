@@ -617,13 +617,8 @@ def test_score_3():
 
     # Get score from TPOT
     score = tpot_obj.score(testing_features_r, testing_target_r)
-<<<<<<< HEAD
+
     assert np.allclose(known_score, score)
-=======
-
-    assert np.allclose(known_score, score, rtol=0.03)
-
->>>>>>> 805e1ae... fix known_score changes in sklearn0.23.1
 
 
 def test_sample_weight_func():
@@ -671,13 +666,8 @@ def test_sample_weight_func():
 
     assert np.allclose(cv_score1, cv_score2)
     assert not np.allclose(cv_score1, cv_score_weight)
-<<<<<<< HEAD
     assert np.allclose(known_score, score)
-=======
 
-    assert np.allclose(known_score, score, rtol=0.01)
-    
->>>>>>> 805e1ae... fix known_score changes in sklearn0.23.1
 
 
 def test_template_1():
