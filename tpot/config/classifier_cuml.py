@@ -37,15 +37,6 @@ classifier_config_cuml = {
         "weights": ["uniform",],
     },
 
-    "cuml.ensemble.RandomForestClassifier": {
-        "n_estimators": [100, 300],
-        "split_algo": [0, 1],
-        "max_depth": range(8, 16),
-        "max_features": np.arange(0.05, 1.01, 0.05),
-        "min_rows_per_node": range(2, 21),
-        "n_bins": [64,]
-    },
-
     "cuml.linear_model.LogisticRegression": {
         "penalty": ["l1", "l2", "elasticnet"],
         "C": [1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.,],

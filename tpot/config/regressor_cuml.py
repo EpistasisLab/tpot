@@ -46,15 +46,6 @@ regressor_config_cuml = {
         "normalize": [True, False]
     },
 
-    "cuml.ensemble.RandomForestRegressor": {
-        "n_estimators": [100, 300, 500,],
-        "split_algo": [0, 1,],
-        "max_depth": range(8, 20),
-        "max_features": np.arange(0.05, 1.01, 0.05),
-        "min_rows_per_node": range(2, 21),
-        "n_bins": [64,]
-    },
-
     "cuml.linear_model.Ridge": {
     },
 
