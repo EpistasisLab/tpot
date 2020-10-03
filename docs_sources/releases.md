@@ -75,7 +75,7 @@
 
 - We refined parameters in VarianceThreshold and FeatureAgglomeration.
 
-- TPOT now supports using memory caching within a Pipeline via a optional `memory` parameter.
+- TPOT now supports using memory caching within a Pipeline via an optional `memory` parameter.
 
 - We improved documentation of TPOT.
 

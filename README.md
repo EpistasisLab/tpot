@@ -54,7 +54,7 @@ Click on the corresponding links to find more information on TPOT usage in the d
 
 ### Classification
 
-Below is a minimal working example with the the optical recognition of handwritten digits dataset.
+Below is a minimal working example with the optical recognition of handwritten digits dataset.
 
 ```python
 from tpot import TPOTClassifier
