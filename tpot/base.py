@@ -1632,7 +1632,7 @@ class TPOTBase(BaseEstimator):
         ----------
         individual: list
             A grown tree with leaves at possibly different depths
-            dependending on the condition function.
+            depending on the condition function.
 
         Returns
         -------
@@ -1683,7 +1683,7 @@ class TPOTBase(BaseEstimator):
         min_: int
             Minimum height of the produced trees.
         max_: int
-            Maximum Height of the produced trees.
+            Maximum height of the produced trees.
         condition: function
             The condition is a function that takes two arguments,
             the height of the tree to build and the current
@@ -1696,7 +1696,7 @@ class TPOTBase(BaseEstimator):
         -------
         individual: list
             A grown tree with leaves at possibly different depths
-            dependending on the condition function.
+            depending on the condition function.
         """
         if type_ is None:
             type_ = pset.ret

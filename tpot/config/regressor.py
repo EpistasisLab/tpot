@@ -116,7 +116,7 @@ regressor_config_dict = {
         'power_t': [0.5, 0.0, 1.0, 0.1, 100.0, 10.0, 50.0]
     },
 
-    # Preprocesssors
+    # Preprocessors
     'sklearn.preprocessing.Binarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
     },
