@@ -227,10 +227,13 @@ Flag indicating whether the TPOT version checker should be disabled.
 The update checker will tell you when a new version of TPOT has been released.
 </blockquote>
 
-<strong>log_file</strong>: io.TextIOWrapper or io.StringIO, optional (default: sys.stdout)
+<strong>log_file</strong>: file-like class (io.TextIOWrapper or io.StringIO) or string, optional (default: None)
 <br /><br />
 <blockquote>
 Save progress content to a file.
+If it is a string for the path and file name of the desired output file,
+TPOT will create the file and write log into it.
+If it is None, TPOT will output log into sys.stdout
 </blockquote>
 
 </td>
