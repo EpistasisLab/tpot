@@ -195,7 +195,7 @@ def test_init_custom_parameters():
     assert tpot_obj._optimized_pipeline_score == None
     assert tpot_obj.fitted_pipeline_ == None
     assert tpot_obj._exported_pipeline_text == []
-    assert tpot_obj.log_file == sys.stdout
+    assert tpot_obj.log_file_ == sys.stdout
 
 def test_init_log_file():
     """ Assert that TPOT has right file handler to save progress. """
@@ -1300,7 +1300,7 @@ def test_check_periodic_pipeline():
     )
     tpot_obj.fit(training_features, training_target)
     with closing(StringIO()) as our_file:
-        tpot_obj.log_file = our_file
+        tpot_obj.log_file_ = our_file
         tpot_obj.verbosity = 3
         tpot_obj._last_pipeline_write = datetime.now()
         sleep(0.11)
@@ -1344,7 +1344,7 @@ def test_save_periodic_pipeline():
     )
     tpot_obj.fit(training_features, training_target)
     with closing(StringIO()) as our_file:
-        tpot_obj.log_file = our_file
+        tpot_obj.log_file_ = our_file
         tpot_obj.verbosity = 3
         tpot_obj._last_pipeline_write = datetime.now()
         sleep(0.11)
@@ -1374,7 +1374,7 @@ def test_save_periodic_pipeline_2():
     )
     tpot_obj.fit(training_features, training_target)
     with closing(StringIO()) as our_file:
-        tpot_obj.log_file = our_file
+        tpot_obj.log_file_ = our_file
         tpot_obj.verbosity = 3
         tpot_obj._last_pipeline_write = datetime.now()
         sleep(0.11)
@@ -1405,7 +1405,7 @@ def test_check_periodic_pipeline_3():
     )
     tpot_obj.fit(training_features, training_target)
     with closing(StringIO()) as our_file:
-        tpot_obj.log_file = our_file
+        tpot_obj.log_file_ = our_file
         tpot_obj.verbosity = 3
         tpot_obj._exported_pipeline_text = []
         tpot_obj._last_pipeline_write = datetime.now()
@@ -1648,7 +1648,7 @@ def test_update_pbar():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
-        tpot_obj.log_file=our_file
+        tpot_obj.log_file_ = our_file
         tpot_obj._pbar = tqdm(total=10, disable=False, file=our_file)
         tpot_obj._update_pbar(pbar_num=2, pbar_msg="Test Warning Message")
         our_file.seek(0)
@@ -1667,7 +1667,7 @@ def test_update_val():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
-        tpot_obj.log_file=our_file
+        tpot_obj.log_file_ = our_file
         tpot_obj._pbar = tqdm(total=10, disable=False, file=our_file)
         result_score_list = []
         result_score_list = tpot_obj._update_val(0.9999, result_score_list)
@@ -1714,7 +1714,7 @@ def test_preprocess_individuals():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
-        tpot_obj.log_file=our_file
+        tpot_obj.log_file_ = our_file
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
         operator_counts, eval_individuals_str, sklearn_pipeline_list, _ = \
                                 tpot_obj._preprocess_individuals(individuals)
@@ -1760,7 +1760,7 @@ def test_preprocess_individuals_2():
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
-        tpot_obj.log_file=our_file
+        tpot_obj.log_file_ = our_file
         tpot_obj._pbar = tqdm(total=3, disable=False, file=our_file)
         operator_counts, eval_individuals_str, sklearn_pipeline_list, _ = \
                                 tpot_obj._preprocess_individuals(individuals)
@@ -1807,7 +1807,7 @@ def test_preprocess_individuals_3():
     # reset verbosity = 3 for checking pbar message
 
     with closing(StringIO()) as our_file:
-        tpot_obj.log_file=our_file
+        tpot_obj.log_file_ = our_file
         tpot_obj._lambda=4
         tpot_obj._pbar = tqdm(total=2, disable=False, file=our_file)
         tpot_obj._pbar.n = 2
