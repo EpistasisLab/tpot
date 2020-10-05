@@ -341,7 +341,7 @@ def mutNodeReplacement(individual, pset):
         rindex = None
         if index + 1 < len(individual):
             for i, tmpnode in enumerate(individual[index + 1:], index + 1):
-                if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in tmpnode.args:
+                if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in node.args:
                     rindex = i
                     break
 
@@ -349,6 +349,7 @@ def mutNodeReplacement(individual, pset):
         # for example: if op.root is True then the node.ret is Output_DF object
         # based on the function _setup_pset. Then primitives is the list of classifor or regressor
         primitives = pset.primitives[node.ret]
+
         if len(primitives) != 0:
             new_node = np.random.choice(primitives)
             new_subtree = [None] * len(new_node.args)
@@ -371,6 +372,7 @@ def mutNodeReplacement(individual, pset):
             # combine with primitives
             new_subtree.insert(0, new_node)
             individual[slice_] = new_subtree
+
     return individual,
 
 
