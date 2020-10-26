@@ -450,7 +450,7 @@ This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
 </tr>
 
 <tr>
-<td>TPOT-NN</td>
+<td>TPOT NN</td>
 <td>TPOT uses the same configuration as "Default TPOT" plus additional neural network estimators written in PyTorch (currently only `tpot.builtins.PytorchLRClassifier` and `tpot.builtins.PytorchMLPClassifier`).
 <br /><br />
 Currently only classification is supported, but future releases will include regression estimators.</td>
@@ -458,7 +458,7 @@ Currently only classification is supported, but future releases will include reg
 </tr>
 
 <tr>
-<td>TPOT-cuML</td>
+<td>TPOT cuML</td>
 <td>TPOT will search over a restricted configuration using the GPU-accelerated estimators in <a href="https://github.com/rapidsai/cuml">RAPIDS cuML</a> and <a href="https://github.com/dmlc/xgboost">DMLC XGBoost</a>. This configuration requires an NVIDIA Pascal architecture or better GPU with compute capability 6.0+, and that the library cuML is installed. With this configuration, all model training and predicting will be GPU-accelerated.
 <br /><br />
 This configuration is particularly useful for medium-sized and larger datasets on which CPU-based estimators are a common bottleneck, and works for both the TPOTClassifier and TPOTRegressor.</td>

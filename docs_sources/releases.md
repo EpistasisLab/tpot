@@ -1,5 +1,29 @@
 # Release Notes
 
+## Version 0.11.6
+
+- Fix a bug causing point mutation function does not work properly with using `template` option
+- Add a new built configuration called "TPOT cuML" which TPOT will search over a restricted configuration using the GPU-accelerated estimators in [RAPIDS cuML](https://github.com/rapidsai/cuml) and [DMLC XGBoost](https://github.com/dmlc/xgboost). **This configuration requires an NVIDIA Pascal architecture or better GPU with [compute capability 6.0+](https://developer.nvidia.com/cuda-gpus), and that the library cuML is installed.**
+- Add string path support for log/log_file parameter
+- Fix a bug in version 0.11.5 causing no update in stdout after each generation
+- Fix minor bugs
+
+
+## Version 0.11.5
+
+- Make `Pytorch` as an optional dependency
+- Refine installation documentation
+
+## Version 0.11.4
+
+- Add a new built configuration "TPOT NN" which includes all operators in "Default TPOT" plus additional neural network estimators written in PyTorch (currently `tpot.builtins.PytorchLRClassifier` and `tpot.builtins.PytorchMLPClassifier` for classification tasks only)
+- Refine `log_file` parameter's behavior
+
+## Version 0.11.3
+
+- Fix a bug in TPOTRegressor in v0.11.2
+- Add `-log` option in command line interface to save process log to a file.
+
 ## Version 0.11.2
 
 - Fix `early_stop` parameter does not work properly
