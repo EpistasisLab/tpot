@@ -450,11 +450,21 @@ This configuration works for both the TPOTClassifier and TPOTRegressor.</td>
 </tr>
 
 <tr>
-<td>TPOT-NN</td>
+<td>TPOT NN</td>
 <td>TPOT uses the same configuration as "Default TPOT" plus additional neural network estimators written in PyTorch (currently only `tpot.builtins.PytorchLRClassifier` and `tpot.builtins.PytorchMLPClassifier`).
 <br /><br />
 Currently only classification is supported, but future releases will include regression estimators.</td>
 <td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier_nn.py">Classification</a></td>
+</tr>
+
+<tr>
+<td>TPOT cuML</td>
+<td>TPOT will search over a restricted configuration using the GPU-accelerated estimators in <a href="https://github.com/rapidsai/cuml">RAPIDS cuML</a> and <a href="https://github.com/dmlc/xgboost">DMLC XGBoost</a>. This configuration requires an NVIDIA Pascal architecture or better GPU with compute capability 6.0+, and that the library cuML is installed. With this configuration, all model training and predicting will be GPU-accelerated.
+<br /><br />
+This configuration is particularly useful for medium-sized and larger datasets on which CPU-based estimators are a common bottleneck, and works for both the TPOTClassifier and TPOTRegressor.</td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier_cuml.py">Classification</a>
+<br /><br />
+<a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor_cuml.py">Regression</a></td>
 </tr>
 
 </table>
@@ -566,7 +576,7 @@ If a specific operator, e.g. `SelectPercentile`, is preferred for usage in the 1
 
 ## FeatureSetSelector in TPOT
 
-`FeatureSetSelector` is a special new operator in TPOT. This operator enables feature selection based on *priori* expert knowledge. For example, in RNA-seq gene expression analysis, this operator can be used to select one or more gene (feature) set(s) based on GO (Gene Ontology) terms or annotated gene sets Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/index.jsp)) in the 1st step of pipeline via `template` option above, in order to reduce dimensions and TPOT computation time. This operator requires a dataset list in csv format. In this csv file, there are only three columns: 1st column is feature set names, 2nd column is the total number of features in one set and 3rd column is a list of feature names (if input X is pandas.DataFrame) or indexes (if input X is numpy.ndarray) delimited by ";". Below is a example how to use this operator in TPOT.
+`FeatureSetSelector` is a special new operator in TPOT. This operator enables feature selection based on *priori* expert knowledge. For example, in RNA-seq gene expression analysis, this operator can be used to select one or more gene (feature) set(s) based on GO (Gene Ontology) terms or annotated gene sets Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/index.jsp)) in the 1st step of pipeline via `template` option above, in order to reduce dimensions and TPOT computation time. This operator requires a dataset list in csv format. In this csv file, there are only three columns: 1st column is feature set names, 2nd column is the total number of features in one set and 3rd column is a list of feature names (if input X is pandas.DataFrame) or indexes (if input X is numpy.ndarray) delimited by ";". Below is an example how to use this operator in TPOT.
 
 Please check our [preprint paper](https://www.biorxiv.org/content/10.1101/502484v1.article-info) for more details.
 
@@ -655,7 +665,7 @@ To use your Dask cluster to fit a TPOT model, specify the ``use_dask`` keyword w
 estimator = TPOTEstimator(use_dask=True, n_jobs=-1)
 ```
 
-This will use use all the workers on your cluster to do the training, and use [Dask-ML's pipeline rewriting](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) to avoid re-fitting estimators multiple times on the same set of data.
+This will use all the workers on your cluster to do the training, and use [Dask-ML's pipeline rewriting](https://dask-ml.readthedocs.io/en/latest/hyper-parameter-search.html#avoid-repeated-work) to avoid re-fitting estimators multiple times on the same set of data.
 It will also provide fine-grained diagnostics in the [distributed scheduler UI](https://distributed.readthedocs.io/en/latest/web.html).
 
 Alternatively, Dask implements a joblib backend.

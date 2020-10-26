@@ -74,6 +74,14 @@
                 <ul class="current">
                     <li class="toctree-l1 current"><a class="reference internal current" href="./">Release Notes</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#version-0116">Version 0.11.6</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0115">Version 0.11.5</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0114">Version 0.11.4</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0113">Version 0.11.3</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#version-0112">Version 0.11.2</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#version-0111">Version 0.11.1</a>
@@ -159,6 +167,29 @@
             <div class="section">
               
                 <h1 id="release-notes">Release Notes</h1>
+<h2 id="version-0116">Version 0.11.6</h2>
+<ul>
+<li>Fix a bug causing point mutation function does not work properly with using <code>template</code> option</li>
+<li>Add a new built configuration called "TPOT cuML" which TPOT will search over a restricted configuration using the GPU-accelerated estimators in <a href="https://github.com/rapidsai/cuml">RAPIDS cuML</a> and <a href="https://github.com/dmlc/xgboost">DMLC XGBoost</a>. <strong>This configuration requires an NVIDIA Pascal architecture or better GPU with <a href="https://developer.nvidia.com/cuda-gpus">compute capability 6.0+</a>, and that the library cuML is installed.</strong></li>
+<li>Add string path support for log/log_file parameter</li>
+<li>Fix a bug in version 0.11.5 causing no update in stdout after each generation</li>
+<li>Fix minor bugs</li>
+</ul>
+<h2 id="version-0115">Version 0.11.5</h2>
+<ul>
+<li>Make <code>Pytorch</code> as an optional dependency</li>
+<li>Refine installation documentation</li>
+</ul>
+<h2 id="version-0114">Version 0.11.4</h2>
+<ul>
+<li>Add a new built configuration "TPOT NN" which includes all operators in "Default TPOT" plus additional neural network estimators written in PyTorch (currently <code>tpot.builtins.PytorchLRClassifier</code> and <code>tpot.builtins.PytorchMLPClassifier</code> for classification tasks only)</li>
+<li>Refine <code>log_file</code> parameter's behavior</li>
+</ul>
+<h2 id="version-0113">Version 0.11.3</h2>
+<ul>
+<li>Fix a bug in TPOTRegressor in v0.11.2</li>
+<li>Add <code>-log</code> option in command line interface to save process log to a file.</li>
+</ul>
 <h2 id="version-0112">Version 0.11.2</h2>
 <ul>
 <li>Fix <code>early_stop</code> parameter does not work properly</li>
@@ -240,7 +271,7 @@
 <p>We refined parameters in VarianceThreshold and FeatureAgglomeration.</p>
 </li>
 <li>
-<p>TPOT now supports using memory caching within a Pipeline via a optional <code>memory</code> parameter.</p>
+<p>TPOT now supports using memory caching within a Pipeline via an optional <code>memory</code> parameter.</p>
 </li>
 <li>
 <p>We improved documentation of TPOT.</p>

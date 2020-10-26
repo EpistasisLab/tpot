@@ -56,7 +56,6 @@ class TPOTClassifier(TPOTBase):
                                 random_state=self.random_state,
                                 test_size=None,
                                 train_size=min(50,int(0.9*features.shape[0])),
-                                stratify=target
                                 )
         #Make sure there is a least one example from each class
         #for this evaluative test sample

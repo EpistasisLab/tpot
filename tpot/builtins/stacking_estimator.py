@@ -24,7 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
+from sklearn.base import BaseEstimator, TransformerMixin, is_classifier
 from sklearn.utils import check_array
 
 
@@ -83,7 +83,7 @@ class StackingEstimator(BaseEstimator, TransformerMixin):
         X = check_array(X)
         X_transformed = np.copy(X)
         # add class probabilities as a synthetic feature
-        if issubclass(self.estimator.__class__, ClassifierMixin) and hasattr(self.estimator, 'predict_proba'):
+        if is_classifier(self.estimator) and hasattr(self.estimator, 'predict_proba'):
             y_pred_proba = self.estimator.predict_proba(X)
             # check all values that should be not infinity or not NAN
             if np.all(np.isfinite(y_pred_proba)):
@@ -91,5 +91,4 @@ class StackingEstimator(BaseEstimator, TransformerMixin):
 
         # add class prediction as a synthetic feature
         X_transformed = np.hstack((np.reshape(self.estimator.predict(X), (-1, 1)), X_transformed))
-
         return X_transformed

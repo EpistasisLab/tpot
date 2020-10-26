@@ -68,7 +68,7 @@ def test_nn_errors_on_multiclass():
         config_dict=classifier_config_nn,
         template='PytorchLRClassifier'
     )
-    assert_raises(RuntimeError, clf.fit, multiclass_X, multiclass_y)
+    assert_raises(ValueError, clf.fit, multiclass_X, multiclass_y)
 
 def test_pytorch_lr_classifier():
     """Assert that the PytorchLRClassifier model works. (NN)"""

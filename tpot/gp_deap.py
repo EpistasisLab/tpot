@@ -171,7 +171,8 @@ def initialize_stats_dict(individual):
 
 
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
-                   stats=None, halloffame=None, verbose=0, per_generation_function=None):
+                   stats=None, halloffame=None, verbose=0,
+                   per_generation_function=None, log_file=None):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
@@ -189,6 +190,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     :param verbose: Whether or not to log the statistics.
     :param per_generation_function: if supplied, call this function before each generation
                             used by tpot to save best pipeline before each new generation
+    :param log_file: io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
     :returns: The final population
     :returns: A class:`~deap.tools.Logbook` with the statistics of the
               evolution.
@@ -252,18 +254,26 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         if not pbar.disable:
             # Print only the best individual fitness
             if verbose == 2:
-                high_score = max(halloffame.keys[x].wvalues[1] for x in range(len(halloffame.keys)))
-                pbar.fp.write('\nGeneration {0} - Current best internal CV score: {1}'.format(gen, high_score))
+                high_score = max(halloffame.keys[x].wvalues[1] \
+                    for x in range(len(halloffame.keys)))
+                pbar.write('\nGeneration {0} - Current '
+                            'best internal CV score: {1}'.format(gen,
+                                                        high_score),
+
+                            file=log_file)
 
             # Print the entire Pareto front
             elif verbose == 3:
-                pbar.fp.write('\nGeneration {} - Current Pareto front scores:'.format(gen))
+                pbar.write('\nGeneration {} - '
+                            'Current Pareto front scores:'.format(gen),
+                            file=log_file)
                 for pipeline, pipeline_scores in zip(halloffame.items, reversed(halloffame.keys)):
-                    pbar.fp.write('\n{}\t{}\t{}'.format(
+                    pbar.write('\n{}\t{}\t{}'.format(
                             int(pipeline_scores.wvalues[0]),
                             pipeline_scores.wvalues[1],
                             pipeline
-                        )
+                        ),
+                        file=log_file
                     )
 
         # after each population save a periodic pipeline
@@ -341,7 +351,7 @@ def mutNodeReplacement(individual, pset):
         rindex = None
         if index + 1 < len(individual):
             for i, tmpnode in enumerate(individual[index + 1:], index + 1):
-                if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in tmpnode.args:
+                if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in node.args:
                     rindex = i
                     break
 
@@ -349,6 +359,7 @@ def mutNodeReplacement(individual, pset):
         # for example: if op.root is True then the node.ret is Output_DF object
         # based on the function _setup_pset. Then primitives is the list of classifor or regressor
         primitives = pset.primitives[node.ret]
+
         if len(primitives) != 0:
             new_node = np.random.choice(primitives)
             new_subtree = [None] * len(new_node.args)
@@ -371,6 +382,7 @@ def mutNodeReplacement(individual, pset):
             # combine with primitives
             new_subtree.insert(0, new_node)
             individual[slice_] = new_subtree
+
     return individual,
 
 
@@ -450,8 +462,9 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                                          error_score='raise',
                                          fit_params=sample_weight_dict)
                                     for train, test in cv_iter]
-            CV_score = np.array(scores)[:, 0]
-            return np.nanmean(CV_score)
+                CV_score = np.array(scores)[:, 0]
+                CV_score_mean = np.nanmean(CV_score)
+            return CV_score_mean
         except TimeoutException:
             return "Timeout"
         except Exception as e:

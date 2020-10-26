@@ -194,6 +194,20 @@ belonging to a typical class of machine learning tasks.</p>
 <td align="center"><a href="https://archive.ics.uci.edu/ml/datasets/MAGIC+Gamma+Telescope">link</a></td>
 <td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb">link</a></td>
 </tr>
+<tr>
+<td>cuML Classification Example</td>
+<td>random classification problem</td>
+<td>classification</td>
+<td align="center"><a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_classification.html">link</a></td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/cuML_Classification_Example.ipynb">link</a></td>
+</tr>
+<tr>
+<td>cuML Regression Example</td>
+<td>random regression problem</td>
+<td>regression</td>
+<td align="center"><a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_regression.html">link</a></td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/cuML_Regression_Example.ipynb">link</a></td>
+</tr>
 </tbody>
 </table>
 <p><strong>Notes:</strong>
@@ -201,7 +215,7 @@ belonging to a typical class of machine learning tasks.</p>
 - Upon re-running the experiments, your resulting pipelines <em>may</em> differ (to some extent) from the ones demonstrated here.</p>
 <h2 id="iris-flower-classification">Iris flower classification</h2>
 <p>The following code illustrates how TPOT can be employed for performing a simple <em>classification task</em> over the Iris dataset.</p>
-<pre><code class="Python">from tpot import TPOTClassifier
+<pre><code class="language-Python">from tpot import TPOTClassifier
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -215,9 +229,8 @@ tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_iris_pipeline.py')
 </code></pre>
-
 <p>Running this code should discover a pipeline (exported as <code>tpot_iris_pipeline.py</code>) that achieves about 97% test accuracy:</p>
-<pre><code class="Python">import numpy as np
+<pre><code class="language-Python">import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -242,10 +255,9 @@ set_param_recursive(exported_pipeline.steps, 'random_state', 42)
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 </code></pre>
-
 <h2 id="digits-dataset">Digits dataset</h2>
 <p>Below is a minimal working example with the optical recognition of handwritten digits dataset, which is an <em>image classification problem</em>.</p>
-<pre><code class="Python">from tpot import TPOTClassifier
+<pre><code class="language-Python">from tpot import TPOTClassifier
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 
@@ -258,9 +270,8 @@ tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_digits_pipeline.py')
 </code></pre>
-
 <p>Running this code should discover a pipeline (exported as <code>tpot_digits_pipeline.py</code>) that achieves about 98% test accuracy:</p>
-<pre><code class="Python">import numpy as np
+<pre><code class="language-Python">import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -288,10 +299,9 @@ set_param_recursive(exported_pipeline.steps, 'random_state', 42)
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 </code></pre>
-
 <h2 id="boston-housing-prices-modeling">Boston housing prices modeling</h2>
 <p>The following code illustrates how TPOT can be employed for performing a <em>regression task</em> over the Boston housing prices dataset.</p>
-<pre><code class="Python">from tpot import TPOTRegressor
+<pre><code class="language-Python">from tpot import TPOTRegressor
 from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
 
@@ -304,9 +314,8 @@ tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_boston_pipeline.py')
 </code></pre>
-
 <p>Running this code should discover a pipeline (exported as <code>tpot_boston_pipeline.py</code>) that achieves at least 10 mean squared error (MSE) on the test set:</p>
-<pre><code class="Python">import numpy as np
+<pre><code class="language-Python">import numpy as np
 import pandas as pd
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.model_selection import train_test_split
@@ -331,7 +340,6 @@ set_param_recursive(exported_pipeline.steps, 'random_state', 42)
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
 </code></pre>
-
 <h2 id="titanic-survival-analysis">Titanic survival analysis</h2>
 <p>To see the TPOT applied the Titanic Kaggle dataset, see the Jupyter notebook <a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb">here</a>. This example shows how to take a messy dataset and preprocess it such that it can be used in scikit-learn and TPOT.</p>
 <h2 id="portuguese-bank-marketing">Portuguese Bank Marketing</h2>
@@ -340,7 +348,7 @@ results = exported_pipeline.predict(testing_features)
 <p>The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found <a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb">here</a>.</p>
 <h2 id="neural-network-classifier-using-tpot-nn">Neural network classifier using TPOT-NN</h2>
 <p>By loading the <a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier_nn.py">TPOT-NN configuration dictionary</a>, PyTorch estimators will be included for classification. Users can also create their own NN configuration dictionary that includes <code>tpot.builtins.PytorchLRClassifier</code> and/or <code>tpot.builtins.PytorchMLPClassifier</code>, or they can specify them using a template string, as shown in the following example:</p>
-<pre><code class="Python">from tpot import TPOTClassifier
+<pre><code class="language-Python">from tpot import TPOTClassifier
 from sklearn.datasets import make_blobs
 from sklearn.model_selection import train_test_split
 
@@ -353,7 +361,6 @@ clf.fit(X_train, y_train)
 print(clf.score(X_test, y_test))
 clf.export('tpot_nn_demo_pipeline.py')
 </code></pre>
-
 <p>This example is somewhat trivial, but it should result in nearly 100% classification accuracy.</p>
               
             </div>

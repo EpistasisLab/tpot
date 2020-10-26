@@ -71,6 +71,8 @@ from .config.regressor_mdr import tpot_mdr_regressor_config_dict
 from .config.regressor_sparse import regressor_config_sparse
 from .config.classifier_sparse import classifier_config_sparse
 from .config.classifier_nn import classifier_config_nn
+from .config.classifier_cuml import classifier_config_cuml
+from .config.regressor_cuml import regressor_config_cuml
 
 from .metrics import SCORERS
 from .gp_types import Output_Array
@@ -240,7 +242,7 @@ class TPOTBase(BaseEstimator):
             A setting of 2 or higher will add a progress bar during the optimization procedure.
         disable_update_check: bool, optional (default: False)
             Flag indicating whether the TPOT version checker should be disabled.
-        log_file: io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
+        log_file: string, io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
             Save progress content to a file.
 
         Returns
@@ -345,6 +347,16 @@ class TPOTBase(BaseEstimator):
                     self._config_dict = regressor_config_sparse
             elif config_dict == 'TPOT NN':
                 self._config_dict = classifier_config_nn
+            elif config_dict == 'TPOT cuML':
+                if not _has_cuml():
+                    raise ValueError(
+                        'The GPU machine learning library cuML is not '
+                        'available. To use cuML, please install cuML via conda.'
+                    )
+                elif self.classification:
+                    self._config_dict = classifier_config_cuml
+                else:
+                    self._config_dict = regressor_config_cuml
             else:
                 config = self._read_config_file(config_dict)
                 if hasattr(config, 'tpot_config'):
@@ -577,7 +589,11 @@ class TPOTBase(BaseEstimator):
         self._pbar = None
 
         if not self.log_file:
-            self.log_file = sys.stdout
+            self.log_file_ = sys.stdout
+        elif isinstance(self.log_file, str):
+            self.log_file_ = open(self.log_file, 'w')
+        else:
+            self.log_file_ = self.log_file
 
         self._setup_scoring_function(self.scoring)
 
@@ -704,7 +720,7 @@ class TPOTBase(BaseEstimator):
         else:
             total_evals = self._lambda * self.generations + self.population_size
 
-        self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False, file=self.log_file,
+        self._pbar = tqdm(total=total_evals, unit='pipeline', leave=False, file=self.log_file_,
                           disable=not (self.verbosity >= 2), desc='Optimization Progress')
 
         try:
@@ -722,15 +738,16 @@ class TPOTBase(BaseEstimator):
                     pbar=self._pbar,
                     halloffame=self._pareto_front,
                     verbose=self.verbosity,
-                    per_generation_function=self._check_periodic_pipeline
+                    per_generation_function=self._check_periodic_pipeline,
+                    log_file=self.log_file_
                 )
 
         # Allow for certain exceptions to signal a premature fit() cancellation
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
-                self._pbar.write('', file=self.log_file)
+                self._pbar.write('', file=self.log_file_)
                 self._pbar.write('{}\nTPOT closed prematurely. Will use the current best pipeline.'.format(e),
-                                 file=self.log_file)
+                                 file=self.log_file_)
         finally:
             # clean population for the next call if warm_start=False
             if not self.warm_start:
@@ -804,6 +821,20 @@ class TPOTBase(BaseEstimator):
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
 
             if not self._optimized_pipeline:
+                # pick one individual from evaluated pipeline for a error message
+                eval_ind_list = list(self.evaluated_individuals_.keys())
+                for pipeline, pipeline_scores in zip(self._pareto_front.items, reversed(self._pareto_front.keys)):
+                    if np.isinf(pipeline_scores.wvalues[1]):
+                        sklearn_pipeline = self._toolbox.compile(expr=pipeline)
+                        from sklearn.model_selection import cross_val_score
+                        cv_scores = cross_val_score(sklearn_pipeline,
+                                                    self.pretest_X,
+                                                    self.pretest_y,
+                                                    cv=self.cv,
+                                                    scoring=self.scoring_function,
+                                                    verbose=0,
+                                                    error_score="raise")
+                        break
                 raise RuntimeError('There was an error in the TPOT optimization '
                                    'process. This could be because the data was '
                                    'not formatted properly, or because data for '
@@ -1345,10 +1376,10 @@ class TPOTBase(BaseEstimator):
 
         except (KeyboardInterrupt, SystemExit, StopIteration) as e:
             if self.verbosity > 0:
-                self._pbar.write('', file=self.log_file)
+                self._pbar.write('', file=self.log_file_)
                 self._pbar.write('{}\nTPOT closed during evaluation in one generation.\n'
                                     'WARNING: TPOT may not provide a good pipeline if TPOT is stopped/interrupted in a early generation.'.format(e),
-                                 file=self.log_file)
+                                 file=self.log_file_)
 
             # number of individuals already evaluated in this generation
             num_eval_ind = len(result_score_list)
@@ -1497,7 +1528,7 @@ class TPOTBase(BaseEstimator):
         """
         if not isinstance(self._pbar, type(None)):
             if self.verbosity > 2 and pbar_msg is not None:
-                self._pbar.write(pbar_msg, file=self.log_file)
+                self._pbar.write(pbar_msg, file=self.log_file_)
             if not self._pbar.disable:
                 self._pbar.update(pbar_num)
 
@@ -1619,7 +1650,7 @@ class TPOTBase(BaseEstimator):
         ----------
         individual: list
             A grown tree with leaves at possibly different depths
-            dependending on the condition function.
+            depending on the condition function.
 
         Returns
         -------
@@ -1670,7 +1701,7 @@ class TPOTBase(BaseEstimator):
         min_: int
             Minimum height of the produced trees.
         max_: int
-            Maximum Height of the produced trees.
+            Maximum height of the produced trees.
         condition: function
             The condition is a function that takes two arguments,
             the height of the tree to build and the current
@@ -1683,7 +1714,7 @@ class TPOTBase(BaseEstimator):
         -------
         individual: list
             A grown tree with leaves at possibly different depths
-            dependending on the condition function.
+            depending on the condition function.
         """
         if type_ is None:
             type_ = pset.ret
@@ -1721,3 +1752,11 @@ class TPOTBase(BaseEstimator):
                 for arg in reversed(prim.args):
                     stack.append((depth + 1, arg))
         return expr
+
+
+def _has_cuml():
+    try:
+        import cuml
+        return True
+    except ImportError:
+        return False

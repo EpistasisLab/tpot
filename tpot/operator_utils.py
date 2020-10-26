@@ -24,12 +24,8 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
+from sklearn.base import BaseEstimator, is_classifier, is_regressor
 from sklearn.gaussian_process.kernels import Kernel
-try:
-    from sklearn.feature_selection._base import SelectorMixin
-except ImportError:
-    from sklearn.feature_selection.base import SelectorMixin
 import inspect
 
 
@@ -118,6 +114,20 @@ def set_sample_weight(pipeline_steps, sample_weight=None):
         return None
 
 
+def _is_selector(estimator):
+    selector_attributes = [
+        "get_support",
+        "transform",
+        "inverse_transform",
+        "fit_transform"
+    ]
+    return all(hasattr(estimator, attr) for attr in selector_attributes)
+
+
+def _is_transformer(estimator):
+    return hasattr(estimator, "fit_transform")
+
+
 def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
     """Dynamically create parameter type class.
 
@@ -178,15 +188,15 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
         return None, None
     else:
         # define if the operator can be the root of a pipeline
-        if issubclass(op_obj, ClassifierMixin):
+        if is_classifier(op_obj):
             class_profile['root'] = True
             optype = "Classifier"
-        elif issubclass(op_obj, RegressorMixin):
+        elif is_regressor(op_obj):
             class_profile['root'] = True
             optype = "Regressor"
-        if issubclass(op_obj, TransformerMixin):
+        if _is_transformer(op_obj):
             optype = "Transformer"
-        if issubclass(op_obj, SelectorMixin):
+        if _is_selector(op_obj):
             optype = "Selector"
 
         @classmethod
@@ -291,9 +301,9 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                     doptype = dep_op_type[dep_op_pname]
                     if inspect.isclass(doptype): # a estimator
                         if issubclass(doptype, BaseEstimator) or \
-                            issubclass(doptype, ClassifierMixin) or \
-                            issubclass(doptype, RegressorMixin) or \
-                            issubclass(doptype, TransformerMixin) or \
+                            is_classifier(doptype) or \
+                            is_regressor(doptype) or \
+                            _is_transformer(doptype) or \
                             issubclass(doptype, Kernel):
                             arg_value = "{}({})".format(dep_op_str, ", ".join(dep_op_arguments[dep_op_str]))
                     tmp_op_args.append("{}={}".format(dep_op_pname, arg_value))
