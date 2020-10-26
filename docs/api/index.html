@@ -147,7 +147,6 @@
                           <strong>disable_update_check</strong>=False,
                           <strong>log_file</strong>=None
                           </em>)</pre>
-
 <div align="right"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/base.py">source</a></div>
 
 <p>Automated machine learning for supervised classification tasks.</p>
@@ -352,10 +351,13 @@ Flag indicating whether the TPOT version checker should be disabled.
 The update checker will tell you when a new version of TPOT has been released.
 </blockquote>
 
-<strong>log_file</strong>: io.TextIOWrapper or io.StringIO, optional (defaul: sys.stdout)
+<strong>log_file</strong>: file-like class (io.TextIOWrapper or io.StringIO) or string, optional (default: None)
 <br /><br />
 <blockquote>
 Save progress content to a file.
+If it is a string for the path and file name of the desired output file,
+TPOT will create the file and write log into it.
+If it is None, TPOT will output log into sys.stdout
 </blockquote>
 
 </td>
@@ -389,7 +391,7 @@ This attribute is primarily for internal use, but may be useful for looking at t
 </table>
 
 <p><strong>Example</strong></p>
-<pre><code class="Python">from tpot import TPOTClassifier
+<pre><code class="language-Python">from tpot import TPOTClassifier
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 
@@ -402,7 +404,6 @@ tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_digits_pipeline.py')
 </code></pre>
-
 <p><strong>Functions</strong></p>
 <table width="100%">
 <tr>
@@ -432,9 +433,8 @@ tpot.export('tpot_digits_pipeline.py')
 </table>
 
 <p><a name="tpotclassifier-fit"></a></p>
-<pre><code class="Python">fit(features, classes, sample_weight=None, groups=None)
+<pre><code class="language-Python">fit(features, classes, sample_weight=None, groups=None)
 </code></pre>
-
 <div style="padding-left:5%" width="100%">
 Run the TPOT optimization process on the given training data.
 <br /><br />
@@ -486,9 +486,8 @@ Returns a copy of the fitted TPOT object
 </div>
 
 <p><a name="tpotclassifier-predict"></a></p>
-<pre><code class="Python">predict(features)
+<pre><code class="language-Python">predict(features)
 </code></pre>
-
 <div style="padding-left:5%" width="100%">
 Use the optimized pipeline to predict the classes for a feature set.
 <br /><br />
@@ -515,9 +514,8 @@ Predicted classes for the samples in the feature matrix
 </div>
 
 <p><a name="tpotclassifier-predict-proba"></a></p>
-<pre><code class="Python">predict_proba(features)
+<pre><code class="language-Python">predict_proba(features)
 </code></pre>
-
 <div style="padding-left:5%" width="100%">
 Use the optimized pipeline to estimate the class probabilities for a feature set.
 <br /><br />
@@ -546,9 +544,8 @@ The class probabilities of the input samples
 </div>
 
 <p><a name="tpotclassifier-score"></a></p>
-<pre><code class="Python">score(testing_features, testing_classes)
+<pre><code class="language-Python">score(testing_features, testing_classes)
 </code></pre>
-
 <div style="padding-left:5%" width="100%">
 Returns the optimized pipeline's score on the given testing data using the user-specified scoring function.
 <br /><br />
@@ -582,9 +579,8 @@ The estimated test set accuracy according to the user-specified scoring function
 </div>
 
 <p><a name="tpotclassifier-export"></a></p>
-<pre><code class="Python">export(output_file_name, data_file_path)
+<pre><code class="language-Python">export(output_file_name, data_file_path)
 </code></pre>
-
 <div style="padding-left:5%" width="100%">
 Export the optimized pipeline as Python code.
 <br /><br />
@@ -631,7 +627,6 @@ The whole pipeline text as a string should be returned if output_file_name is no
                          <strong>early_stop</strong>=None,
                          <strong>verbosity</strong>=0,
                          <strong>disable_update_check</strong>=False</em>)</pre>
-
 <div align="right"><a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/base.py">source</a></div>
 
 <p>Automated machine learning for supervised regression tasks.</p>
@@ -868,7 +863,7 @@ This attribute is primarily for internal use, but may be useful for looking at t
 </table>
 
 <p><strong>Example</strong></p>
-<pre><code class="Python">from tpot import TPOTRegressor
+<pre><code class="language-Python">from tpot import TPOTRegressor
 from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
 
@@ -881,7 +876,6 @@ tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_boston_pipeline.py')
 </code></pre>
-
 <p><strong>Functions</strong></p>
 <table width="100%">
 <tr>
@@ -906,9 +900,8 @@ tpot.export('tpot_boston_pipeline.py')
 </table>
 
 <p><a name="tpotregressor-fit"></a></p>
-<pre><code class="Python">fit(features, target, sample_weight=None, groups=None)
+<pre><code class="language-Python">fit(features, target, sample_weight=None, groups=None)
 </code></pre>
-
 <div style="padding-left:5%" width="100%">
 Run the TPOT optimization process on the given training data.
 <br /><br />
@@ -960,9 +953,8 @@ Returns a copy of the fitted TPOT object
 </div>
 
 <p><a name="tpotregressor-predict"></a></p>
-<pre><code class="Python">predict(features)
+<pre><code class="language-Python">predict(features)
 </code></pre>
-
 <div style="padding-left:5%" width="100%">
 Use the optimized pipeline to predict the target values for a feature set.
 <br /><br />
@@ -989,9 +981,8 @@ Predicted target values for the samples in the feature matrix
 </div>
 
 <p><a name="tpotregressor-score"></a></p>
-<pre><code class="Python">score(testing_features, testing_target)
+<pre><code class="language-Python">score(testing_features, testing_target)
 </code></pre>
-
 <div style="padding-left:5%" width="100%">
 Returns the optimized pipeline's score on the given testing data using the user-specified scoring function.
 <br /><br />
@@ -1025,9 +1016,8 @@ The estimated test set accuracy according to the user-specified scoring function
 </div>
 
 <p><a name="tpotregressor-export"></a></p>
-<pre><code class="Python">export(output_file_name)
+<pre><code class="language-Python">export(output_file_name)
 </code></pre>
-
 <div style="padding-left:5%" width="100%">
 Export the optimized pipeline as Python code.
 <br /><br />
