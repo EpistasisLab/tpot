@@ -11,6 +11,8 @@ belonging to a typical class of machine learning tasks.
 | Titanic               | survival analysis       | classification         | [link](https://www.kaggle.com/c/titanic/data) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb) |
 | Bank Marketing        | subscription prediction | classification         | [link](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Strategy.ipynb) |
 | MAGIC Gamma Telescope | event detection         | classification         | [link](https://archive.ics.uci.edu/ml/datasets/MAGIC+Gamma+Telescope) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb) |
+| cuML Classification Example | random classification problem         | classification         | [link](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_classification.html) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/cuML_Classification_Example.ipynb) |
+| cuML Regression Example | random regression problem         | regression         | [link](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_regression.html) | [link](https://github.com/EpistasisLab/tpot/blob/master/tutorials/cuML_Regression_Example.ipynb) |
 
 **Notes:**
 - For details on how the `fit()`, `score()` and `export()` methods work, refer to the [usage documentation](/using/).
