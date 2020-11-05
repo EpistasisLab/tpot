@@ -194,10 +194,11 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
         elif is_regressor(op_obj):
             class_profile['root'] = True
             optype = "Regressor"
-        if _is_transformer(op_obj):
-            optype = "Transformer"
-        if _is_selector(op_obj):
+        elif _is_selector(op_obj):
             optype = "Selector"
+        elif _is_transformer(op_obj):
+            optype = "Transformer"
+
 
         @classmethod
         def op_type(cls):
