@@ -48,7 +48,8 @@ from copy import copy, deepcopy
 
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y, check_consistent_length, check_array
-from sklearn.pipeline import make_pipeline, make_union
+from sklearn.pipeline import make_union
+from imblearn.pipeline import make_pipeline
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split

@@ -67,20 +67,24 @@ def source_decode(sourcecode, verbose=0):
         operator class (e.g. RFE)
 
     """
-    tmp_path = sourcecode.split('.')
+    tmp_path = sourcecode.split(".")
     op_str = tmp_path.pop()
-    import_str = '.'.join(tmp_path)
+    import_str = ".".join(tmp_path)
     try:
-        if sourcecode.startswith('tpot.'):
-            exec('from {} import {}'.format(import_str[4:], op_str))
+        if sourcecode.startswith("tpot."):
+            exec("from {} import {}".format(import_str[4:], op_str))
         else:
-            exec('from {} import {}'.format(import_str, op_str))
+            exec("from {} import {}".format(import_str, op_str))
         op_obj = eval(op_str)
     except Exception as e:
         if verbose > 2:
-            raise ImportError('Error: could not import {}.\n{}'.format(sourcecode, e))
+            raise ImportError("Error: could not import {}.\n{}".format(sourcecode, e))
         else:
-            print('Warning: {} is not available and will not be used by TPOT.'.format(sourcecode))
+            print(
+                "Warning: {} is not available and will not be used by TPOT.".format(
+                    sourcecode
+                )
+            )
         op_obj = None
 
     return import_str, op_str, op_obj
@@ -104,8 +108,8 @@ def set_sample_weight(pipeline_steps, sample_weight=None):
     sample_weight_dict = {}
     if not isinstance(sample_weight, type(None)):
         for (pname, obj) in pipeline_steps:
-            if inspect.getargspec(obj.fit).args.count('sample_weight'):
-                step_sw = pname + '__sample_weight'
+            if inspect.getargspec(obj.fit).args.count("sample_weight"):
+                step_sw = pname + "__sample_weight"
                 sample_weight_dict[step_sw] = sample_weight
 
     if sample_weight_dict:
@@ -119,13 +123,17 @@ def _is_selector(estimator):
         "get_support",
         "transform",
         "inverse_transform",
-        "fit_transform"
+        "fit_transform",
     ]
     return all(hasattr(estimator, attr) for attr in selector_attributes)
 
 
 def _is_transformer(estimator):
     return hasattr(estimator, "fit_transform")
+
+
+def _is_resampler(estimator):
+    return hasattr(estimator, "fit_resample")
 
 
 def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
@@ -146,10 +154,12 @@ def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
         parameter class
 
     """
-    return type(classname, (BaseClass,), {'values': prange})
+    return type(classname, (BaseClass,), {"values": prange})
 
 
-def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=ARGType, verbose=0):
+def TPOTOperatorClassFactory(
+    opsourse, opdict, BaseClass=Operator, ArgBaseClass=ARGType, verbose=0
+):
     """Dynamically create operator class.
 
     Parameters
@@ -180,8 +190,8 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
 
     """
     class_profile = {}
-    dep_op_list = {} # list of nested estimator/callable function
-    dep_op_type = {} # type of nested estimator/callable function
+    dep_op_list = {}  # list of nested estimator/callable function
+    dep_op_type = {}  # type of nested estimator/callable function
     import_str, op_str, op_obj = source_decode(opsourse, verbose=verbose)
 
     if not op_obj:
@@ -189,17 +199,21 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
     else:
         # define if the operator can be the root of a pipeline
         if is_classifier(op_obj):
-            class_profile['root'] = True
+            class_profile["root"] = True
             optype = "Classifier"
         elif is_regressor(op_obj):
-            class_profile['root'] = True
+            class_profile["root"] = True
             optype = "Regressor"
         elif _is_selector(op_obj):
             optype = "Selector"
         elif _is_transformer(op_obj):
             optype = "Transformer"
+        elif _is_resampler(op_obj):
+            optype = "Resampler"
         else:
-        	raise ValueError('optype must be one of: Classifier, Regressor, Selector, Transformer')
+            raise ValueError(
+                "optype must be one of: Classifier, Regressor, Selector, Transformer, or Resampler"
+            )
 
         @classmethod
         def op_type(cls):
@@ -210,8 +224,8 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
             """
             return optype
 
-        class_profile['type'] = op_type
-        class_profile['sklearn_class'] = op_obj
+        class_profile["type"] = op_type
+        class_profile["sklearn_class"] = op_obj
         import_hash = {}
         import_hash[import_str] = [op_str]
         arg_types = []
@@ -219,11 +233,13 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
         for pname in sorted(opdict.keys()):
             prange = opdict[pname]
             if not isinstance(prange, dict):
-                classname = '{}__{}'.format(op_str, pname)
+                classname = "{}__{}".format(op_str, pname)
                 arg_types.append(ARGTypeClassFactory(classname, prange, ArgBaseClass))
             else:
                 for dkey, dval in prange.items():
-                    dep_import_str, dep_op_str, dep_op_obj = source_decode(dkey, verbose=verbose)
+                    dep_import_str, dep_op_str, dep_op_obj = source_decode(
+                        dkey, verbose=verbose
+                    )
                     if dep_import_str in import_hash:
                         import_hash[dep_import_str].append(dep_op_str)
                     else:
@@ -233,12 +249,14 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                     if dval:
                         for dpname in sorted(dval.keys()):
                             dprange = dval[dpname]
-                            classname = '{}__{}__{}'.format(op_str, dep_op_str, dpname)
-                            arg_types.append(ARGTypeClassFactory(classname, dprange, ArgBaseClass))
-        class_profile['arg_types'] = tuple(arg_types)
-        class_profile['import_hash'] = import_hash
-        class_profile['dep_op_list'] = dep_op_list
-        class_profile['dep_op_type'] = dep_op_type
+                            classname = "{}__{}__{}".format(op_str, dep_op_str, dpname)
+                            arg_types.append(
+                                ARGTypeClassFactory(classname, dprange, ArgBaseClass)
+                            )
+        class_profile["arg_types"] = tuple(arg_types)
+        class_profile["import_hash"] = import_hash
+        class_profile["dep_op_list"] = dep_op_list
+        class_profile["dep_op_type"] = dep_op_type
 
         @classmethod
         def parameter_types(cls):
@@ -255,9 +273,9 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                 operator
 
             """
-            return ([np.ndarray] + arg_types, np.ndarray) # (input types, return types)
+            return ([np.ndarray] + arg_types, np.ndarray)  # (input types, return types)
 
-        class_profile['parameter_types'] = parameter_types
+        class_profile["parameter_types"] = parameter_types
 
         @classmethod
         def export(cls, *args):
@@ -284,37 +302,44 @@ def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=
                     dep_op_arguments[dep_op_str] = []
 
             for arg_class, arg_value in zip(arg_types, args):
-                aname_split = arg_class.__name__.split('__')
+                aname_split = arg_class.__name__.split("__")
                 if isinstance(arg_value, str):
-                    arg_value = '\"{}\"'.format(arg_value)
+                    arg_value = '"{}"'.format(arg_value)
                 if len(aname_split) == 2:  # simple parameter
                     op_arguments.append("{}={}".format(aname_split[-1], arg_value))
                 # Parameter of internal operator as a parameter in the
                 # operator, usually in Selector
                 else:
-                    dep_op_arguments[aname_split[1]].append("{}={}".format(aname_split[-1], arg_value))
+                    dep_op_arguments[aname_split[1]].append(
+                        "{}={}".format(aname_split[-1], arg_value)
+                    )
 
             tmp_op_args = []
             if dep_op_list:
                 # To make sure the inital operators is the first parameter just
                 # for better persentation
                 for dep_op_pname, dep_op_str in dep_op_list.items():
-                    arg_value = dep_op_str # a callable function, e.g scoring function
+                    arg_value = dep_op_str  # a callable function, e.g scoring function
                     doptype = dep_op_type[dep_op_pname]
-                    if inspect.isclass(doptype): # a estimator
-                        if issubclass(doptype, BaseEstimator) or \
-                            is_classifier(doptype) or \
-                            is_regressor(doptype) or \
-                            _is_transformer(doptype) or \
-                            issubclass(doptype, Kernel):
-                            arg_value = "{}({})".format(dep_op_str, ", ".join(dep_op_arguments[dep_op_str]))
+                    if inspect.isclass(doptype):  # a estimator
+                        if (
+                            issubclass(doptype, BaseEstimator)
+                            or is_classifier(doptype)
+                            or is_regressor(doptype)
+                            or _is_transformer(doptype)
+                            or _is_resampler(doptype)
+                            or issubclass(doptype, Kernel)
+                        ):
+                            arg_value = "{}({})".format(
+                                dep_op_str, ", ".join(dep_op_arguments[dep_op_str])
+                            )
                     tmp_op_args.append("{}={}".format(dep_op_pname, arg_value))
             op_arguments = tmp_op_args + op_arguments
             return "{}({})".format(op_obj.__name__, ", ".join(op_arguments))
 
-        class_profile['export'] = export
+        class_profile["export"] = export
 
-        op_classname = 'TPOT_{}'.format(op_str)
+        op_classname = "TPOT_{}".format(op_str)
         op_class = type(op_classname, (BaseClass,), class_profile)
         op_class.__name__ = op_str
         return op_class, arg_types
