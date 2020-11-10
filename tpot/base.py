@@ -49,7 +49,6 @@ from copy import copy, deepcopy
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y, check_consistent_length, check_array
 from sklearn.pipeline import make_union, make_pipeline
-from imblearn.pipeline import make_pipeline as make_imblearn_pipeline
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
@@ -88,6 +87,11 @@ from .gp_deap import (
     _wrapped_cross_val_score,
     cxOnePoint,
 )
+
+try:
+    from imblearn.pipeline import make_pipeline as make_imblearn_pipeline
+except:
+    make_imblearn_pipeline = None
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -577,6 +581,7 @@ class TPOTBase(BaseEstimator):
         )
 
         if imblearn_used == True:
+            assert make_imblearn_pipeline is not None, "You must install `imblearn`"
             make_pipeline_func = make_imblearn_pipeline
         else:
             make_pipeline_func = make_pipeline

@@ -259,14 +259,13 @@ def _starting_imports(operators, operators_used):
     if num_op_root > 1:
         return {
             "sklearn.model_selection": ["train_test_split"],
-            "sklearn.pipeline": ["make_union"],
-            "imblearn.pipeline": ["make_pipeline"],
+            "sklearn.pipeline": ["make_union", "make_pipeline"],
             "tpot.builtins": ["StackingEstimator"],
         }
     elif num_op > 1:
         return {
             "sklearn.model_selection": ["train_test_split"],
-            "imblearn.pipeline": ["make_pipeline"],
+            "sklearn.pipeline": ["make_pipeline"],
         }
     # if operators # == 1 and classifier/regressor # == 1, this import statement is simpler
     else:
