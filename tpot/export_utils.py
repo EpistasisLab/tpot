@@ -276,12 +276,19 @@ def _starting_imports(operators, operators_used, pipeline_module):
             num_op_root += 1
 
     if num_op_root > 1:
-        return {
-            "sklearn.model_selection": ["train_test_split"],
-            "sklearn.pipeline": ["make_union"],
-            f"{pipeline_module}.pipeline": ["make_pipeline"],
-            "tpot.builtins": ["StackingEstimator"],
-        }
+        if pipeline_module == "sklearn":
+            return {
+                "sklearn.model_selection": ["train_test_split"],
+                "sklearn.pipeline": ["make_union", "make_pipeline"],
+                "tpot.builtins": ["StackingEstimator"],
+            }
+        else:
+            {
+                "sklearn.model_selection": ["train_test_split"],
+                "sklearn.pipeline": ["make_union"],
+                "imblearn.pipeline": ["make_pipeline"],
+                "tpot.builtins": ["StackingEstimator"],
+            }
     elif num_op > 1:
         return {
             "sklearn.model_selection": ["train_test_split"],

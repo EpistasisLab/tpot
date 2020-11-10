@@ -40,7 +40,7 @@ from tempfile import mkdtemp
 from shutil import rmtree
 
 import numpy as np
-from pandas import DataFrame, Series
+from pandas import DataFrame
 from scipy import sparse
 import deap
 from deap import base, creator, tools, gp
@@ -570,14 +570,7 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register("mutate", self._random_mutation_operator)
 
     def _get_make_pipeline_func(self):
-        imblearn_used = (
-            Series(self._config_dict.keys())
-            .str.split(".")
-            .str[0]
-            .isin(["imblearn"])
-            .sum(0)
-            > 0
-        )
+        imblearn_used = np.any([k.count("imblearn") for k in self._config_dict.keys()])
 
         if imblearn_used == True:
             assert make_imblearn_pipeline is not None, "You must install `imblearn`"
