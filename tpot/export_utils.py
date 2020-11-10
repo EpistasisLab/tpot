@@ -238,6 +238,11 @@ def generate_import_code(pipeline, operators, impute=False, random_state=None):
         module_list = ", ".join(sorted(pipeline_imports[key]))
         pipeline_text += "from {} import {}\n".format(key, module_list)
 
+    # Add the imblearn pipeline if necessary
+    if pipeline_module == "imblearn":
+        pipeline_text += """from imblearn.pipeline import make_pipeline
+"""
+
     # Add the imputer if necessary
     if impute:
         pipeline_text += """from sklearn.impute import SimpleImputer
