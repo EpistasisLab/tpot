@@ -568,7 +568,7 @@ class TPOTBase(BaseEstimator):
     def _fit_init(self):
         # initialization for fit function
         imblearn_used = (
-            Series(self._config_dict.keys())
+            Series(self.config_dict.keys())
             .str.split(".")
             .str[0]
             .isin(["imblearn"])
@@ -604,7 +604,7 @@ class TPOTBase(BaseEstimator):
                     self.operators.append(op_class)
                     self.arguments += arg_types
             self.operators_context = {
-                "make_pipeline": make_pipeline,
+                "make_pipeline": make_pipeline_func,
                 "make_union": make_union,
                 "StackingEstimator": StackingEstimator,
                 "FunctionTransformer": FunctionTransformer,
