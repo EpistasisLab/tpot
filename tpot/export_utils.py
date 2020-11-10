@@ -21,13 +21,6 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import deap
 
-try:
-    import imblearn
-
-    pipeline_module = "imblearn"
-except:
-    pipeline_module = "sklearn"
-
 
 def get_by_name(opname, operators):
     """Return operator class instance by name.
@@ -220,12 +213,19 @@ def generate_import_code(pipeline, operators, impute=False, random_state=None):
 
     operators_used = [x.name for x in pipeline if isinstance(x, deap.gp.Primitive)]
     pipeline_text = "import numpy as np\nimport pandas as pd\n"
-    pipeline_imports = _starting_imports(operators, operators_used)
 
     # Build dict of import requirments from list of operators
     import_relations = {op.__name__: op.import_hash for op in operators}
+    print(import_relations)  ## to be removed on merge
 
-    # Build import dict from operators used
+    if "imblearn" in import_relations.values():
+        pipeline_module = "imblearn"
+    else:
+        pipeline_module = "sklearn"
+
+    pipeline_imports = _starting_imports(operators, operators_used, pipeline_module)
+
+    # Build import dict from used
     for op in operators_used:
         try:
             operator_import = import_relations[op]
@@ -254,7 +254,7 @@ def generate_import_code(pipeline, operators, impute=False, random_state=None):
     return pipeline_text
 
 
-def _starting_imports(operators, operators_used):
+def _starting_imports(operators, operators_used, pipeline_module):
     # number of operators
     num_op = len(operators_used)
 
