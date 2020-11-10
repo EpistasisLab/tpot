@@ -21,6 +21,13 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import deap
 
+try:
+    import imblearn
+
+    pipeline_module = "imblearn"
+except:
+    pipeline_module = "sklearn"
+
 
 def get_by_name(opname, operators):
     """Return operator class instance by name.
@@ -259,13 +266,14 @@ def _starting_imports(operators, operators_used):
     if num_op_root > 1:
         return {
             "sklearn.model_selection": ["train_test_split"],
-            "sklearn.pipeline": ["make_union", "make_pipeline"],
+            "sklearn.pipeline": ["make_union"],
+            f"{pipeline_module}.pipeline": ["make_pipeline"],
             "tpot.builtins": ["StackingEstimator"],
         }
     elif num_op > 1:
         return {
             "sklearn.model_selection": ["train_test_split"],
-            "sklearn.pipeline": ["make_pipeline"],
+            f"{pipeline_module}.pipeline": ["make_pipeline"],
         }
     # if operators # == 1 and classifier/regressor # == 1, this import statement is simpler
     else:
