@@ -58,4 +58,5 @@ python -c "import tqdm; print('tqdm %s' % tqdm.__version__)"
 python -c "import pandas; print('pandas %s' % pandas.__version__)"
 python -c "import stopit; print('stopit %s' % stopit.__version__)"
 python -c "import torch; print('torch %s' % torch.__version__)"
+python -c "import imblearn; print('torch %s' % imblearn.__version__)"
 python setup.py build_ext --inplace
