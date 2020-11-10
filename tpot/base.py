@@ -569,8 +569,7 @@ class TPOTBase(BaseEstimator):
             )
         self._toolbox.register("mutate", self._random_mutation_operator)
 
-    def _fit_init(self):
-        # initialization for fit function
+    def _get_make_pipeline_func(self):
         imblearn_used = (
             Series(self.config_dict.keys())
             .str.split(".")
@@ -586,6 +585,11 @@ class TPOTBase(BaseEstimator):
         else:
             make_pipeline_func = make_pipeline
 
+        return make_pipeline_func
+
+    def _fit_init(self):
+        # initialization for fit function
+
         if not self.warm_start or not hasattr(self, "_pareto_front"):
             self._pop = []
             self._pareto_front = None
@@ -597,6 +601,9 @@ class TPOTBase(BaseEstimator):
 
             self.operators = []
             self.arguments = []
+
+            make_pipeline_func = self._get_make_pipeline_func()
+
             for key in sorted(self._config_dict.keys()):
                 op_class, arg_types = TPOTOperatorClassFactory(
                     key,
