@@ -571,7 +571,7 @@ class TPOTBase(BaseEstimator):
 
     def _get_make_pipeline_func(self):
         imblearn_used = (
-            Series(self.config_dict.keys())
+            Series(self._config_dict.keys())
             .str.split(".")
             .str[0]
             .isin(["imblearn"])
