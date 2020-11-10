@@ -216,9 +216,16 @@ def generate_import_code(pipeline, operators, impute=False, random_state=None):
 
     # Build dict of import requirments from list of operators
     import_relations = {op.__name__: op.import_hash for op in operators}
-    print(import_relations)  ## to be removed on merge
 
-    if "imblearn" in import_relations.values():
+    flatten_list = lambda list_: [item for sublist in list_ for item in sublist]
+    modules_used = [
+        module.split(".")[0]
+        for module in flatten_list(
+            [list(val.keys()) for val in import_relations.values()]
+        )
+    ]
+
+    if "imblearn" in modules_used:
         pipeline_module = "imblearn"
     else:
         pipeline_module = "sklearn"
