@@ -39,7 +39,7 @@ source activate testenv
 
 pip install deap tqdm update_checker stopit \
     dask[delayed] dask[dataframe] xgboost cloudpickle>=1.5.0 \
-    dask_ml==$DASK_ML_VERSION fsspec>=0.3.3 torch
+    dask_ml==$DASK_ML_VERSION fsspec>=0.3.3 torch imbalanced-learn
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
