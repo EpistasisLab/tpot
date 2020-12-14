@@ -1,4 +1,3 @@
-xgboost==0.90
 scikit-mdr==0.4.4
 skrebate==0.3.4
 torch==1.3.1
