@@ -8,4 +8,4 @@ update-checker>=0.16
 stopit>=1.1.2
 pandas>=0.24.2
 joblib>=0.13.2
-xgboost>=0.90
+xgboost>=1.1.0
