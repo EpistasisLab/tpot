@@ -275,6 +275,7 @@ class TPOTBase(BaseEstimator):
         self.disable_update_check = disable_update_check
         self.random_state = random_state
         self.log_file = log_file
+        self._feature_shape = None
 
 
     def _setup_template(self, template):
@@ -371,6 +372,18 @@ class TPOTBase(BaseEstimator):
         else:
             self._config_dict = self.default_config_dict
 
+        # set params for column transformer if enabled
+        ct = 'tpot.builtins.ColumnTransformer'
+        if ct not in self._config_dict:
+            return
+        i = 0
+        for k, v in self._config_dict.items():
+            if k != ct and TPOTOperatorClassFactory(k, v)[0].type() == 'Transformer':
+                self._config_dict[ct]['transformer_{}'.format(i)] = {k: v}
+                i += 1
+        self._config_dict[ct]['choice'] = range(i)
+        for n in range(self._feature_shape[1]):
+            self._config_dict[ct]['include_col_{}'.format(n)] = [True, False]
 
     def _read_config_file(self, config_path):
         if os.path.isfile(config_path):
@@ -655,6 +668,7 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
 
         """
+        self._feature_shape = features.shape
         self._fit_init()
         features, target = self._check_dataset(features, target, sample_weight)
 

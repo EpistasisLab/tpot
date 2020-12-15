@@ -23,6 +23,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.decomposition import PCA
+from sklearn.compose import make_column_transformer
 
 from .one_hot_encoder import OneHotEncoder, auto_select_categorical_features, _X_selected
 
@@ -158,3 +159,41 @@ class ContinuousSelector(BaseEstimator, TransformerMixin):
         else:
             pca = PCA(svd_solver=self.svd_solver, iterated_power=self.iterated_power, random_state=self.random_state)
             return pca.fit_transform(X_sel)
+
+
+class ColumnTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.cols = []
+        self.transformer = None
+        self.col_transformer = None
+
+        if not kwargs:
+            return
+        transformers_temp = {}
+        # parse cols and transformer
+        for k, v in kwargs.items():
+            if 'include_col_' in k:
+                if v:
+                    self.cols.append(int(k.split('_')[-1]))
+            elif 'transformer_' in k:
+                transformers_temp[int(k.split('_')[-1])] = v
+
+        if 'choice' in kwargs and kwargs['choice']:
+            self.transformer = transformers_temp[kwargs['choice']]
+            self.col_transformer = make_column_transformer((self.transformer, self.cols), remainder=kwargs['remainder'])
+
+    def fit(self, X, y=None):
+        if self.transformer:
+            cols = [c for c in self.cols if c < X.shape[1]]
+            self.col_transformer = make_column_transformer((self.transformer, cols), remainder=kwargs['remainder'])
+        if self.col_transformer:
+            self.col_transformer.fit(X, y)
+        return self
+
+
+    def transform(self, X):
+        if self.col_transformer:
+            return self.col_transformer.transform(X)
+        return X
+
