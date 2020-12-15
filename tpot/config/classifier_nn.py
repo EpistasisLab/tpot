@@ -30,7 +30,7 @@ import numpy as np
 # estimators.
 
 classifier_config_nn = {
-    
+
     'tpot.builtins.PytorchLRClassifier': {
         'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
         'batch_size': [4, 8, 16, 32],
@@ -120,7 +120,8 @@ classifier_config_nn = {
         'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
         'subsample': np.arange(0.05, 1.01, 0.05),
         'min_child_weight': range(1, 21),
-        'nthread': [1]
+        'n_jobs': [1],
+        'verbosity': [0]
     },
 
     'sklearn.linear_model.SGDClassifier': {

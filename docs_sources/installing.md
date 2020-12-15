@@ -20,6 +20,8 @@ TPOT is built on top of several existing Python libraries, including:
 
 * [joblib](https://joblib.readthedocs.io/en/latest/)
 
+* [xgboost](https://xgboost.readthedocs.io/en/latest/)
+
 Most of the necessary Python packages can be installed via the [Anaconda Python distribution](https://www.anaconda.com/products/individual), which we strongly recommend that you use. **Support for Python 3.4 and below has been officially dropped since version 0.11.0.**
 
 
@@ -33,19 +35,13 @@ NumPy, SciPy, scikit-learn, pandas, joblib, and PyTorch can be installed in Anac
 conda install numpy scipy scikit-learn pandas joblib pytorch
 ```
 
-DEAP, update_checker, tqdm and stopit can be installed with `pip` via the command:
+DEAP, update_checker, tqdm, stopit and xgboost can be installed with `pip` via the command:
 
 ```Shell
-pip install deap update_checker tqdm stopit
+pip install deap update_checker tqdm stopit xgboost
 ```
 
-**Optionally**, you can install [XGBoost](https://github.com/dmlc/xgboost) if you would like TPOT to use the eXtreme Gradient Boosting models. XGBoost is entirely optional, and TPOT will still function normally without XGBoost if you do not have it installed. **Windows users: pip installation may not work on some Windows environments, and it may cause unexpected errors.**
-
-```Shell
-pip install xgboost
-```
-
-If you have issues installing XGBoost, check the [XGBoost installation documentation](http://xgboost.readthedocs.io/en/latest/build.html).
+**Windows users: pip installation may not work on some Windows environments, and it may cause unexpected errors.** If you have issues installing XGBoost, check the [XGBoost installation documentation](http://xgboost.readthedocs.io/en/latest/build.html).
 
 If you plan to use [Dask](http://dask.pydata.org/en/latest/) for parallel training, make sure to install [dask[delay] and dask[dataframe]](https://docs.dask.org/en/latest/install.html) and [dask_ml](https://dask-ml.readthedocs.io/en/latest/install.html). **It is noted that dask-ml>=1.7 requires distributed>=2.4.0 and scikit-learn>=0.23.0.**
 
