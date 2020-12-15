@@ -48,7 +48,7 @@ class TPOTClassifier(TPOTBase):
         This is not intend for anything other than perfunctory dataset
         pipeline compatibility testing
         """
-        num_unique_target = np.unique(target)
+        num_unique_target = len(np.unique(target))
         # make sure train_size is at least num_unique_target
         train_size=max(min(50,int(0.9*features.shape[0])), num_unique_target)
 
@@ -62,7 +62,7 @@ class TPOTClassifier(TPOTBase):
                                 )
         #Make sure there is a least one example from each class
         #for this evaluative test sample
-        if not np.array_equal(num_unique_target, np.unique(self.pretest_y)):
+        if not np.array_equal(np.unique(target), np.unique(self.pretest_y)):
             unique_target_idx = np.unique(target,return_index=True)[1]
             self.pretest_y[0:unique_target_idx.shape[0]] = \
                     _safe_indexing(target, unique_target_idx)
