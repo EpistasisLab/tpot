@@ -104,7 +104,8 @@ classifier_config_dict = {
         'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
         'subsample': np.arange(0.05, 1.01, 0.05),
         'min_child_weight': range(1, 21),
-        'nthread': [1]
+        'n_jobs': [1],
+        'verbosity': [0]
     },
 
     'sklearn.linear_model.SGDClassifier': {
