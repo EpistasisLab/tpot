@@ -176,6 +176,10 @@ regressor_config_dict = {
         'threshold': [10]
     },
 
+    'tpot.builtins.ColumnTransformer': {
+        'remainder': ['passthrough', 'drop'],
+    },
+
 
     # Selectors
     'sklearn.feature_selection.SelectFwe': {

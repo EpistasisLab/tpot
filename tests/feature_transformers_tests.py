@@ -1,6 +1,9 @@
+import numpy as np
 from sklearn.datasets import load_iris
-from tpot.builtins import CategoricalSelector, ContinuousSelector
-from nose.tools import assert_equal, assert_raises
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+import sklearn.compose
+from tpot.builtins import CategoricalSelector, ContinuousSelector, ColumnTransformer
+from nose.tools import assert_equal, assert_raises, assert_true
 
 iris_data = load_iris().data
 
@@ -78,3 +81,48 @@ def test_ContinuousSelector_fit():
     ret_op = op.fit(iris_data)
 
     assert ret_op==op
+
+
+def _make_col_transformer_kwargs(choice, transformers, cols, remainder):
+    kwargs = {}
+    for i, t in enumerate(transformers):
+        kwargs['transformer_{}'.format(i)] = t
+    for c in cols:
+        kwargs['include_col_{}'.format(c)] = True
+    kwargs['choice'] = choice
+    kwargs['remainder'] = remainder
+    return kwargs
+
+
+def test_ColumnTransformer():
+    """Assert ColumnTransformer matches its sklearn counterpart."""
+    cols = list(range(0, 3))
+    kwargs = _make_col_transformer_kwargs(0, [StandardScaler(), MinMaxScaler()], cols, 'drop')
+    ct = ColumnTransformer(**kwargs)
+    sklearn_ct = sklearn.compose.ColumnTransformer([("rand_name", StandardScaler(), cols)], remainder='drop')
+    ct.fit(iris_data)
+    sklearn_ct.fit(iris_data)
+    X1 = ct.transform(iris_data)
+    X2 = sklearn_ct.transform(iris_data)
+    assert_true(np.array_equal(X1, X2))
+
+
+def test_ColumnTransformer_2():
+    """Assert that ColumnTransformer matches its sklearn counterpart with different params."""
+    cols = list(range(1, 4))
+    kwargs = _make_col_transformer_kwargs(1, [StandardScaler(), MinMaxScaler()], cols, 'passthrough')
+    ct = ColumnTransformer(**kwargs)
+    sklearn_ct = sklearn.compose.ColumnTransformer([("rand_name", MinMaxScaler(), cols)], remainder='passthrough')
+    ct.fit(iris_data)
+    sklearn_ct.fit(iris_data)
+    X1 = ct.transform(iris_data)
+    X2 = sklearn_ct.transform(iris_data)
+    assert_true(np.array_equal(X1, X2))
+
+
+def test_ColumnTransformer_3():
+    """Assert that ColumnTransformer does nothing if bad kwargs."""
+    ct = ColumnTransformer(invalid_param=True)
+    ct.fit(iris_data)
+    X_transformed = ct.transform(iris_data)
+    assert_true(np.array_equal(X_transformed, iris_data))

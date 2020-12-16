@@ -162,6 +162,24 @@ class ContinuousSelector(BaseEstimator, TransformerMixin):
 
 
 class ColumnTransformer(BaseEstimator, TransformerMixin):
+    """Wrapper around sklearn.compose.ColumnTransformer, for ease of use with evolutionary algo.
+
+    Parameters
+    ----------
+
+    include_col_{n} : bool
+        Whether to include col n or not. Example: include_col_5 = True
+
+    transformer_{n} : sklearn transformer object
+        Whether to include transformer n or not. Example: transformer_0 = StandardScaler()
+
+    choice: int
+        Which transformer to use. For example, choice = 1 will use transformer_1
+
+    remainder: 'drop' | 'passthrough'
+        'drop' will drop the unselected columns, 'passthrough' will leave them unchanged
+    """
+
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.cols = []
@@ -179,21 +197,42 @@ class ColumnTransformer(BaseEstimator, TransformerMixin):
             elif 'transformer_' in k:
                 transformers_temp[int(k.split('_')[-1])] = v
 
-        if 'choice' in kwargs and kwargs['choice']:
+        if 'choice' in kwargs and kwargs['choice'] is not None:
             self.transformer = transformers_temp[kwargs['choice']]
             self.col_transformer = make_column_transformer((self.transformer, self.cols), remainder=kwargs['remainder'])
 
     def fit(self, X, y=None):
+        """Call underlying fit method of transformer.
+        Parameters
+        ----------
+        X : array-like
+        """
         if self.transformer:
             cols = [c for c in self.cols if c < X.shape[1]]
-            self.col_transformer = make_column_transformer((self.transformer, cols), remainder=kwargs['remainder'])
+            self.col_transformer = make_column_transformer((self.transformer, cols), remainder=self.kwargs['remainder'])
         if self.col_transformer:
             self.col_transformer.fit(X, y)
         return self
 
 
     def transform(self, X):
+        """Call underlying transform method of transformer.
+
+        Parameters
+        ----------
+        X: numpy ndarray, {n_samples, n_components}
+            New data, where n_samples is the number of samples and n_components is the number of components.
+
+        Returns
+        -------
+        array-like, {n_samples, n_components}
+        """
         if self.col_transformer:
-            return self.col_transformer.transform(X)
+            r = self.col_transformer.transform(X)
+            return r
+        elif self.transformer:
+            cols = [c for c in self.cols if c < X.shape[1]]
+            self.col_transformer = make_column_transformer((self.transformer, cols), remainder=self.kwargs['remainder'])
+            return self.col_transformer.transform(X)            
         return X
 
