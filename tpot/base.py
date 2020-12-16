@@ -275,7 +275,6 @@ class TPOTBase(BaseEstimator):
         self.disable_update_check = disable_update_check
         self.random_state = random_state
         self.log_file = log_file
-        self._feature_shape = None
 
 
     def _setup_template(self, template):
@@ -327,7 +326,7 @@ class TPOTBase(BaseEstimator):
                     self.scoring_function = scoring
 
 
-    def _setup_config(self, config_dict):
+    def _setup_config(self, config_dict, feature_shape):
         if config_dict:
             if isinstance(config_dict, dict):
                 self._config_dict = config_dict
@@ -382,8 +381,9 @@ class TPOTBase(BaseEstimator):
                 self._config_dict[ct]['transformer_{}'.format(i)] = {k: v}
                 i += 1
         self._config_dict[ct]['choice'] = range(i)
-        for n in range(self._feature_shape[1]):
+        for n in range(feature_shape[1]):
             self._config_dict[ct]['include_col_{}'.format(n)] = [True, False]
+
 
     def _read_config_file(self, config_path):
         if os.path.isfile(config_path):
@@ -529,14 +529,14 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register('mutate', self._random_mutation_operator)
 
 
-    def _fit_init(self):
+    def _fit_init(self, feature_shape):
         # initialization for fit function
         if not self.warm_start or not hasattr(self, '_pareto_front'):
             self._pop = []
             self._pareto_front = None
             self._last_optimized_pareto_front = None
             self._last_optimized_pareto_front_n_gens = 0
-            self._setup_config(self.config_dict)
+            self._setup_config(self.config_dict, feature_shape)
 
             self._setup_template(self.template)
 
@@ -668,8 +668,7 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
 
         """
-        self._feature_shape = features.shape
-        self._fit_init()
+        self._fit_init(features.shape)
         features, target = self._check_dataset(features, target, sample_weight)
 
         self._init_pretest(features, target)
