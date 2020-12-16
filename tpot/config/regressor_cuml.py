@@ -57,7 +57,8 @@ regressor_config_cuml = {
         "min_child_weight": range(1, 21),
         "alpha": [1, 10],
         "tree_method": ["gpu_hist"],
-        "nthread": [1],
+        "n_jobs": [1],
+        "verbosity": [0],
         "objective": ["reg:squarederror"]
     },
 
