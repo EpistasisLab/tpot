@@ -21,6 +21,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.exceptions import NotFittedError
 from sklearn.utils import check_array
 from sklearn.decomposition import PCA
 from sklearn.compose import make_column_transformer
@@ -231,8 +232,6 @@ class ColumnTransformer(BaseEstimator, TransformerMixin):
             r = self.col_transformer.transform(X)
             return r
         elif self.transformer:
-            cols = [c for c in self.cols if c < X.shape[1]]
-            self.col_transformer = make_column_transformer((self.transformer, cols), remainder=self.kwargs['remainder'])
-            return self.col_transformer.transform(X)            
+            raise NotFittedError("This ColumnTransformer instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")            
         return X
 

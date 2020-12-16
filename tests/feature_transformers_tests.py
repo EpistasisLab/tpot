@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.datasets import load_iris
+from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import sklearn.compose
 from tpot.builtins import CategoricalSelector, ContinuousSelector, ColumnTransformer
@@ -113,6 +114,7 @@ def test_ColumnTransformer_2():
     kwargs = _make_col_transformer_kwargs(1, [StandardScaler(), MinMaxScaler()], cols, 'passthrough')
     ct = ColumnTransformer(**kwargs)
     sklearn_ct = sklearn.compose.ColumnTransformer([("rand_name", MinMaxScaler(), cols)], remainder='passthrough')
+    ct.fit(iris_data)
     sklearn_ct.fit(iris_data)
     X1 = ct.transform(iris_data)
     X2 = sklearn_ct.transform(iris_data)
@@ -125,3 +127,10 @@ def test_ColumnTransformer_3():
     ct.fit(iris_data)
     X_transformed = ct.transform(iris_data)
     assert_true(np.array_equal(X_transformed, iris_data))
+
+def test_ColumnTransformer_4():
+    """Assert transform without fitting throws error."""
+    cols = list(range(1, 4))
+    kwargs = _make_col_transformer_kwargs(1, [StandardScaler(), MinMaxScaler()], cols, 'passthrough')
+    ct = ColumnTransformer(**kwargs)
+    assert_raises(NotFittedError, ct.transform, iris_data)
