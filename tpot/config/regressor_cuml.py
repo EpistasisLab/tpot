@@ -117,10 +117,6 @@ regressor_config_cuml = {
         "threshold": [10]
     },
 
-    'tpot.builtins.ColumnTransformer': {
-        'remainder': ['passthrough', 'drop'],
-    },
-
     # Selectors
 
     "sklearn.feature_selection.SelectFwe": {

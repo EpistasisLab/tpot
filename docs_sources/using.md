@@ -608,17 +608,27 @@ tpot.fit(test_X, test_y)
 `tpot.builtins.ColumnTransformer` is a wrapper around [`sklearn.compose.ColumnTransformer`](https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html). By default, transformers in TPOT are applied to the entire feature matrix `X`. `ColumnTransformer` allows transformers to applied to a subset of columns. The TPOT version also allows the evolutionary algorithm to choose which columns to best apply the transformer to. For example, it may be the case that `StandardScaler` is applied to some columns, while `MinMaxScaler` is applied to other columns. `tpot.builtins.ColumnTransformer` has access to every transformer enabled in your `config_dict`. To use, simply add transformers to your `config_dict`, and also add `tpot.builtins.ColumnTransformer` like so:
 
 ```Python
-    'sklearn.preprocessing.RobustScaler': {
-    },
+from tpot import TPOTClassifier
+import numpy as np
+import pandas as pd
+from tpot.config import classifier_config_dict
+test_data = pd.read_csv("https://raw.githubusercontent.com/EpistasisLab/tpot/master/tests/tests.csv")
+test_X = test_data.drop("class", axis=1)
+test_y = test_data['class']
 
-    'sklearn.preprocessing.StandardScaler': {
-    },
+# add ColumnTransformer into tpot configuration
+# will have access to all transformers in classifier_config_dict
+classifier_config_dict['tpot.builtins.FeatureSetSelector'] = {
+    'remainder': ['passthrough', 'drop'],  # same as sklearn options
+    # no other params needed
+}
 
-    # ColumnTransformer will be enabled with RobustScaler and StandardScaler as available transformers
-    'tpot.builtins.ColumnTransformer': {
-        'remainder': ['passthrough', 'drop'],  # same as sklearn.compose.ColumnTransformer
-        # no other params required
-    },
+
+tpot = TPOTClassifier(generations=5,
+                           population_size=50, verbosity=2,
+                           template='Selector-ColumnTransformer-Classifier',
+                           config_dict=classifier_config_dict)
+tpot.fit(test_X, test_y)
 ```
 
 
