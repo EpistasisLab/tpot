@@ -52,6 +52,7 @@ from multiprocessing import cpu_count
 import os
 import sys
 from re import search
+from copy import copy
 from datetime import datetime
 from time import sleep
 from tempfile import mkdtemp
@@ -1132,6 +1133,27 @@ def test_fit_7():
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
     assert not (tpot_obj._start_datetime is None)
+
+
+def test_fit_8():
+    """Assert that the TPOT fit function provides an optimized pipeline when ColumnTransformer is specified."""
+    custom_config_dict = copy(classifier_config_dict)
+    custom_config_dict['tpot.builtins.ColumnTransformer'] = {
+        'remainder': ['passthrough', 'drop'],
+    }
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict=custom_config_dict,
+        template='Selector-ColumnTransformer-Classifier',
+    )
+    tpot_obj.fit(training_features, training_target)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)    
 
 
 def test_fit_cuml():

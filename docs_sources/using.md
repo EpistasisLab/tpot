@@ -618,7 +618,7 @@ test_y = test_data['class']
 
 # add ColumnTransformer into tpot configuration
 # will have access to all transformers in classifier_config_dict
-classifier_config_dict['tpot.builtins.FeatureSetSelector'] = {
+classifier_config_dict['tpot.builtins.ColumnTransformer'] = {
     'remainder': ['passthrough', 'drop'],  # same as sklearn options
     # no other params needed
 }
