@@ -1,4 +1,4 @@
-# Using TPOT
+# Using TPOT 2
 
 ## What to expect from AutoML software
 
