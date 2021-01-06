@@ -462,7 +462,13 @@ def _wrapped_cross_val_score(sklearn_pipeline, features, target,
                                          error_score='raise',
                                          fit_params=sample_weight_dict)
                                     for train, test in cv_iter]
-                CV_score = np.array(scores)[:, 0]
+                if isinstance(scores[0], list): #scikit-learn <= 0.23.2
+                    CV_score = np.array(scores)[:, 0]
+                elif isinstance(scores[0], dict): # scikit-learn >= 0.24
+                    from sklearn.model_selection._validation import _aggregate_score_dicts
+                    CV_score = _aggregate_score_dicts(scores)["test_scores"]
+                else:
+                    raise ValueError("Incorrect output format from _fit_and_score!")
                 CV_score_mean = np.nanmean(CV_score)
             return CV_score_mean
         except TimeoutException:

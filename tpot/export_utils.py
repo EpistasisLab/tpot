@@ -41,21 +41,27 @@ def get_by_name(opname, operators):
     ret_op_classes = [op for op in operators if op.__name__ == opname]
 
     if len(ret_op_classes) == 0:
-        raise TypeError('Cannot found operator {} in operator dictionary'.format(opname))
+        raise TypeError(
+            "Cannot found operator {} in operator dictionary".format(opname)
+        )
     elif len(ret_op_classes) > 1:
         raise ValueError(
-            'Found duplicate operators {} in operator dictionary. Please check '
-            'your dictionary file.'.format(opname)
+            "Found duplicate operators {} in operator dictionary. Please check "
+            "your dictionary file.".format(opname)
         )
     ret_op_class = ret_op_classes[0]
     return ret_op_class
 
 
-def export_pipeline(exported_pipeline,
-                    operators, pset,
-                    impute=False, pipeline_score=None,
-                    random_state=None,
-                    data_file_path=''):
+def export_pipeline(
+    exported_pipeline,
+    operators,
+    pset,
+    impute=False,
+    pipeline_score=None,
+    random_state=None,
+    data_file_path="",
+):
     """Generate source code for a TPOT Pipeline.
 
     Parameters
@@ -84,16 +90,20 @@ def export_pipeline(exported_pipeline,
     pipeline_tree = expr_to_tree(exported_pipeline, pset)
 
     # Have the exported code import all of the necessary modules and functions
-    pipeline_text = generate_import_code(exported_pipeline, operators, impute, random_state)
+    pipeline_text = generate_import_code(
+        exported_pipeline, operators, impute, random_state
+    )
 
-    pipeline_code = pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators), random_state)
+    pipeline_code = pipeline_code_wrapper(
+        generate_export_pipeline_code(pipeline_tree, operators), random_state
+    )
 
     if pipeline_code.count("FunctionTransformer(copy)"):
         pipeline_text += """from sklearn.preprocessing import FunctionTransformer
 from copy import copy
 """
     if not data_file_path:
-        data_file_path = 'PATH/TO/DATA/FILE'
+        data_file_path = "PATH/TO/DATA/FILE"
 
     pipeline_text += """
 # NOTE: Make sure that the outcome column is labeled 'target' in the data file
@@ -101,7 +111,9 @@ tpot_data = pd.read_csv('{}', sep='COLUMN_SEPARATOR', dtype=np.float64)
 features = tpot_data.drop('target', axis=1)
 training_features, testing_features, training_target, testing_target = \\
             train_test_split(features, tpot_data['target'], random_state={})
-""".format(data_file_path, random_state)
+""".format(
+        data_file_path, random_state
+    )
 
     # Add the imputation step if it was used by TPOT
     if impute:
@@ -113,8 +125,10 @@ testing_features = imputer.transform(testing_features)
 """
 
     if pipeline_score is not None:
-        pipeline_text += '\n# Average CV score on the training set was: {}'.format(pipeline_score)
-    pipeline_text += '\n'
+        pipeline_text += "\n# Average CV score on the training set was: {}".format(
+            pipeline_score
+        )
+    pipeline_text += "\n"
 
     # Replace the function calls with their corresponding Python code
     pipeline_text += pipeline_code
@@ -142,6 +156,7 @@ def expr_to_tree(ind, pset):
             ['DecisionTreeClassifier', 'input_matrix', 28.0]
 
     """
+
     def prim_to_list(prim, args):
         if isinstance(prim, deap.gp.Terminal):
             if prim.name in pset.context:
@@ -159,7 +174,7 @@ def expr_to_tree(ind, pset):
             prim, args = stack.pop()
             tree = prim_to_list(prim, args)
             if len(stack) == 0:
-                break   # If stack is empty, all nodes should have been seen
+                break  # If stack is empty, all nodes should have been seen
             stack[-1][1].append(tree)
 
     return tree
@@ -186,6 +201,7 @@ def generate_import_code(pipeline, operators, impute=False, random_state=None):
         optimized pipeline
 
     """
+
     def merge_imports(old_dict, new_dict):
         # Key is a module name
         for key in new_dict.keys():
@@ -196,13 +212,27 @@ def generate_import_code(pipeline, operators, impute=False, random_state=None):
                 old_dict[key] = set(new_dict[key])
 
     operators_used = [x.name for x in pipeline if isinstance(x, deap.gp.Primitive)]
-    pipeline_text = 'import numpy as np\nimport pandas as pd\n'
-    pipeline_imports = _starting_imports(operators, operators_used)
+    pipeline_text = "import numpy as np\nimport pandas as pd\n"
 
     # Build dict of import requirments from list of operators
     import_relations = {op.__name__: op.import_hash for op in operators}
 
-    # Build import dict from operators used
+    flatten_list = lambda list_: [item for sublist in list_ for item in sublist]
+    modules_used = [
+        module.split(".")[0]
+        for module in flatten_list(
+            [list(val.keys()) for val in import_relations.values()]
+        )
+    ]
+
+    if "imblearn" in modules_used:
+        pipeline_module = "imblearn"
+    else:
+        pipeline_module = "sklearn"
+
+    pipeline_imports = _starting_imports(operators, operators_used, pipeline_module)
+
+    # Build import dict from used
     for op in operators_used:
         try:
             operator_import = import_relations[op]
@@ -212,28 +242,33 @@ def generate_import_code(pipeline, operators, impute=False, random_state=None):
 
     # Build import string
     for key in sorted(pipeline_imports.keys()):
-        module_list = ', '.join(sorted(pipeline_imports[key]))
-        pipeline_text += 'from {} import {}\n'.format(key, module_list)
+        module_list = ", ".join(sorted(pipeline_imports[key]))
+        pipeline_text += "from {} import {}\n".format(key, module_list)
+
+    # Add the imblearn pipeline if necessary
+    if pipeline_module == "imblearn":
+        pipeline_text += """from imblearn.pipeline import make_pipeline
+"""
 
     # Add the imputer if necessary
     if impute:
         pipeline_text += """from sklearn.impute import SimpleImputer
 """
-    if random_state is not None and 'sklearn.pipeline' in pipeline_imports:
+    if random_state is not None and "sklearn.pipeline" in pipeline_imports:
         pipeline_text += """from tpot.export_utils import set_param_recursive
 """
 
     return pipeline_text
 
 
-def _starting_imports(operators, operators_used):
+def _starting_imports(operators, operators_used, pipeline_module):
     # number of operators
     num_op = len(operators_used)
 
     # number of classifier/regressor or CombineDFs
     num_op_root = 0
     for op in operators_used:
-        if op != 'CombineDFs':
+        if op != "CombineDFs":
             tpot_op = get_by_name(op, operators)
             if tpot_op.root:
                 num_op_root += 1
@@ -241,21 +276,27 @@ def _starting_imports(operators, operators_used):
             num_op_root += 1
 
     if num_op_root > 1:
-        return {
-            'sklearn.model_selection':  ['train_test_split'],
-            'sklearn.pipeline':         ['make_pipeline', 'make_union'],
-            'tpot.builtins':  ['StackingEstimator'],
-        }
+        if pipeline_module == "sklearn":
+            return {
+                "sklearn.model_selection": ["train_test_split"],
+                "sklearn.pipeline": ["make_union", "make_pipeline"],
+                "tpot.builtins": ["StackingEstimator"],
+            }
+        else:
+            {
+                "sklearn.model_selection": ["train_test_split"],
+                "sklearn.pipeline": ["make_union"],
+                "imblearn.pipeline": ["make_pipeline"],
+                "tpot.builtins": ["StackingEstimator"],
+            }
     elif num_op > 1:
         return {
-            'sklearn.model_selection':  ['train_test_split'],
-            'sklearn.pipeline':         ['make_pipeline']
+            "sklearn.model_selection": ["train_test_split"],
+            f"{pipeline_module}.pipeline": ["make_pipeline"],
         }
     # if operators # == 1 and classifier/regressor # == 1, this import statement is simpler
     else:
-        return {
-            'sklearn.model_selection':  ['train_test_split']
-        }
+        return {"sklearn.model_selection": ["train_test_split"]}
 
 
 def pipeline_code_wrapper(pipeline_code, random_state=None):
@@ -279,16 +320,20 @@ def pipeline_code_wrapper(pipeline_code, random_state=None):
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
-""".format(pipeline_code)
+""".format(
+            pipeline_code
+        )
     else:
-        if pipeline_code.startswith('make_pipeline'):
+        if pipeline_code.startswith("make_pipeline"):
             exported_code = """exported_pipeline = {}
 # Fix random state for all the steps in exported pipeline
 set_param_recursive(exported_pipeline.steps, 'random_state', {})
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
-""".format(pipeline_code, random_state)
+""".format(
+                pipeline_code, random_state
+            )
         else:
             exported_code = """exported_pipeline = {}
 # Fix random state in exported estimator
@@ -297,7 +342,9 @@ if hasattr(exported_pipeline, 'random_state'):
 
 exported_pipeline.fit(training_features, training_target)
 results = exported_pipeline.predict(testing_features)
-""".format(pipeline_code, random_state)
+""".format(
+                pipeline_code, random_state
+            )
 
     return exported_code
 
@@ -316,7 +363,9 @@ def generate_pipeline_code(pipeline_tree, operators):
 
     """
     steps = _process_operator(pipeline_tree, operators)
-    pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
+    pipeline_text = "make_pipeline(\n{STEPS}\n)".format(
+        STEPS=_indent(",\n".join(steps), 4)
+    )
     return pipeline_text
 
 
@@ -337,7 +386,9 @@ def generate_export_pipeline_code(pipeline_tree, operators):
     # number of steps in a pipeline
     num_step = len(steps)
     if num_step > 1:
-        pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
+        pipeline_text = "make_pipeline(\n{STEPS}\n)".format(
+            STEPS=_indent(",\n".join(steps), 4)
+        )
     # only one operator (root = True)
     else:
         pipeline_text = "{STEPS}".format(STEPS=_indent(",\n".join(steps), 0))
@@ -350,14 +401,12 @@ def _process_operator(operator, operators, depth=0):
     op_name = operator[0]
 
     if op_name == "CombineDFs":
-        steps.append(
-            _combine_dfs(operator[1], operator[2], operators)
-        )
+        steps.append(_combine_dfs(operator[1], operator[2], operators))
     else:
         input_name, args = operator[1], operator[2:]
         tpot_op = get_by_name(op_name, operators)
 
-        if input_name != 'input_matrix':
+        if input_name != "input_matrix":
             steps.extend(_process_operator(input_name, operators, depth + 1))
 
         # If the step is an estimator and is not the last step then we must
@@ -366,8 +415,7 @@ def _process_operator(operator, operators, depth=0):
         # classification probabilities for classification if available
         if tpot_op.root and depth > 0:
             steps.append(
-                "StackingEstimator(estimator={})".
-                format(tpot_op.export(*args))
+                "StackingEstimator(estimator={})".format(tpot_op.export(*args))
             )
         else:
             steps.append(tpot_op.export(*args))
@@ -389,8 +437,8 @@ def _indent(text, amount):
     indented_text
 
     """
-    indentation = amount * ' '
-    return indentation + ('\n' + indentation).join(text.split('\n'))
+    indentation = amount * " "
+    return indentation + ("\n" + indentation).join(text.split("\n"))
 
 
 def _combine_dfs(left, right, operators):
@@ -403,19 +451,24 @@ def _combine_dfs(left, right, operators):
             tpot_op = get_by_name(branch[0], operators)
 
             if tpot_op.root:
-                return "StackingEstimator(estimator={})".format(_process_operator(branch, operators)[0])
+                return "StackingEstimator(estimator={})".format(
+                    _process_operator(branch, operators)[0]
+                )
             else:
                 return _process_operator(branch, operators)[0]
         else:  # We're going to have to make a pipeline
             tpot_op = get_by_name(branch[0], operators)
 
             if tpot_op.root:
-                return "StackingEstimator(estimator={})".format(generate_pipeline_code(branch, operators))
+                return "StackingEstimator(estimator={})".format(
+                    generate_pipeline_code(branch, operators)
+                )
             else:
                 return generate_pipeline_code(branch, operators)
 
-    return "make_union(\n{},\n{}\n)".\
-        format(_indent(_make_branch(left), 4), _indent(_make_branch(right), 4))
+    return "make_union(\n{},\n{}\n)".format(
+        _indent(_make_branch(left), 4), _indent(_make_branch(right), 4)
+    )
 
 
 def set_param_recursive(pipeline_steps, parameter, value):
@@ -435,12 +488,12 @@ def set_param_recursive(pipeline_steps, parameter, value):
 
     """
     for (_, obj) in pipeline_steps:
-        recursive_attrs = ['steps', 'transformer_list', 'estimators']
+        recursive_attrs = ["steps", "transformer_list", "estimators"]
         for attr in recursive_attrs:
             if hasattr(obj, attr):
                 set_param_recursive(getattr(obj, attr), parameter, value)
-        if hasattr(obj, 'estimator'):  # nested estimator
-            est = getattr(obj, 'estimator')
+        if hasattr(obj, "estimator"):  # nested estimator
+            est = getattr(obj, "estimator")
             if hasattr(est, parameter):
                 setattr(est, parameter, value)
         if hasattr(obj, parameter):

@@ -1,5 +1,13 @@
 # Release Notes
 
+## Version 0.11.7
+
+- Fix compatibility issue with scikit-learn 0.24 and xgboost 1.3.0
+- Fix a bug causing that TPOT does not work when classifying more than 50 classes
+- Add initial support `Resampler` from `imblearn`
+- Fix minor bugs
+
+
 ## Version 0.11.6
 
 - Fix a bug causing point mutation function does not work properly with using `template` option
