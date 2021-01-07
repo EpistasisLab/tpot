@@ -52,6 +52,7 @@ from multiprocessing import cpu_count
 import os
 import sys
 from re import search
+from copy import copy
 from datetime import datetime
 from time import sleep
 from tempfile import mkdtemp
@@ -154,7 +155,7 @@ TPOTSelectPercentile, TPOTSelectPercentile_args = TPOTOperatorClassFactory(
 )
 
 tpot_obj = TPOTClassifier()
-tpot_obj._fit_init()
+tpot_obj._fit_init(training_features.shape)
 
 def test_init_custom_parameters():
     """Assert that the TPOT instantiator stores the TPOT variables properly."""
@@ -185,7 +186,7 @@ def test_init_custom_parameters():
     assert tpot_obj.verbosity == 1
     assert tpot_obj.log_file == None
 
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     assert tpot_obj._pop == []
     assert tpot_obj._pareto_front == None
@@ -203,7 +204,7 @@ def test_init_log_file():
     file_name = cachedir + "/progress.log"
     file_handle = open(file_name, "w")
     tpot_obj = TPOTClassifier(log_file=file_handle)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj.log_file_ == file_handle
     file_handle.close()
     # clean up
@@ -215,7 +216,7 @@ def test_init_log_file_2():
     cachedir = mkdtemp()
     file_name = cachedir + "/progress.log"
     tpot_obj = TPOTClassifier(log_file=file_name)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     from io import TextIOWrapper
     assert isinstance(tpot_obj.log_file_, TextIOWrapper)
     tpot_obj.log_file_.close()
@@ -235,14 +236,14 @@ def test_init_default_scoring():
 def test_init_default_scoring_2():
     """Assert that TPOT rasies ValueError with a invalid sklearn metric function."""
     tpot_obj = TPOTClassifier(scoring=balanced_accuracy)
-    assert_raises(ValueError, tpot_obj._fit_init)
+    assert_raises(ValueError, tpot_obj._fit_init, training_features.shape)
 
 
 def test_init_default_scoring_3():
     """Assert that TPOT intitializes with a valid _BaseScorer."""
     with warnings.catch_warnings(record=True) as w:
         tpot_obj = TPOTClassifier(scoring=make_scorer(balanced_accuracy))
-        tpot_obj._fit_init()
+        tpot_obj._fit_init(training_features.shape)
     assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
     assert tpot_obj.scoring_function._score_func == balanced_accuracy
 
@@ -254,7 +255,7 @@ def test_init_default_scoring_4():
 
     with warnings.catch_warnings(record=True) as w:
         tpot_obj = TPOTClassifier(scoring=my_scorer)
-        tpot_obj._fit_init()
+        tpot_obj._fit_init(training_features.shape)
     assert len(w) == 0 # deap 1.2.2 warning message made this unit test failed
     assert tpot_obj.scoring_function == my_scorer
 
@@ -262,7 +263,7 @@ def test_init_default_scoring_4():
 def test_init_default_scoring_5():
     """Assert that TPOT rasies ValueError with a invalid sklearn metric function roc_auc_score."""
     tpot_obj = TPOTClassifier(scoring=roc_auc_score)
-    assert_raises(ValueError, tpot_obj._fit_init)
+    assert_raises(ValueError, tpot_obj._fit_init, training_features.shape)
 
 
 def test_init_default_scoring_6():
@@ -271,7 +272,7 @@ def test_init_default_scoring_6():
         return roc_auc_score(y_true, y_pred)
 
     tpot_obj = TPOTClassifier(scoring=my_scorer)
-    assert_raises(ValueError, tpot_obj._fit_init)
+    assert_raises(ValueError, tpot_obj._fit_init, training_features.shape)
 
 
 def test_init_default_scoring_7():
@@ -280,14 +281,14 @@ def test_init_default_scoring_7():
         return make_scorer(balanced_accuracy)
 
     tpot_obj = TPOTClassifier(scoring=my_scorer)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
 
 def test_invalid_score_warning():
     """Assert that the TPOT intitializes raises a ValueError when the scoring metrics is not available in SCORERS."""
     # Mis-spelled scorer
     tpot_obj = TPOTClassifier(scoring='balanced_accuray')
-    assert_raises(ValueError, tpot_obj._fit_init)
+    assert_raises(ValueError, tpot_obj._fit_init, training_features.shape)
     # Correctly spelled
     tpot_obj = TPOTClassifier(scoring='balanced_accuracy')
 
@@ -301,7 +302,7 @@ def test_invalid_dataset_warning():
         generations=1,
         verbosity=0
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     # common mistake in target
     bad_training_target = training_target.reshape((1, len(training_target)))
     assert_raises(ValueError, tpot_obj.fit, training_features, bad_training_target)
@@ -311,7 +312,7 @@ def test_invalid_subsample_ratio_warning():
     """Assert that the TPOT intitializes raises a ValueError when subsample ratio is not in the range (0.0, 1.0]."""
     # Invalid ratio
     tpot_obj = TPOTClassifier(subsample=0.0)
-    assert_raises(ValueError, tpot_obj._fit_init)
+    assert_raises(ValueError, tpot_obj._fit_init, training_features.shape)
     # Valid ratio
     TPOTClassifier(subsample=0.1)
 
@@ -320,7 +321,7 @@ def test_invalid_mut_rate_plus_xo_rate():
     """Assert that the TPOT intitializes raises a ValueError when the sum of crossover and mutation probabilities is large than 1."""
     # Invalid ratio
     tpot_obj = TPOTClassifier(mutation_rate=0.8, crossover_rate=0.8)
-    assert_raises(ValueError, tpot_obj._fit_init)
+    assert_raises(ValueError, tpot_obj._fit_init, training_features.shape)
     # Valid ratio
     TPOTClassifier(mutation_rate=0.8, crossover_rate=0.1)
 
@@ -328,7 +329,7 @@ def test_invalid_mut_rate_plus_xo_rate():
 def test_init_max_time_mins():
     """Assert that the TPOT init stores max run time and sets generations to 1000000."""
     tpot_obj = TPOTClassifier(max_time_mins=30, generations=None)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj.generations == 1000000
     assert tpot_obj.max_time_mins == 30
 
@@ -336,7 +337,7 @@ def test_init_max_time_mins():
 def test_init_max_time_mins_and_generations():
     """Assert that the TPOT init stores max run time but keeps the generations at the user-supplied value."""
     tpot_obj = TPOTClassifier(max_time_mins=30, generations=1000)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj.generations == 1000
     assert tpot_obj.max_time_mins == 30
 
@@ -345,12 +346,12 @@ def test_init_n_jobs():
     """Assert that the TPOT init stores current number of processes."""
     tpot_obj = TPOTClassifier(n_jobs=2)
     assert tpot_obj.n_jobs == 2
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj._n_jobs == 2
 
     tpot_obj = TPOTClassifier(n_jobs=-1)
     assert tpot_obj.n_jobs == -1
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj._n_jobs == cpu_count()
 
 
@@ -359,7 +360,7 @@ def test_init_n_jobs_2():
     tpot_obj = TPOTClassifier(n_jobs=-2)
     assert tpot_obj.n_jobs == -2
 
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj._n_jobs == cpu_count() - 1
 
 
@@ -368,13 +369,13 @@ def test_init_n_jobs_3():
     tpot_obj = TPOTClassifier(n_jobs=0)
     assert tpot_obj.n_jobs == 0
 
-    assert_raises(ValueError, tpot_obj._fit_init)
+    assert_raises(ValueError, tpot_obj._fit_init, training_features.shape)
 
 
 def test_timeout():
     """Assert that _wrapped_cross_val_score return Timeout in a time limit."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     # a complex pipeline for the test
     pipeline_string = (
         "ExtraTreesRegressor("
@@ -508,36 +509,36 @@ def test_TPOTBase():
 def test_conf_dict():
     """Assert that TPOT uses the pre-configured dictionary of operators when config_dict is 'TPOT light' or 'TPOT MDR'."""
     tpot_obj = TPOTClassifier(config_dict='TPOT light')
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj._config_dict == classifier_config_dict_light
 
     tpot_obj = TPOTClassifier(config_dict='TPOT MDR')
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj._config_dict == tpot_mdr_classifier_config_dict
 
     tpot_obj = TPOTClassifier(config_dict='TPOT sparse')
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj._config_dict == classifier_config_sparse
 
     tpot_obj = TPOTRegressor(config_dict='TPOT light')
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj._config_dict == regressor_config_dict_light
 
     tpot_obj = TPOTRegressor(config_dict='TPOT MDR')
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj._config_dict == tpot_mdr_regressor_config_dict
 
     tpot_obj = TPOTRegressor(config_dict='TPOT sparse')
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj._config_dict == regressor_config_sparse
 
     if _has_cuml():
         tpot_obj = TPOTClassifier(config_dict='TPOT cuML')
-        tpot_obj._fit_init()
+        tpot_obj._fit_init(training_features.shape)
         assert tpot_obj._config_dict == classifier_config_cuml
 
         tpot_obj = TPOTRegressor(config_dict='TPOT cuML')
-        tpot_obj._fit_init()
+        tpot_obj._fit_init(training_features.shape)
         assert tpot_obj._config_dict == regressor_config_cuml
 
 
@@ -550,7 +551,7 @@ def test_conf_dict_2():
 def test_conf_dict_3():
     """Assert that TPOT uses a custom dictionary of operators when config_dict is the path of Python dictionary."""
     tpot_obj = TPOTRegressor(config_dict='tests/test_config.py')
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     tested_config_dict = {
         'sklearn.naive_bayes.GaussianNB': {
         },
@@ -587,16 +588,16 @@ def test_read_config_file_2():
 def test_read_config_file_3():
     """Assert that _read_config_file rasies ValueError without a dictionary named 'tpot_config'."""
     tpot_obj = TPOTRegressor()
-    assert_raises(ValueError, tpot_obj._setup_config, "tpot/config/regressor_sparse.py")
+    assert_raises(ValueError, tpot_obj._setup_config, "tpot/config/regressor_sparse.py", training_features.shape)
 
 
 def test_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline with same random seed."""
     tpot_obj = TPOTClassifier(random_state=43)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pipeline1 = str(tpot_obj._toolbox.individual())
     tpot_obj = TPOTClassifier(random_state=43)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pipeline2 = str(tpot_obj._toolbox.individual())
     assert pipeline1 == pipeline2
 
@@ -604,10 +605,10 @@ def test_random_ind():
 def test_random_ind_2():
     """Assert that the TPOTRegressor can generate the same pipeline with same random seed."""
     tpot_obj = TPOTRegressor(random_state=43)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pipeline1 = str(tpot_obj._toolbox.individual())
     tpot_obj = TPOTRegressor(random_state=43)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pipeline2 = str(tpot_obj._toolbox.individual())
 
     assert pipeline1 == pipeline2
@@ -616,14 +617,14 @@ def test_random_ind_2():
 def test_score():
     """Assert that the TPOT score function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert_raises(RuntimeError, tpot_obj.score, testing_features, testing_target)
 
 
 def test_score_2():
     """Assert that the TPOTClassifier score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTClassifier(random_state=34)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     known_score = 0.977777777778  # Assumes use of the TPOT accuracy function
 
     # Create a pipeline with a known score
@@ -647,7 +648,7 @@ def test_score_2():
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     known_score = -11.708199875921563
 
     # Reify pipeline with known score
@@ -676,7 +677,7 @@ def test_score_3():
 def test_sample_weight_func():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline with sample weights."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error')
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     # Reify pipeline with known scor
     pipeline_string = (
         "ExtraTreesRegressor("
@@ -731,7 +732,7 @@ def test_template_1():
         verbosity=0,
         template='Selector-Transformer-Classifier'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pop = tpot_obj._toolbox.population(n=10)
     for deap_pipeline in pop:
         operator_count = tpot_obj._operator_count(deap_pipeline)
@@ -750,7 +751,7 @@ def test_template_2():
         verbosity=0,
         template='Selector-Selector-Transformer-Classifier'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pop = tpot_obj._toolbox.population(n=10)
     for deap_pipeline in pop:
         operator_count = tpot_obj._operator_count(deap_pipeline)
@@ -770,7 +771,7 @@ def test_template_3():
         verbosity=0,
         template='SelectPercentile-Transformer-Classifier'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pop = tpot_obj._toolbox.population(n=10)
     for deap_pipeline in pop:
         operator_count = tpot_obj._operator_count(deap_pipeline)
@@ -815,7 +816,7 @@ def test_template_5():
         verbosity=0,
         template='SelectPercentile-Transformer-Classifie' # a typ in Classifier
     )
-    assert_raises(ValueError, tpot_obj._fit_init)
+    assert_raises(ValueError, tpot_obj._fit_init, training_features.shape)
 
 
 def test_fit_GroupKFold():
@@ -841,14 +842,14 @@ def test_fit_GroupKFold():
 def test_predict():
     """Assert that the TPOT predict function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert_raises(RuntimeError, tpot_obj.predict, testing_features)
 
 
 def test_predict_2():
     """Assert that the TPOT predict function returns a numpy matrix of shape (num_testing_rows,)."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pipeline_string = (
         'DecisionTreeClassifier('
         'input_matrix, '
@@ -869,7 +870,7 @@ def test_predict_2():
 def test_predict_3():
     """Assert that the TPOT predict function works on dataset with nan"""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     pipeline_string = (
         'DecisionTreeClassifier('
@@ -891,7 +892,7 @@ def test_predict_3():
 def test_predict_proba():
     """Assert that the TPOT predict_proba function returns a numpy matrix of shape (num_testing_rows, num_testing_target)."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     pipeline_string = (
         'DecisionTreeClassifier('
@@ -914,7 +915,7 @@ def test_predict_proba():
 def test_predict_proba_2():
     """Assert that the TPOT predict_proba function returns a numpy matrix filled with probabilities (float)."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pipeline_string = (
         'DecisionTreeClassifier('
         'input_matrix, '
@@ -938,7 +939,7 @@ def test_predict_proba_2():
 def test_predict_proba_3():
     """Assert that the TPOT predict_proba function raises a RuntimeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
 
@@ -946,7 +947,7 @@ def test_predict_proba_3():
 def test_predict_proba_4():
     """Assert that the TPOT predict_proba function raises a RuntimeError when the optimized pipeline do not have the predict_proba() function"""
     tpot_obj = TPOTRegressor()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pipeline_string = (
         "ExtraTreesRegressor(input_matrix, "
         "ExtraTreesRegressor__bootstrap=True, ExtraTreesRegressor__max_features=0.5,"
@@ -963,7 +964,7 @@ def test_predict_proba_4():
 def test_predict_proba_5():
     """Assert that the TPOT predict_proba function works on dataset with nan."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pipeline_string = (
         'DecisionTreeClassifier('
         'input_matrix, '
@@ -1063,7 +1064,7 @@ def test_fit_4():
         max_time_mins=2/60.,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj.generations == 1000000
 
     # reset generations to 20 just in case that the failed test may take too much time
@@ -1086,7 +1087,7 @@ def test_fit_5():
         config_dict='TPOT light',
         warm_start=True
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     assert tpot_obj.generations == 1000000
 
     # reset generations to 20 just in case that the failed test may take too much time
@@ -1134,6 +1135,27 @@ def test_fit_7():
     assert not (tpot_obj._start_datetime is None)
 
 
+def test_fit_8():
+    """Assert that the TPOT fit function provides an optimized pipeline when ColumnTransformer is specified."""
+    custom_config_dict = copy(classifier_config_dict)
+    custom_config_dict['tpot.builtins.ColumnTransformer'] = {
+        'remainder': ['passthrough', 'drop'],
+    }
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=1,
+        offspring_size=2,
+        generations=1,
+        verbosity=0,
+        config_dict=custom_config_dict,
+        template='Selector-ColumnTransformer-Classifier',
+    )
+    tpot_obj.fit(training_features, training_target)
+
+    assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
+    assert not (tpot_obj._start_datetime is None)    
+
+
 def test_fit_cuml():
     """Assert that the TPOT fit function provides an optimized pipeline when config_dict is 'TPOT cuML' if cuML is available. If not available, assert _fit_init raises a ValueError."""
 
@@ -1164,8 +1186,8 @@ def test_fit_cuml():
         assert isinstance(tpot_regr_obj._optimized_pipeline, creator.Individual)
         assert not (tpot_regr_obj._start_datetime is None)
     else:
-        assert_raises(ValueError, tpot_clf_obj._fit_init)
-        assert_raises(ValueError, tpot_regr_obj._fit_init)
+        assert_raises(ValueError, tpot_clf_obj._fit_init, training_features.shape)
+        assert_raises(ValueError, tpot_regr_obj._fit_init, training_features.shape)
 
 
 def test_memory():
@@ -1508,7 +1530,7 @@ def test_summary_of_best_pipeline():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     assert_raises(RuntimeError, tpot_obj._summary_of_best_pipeline, features=training_features, target=training_target)
 
@@ -1561,7 +1583,7 @@ def test_evaluate_individuals():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     def pareto_eq(ind1, ind2):
         return np.allclose(ind1.fitness.values, ind2.fitness.values)
 
@@ -1603,7 +1625,7 @@ def test_evaluate_individuals_2():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     def pareto_eq(ind1, ind2):
         return np.allclose(ind1.fitness.values, ind2.fitness.values)
 
@@ -1644,7 +1666,7 @@ def test_update_pbar():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
@@ -1663,7 +1685,7 @@ def test_update_val():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     # reset verbosity = 3 for checking pbar message
     tpot_obj.verbosity = 3
     with closing(StringIO()) as our_file:
@@ -1685,7 +1707,7 @@ def test_preprocess_individuals():
         random_state=42,
         verbosity=0
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     pipeline_string_1 = (
         'LogisticRegression(PolynomialFeatures'
@@ -1731,7 +1753,7 @@ def test_preprocess_individuals_2():
         random_state=42,
         verbosity=0
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     # pipeline with two PolynomialFeatures operator
     pipeline_string_1 = (
@@ -1781,7 +1803,7 @@ def test_preprocess_individuals_3():
         max_time_mins=5,
         verbosity=0
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     pipeline_string_1 = (
         'LogisticRegression(PolynomialFeatures'
@@ -1825,7 +1847,7 @@ def test__init_pretest():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     np.random.seed(seed=42)
     features = np.random.rand(10000,2)
@@ -1844,7 +1866,7 @@ def test_check_dataset():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     ret_features, ret_target = tpot_obj._check_dataset(training_features, training_target)
     assert np.allclose(ret_features, training_features)
@@ -1861,7 +1883,7 @@ def test_check_dataset_2():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     test_sample_weight = list(range(1, len(training_target)+1))
     _, _ = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
     test_sample_weight[0] = 'opps'
@@ -1879,7 +1901,7 @@ def test_check_dataset_3():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     test_sample_weight = list(range(1, len(training_target)+1))
     _, _ = tpot_obj._check_dataset(training_features, training_target, test_sample_weight)
     test_sample_weight[0] = np.nan
@@ -1897,7 +1919,7 @@ def test_check_dataset_4():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     test_sample_weight = list(range(1, len(training_target)))
     assert_raises(ValueError, tpot_obj._check_dataset, training_features, training_target, test_sample_weight)
 
@@ -1912,7 +1934,7 @@ def test_check_dataset_5():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     ret_features = tpot_obj._check_dataset(training_features, target=None)
     assert np.allclose(ret_features, training_features)
 
@@ -1959,7 +1981,7 @@ def test_imputer_3():
         verbosity=2,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     with captured_output() as (out, err):
         imputed_features = tpot_obj._impute_values(features_with_nan)
@@ -2336,7 +2358,7 @@ def test_mutNodeReplacement():
 def test_mutNodeReplacement_2():
     """Assert that mutNodeReplacement() returns the correct type of mutation node in a complex pipeline."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     # a pipeline with 4 operators
     pipeline_string = (
         "LogisticRegression("
@@ -2380,7 +2402,7 @@ def test_varOr():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pop = tpot_obj._toolbox.population(n=5)
@@ -2403,7 +2425,7 @@ def test_varOr_2():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pop = tpot_obj._toolbox.population(n=5)
@@ -2426,7 +2448,7 @@ def test_varOr_3():
         verbosity=0,
         config_dict='TPOT light'
     )
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pop = tpot_obj._toolbox.population(n=5)

@@ -34,7 +34,7 @@ import random
 def test_dict_initialization():
     """Asserts that gp_deap.initialize_stats_dict initializes individual statistics correctly"""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init((0, 0))
     tb = tpot_obj._toolbox
 
     test_ind = tb.individual()
@@ -49,7 +49,7 @@ def test_dict_initialization():
 def test_mate_operator_stats_update():
     """Assert that self._mate_operator updates stats as expected."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init((0, 0))
     ind1 = creator.Individual.from_string(
         'KNeighborsClassifier('
         'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False),'
@@ -101,7 +101,7 @@ def test_mate_operator_stats_update():
 def test_mut_operator_stats_update():
     """Asserts that self._random_mutation_operator updates stats as expected."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init((0, 0))
     ind = creator.Individual.from_string(
         'KNeighborsClassifier('
         'BernoulliNB(input_matrix, BernoulliNB__alpha=10.0, BernoulliNB__fit_prior=False),'
