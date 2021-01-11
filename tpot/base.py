@@ -367,7 +367,8 @@ class TPOTBase(BaseEstimator):
                 else:
                     self.scoring_function = scoring
 
-    def _setup_config(self, config_dict):
+                    
+    def _setup_config(self, config_dict, feature_shape):
         if config_dict:
             if isinstance(config_dict, dict):
                 self._config_dict = config_dict
@@ -411,6 +412,20 @@ class TPOTBase(BaseEstimator):
                     )
         else:
             self._config_dict = self.default_config_dict
+
+        # set params for column transformer if enabled
+        ct = 'tpot.builtins.ColumnTransformer'
+        if ct not in self._config_dict:
+            return
+        i = 0
+        for k, v in self._config_dict.items():
+            if k != ct and TPOTOperatorClassFactory(k, v)[0].type() == 'Transformer':
+                self._config_dict[ct]['transformer_{}'.format(i)] = {k: v}
+                i += 1
+        self._config_dict[ct]['choice'] = range(i)
+        for n in range(feature_shape[1]):
+            self._config_dict[ct]['include_col_{}'.format(n)] = [True, False]
+
 
     def _read_config_file(self, config_path):
         if os.path.isfile(config_path):
@@ -585,7 +600,7 @@ class TPOTBase(BaseEstimator):
 
         return make_pipeline_func
 
-    def _fit_init(self):
+    def _fit_init(self, feature_shape):
         # initialization for fit function
 
         if not self.warm_start or not hasattr(self, "_pareto_front"):
@@ -593,7 +608,7 @@ class TPOTBase(BaseEstimator):
             self._pareto_front = None
             self._last_optimized_pareto_front = None
             self._last_optimized_pareto_front_n_gens = 0
-            self._setup_config(self.config_dict)
+            self._setup_config(self.config_dict, feature_shape)
 
             self._setup_template(self.template)
 
@@ -727,7 +742,7 @@ class TPOTBase(BaseEstimator):
             Returns a copy of the fitted TPOT object
 
         """
-        self._fit_init()
+        self._fit_init(features.shape)
         features, target = self._check_dataset(features, target, sample_weight)
 
         self._init_pretest(features, target)

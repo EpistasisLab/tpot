@@ -56,15 +56,15 @@ training_features, testing_features, training_target, testing_target = \
     train_test_split(digits_data.data.astype(np.float64), digits_data.target.astype(np.float64), random_state=42)
 
 tpot_obj = TPOTClassifier()
-tpot_obj._fit_init()
+tpot_obj._fit_init(training_features.shape)
 
 tpot_obj_reg = TPOTRegressor()
-tpot_obj_reg._fit_init()
+tpot_obj_reg._fit_init(training_features.shape)
 
 def test_export_random_ind():
     """Assert that the TPOTClassifier can generate the same pipeline export with random seed of 39."""
     tpot_obj = TPOTClassifier(random_state=39, config_dict="TPOT light")
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pipeline = tpot_obj._toolbox.individual()
     expected_code = """import numpy as np
@@ -144,7 +144,7 @@ results = exported_pipeline.predict(testing_features)
 def test_generate_pipeline_code():
     """Assert that generate_pipeline_code() returns the correct code given a specific pipeline."""
 
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     pipeline = [
         'KNeighborsClassifier',
         [
@@ -582,7 +582,7 @@ test3"""
 def test_pipeline_score_save():
     """Assert that the TPOTClassifier can generate a scored pipeline export correctly."""
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     tpot_obj._pbar = tqdm(total=1, disable=True)
     pipeline_string = (
         'DecisionTreeClassifier(SelectPercentile(input_matrix, SelectPercentile__percentile=20),'
@@ -670,7 +670,7 @@ results = exported_pipeline.predict(testing_features)
 
 def test_set_param_recursive():
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     """Assert that _set_param_recursive sets \"random_state\" to 42 in all steps in a simple pipeline."""
     pipeline_string = (
         'DecisionTreeClassifier(PCA(input_matrix, PCA__iterated_power=5, PCA__svd_solver=randomized), '
@@ -696,7 +696,7 @@ def test_set_param_recursive_2():
         'DecisionTreeRegressor__min_samples_leaf=5, DecisionTreeRegressor__min_samples_split=5)'
     )
     tpot_obj = TPOTRegressor()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
     deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
     set_param_recursive(sklearn_pipeline.steps, 'random_state', 42)
@@ -716,7 +716,7 @@ def test_set_param_recursive_3():
         'DecisionTreeClassifier__min_samples_leaf=5, DecisionTreeClassifier__min_samples_split=5)'
     )
     tpot_obj = TPOTClassifier()
-    tpot_obj._fit_init()
+    tpot_obj._fit_init(training_features.shape)
 
     deap_pipeline = creator.Individual.from_string(pipeline_string, tpot_obj._pset)
     sklearn_pipeline = tpot_obj._toolbox.compile(expr=deap_pipeline)
