@@ -197,6 +197,7 @@ def test_init_custom_parameters():
     assert tpot_obj.fitted_pipeline_ == None
     assert tpot_obj._exported_pipeline_text == []
     assert tpot_obj.log_file_ == sys.stdout
+    assert tpot_obj.ensemble == False
 
 def test_init_log_file():
     """ Assert that TPOT has right file handler to save progress. """
@@ -1153,7 +1154,7 @@ def test_fit_8():
     tpot_obj.fit(training_features, training_target)
 
     assert isinstance(tpot_obj._optimized_pipeline, creator.Individual)
-    assert not (tpot_obj._start_datetime is None)    
+    assert not (tpot_obj._start_datetime is None)
 
 
 def test_fit_cuml():
