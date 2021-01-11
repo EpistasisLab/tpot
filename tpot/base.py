@@ -120,6 +120,7 @@ class TPOTBase(BaseEstimator):
         config_dict=None,
         template=None,
         warm_start=False,
+        ensemble=False,
         memory=None,
         use_dask=False,
         periodic_checkpoint_folder=None,
@@ -235,6 +236,9 @@ class TPOTBase(BaseEstimator):
         warm_start: bool, optional (default: False)
             Flag indicating whether the TPOT instance will reuse the population from
             previous calls to fit().
+        ensemble: bool, optional (default: False)
+            VotingClassifier/VotingRegressor to ensemble
+            pipelines in Pareto Front into one model.
         memory: a Memory object or string, optional (default: None)
             If supplied, pipeline will cache each transformer after calling fit. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
@@ -303,6 +307,7 @@ class TPOTBase(BaseEstimator):
         self.config_dict = config_dict
         self.template = template
         self.warm_start = warm_start
+        self.ensemble = ensemble
         self.memory = memory
         self.use_dask = use_dask
         self.verbosity = verbosity
@@ -903,10 +908,12 @@ class TPOTBase(BaseEstimator):
         """Helper function to update the _optimized_pipeline field."""
         # Store the pipeline with the highest internal testing score
         if self._pareto_front:
+            self._pareto_front_piplines = []
             self._optimized_pipeline_score = -float("inf")
             for pipeline, pipeline_scores in zip(
                 self._pareto_front.items, reversed(self._pareto_front.keys)
             ):
+                self._pareto_front_piplines.append(pipeline)
                 if pipeline_scores.wvalues[1] > self._optimized_pipeline_score:
                     self._optimized_pipeline = pipeline
                     self._optimized_pipeline_score = pipeline_scores.wvalues[1]
@@ -988,7 +995,22 @@ class TPOTBase(BaseEstimator):
                 "passed the data to TPOT correctly."
             )
         else:
-            self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
+            if self.ensemble:
+                estimators = [("pipeline{}".format(i),
+                    self._toolbox.compile(expr=p))
+                    for i, p in enumerate(self._pareto_front_piplines)]
+                if self.classification:
+                    from sklearn.ensemble import VotingClassifier
+                    self.estimator = VotingClassifier(estimators=estimators,
+                                                  voting='hard',
+                                                  n_jobs=self.n_jobs)
+                else:
+                    from sklearn.ensemble import VotingRegressor
+                    self.estimator = VotingRegressor(estimators=estimators,
+                                                 voting='hard',
+                                                 n_jobs=self.n_jobs)
+            else:
+                self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
