@@ -833,8 +833,8 @@ def test_TPOT_ensemble_1():
         ensemble=True
     )
     tpot_obj.fit(training_features, training_target)
-    print(tpot_obj.fitted_pipeline_)
-
+    from sklearn.ensemble import VotingClassifier
+    assert isinstance(tpot_obj.fitted_pipeline_, VotingClassifier)
 
 def test_TPOT_ensemble_2():
     """Assert that TPOT uses ensemble methods."""
@@ -849,7 +849,8 @@ def test_TPOT_ensemble_2():
         ensemble=True
     )
     tpot_obj.fit(training_features, training_target)
-    print(tpot_obj.fitted_pipeline_)
+    from sklearn.ensemble import VotingRegressor
+    assert isinstance(tpot_obj.fitted_pipeline_, VotingRegressor)
 
 def test_fit_GroupKFold():
     """Assert that TPOT properly handles the group parameter when using GroupKFold."""
