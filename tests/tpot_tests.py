@@ -820,6 +820,37 @@ def test_template_5():
     assert_raises(ValueError, tpot_obj._fit_init, training_features.shape)
 
 
+def test_TPOT_ensemble_1():
+    """Assert that TPOT uses ensemble methods."""
+
+    tpot_obj = TPOTClassifier(
+        random_state=42,
+        population_size=2,
+        offspring_size=4,
+        generations=3,
+        verbosity=0,
+        config_dict='TPOT light',
+        ensemble=True
+    )
+    tpot_obj.fit(training_features, training_target)
+    print(tpot_obj.fitted_pipeline_)
+
+
+def test_TPOT_ensemble_2():
+    """Assert that TPOT uses ensemble methods."""
+
+    tpot_obj = TPOTRegressor(
+        random_state=42,
+        population_size=2,
+        offspring_size=4,
+        generations=3,
+        verbosity=0,
+        config_dict='TPOT light',
+        ensemble=True
+    )
+    tpot_obj.fit(training_features, training_target)
+    print(tpot_obj.fitted_pipeline_)
+
 def test_fit_GroupKFold():
     """Assert that TPOT properly handles the group parameter when using GroupKFold."""
     # This check tests if the darker digits images would generalize to the lighter ones.

@@ -367,7 +367,7 @@ class TPOTBase(BaseEstimator):
                 else:
                     self.scoring_function = scoring
 
-                    
+
     def _setup_config(self, config_dict, feature_shape):
         if config_dict:
             if isinstance(config_dict, dict):
@@ -1016,13 +1016,12 @@ class TPOTBase(BaseEstimator):
                     for i, p in enumerate(self._pareto_front_piplines)]
                 if self.classification:
                     from sklearn.ensemble import VotingClassifier
-                    self.estimator = VotingClassifier(estimators=estimators,
+                    self.fitted_pipeline_ = VotingClassifier(estimators=estimators,
                                                   voting='hard',
                                                   n_jobs=self.n_jobs)
                 else:
                     from sklearn.ensemble import VotingRegressor
-                    self.estimator = VotingRegressor(estimators=estimators,
-                                                 voting='hard',
+                    self.fitted_pipeline_ = VotingRegressor(estimators=estimators,
                                                  n_jobs=self.n_jobs)
             else:
                 self.fitted_pipeline_ = self._toolbox.compile(expr=self._optimized_pipeline)
