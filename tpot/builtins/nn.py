@@ -162,8 +162,8 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
 
         assert_all_finite(X, y)
 
-        if type_of_target(y) != 'binary':
-            raise ValueError("Non-binary targets not supported")
+        #if type_of_target(y) != 'binary':
+        #    raise ValueError("Non-binary targets not supported")
 
         if np.any(np.iscomplex(X)) or np.any(np.iscomplex(y)):
             raise ValueError("Complex data not supported")
