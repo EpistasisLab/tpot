@@ -154,16 +154,12 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
     def validate_inputs(self, X, y):
         # Things we don't want to allow until we've tested them:
         # - Sparse inputs
-        # - Multiclass outputs (e.g., more than 2 classes in `y`)
         # - Non-finite inputs
         # - Complex inputs
 
         X, y = check_X_y(X, y, accept_sparse=False, allow_nd=False)
 
         assert_all_finite(X, y)
-
-        if type_of_target(y) != 'binary':
-            raise ValueError("Non-binary targets not supported")
 
         if np.any(np.iscomplex(X)) or np.any(np.iscomplex(y)):
             raise ValueError("Complex data not supported")
