@@ -719,7 +719,7 @@ if __name__ == '__main__':
 <p>More information about these start methods can be found in the <a href="https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods">multiprocessing documentation</a>.</p>
 <h2 id="parallel-training-with-dask">Parallel Training with Dask</h2>
 <p>For large problems or working on Jupyter notebook, we highly recommend that you can distribute the work on a <a href="http://dask.pydata.org/en/latest/">Dask</a> cluster.
-The <a href="https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=machine-learning%2Ftpot.ipynb">dask-examples binder</a> has a runnable example
+The <a href="https://mybinder.org/v2/gh/dask/dask-examples/main?filepath=machine-learning%2Ftpot.ipynb">dask-examples binder</a> has a runnable example
 with a small dask cluster.</p>
 <p>To use your Dask cluster to fit a TPOT model, specify the <code>use_dask</code> keyword when you create the TPOT estimator. <strong>Note: if <code>use_dask=True</code>, TPOT will use as many cores as available on the your Dask cluster. If <code>n_jobs</code> is specified, then it will control the chunk size (10*<code>n_jobs</code> if it is less then offspring size) of parallel training.</strong></p>
 <pre><code class="language-python">estimator = TPOTEstimator(use_dask=True, n_jobs=-1)
