@@ -129,8 +129,8 @@ regressor_config_dict = {
         'alpha': [5e-9,1e-3, 1e-2, 1e-1, 1., 10., 100.],
         'normalize_y' : [True, False],
         'optimizer' : ['fmin_l_bfgs_b']
-    }
-}    
+    },
+    
     # Preprocessors
     'sklearn.preprocessing.Binarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
