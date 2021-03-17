@@ -24,7 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from sklearn.gaussian_process.kernels import WhiteKernel, Matern, RBF, DotProduct, RationalQuadratic, ExpSineSquared
+from sklearn.gaussian_process.kernels import WhiteKernel, Matern, RBF, DotProduct, RationalQuadratic, ExpSineSquared, ConstantKernel
 # Check the TPOT documentation for information on the structure of config dicts
 
 classifier_config_dict = {
@@ -123,6 +123,7 @@ classifier_config_dict = {
         'alpha': [1e-4, 1e-3, 1e-2, 1e-1],
         'learning_rate_init': [1e-3, 1e-2, 1e-1, 0.5, 1.]
     },
+    
     'sklearn.gaussian_process.GaussianProcessClassifier': {
         'kernel' : [1.0*RBF(length_scale=0.5, length_scale_bounds=(1e-05, 100000.0)),
            1.0*RationalQuadratic(length_scale=0.5, alpha=0.1),
@@ -135,6 +136,7 @@ classifier_config_dict = {
         'alpha': [5e-9,1e-3, 1e-2, 1e-1, 1., 10., 100.],
         'normalize_y' : [True, False],
         'optimizer' : ['fmin_l_bfgs_b']
+    },
     
     'sklearn.ensemble.AdaBoostClassifier': {
         'n_estimators': [100],
