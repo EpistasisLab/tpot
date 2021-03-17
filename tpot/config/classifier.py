@@ -24,7 +24,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-
+from sklearn.gaussian_process.kernels import WhiteKernel, Matern, RBF, DotProduct, RationalQuadratic, ExpSineSquared
 # Check the TPOT documentation for information on the structure of config dicts
 
 classifier_config_dict = {
@@ -123,7 +123,25 @@ classifier_config_dict = {
         'alpha': [1e-4, 1e-3, 1e-2, 1e-1],
         'learning_rate_init': [1e-3, 1e-2, 1e-1, 0.5, 1.]
     },
-
+    'sklearn.gaussian_process.GaussianProcessClassifier': {
+        'kernel' : [1.0*RBF(length_scale=0.5, length_scale_bounds=(1e-05, 100000.0)),
+           1.0*RationalQuadratic(length_scale=0.5, alpha=0.1),
+           1.0*ExpSineSquared(length_scale=0.5, periodicity=3.0,
+                                length_scale_bounds=(1e-05, 100000.0),
+                                periodicity_bounds=(1.0, 10.0)),
+           ConstantKernel(0.1, (0.01, 10.0))*(DotProduct(sigma_0=1.0, sigma_0_bounds=(0.1, 10.0)) ** 2),
+           1.0**2*Matern(length_scale=0.5, length_scale_bounds=(1e-05, 100000.0),
+                        nu=0.5)],
+        'alpha': [5e-9,1e-3, 1e-2, 1e-1, 1., 10., 100.],
+        'normalize_y' : [True, False],
+        'optimizer' : ['fmin_l_bfgs_b']
+    
+    'sklearn.ensemble.AdaBoostClassifier': {
+        'n_estimators': [100],
+        'learning_rate': [1e-3, 1e-2, 1e-1, 0.5, 1.],
+        'loss': ["linear", "square", "exponential"]
+    },
+    
     # Preprocesssors
     'sklearn.preprocessing.Binarizer': {
         'threshold': np.arange(0.0, 1.01, 0.05)
