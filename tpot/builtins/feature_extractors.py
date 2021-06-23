@@ -77,6 +77,14 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
     def extract(self, X, y=None): # pragma: no cover
         pass
 
+    @abstractmethod
+    def expected_input_type(self): # pragma: no cover
+        pass
+
+    @abstractmethod
+    def expected_output_type(self): # pragma: no cover
+        pass
+
     def transform(self, X, y=None): # pragma: no cover
         return self.extract(X)
 
@@ -112,6 +120,19 @@ class ImageExtractor(FeatureExtractor):
 
         return X
 
+    #Define expected inputs and outputs for TPOT Operator Factory setting
+    @classmethod
+    def expected_input_type(cls):
+        return "image"
+
+    @classmethod
+    def expected_output_type(cls):
+        return np.ndarray
+
+    @abstractmethod
+    def _init_model(self, X=None, y=None): # pragma: no cover
+        pass
+
 
 class DeepImageFeatureExtractor(ImageExtractor):
     """Image Feature Extractor using pretrained/premade Deep Learning models"""
@@ -119,7 +140,7 @@ class DeepImageFeatureExtractor(ImageExtractor):
     def __init__(
         self,
         network_name="AlexNet",
-        verbose=False
+        verbose=True
     ):
         self.network_name = network_name
         self.verbose = verbose
@@ -130,7 +151,7 @@ class DeepImageFeatureExtractor(ImageExtractor):
         self.out_feature_num = None
 
 
-    def _init_model(self):
+    def _init_model(self, X=None, y=None):
         self.device = _get_cuda_device_if_available()
         self.network = _torchvisionModelAsFeatureExtractor(self.network_name).to(self.device)
         self.out_feature_num = self.network.get_feature_num()
@@ -190,7 +211,7 @@ class DeepImageFeatureExtractor(ImageExtractor):
             featureArr[i, :] = feature_outputs.detach().numpy()
 
             if(self.verbose):
-                if(i % 1000 == 0):
+                if(i % 100 == 0):
                     print("DeepImageFeatureExtractor transform: Processing image {} of {}".format(i+1, init_input_size[0]))
 
         return featureArr

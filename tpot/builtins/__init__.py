@@ -34,3 +34,10 @@ try:
 except (ModuleNotFoundError, ImportError):
     import warnings
     warnings.warn("Warning: optional dependency `torch` is not available. - skipping import of NN models.")
+
+try:
+    from .feature_extractors import DeepImageFeatureExtractor
+except (ModuleNotFoundError, ImportError):
+    import warnings
+    warnings.warn("Warning: optional dependency `torch/torchvision` is not available. - skipping import of NN feature extractors.")
+

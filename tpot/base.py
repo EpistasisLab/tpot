@@ -79,14 +79,18 @@ from .config.classifier_nn import classifier_config_nn
 from .config.classifier_cuml import classifier_config_cuml
 from .config.regressor_cuml import regressor_config_cuml
 
+from .config.image_extractors import config_imagefeatureextract
+
 from .metrics import SCORERS
-from .gp_types import Output_Array
+from .gp_types import Output_Array, Image_Array
 from .gp_deap import (
     eaMuPlusLambda,
     mutNodeReplacement,
     _wrapped_cross_val_score,
     cxOnePoint,
 )
+
+from pprint import pprint
 
 try:
     from imblearn.pipeline import make_pipeline as make_imblearn_pipeline
@@ -118,6 +122,7 @@ class TPOTBase(BaseEstimator):
         max_eval_time_mins=5,
         random_state=None,
         config_dict=None,
+        input_type=None,
         template=None,
         warm_start=False,
         memory=None,
@@ -222,6 +227,11 @@ class TPOTBase(BaseEstimator):
             String 'TPOT NN':
                 TPOT uses a configuration dictionary for PyTorch neural network classifiers
                 included in `tpot.nn`.
+        input_type: string, optional (default: None)
+            A string indicating what form the input data takes and what extractors to include, if any.
+            String 'image':
+                TPOT will include extractors from config/image_extractors.py in the pipeline and sets
+                the input of the pipeline to a custom "Image_Array" to enforce strong typing
         template: string (default: None)
             Template of predefined pipeline structure. The option is for specifying a desired structure
             for the machine learning pipeline evaluated in TPOT. So far this option only supports
@@ -301,6 +311,7 @@ class TPOTBase(BaseEstimator):
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
         self.early_stop = early_stop
         self.config_dict = config_dict
+        self.input_type = input_type
         self.template = template
         self.warm_start = warm_start
         self.memory = memory
@@ -393,6 +404,9 @@ class TPOTBase(BaseEstimator):
                     self._config_dict = classifier_config_cuml
                 else:
                     self._config_dict = regressor_config_cuml
+
+            elif config_dict == "extractor_debug":
+                self._config_dict = config_imagefeatureextract
             else:
                 config = self._read_config_file(config_dict)
                 if hasattr(config, "tpot_config"):
@@ -406,6 +420,11 @@ class TPOTBase(BaseEstimator):
                     )
         else:
             self._config_dict = self.default_config_dict
+
+        #Adds feature extractor configs to images if input type defined
+        if self.input_type is not None:
+            if self.input_type == "image":
+                self._config_dict.update(config_imagefeatureextract)
 
     def _read_config_file(self, config_path):
         if os.path.isfile(config_path):
@@ -432,7 +451,15 @@ class TPOTBase(BaseEstimator):
             random.seed(self.random_state)
             np.random.seed(self.random_state)
 
-        self._pset = gp.PrimitiveSetTyped("MAIN", [np.ndarray], Output_Array)
+        #Change the GP problem input if input_type is indicated by user
+        if self.input_type is not None:
+            if self.input_type == 'image':
+                self._pset = gp.PrimitiveSetTyped("MAIN", [Image_Array], Output_Array)
+            elif self.input_type == 'text':
+                #TODO: Implement other target types, including text
+                raise ValueError("Text inputs not yet supported in TPOT")
+        else:
+            self._pset = gp.PrimitiveSetTyped("MAIN", [np.ndarray], Output_Array)
         self._pset.renameArguments(ARG0="input_matrix")
         self._add_operators()
 
@@ -446,21 +473,24 @@ class TPOTBase(BaseEstimator):
         ret_types = []
         self.op_list = []
         if self.template == None:  # default pipeline structure
-            step_in_type = np.ndarray
             step_ret_type = Output_Array
             for operator in self.operators:
-                arg_types = operator.parameter_types()[0][1:]
-                p_types = ([step_in_type] + arg_types, step_ret_type)
+                expected_arg_types = operator.parameter_types()[0]
+                terminal_arg_types = expected_arg_types[1:]
+                expected_ret_types = operator.parameter_types()[1]
+
+                p_types = (expected_arg_types, step_ret_type)
                 if operator.root:
                     # We need to add rooted primitives twice so that they can
                     # return both an Output_Array (and thus be the root of the tree),
                     # and return a np.ndarray so they can exist elsewhere in the tree.
                     self._pset.addPrimitive(operator, *p_types)
-                tree_p_types = ([step_in_type] + arg_types, step_in_type)
+                tree_p_types = (expected_arg_types, expected_ret_types)
                 self._pset.addPrimitive(operator, *tree_p_types)
-                self._import_hash_and_add_terminals(operator, arg_types)
+                self._import_hash_and_add_terminals(operator, terminal_arg_types)
             self._pset.addPrimitive(
-                CombineDFs(), [step_in_type, step_in_type], step_in_type
+                #Special operator, existing as a simple inclusion in all pipelines
+                CombineDFs(), [np.ndarray, np.ndarray], np.ndarray
             )
         else:
             gp_types = {}
@@ -470,7 +500,13 @@ class TPOTBase(BaseEstimator):
                 if idx:
                     step_in_type = ret_types[-1]
                 else:
-                    step_in_type = np.ndarray
+                    if self.input_type is not None:
+                        if self.input_type == 'image':
+                            step_in_type = Image_Array
+                            #TODO: Make sure this actually works
+                            print("Image_Array implementation needs testing with templates")
+                    else:
+                        step_in_type = np.ndarray
                 if step != "CombineDFs":
                     if idx < len(self._template_comp) - 1:
                         # create an empty for returning class for strongly-type GP
@@ -628,6 +664,7 @@ class TPOTBase(BaseEstimator):
         self._fitted_imputer = None
         self._imputed = False
         self._memory = None  # initial Memory setting for sklearn pipeline
+        self._allow_nd = False
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -1375,15 +1412,19 @@ class TPOTBase(BaseEstimator):
             if self._imputed:
                 features = self._impute_values(features)
 
+        #Allow n-dimensional/non-2D input if the input_type is set
+        if self.input_type is not None:
+            self._allow_nd = True
+
         try:
             if target is not None:
-                X, y = check_X_y(features, target, accept_sparse=True, dtype=None)
+                X, y = check_X_y(features, target, accept_sparse=True, dtype=None, allow_nd=self._allow_nd)
                 if self._imputed:
                     return X, y
                 else:
                     return features, target
             else:
-                X = check_array(features, accept_sparse=True, dtype=None)
+                X = check_array(features, accept_sparse=True, dtype=None, allow_nd=self._allow_nd)
                 if self._imputed:
                     return X
                 else:
@@ -1670,6 +1711,7 @@ class TPOTBase(BaseEstimator):
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual_str = str(individual)
+            print("Pipeline: {}: ".format(individual_str))
             if not len(individual):  # a pipeline cannot be randomly generated
                 self.evaluated_individuals_[
                     individual_str

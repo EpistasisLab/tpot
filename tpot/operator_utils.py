@@ -28,6 +28,8 @@ from sklearn.base import BaseEstimator, is_classifier, is_regressor
 from sklearn.gaussian_process.kernels import Kernel
 import inspect
 
+from .gp_types import Image_Array
+
 
 class Operator(object):
     """Base class for operators in TPOT."""
@@ -134,6 +136,10 @@ def _is_transformer(estimator):
 
 def _is_resampler(estimator):
     return hasattr(estimator, "fit_resample")
+
+
+def _has_self_defined_types(estimator):
+    return hasattr(estimator, "expected_input_type") and hasattr(estimator, "expected_output_type")
 
 
 def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
@@ -273,7 +279,23 @@ def TPOTOperatorClassFactory(
                 operator
 
             """
-            return ([np.ndarray] + arg_types, np.ndarray)  # (input types, return types)
+            data_in_type = np.ndarray
+            data_out_type = np.ndarray
+
+            #Any operators with defined in and out types will use those instead of the assumed in-out
+            if _has_self_defined_types(op_obj):
+                expected_in_type = op_obj.expected_input_type()
+                expected_out_type = op_obj.expected_output_type()
+
+                #TODO: Add handling for other types (text, sequences, etc.)
+                if(expected_in_type == "image"):
+                    data_in_type = Image_Array
+
+                #TODO: Add handling for extractors that may just return other types (other than standard ndarrays)
+                if(expected_out_type == "image"):
+                    data_out_type = Image_Array
+
+            return ([data_in_type] + arg_types, data_out_type)  # (input types, return types)
 
         class_profile["parameter_types"] = parameter_types
 

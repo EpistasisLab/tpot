@@ -27,11 +27,16 @@ import numpy as np
 
 # This configuration only includes the image extractors. 
 # These are appended to any config selected if the input is indicated as an image.
+# This config is NOT meant to be used by itself. 
+# It is selected/appended to any config used if the argument
+# input_type='image' is passed to the TPOT object on instantiation
 
-classifier_config_imagefeatureextract = {
+config_imagefeatureextract = {
 
     #TODO: Add image feature extractor(s) here
     'tpot.builtins.DeepImageFeatureExtractor': {
         'network_name': ["resnet", "alexnet", "vgg", "densenet", "googlenet", "shufflenet", "mobilenet", "resnext", "wide_resnet", "mnasnet"]
     },
+
+    
 }

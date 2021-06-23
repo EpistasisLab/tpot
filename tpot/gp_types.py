@@ -26,3 +26,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 class Output_Array(object):
     """Final output data type of pipelines."""
     pass
+
+class Image_Array(object):
+    """Data type to represent image data in pipelines."""
+    pass
