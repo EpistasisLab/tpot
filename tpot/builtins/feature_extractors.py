@@ -140,7 +140,7 @@ class DeepImageFeatureExtractor(ImageExtractor):
     def __init__(
         self,
         network_name="AlexNet",
-        verbose=True
+        verbose=False
     ):
         self.network_name = network_name
         self.verbose = verbose

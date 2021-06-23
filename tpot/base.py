@@ -1711,7 +1711,6 @@ class TPOTBase(BaseEstimator):
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual_str = str(individual)
-            print("Pipeline: {}: ".format(individual_str))
             if not len(individual):  # a pipeline cannot be randomly generated
                 self.evaluated_individuals_[
                     individual_str
