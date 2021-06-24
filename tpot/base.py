@@ -90,8 +90,6 @@ from .gp_deap import (
     cxOnePoint,
 )
 
-from pprint import pprint
-
 try:
     from imblearn.pipeline import make_pipeline as make_imblearn_pipeline
 except:
@@ -231,7 +229,7 @@ class TPOTBase(BaseEstimator):
             A string indicating what form the input data takes and what extractors to include, if any.
             String 'image':
                 TPOT will include extractors from config/image_extractors.py in the pipeline and sets
-                the input of the pipeline to a custom "Image_Array" to enforce strong typing
+                the input of the pipeline to a custom "Image_Array" to enforce strong typing in DEAP
         template: string (default: None)
             Template of predefined pipeline structure. The option is for specifying a desired structure
             for the machine learning pipeline evaluated in TPOT. So far this option only supports
