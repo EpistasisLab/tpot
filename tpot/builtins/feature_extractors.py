@@ -181,13 +181,11 @@ class DeepImageFeatureExtractor(ImageExtractor):
         try:
             resize_norm_transform = transforms.Compose([
                 transforms.ToPILImage(),
-                transforms.Resize(256),
+                transforms.Resize(224),
                 transforms.CenterCrop(224),
                 transforms.ToTensor(),
-                transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]
-             )])
+                transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
+                ])
         except ModuleNotFoundError:
             raise
 
@@ -202,6 +200,10 @@ class DeepImageFeatureExtractor(ImageExtractor):
         #TODO: Is there a way to speed this up? Batch in images instead of doing it one by one?
         #Need to consider memory concerns/issues - maybe just accept that the user needs to be aware?
 
+        if(self.verbose):
+            print("DeepImageFeatureExtractor transform: Processing {} images".format(init_input_size[0]))
+
+
         for i, im in enumerate(X):
             #Create 4D transformed image
             transformedIm = torch.unsqueeze(resize_norm_transform(im),0).to(self.device)
@@ -209,10 +211,6 @@ class DeepImageFeatureExtractor(ImageExtractor):
             #Get feature outputs from the network and set in featureArr
             feature_outputs = self.network(transformedIm)
             featureArr[i, :] = feature_outputs.detach().numpy()
-
-            if(self.verbose):
-                if(i % 100 == 0):
-                    print("DeepImageFeatureExtractor transform: Processing image {} of {}".format(i+1, init_input_size[0]))
 
         return featureArr
 
@@ -244,9 +242,7 @@ class FlattenerImageExtractor(ImageExtractor):
         X_size = X.shape
 
         #Flatten images using np.reshape (collapses channels too)
-        flattenedArr = X.reshape((X_size[0], -1))
-
-        return flattenedArr
+        return X.reshape((X_size[0], -1))
 
     @property
     def __name__(self):
