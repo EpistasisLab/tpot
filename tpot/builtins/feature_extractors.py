@@ -216,7 +216,47 @@ class DeepImageFeatureExtractor(ImageExtractor):
 
         return featureArr
 
+    @property
+    def __name__(self):
+        """Instance name is the same as the class name."""
+        return self.__class__.__name__
 
+
+class FlattenerImageExtractor(ImageExtractor):
+    """Image extractor that flattens the image (so each pixel is a feature)"""
+
+    def __init__(
+        self,
+        verbose=False
+    ):
+        self.verbose = verbose
+
+
+    def _init_model(self, X=None, y=None):
+        #Do nothing. This doesn't need any specific model.
+        return self
+
+
+    def transform(self, X, y=None):
+        self.input_size = X.shape
+        X = self.validate_inputs(X)
+
+        X_size = X.shape
+
+        #Flatten images using np.reshape (collapses channels too)
+        flattenedArr = X.reshape((X_size[0], -1))
+
+        return flattenedArr
+
+    @property
+    def __name__(self):
+        """Instance name is the same as the class name."""
+        return self.__class__.__name__
+
+
+
+#Internal class that initializes and sets up standard deep NN models from Torchvision
+#Removes the final classification layer so that only the final features remain
 class _torchvisionModelAsFeatureExtractor(nn.Module):
     # pylint: disable=arguments-differ
     def __init__(self, network_name):
@@ -224,7 +264,7 @@ class _torchvisionModelAsFeatureExtractor(nn.Module):
         super(_torchvisionModelAsFeatureExtractor, self).__init__()
 
         network_name = network_name.lower()
-        pretrained_val = True
+        pretrained_val = True #only true for feature extraction
 
         #Note that input size is: (N, 3, 224, 224) to match every prebuilt network.
 
@@ -319,5 +359,10 @@ class _torchvisionModelAsFeatureExtractor(nn.Module):
 
     def get_feature_num(self):
         return self.out_feature_num
+
+    @property
+    def __name__(self):
+        """Instance name is the same as the class name."""
+        return self.__class__.__name__
 
 

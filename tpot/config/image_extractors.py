@@ -38,5 +38,8 @@ config_imagefeatureextract = {
         'network_name': ["resnet", "alexnet", "vgg", "densenet", "googlenet", "shufflenet", "mobilenet", "resnext", "wide_resnet", "mnasnet"]
     },
 
+    'tpot.builtins.FlattenerImageExtractor': {
+    },
+
     
 }
