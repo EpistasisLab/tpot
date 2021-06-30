@@ -28,7 +28,7 @@ from sklearn.base import BaseEstimator, is_classifier, is_regressor
 from sklearn.gaussian_process.kernels import Kernel
 import inspect
 
-from .gp_types import Image_Array
+from .gp_types import Image_Array, Output_Array
 
 
 class Operator(object):
@@ -137,7 +137,8 @@ def _is_transformer(estimator):
 def _is_resampler(estimator):
     return hasattr(estimator, "fit_resample")
 
-
+#Function to check if the operator has special input/output types
+#(rather than the assumed np.ndarray for all operators without these)
 def _has_self_defined_types(estimator):
     return hasattr(estimator, "expected_input_type") and hasattr(estimator, "expected_output_type")
 
