@@ -59,6 +59,7 @@ from tempfile import mkdtemp
 from shutil import rmtree
 import platform
 
+import sklearn
 from sklearn.datasets import load_digits, load_boston, make_classification, make_regression
 from sklearn import model_selection
 from joblib import Memory
@@ -625,7 +626,21 @@ def test_score_2():
     """Assert that the TPOTClassifier score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTClassifier(random_state=34)
     tpot_obj._fit_init(training_features.shape)
-    known_score = 0.977777777778  # Assumes use of the TPOT accuracy function
+    #Score changes between sklearn versions; dictionary for different versions
+    #Up to date as of sklearn 0.24.2
+    score_dict = {
+        '0.24.2': 0.9755555555555555,
+        '0.24.1': 0.9755555555555555,
+        '0.24.0': 0.9755555555555555, #introduced a change affecting KNeighborsClassifier: https://github.com/scikit-learn/scikit-learn/pull/17038
+        '0.23.2': 0.977777777778,
+        '0.23.1': 0.977777777778,
+        '0.23.0': 0.977777777778,
+        '0.22.2': 0.977777777778,
+        '0.22.1': 0.977777777778,
+        '0.22': 0.977777777778,
+
+    }
+    # Scores assume use of the TPOT accuracy function
 
     # Create a pipeline with a known score
     pipeline_string = (
@@ -642,14 +657,34 @@ def test_score_2():
     # Get score from TPOT
     score = tpot_obj.score(testing_features, testing_target)
 
-    assert np.allclose(known_score, score)
+    if sklearn.__version__ in score_dict.keys():
+        known_score = score_dict[sklearn.__version__]
+        assert np.allclose(known_score, score)
+    else:
+        #If the version isn't found, compare to all versions in the dict
+        closeness = [np.allclose(score, known_score) for known_score in score_dict.values()]
+        assert(closeness)
 
 
 def test_score_3():
     """Assert that the TPOTRegressor score function outputs a known score for a fixed pipeline."""
     tpot_obj = TPOTRegressor(scoring='neg_mean_squared_error', random_state=72)
     tpot_obj._fit_init(training_features.shape)
-    known_score = -11.708199875921563
+    #Score changes between sklearn versions; dictionary for different versions
+    #Up to date as of sklearn 0.24.2
+    score_dict = {
+        '0.24.2': -11.708199875921563,
+        '0.24.1': -11.708199875921563,
+        '0.24.0': -11.708199875921563,
+        '0.23.2': -11.708199875921563,
+        '0.23.1': -11.708199875921563,
+        '0.23.0': -11.708199875921563,
+        '0.22.2': -11.708199875921563,
+        '0.22.1': -11.708199875921563,
+        '0.22': -11.708199875921563,
+
+    }
+    # Scores assume use of the TPOT accuracy function
 
     # Reify pipeline with known score
     pipeline_string = (
@@ -670,7 +705,13 @@ def test_score_3():
     # Get score from TPOT
     score = tpot_obj.score(testing_features_r, testing_target_r)
 
-    assert np.allclose(known_score, score, rtol=0.03)
+    if sklearn.__version__ in score_dict.keys():
+        known_score = score_dict[sklearn.__version__]
+        assert np.allclose(known_score, score)
+    else:
+        #If the version isn't found, compare to all versions in the dict
+        closeness = [np.allclose(score, known_score) for known_score in score_dict.values()]
+        assert(closeness)
 
 
 
