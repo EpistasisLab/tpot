@@ -503,8 +503,6 @@ class TPOTBase(BaseEstimator):
                 else:
                     if self.input_type is not None:
                         step_in_type = self._pset_in
-                        #TODO: Make sure this actually works
-                        print("Image_Array (and other types) implementation needs testing with templates")
                     else:
                         step_in_type = np.ndarray
                 if step != "CombineDFs":
