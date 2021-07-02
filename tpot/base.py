@@ -1406,7 +1406,7 @@ class TPOTBase(BaseEstimator):
             #If input_type is image, then we check to make sure it's 3D or 4D
             #We also want to perform the other checks, so we don't return just yet 
             elif(self.input_type == "image"):
-                if len(features.shape) != 3 or len(features.shape) != 4:
+                if len(features.shape) != 3 and len(features.shape) != 4:
                     raise ValueError(
                         "input_type was set as image, but input feature array is "
                         "not in expected shape. Image inputs should be "
