@@ -30,3 +30,7 @@ class Output_Array(object):
 class Image_Array(object):
     """Data type to represent image data in pipelines."""
     pass
+
+class Text_Array(object):
+	"""Data type to represent text data in pipelines."""
+	pass

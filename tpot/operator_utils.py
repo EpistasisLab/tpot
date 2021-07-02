@@ -28,7 +28,7 @@ from sklearn.base import BaseEstimator, is_classifier, is_regressor
 from sklearn.gaussian_process.kernels import Kernel
 import inspect
 
-from .gp_types import Image_Array, Output_Array
+from .gp_types import Output_Array, Image_Array, Text_Array
 
 
 class Operator(object):
@@ -291,10 +291,14 @@ def TPOTOperatorClassFactory(
                 #TODO: Add handling for other types (text, sequences, etc.)
                 if(expected_in_type == "image"):
                     data_in_type = Image_Array
+                elif(expected_in_type == "text"):
+                    data_in_type = Text_Array
 
                 #TODO: Add handling for extractors that may just return other types (other than standard ndarrays)
                 if(expected_out_type == "image"):
                     data_out_type = Image_Array
+                elif(expected_out_type == "text"):
+                    data_out_type = Text_Array
 
             return ([data_in_type] + arg_types, data_out_type)  # (input types, return types)
 

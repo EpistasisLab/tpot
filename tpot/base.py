@@ -80,9 +80,10 @@ from .config.classifier_cuml import classifier_config_cuml
 from .config.regressor_cuml import regressor_config_cuml
 
 from .config.image_extractors import config_imagefeatureextract
+from .config.text_extractors import config_textfeatureextract
 
 from .metrics import SCORERS
-from .gp_types import Output_Array, Image_Array
+from .gp_types import Output_Array, Image_Array, Text_Array
 from .gp_deap import (
     eaMuPlusLambda,
     mutNodeReplacement,
@@ -423,6 +424,8 @@ class TPOTBase(BaseEstimator):
         if self.input_type is not None:
             if self.input_type == "image":
                 self._config_dict.update(config_imagefeatureextract)
+            if self.input_type == "text":
+                self._config_dict.update(config_textfeatureextract)
 
     def _read_config_file(self, config_path):
         if os.path.isfile(config_path):
@@ -453,14 +456,14 @@ class TPOTBase(BaseEstimator):
         if self.input_type is not None:
             if self.input_type == 'image':
                 self._pset_in = Image_Array
-                self._pset = gp.PrimitiveSetTyped("MAIN", [self._pset_in], Output_Array)
             elif self.input_type == 'text':
-                #TODO: Implement other target types, including text
-                raise ValueError("Text inputs not yet supported in TPOT")
+                self._pset_in = Text_Array
             else: 
-                raise ValueError("Other input types besides images not yet supported in TPOT")
+                raise ValueError("Other input types besides image and text not yet supported in TPOT")
         else:
-            self._pset = gp.PrimitiveSetTyped("MAIN", [np.ndarray], Output_Array)
+            self._pset_in = np.ndarray
+
+        self._pset = gp.PrimitiveSetTyped("MAIN", [self._pset_in], Output_Array)
         self._pset.renameArguments(ARG0="input_matrix")
         self._add_operators()
 
@@ -1136,11 +1139,18 @@ class TPOTBase(BaseEstimator):
             raise RuntimeError(
                 "The scoring function should either be the name of a scikit-learn scorer or a scorer object"
             )
-        score = scorer(
-            self.fitted_pipeline_,
-            testing_features.astype(np.float64),
-            testing_target.astype(np.float64),
-        )
+        if(self.input_type != "text"):
+            score = scorer(
+                self.fitted_pipeline_,
+                testing_features.astype(np.float64),
+                testing_target.astype(np.float64),
+            )
+        else:
+            score = scorer(
+                self.fitted_pipeline_,
+                testing_features,
+                testing_target.astype(np.float64),
+            )
         return score
 
     def predict_proba(self, features):
@@ -1368,6 +1378,43 @@ class TPOTBase(BaseEstimator):
         -------
         (features, target)
         """
+
+        #Allow n-dimensional/non-2D input if the input_type is set
+        if self.input_type is not None:
+            self._allow_nd = True
+            #If input_type is text, then need to only check that 
+            #the input array is a string and is only one column
+            #The other checks in this function are unnecessary, so return
+            if(self.input_type == "text"):
+                if len(features.shape) != 1:
+                    raise ValueError(
+                        "input_type was set as text, "
+                        "but input feature array has more than one dimension. "
+                        "Text data should be a 1D array. "
+                        "Try calling np.ravel() on your data to flatten dimensions."
+                    )
+                if not np.issubdtype(features.dtype, str):
+                    raise ValueError(
+                        "input features are not a numpy str array "
+                        "despite input_type being text. "
+                        "Try doing X = X.astype(str) where "
+                        "X is your input feature numpy array to "
+                        "cast your array to a numpy string array."
+                    )
+
+                return features, target
+            #If input_type is image, then we check to make sure it's 3D or 4D
+            #We also want to perform the other checks, so we don't return just yet 
+            elif(self.input_type == "image"):
+                if len(features.shape) != 3 or len(features.shape) != 4:
+                    raise ValueError(
+                        "input_type was set as image, but input feature array is "
+                        "not in expected shape. Image inputs should be "
+                        "3D in form [N, H, W] or "
+                        "4D in form [N, C, H, W] "
+                        "where N = number of samples, C = channels, H = height, W = width"
+                    )
+
         # Check sample_weight
         if sample_weight is not None:
             try:
@@ -1410,10 +1457,6 @@ class TPOTBase(BaseEstimator):
             if self._imputed:
                 features = self._impute_values(features)
 
-        #Allow n-dimensional/non-2D input if the input_type is set
-        if self.input_type is not None:
-            self._allow_nd = True
-
         try:
             if target is not None:
                 X, y = check_X_y(features, target, accept_sparse=True, dtype=None, allow_nd=self._allow_nd)
@@ -1430,9 +1473,10 @@ class TPOTBase(BaseEstimator):
         except (AssertionError, ValueError):
             raise ValueError(
                 "Error: Input data is not in a valid format. Please confirm "
-                "that the input data is scikit-learn compatible. For example, "
-                "the features must be a 2-D array and target labels must be a "
-                "1-D array."
+                "that the input data is scikit-learn compatible. "
+                "For example, the features must be a 2-D array "
+                "(if input_type is not passed into TPOT) " 
+                "and target labels must be a 1-D array."
             )
 
     def _compile_to_sklearn(self, expr):
