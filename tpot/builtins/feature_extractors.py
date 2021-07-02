@@ -108,6 +108,14 @@ class ImageExtractor(FeatureExtractor):
         #TODO: Need to confirm that X is an array of images
         #Also forces casting of X to floats
         #y/targets irrelevant for feature extractors; is unused/unchanged
+        
+        if len(X.shape) != 3 and len(X.shape) != 4:
+            raise ValueError(
+                "Image inputs to image feature extractors should be "
+                "3D in form [N, H, W] or "
+                "4D in form [N, C, H, W], "
+                "where N = number of samples, C = channels, H = height, W = width"
+            )
 
         X = check_array(X, allow_nd=True)
 
@@ -146,10 +154,19 @@ class TextExtractor(FeatureExtractor):
         #Need to confirm that X is a vector of strings
         #y/targets irrelevant for feature extractors; is unused/unchanged
 
-        X = check_array(X, allow_nd=True)
-
-        if np.any(np.iscomplex(X)):
-            raise ValueError("Complex data not supported")
+        if len(X.shape) != 1:
+            raise ValueError(
+                "Text input has more than one dimension. "
+                "Try calling np.ravel() on your data to flatten dimensions."
+            )
+        if not np.issubdtype(X.dtype, str):
+            raise ValueError(
+                "Input to text feature extractor is not a numpy string array"
+                "Try doing X = X.astype(str) where "
+                "X is a numpy array of strings to "
+                "cast your array to a numpy string array."
+            )
+        
         return X
 
     #Define expected inputs and outputs for TPOT Operator Factory setting
