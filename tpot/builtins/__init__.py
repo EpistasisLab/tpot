@@ -41,4 +41,4 @@ except (ModuleNotFoundError, ImportError):
     import warnings
     warnings.warn("Warning: optional dependency `torch/torchvision` is not available. - skipping import of NN feature extractors.")
 
-from .feature_extractors import FlattenerImageExtractor
+from .feature_extractors import FlattenerImageExtractor, CountVectorizerTextExtractor, TfidfVectorizerTextExtractor

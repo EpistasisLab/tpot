@@ -26,6 +26,7 @@ from abc import abstractmethod
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 
 
 #Attempt to import torch+torchvision for the prebuilt networks, but also just pass if not found
@@ -104,7 +105,7 @@ class ImageExtractor(FeatureExtractor):
         pass
 
     def validate_inputs(self, X, y=None):
-        #Need to confirm that X is an array of images
+        #TODO: Need to confirm that X is an array of images
         #Also forces casting of X to floats
         #y/targets irrelevant for feature extractors; is unused/unchanged
 
@@ -134,6 +135,38 @@ class ImageExtractor(FeatureExtractor):
         pass
 
 
+class TextExtractor(FeatureExtractor):
+    """Base class for text feature extractors for use in TPOT."""
+
+    @abstractmethod
+    def extract(self, X, y=None): # pragma: no cover
+        pass
+
+    def validate_inputs(self, X, y=None):
+        #Need to confirm that X is a vector of strings
+        #y/targets irrelevant for feature extractors; is unused/unchanged
+
+        X = check_array(X, allow_nd=True)
+
+        if np.any(np.iscomplex(X)):
+            raise ValueError("Complex data not supported")
+        return X
+
+    #Define expected inputs and outputs for TPOT Operator Factory setting
+    @classmethod
+    def expected_input_type(cls):
+        return "text"
+
+    @classmethod
+    def expected_output_type(cls):
+        return np.ndarray
+
+    @abstractmethod
+    def _init_model(self, X=None, y=None): # pragma: no cover
+        pass
+
+
+#Image extractors
 class DeepImageFeatureExtractor(ImageExtractor):
     """Image Feature Extractor using pretrained/premade Deep Learning models"""
 
@@ -249,6 +282,40 @@ class FlattenerImageExtractor(ImageExtractor):
         """Instance name is the same as the class name."""
         return self.__class__.__name__
 
+
+#Text extractors
+class TfidfVectorizerTextExtractor(TfidfVectorizer, TextExtractor):
+    """Text extractor that wraps the Sklearn TfidfVectorizer. 
+    Done solely to give it the expected input and output type methods
+    and to allow for returning of dense arrays"""
+
+    def transform(self, X, y=None):
+        return super().transform(X).toarray()
+
+    def fit_transform(self, X, y=None):
+        return super().fit_transform(X).toarray()
+
+    @property
+    def __name__(self):
+        """Instance name is the same as the class name."""
+        return self.__class__.__name__
+
+
+class CountVectorizerTextExtractor(CountVectorizer, TextExtractor):
+    """Text extractor that wraps the Sklearn CountVectorizer. 
+    Done solely to give it the expected input and output type methods
+    and to allow for returning of dense arrays"""
+
+    def transform(self, X, y=None):
+        return super().transform(X).toarray()
+
+    def fit_transform(self, X, y=None):
+        return super().fit_transform(X).toarray()
+
+    @property
+    def __name__(self):
+        """Instance name is the same as the class name."""
+        return self.__class__.__name__
 
 
 #Internal class that initializes and sets up standard deep NN models from Torchvision

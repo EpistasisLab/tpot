@@ -23,14 +23,23 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from .classifier_light import classifier_config_dict_light
-from .classifier_mdr import tpot_mdr_classifier_config_dict
-from .classifier_sparse import classifier_config_sparse
-from .classifier_nn import classifier_config_nn
-from .classifier import classifier_config_dict
-from .regressor_light import regressor_config_dict_light
-from .regressor_mdr import tpot_mdr_regressor_config_dict
-from .regressor_sparse import regressor_config_sparse
-from .regressor import regressor_config_dict
-from .image_extractors import config_imagefeatureextract
-from .text_extractors import config_textfeatureextract
+import numpy as np
+
+# This configuration only includes the image extractors. 
+# These are appended to any config selected if the input is indicated as an image.
+# This config is NOT meant to be used by itself. 
+# It is selected/appended to any config used if the argument
+# input_type='image' is passed to the TPOT object on instantiation
+
+config_textfeatureextract = {
+
+    #TODO: Add image feature extractor(s) here
+    'tpot.builtins.TfidfVectorizerTextExtractor': {
+
+    },
+
+    'tpot.builtins.CountVectorizerTextExtractor': {
+    },
+
+    
+}
