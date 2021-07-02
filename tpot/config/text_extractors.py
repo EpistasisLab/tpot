@@ -25,21 +25,32 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 
-# This configuration only includes the image extractors. 
-# These are appended to any config selected if the input is indicated as an image.
+# This configuration only includes the text extractors. 
+# These are appended to any config selected if the input is indicated as an text.
 # This config is NOT meant to be used by itself. 
 # It is selected/appended to any config used if the argument
-# input_type='image' is passed to the TPOT object on instantiation
+# input_type='text' is passed to the TPOT object on instantiation
 
 config_textfeatureextract = {
 
-    #TODO: Add image feature extractor(s) here
+    #TODO: Add text feature extractor(s) here
     'tpot.builtins.TfidfVectorizerTextExtractor': {
-
+        'analyzer': ["word", "char", "char_wb"],
+        'ngram_range': [(1,1), (1,2), (2,2)],
+        'max_df': [0.75, 0.9, 1.0],
+        'min_df': [1, 0.1, 0.25],
+        'binary': [True, False],
+        'norm': ['l1', 'l2'],
+        'use_idf': [True, False],
+        'sublinear_tf': [True, False]
     },
 
     'tpot.builtins.CountVectorizerTextExtractor': {
+        'analyzer': ["word", "char", "char_wb"],
+        'ngram_range': [(1,1), (1,2), (2,2)],
+        'max_df': [0.75, 0.9, 1.0],
+        'min_df': [1, 0.1, 0.25],
+        'binary': [True, False]
     },
 
-    
 }
