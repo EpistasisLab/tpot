@@ -1474,9 +1474,11 @@ class TPOTBase(BaseEstimator):
             raise ValueError(
                 "Error: Input data is not in a valid format. Please confirm "
                 "that the input data is scikit-learn compatible. "
-                "For example, the features must be a 2-D array "
-                "(if input_type is not passed into TPOT) " 
-                "and target labels must be a 1-D array."
+                "For example, the features must be a 2-D array " 
+                "and target labels must be a 1-D array unless you change input_type. "
+                "If you are using text or image data as input to TPOT, "
+                "please set the input_type argument to 'text' or 'image' "
+                "respectively when instantiating TPOT"
             )
 
     def _compile_to_sklearn(self, expr):
