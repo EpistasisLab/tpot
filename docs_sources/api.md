@@ -10,6 +10,7 @@
                           <strong>max_time_mins</strong>=None, <strong>max_eval_time_mins</strong>=5,
                           <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                           <strong>template</strong>=None,
+                          <strong>input_type</strong>=None,
                           <strong>warm_start</strong>=False,
                           <strong>memory</strong>=None,
                           <strong>use_dask</strong>=False,
@@ -156,6 +157,20 @@ Template of predefined pipeline structure. The option is for specifying a desire
 So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer, Classifier) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html), [`ClassifierMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html) in scikit-learn) to that step. Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Classifier". By default value of template is None, TPOT generates tree-based pipeline randomly.
 
 See the <a href="../using/#template-option-in-tpot"> template option in tpot</a> section for more details.
+</blockquote>
+
+<strong>input_type</strong>: string, optional (default=None)
+<blockquote>
+Flag indicating what the input data type is meant to be. <em>None</em> will lead to the default behavior of TPOT.
+<br /><br />
+Possible inputs include:
+<ul>
+<li><em>input_type</em>='image' will lead to TPOT appending <a href="https://github.com/rachitk/tpot/blob/feature-extract/tpot/config/image_extractors.py">image feature extractors</a> to any configuration dictionary added. The input is expected to be 3D shape (N, H, W) if single-channel/grayscale or 4D shape (N, C, H, W) if RGB.</li>
+<li><em>input_type</em>='text' will lead to TPOT appending <a href="https://github.com/rachitk/tpot/blob/feature-extract/tpot/config/text_extractors.py">text feature extractors</a> to any configuration dictionary entered. The input is expected to be a numpy string array.</li>
+<li><em>None</em>, TPOT will operate as if the input matrix is a matrix of features (default behavior).</li>
+</ul>
+
+For all <em>input_type</em> that are not <em>None</em>, TPOT will perform different input validations to verify that the input shapes and types are as expected.
 </blockquote>
 
 <strong>warm_start</strong>: boolean, optional (default=False)
@@ -520,6 +535,7 @@ The whole pipeline text as a string should be returned if output_file_name is no
                          <strong>random_state</strong>=None, <strong>config_dict</strong>=None,
                          <strong>template</strong>=None,
                          <strong>warm_start</strong>=False,
+                         <strong>input_type</strong>=None,
                          <strong>memory</strong>=None,
                          <strong>use_dask</strong>=False,
                          <strong>periodic_checkpoint_folder</strong>=None,
@@ -665,6 +681,20 @@ Template of predefined pipeline structure. The option is for specifying a desire
 So far this option only supports linear pipeline structure. Each step in the pipeline should be a main class of operators (Selector, Transformer or Regressor) or a specific operator (e.g. `SelectPercentile`) defined in TPOT operator configuration. If one step is a main class, TPOT will randomly assign all subclass operators (subclasses of [`SelectorMixin`](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/feature_selection/base.py#L17), [`TransformerMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html) or [`RegressorMixin`](https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html) in scikit-learn) to that step. Steps in the template are delimited by "-", e.g. "SelectPercentile-Transformer-Regressor". By default value of template is None, TPOT generates tree-based pipeline randomly.
 
 See the <a href="../using/#template-option-in-tpot"> template option in tpot</a> section for more details.
+</blockquote>
+
+<strong>input_type</strong>: string, optional (default=None)
+<blockquote>
+Flag indicating what the input data type is meant to be. <em>None</em> will lead to the default behavior of TPOT.
+<br /><br />
+Possible inputs include:
+<ul>
+<li><em>input_type</em>='image' will lead to TPOT appending <a href="https://github.com/rachitk/tpot/blob/feature-extract/tpot/config/image_extractors.py">image feature extractors</a> to any configuration dictionary added. The input is expected to be 3D shape (N, H, W) if single-channel/grayscale or 4D shape (N, C, H, W) if RGB.</li>
+<li><em>input_type</em>='text' will lead to TPOT appending <a href="https://github.com/rachitk/tpot/blob/feature-extract/tpot/config/text_extractors.py">text feature extractors</a> to any configuration dictionary entered. The input is expected to be a numpy string array.</li>
+<li><em>None</em>, TPOT will operate as if the input matrix is a matrix of features (default behavior).</li>
+</ul>
+
+For all <em>input_type</em> that are not <em>None</em>, TPOT will perform different input validations to verify that the input shapes and types are as expected.
 </blockquote>
 
 <strong>warm_start</strong>: boolean, optional (default=False)

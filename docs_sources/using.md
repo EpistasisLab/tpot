@@ -722,3 +722,53 @@ A simple example of using TPOT-NN is shown in [examples](/tpot/examples/).
 - TPOT will occasionally learn pipelines that stack several `sklearn` estimators. Mathematically, these can be nearly identical to some deep learning models. For example, by stacking several `sklearn.linear_model.LogisticRegression`s, you end up with a very close approximation of a Multilayer Perceptron; one of the simplest and most well known deep learning architectures. TPOT's genetic programming algorithms generally optimize these 'networks' much faster than PyTorch, which typically uses a more brute-force convex optimization approach.
 
 - The problem of 'black box' model introspection is one of the most substantial criticisms and challenges of deep learning. This problem persists in `tpot.nn`, whereas TPOT's default estimators often are far easier to introspect.
+
+## Feature extraction in TPOT (supporting Image or Text data as inputs)
+
+Using feature extraction operators that build off of `sklearn` transformers allows TPOT to handle Image or Text inputs rather than requiring that the data be pretransformed to feature matrices. This allows TPOT to explore different feature extractors and their hyperparameters within TPOT itself. Unlike regular `sklearn` transformers, these operators need to implement additional methods. That is, they need to implement the methods `.expected_input_type()` and `.expected_output_type()` for TPOT to recognize that they have special input (and possibly output) types rather than the standard types used in TPOT. The code implementation of these extractors can be found at [this link](https://github.com/rachitk/tpot/blob/feature-extract/tpot/builtins/feature_extractors.py).
+
+### Telling TPOT to include feature extractors as operators
+
+As it would be unwieldy to create new configuration dictionaries for every current iteration of configurations with the feature extraction operators included, setting `input_type` when instantiating TPOT will automatically append configuration dictionaries corresponding to the extractors that handle the `input_type` indicated.
+
+- `input_type='image'` will include [image feature extractors](https://github.com/rachitk/tpot/blob/feature-extract/tpot/config/image_extractors.py)
+- `input_type='text'` will include [text feature extractors](https://github.com/rachitk/tpot/blob/feature-extract/tpot/config/text_extractors.py)
+
+TPOT will also perform different input validations to ensure that the inputs match certain criteria:
+
+- For images, the images must be in one of two forms: 
+	- a 3D shape (N, H, W) if single-channel/grayscale, or
+	- a 4D shape (N, C, H, W) if RGB
+<br>
+- For text, the text inputs must be:
+	- a numpy string array (which can be cast by doing `X = X.astype(str)`)
+
+
+### Current Image Feature Extractors
+
+TPOT currently supports two image feature extractors:
+
+- `DeepImageFeatureExtractor`, which instantiates a [deep neural network pretrained on ImageNet](https://pytorch.org/vision/stable/models.html) with the final layers dropped out to only have the features extracted, defined by one parameter:
+	- network_name: currently supports one of ["resnet", "alexnet", "vgg", "densenet", "googlenet", "shufflenet", "mobilenet", "resnext", "wide_resnet", "mnasnet"]
+<br>
+- `FlattenerImageExtractor`, which flattens the input image and treats each pixel as a discrete feature. This operator has no parameters.
+
+A simple example of using TPOT with feature extractors to analyze the MNIST dataset as images is shown in [examples](/tpot/examples/#digits-dataset-as-images-using-feature-extraction).
+
+
+### Current Text Feature Extractors
+
+TPOT currently supports two text feature extractors:
+
+- `TfidfVectorizerTextExtractor`, which completely wraps [sklearn's `TfidfVectorizer`](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html) and casts the output to a dense array. It takes the same parameters as sklearn's implementation at the above link.
+<br>
+- `CountVectorizerTextExtractor`, which completely wraps [sklearn's `CountVectorizer`](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html) and casts the output to a dense array. It takes the same parameters as sklearn's implementation at the above link.
+
+
+### Important caveats
+
+- Some of the feature extractors (particularly `DeepImageFeatureExtractor` among others) can cause a pipeline to take a long time to evaluate when included.
+
+- Many of these feature extractors can cause the memory usage of TPOT to increase beyond what is allocated for the original dataset due to the nature of feature extraction. Please be mindful of memory issues and constraints when training TPOT using these feature extractors.
+
+- There is currently a limited number of feature extractors available, and only a subset of data types are supported. However, any suggestions for new feature extraction options that TPOT can implement/wrap to either extend options for existing supported data types or for new data types entirely are greatly appreciated. Please make any such suggestions by creating a new [GitHub issue](https://github.com/EpistasisLab/tpot/issues/new).
