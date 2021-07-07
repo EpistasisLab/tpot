@@ -25,6 +25,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.config import config_imagefeatureextract
+from tpot.config import config_textfeatureextract
 from tpot.builtins import feature_extractors as tpot_fe
 
 import numpy as np
@@ -33,6 +34,7 @@ import pandas as pd
 from sklearn.datasets import make_classification, load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.base import ClassifierMixin
+from sklearn.preprocessing import LabelEncoder
 try:
     from sklearn.feature_selection._base import SelectorMixin
 except ImportError:
@@ -67,7 +69,36 @@ X_train_images, X_test_images, y_train_images, y_test_images = train_test_split(
 X_train_flat, X_test_flat, y_train_flat, y_test_flat = train_test_split(digits.data, digits.target,
                                                     train_size=0.15, test_size=0.85, random_state=42)
 
+
+#Set up a text dataset
+text_data_file = 'tests/spam_subset_text.csv'
+df = pd.read_csv(text_data_file, delimiter=',', encoding='latin-1')
+df.drop(['Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4'],axis=1,inplace=True)
+
+X_rawtext = df.v2.values
+X_rawtext = X_rawtext.astype(str)
+y_text = df.v1
+le = LabelEncoder()
+y_text = le.fit_transform(y_text)
+
+X_train_text,X_test_text,y_train_text,y_test_text = train_test_split(X_rawtext,y_text,test_size=0.85, 
+                                                    random_state=42)
+
+
 # Tests
+
+#General extractor tests
+def test_complain_about_input_type():
+    """Assert that TPOT complains if input_type not set but input is text/image (FE)"""
+    clf = TPOTClassifier()
+    assert_raises(ValueError, clf.fit, X_train_images, y_train_images)
+
+
+#Image extractor tests
+def test_complain_about_image_input():
+    """Assert that TPOT complains if image input set but input is actually feature matrix (FE)"""
+    clf = TPOTClassifier(input_type="image")
+    assert_raises(ValueError, clf.fit, X_train_flat, y_train_flat)
 
 def test_image_extractor_append_config():
     """Assert that passing the image input type appends the image_extractor dict (FE)"""
@@ -88,8 +119,8 @@ def test_FlattenerImageExtractor_output():
     X_flattened = tpot_FIE.fit_transform(X_train_images)
     assert(np.array_equal(X_flattened, X_train_flat))
 
-def test_operator_type():
-    """Assert that Image Extractors with special inputs/outputs have attributes indicating so."""
+def test_operator_type_image_extractors():
+    """Assert that Image Extractors with special inputs/outputs have attributes indicating so (FE)"""
     assert(hasattr(tpot_fe.FlattenerImageExtractor(), 'expected_input_type') and
         hasattr(tpot_fe.FlattenerImageExtractor(), 'expected_output_type'))
 
@@ -105,3 +136,32 @@ def test_MNIST_performance_images():
     score = fe_classifier.score(X_train_images, y_train_images)
     assert(score >= 0.80)
 
+
+#Text extractor tests
+def test_complain_about_text_input():
+    """Assert that TPOT complains if text input set but input is actually feature matrix (FE)"""
+    clf = TPOTClassifier(input_type="text")
+    assert_raises(ValueError, clf.fit, X_train_flat, y_train_flat)
+
+def test_text_extractor_append_config():
+    """Assert that passing the text input type appends the text_extractor dict (FE)"""
+    clf = TPOTClassifier(input_type="text")
+    clf._fit_init()
+    assert config_textfeatureextract.items() <= clf._config_dict.items()
+
+def test_TfidfVectorizerTextExtractor_output():
+    """Assert that TfidfVectorizer text extractor returns a 2D array with the same number of samples after passing text (FE)"""
+    tpot_tf = tpot_fe.TfidfVectorizerTextExtractor()
+    X_extracted = tpot_tf.fit_transform(X_train_text)
+    assert len(X_extracted.shape) == 2 and X_extracted.shape[0] == X_train_text.shape[0]
+
+def test_CountVectorizerTextExtractor_output():
+    """Assert that CountVectorizer text extractor returns a 2D array with the same number of samples after passing text (FE)"""
+    tpot_tf = tpot_fe.CountVectorizerTextExtractor()
+    X_extracted = tpot_tf.fit_transform(X_train_text)
+    assert len(X_extracted.shape) == 2 and X_extracted.shape[0] == X_train_text.shape[0]
+
+def test_operator_type_text_extractors():
+    """Assert that Text Extractors with special inputs/outputs have attributes indicating so (FE)"""
+    assert(hasattr(tpot_fe.TfidfVectorizerTextExtractor(), 'expected_input_type') and
+        hasattr(tpot_fe.TfidfVectorizerTextExtractor(), 'expected_output_type'))
