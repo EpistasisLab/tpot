@@ -267,14 +267,10 @@ class DeepImageFeatureExtractor(ImageExtractor):
         with torch.no_grad():
             self.network = self.network.eval()
 
-            start_time = time.time()
-
             for i in range(0, X.size(0), batchSize):
                 transformedImChunk = resize_norm_transform(X[i:i+batchSize,:,:,:]).to(self.device)
                 feature_outputs = self.network(transformedImChunk)
                 featureArr[i:i+batchSize, :] = feature_outputs.detach().numpy()
-
-            print("Processing images took {} seconds".format(time.time()-start_time))
 
         return featureArr
 
