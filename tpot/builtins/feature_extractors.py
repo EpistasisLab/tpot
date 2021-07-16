@@ -44,6 +44,8 @@ try:
 except:
     pass
 
+import time
+
 #Attempt to import torchvision for the deep, prebuilt networks
 #If not found, pass, but error within the operators that use these
 
@@ -215,27 +217,32 @@ class DeepImageFeatureExtractor(ImageExtractor):
         X = self.validate_inputs(X)
 
         X_size = X.shape
+        need_stack = False
 
         # Place X into the expected form if only 1 channel input but as a 3D array
         # (as expected size for all prebuilt models is 4D with [N, 3, H, W], need to stack to RGB 
         # if X is only a sequence of 2D images)
         init_input_size = X.shape
         if(X.ndim == 3):
-            X = np.stack((X, X, X), axis=-1)
-            X = X.reshape(init_input_size[0], -1, init_input_size[1], init_input_size[2])
+            X = np.expand_dims(X, 1)
+            need_stack = True
 
         X = torch.tensor(X, dtype=torch.float32)
 
         #Create normalizing transform for all prebuilt models in torchvision (except inception, which is unsupported)
         #Also running the check here to see if torchvision is installed; if not, raise an error
         try:
-            resize_norm_transform = transforms.Compose([
-                transforms.ToPILImage(),
-                transforms.Resize(224),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
-                ])
+            if(need_stack):
+                resize_norm_transform = transforms.Compose([
+                    transforms.Lambda(lambda x: x.repeat(1, 3, 1, 1)),
+                    transforms.Resize(224),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
+                    ])
+            else:
+                resize_norm_transform = transforms.Compose([
+                    transforms.Resize(224),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
+                    ])
         except ModuleNotFoundError:
             raise
 
@@ -243,24 +250,31 @@ class DeepImageFeatureExtractor(ImageExtractor):
         featureArr = np.empty((init_input_size[0], self.out_feature_num))
 
         #Feed images into the network (in the appropriate size for the network)
+        #Size needs to be (B, 3, 224, 224) with B being the batch size
 
-        #To try to avoid hitting memory limits, only feed in images in one at a time 
-        #(and unsqueeze to make it 4D)
-        #Applying the transform to each as it is passed in
-        #TODO: Is there a way to speed this up? Batch in images instead of doing it one by one?
-        #Need to consider memory concerns/issues - maybe just accept that the user needs to be aware?
+        #As the images may be resized dramatically, cannot pass them all in at once by default
+        #or will face major memory issues if the original image set was smaller
+        #Dynamically batch based on sizing difference between input and transformed image
+        #with a minimum batch size of 1 and a maximum batch size of the original
+        sizeMult = max(1, (3 * 224 * 224) / (X.size(1) * X.size(2) * X.size(3)))
+        batchSize = int(max(np.floor(X.size(0) / sizeMult), 1))
+
 
         if(self.verbose):
-            print("DeepImageFeatureExtractor transform: Processing {} images".format(init_input_size[0]))
+            print("DeepImageFeatureExtractor transform: Processing {} images with batch size {}".format(init_input_size[0], batchSize))
 
 
-        for i, im in enumerate(X):
-            #Create 4D transformed image
-            transformedIm = torch.unsqueeze(resize_norm_transform(im),0).to(self.device)
+        with torch.no_grad():
+            self.network = self.network.eval()
 
-            #Get feature outputs from the network and set in featureArr
-            feature_outputs = self.network(transformedIm)
-            featureArr[i, :] = feature_outputs.detach().numpy()
+            start_time = time.time()
+
+            for i in range(0, X.size(0), batchSize):
+                transformedImChunk = resize_norm_transform(X[i:i+batchSize,:,:,:]).to(self.device)
+                feature_outputs = self.network(transformedImChunk)
+                featureArr[i:i+batchSize, :] = feature_outputs.detach().numpy()
+
+            print("Processing images took {} seconds".format(time.time()-start_time))
 
         return featureArr
 
@@ -367,14 +381,14 @@ class _torchvisionModelAsFeatureExtractor(nn.Module):
 
         elif(network_name == 'alexnet'):
             model = models.alexnet(pretrained=pretrained_val)
-            model.classifier[5] = nn.Identity()
+            # model.classifier[5] = nn.Identity()
             model.classifier[6] = nn.Identity()
             out_feature_num = 4096
 
         elif(network_name == 'vgg'):
             model = models.vgg16(pretrained=pretrained_val)
-            model.classifier[4] = nn.Identity()
-            model.classifier[5] = nn.Identity()
+            # model.classifier[4] = nn.Identity()
+            # model.classifier[5] = nn.Identity()
             model.classifier[6] = nn.Identity()
             out_feature_num = 4096
 
@@ -428,8 +442,8 @@ class _torchvisionModelAsFeatureExtractor(nn.Module):
             raise NotImplementedError("{} is not supported in TPOT for feature extraction yet. \
                 Supported: [resnet, alexnet, vgg, densenet, googlenet, shufflenet, mobilenet, resnext, wide_resnet, mnasnet]".format(network_name))
 
-
-        self.nn_model = model
+        # Set model to evaluation mode, since it will never be trained
+        self.nn_model = model.eval()
         self.out_feature_num = out_feature_num
 
 
