@@ -66,8 +66,7 @@ def _pre_test(func):
             # clone individual before each func call so it is not altered for
             # the possible next cycle loop
             args = [self._toolbox.clone(arg) if isinstance(arg, creator.Individual) else arg for arg in args]
-            # print("//////////")
-            # print("Wrapped check_pipeline function is: {}".format(func.__name__))
+
             try:
 
                 if func.__name__ == "_generate":
@@ -89,24 +88,14 @@ def _pre_test(func):
 
                 expr_tuple = expr if isinstance(expr, tuple) else (expr,)
                 for expr_test in expr_tuple:
-                    #DEBUG
-                    # print("/////////")
-                    # print("Check pipeline expression within check_pipeline")
-                    # for ind in expr_test:
-                    #     print(ind.name)
-
-                    # print("/////////////")
                     pipeline_code = generate_pipeline_code(
                         expr_to_tree(expr_test, self._pset),
                         self.operators
                     )
                     sklearn_pipeline = eval(pipeline_code, self.operators_context)
-                    #DEBUG
-                    # print("Sklearn pipeline: {}".format(sklearn_pipeline))
-                    # print("//////////////")
+
                     with warnings.catch_warnings():
-                        # warnings.simplefilter('always') #debug
-                        warnings.simplefilter('ignore') #original
+                        warnings.simplefilter('ignore')
                         time_limited_call(
                             sklearn_pipeline.fit,
                             self.pretest_X,
@@ -123,20 +112,11 @@ def _pre_test(func):
 
                 )
 
-                #DEBUG
-                # print(message)
-                # input('Something went wrong with the pretest decorator...')
-
                 # Use the pbar output stream if it's active
                 self._update_pbar(pbar_num=0, pbar_msg=message)
             finally:
                 num_test += 1
 
-        #DEBUG
-        # print("check_pipeline seems to have succeeded...")
-        # print("End check_pipeline")
-        # print("-----------")
-        # print("-----------")
         return expr
 
 

@@ -404,8 +404,6 @@ class TPOTBase(BaseEstimator):
                 else:
                     self._config_dict = regressor_config_cuml
 
-            elif config_dict == "extractor_debug":
-                self._config_dict = config_imagefeatureextract
             else:
                 config = self._read_config_file(config_dict)
                 if hasattr(config, "tpot_config"):
@@ -1756,11 +1754,6 @@ class TPOTBase(BaseEstimator):
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual_str = str(individual)
 
-            #Debug
-            # print("-------------------")
-            # print('Current pipeline being preprocessed: {}'.format(str(individual)))
-            # print("-------------------")
-
             if not len(individual):  # a pipeline cannot be randomly generated
                 self.evaluated_individuals_[
                     individual_str
@@ -1801,13 +1794,7 @@ class TPOTBase(BaseEstimator):
                     operator_counts[individual_str] = max(1, operator_count)
 
                     stats_dicts[individual_str] = individual.statistics
-                #DEBUG - NORMALLY NO DEBUGEXCEPT ASSIGNMENT
-                except Exception as debugExcept:
-
-                    #Debug
-                    # debugMessage = 'Exception occurred: {}'.format(debugExcept)
-                    # print(debugMessage)
-
+                except Exception:
                     self.evaluated_individuals_[
                         individual_str
                     ] = self._combine_individual_stats(
@@ -1926,13 +1913,6 @@ class TPOTBase(BaseEstimator):
 
         """
 
-        #DEBUG
-        # print("~~~~~~~~~~~~~~~~")
-        # print("~~~~~~~~~~~~~~~~")
-        # print("Starting mutation function... individual pipeline fed in below")
-        # print(str(individual))
-        # print("~~~~~~~~~~~~~~~~")
-
         if self.tree_structure:
             mutation_techniques = [
                 partial(gp.mutInsert, pset=self._pset),
@@ -1972,28 +1952,15 @@ class TPOTBase(BaseEstimator):
             else:
                 unsuccesful_mutations += 1
         
-        #DEBUG
-        # print("Got to after trying to mutate.")
-        # print("Number of failed mutations: {}".format(unsuccesful_mutations))
-        # print("~~~~~~~~~~~~~~~~")
-
         # Sometimes you have pipelines for which every shrunk version has already been explored too.
         # To still mutate the individual, one of the two other mutators should be applied instead.
         if (unsuccesful_mutations == 50) and (
             type(mutator) is partial and mutator.func is gp.mutShrink
         ):
-            #DEBUG
-            # print("Recalling mutator without shrink function...")
-            # print("~~~~~~~~~~~~~~~~")
 
             (offspring,) = self._random_mutation_operator(
                 individual, allow_shrink=False
             )
-
-        #DEBUG
-        # print("Got to return function of mutator.")
-        # print("~~~~~~~~~~~~~~~~")
-        # input("~~~~~~~~~~~~~~~~")
 
         return (offspring,)
 
@@ -2127,40 +2094,16 @@ class TPOTBase(BaseEstimator):
                 #add to depth limits to account for needed extractor
                 min_ = min_ + 1 #or max(min_, 2)
                 max_ = max_ + 1 #or max(max_, 3)
-                #DEBUG
-                #print("No valid fullstack classifiers found - adding to bounds")
-
-        #DEBUG
-        # print("---------")
-        # print("Min height: {}".format(min_))
-        # print("Max height: {}".format(max_))
-        # print("----------")
 
         height = np.random.randint(min_, max_)
         stack = [(0, type_)]
 
         while len(stack) != 0:
-            #DEBUG
-            # print("-------")
-            # print("-------")
-            # print("Current pipeline generation progress:")
-            # print("-------")
-            # print("stack: {}".format(stack))
-
             depth, type_ = stack.pop()
-
-            #DEBUG
-            # print("depth: {}".format(depth))
-            # print("Final tree height: {}".format(height))
-            # print("type_: {}".format(type_))
-            # print("Condition: {}".format(condition(height, depth, type_)))
 
             # We've added a type_ parameter to the condition function
             if condition(height, depth, type_):
                 try:
-                    #DEBUG
-                    # print("Adding terminal now...")
-                    # print("Terminal options: {}".format(pset.terminals[type_]))
                     term = np.random.choice(pset.terminals[type_])
                 except IndexError:
                     _, _, traceback = sys.exc_info()
@@ -2169,23 +2112,15 @@ class TPOTBase(BaseEstimator):
                         "a terminal of type {}, but there is"
                         "none available. {}".format(type_, traceback)
                     )
-                #DEBUG
-                # except (BaseException) as err:
-                #     print(err)
-                #     input("Failed to add terminal")
                 if inspect.isclass(term):
                     term = term()
                 expr.append(term)
 
-                #DEBUG
-                # print("Adding TERMINAL: {}".format(term.name))
             #Add an elif here for input checking
             #Specifically, if there is a special input type and 
             #if we're one node below the max depth, then limit the primitives to those
             #with the correct input type
             elif depth+1 == height and self.input_type is not None:
-                #DEBUG
-                # print("Alt. condition passed...")
 
                 prim_ret_options = pset.primitives[type_]
                 valid_prims = []
@@ -2209,9 +2144,6 @@ class TPOTBase(BaseEstimator):
                 for arg in reversed(prim.args):
                     stack.append((depth + 1, arg))
 
-                #DEBUG
-                # print("Adding SPECIAL PRIMITIVE: {}".format(prim.name))
-
             else:
                 try:
                     prim = np.random.choice(pset.primitives[type_])
@@ -2222,16 +2154,9 @@ class TPOTBase(BaseEstimator):
                         "a primitive of type {}, but there is"
                         "none available. {}".format(type_, traceback)
                     )
-                #DEBUG
-                # except (BaseException) as err:
-                #     print(err)
-                #     input("Failed to add primitive")
                 expr.append(prim)
                 for arg in reversed(prim.args):
                     stack.append((depth + 1, arg))
-
-                #DEBUG
-                # print("Adding NORMAL PRIMITIVE: {}".format(prim.name))
 
         return expr
 
