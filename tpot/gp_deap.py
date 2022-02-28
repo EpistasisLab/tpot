@@ -36,6 +36,7 @@ from collections import defaultdict
 import warnings
 from stopit import threading_timeoutable, TimeoutException
 
+graph = {}
 
 def pick_two_individuals_eligible_for_crossover(population):
     """Pick two individuals from the population which can do crossover, that is, they share a primitive.
@@ -72,7 +73,7 @@ def pick_two_individuals_eligible_for_crossover(population):
     return population[idx1], population[idx2]
 
 
-def mutate_random_individual(population, toolbox):
+def mutate_random_individual(population, toolbox, return_selected=False):
     """Picks a random individual from the population, and performs mutation on a copy of it.
 
     Parameters
@@ -87,12 +88,15 @@ def mutate_random_individual(population, toolbox):
     """
     idx = np.random.randint(0,len(population))
     ind = population[idx]
+    selected_ind = ind
     ind, = toolbox.mutate(ind)
     del ind.fitness.values
+    if return_selected:
+        return ind, selected_ind
     return ind
 
 
-def varOr(population, toolbox, lambda_, cxpb, mutpb):
+def varOr(population, toolbox, lambda_, cxpb, mutpb, gen):
     """Part of an evolutionary algorithm applying only the variation part
     (crossover, mutation **or** reproduction). The modified individuals have
     their fitness invalidated. The individuals are cloned so returned
@@ -130,21 +134,28 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
         op_choice = np.random.random()
         if op_choice < cxpb:  # Apply crossover
             ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)
+            p1, p2 = ind1, ind2
             if ind1 is not None:
                 ind1, _ = toolbox.mate(ind1, ind2)
+                graph[(gen, str(ind1))] = (gen, str(p1), str(p2))
                 del ind1.fitness.values
             else:
                 # If there is no pair eligible for crossover, we still want to
                 # create diversity in the population, and do so by mutation instead.
-                ind1 = mutate_random_individual(population, toolbox)
+                ind1, selected = mutate_random_individual(population, toolbox, return_selected=True)
+                graph[(gen, str(ind1))] = (gen, str(selected),)
             offspring.append(ind1)
         elif op_choice < cxpb + mutpb:  # Apply mutation
-            ind = mutate_random_individual(population, toolbox)
+            ind, selected = mutate_random_individual(population, toolbox, return_selected=True)
+            graph[(gen, str(ind))] = (gen, str(selected),)
             offspring.append(ind)
         else:  # Apply reproduction
             idx = np.random.randint(0, len(population))
-            offspring.append(toolbox.clone(population[idx]))
+            ind = population[idx]
+            graph[(gen, str(ind))] = (gen, str(ind),)
+            offspring.append(toolbox.clone(ind))
 
+    print(len(offspring))
     return offspring
 
 def initialize_stats_dict(individual):
@@ -233,7 +244,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
     # Begin the generational process
     for gen in range(1, ngen + 1):
         # Vary the population
-        offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+        offspring = varOr(population, toolbox, lambda_, cxpb, mutpb, gen)
 
 
         # Update generation statistic for all individuals which have invalid 'generation' stats
@@ -284,7 +295,7 @@ def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
         record = stats.compile(population) if stats is not None else {}
         logbook.record(gen=gen, nevals=len(invalid_ind), **record)
 
-    return population, logbook
+    return population, logbook, graph
 
 
 def cxOnePoint(ind1, ind2):
