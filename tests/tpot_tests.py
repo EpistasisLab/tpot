@@ -984,6 +984,18 @@ def test_predict_proba_5():
 
     assert result.shape == (features_with_nan.shape[0], num_labels)
 
+def test_predict_proba_6():
+    """Assert that TPOT's predict_proba is exposed when available, and hidden when not."""
+
+    est = TPOTClassifier(generations=1,population_size=1, template='LogisticRegression')
+    est.fit(training_features, training_target)
+    assert hasattr(est, "predict_proba") #This model has predict_proba
+    est.predict_proba(training_features)
+
+    est = TPOTClassifier(generations=1,population_size=1, template='LinearSVC')
+    est.fit(training_features, training_target)
+    assert not hasattr(est, "predict_proba") #This model does not have predict_proba, but it hasattr shouldn't raise an error
+
 
 def test_warm_start():
     """Assert that the TPOT warm_start flag stores the pop and pareto_front from the first run."""
