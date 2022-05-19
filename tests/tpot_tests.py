@@ -2468,24 +2468,3 @@ def test_clean_pipeline_string():
 
     pretty_string = tpot_obj.clean_pipeline_string(ind1)
     assert pretty_string == without_prefix
-
-def test_proba():
-    """Assert that TPOT's predict_proba is working correctly."""
-
-
-    X = np.random.rand(10,10)
-    y = np.random.randint(0,2,10)
-
-    est = TPOTClassifier(generations=1,population_size=1, template='LogisticRegression')
-    est.fit(X,y)
-    assert hasattr(est, "predict_proba") #This model has predict_proba
-    est.predict_proba(X)
-
-    est = TPOTClassifier(generations=1,population_size=1, template='LinearSVC')
-    with assert_raises(AttributeError) as cm: #This model is not fit and should raise an error
-        est.predict_proba(X)
-    est.fit(X,y)
-    assert not hasattr(est, "predict_proba") #This model does not have predict_proba, but it hasattr shouldn't raise an error
-    
-    with assert_raises(AttributeError) as cm: #This model does not have predict_proba so this should raise an error
-        est.predict_proba(X)
