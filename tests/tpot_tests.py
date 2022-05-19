@@ -936,15 +936,16 @@ def test_predict_proba_2():
 
 
 def test_predict_proba_3():
-    """Assert that the TPOT predict_proba function raises a RuntimeError when no optimized pipeline exists."""
+    """Assert that the TPOT predict_proba function raises an AttributeError when no optimized pipeline exists."""
     tpot_obj = TPOTClassifier()
     tpot_obj._fit_init()
 
-    assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
+    with assert_raises(AttributeError) as cm:
+        tpot_obj.predict_proba(testing_features)
 
 
 def test_predict_proba_4():
-    """Assert that the TPOT predict_proba function raises a RuntimeError when the optimized pipeline do not have the predict_proba() function"""
+    """Assert that the TPOT predict_proba function raises an AttributeError when the optimized pipeline do not have the predict_proba() function"""
     tpot_obj = TPOTRegressor()
     tpot_obj._fit_init()
     pipeline_string = (
@@ -957,7 +958,9 @@ def test_predict_proba_4():
     tpot_obj.fitted_pipeline_ = tpot_obj._toolbox.compile(expr=tpot_obj._optimized_pipeline)
     tpot_obj.fitted_pipeline_.fit(training_features_r, training_target_r)
 
-    assert_raises(RuntimeError, tpot_obj.predict_proba, testing_features)
+    with assert_raises(AttributeError) as cm:
+        tpot_obj.predict_proba(testing_features)
+    
 
 
 def test_predict_proba_5():
