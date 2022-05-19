@@ -23,7 +23,6 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from errno import ESRMNT
 from tpot import TPOTClassifier, TPOTRegressor
 from tpot.base import TPOTBase, _has_cuml
 from tpot.driver import float_range
