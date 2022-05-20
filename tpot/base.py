@@ -1561,10 +1561,10 @@ class TPOTBase(BaseEstimator):
                             ]
                         ]
 
-                        self.dask_graphs_ = tmp_result_scores
+                        
                         with warnings.catch_warnings():
                             warnings.simplefilter("ignore")
-                            tmp_result_scores = list(dask.compute(*tmp_result_scores))
+                            tmp_result_scores = list(dask.compute(*tmp_result_scores, num_workers=self.n_jobs))
 
                     else:
 
