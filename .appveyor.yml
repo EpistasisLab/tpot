@@ -1,0 +1,29 @@
+build: false
+
+environment:
+  matrix:
+    - PYTHON_VERSION: 3.7
+      MINICONDA: C:/Miniconda36-x64
+      DASK_ML_VERSION: 1.0.0
+
+platform:
+  - x64
+
+init:
+  - ECHO %PYTHON_VERSION% %MINICONDA%
+  - ECHO conda --version
+
+install:
+  - set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy scikit-learn nose cython pandas joblib
+  - activate test-environment
+  - pip install deap tqdm update_checker stopit xgboost dask[delayed] dask[dataframe] cloudpickle>=1.5.0 fsspec>=0.3.3 dask_ml==%DASK_ML_VERSION%
+  - pip install torch==1.3.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+  - pip install imbalanced-learn
+
+
+test_script:
+  - nosetests -s -v

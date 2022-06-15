@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Randal S. Olson">
+  <link rel="canonical" href="http://epistasislab.github.io/tpot/releases/">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Release Notes - TPOT</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Release Notes";
+    var mkdocs_page_input_path = "releases.md";
+    var mkdocs_page_url = "/tpot/releases/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> TPOT</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../installing/">Installation</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../using/">Using TPOT</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../api/">TPOT API</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../examples/">Examples</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Release Notes</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#version-0117">Version 0.11.7</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0116">Version 0.11.6</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0115">Version 0.11.5</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0114">Version 0.11.4</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0113">Version 0.11.3</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0112">Version 0.11.2</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0111">Version 0.11.1</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0110">Version 0.11.0</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0102">Version 0.10.2</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0101">Version 0.10.1</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-0100">Version 0.10.0</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-096">Version 0.9.6</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-095">Version 0.9.5</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-09">Version 0.9</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-08">Version 0.8</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-07">Version 0.7</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-06">Version 0.6</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-05">Version 0.5</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-04">Version 0.4</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-03">Version 0.3</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-02">Version 0.2</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-01">Version 0.1</a>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../citing/">Citing TPOT</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../support/">Support</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../related/">Related</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">TPOT</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Release Notes</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/epistasislab/tpot/edit/master/docs_sources/releases.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="release-notes">Release Notes</h1>
+<h2 id="version-0117">Version 0.11.7</h2>
+<ul>
+<li>Fix compatibility issue with scikit-learn 0.24 and xgboost 1.3.0</li>
+<li>Fix a bug causing that TPOT does not work when classifying more than 50 classes</li>
+<li>Add initial support <code>Resampler</code> from <code>imblearn</code></li>
+<li>Fix minor bugs</li>
+</ul>
+<h2 id="version-0116">Version 0.11.6</h2>
+<ul>
+<li>Fix a bug causing point mutation function does not work properly with using <code>template</code> option</li>
+<li>Add a new built configuration called "TPOT cuML" which TPOT will search over a restricted configuration using the GPU-accelerated estimators in <a href="https://github.com/rapidsai/cuml">RAPIDS cuML</a> and <a href="https://github.com/dmlc/xgboost">DMLC XGBoost</a>. <strong>This configuration requires an NVIDIA Pascal architecture or better GPU with <a href="https://developer.nvidia.com/cuda-gpus">compute capability 6.0+</a>, and that the library cuML is installed.</strong></li>
+<li>Add string path support for log/log_file parameter</li>
+<li>Fix a bug in version 0.11.5 causing no update in stdout after each generation</li>
+<li>Fix minor bugs</li>
+</ul>
+<h2 id="version-0115">Version 0.11.5</h2>
+<ul>
+<li>Make <code>Pytorch</code> as an optional dependency</li>
+<li>Refine installation documentation</li>
+</ul>
+<h2 id="version-0114">Version 0.11.4</h2>
+<ul>
+<li>Add a new built configuration "TPOT NN" which includes all operators in "Default TPOT" plus additional neural network estimators written in PyTorch (currently <code>tpot.builtins.PytorchLRClassifier</code> and <code>tpot.builtins.PytorchMLPClassifier</code> for classification tasks only)</li>
+<li>Refine <code>log_file</code> parameter's behavior</li>
+</ul>
+<h2 id="version-0113">Version 0.11.3</h2>
+<ul>
+<li>Fix a bug in TPOTRegressor in v0.11.2</li>
+<li>Add <code>-log</code> option in command line interface to save process log to a file.</li>
+</ul>
+<h2 id="version-0112">Version 0.11.2</h2>
+<ul>
+<li>Fix <code>early_stop</code> parameter does not work properly</li>
+<li>TPOT built-in <code>OneHotEncoder</code> can refit to different datasets</li>
+<li>Fix the issue that the attribute <code>evaluated_individuals_</code> cannot record correct generation info.</li>
+<li>Add a new parameter <code>log_file</code> to output logs to a file instead of <code>sys.stdout</code></li>
+<li>Fix some code quality issues and mistakes in documentations</li>
+<li>Fix minor bugs</li>
+</ul>
+<h2 id="version-0111">Version 0.11.1</h2>
+<ul>
+<li>Fix compatibility issue with scikit-learn v0.22</li>
+<li><code>warm_start</code> now saves both Primitive Sets and evaluated_pipelines_ from previous runs;</li>
+<li>Fix the error that TPOT assign wrong fitness scores to non-evaluated pipelines (interrupted by <code>max_min_mins</code> or <code>KeyboardInterrupt</code>) ;</li>
+<li>Fix the bug that mutation operator cannot generate new pipeline when template is not default value and <code>warm_start</code> is True;</li>
+<li>Fix the bug that <code>max_time_mins</code> cannot stop optimization process when search space is limited.  </li>
+<li>Fix a bug in exported codes when the exported pipeline is only 1 estimator</li>
+<li>Fix spelling mistakes in documentations</li>
+<li>Fix some code quality issues</li>
+</ul>
+<h2 id="version-0110">Version 0.11.0</h2>
+<ul>
+<li><strong>Support for Python 3.4 and below has been officially dropped.</strong> Also support for scikit-learn 0.20 or below has been dropped.</li>
+<li>The support of a metric function with the signature <code>score_func(y_true, y_pred)</code> for <code>scoring parameter</code> has been dropped.</li>
+<li>Refine <code>StackingEstimator</code> for not stacking NaN/Infinity predication probabilities.</li>
+<li>Fix a bug that population doesn't persist by <code>warm_start=True</code> when <code>max_time_mins</code> is not default value.</li>
+<li>Now the <code>random_state</code> parameter in TPOT is used for pipeline evaluation instead of using a fixed random seed of 42 before. The <code>set_param_recursive</code> function has been moved to <code>export_utils.py</code> and it can be used in exported codes for setting <code>random_state</code> recursively in scikit-learn Pipeline. It is used to set <code>random_state</code> in <code>fitted_pipeline_</code> attribute and exported pipelines.</li>
+<li>TPOT can independently use <code>generations</code> and <code>max_time_mins</code> to limit the optimization process through using one of the parameters or both.</li>
+<li><code>.export()</code> function will return string of exported pipeline if output filename is not specified.</li>
+<li>Add <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html"><code>SGDClassifier</code></a> and <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html"><code>SGDRegressor</code></a> into TPOT default configs.</li>
+<li>Documentation has been updated</li>
+<li>Fix minor bugs.</li>
+</ul>
+<h2 id="version-0102">Version 0.10.2</h2>
+<ul>
+<li><strong>TPOT v0.10.2 is the last version to support Python 2.7 and Python 3.4.</strong></li>
+<li>Minor updates for fixing compatibility issues with the latest version of scikit-learn (version &gt; 0.21) and xgboost (v0.90)</li>
+<li>Default value of <code>template</code> parameter is changed to <code>None</code> instead.</li>
+<li>Fix errors in documentation</li>
+</ul>
+<h2 id="version-0101">Version 0.10.1</h2>
+<ul>
+<li>Add <code>data_file_path</code> option into <code>expert</code> function for replacing <code>'PATH/TO/DATA/FILE'</code> to customized dataset path in exported scripts. (Related issue #838)</li>
+<li>Change python version in CI tests to 3.7</li>
+<li>Add CI tests for macOS.</li>
+</ul>
+<h2 id="version-0100">Version 0.10.0</h2>
+<ul>
+<li>Add a new <code>template</code> option to specify a desired structure for machine learning pipeline in TPOT. Check <a href="https://epistasislab.github.io/tpot/api/">TPOT API</a> (it will be updated once it is merge to master branch).</li>
+<li>Add <code>FeatureSetSelector</code> operator into TPOT for feature selection based on <em>priori</em> export knowledge. Please check our <a href="https://www.biorxiv.org/content/10.1101/502484v1.article-info">preprint paper</a> for more details (<em>Note: it was named <code>DatasetSelector</code> in 1st version paper but we will rename to FeatureSetSelector in next version of the paper</em>)</li>
+<li>Refine <code>n_jobs</code> parameter to accept value below -1. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used.</li>
+<li>Now <code>memory</code>  parameter can create memory cache directory if it does not exist.</li>
+<li>Fix minor bugs.</li>
+</ul>
+<h2 id="version-096">Version 0.9.6</h2>
+<ul>
+<li>Fix a bug causing that <code>max_time_mins</code> parameter doesn't work when <code>use_dask=True</code> in TPOT 0.9.5</li>
+<li>Now TPOT saves best pareto values best pareto pipeline s in checkpoint folder</li>
+<li>TPOT raises <code>ImportError</code> if operators in the TPOT configuration are not available when <code>verbosity&gt;2</code></li>
+<li>Thank @PGijsbers for the suggestions. Now TPOT can save scores of individuals already evaluated in any generation even the evaluation process of that generation is interrupted/stopped. But it is noted that, in this case, TPOT will raise this <strong>warning message</strong>: <code>WARNING: TPOT may not provide a good pipeline if TPOT is stopped/interrupted in a early generation.</code>, because the pipelines in early generation, e.g. 1st generation, are evolved/modified very limited times via evolutionary algorithm.</li>
+<li>Fix bugs in configuration of <code>TPOTRegressor</code></li>
+<li>Error fixes in documentation</li>
+</ul>
+<h2 id="version-095">Version 0.9.5</h2>
+<ul>
+<li>
+<p><strong>TPOT now supports integration with Dask for parallelization + smart caching</strong>. Big thanks to the Dask dev team for making this happen!</p>
+</li>
+<li>
+<p>TPOT now supports for imputation/sparse matrices into <code>predict</code> and <code>predict_proba</code> functions.</p>
+</li>
+<li>
+<p><code>TPOTClassifier</code> and <code>TPOTRegressor</code> now follows scikit-learn estimator API.</p>
+</li>
+<li>
+<p>We refined scoring parameter in TPOT API for accepting <a href="http://jaquesgrobler.github.io/online-sklearn-build/modules/generated/sklearn.metrics.Scorer.html"><code>Scorer</code> object</a>.</p>
+</li>
+<li>
+<p>We refined parameters in VarianceThreshold and FeatureAgglomeration.</p>
+</li>
+<li>
+<p>TPOT now supports using memory caching within a Pipeline via an optional <code>memory</code> parameter.</p>
+</li>
+<li>
+<p>We improved documentation of TPOT.</p>
+</li>
+</ul>
+<h2 id="version-09">Version 0.9</h2>
+<ul>
+<li>
+<p><strong>TPOT now supports sparse matrices</strong> with a new built-in TPOT configuration, "TPOT sparse". We are using a custom OneHotEncoder implementation that supports missing values and continuous features.</p>
+</li>
+<li>
+<p>We have added an "early stopping" option for stopping the optimization process if no improvement is made within a set number of generations. Look up the <code>early_stop</code> parameter to access this functionality.</p>
+</li>
+<li>
+<p>TPOT now reduces the number of duplicated pipelines between generations, which saves you time during the optimization process.</p>
+</li>
+<li>
+<p>TPOT now supports custom scoring functions via the command-line mode.</p>
+</li>
+<li>
+<p>We have added a new optional argument, <code>periodic_checkpoint_folder</code>, that allows TPOT to periodically save the best pipeline so far to a local folder during optimization process.</p>
+</li>
+<li>
+<p>TPOT no longer uses <code>sklearn.externals.joblib</code> when <code>n_jobs=1</code> to avoid the potential freezing issue <a href="http://scikit-learn.org/stable/faq.html#why-do-i-sometime-get-a-crash-freeze-with-n-jobs-1-under-osx-or-linux">that scikit-learn suffers from</a>.</p>
+</li>
+<li>
+<p>We have added <code>pandas</code> as a dependency to read input datasets instead of <code>numpy.recfromcsv</code>. NumPy's <code>recfromcsv</code> function is unable to parse datasets with complex data types.</p>
+</li>
+<li>
+<p>Fixed a bug that <code>DEFAULT</code> in the parameter(s) of nested estimator raises <code>KeyError</code> when exporting pipelines.</p>
+</li>
+<li>
+<p>Fixed a bug related to setting <code>random_state</code> in nested estimators. The issue would happen with pipeline with <code>SelectFromModel</code> (<code>ExtraTreesClassifier</code> as nested estimator) or <code>StackingEstimator</code> if nested estimator has <code>random_state</code> parameter.</p>
+</li>
+<li>
+<p>Fixed a bug in the missing value imputation function in TPOT to impute along columns instead rows.</p>
+</li>
+<li>
+<p>Refined input checking for sparse matrices in TPOT.</p>
+</li>
+<li>
+<p>Refined the TPOT pipeline mutation operator.</p>
+</li>
+</ul>
+<h2 id="version-08">Version 0.8</h2>
+<ul>
+<li>
+<p><strong>TPOT now detects whether there are missing values in your dataset</strong> and replaces them with the median value of the column.</p>
+</li>
+<li>
+<p>TPOT now allows you to set a <code>group</code> parameter in the <code>fit</code> function so you can use the <a href="http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html">GroupKFold</a> cross-validation strategy.</p>
+</li>
+<li>
+<p>TPOT now allows you to set a subsample ratio of the training instance with the <code>subsample</code> parameter. For example, setting <code>subsample</code>=0.5 tells TPOT to create a fixed subsample of half of the training data for the pipeline optimization process. This parameter can be useful for speeding up the pipeline optimization process, but may give less accurate performance estimates from cross-validation.</p>
+</li>
+<li>
+<p><strong>TPOT now has more <a href="/using/#built-in-tpot-configurations">built-in configurations</a></strong>, including TPOT MDR and TPOT light, for both classification and regression problems.</p>
+</li>
+<li>
+<p><code>TPOTClassifier</code> and <code>TPOTRegressor</code> now expose three useful internal attributes, <code>fitted_pipeline_</code>, <code>pareto_front_fitted_pipelines_</code>, and <code>evaluated_individuals_</code>. These attributes are described in the <a href="/api/">API documentation</a>.</p>
+</li>
+<li>
+<p>Oh, <strong>TPOT now has <a href="/api/">thorough API documentation</a></strong>. Check it out!</p>
+</li>
+<li>
+<p>Fixed a reproducibility issue where setting <code>random_seed</code> didn't necessarily result in the same results every time. This bug was present since TPOT v0.7.</p>
+</li>
+<li>
+<p>Refined input checking in TPOT.</p>
+</li>
+<li>
+<p>Removed Python 2 uncompliant code.</p>
+</li>
+</ul>
+<h2 id="version-07">Version 0.7</h2>
+<ul>
+<li>
+<p><strong>TPOT now has multiprocessing support.</strong> TPOT allows you to use multiple processes in parallel to accelerate the pipeline optimization process in TPOT with the <code>n_jobs</code> parameter.</p>
+</li>
+<li>
+<p>TPOT now allows you to <strong>customize the operators and parameters considered during the optimization process</strong>, which can be accomplished with the new <code>config_dict</code> parameter. The format of this customized dictionary can be found in the <a href="/using/#customizing-tpots-operators-and-parameters">online documentation</a>, along with a list of <a href="/using/#built-in-tpot-configurations">built-in configurations</a>.</p>
+</li>
+<li>
+<p>TPOT now allows you to <strong>specify a time limit for evaluating a single pipeline</strong>  (default limit is 5 minutes) in optimization process with the <code>max_eval_time_mins</code> parameter, so TPOT won't spend hours evaluating overly-complex pipelines.</p>
+</li>
+<li>
+<p>We tweaked TPOT's underlying evolutionary optimization algorithm to work even better, including using the <a href="http://deap.readthedocs.io/en/master/api/algo.html#deap.algorithms.eaMuPlusLambda">mu+lambda algorithm</a>. This algorithm gives you more control of how many pipelines are generated every iteration with the <code>offspring_size</code> parameter.</p>
+</li>
+<li>
+<p>Refined the default operators and parameters in TPOT, so TPOT 0.7 should work even better than 0.6.</p>
+</li>
+<li>
+<p>TPOT now supports sample weights in the fitness function if some if your samples are more important to classify correctly than others. The sample weights option works the same as in scikit-learn, e.g., <code>tpot.fit(x_train, y_train, sample_weights=sample_weights)</code>.</p>
+</li>
+<li>
+<p>The default scoring metric in TPOT has been changed from balanced accuracy to accuracy, the same default metric for classification algorithms in scikit-learn. Balanced accuracy can still be used by setting <code>scoring='balanced_accuracy'</code> when creating a TPOT instance.</p>
+</li>
+</ul>
+<h2 id="version-06">Version 0.6</h2>
+<ul>
+<li>
+<p><strong>TPOT now supports regression problems!</strong> We have created two separate <code>TPOTClassifier</code> and <code>TPOTRegressor</code> classes to support classification and regression problems, respectively. The <a href="/using/#tpot-on-the-command-line">command-line interface</a> also supports this feature through the <code>-mode</code> parameter.</p>
+</li>
+<li>
+<p>TPOT now allows you to <strong>specify a time limit</strong> for the optimization process with the <code>max_time_mins</code> parameter, so you don't need to guess how long TPOT will take any more to recommend a pipeline to you.</p>
+</li>
+<li>
+<p>Added a new operator that performs feature selection using <a href="http://scikit-learn.org/stable/modules/ensemble.html#extremely-randomized-trees">ExtraTrees</a> feature importance scores.</p>
+</li>
+<li>
+<p><strong><a href="https://github.com/dmlc/xgboost">XGBoost</a> has been added as an optional dependency to TPOT.</strong> If you have XGBoost installed, TPOT will automatically detect your installation and use the <code>XGBoostClassifier</code> and <code>XGBoostRegressor</code> in its pipelines.</p>
+</li>
+<li>
+<p>TPOT now offers a verbosity level of 3 ("science mode"), which outputs the entire Pareto front instead of only the current best score. This feature may be useful for users looking to make a trade-off between pipeline complexity and score.</p>
+</li>
+</ul>
+<h2 id="version-05">Version 0.5</h2>
+<ul>
+<li>Major refactor: Each operator is defined in a separate class file. Hooray for easier-to-maintain code!</li>
+<li>TPOT now <strong>exports directly to scikit-learn Pipelines</strong> instead of hacky code.</li>
+<li>Internal representation of individuals now uses scikit-learn pipelines.</li>
+<li>Parameters for each operator have been optimized so TPOT spends less time exploring useless parameters.</li>
+<li>We have removed pandas as a dependency and instead use numpy matrices to store the data.</li>
+<li>TPOT now uses <strong>k-fold cross-validation</strong> when evaluating pipelines, with a default k = 3. This k parameter can be tuned when creating a new TPOT instance.</li>
+<li>Improved <strong>scoring function support</strong>: Even though TPOT uses balanced accuracy by default, you can now have TPOT use <a href="http://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values">any of the scoring functions</a> that <code>cross_val_score</code> supports.</li>
+<li>Added the scikit-learn <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.Normalizer.html">Normalizer</a> preprocessor.</li>
+<li><a href="http://knowyourmeme.com/memes/pokemon-go-updates-controversy">Minor text fixes.</a></li>
+</ul>
+<h2 id="version-04">Version 0.4</h2>
+<p>In TPOT 0.4, we've made some major changes to the internals of TPOT and added some convenience functions. We've summarized the changes below.</p>
+<ul>
+<li>Added new sklearn models and preprocessors
+
+<ul>
+<li>AdaBoostClassifier</li>
+<li>BernoulliNB</li>
+<li>ExtraTreesClassifier</li>
+<li>GaussianNB</li>
+<li>MultinomialNB</li>
+<li>LinearSVC</li>
+<li>PassiveAggressiveClassifier</li>
+<li>GradientBoostingClassifier</li>
+<li>RBFSampler</li>
+<li>FastICA</li>
+<li>FeatureAgglomeration</li>
+<li>Nystroem</li>
+</ul></li>
+<li>Added operator that inserts virtual features for the count of features with values of zero</li>
+<li>Reworked parameterization of TPOT operators
+<ul>
+<li>Reduced parameter search space with information from a scikit-learn benchmark</li>
+<li>TPOT no longer generates arbitrary parameter values, but uses a fixed parameter set instead</li>
+</ul></li>
+<li>Removed XGBoost as a dependency
+<ul>
+<li>Too many users were having install issues with XGBoost</li>
+<li>Replaced with scikit-learn's GradientBoostingClassifier</li>
+</ul></li>
+<li>Improved descriptiveness of TPOT command line parameter documentation</li>
+<li>Removed min/max/avg details during fit() when verbosity &gt; 1
+
+<ul>
+<li>Replaced with tqdm progress bar</li>
+<li>Added tqdm as a dependency</li>
+</ul></li>
+<li>Added <code>fit_predict()</code> convenience function</li>
+<li>Added <code>get_params()</code> function so TPOT can operate in scikit-learn's <code>cross_val_score</code> & related functions</li>
+</ul>
+
+<h2 id="version-03">Version 0.3</h2>
+<ul>
+<li>We revised the internal optimization process of TPOT to make it more efficient, in particular in regards to the model parameters that TPOT optimizes over.</li>
+</ul>
+<h2 id="version-02">Version 0.2</h2>
+<ul>
+<li>
+<p>TPOT now has the ability to export the optimized pipelines to sklearn code.</p>
+</li>
+<li>
+<p>Logistic regression, SVM, and k-nearest neighbors classifiers were added as pipeline operators. Previously, TPOT only included decision tree and random forest classifiers.</p>
+</li>
+<li>
+<p>TPOT can now use arbitrary scoring functions for the optimization process.</p>
+</li>
+<li>
+<p>TPOT now performs multi-objective Pareto optimization to balance model complexity (i.e., # of pipeline operators) and the score of the pipeline.</p>
+</li>
+</ul>
+<h2 id="version-01">Version 0.1</h2>
+<ul>
+<li>
+<p>First public release of TPOT.</p>
+</li>
+<li>
+<p>Optimizes pipelines with decision trees and random forest classifiers as the model, and uses a handful of feature preprocessors.</p>
+</li>
+</ul>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../citing/" class="btn btn-neutral float-right" title="Citing TPOT">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../contributing/" class="btn btn-neutral" title="Contributing"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania</p>
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/epistasislab/tpot/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../contributing/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../citing/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

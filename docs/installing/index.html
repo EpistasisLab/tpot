@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Randal S. Olson">
+  <link rel="canonical" href="http://epistasislab.github.io/tpot/installing/">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Installation - TPOT</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Installation";
+    var mkdocs_page_input_path = "installing.md";
+    var mkdocs_page_url = "/tpot/installing/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> TPOT</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Installation</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#pip">pip</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#conda-forge">conda-forge</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#installation-for-using-tpot-cuml-configuration">Installation for using TPOT-cuML configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#installation-problems">Installation problems</a>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../using/">Using TPOT</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../api/">TPOT API</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../examples/">Examples</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../releases/">Release Notes</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../citing/">Citing TPOT</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../support/">Support</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../related/">Related</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">TPOT</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Installation</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/epistasislab/tpot/edit/master/docs_sources/installing.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="installation">Installation</h1>
+<p>TPOT is built on top of several existing Python libraries, including:</p>
+<ul>
+<li>
+<p><a href="http://www.numpy.org/">NumPy</a></p>
+</li>
+<li>
+<p><a href="https://www.scipy.org/">SciPy</a></p>
+</li>
+<li>
+<p><a href="http://www.scikit-learn.org/">scikit-learn</a></p>
+</li>
+<li>
+<p><a href="https://github.com/DEAP/deap">DEAP</a></p>
+</li>
+<li>
+<p><a href="https://github.com/bboe/update_checker">update_checker</a></p>
+</li>
+<li>
+<p><a href="https://github.com/tqdm/tqdm">tqdm</a></p>
+</li>
+<li>
+<p><a href="https://github.com/glenfant/stopit">stopit</a></p>
+</li>
+<li>
+<p><a href="http://pandas.pydata.org">pandas</a></p>
+</li>
+<li>
+<p><a href="https://joblib.readthedocs.io/en/latest/">joblib</a></p>
+</li>
+<li>
+<p><a href="https://xgboost.readthedocs.io/en/latest/">xgboost</a></p>
+</li>
+</ul>
+<p>Most of the necessary Python packages can be installed via the <a href="https://www.anaconda.com/products/individual">Anaconda Python distribution</a>, which we strongly recommend that you use. <strong>Support for Python 3.4 and below has been officially dropped since version 0.11.0.</strong></p>
+<p>You can install TPOT using <code>pip</code> or <code>conda-forge</code>.</p>
+<h2 id="pip">pip</h2>
+<p>NumPy, SciPy, scikit-learn, pandas, joblib, and PyTorch can be installed in Anaconda via the command:</p>
+<pre><code class="language-Shell">conda install numpy scipy scikit-learn pandas joblib pytorch
+</code></pre>
+<p>DEAP, update_checker, tqdm, stopit and xgboost can be installed with <code>pip</code> via the command:</p>
+<pre><code class="language-Shell">pip install deap update_checker tqdm stopit xgboost
+</code></pre>
+<p><strong>Windows users: pip installation may not work on some Windows environments, and it may cause unexpected errors.</strong> If you have issues installing XGBoost, check the <a href="http://xgboost.readthedocs.io/en/latest/build.html">XGBoost installation documentation</a>.</p>
+<p>If you plan to use <a href="http://dask.pydata.org/en/latest/">Dask</a> for parallel training, make sure to install <a href="https://docs.dask.org/en/latest/install.html">dask[delay] and dask[dataframe]</a> and <a href="https://dask-ml.readthedocs.io/en/latest/install.html">dask_ml</a>. <strong>It is noted that dask-ml&gt;=1.7 requires distributed&gt;=2.4.0 and scikit-learn&gt;=0.23.0.</strong></p>
+<pre><code class="language-Shell">pip install dask[delayed] dask[dataframe] dask-ml fsspec&gt;=0.3.3 distributed&gt;=2.10.0
+</code></pre>
+<p>If you plan to use the <a href="https://arxiv.org/abs/1702.01780">TPOT-MDR configuration</a>, make sure to install <a href="https://github.com/EpistasisLab/scikit-mdr">scikit-mdr</a> and <a href="https://github.com/EpistasisLab/scikit-rebate">scikit-rebate</a>:</p>
+<pre><code class="language-Shell">pip install scikit-mdr skrebate
+</code></pre>
+<p>To enable support for <a href="https://pytorch.org/">PyTorch</a>-based neural networks (TPOT-NN), you will need to install PyTorch. TPOT-NN will work with either CPU or GPU PyTorch, but we strongly recommend using a GPU version, if possible, as CPU PyTorch models tend to train very slowly.</p>
+<p>We recommend following <a href="https://pytorch.org/get-started/locally/">PyTorch's installation instructions</a> customized for your operating system and Python distribution.</p>
+<p>Finally to install TPOT itself, run the following command:</p>
+<pre><code class="language-Shell">pip install tpot
+</code></pre>
+<h2 id="conda-forge">conda-forge</h2>
+<p>To install tpot and its core dependencies you can use:</p>
+<pre><code class="language-Shell">conda install -c conda-forge tpot
+</code></pre>
+<p>To install additional dependencies you can use:</p>
+<pre><code class="language-Shell">conda install -c conda-forge tpot xgboost dask dask-ml scikit-mdr skrebate
+</code></pre>
+<p>As mentioned above, we recommend following <a href="https://pytorch.org/get-started/locally/">PyTorch's installation instructions</a> for installing it to enable support for <a href="https://pytorch.org/">PyTorch</a>-based neural networks (TPOT-NN).</p>
+<h2 id="installation-for-using-tpot-cuml-configuration">Installation for using TPOT-cuML configuration</h2>
+<p>With "TPOT cuML" configuration (see <a href="../using/#built-in-tpot-configurations">built-in configurations</a>), TPOT will search over a restricted configuration using the GPU-accelerated estimators in <a href="https://github.com/rapidsai/cuml">RAPIDS cuML</a> and <a href="https://github.com/dmlc/xgboost">DMLC XGBoost</a>. <strong>This configuration requires an NVIDIA Pascal architecture or better GPU with <a href="https://developer.nvidia.com/cuda-gpus">compute capability 6.0+</a>, and that the library cuML is installed.</strong> With this configuration, all model training and predicting will be GPU-accelerated. This configuration is particularly useful for medium-sized and larger datasets on which CPU-based estimators are a common bottleneck, and works for both the <code>TPOTClassifier</code> and <code>TPOTRegressor</code>.</p>
+<p>Please download this conda environment <a href="https://github.com/EpistasisLab/tpot/blob/master/tpot-cuml.yml">yml file</a></td> to install TPOT for using TPOT-cuML configuration.</p>
+<pre><code>conda env create -f tpot-cuml.yml -n tpot-cuml
+conda activate tpot-cuml
+</code></pre>
+<h2 id="installation-problems">Installation problems</h2>
+<p>Please <a href="https://github.com/EpistasisLab/tpot/issues/new">file a new issue</a> if you run into installation problems.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../using/" class="btn btn-neutral float-right" title="Using TPOT">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href=".." class="btn btn-neutral" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania</p>
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/epistasislab/tpot/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href=".." style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../using/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Randal S. Olson">
+  <link rel="canonical" href="http://epistasislab.github.io/tpot/contributing/">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Contributing - TPOT</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Contributing";
+    var mkdocs_page_input_path = "contributing.md";
+    var mkdocs_page_url = "/tpot/contributing/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> TPOT</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../installing/">Installation</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../using/">Using TPOT</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../api/">TPOT API</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../examples/">Examples</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Contributing</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#project-layout">Project layout</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#how-to-contribute">How to contribute</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#before-submitting-your-pull-request">Before submitting your pull request</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#after-submitting-your-pull-request">After submitting your pull request</a>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../releases/">Release Notes</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../citing/">Citing TPOT</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../support/">Support</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../related/">Related</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">TPOT</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Contributing</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/epistasislab/tpot/edit/master/docs_sources/contributing.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="contribution-guide">Contribution Guide</h1>
+<p>We welcome you to <a href="https://github.com/EpistasisLab/tpot/issues/">check the existing issues</a> for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please <a href="https://github.com/EpistasisLab/tpot/issues/new">file a new issue</a> so we can discuss it.</p>
+<h2 id="project-layout">Project layout</h2>
+<p>The latest stable release of TPOT is on the <a href="https://github.com/EpistasisLab/tpot/tree/master">master branch</a>, whereas the latest version of TPOT in development is on the <a href="https://github.com/EpistasisLab/tpot/tree/development">development branch</a>. Make sure you are looking at and working on the correct branch if you're looking to contribute code.</p>
+<p>In terms of directory structure:</p>
+<ul>
+<li>All of TPOT's code sources are in the <code>tpot</code> directory</li>
+<li>The documentation sources are in the <code>docs_sources</code> directory</li>
+<li>Images in the documentation are in the <code>images</code> directory</li>
+<li>Tutorials for TPOT are in the <code>tutorials</code> directory</li>
+<li>Unit tests for TPOT are in the <code>tests.py</code> file</li>
+</ul>
+<p>Make sure to familiarize yourself with the project layout before making any major contributions, and especially make sure to send all code changes to the <code>development</code> branch.</p>
+<h2 id="how-to-contribute">How to contribute</h2>
+<p>The preferred way to contribute to TPOT is to fork the
+<a href="https://github.com/EpistasisLab/tpot/">main repository</a> on
+GitHub:</p>
+<ol>
+<li>
+<p>Fork the <a href="https://github.com/EpistasisLab/tpot">project repository</a>:
+   click on the 'Fork' button near the top of the page. This creates
+   a copy of the code under your account on the GitHub server.</p>
+</li>
+<li>
+<p>Clone this copy to your local disk:</p>
+<pre><code>  $ git clone git@github.com:YourUsername/tpot.git
+  $ cd tpot
+</code></pre>
+</li>
+<li>
+<p>Create a branch to hold your changes:</p>
+<pre><code>  $ git checkout -b my-contribution
+</code></pre>
+</li>
+<li>
+<p>Make sure your local environment is setup correctly for development. Installation instructions are almost identical to <a href="../installing/">the user instructions</a> except that TPOT should <em>not</em> be installed. If you have TPOT installed on your computer then make sure you are using a virtual environment that does not have TPOT installed. Furthermore, you should make sure you have installed the <code>nose</code> package into your development environment so that you can test changes locally.</p>
+<pre><code>  $ conda install nose
+</code></pre>
+</li>
+<li>
+<p>Start making changes on your newly created branch, remembering to never work on the <code>master</code> branch! Work on this copy on your computer using Git to do the version control.</p>
+</li>
+<li>
+<p>Once some changes are saved locally, you can use your tweaked version of TPOT by navigating to the project's base directory and running TPOT directly from the command line:</p>
+<pre><code>  $ python -m tpot.driver
+</code></pre>
+<p>or by running script that imports and uses the TPOT module with code similar to <code>from tpot import TPOTClassifier</code></p>
+</li>
+<li>
+<p>To check your changes haven't broken any existing tests and to check new tests you've added pass run the following (note, you must have the <code>nose</code> package installed within your dev environment for this to work):</p>
+<pre><code>  $ nosetests -s -v
+</code></pre>
+</li>
+<li>
+<p>When you're done editing and local testing, run:</p>
+<pre><code>  $ git add modified_files
+  $ git commit
+</code></pre>
+</li>
+</ol>
+<p>to record your changes in Git, then push them to GitHub with:</p>
+<pre><code>      $ git push -u origin my-contribution
+</code></pre>
+<p>Finally, go to the web page of your fork of the TPOT repo, and click 'Pull Request' (PR) to send your changes to the maintainers for review. Make sure that you send your PR to the <code>development</code> branch, as the <code>master</code> branch is reserved for the latest stable release. This will start the CI server to check all the project's unit tests run and send an email to the maintainers.</p>
+<p>(If any of the above seems like magic to you, then look up the
+<a href="http://git-scm.com/documentation">Git documentation</a> on the web.)</p>
+<h2 id="before-submitting-your-pull-request">Before submitting your pull request</h2>
+<p>Before you submit a pull request for your contribution, please work through this checklist to make sure that you have done everything necessary so we can efficiently review and accept your changes.</p>
+<p>If your contribution changes TPOT in any way:</p>
+<ul>
+<li>
+<p>Update the <a href="https://github.com/EpistasisLab/tpot/tree/master/docs_sources">documentation</a> so all of your changes are reflected there.</p>
+</li>
+<li>
+<p>Update the <a href="https://github.com/EpistasisLab/tpot/blob/master/README.md">README</a> if anything there has changed.</p>
+</li>
+</ul>
+<p>If your contribution involves any code changes:</p>
+<ul>
+<li>
+<p>Update the <a href="https://github.com/EpistasisLab/tpot/tree/master/tests">project unit tests</a> to test your code changes.</p>
+</li>
+<li>
+<p>Make sure that your code is properly commented with <a href="https://www.python.org/dev/peps/pep-0257/">docstrings</a> and comments explaining your rationale behind non-obvious coding practices.</p>
+</li>
+<li>
+<p>If your code affected any of the pipeline operators, make sure that the corresponding <a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/export_utils.py">export functionality</a> reflects those changes.</p>
+</li>
+</ul>
+<p>If your contribution requires a new library dependency:</p>
+<ul>
+<li>
+<p>Double-check that the new dependency is easy to install via <code>pip</code> or Anaconda and supports both Python 2 and 3. If the dependency requires a complicated installation, then we most likely won't merge your changes because we want to keep TPOT easy to install.</p>
+</li>
+<li>
+<p>Add the required version of the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/.travis.yml#L7">.travis.yml</a></p>
+</li>
+<li>
+<p>Add a line to pip install the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_install.sh#L46">.travis_install.sh</a></p>
+</li>
+<li>
+<p>Add a line to print the version of the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_install.sh#L63">.travis_install.sh</a></p>
+</li>
+<li>
+<p>Similarly add a line to print the version of the library to <a href="https://github.com/EpistasisLab/tpot/blob/master/ci/.travis_test.sh#L13">.travis_test.sh</a></p>
+</li>
+</ul>
+<h2 id="after-submitting-your-pull-request">After submitting your pull request</h2>
+<p>After submitting your pull request, <a href="https://travis-ci.com/">Travis-CI</a> will automatically run unit tests on your changes and make sure that your updated code builds and runs on Python 2 and 3. We also use services that automatically check code quality and test coverage.</p>
+<p>Check back shortly after submitting your pull request to make sure that your code passes these checks. If any of the checks come back with a red X, then do your best to address the errors.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../releases/" class="btn btn-neutral float-right" title="Release Notes">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../examples/" class="btn btn-neutral" title="Examples"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania</p>
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/epistasislab/tpot/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../examples/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../releases/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

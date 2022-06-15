@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Randal S. Olson">
+  <link rel="canonical" href="http://epistasislab.github.io/tpot/examples/">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Examples - TPOT</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Examples";
+    var mkdocs_page_input_path = "examples.md";
+    var mkdocs_page_url = "/tpot/examples/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> TPOT</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../installing/">Installation</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../using/">Using TPOT</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../api/">TPOT API</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Examples</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#iris-flower-classification">Iris flower classification</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#digits-dataset">Digits dataset</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#boston-housing-prices-modeling">Boston housing prices modeling</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#titanic-survival-analysis">Titanic survival analysis</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#portuguese-bank-marketing">Portuguese Bank Marketing</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#magic-gamma-telescope">MAGIC Gamma Telescope</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#neural-network-classifier-using-tpot-nn">Neural network classifier using TPOT-NN</a>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../releases/">Release Notes</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../citing/">Citing TPOT</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../support/">Support</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../related/">Related</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">TPOT</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Examples</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/epistasislab/tpot/edit/master/docs_sources/examples.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="overview">Overview</h1>
+<p>The following sections illustrate the usage of TPOT with various datasets, each
+belonging to a typical class of machine learning tasks.</p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Task</th>
+<th>Task class</th>
+<th align="center">Dataset description</th>
+<th align="center">Jupyter notebook</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Iris</td>
+<td>flower classification</td>
+<td>classification</td>
+<td align="center"><a href="https://archive.ics.uci.edu/ml/datasets/iris">link</a></td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/IRIS.ipynb">link</a></td>
+</tr>
+<tr>
+<td>Optical Recognition of Handwritten Digits</td>
+<td>digit recognition</td>
+<td>(image) classification</td>
+<td align="center"><a href="https://scikit-learn.org/stable/datasets/index.html#digits-dataset">link</a></td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/Digits.ipynb">link</a></td>
+</tr>
+<tr>
+<td>Boston</td>
+<td>housing prices modeling</td>
+<td>regression</td>
+<td align="center"><a href="https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html">link</a></td>
+<td align="center">N/A</td>
+</tr>
+<tr>
+<td>Titanic</td>
+<td>survival analysis</td>
+<td>classification</td>
+<td align="center"><a href="https://www.kaggle.com/c/titanic/data">link</a></td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb">link</a></td>
+</tr>
+<tr>
+<td>Bank Marketing</td>
+<td>subscription prediction</td>
+<td>classification</td>
+<td align="center"><a href="https://archive.ics.uci.edu/ml/datasets/Bank+Marketing">link</a></td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Strategy.ipynb">link</a></td>
+</tr>
+<tr>
+<td>MAGIC Gamma Telescope</td>
+<td>event detection</td>
+<td>classification</td>
+<td align="center"><a href="https://archive.ics.uci.edu/ml/datasets/MAGIC+Gamma+Telescope">link</a></td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb">link</a></td>
+</tr>
+<tr>
+<td>cuML Classification Example</td>
+<td>random classification problem</td>
+<td>classification</td>
+<td align="center"><a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_classification.html">link</a></td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/cuML_Classification_Example.ipynb">link</a></td>
+</tr>
+<tr>
+<td>cuML Regression Example</td>
+<td>random regression problem</td>
+<td>regression</td>
+<td align="center"><a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_regression.html">link</a></td>
+<td align="center"><a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/cuML_Regression_Example.ipynb">link</a></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Notes:</strong>
+- For details on how the <code>fit()</code>, <code>score()</code> and <code>export()</code> methods work, refer to the <a href="/using/">usage documentation</a>.
+- Upon re-running the experiments, your resulting pipelines <em>may</em> differ (to some extent) from the ones demonstrated here.</p>
+<h2 id="iris-flower-classification">Iris flower classification</h2>
+<p>The following code illustrates how TPOT can be employed for performing a simple <em>classification task</em> over the Iris dataset.</p>
+<pre><code class="language-Python">from tpot import TPOTClassifier
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+iris = load_iris()
+X_train, X_test, y_train, y_test = train_test_split(iris.data.astype(np.float64),
+    iris.target.astype(np.float64), train_size=0.75, test_size=0.25, random_state=42)
+
+tpot = TPOTClassifier(generations=5, population_size=50, verbosity=2, random_state=42)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_iris_pipeline.py')
+</code></pre>
+<p>Running this code should discover a pipeline (exported as <code>tpot_iris_pipeline.py</code>) that achieves about 97% test accuracy:</p>
+<pre><code class="language-Python">import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import Normalizer
+from tpot.export_utils import set_param_recursive
+
+# NOTE: Make sure that the outcome column is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1)
+training_features, testing_features, training_target, testing_target = \
+            train_test_split(features, tpot_data['target'], random_state=42)
+
+# Average CV score on the training set was: 0.9826086956521738
+exported_pipeline = make_pipeline(
+    Normalizer(norm=&quot;l2&quot;),
+    KNeighborsClassifier(n_neighbors=5, p=2, weights=&quot;distance&quot;)
+)
+# Fix random state for all the steps in exported pipeline
+set_param_recursive(exported_pipeline.steps, 'random_state', 42)
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+</code></pre>
+<h2 id="digits-dataset">Digits dataset</h2>
+<p>Below is a minimal working example with the optical recognition of handwritten digits dataset, which is an <em>image classification problem</em>.</p>
+<pre><code class="language-Python">from tpot import TPOTClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25, random_state=42)
+
+tpot = TPOTClassifier(generations=5, population_size=50, verbosity=2, random_state=42)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_digits_pipeline.py')
+</code></pre>
+<p>Running this code should discover a pipeline (exported as <code>tpot_digits_pipeline.py</code>) that achieves about 98% test accuracy:</p>
+<pre><code class="language-Python">import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.preprocessing import PolynomialFeatures
+from tpot.builtins import StackingEstimator
+from tpot.export_utils import set_param_recursive
+
+# NOTE: Make sure that the outcome column is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1)
+training_features, testing_features, training_target, testing_target = \
+            train_test_split(features, tpot_data['target'], random_state=42)
+
+# Average CV score on the training set was: 0.9799428471757372
+exported_pipeline = make_pipeline(
+    PolynomialFeatures(degree=2, include_bias=False, interaction_only=False),
+    StackingEstimator(estimator=LogisticRegression(C=0.1, dual=False, penalty=&quot;l1&quot;)),
+    RandomForestClassifier(bootstrap=True, criterion=&quot;entropy&quot;, max_features=0.35000000000000003, min_samples_leaf=20, min_samples_split=19, n_estimators=100)
+)
+# Fix random state for all the steps in exported pipeline
+set_param_recursive(exported_pipeline.steps, 'random_state', 42)
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+</code></pre>
+<h2 id="boston-housing-prices-modeling">Boston housing prices modeling</h2>
+<p>The following code illustrates how TPOT can be employed for performing a <em>regression task</em> over the Boston housing prices dataset.</p>
+<pre><code class="language-Python">from tpot import TPOTRegressor
+from sklearn.datasets import load_boston
+from sklearn.model_selection import train_test_split
+
+housing = load_boston()
+X_train, X_test, y_train, y_test = train_test_split(housing.data, housing.target,
+                                                    train_size=0.75, test_size=0.25, random_state=42)
+
+tpot = TPOTRegressor(generations=5, population_size=50, verbosity=2, random_state=42)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_boston_pipeline.py')
+</code></pre>
+<p>Running this code should discover a pipeline (exported as <code>tpot_boston_pipeline.py</code>) that achieves at least 10 mean squared error (MSE) on the test set:</p>
+<pre><code class="language-Python">import numpy as np
+import pandas as pd
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures
+from tpot.export_utils import set_param_recursive
+
+# NOTE: Make sure that the outcome column is labeled 'target' in the data file
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
+features = tpot_data.drop('target', axis=1)
+training_features, testing_features, training_target, testing_target = \
+            train_test_split(features, tpot_data['target'], random_state=42)
+
+# Average CV score on the training set was: -10.812040755234403
+exported_pipeline = make_pipeline(
+    PolynomialFeatures(degree=2, include_bias=False, interaction_only=False),
+    ExtraTreesRegressor(bootstrap=False, max_features=0.5, min_samples_leaf=2, min_samples_split=3, n_estimators=100)
+)
+# Fix random state for all the steps in exported pipeline
+set_param_recursive(exported_pipeline.steps, 'random_state', 42)
+
+exported_pipeline.fit(training_features, training_target)
+results = exported_pipeline.predict(testing_features)
+</code></pre>
+<h2 id="titanic-survival-analysis">Titanic survival analysis</h2>
+<p>To see the TPOT applied the Titanic Kaggle dataset, see the Jupyter notebook <a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb">here</a>. This example shows how to take a messy dataset and preprocess it such that it can be used in scikit-learn and TPOT.</p>
+<h2 id="portuguese-bank-marketing">Portuguese Bank Marketing</h2>
+<p>The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found <a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/Portuguese%20Bank%20Marketing/Portuguese%20Bank%20Marketing%20Stratergy.ipynb">here</a>.</p>
+<h2 id="magic-gamma-telescope">MAGIC Gamma Telescope</h2>
+<p>The corresponding Jupyter notebook, containing the associated data preprocessing and analysis, can be found <a href="https://github.com/EpistasisLab/tpot/blob/master/tutorials/MAGIC%20Gamma%20Telescope/MAGIC%20Gamma%20Telescope.ipynb">here</a>.</p>
+<h2 id="neural-network-classifier-using-tpot-nn">Neural network classifier using TPOT-NN</h2>
+<p>By loading the <a href="https://github.com/EpistasisLab/tpot/blob/master/tpot/config/classifier_nn.py">TPOT-NN configuration dictionary</a>, PyTorch estimators will be included for classification. Users can also create their own NN configuration dictionary that includes <code>tpot.builtins.PytorchLRClassifier</code> and/or <code>tpot.builtins.PytorchMLPClassifier</code>, or they can specify them using a template string, as shown in the following example:</p>
+<pre><code class="language-Python">from tpot import TPOTClassifier
+from sklearn.datasets import make_blobs
+from sklearn.model_selection import train_test_split
+
+X, y = make_blobs(n_samples=100, centers=2, n_features=3, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.75, test_size=0.25)
+
+clf = TPOTClassifier(config_dict='TPOT NN', template='Selector-Transformer-PytorchLRClassifier',
+                     verbosity=2, population_size=10, generations=10)
+clf.fit(X_train, y_train)
+print(clf.score(X_test, y_test))
+clf.export('tpot_nn_demo_pipeline.py')
+</code></pre>
+<p>This example is somewhat trivial, but it should result in nearly 100% classification accuracy.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../contributing/" class="btn btn-neutral float-right" title="Contributing">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../api/" class="btn btn-neutral" title="TPOT API"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania</p>
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/epistasislab/tpot/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../api/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../contributing/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
