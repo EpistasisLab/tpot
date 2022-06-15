@@ -723,4 +723,3 @@ A simple example of using TPOT-NN is shown in [examples](/tpot/examples/).
 
 - The problem of 'black box' model introspection is one of the most substantial criticisms and challenges of deep learning. This problem persists in `tpot.nn`, whereas TPOT's default estimators often are far easier to introspect.
 
-t.
