@@ -7,7 +7,11 @@ repo_url: https://github.com/epistasislab/tpot
 edit_uri: edit/master/docs_sources/
 docs_dir: docs_sources/
 site_dir: docs/
-theme: readthedocs
+  #theme: readthedocs
+theme:
+  name: material
+  features:
+    - toc.integrate
 
 markdown_extensions:
   - tables
