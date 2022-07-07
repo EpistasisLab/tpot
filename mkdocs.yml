@@ -13,12 +13,6 @@ theme:
   features:
     - toc.integrate
   palette:
-    # automatic mode
-    - media: "(prefers-color-scheme)"
-      toggle:
-        icon: material/brightness-auto
-        name: Switch to light mode
-
     # light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
