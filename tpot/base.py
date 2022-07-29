@@ -1812,7 +1812,7 @@ class TPOTBase(BaseEstimator):
                 offspring.statistics["generation"] = "INVALID"
                 break
 
-        return offspring, offspring2
+        return offspring, offspring2, self.evaluated_individuals_
 
     @_pre_test
     def _random_mutation_operator(self, individual, allow_shrink=True):

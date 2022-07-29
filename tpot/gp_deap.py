@@ -131,10 +131,10 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
         if op_choice < cxpb:  # Apply crossover
             ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)
             if ind1 is not None:
-                ind1, _ = toolbox.mate(ind1, ind2)
+                ind1_cx, _, evaluated_individuals_= toolbox.mate(ind1, ind2)
                 del ind1.fitness.values
 
-                if str(ind1_cx) == str(ind1) or str(ind1_cx) == str(ind2):
+                if str(ind1_cx) in evaluated_individuals_:
                     ind1_cx = mutate_random_individual(population, toolbox)
                 offspring.append(ind1_cx)
             else:
