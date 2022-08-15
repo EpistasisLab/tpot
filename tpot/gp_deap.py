@@ -131,13 +131,17 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
         if op_choice < cxpb:  # Apply crossover
             ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)
             if ind1 is not None:
-                ind1, _ = toolbox.mate(ind1, ind2)
+                ind1_cx, _, evaluated_individuals_= toolbox.mate(ind1, ind2)
                 del ind1.fitness.values
+
+                if str(ind1_cx) in evaluated_individuals_:
+                    ind1_cx = mutate_random_individual(population, toolbox)
+                offspring.append(ind1_cx)
             else:
                 # If there is no pair eligible for crossover, we still want to
                 # create diversity in the population, and do so by mutation instead.
-                ind1 = mutate_random_individual(population, toolbox)
-            offspring.append(ind1)
+                ind_mu = mutate_random_individual(population, toolbox)
+                offspring.append(ind_mu)
         elif op_choice < cxpb + mutpb:  # Apply mutation
             ind = mutate_random_individual(population, toolbox)
             offspring.append(ind)

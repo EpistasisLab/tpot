@@ -722,3 +722,4 @@ A simple example of using TPOT-NN is shown in [examples](/tpot/examples/).
 - TPOT will occasionally learn pipelines that stack several `sklearn` estimators. Mathematically, these can be nearly identical to some deep learning models. For example, by stacking several `sklearn.linear_model.LogisticRegression`s, you end up with a very close approximation of a Multilayer Perceptron; one of the simplest and most well known deep learning architectures. TPOT's genetic programming algorithms generally optimize these 'networks' much faster than PyTorch, which typically uses a more brute-force convex optimization approach.
 
 - The problem of 'black box' model introspection is one of the most substantial criticisms and challenges of deep learning. This problem persists in `tpot.nn`, whereas TPOT's default estimators often are far easier to introspect.
+

@@ -93,7 +93,7 @@ Cross-validation strategy used when evaluating pipelines.
 <br /><br />
 Possible inputs:
 <ul>
-<li>integer, to specify the number of folds in a StratifiedKFold,</li>
+<li>integer, to specify the number of folds in an unshuffled StratifiedKFold,</li>
 <li>An object to be used as a cross-validation generator, or</li>
 <li>An iterable yielding train/test splits.</li>
 </blockquote>
@@ -601,7 +601,7 @@ Cross-validation strategy used when evaluating pipelines.
 <br /><br />
 Possible inputs:
 <ul>
-<li>integer, to specify the number of folds in a KFold,</li>
+<li>integer, to specify the number of folds in an unshuffled KFold,</li>
 <li>An object to be used as a cross-validation generator, or</li>
 <li>An iterable yielding train/test splits.</li>
 </ul>

@@ -1561,10 +1561,10 @@ class TPOTBase(BaseEstimator):
                             ]
                         ]
 
-                        self.dask_graphs_ = tmp_result_scores
+                        
                         with warnings.catch_warnings():
                             warnings.simplefilter("ignore")
-                            tmp_result_scores = list(dask.compute(*tmp_result_scores))
+                            tmp_result_scores = list(dask.compute(*tmp_result_scores, num_workers=self.n_jobs))
 
                     else:
 
@@ -1812,7 +1812,7 @@ class TPOTBase(BaseEstimator):
                 offspring.statistics["generation"] = "INVALID"
                 break
 
-        return offspring, offspring2
+        return offspring, offspring2, self.evaluated_individuals_
 
     @_pre_test
     def _random_mutation_operator(self, individual, allow_shrink=True):
