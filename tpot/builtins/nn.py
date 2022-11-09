@@ -160,7 +160,8 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
 
         X, y = check_X_y(X, y, accept_sparse=False, allow_nd=False)
 
-        assert_all_finite(X, y)
+        # Checks if input contains NaN, infinity or a value too large for dtype('float64').
+        assert_all_finite(X)
 
         if type_of_target(y) != 'binary':
             raise ValueError("Non-binary targets not supported")
