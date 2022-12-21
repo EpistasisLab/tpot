@@ -158,7 +158,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
 
         Non-categorical features are always stacked to the right of the matrix.
 
-    dtype : number type, default=np.float
+    dtype : number type, default=np.float64
         Desired dtype of output.
 
     sparse : boolean, default=True
@@ -213,7 +213,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
       encoding of dictionary items or strings.
     """
 
-    def __init__(self, categorical_features='auto', dtype=np.float,
+    def __init__(self, categorical_features='auto', dtype=np.float64,
                  sparse=True, minimum_fraction=None, threshold=10):
         self.categorical_features = categorical_features
         self.dtype = dtype
