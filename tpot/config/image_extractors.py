@@ -23,14 +23,23 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-class Output_Array(object):
-    """Final output data type of pipelines."""
-    pass
+import numpy as np
 
-class Image_Array(object):
-    """Data type to represent image data in pipelines."""
-    pass
+# This configuration only includes the image extractors. 
+# These are appended to any config selected if the input is indicated as an image.
+# This config is NOT meant to be used by itself. 
+# It is selected/appended to any config used if the argument
+# input_type='image' is passed to the TPOT object on instantiation
 
-class Text_Array(object):
-	"""Data type to represent text data in pipelines."""
-	pass
+config_imagefeatureextract = {
+
+    #TODO: Add image feature extractor(s) here
+    'tpot.builtins.DeepImageFeatureExtractor': {
+        'network_name': ["resnet", "alexnet", "vgg", "densenet", "googlenet", "shufflenet", "mobilenet", "resnext", "wide_resnet", "mnasnet"]
+    },
+
+    'tpot.builtins.FlattenerImageExtractor': {
+    },
+
+    
+}

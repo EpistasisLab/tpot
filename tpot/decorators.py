@@ -66,6 +66,7 @@ def _pre_test(func):
             # clone individual before each func call so it is not altered for
             # the possible next cycle loop
             args = [self._toolbox.clone(arg) if isinstance(arg, creator.Individual) else arg for arg in args]
+
             try:
 
                 if func.__name__ == "_generate":
@@ -92,6 +93,7 @@ def _pre_test(func):
                         self.operators
                     )
                     sklearn_pipeline = eval(pipeline_code, self.operators_context)
+
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore')
                         time_limited_call(
@@ -109,6 +111,7 @@ def _pre_test(func):
                     e=e
 
                 )
+
                 # Use the pbar output stream if it's active
                 self._update_pbar(pbar_num=0, pbar_msg=message)
             finally:

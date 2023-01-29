@@ -59,6 +59,12 @@ To enable support for [PyTorch](https://pytorch.org/)-based neural networks (TPO
 
 We recommend following [PyTorch's installation instructions](https://pytorch.org/get-started/locally/) customized for your operating system and Python distribution.
 
+
+Some feature extraction operators use additional libraries. If you plan to use  image or text inputs and want to use these operators, you may need the following libraries for each operator:
+
+* DeepImageFeatureExtractor - [PyTorch and Torchvision](https://pytorch.org/), used to instantiate the pretrained-on-ImageNet neural networks for feature extraction.
+
+
 Finally to install TPOT itself, run the following command:
 
 ```Shell

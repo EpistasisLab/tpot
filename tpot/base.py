@@ -80,8 +80,11 @@ from .config.classifier_nn import classifier_config_nn
 from .config.classifier_cuml import classifier_config_cuml
 from .config.regressor_cuml import regressor_config_cuml
 
+from .config.image_extractors import config_imagefeatureextract
+from .config.text_extractors import config_textfeatureextract
+
 from .metrics import SCORERS
-from .gp_types import Output_Array
+from .gp_types import Output_Array, Image_Array, Text_Array
 from .gp_deap import (
     eaMuPlusLambda,
     mutNodeReplacement,
@@ -119,6 +122,7 @@ class TPOTBase(BaseEstimator):
         max_eval_time_mins=5,
         random_state=None,
         config_dict=None,
+        input_type=None,
         template=None,
         warm_start=False,
         memory=None,
@@ -223,6 +227,11 @@ class TPOTBase(BaseEstimator):
             String 'TPOT NN':
                 TPOT uses a configuration dictionary for PyTorch neural network classifiers
                 included in `tpot.nn`.
+        input_type: string, optional (default: None)
+            A string indicating what form the input data takes and what extractors to include, if any.
+            String 'image':
+                TPOT will include extractors from config/image_extractors.py in the pipeline and sets
+                the input of the pipeline to a custom "Image_Array" to enforce strong typing in DEAP
         template: string (default: None)
             Template of predefined pipeline structure. The option is for specifying a desired structure
             for the machine learning pipeline evaluated in TPOT. So far this option only supports
@@ -302,6 +311,7 @@ class TPOTBase(BaseEstimator):
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
         self.early_stop = early_stop
         self.config_dict = config_dict
+        self.input_type = input_type
         self.template = template
         self.warm_start = warm_start
         self.memory = memory
@@ -394,6 +404,7 @@ class TPOTBase(BaseEstimator):
                     self._config_dict = classifier_config_cuml
                 else:
                     self._config_dict = regressor_config_cuml
+
             else:
                 config = self._read_config_file(config_dict)
                 if hasattr(config, "tpot_config"):
@@ -407,6 +418,13 @@ class TPOTBase(BaseEstimator):
                     )
         else:
             self._config_dict = self.default_config_dict
+
+        #Adds feature extractor configs to images if input type defined
+        if self.input_type is not None:
+            if self.input_type == "image":
+                self._config_dict.update(config_imagefeatureextract)
+            if self.input_type == "text":
+                self._config_dict.update(config_textfeatureextract)
 
     def _read_config_file(self, config_path):
         if os.path.isfile(config_path):
@@ -433,7 +451,18 @@ class TPOTBase(BaseEstimator):
             random.seed(self.random_state)
             np.random.seed(self.random_state)
 
-        self._pset = gp.PrimitiveSetTyped("MAIN", [np.ndarray], Output_Array)
+        #Change the GP problem input if input_type is indicated by user
+        if self.input_type is not None:
+            if self.input_type == 'image':
+                self._pset_in = Image_Array
+            elif self.input_type == 'text':
+                self._pset_in = Text_Array
+            else: 
+                raise ValueError("Other input types besides image and text not yet supported in TPOT")
+        else:
+            self._pset_in = np.ndarray
+
+        self._pset = gp.PrimitiveSetTyped("MAIN", [self._pset_in], Output_Array)
         self._pset.renameArguments(ARG0="input_matrix")
         self._add_operators()
 
@@ -447,21 +476,24 @@ class TPOTBase(BaseEstimator):
         ret_types = []
         self.op_list = []
         if self.template == None:  # default pipeline structure
-            step_in_type = np.ndarray
             step_ret_type = Output_Array
             for operator in self.operators:
-                arg_types = operator.parameter_types()[0][1:]
-                p_types = ([step_in_type] + arg_types, step_ret_type)
+                expected_arg_types = operator.parameter_types()[0]
+                terminal_arg_types = expected_arg_types[1:]
+                expected_ret_types = operator.parameter_types()[1]
+
+                p_types = (expected_arg_types, step_ret_type)
                 if operator.root:
                     # We need to add rooted primitives twice so that they can
                     # return both an Output_Array (and thus be the root of the tree),
                     # and return a np.ndarray so they can exist elsewhere in the tree.
                     self._pset.addPrimitive(operator, *p_types)
-                tree_p_types = ([step_in_type] + arg_types, step_in_type)
+                tree_p_types = (expected_arg_types, expected_ret_types)
                 self._pset.addPrimitive(operator, *tree_p_types)
-                self._import_hash_and_add_terminals(operator, arg_types)
+                self._import_hash_and_add_terminals(operator, terminal_arg_types)
             self._pset.addPrimitive(
-                CombineDFs(), [step_in_type, step_in_type], step_in_type
+                #Special operator, existing as a simple inclusion in all pipelines
+                CombineDFs(), [np.ndarray, np.ndarray], np.ndarray
             )
         else:
             gp_types = {}
@@ -471,7 +503,10 @@ class TPOTBase(BaseEstimator):
                 if idx:
                     step_in_type = ret_types[-1]
                 else:
-                    step_in_type = np.ndarray
+                    if self.input_type is not None:
+                        step_in_type = self._pset_in
+                    else:
+                        step_in_type = np.ndarray
                 if step != "CombineDFs":
                     if idx < len(self._template_comp) - 1:
                         # create an empty for returning class for strongly-type GP
@@ -629,6 +664,7 @@ class TPOTBase(BaseEstimator):
         self._fitted_imputer = None
         self._imputed = False
         self._memory = None  # initial Memory setting for sklearn pipeline
+        self._allow_nd = False
 
         # dont save periodic pipelines more often than this
         self._output_best_pipeline_period_seconds = 30
@@ -1102,11 +1138,18 @@ class TPOTBase(BaseEstimator):
             raise RuntimeError(
                 "The scoring function should either be the name of a scikit-learn scorer or a scorer object"
             )
-        score = scorer(
-            self.fitted_pipeline_,
-            testing_features.astype(np.float64),
-            testing_target.astype(np.float64),
-        )
+        if(self.input_type != "text"):
+            score = scorer(
+                self.fitted_pipeline_,
+                testing_features.astype(np.float64),
+                testing_target.astype(np.float64),
+            )
+        else:
+            score = scorer(
+                self.fitted_pipeline_,
+                testing_features,
+                testing_target.astype(np.float64),
+            )
         return score
 
 
@@ -1340,6 +1383,43 @@ class TPOTBase(BaseEstimator):
         -------
         (features, target)
         """
+
+        #Allow n-dimensional/non-2D input if the input_type is set
+        if self.input_type is not None:
+            self._allow_nd = True
+            #If input_type is text, then need to only check that 
+            #the input array is a string and is only one column
+            #The other checks in this function are unnecessary, so return
+            if(self.input_type == "text"):
+                if len(features.shape) != 1:
+                    raise ValueError(
+                        "input_type was set as text, "
+                        "but input feature array has more than one dimension. "
+                        "Text data should be a 1D array. "
+                        "Try calling np.ravel() on your data to flatten dimensions."
+                    )
+                if not np.issubdtype(features.dtype, str):
+                    raise ValueError(
+                        "input features are not a numpy str array "
+                        "despite input_type being text. "
+                        "Try doing X = X.astype(str) where "
+                        "X is your input feature numpy array to "
+                        "cast your array to a numpy string array."
+                    )
+
+                return features, target
+            #If input_type is image, then we check to make sure it's 3D or 4D
+            #We also want to perform the other checks, so we don't return just yet 
+            elif(self.input_type == "image"):
+                if len(features.shape) != 3 and len(features.shape) != 4:
+                    raise ValueError(
+                        "input_type was set as image, but input feature array is "
+                        "not in expected shape. Image inputs should be "
+                        "3D in form [N, H, W] or "
+                        "4D in form [N, C, H, W] "
+                        "where N = number of samples, C = channels, H = height, W = width"
+                    )
+
         # Check sample_weight
         if sample_weight is not None:
             try:
@@ -1384,13 +1464,13 @@ class TPOTBase(BaseEstimator):
 
         try:
             if target is not None:
-                X, y = check_X_y(features, target, accept_sparse=True, dtype=None)
+                X, y = check_X_y(features, target, accept_sparse=True, dtype=None, allow_nd=self._allow_nd)
                 if self._imputed:
                     return X, y
                 else:
                     return features, target
             else:
-                X = check_array(features, accept_sparse=True, dtype=None)
+                X = check_array(features, accept_sparse=True, dtype=None, allow_nd=self._allow_nd)
                 if self._imputed:
                     return X
                 else:
@@ -1398,9 +1478,12 @@ class TPOTBase(BaseEstimator):
         except (AssertionError, ValueError):
             raise ValueError(
                 "Error: Input data is not in a valid format. Please confirm "
-                "that the input data is scikit-learn compatible. For example, "
-                "the features must be a 2-D array and target labels must be a "
-                "1-D array."
+                "that the input data is scikit-learn compatible. "
+                "For example, the features must be a 2-D array " 
+                "and target labels must be a 1-D array unless you change input_type. "
+                "If you are using text or image data as input to TPOT, "
+                "please set the input_type argument to 'text' or 'image' "
+                "respectively when instantiating TPOT"
             )
 
     def _compile_to_sklearn(self, expr):
@@ -1677,6 +1760,7 @@ class TPOTBase(BaseEstimator):
             # Disallow certain combinations of operators because they will take too long or take up too much RAM
             # This is a fairly hacky way to prevent TPOT from getting stuck on bad pipelines and should be improved in a future release
             individual_str = str(individual)
+
             if not len(individual):  # a pipeline cannot be randomly generated
                 self.evaluated_individuals_[
                     individual_str
@@ -1835,6 +1919,7 @@ class TPOTBase(BaseEstimator):
             Returns the individual with one of the mutations applied to it
 
         """
+
         if self.tree_structure:
             mutation_techniques = [
                 partial(gp.mutInsert, pset=self._pset),
@@ -1873,11 +1958,13 @@ class TPOTBase(BaseEstimator):
                 break
             else:
                 unsuccesful_mutations += 1
+        
         # Sometimes you have pipelines for which every shrunk version has already been explored too.
         # To still mutate the individual, one of the two other mutators should be applied instead.
         if (unsuccesful_mutations == 50) and (
             type(mutator) is partial and mutator.func is gp.mutShrink
         ):
+
             (offspring,) = self._random_mutation_operator(
                 individual, allow_shrink=False
             )
@@ -1980,7 +2067,8 @@ class TPOTBase(BaseEstimator):
             depth in the tree.
         type_: class
             The type that should return the tree when called, when
-            :obj:None (default) no return type is enforced.
+            :obj:None (default) the type of :pset: (pset.ret)
+            is assumed.
 
         Returns
         -------
@@ -1991,8 +2079,32 @@ class TPOTBase(BaseEstimator):
         if type_ is None:
             type_ = pset.ret
         expr = []
+
+        # If there is a special input type, need to
+        # check for primitives that return the pset.ret type 
+        # and then loop through to find which
+        # (if any) have the correct input (image_array).
+        # If there are none, then need at least two operators
+        # (one extractor and one classifier)
+        if self.input_type is not None:
+            in_type = self._pset_in
+
+            prims_with_correct_outputs = pset.primitives[pset.ret]
+            valid_full_classifiers = []
+
+            for prim in prims_with_correct_outputs:
+                if in_type in prim.args:
+                    valid_full_classifiers.append(prim)
+
+            if len(valid_full_classifiers) == 0:
+                #If there are no full-network classifiers, then
+                #add to depth limits to account for needed extractor
+                min_ = min_ + 1 #or max(min_, 2)
+                max_ = max_ + 1 #or max(max_, 3)
+
         height = np.random.randint(min_, max_)
         stack = [(0, type_)]
+
         while len(stack) != 0:
             depth, type_ = stack.pop()
 
@@ -2010,6 +2122,35 @@ class TPOTBase(BaseEstimator):
                 if inspect.isclass(term):
                     term = term()
                 expr.append(term)
+
+            #Add an elif here for input checking
+            #Specifically, if there is a special input type and 
+            #if we're one node below the max depth, then limit the primitives to those
+            #with the correct input type
+            elif depth+1 == height and self.input_type is not None:
+
+                prim_ret_options = pset.primitives[type_]
+                valid_prims = []
+
+                for prim_opt in prim_ret_options:
+                    if in_type in prim_opt.args:
+                        valid_prims.append(prim_opt) 
+
+                try:
+                    prim = np.random.choice(valid_prims)
+                except IndexError:
+                    _, _, traceback = sys.exc_info()
+                    raise IndexError(
+                        "The gp.generate function tried to add "
+                        "a primitive of type {}, but there is"
+                        "none available. {}".format(type_, traceback)
+                    )
+
+
+                expr.append(prim)
+                for arg in reversed(prim.args):
+                    stack.append((depth + 1, arg))
+
             else:
                 try:
                     prim = np.random.choice(pset.primitives[type_])
@@ -2023,6 +2164,7 @@ class TPOTBase(BaseEstimator):
                 expr.append(prim)
                 for arg in reversed(prim.args):
                     stack.append((depth + 1, arg))
+
         return expr
 
 

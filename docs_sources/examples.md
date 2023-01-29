@@ -196,3 +196,23 @@ clf.export('tpot_nn_demo_pipeline.py')
 ```
 
 This example is somewhat trivial, but it should result in nearly 100% classification accuracy.
+
+## Digits dataset as images using feature extraction
+
+The original example above with the digits dataset uses a flattened version of the original images in the MNIST dataset to meet base TPOT's input requirements. By using feature extraction operators and indicating the `input_type` argument when instantiating TPOT, it is possible for TPOT to handle images as inputs. 
+
+```Python
+from tpot import TPOTClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+
+digits = load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits.images, digits.target, train_size=0.75, test_size=0.25, random_state=42)
+
+tpot = TPOTClassifier(input_type='image', generations=5, population_size=3, verbosity=2, random_state=42)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_digits_with_feature_extraction_pipeline.py')
+```
+
+This example may take some time to run as one of the possible image feature extractors that TPOT will explore makes use of deep neural networks pretrained on ImageNet to extract features. With simpler datasets like the MNIST dataset, TPOT will often find that using the `FlattenerImageExtractor` operator is sufficient (this operator flattens the images before building the rest of the pipeline).
