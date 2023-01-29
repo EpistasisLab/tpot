@@ -723,6 +723,7 @@ A simple example of using TPOT-NN is shown in [examples](/tpot/examples/).
 
 - The problem of 'black box' model introspection is one of the most substantial criticisms and challenges of deep learning. This problem persists in `tpot.nn`, whereas TPOT's default estimators often are far easier to introspect.
 
+
 ## Feature extraction in TPOT (supporting Image or Text data as inputs)
 
 Using feature extraction operators that build off of `sklearn` transformers allows TPOT to handle Image or Text inputs rather than requiring that the data be pretransformed to feature matrices. This allows TPOT to explore different feature extractors and their hyperparameters within TPOT itself. Unlike regular `sklearn` transformers, these operators need to implement additional methods. That is, they need to implement the methods `.expected_input_type()` and `.expected_output_type()` for TPOT to recognize that they have special input (and possibly output) types rather than the standard types used in TPOT. The code implementation of these extractors can be found at [this link](https://github.com/rachitk/tpot/blob/feature-extract/tpot/builtins/feature_extractors.py).

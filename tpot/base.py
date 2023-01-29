@@ -53,6 +53,7 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection._split import check_cv
+from sklearn.utils.metaestimators import available_if
 
 from joblib import Parallel, delayed, Memory
 
@@ -1151,6 +1152,22 @@ class TPOTBase(BaseEstimator):
             )
         return score
 
+
+    def _check_proba(self):
+        if not hasattr(self, 'fitted_pipeline_'):
+            raise AttributeError(
+                "A pipeline has not yet been optimized. Please call fit() first."
+            )
+            
+        else:
+            if not (hasattr(self.fitted_pipeline_, "predict_proba")):
+                raise AttributeError(
+                    "The fitted pipeline does not have the predict_proba() function."
+                )
+            
+        return True
+
+    @available_if(_check_proba)
     def predict_proba(self, features):
         """Use the optimized pipeline to estimate the class probabilities for a feature set.
 
@@ -1165,19 +1182,9 @@ class TPOTBase(BaseEstimator):
             The class probabilities of the input samples
 
         """
-        if not self.fitted_pipeline_:
-            raise RuntimeError(
-                "A pipeline has not yet been optimized. Please call fit() first."
-            )
-        else:
-            if not (hasattr(self.fitted_pipeline_, "predict_proba")):
-                raise RuntimeError(
-                    "The fitted pipeline does not have the predict_proba() function."
-                )
-
-            features = self._check_dataset(features, target=None, sample_weight=None)
-
-            return self.fitted_pipeline_.predict_proba(features)
+    
+        features = self._check_dataset(features, target=None, sample_weight=None)
+        return self.fitted_pipeline_.predict_proba(features)
 
     def clean_pipeline_string(self, individual):
         """Provide a string of the individual without the parameter prefixes.
@@ -1637,10 +1644,10 @@ class TPOTBase(BaseEstimator):
                             ]
                         ]
 
-                        self.dask_graphs_ = tmp_result_scores
+                        
                         with warnings.catch_warnings():
                             warnings.simplefilter("ignore")
-                            tmp_result_scores = list(dask.compute(*tmp_result_scores))
+                            tmp_result_scores = list(dask.compute(*tmp_result_scores, num_workers=self.n_jobs))
 
                     else:
 
@@ -1889,7 +1896,7 @@ class TPOTBase(BaseEstimator):
                 offspring.statistics["generation"] = "INVALID"
                 break
 
-        return offspring, offspring2
+        return offspring, offspring2, self.evaluated_individuals_
 
     @_pre_test
     def _random_mutation_operator(self, individual, allow_shrink=True):
