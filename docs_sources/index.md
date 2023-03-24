@@ -2,6 +2,13 @@
 <img src="https://raw.githubusercontent.com/EpistasisLab/tpot/master/images/tpot-logo.jpg" width=300 />
 </center>
 
+
+---
+To try the ![NEW!](https://raw.githubusercontent.com/EpistasisLab/tpot/master/images/NEW-small.gif "NEW!") TPOT2 (*alpha*) please go [here](https://github.com/EpistasisLab/tpot2)!
+
+- - - -
+
+
 Consider TPOT your **Data Science Assistant**. TPOT is a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming.
 
 <br />
