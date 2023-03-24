@@ -1,7 +1,7 @@
 # TPOT2 ALPHA
 
 TPOT2 is a rewrite of TPOT1 with some additional functionality.
-TPOT2 is currently in Alpha. This means that there will likely be some backwards incompatible changes to the API as we develop. Some implemented features may be buggy. There is a list of known issues written at the bottom of this README. Some features have placeholder names or are listed as "Experimental" in the doc string. These are features that may not be fully implemented and may or may work work with all other features.
+TPOT2 is currently in Alpha. This means that there will likely be some backwards incompatible changes to the API as we develop. Some implemented features may be buggy. There is a list of known issues written at the bottom of this README. Some features have placeholder names or are listed as "Experimental" in the doc string. These are features that may not be fully implemented and may or may work with all other features.
 
 If you are interested in using the current stable release of TPOT, you can do that here: [https://github.com/EpistasisLab/tpot/](https://github.com/EpistasisLab/tpot/). 
 
@@ -18,7 +18,7 @@ TPOT requires a working installation of Python.
 
 ### Creating a conda environment (optional)
 
-We recommend using conda environmnets for installing TPOT2, though it would work equally well if manually installed without it.
+We recommend using conda environments for installing TPOT2, though it would work equally well if manually installed without it.
 
 [More information on making anaconda environments found here.](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
 
@@ -37,7 +37,7 @@ This is to ensure that you get the version that is compatible with your system.
 conda install --yes -c conda-forge 'lightgbm>=3.3.3'
 ```
 
-### Developer/Lastest Branch Installation
+### Developer/Latest Branch Installation
 
 
 ```
