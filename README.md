@@ -1,6 +1,6 @@
 # TPOT2 ALPHA
 
-TPOT2 is a rewrite of TPOT1 with some additional functionality.
+TPOT2 is a rewrite of TPOT with some additional functionality.
 TPOT2 is currently in Alpha. This means that there will likely be some backwards incompatible changes to the API as we develop. Some implemented features may be buggy. There is a list of known issues written at the bottom of this README. Some features have placeholder names or are listed as "Experimental" in the doc string. These are features that may not be fully implemented and may or may work with all other features.
 
 If you are interested in using the current stable release of TPOT, you can do that here: [https://github.com/EpistasisLab/tpot/](https://github.com/EpistasisLab/tpot/). 
@@ -8,13 +8,13 @@ If you are interested in using the current stable release of TPOT, you can do th
 
 ## License
 
-Please see the [repository license](https://github.com/EpistasisLab/tpot/blob/master/LICENSE) for the licensing and usage information for TPOT.
-Generally, we have licensed TPOT to make it as widely usable as possible.
+Please see the [repository license](https://github.com/EpistasisLab/tpot/blob/master/LICENSE) for the licensing and usage information for TPOT2.
+Generally, we have licensed TPOT2 to make it as widely usable as possible.
 
 
 ## Installation
 
-TPOT requires a working installation of Python.
+TPOT2 requires a working installation of Python.
 
 ### Creating a conda environment (optional)
 
@@ -69,6 +69,6 @@ We welcome you to check the existing issues for bugs or enhancements to work on.
 
 ### Support for TPOT2
 
-TPOT was developed in the [Artificial Intelligence Innovation (A2I) Lab](http://epistasis.org/) at Cedars-Sinai with funding from the [NIH](http://www.nih.gov/) under grants U01 AG066833 and R01 LM010098. We are incredibly grateful for the support of the NIH and the Cedars-Sinai during the development of this project.
+TPOT2 was developed in the [Artificial Intelligence Innovation (A2I) Lab](http://epistasis.org/) at Cedars-Sinai with funding from the [NIH](http://www.nih.gov/) under grants U01 AG066833 and R01 LM010098. We are incredibly grateful for the support of the NIH and the Cedars-Sinai during the development of this project.
 
 The TPOT logo was designed by Todd Newmuis, who generously donated his time to the project.
