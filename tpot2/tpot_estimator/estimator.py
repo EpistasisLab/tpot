@@ -12,7 +12,10 @@ from sklearn.utils.multiclass import unique_labels
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import tpot2
-
+import distributed
+from dask.distributed import Client
+from dask.distributed import LocalCluster
+import math
 
 EVOLVERS = {"nsga2":tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver}
 
@@ -30,10 +33,9 @@ class TPOTEstimator(BaseEstimator):
                         generations_until_end_population = 1,  
                         callback: tpot2.CallBackInterface = None,
                         n_jobs=1,
-                        
                         cv = 5,
-                        verbose = 0, #TODO
-                        other_objective_functions=[tpot2.estimator_objective_functions.average_path_length_objective], #tpot2.estimator_objective_functions.complexity_objective],
+                        verbose = 0, 
+                        other_objective_functions=[tpot2.estimator_objective_functions.average_path_length_objective], #tpot2.estimator_objective_functions.number_of_nodes_objective],
                         other_objective_functions_weights = [-1],
                         bigger_is_better = True,
                         evolver = "nsga2",
@@ -44,47 +46,35 @@ class TPOTEstimator(BaseEstimator):
                         root_config_dict= 'Auto',
                         inner_config_dict=["selectors", "transformers"],
                         leaf_config_dict= None,
-
                         subsets = None,
-
                         max_time_seconds=float('inf'), 
                         max_eval_time_seconds=60*10, 
-                        
-
+                        memory_limit = "4GB",
                         n_initial_optimizations = 0,
                         optimization_cv = 3,
                         max_optimize_time_seconds=60*20,
                         optimization_steps = 10,
-
                         periodic_checkpoint_folder = None,
-
                         threshold_evaluation_early_stop = None, 
                         threshold_evaluation_scaling = 4,
                         min_history_threshold = 20,
                         selection_evaluation_early_stop = None, 
                         selection_evaluation_scaling = 4, 
-
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol =None,
                         early_stop = None,
-
                         warm_start = False,
                         memory = None,
                         cross_val_predict_cv = 0,
-                        
                         budget_range = None,
                         budget_scaling = .8,
                         generations_until_end_budget = 1,  
-
-
                         preprocessing = False,  
-
                         validation_strategy = "none",
                         validation_fraction = .2,
-
                         subset_column = None,
-
                         stepwise_steps = 5,
+                        client = None,
                         ):
                         
         '''
@@ -108,7 +98,9 @@ class TPOTEstimator(BaseEstimator):
         
         - scorers_weights (list): A list of weights to be applied to the scorers during the optimization process.
         
-        - cv (int): Number of folds to use in the cross-validation process.
+        - cv 
+            - (int): Number of folds to use in the cross-validation process. By uses the sklearn.model_selection.KFold cross-validator for regression and StratifiedKFold for classification. In both cases, shuffled is set to True.
+            - (sklearn.model_selection.BaseCrossValidator): A cross-validator to use in the cross-validation process.
         
         - verbose (int): How much information to print during the optimization process. Higher values include the information from lower values.
             0. nothing
@@ -164,6 +156,9 @@ class TPOTEstimator(BaseEstimator):
             - 'passthrough' : A node that just passes though the input. Useful for passing through raw inputs into inner nodes.
             - 'feature_set_selector' : A selector that pulls out specific subsets of columns from the data. Only well defined as a leaf.
                                         Subsets are set with the subsets parameter.
+            - 'skrebate' : Includes ReliefF, SURF, SURFstar, MultiSURF.
+            - 'MDR' : Includes MDR.
+            - 'ContinuousMDR' : Includes ContinuousMDR.
             - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
 
         - leaf_config_dict (dict): The configuration dictionary to use for the leaf node of the model. If set, leaf nodes must be from this dictionary.
@@ -193,6 +188,9 @@ class TPOTEstimator(BaseEstimator):
             If the evaluation takes longer than this, the model will be discarded.
             Set to None for no timer limit.
         
+            
+        - memory_limit (str): The maximum amount of memory that the optimization process should use per thread (in this case, per pipeline). See https://docs.dask.org/en/stable/deploying-python.html
+
         - classification (bool): A flag indicating whether the problem is a classification problem or not.
         
         - n_initial_optimizations (int): NOT YET IMPLEMENTED Number of initial optimizations to perform.
@@ -280,17 +278,69 @@ class TPOTEstimator(BaseEstimator):
          
         - stepwise_steps (int): EXPERIMENTAL The number of staircase steps to take when scaling the budget and population size.
 
+        - client (dask.distributed.Client): A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client. 
+        
         '''
 
-
-        self.callback=callback
+        # sklearn BaseEstimator must have a corresponding attribute for each parameter.
+        # These should not be modified once set.
+        self.scorers = scorers
+        self.scorers_weights = scorers_weights
+        self.classification = classification
         self.population_size = population_size
         self.generations = generations
-        self.n_jobs= n_jobs
-        self.scorers = scorers
-
-        self.warm_start=warm_start
         self.initial_population_size = initial_population_size
+        self.population_scaling = population_scaling
+        self.generations_until_end_population = generations_until_end_population
+        self.callback = callback
+        self.n_jobs= n_jobs
+        self.cv = cv
+        self.verbose = verbose
+        self.other_objective_functions = other_objective_functions
+        self.other_objective_functions_weights = other_objective_functions_weights
+        self.bigger_is_better = bigger_is_better
+        self.evolver = evolver
+        self.evolver_params  = evolver_params
+        self.max_depth = max_depth
+        self.max_size = max_size
+        self.max_children = max_children
+        self.root_config_dict= root_config_dict
+        self.inner_config_dict= inner_config_dict
+        self.leaf_config_dict= leaf_config_dict
+        self.subsets = subsets
+        self.max_time_seconds = max_time_seconds 
+        self.max_eval_time_seconds = max_eval_time_seconds
+        self.memory_limit = memory_limit
+        self.n_initial_optimizations  = n_initial_optimizations  
+        self.optimization_cv  = optimization_cv
+        self.max_optimize_time_seconds = max_optimize_time_seconds 
+        self.optimization_steps = optimization_steps 
+        self.periodic_checkpoint_folder = periodic_checkpoint_folder
+        self.threshold_evaluation_early_stop =threshold_evaluation_early_stop
+        self.threshold_evaluation_scaling =  threshold_evaluation_scaling
+        self.min_history_threshold = min_history_threshold
+        self.selection_evaluation_early_stop = selection_evaluation_early_stop
+        self.selection_evaluation_scaling =  selection_evaluation_scaling
+        self.scorers_early_stop_tol = scorers_early_stop_tol
+        self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
+        self.early_stop = early_stop
+        self.warm_start = warm_start
+        self.memory = memory
+        self.cross_val_predict_cv = cross_val_predict_cv
+        self.budget_range = budget_range
+        self.budget_scaling = budget_scaling
+        self.generations_until_end_budget = generations_until_end_budget
+        self.preprocessing = preprocessing
+        self.validation_strategy = validation_strategy
+        self.validation_fraction = validation_fraction
+        self.subset_column = subset_column
+        self.stepwise_steps = stepwise_steps
+        self.client = client
+
+
+        #Initialize other used params
+
+
         if self.initial_population_size is None:
             self._initial_population_size = self.population_size
         else:
@@ -305,78 +355,20 @@ class TPOTEstimator(BaseEstimator):
             self._scorers = self.scorers
         
         self._scorers = [sklearn.metrics.get_scorer(scoring) for scoring in self._scorers]
-
-        self.bigger_is_better = bigger_is_better
-
-        self.cv = cv
-        self.other_objective_functions = other_objective_functions
-
-        self.evolver = evolver
+        self._scorers_early_stop_tol = self.scorers_early_stop_tol
+        
         if isinstance(self.evolver, str):
             self._evolver = EVOLVERS[self.evolver]
         else:
             self._evolver = self.evolver
         
-        self.evolver_params  = evolver_params
+       
 
-        self.scorers_weights = scorers_weights
-        self.other_objective_functions_weights = other_objective_functions_weights
-
-        self.verbose = verbose
-
-        self.max_depth = max_depth
-        self.max_size = max_size
-        self.max_children = max_children
-
-        self.inner_config_dict= inner_config_dict
-        self.root_config_dict= root_config_dict
-        self.leaf_config_dict= leaf_config_dict
-
-        self.max_time_seconds =max_time_seconds 
-        self.max_eval_time_seconds = max_eval_time_seconds
-        self.classification = classification
-
-        self.periodic_checkpoint_folder = periodic_checkpoint_folder
-
-        self.n_initial_optimizations  = n_initial_optimizations  
-        self.optimization_cv  = optimization_cv
-        self.max_optimize_time_seconds = max_optimize_time_seconds 
-        self.optimization_steps = optimization_steps 
-
-        self.threshold_evaluation_early_stop =threshold_evaluation_early_stop
-        self.threshold_evaluation_scaling =  threshold_evaluation_scaling
-        self.min_history_threshold = min_history_threshold
-
-        self.selection_evaluation_early_stop = selection_evaluation_early_stop
-        self.selection_evaluation_scaling =  selection_evaluation_scaling
-        
-        self.population_scaling = population_scaling
-        self.generations_until_end_population = generations_until_end_population
-
-        self.subsets = subsets
-
-        #Initialize other used params
         self.objective_function_weights = [*scorers_weights, *other_objective_functions_weights]
         
         self.objective_names = [f._score_func.__name__ if hasattr(f,"_score_func") else f.__name__ for f in self._scorers] + [f.__name__ for f in other_objective_functions]
-        self.scorers_early_stop_tol = scorers_early_stop_tol
-        self._scorers_early_stop_tol = self.scorers_early_stop_tol
-        self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
-        self.early_stop = early_stop
-        self.memory = memory
-        self.cross_val_predict_cv = cross_val_predict_cv
-
-        self.budget_range = budget_range
-        self.budget_scaling = budget_scaling
-        self.generations_until_end_budget = generations_until_end_budget
-        self.preprocessing = preprocessing
-
-        self.validation_strategy = validation_strategy
-        self.validation_fraction = validation_fraction
-
-        self.subset_column = subset_column
-        self.stepwise_steps = stepwise_steps
-
+        
+        
         if not isinstance(self.other_objectives_early_stop_tol, list):
             self._other_objectives_early_stop_tol = [self.other_objectives_early_stop_tol for _ in range(len(self.other_objective_functions))]
         else:
@@ -394,6 +386,23 @@ class TPOTEstimator(BaseEstimator):
 
 
     def fit(self, X, y):
+        if self.client is not None: #If user passed in a client manually
+           _client = self.client
+        else:
+
+            if self.verbose >= 4:
+                silence_logs = 30
+            elif self.verbose >=5:
+                silence_logs = 40
+            else:
+                silence_logs = 50
+            cluster = LocalCluster(n_workers=self.n_jobs, #if no client is passed in and no global client exists, create our own
+                    threads_per_worker=1,
+                    processes=False,
+                    silence_logs=silence_logs,
+                    memory_limit=self.memory_limit)
+            _client = Client(cluster)
+
 
         self.evaluated_individuals = None
         #determine validation strategy
@@ -425,10 +434,16 @@ class TPOTEstimator(BaseEstimator):
         else:
             self._preprocessing_pipeline = None
 
-        _, y = sklearn.utils.check_X_y(X, y, y_numeric=True)
+        #_, y = sklearn.utils.check_X_y(X, y, y_numeric=True)
 
         #Set up the configuation dictionaries and the search spaces
-        n_samples=X.shape[0]
+
+        if isinstance(self.cv, int) or isinstance(self.cv, float):
+            n_folds = self.cv
+        else:
+            n_folds = self.cv.n_splits
+
+        n_samples= int(math.floor(X.shape[0]/n_folds))
         n_features=X.shape[1]
 
         if isinstance(X, pd.DataFrame):
@@ -448,18 +463,24 @@ class TPOTEstimator(BaseEstimator):
         leaf_config_dict = get_configuration_dictionary(self.leaf_config_dict, n_samples, n_features, self.classification, subsets=self.subsets, feature_names=self.feature_names)
 
         if self.n_initial_optimizations > 0:
-            tmp = partial(tpot2.estimator_objective_functions.cross_val_score_objective,scorers= self._scorers, cv=self.optimization_cv )
-            optuna_objective = lambda ind: tmp(
-                ind.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column), 
-                X, y, )
+            #tmp = partial(tpot2.estimator_objective_functions.cross_val_score_objective,scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column )
+            optuna_objective = lambda ind,  X=X, y=y , scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column: tpot2.estimator_objective_functions.cross_val_score_objective(
+                ind, 
+                X=X, y=y, scorers= scorers, cv=cv, memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column )
         else:
             optuna_objective = None
 
 
+        #check if self.cv is a number
+        if isinstance(self.cv, int) or isinstance(self.cv, float):
+            if self.classification:
+                self.cv_gen = sklearn.model_selection.StratifiedKFold(n_splits=self.cv, shuffle=True, random_state=42)
+            else:
+                self.cv_gen = sklearn.model_selection.KFold(n_splits=self.cv, shuffle=True, random_state=42)
 
-        self.cv_gen = sklearn.model_selection.check_cv(self.cv, y, classifier=self.classification)
-        self.cv_gen.shuffle = True
-        self.cv_gen.random_state = 1
+        else:
+            self.cv_gen = sklearn.model_selection.check_cv(self.cv, y, classifier=self.classification)
+
 
         self.individual_generator_instance = tpot2.estimator_graph_individual_generator(   
                                                             inner_config_dict=inner_config_dict,
@@ -476,32 +497,22 @@ class TPOTEstimator(BaseEstimator):
             evalutation_early_stop_steps = None
 
 
-        def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_functions, step=None, budget=None, generation=1,is_classification=True):
-            #subsample the data
-            if budget is not None and budget < 1:
-                if is_classification:
-                    x,y = sklearn.utils.resample(x,y, stratify=y, n_samples=int(budget*len(x)), replace=False, random_state=1)
-                else:
-                    x,y = sklearn.utils.resample(x,y, n_samples=int(budget*len(x)), replace=False, random_state=1)
+        # X = _client.scatter(X)
+        # y = _client.scatter(y)
 
-            cv_obj_scores = tpot2.estimator_objective_functions.cross_val_score_objective(sklearn.base.clone(pipeline),x,y,scorers=scorers, cv=cv , fold=step)
-            
-            other_scores = []
-            
-            if other_objective_functions is not None and len(other_objective_functions) >0:
-                other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
-            
-            return np.concatenate([cv_obj_scores,other_scores])
-
+        #.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column),
         #tmp = partial(objective_function_generator, scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions )
-        self.final_object_function_list = [lambda pipeline_individual, **kwargs: objective_function_generator(
-                pipeline_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column),
-                #ind,
-                X, y, 
-                is_classification=self.classification,
+        self.final_object_function_list =[ lambda pipeline_individual, X=X, y=y,is_classification=self.classification,
                 scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions,
-                **kwargs,
-                )]
+                 memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column, **kwargs: objective_function_generator(
+                                pipeline_individual,
+                                #ind,
+                                X, y, 
+                                is_classification=is_classification,
+                                scorers= scorers, cv=cv, other_objective_functions=other_objective_functions,
+                                memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column,
+                                **kwargs,
+                                )]
 
 
         #If warm start and we have an evolver instance, use the existing one
@@ -538,6 +549,7 @@ class TPOTEstimator(BaseEstimator):
                                             population_scaling = self.population_scaling,
                                             generations_until_end_population = self.generations_until_end_population,
                                             stepwise_steps = self.stepwise_steps,
+                                            client = _client,
                                             **self.evolver_params)
 
         
@@ -552,17 +564,17 @@ class TPOTEstimator(BaseEstimator):
             #reshuffle rows
             X, y = sklearn.utils.shuffle(X, y, random_state=1)
 
-            val_objective_function_list = [lambda ind, **kwargs: objective_function_generator(
-                ind,
-                X,y, 
-                is_classification=self.classification,
-                scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions,
-                **kwargs,
-                )]
+            val_objective_function_list = [lambda ind, X=X, y=y, is_classification=self.classification,scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions, **kwargs: objective_function_generator(
+                                                                                                ind,
+                                                                                                X,y, 
+                                                                                                is_classification=is_classification,
+                                                                                                scorers= scorers, cv=cv, other_objective_functions=other_objective_functions,
+                                                                                                **kwargs,
+                                                                                                )]
             
             val_scores = tpot2.objectives.parallel_eval_objective_list(
                 best_pareto_front,
-                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names))
+                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client)
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
@@ -571,33 +583,21 @@ class TPOTEstimator(BaseEstimator):
         elif validation_strategy == 'split':
 
                 
-            def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test, scorers, other_objective_functions):
-                #subsample the data
-                fitted_pipeline = sklearn.base.clone(pipeline)
-                fitted_pipeline.fit(X_train, y_train)
 
-                this_fold_scores = [sklearn.metrics.get_scorer(scorer)(fitted_pipeline, X_test, y_test) for scorer in scorers] 
-                
-                other_scores = []
-                #TODO use same exported pipeline as for each objective
-                if other_objective_functions is not None and len(other_objective_functions) >0:
-                    other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
-                
-                return np.concatenate([this_fold_scores,other_scores])
 
             best_pareto_front_idx = list(self.pareto_front.index)
             best_pareto_front = self.pareto_front.loc[best_pareto_front_idx]['Instance']
-            val_objective_function_list = [lambda ind, **kwargs: val_objective_function_generator(
+            val_objective_function_list = [lambda ind, X=X, y=y, X_val=X_val, y_val=y_val, scorers= self._scorers, other_objective_functions=self.other_objective_functions, **kwargs: val_objective_function_generator(
                 ind,
                 X,y,
                 X_val, y_val, 
-                scorers= self._scorers, other_objective_functions=self.other_objective_functions,
+                scorers= scorers, other_objective_functions=other_objective_functions,
                 **kwargs,
                 )]
             
             val_scores = tpot2.objectives.parallel_eval_objective_list(
                 best_pareto_front,
-                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names))
+                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names),client=_client)
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
@@ -628,6 +628,13 @@ class TPOTEstimator(BaseEstimator):
         if self.verbose >= 3:
             best_individual.plot()
 
+        if self.client is None: #no client was passed in
+            #close cluster and client
+            _client.close()
+            cluster.close()
+
+        return self
+        
     def _estimator_has(attr):
         '''Check if we can delegate a method to the underlying estimator.
         First, we check the first fitted final estimator if available, otherwise we
@@ -636,6 +643,10 @@ class TPOTEstimator(BaseEstimator):
         return  lambda self: (self.fitted_pipeline_ is not None and
             hasattr(self.fitted_pipeline_, attr)
         )
+
+
+
+    
 
 
     @available_if(_estimator_has('predict'))
@@ -700,11 +711,13 @@ def _convert_parents_tuples_to_integers(row, object_to_int):
         return np.nan
 
 def _apply_make_pipeline(graphindividual, preprocessing_pipeline=None):
-    if preprocessing_pipeline is None:
-        return graphindividual.export_pipeline()
-    else:
-        return sklearn.pipeline.make_pipeline(sklearn.base.clone(preprocessing_pipeline), graphindividual.export_pipeline())
-
+    try: 
+        if preprocessing_pipeline is None:
+            return graphindividual.export_pipeline()
+        else:
+            return sklearn.pipeline.make_pipeline(sklearn.base.clone(preprocessing_pipeline), graphindividual.export_pipeline())
+    except:
+        return None
 
 def get_configuration_dictionary(options, n_samples, n_features, classification, subsets=None, feature_names=None):
     if options is None:
@@ -738,8 +751,18 @@ def get_configuration_dictionary(options, n_samples, n_features, classification,
         elif option == "feature_set_selector":
             config_dict.update(tpot2.config.make_FSS_config_dictionary(subsets, n_features, feature_names=feature_names))
 
+        elif option == "skrebate":
+            config_dict.update(tpot2.config.make_skrebate_config_dictionary(n_features=n_features))
+        
+        elif option == "MDR":
+            config_dict.update(tpot2.config.make_MDR_config_dictionary())
+        
+        elif option == "ContinuousMDR":
+            config_dict.update(tpot2.config.make_ContinuousMDR_config_dictionary())
+
         elif option == "passthrough":
             config_dict.update(tpot2.config.make_passthrough_config_dictionary())
+        
 
         else:
             config_dict.update(recursive_with_defaults(option, n_samples, n_features, classification, subsets=subsets, feature_names=feature_names))
@@ -760,3 +783,40 @@ def recursive_with_defaults(config_dict, n_samples, n_features, classification, 
                 config_dict[key] = get_configuration_dictionary(value, n_samples, n_features, classification, subsets, feature_names)
         
     return config_dict
+
+
+
+def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_functions, memory=None, cross_val_predict_cv=None, subset_column=None, step=None, budget=None, generation=1,is_classification=True):
+    #subsample the data
+    pipeline = pipeline.export_pipeline(memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column)
+    if budget is not None and budget < 1:
+        if is_classification:
+            x,y = sklearn.utils.resample(x,y, stratify=y, n_samples=int(budget*len(x)), replace=False, random_state=1)
+        else:
+            x,y = sklearn.utils.resample(x,y, n_samples=int(budget*len(x)), replace=False, random_state=1)
+
+    if len(scorers) == 0:
+        cv_obj_scores = []
+    else:
+        cv_obj_scores = tpot2.estimator_objective_functions.cross_val_score_objective(sklearn.base.clone(pipeline),x,y,scorers=scorers, cv=cv , fold=step)
+    
+    if other_objective_functions is not None and len(other_objective_functions) >0:
+        other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
+    
+    return np.concatenate([cv_obj_scores,other_scores])
+
+
+def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test, scorers, other_objective_functions, memory=None, cross_val_predict_cv=None, subset_column=None, ):
+    #subsample the data
+    pipeline = pipeline.export_pipeline(memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column)
+    fitted_pipeline = sklearn.base.clone(pipeline)
+    fitted_pipeline.fit(X_train, y_train)
+
+    this_fold_scores = [sklearn.metrics.get_scorer(scorer)(fitted_pipeline, X_test, y_test) for scorer in scorers] 
+    
+    other_scores = []
+    #TODO use same exported pipeline as for each objective
+    if other_objective_functions is not None and len(other_objective_functions) >0:
+        other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
+    
+    return np.concatenate([this_fold_scores,other_scores])

@@ -314,11 +314,6 @@ class GraphPipeline(_BaseComposition):
     def plot(self, ):
         plot(graph = self.graph)
 
-    @property
-    def classes_(self):
-        '''The classes labels. Only exist if the last step is a classifier.'''
-        return self.graph.nodes[self.root.classes_]["instance"]
-
     def __sklearn_is_fitted__(self):
         '''Indicate whether pipeline has been fit.'''
         try:

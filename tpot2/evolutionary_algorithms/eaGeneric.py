@@ -13,9 +13,9 @@ class eaGeneric_Evolver(tpot2.BaseEvolver):
                         survival_selector,
                         parent_selector,
                         parent_selector_args = {},
-                        survival_percentage = 0.1,
+                        survival_percentage = 0.5,
                         crossover_probability=.1,
-                        mutation_probability=.9,
+                        mutation_probability=.5,
                         **kwargs,
                         ):
 

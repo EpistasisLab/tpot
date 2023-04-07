@@ -5,3 +5,7 @@ from .regressors import regressor_config_dictionary, make_regressor_config_dicti
 from .selectors import selector_config_dictionary, make_selector_config_dictionary
 from .special_configs import make_arithmetic_transformer_config_dictionary, make_FSS_config_dictionary, make_passthrough_config_dictionary
 from .hyperparametersuggestor import *
+try:
+    from .mdr_configs import make_skrebate_config_dictionary, make_MDR_config_dictionary, make_ContinuousMDR_config_dictionary
+except: #if optional packages are not installed
+    pass

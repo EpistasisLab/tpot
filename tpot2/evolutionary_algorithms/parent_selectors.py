@@ -99,7 +99,7 @@ def LexicaseSelection(scores, k, n_parents=1,):
     :mod:`random` module.
     """
     chosen =[]
-    for i in range(k):
+    for i in range(k*n_parents):
         candidates = list(range(len(scores)))
         cases = list(range(len(scores[0])))
         random.shuffle(cases)

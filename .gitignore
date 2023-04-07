@@ -1,0 +1,9 @@
+*.pyc
+.pytest_cache/
+TPOT2.egg-info
+*.tar.gz
+*.pkl
+*.json
+joblib/
+cache_folder/
+dask-worker-space/

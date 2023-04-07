@@ -38,6 +38,7 @@ def params_LogisticRegression(trial, name=None):
                   'multi_class': 'auto',
                   'l1_ratio': params['l1_ratio'],
                   'C': params['C'],
+                  'n_jobs': 1,
                   }
     return param_grid
 
@@ -45,10 +46,11 @@ def params_LogisticRegression(trial, name=None):
 def params_KNeighborsClassifier(trial, name=None, n_samples=10):
     return {
         #'n_neighbors': trial.suggest_int(f'n_neighbors_{name}', 1, 20 ), #TODO: set as a function of the number of samples
-        'n_neighbors': trial.suggest_int(f'n_neighbors_{name}', 1, 100 ), #TODO: set as a function of the number of samples
+        'n_neighbors': trial.suggest_int(f'n_neighbors_{name}', 1, n_samples, log=True ), #TODO: set as a function of the number of samples
         'weights': trial.suggest_categorical(f'weights_{name}', ['uniform', 'distance']),
         'p': trial.suggest_int('p', 1, 3),
         'metric': trial.suggest_categorical(f'metric_{name}', ['euclidean', 'minkowski']),
+        'n_jobs': 1,
     }
 
 
@@ -107,6 +109,7 @@ def params_RandomForestClassifier(trial, name=None):
         'bootstrap': trial.suggest_categorical(name=f'bootstrap_{name}', choices=[True, False]),
         'min_samples_split': trial.suggest_int(f'min_samples_split_{name}', 2, 20),
         'min_samples_leaf': trial.suggest_int(f'min_samples_leaf_{name}', 1, 20),
+        'n_jobs': 1,
     }
     return params
 
@@ -134,7 +137,8 @@ def params_XGBClassifier(trial, name=None):
         #'booster': trial.suggest_categorical(name='booster_{name}', choices=['gbtree', 'dart']),
         'n_estimators': 100,
         'max_depth': trial.suggest_int(f'max_depth_{name}', 1, 11),
-        'nthread': 1,
+        'n_jobs': 1,
+        #'use_label_encoder' : True,
     }
 
 
@@ -163,19 +167,21 @@ def params_ExtraTreesClassifier(trial, name=None):
         'min_samples_split': trial.suggest_int(f'min_samples_split_{name}', 2, 21,step=1),
         'min_samples_leaf': trial.suggest_int(f'min_samples_leaf_{name}', 1, 21, step=1),
         'bootstrap': trial.suggest_categorical(f'bootstrap_{name}', [True, False]),
+        'n_jobs': 1,
     }
     return params
 
 def params_SGDClassifier(trial, name=None):
     params = {
-        'loss': trial.suggest_categorical(f'loss_{name}', ['log_loss', 'hinge', 'modified_huber', 'squared_hinge', 'perceptron']),
+        'loss': trial.suggest_categorical(f'loss_{name}', ['log_loss', 'modified_huber',]),
         'penalty': 'elasticnet',
         'alpha': trial.suggest_float(f'alpha_{name}', 1e-5, 0.01, log=True),
         'learning_rate': trial.suggest_categorical(f'learning_rate_{name}', ['invscaling', 'constant']),
         'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
         'l1_ratio': trial.suggest_float(f'l1_ratio_{name}', 0.0, 1.0),
         'eta0': trial.suggest_float(f'eta0_{name}', 0.01, 1.0),
-        'power_t': trial.suggest_float(f'power_t_{name}', 1e-5, 100.0, log=True)
+        'power_t': trial.suggest_float(f'power_t_{name}', 1e-5, 100.0, log=True),
+        'n_jobs': 1,
     }
 
     return params

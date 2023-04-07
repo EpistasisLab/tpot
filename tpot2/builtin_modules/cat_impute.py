@@ -100,8 +100,11 @@ class CatImpute(BaseEstimator, TransformerMixin):
                     X.rename(columns={col: f"X{col}"}, inplace=True)
 
         self.enc = sklearn.impute.SimpleImputer(strategy='most_frequent')
+        if isinstance(X, pd.DataFrame):
+            self.enc.set_output(transform="pandas")
 
         if sum(self.categorical_features_) == X.shape[1]:
+            
             X_sel = self.enc.fit(X)
         else:
             X_sel, X_not_sel = _X_selected(X, self.categorical_features_)

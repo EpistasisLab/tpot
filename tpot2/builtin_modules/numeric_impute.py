@@ -100,6 +100,8 @@ class NumericImpute(BaseEstimator, TransformerMixin):
             return self
         
         self.enc = sklearn.impute.SimpleImputer(strategy='most_frequent')
+        if isinstance(X, pd.DataFrame):
+            self.enc.set_output(transform="pandas")
 
         if sum(self.categorical_features_) == X.shape[1]:
             X_sel = self.enc.fit(X)

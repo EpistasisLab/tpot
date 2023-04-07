@@ -13,7 +13,9 @@ import os
 import pickle
 import statistics
 from tqdm.dask import TqdmCallback
-
+import distributed
+from dask.distributed import Client
+from dask.distributed import LocalCluster
 
 class BaseEvolver():
     def __init__(   self, 
@@ -56,6 +58,8 @@ class BaseEvolver():
                     generations_until_end_budget = 1,                    
                     stepwise_steps = 5,
 
+                    client=None,
+                    memory_limit="4GB",
                     ) -> None:
         """
         Uses mutation, crossover, and optimization functions to evolve a population of individuals towards the given objective functions.
@@ -145,6 +149,10 @@ class BaseEvolver():
         - generations_until_max_budget (int): The number of generations to run before reaching the max budget.
 
         - stepwise_steps (int): The number of staircase steps to take when scaling the budget and population size.
+
+        - client (dask.distributed.Client): A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client. 
+
+        - memory_limit (str): The maximum amount of memory that the optimization process should use per thread. See https://docs.dask.org/en/stable/deploying-python.html
         """
 
 
@@ -204,6 +212,14 @@ class BaseEvolver():
         self.generations_until_end_budget = generations_until_end_budget
         self.stepwise_steps = stepwise_steps
 
+        self.memory_limit = memory_limit
+
+        self.client = client
+
+
+
+        ###########
+
         if self.initial_population_size != self.population_size:
             self.population_size_list = beta_interpolation(start=self.cur_population_size, end=self.population_size, scale=self.population_scaling, n=generations_until_end_population, n_steps=self.stepwise_steps)
             self.population_size_list = np.round(self.population_size_list).astype(int)
@@ -259,6 +275,22 @@ class BaseEvolver():
 
     def optimize(self, generations=None):
 
+        if self.client is not None: #If user passed in a client manually
+           self._client = self.client
+        else:
+
+            if self.verbose >= 4:
+                silence_logs = 30
+            elif self.verbose >=5:
+                silence_logs = 40
+            else:
+                silence_logs = 50
+            self._cluster = LocalCluster(n_workers=self.n_jobs, #if no client is passed in and no global client exists, create our own
+                    threads_per_worker=1,
+                    silence_logs=silence_logs,
+                    processes=False,
+                    memory_limit=self.memory_limit)
+            self._client = Client(self._cluster)
         
 
         if self.n_initial_optimizations > 0:
@@ -275,19 +307,15 @@ class BaseEvolver():
 
         try: 
             for gen in tnrange(generations,desc="Generation", disable=self.verbose<1):
+                
+                # Generation 0 is the initial population
                 if self.generation == 0:
-
-                    
                     if self.population_file is not None:
                         pickle.dump(self.population, open(self.population_file, "wb"))
-                        
                     self.evaluate_population()
-
-                    
                     if self.population_file is not None:
                         pickle.dump(self.population, open(self.population_file, "wb"))
-                        
-
+                    
                     attempts = 2
                     while len(self.population.population) == 0 and attempts > 0:
                         new_initial_population = [next(self.individual_generator) for _ in range(self.cur_population_size)]
@@ -299,8 +327,8 @@ class BaseEvolver():
                         raise Exception("No individuals could be evaluated in the initial population")
 
                     self.generation += 1
+                # Generation 1 is the first generation after the initial population
                 else:
-                    
                     if time.time() - start_time > self.max_time_seconds:
                         break
                     self.step()
@@ -316,25 +344,26 @@ class BaseEvolver():
 
 
                 if self.early_stop:
-                    #get sign of objective_function_weights
-                    sign = np.sign(self.objective_function_weights)
-                    #get best score for each objective
-                    valid_df = self.population.evaluated_individuals[~self.population.evaluated_individuals[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names]*sign
-                    cur_best_scores = valid_df.max(axis=0)*sign
-                    cur_best_scores = cur_best_scores.to_numpy()
-                    #cur_best_scores =  self.population.get_column(self.population.population, column_names=self.objective_names).max(axis=0)*sign #TODO this assumes the current population is the best
-                    
-                    improved = ( np.array(best_scores) - np.array(cur_best_scores) <= np.array(self.early_stop_tol) )
-                    not_improved = np.logical_not(improved)
-                    generations_without_improvement = generations_without_improvement* not_improved + not_improved #set to zero if not improved, else increment
+                    if self.budget is None or self.budget>=1:
+                        #get sign of objective_function_weights
+                        sign = np.sign(self.objective_function_weights)
+                        #get best score for each objective
+                        valid_df = self.population.evaluated_individuals[~self.population.evaluated_individuals[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names]*sign
+                        cur_best_scores = valid_df.max(axis=0)*sign
+                        cur_best_scores = cur_best_scores.to_numpy()
+                        #cur_best_scores =  self.population.get_column(self.population.population, column_names=self.objective_names).max(axis=0)*sign #TODO this assumes the current population is the best
+                        
+                        improved = ( np.array(best_scores) - np.array(cur_best_scores) <= np.array(self.early_stop_tol) )
+                        not_improved = np.logical_not(improved)
+                        generations_without_improvement = generations_without_improvement* not_improved + not_improved #set to zero if not improved, else increment
 
-                    #update best score
-                    best_scores = [max(best_scores[i], cur_best_scores[i]) for i in range(len(self.objective_names))]
+                        #update best score
+                        best_scores = [max(best_scores[i], cur_best_scores[i]) for i in range(len(self.objective_names))]
 
-                    if all(generations_without_improvement>self.early_stop):
-                        if self.verbose >= 3:
-                            print("Early stop")
-                        break
+                        if all(generations_without_improvement>self.early_stop):
+                            if self.verbose >= 3:
+                                print("Early stop")
+                            break
 
                 #save population
                 if self.population_file is not None: # and time.time() - last_save_time > 60*10:
@@ -353,6 +382,9 @@ class BaseEvolver():
         if self.population_file is not None:
             pickle.dump(self.population, open(self.population_file, "wb"))
 
+        if self.client is None: #If we created our own client, close it
+            self._client.close()
+            self._cluster.close()
 
 
     def step(self,):
@@ -362,7 +394,7 @@ class BaseEvolver():
             else:
                 self.cur_population_size = self.population_size
 
-                #get current budget
+                
         if self.budget_list is not None:
             if len(self.budget_list) <= self.generation:
                 self.budget = self.budget_range[-1]
@@ -458,7 +490,7 @@ class BaseEvolver():
                 print("No new individuals to evaluate")
             return
 
-        scores = tpot2.objectives.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names))
+        scores = tpot2.objectives.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client )
 
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
@@ -526,7 +558,8 @@ class BaseEvolver():
                                     step=step,
                                     budget = self.budget,
                                     generation = self.generation,
-                                    n_expected_columns=len(self.objective_names)
+                                    n_expected_columns=len(self.objective_names),
+                                    client=self._client,
                                     )
 
             self.population.update_column(unevaluated_individuals_this_step, column_names=this_step_names, data=scores)

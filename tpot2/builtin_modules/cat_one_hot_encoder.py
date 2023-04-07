@@ -62,6 +62,7 @@ class CatOneHotEncoder(BaseEstimator, TransformerMixin):
 
         #TODO make this more consistent with sklearn baseimputer/baseencoder
         if isinstance(X, pd.DataFrame):
+            self.enc.set_output(transform="pandas")
             for col in X.columns:
                 # check if the column name is not a string
                 if not isinstance(col, str):
