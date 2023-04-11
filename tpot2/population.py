@@ -294,36 +294,7 @@ class Population():
             
         return new_offspring
 
-            
-    def update_pareto_fronts(self, column_names, weights, invalid_values = ["TIMEOUT","INVALID"]):
-        '''
-        Updates the pareto fronts with the new pareto fronts.
-        '''
-        df_pareto_fronts(self.evaluated_individuals, column_names, weights, invalid_values =  invalid_values, inplace=True)
-
-
-
-def df_pareto_fronts(df, column_names, weights, invalid_values = ["TIMEOUT","INVALID", np.nan], inplace=True):
-    '''
-    Updates the pareto fronts with the new pareto fronts.
-    '''
-    dftmp = df[~df[column_names].isin(invalid_values).any(axis=1)]
-
-    indeces = dftmp[~dftmp[column_names].isna().any(axis=1)].index.values
-    weighted_scores = df.loc[indeces][column_names].to_numpy()  * weights
-
-    pareto_fronts = tpot2.parent_selectors.nondominated_sorting(weighted_scores)
-
-    if not inplace:
-        df = pd.DataFrame(index=df.index,columns=["Pareto_Front"], data=[])
-    
-    df["Pareto_Front"] = np.nan
-
-    for i, front in enumerate(pareto_fronts):
-        for index in front:
-            df.loc[indeces[index], "Pareto_Front"] = i
-
-    return df
+   
 
 def get_id(individual):
     return individual.unique_id()

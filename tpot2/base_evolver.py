@@ -302,7 +302,7 @@ class BaseEvolver():
 
         init_names = self.objective_names
         if self.budget_range is not None:
-            init_names = init_names + ["budget"]
+            init_names = init_names + ["Budget"]
         if self.population is None:
             self.population = tpot2.Population(column_names=init_names)
             initial_population = [next(self.individual_generator) for _ in range(self.cur_population_size)]
@@ -570,7 +570,7 @@ class BaseEvolver():
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
         if budget is not None:
-            self.population.update_column(individuals_to_evaluate, column_names="budget", data=budget)
+            self.population.update_column(individuals_to_evaluate, column_names="Budget", data=budget)
 
         self.population.remove_invalid_from_population(column_names=self.objective_names)
         self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
@@ -583,9 +583,9 @@ class BaseEvolver():
 
         if all([name_step in self.population.evaluated_individuals.columns for name_step in column_names]):
             if budget is not None:
-                offspring_scores = self.population.get_column(cur_pop, column_names=column_names+["budget"], to_numpy=False)
+                offspring_scores = self.population.get_column(cur_pop, column_names=column_names+["Budget"], to_numpy=False)
                 #Individuals are unevaluated if we have a higher budget OR if any of the objectives are nan
-                unevaluated_filter = lambda i: any(offspring_scores.loc[offspring_scores.index[i]][column_names].isna()) or (offspring_scores.loc[offspring_scores.index[i]]["budget"] < budget)
+                unevaluated_filter = lambda i: any(offspring_scores.loc[offspring_scores.index[i]][column_names].isna()) or (offspring_scores.loc[offspring_scores.index[i]]["Budget"] < budget)
             else:
                 offspring_scores = self.population.get_column(cur_pop, column_names=column_names, to_numpy=False)
                 unevaluated_filter = lambda i: any(offspring_scores.loc[offspring_scores.index[i]][column_names].isna())
@@ -679,7 +679,7 @@ class BaseEvolver():
             if step == self.evalutation_early_stop_steps-1:
                 self.population.update_column(cur_individuals, column_names=self.objective_names, data=offspring_scores)
                 if budget is not None:
-                    self.population.update_column(cur_individuals, column_names="budget", data=budget)
+                    self.population.update_column(cur_individuals, column_names="Budget", data=budget)
                 return
 
             #If we have more threads than remaining individuals, we may as well evaluate the extras too
