@@ -39,8 +39,8 @@ def crossover_and_mutate(parents):
 
 built_in_var_ops_dict = {"mutate":mutate, 
                         "crossover":crossover, 
-                        "mutate_and_crossover":mutate_and_crossover, 
-                        "crossover_and_mutate":crossover_and_mutate}
+                        "mutate_then_crossover":mutate_and_crossover, 
+                        "crossover_then_mutate":crossover_and_mutate}
 
 
 
@@ -312,7 +312,7 @@ def df_pareto_fronts(df, column_names, weights, invalid_values = ["TIMEOUT","INV
     indeces = dftmp[~dftmp[column_names].isna().any(axis=1)].index.values
     weighted_scores = df.loc[indeces][column_names].to_numpy()  * weights
 
-    pareto_fronts = tpot2.evolutionary_algorithms.nondominated_sorting(weighted_scores)
+    pareto_fronts = tpot2.parent_selectors.nondominated_sorting(weighted_scores)
 
     if not inplace:
         df = pd.DataFrame(index=df.index,columns=["Pareto_Front"], data=[])

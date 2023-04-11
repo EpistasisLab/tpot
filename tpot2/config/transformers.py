@@ -11,6 +11,7 @@ def params_sklearn_preprocessing_Binarizer(trial, name=None):
 def params_sklearn_decomposition_FastICA(trial, name=None, n_features=100):
     return {
         'algorithm': trial.suggest_categorical(f'algorithm_{name}', ['parallel', 'deflation']),
+        'whiten':'unit-variance',
     }
 
 def params_sklearn_cluster_FeatureAgglomeration(trial, name=None, n_features=100):

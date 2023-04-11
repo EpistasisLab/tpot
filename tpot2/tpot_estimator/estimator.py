@@ -7,6 +7,7 @@ import tpot2.estimator_objective_functions
 from functools import partial
 import tpot2.config
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from tpot2.parent_selectors import survival_select_NSGA2, TournamentSelection_Dominated
 from sklearn.preprocessing import LabelEncoder 
 from sklearn.utils.multiclass import unique_labels 
 import pandas as pd
@@ -39,7 +40,6 @@ class TPOTEstimator(BaseEstimator):
                         other_objective_functions_weights = [-1],
                         bigger_is_better = True,
                         evolver = "nsga2",
-                        evolver_params = {},
                         max_depth = np.inf,
                         max_size = np.inf, 
                         max_children = np.inf,
@@ -75,6 +75,15 @@ class TPOTEstimator(BaseEstimator):
                         subset_column = None,
                         stepwise_steps = 5,
                         client = None,
+
+                        survival_selector = survival_select_NSGA2,
+                        parent_selector = TournamentSelection_Dominated,
+                        parent_selector_args = {},
+                        survival_percentage = 0.5,
+                        crossover_probability=.1,
+                        mutate_probability=.7,
+                        mutate_then_crossover_probability=.1,
+                        crossover_then_mutate_probability=.1,
                         ):
                         
         '''
@@ -124,8 +133,6 @@ class TPOTEstimator(BaseEstimator):
         - evolver (tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver): The evolver to use for the optimization process. See tpot2.evolutionary_algorithms
             - type : an type or subclass of a BaseEvolver
             - "nsga2" : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver
-        
-        - evolver_params (dict): A dictionary of parameters for the evolver.
         
         - max_depth (int): The maximum depth from any node to the root of the pipelines to be generated.
         
@@ -302,7 +309,7 @@ class TPOTEstimator(BaseEstimator):
         self.other_objective_functions_weights = other_objective_functions_weights
         self.bigger_is_better = bigger_is_better
         self.evolver = evolver
-        self.evolver_params  = evolver_params
+
         self.max_depth = max_depth
         self.max_size = max_size
         self.max_children = max_children
@@ -339,6 +346,13 @@ class TPOTEstimator(BaseEstimator):
         self.stepwise_steps = stepwise_steps
         self.client = client
 
+        self.survival_selector=survival_selector
+        self.parent_selector=parent_selector
+        self.survival_percentage = survival_percentage
+        self.crossover_probability = crossover_probability
+        self.mutate_probability = mutate_probability
+        self.mutate_then_crossover_probability= mutate_then_crossover_probability
+        self.crossover_then_mutate_probability= crossover_then_mutate_probability
 
         #Initialize other used params
 
@@ -400,7 +414,7 @@ class TPOTEstimator(BaseEstimator):
                 silence_logs = 50
             cluster = LocalCluster(n_workers=self.n_jobs, #if no client is passed in and no global client exists, create our own
                     threads_per_worker=1,
-                    processes=True,
+                    processes=False,
                     silence_logs=silence_logs,
                     memory_limit=self.memory_limit)
             _client = Client(cluster)
@@ -553,7 +567,15 @@ class TPOTEstimator(BaseEstimator):
                                             stepwise_steps = self.stepwise_steps,
                                             client = _client,
                                             objective_kwargs = {"X": X_future, "y": y_future},
-                                            **self.evolver_params)
+                                            survival_selector=self.survival_selector,
+                                            parent_selector=self.parent_selector,
+                                            survival_percentage = self.survival_percentage,
+                                            crossover_probability = self.crossover_probability,
+                                            mutate_probability = self.mutate_probability,
+                                            mutate_then_crossover_probability= self.mutate_then_crossover_probability,
+                                            crossover_then_mutate_probability= self.crossover_then_mutate_probability,
+                                            
+                                            )
 
         
         self._evolver_instance.optimize()
@@ -797,14 +819,16 @@ def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_fun
         else:
             x,y = sklearn.utils.resample(x,y, n_samples=int(budget*len(x)), replace=False, random_state=1)
 
-    if len(scorers) == 0:
-        cv_obj_scores = []
-    else:
+    if len(scorers) > 0:
         cv_obj_scores = tpot2.estimator_objective_functions.cross_val_score_objective(sklearn.base.clone(pipeline),x,y,scorers=scorers, cv=cv , fold=step)
+    else:
+        cv_obj_scores = []
     
     if other_objective_functions is not None and len(other_objective_functions) >0:
         other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
-    
+    else:
+        other_scores = []
+        
     return np.concatenate([cv_obj_scores,other_scores])
 
 
