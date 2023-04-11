@@ -17,7 +17,7 @@ from dask.distributed import Client
 from dask.distributed import LocalCluster
 import math
 
-EVOLVERS = {"nsga2":tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver}
+EVOLVERS = {"nsga2":tpot2.BaseEvolver}
 
 
 
@@ -160,7 +160,8 @@ class TPOTEstimator(BaseEstimator):
             - 'MDR' : Includes MDR.
             - 'ContinuousMDR' : Includes ContinuousMDR.
             - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
-
+            - None : If None and max_depth>1, the root_config_dict will be used for the inner nodes as well.
+            
         - leaf_config_dict (dict): The configuration dictionary to use for the leaf node of the model. If set, leaf nodes must be from this dictionary.
             Otherwise leaf nodes will be generated from the root_config_dict. 
             Default None
@@ -173,6 +174,7 @@ class TPOTEstimator(BaseEstimator):
             - 'feature_set_selector' : A selector that pulls out specific subsets of columns from the data. Only well defined as a leaf.
                                         Subsets are set with the subsets parameter.
             - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
+            - None : If None, a leaf will not be required (i.e. the pipeline can be a single root node). Leaf nodes will be generated from the inner_config_dict.
 
         - subsets : Sets the subsets that the FeatureSetSeletor will select from if set as an option in one of the configuration dictionaries.
             Default None
@@ -398,7 +400,7 @@ class TPOTEstimator(BaseEstimator):
                 silence_logs = 50
             cluster = LocalCluster(n_workers=self.n_jobs, #if no client is passed in and no global client exists, create our own
                     threads_per_worker=1,
-                    processes=False,
+                    processes=True,
                     silence_logs=silence_logs,
                     memory_limit=self.memory_limit)
             _client = Client(cluster)
@@ -497,12 +499,12 @@ class TPOTEstimator(BaseEstimator):
             evalutation_early_stop_steps = None
 
 
-        # X = _client.scatter(X)
-        # y = _client.scatter(y)
+        X_future = _client.scatter(X)
+        y_future = _client.scatter(y)
 
         #.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column),
         #tmp = partial(objective_function_generator, scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions )
-        self.final_object_function_list =[ lambda pipeline_individual, X=X, y=y,is_classification=self.classification,
+        self.final_object_function_list =[ lambda pipeline_individual, X, y,is_classification=self.classification,
                 scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions,
                  memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column, **kwargs: objective_function_generator(
                                 pipeline_individual,
@@ -550,6 +552,7 @@ class TPOTEstimator(BaseEstimator):
                                             generations_until_end_population = self.generations_until_end_population,
                                             stepwise_steps = self.stepwise_steps,
                                             client = _client,
+                                            objective_kwargs = {"X": X_future, "y": y_future},
                                             **self.evolver_params)
 
         
@@ -597,7 +600,7 @@ class TPOTEstimator(BaseEstimator):
             
             val_scores = tpot2.objectives.parallel_eval_objective_list(
                 best_pareto_front,
-                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names),client=_client)
+                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names),client=_client, objective_kwargs = {"X": X_future, "y": y_future})
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
@@ -787,7 +790,6 @@ def recursive_with_defaults(config_dict, n_samples, n_features, classification, 
 
 
 def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_functions, memory=None, cross_val_predict_cv=None, subset_column=None, step=None, budget=None, generation=1,is_classification=True):
-    #subsample the data
     pipeline = pipeline.export_pipeline(memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column)
     if budget is not None and budget < 1:
         if is_classification:

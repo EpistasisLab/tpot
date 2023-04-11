@@ -35,18 +35,11 @@ def params_sklearn_kernel_approximation_Nystroem(trial, name=None, n_features=10
     }
 
 def params_sklearn_decomposition_PCA(trial, name=None, n_features=100):
+    # keep the number of components required to explain 'variance_explained' of the variance
+    variance_explained = 1 - trial.suggest_float(f'n_components_{name}', 0.001, 0.5, log=True) #values closer to 1 are more likely
+    
     return {
-        #'iterated_power': trial.suggest_int(f'iterated_power_{name}', 1, 10),
-        #'n_components': trial.suggest_int(f'n_components_{name}', 1, n_features),
-        #'svd_solver': trial.suggest_categorical(f'svd_solver_{name}', ['auto', 'full', 'arpack', 'randomized']),
-        # 'tol': trial.suggest_float(f'tol_{name}', 1e-12, 1e-2),
-        # 'whiten': trial.suggest_categorical(f'whiten_{name}', [True, False]),
-
-        # 'svd_solver': 'full',
-        # 'n_components': trial.suggest_float(f'n_components_{name}',.8, .999),
-        
-        'svd_solver': 'randomized',
-        'iterated_power': trial.suggest_int(f'iterated_power_{name}', 1, 11),
+        'n_components': variance_explained,
     }
 
 

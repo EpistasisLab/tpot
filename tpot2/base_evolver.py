@@ -16,6 +16,7 @@ from tqdm.dask import TqdmCallback
 import distributed
 from dask.distributed import Client
 from dask.distributed import LocalCluster
+from tpot2.parent_selectors import survival_select_NSGA2, TournamentSelection_Dominated
 
 class BaseEvolver():
     def __init__(   self, 
@@ -60,6 +61,15 @@ class BaseEvolver():
 
                     client=None,
                     memory_limit="4GB",
+
+                    objective_kwargs = None,
+
+                    survival_selector = survival_select_NSGA2,
+                    parent_selector = TournamentSelection_Dominated,
+                    parent_selector_args = {},
+                    survival_percentage = 0.5,
+                    crossover_probability=.1,
+                    mutation_probability=.5,
                     ) -> None:
         """
         Uses mutation, crossover, and optimization functions to evolve a population of individuals towards the given objective functions.
@@ -217,6 +227,24 @@ class BaseEvolver():
         self.client = client
 
 
+        self.survival_selector=survival_selector
+        self.parent_selector=parent_selector
+        self.survival_percentage = survival_percentage
+        self.crossover_probability = crossover_probability
+        self.mutation_probability = mutation_probability
+        self.parent_selector_args = parent_selector_args
+
+        if objective_kwargs is None:
+            self.objective_kwargs = {}
+        else:
+            self.objective_kwargs = objective_kwargs
+
+        # if objective_kwargs is None:
+        #     self.objective_kwargs = [{}] * len(self.objective_functions)
+        # elif isinstance(objective_kwargs, dict):
+        #     self.objective_kwargs = [objective_kwargs] * len(self.objective_functions)
+        # else:
+        #     self.objective_kwargs = objective_kwargs
 
         ###########
 
@@ -288,7 +316,7 @@ class BaseEvolver():
             self._cluster = LocalCluster(n_workers=self.n_jobs, #if no client is passed in and no global client exists, create our own
                     threads_per_worker=1,
                     silence_logs=silence_logs,
-                    processes=False,
+                    processes=True,
                     memory_limit=self.memory_limit)
             self._client = Client(self._cluster)
         
@@ -409,18 +437,41 @@ class BaseEvolver():
         self.generation += 1
         
 
-    @abstractmethod
+    
     def one_generation_step(self, ): #your EA Algorithm goes here
         
-        #generate new individuals
+        self.survival_k = max(1,int(self.cur_population_size*self.survival_percentage))
+        self.n_crossover = max(2,int(self.cur_population_size*self.crossover_probability))
+        self.n_mutation_only = max(1,self.cur_population_size - self.n_crossover)
 
-        #evaluate new individuals
+        #print("getting survivors")
+        #Get survivors from previous 
+        weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
+        new_population_index = np.ravel(self.survival_selector(weighted_scores, k=self.survival_k)) #TODO make it clear that we are concatenating scores...
+        self.population.set_population(np.array(self.population.population)[new_population_index])
+        #print("done getting survivors")
 
-        #add to population
+        #print("making offspring")
+        #2 parents
+        weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
+        #Divide n_cross_over by 2 because we generate two offspring from each pair of parents
+        parents_index = self.parent_selector(weighted_scores, k=self.n_crossover, n_parents=2,   **self.parent_selector_args) #TODO make it clear that we are concatenating scores...
+        var_ops = [np.random.choice(["crossover", "crossover_and_mutate"],p=[1-self.mutation_probability, self.mutation_probability]) for i in range(len(parents_index))]
+        offspring = self.population.create_offspring(np.array(self.population.population)[parents_index], var_ops, n_jobs=self.n_jobs) 
+        self.population.update_column(offspring, column_names="Generation", data=self.generation, )
+        #print("done making offspring")
 
-        #remove individuals
-        
-        pass
+        #print("making mutations")
+        #1 parent
+        parents_index = self.parent_selector(weighted_scores, k=self.n_mutation_only, n_parents=1,   **self.parent_selector_args) #TODO make it clear that we are concatenating scores...
+        var_ops = np.repeat("mutate",len(parents_index))
+        offspring = self.population.create_offspring(np.array(self.population.population)[parents_index], var_ops) 
+        self.population.update_column(offspring, column_names="Generation", data=self.generation, )
+        #print("done making mutations")
+
+        #print("evaluating")
+        self.evaluate_population()
+        #print("done evaluating")
     
     def optimize_population(self,):
         individuals_to_optimize = [copy.deepcopy(ind) for ind in self.population.population[0:self.n_initial_optimizations]]
@@ -490,7 +541,7 @@ class BaseEvolver():
                 print("No new individuals to evaluate")
             return
 
-        scores = tpot2.objectives.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client )
+        scores = tpot2.objectives.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, **self.objective_kwargs)
 
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
@@ -525,7 +576,7 @@ class BaseEvolver():
     def evaluate_population_selection_early_stop(self,survival_counts, thresholds=None, budget=None):
 
 
-        survival_selector = tpot2.evolutionary_algorithms.parent_selectors.survival_select_NSGA2
+        survival_selector = tpot2.parent_selectors.survival_select_NSGA2
 
         ################
 
@@ -560,6 +611,7 @@ class BaseEvolver():
                                     generation = self.generation,
                                     n_expected_columns=len(self.objective_names),
                                     client=self._client,
+                                    **self.objective_kwargs,
                                     )
 
             self.population.update_column(unevaluated_individuals_this_step, column_names=this_step_names, data=scores)

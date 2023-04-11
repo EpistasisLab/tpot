@@ -1,22 +1,8 @@
-import tpot2.evolutionary_algorithms.helpers as helpers
 import numpy as np
 import tpot2
 
 
-
-class eaSimple_Evolver(tpot2.BaseEvolver):
-    def __init__(self, 
-                        selector,
-                        selector_args={},
-                        variation_probabilities={'mutate': 0.5,
-                                                 'crossover': 0.5}, # Possible keys are: 'mutate', 'crossover', 'mutate_and_crossover', 'crossover_and_mutate'
-                        **kwargs,
-                        ):
-
-        self.variation_probabilities = variation_probabilities
-        self.selector=selector
-        self.selector_args = selector_args
-        super().__init__( **kwargs)
+class SimpleEvolver(tpot2.BaseEvolver):
 
     def one_generation_step(self): #EA Algorithm goes here
 

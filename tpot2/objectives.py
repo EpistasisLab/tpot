@@ -6,7 +6,7 @@ import traceback
 from collections.abc import Iterable
 import warnings
 from stopit import threading_timeoutable, TimeoutException
-from tpot2.evolutionary_algorithms import survival_select_NSGA2
+from tpot2.parent_selectors import survival_select_NSGA2
 import time
 import dask
 import stopit
@@ -84,7 +84,7 @@ def parallel_eval_objective_list(individual_list,
                                 timeout=None,
                                 n_expected_columns=None,
                                 client=None,
-                                **objective_kwargs    ):
+                                **objective_kwargs):
 
     #offspring_scores = Parallel(n_jobs=n_jobs)(delayed(eval_objective_list)(ind,  objective_list, verbose, timeout=timeout)  for ind in individual_list )
     
@@ -97,7 +97,9 @@ def parallel_eval_objective_list(individual_list,
         client = dask.distributed.get_client()
     futures = [client.submit(eval_objective_list, ind,  objective_list, verbose, timeout=timeout,**objective_kwargs)  for ind in individual_list]
     
-    dask.distributed.progress(futures, notebook=False)
+    if verbose >= 2:
+        dask.distributed.progress(futures, notebook=False)
+    
     dask.distributed.wait(futures)
     
     offspring_scores = []
