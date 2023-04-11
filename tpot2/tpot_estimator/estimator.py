@@ -78,7 +78,6 @@ class TPOTEstimator(BaseEstimator):
 
                         survival_selector = survival_select_NSGA2,
                         parent_selector = TournamentSelection_Dominated,
-                        parent_selector_args = {},
                         survival_percentage = 0.5,
                         crossover_probability=.1,
                         mutate_probability=.7,
@@ -592,8 +591,10 @@ class TPOTEstimator(BaseEstimator):
             
             #reshuffle rows
             X, y = sklearn.utils.shuffle(X, y, random_state=1)
+            X_future = _client.scatter(X)
+            y_future = _client.scatter(y)
 
-            val_objective_function_list = [lambda ind, X=X, y=y, is_classification=self.classification,scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions, **kwargs: objective_function_generator(
+            val_objective_function_list = [lambda ind, X, y, is_classification=self.classification,scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions, **kwargs: objective_function_generator(
                                                                                                 ind,
                                                                                                 X,y, 
                                                                                                 is_classification=is_classification,
@@ -603,7 +604,7 @@ class TPOTEstimator(BaseEstimator):
             
             val_scores = tpot2.objectives.parallel_eval_objective_list(
                 best_pareto_front,
-                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client)
+                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client, X= X_future, y= y_future)
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
@@ -611,12 +612,16 @@ class TPOTEstimator(BaseEstimator):
 
         elif validation_strategy == 'split':
 
-                
+            
+            X_future = _client.scatter(X)
+            y_future = _client.scatter(y)
+            X_val_future = _client.scatter(X_val)
+            y_val_future = _client.scatter(y_val)
 
 
             best_pareto_front_idx = list(self.pareto_front.index)
             best_pareto_front = self.pareto_front.loc[best_pareto_front_idx]['Instance']
-            val_objective_function_list = [lambda ind, X=X, y=y, X_val=X_val, y_val=y_val, scorers= self._scorers, other_objective_functions=self.other_objective_functions, **kwargs: val_objective_function_generator(
+            val_objective_function_list = [lambda ind, X, y, X_val, y_val, scorers= self._scorers, other_objective_functions=self.other_objective_functions, **kwargs: val_objective_function_generator(
                 ind,
                 X,y,
                 X_val, y_val, 
@@ -626,7 +631,7 @@ class TPOTEstimator(BaseEstimator):
             
             val_scores = tpot2.objectives.parallel_eval_objective_list(
                 best_pareto_front,
-                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names),client=_client, objective_kwargs = {"X": X_future, "y": y_future})
+                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names),client=_client, X=X_future, y=y_future, X_val=X_val_future, y_val=y_val_future)
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names

@@ -66,7 +66,6 @@ class BaseEvolver():
 
                     survival_selector = survival_select_NSGA2,
                     parent_selector = TournamentSelection_Dominated,
-                    parent_selector_args = {},
                     survival_percentage = 0.5,
                     crossover_probability=.1,
                     mutate_probability=.7,
@@ -240,7 +239,6 @@ class BaseEvolver():
         self.mutate_then_crossover_probability= mutate_then_crossover_probability / total_var_p
         self.crossover_then_mutate_probability= crossover_then_mutate_probability / total_var_p
 
-        self.parent_selector_args = parent_selector_args
         self.n_parents = n_parents
 
         if objective_kwargs is None:
@@ -465,7 +463,7 @@ class BaseEvolver():
 
         #get crossover pairs
         if n_total_crossover_pairs > 0:
-            cx_parents_index = self.parent_selector(weighted_scores, k=n_total_crossover_pairs, n_parents=self.n_parents,   **self.parent_selector_args) #TODO make it clear that we are concatenating scores...
+            cx_parents_index = self.parent_selector(weighted_scores, k=n_total_crossover_pairs, n_parents=self.n_parents,   ) #TODO make it clear that we are concatenating scores...
             cx_var_ops = np.concatenate([ np.repeat("crossover",n_crossover),
                                         np.repeat("mutate_then_crossover",n_mutate_then_crossover),
                                         np.repeat("crossover_then_mutate",n_crossover_then_mutate),
@@ -476,7 +474,7 @@ class BaseEvolver():
         
         #get mutation only parents
         if n_mutate_parents > 0:
-            m_parents_index = self.parent_selector(weighted_scores, k=n_mutate_parents, n_parents=1,   **self.parent_selector_args) #TODO make it clear that we are concatenating scores...
+            m_parents_index = self.parent_selector(weighted_scores, k=n_mutate_parents, n_parents=1,  ) #TODO make it clear that we are concatenating scores...
             m_var_ops = np.repeat("mutate",len(m_parents_index))
         else:
             m_parents_index = []

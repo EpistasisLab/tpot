@@ -72,6 +72,15 @@ class TPOTRegressor(TPOTEstimator):
                         subset_column = None,
 
                         stepwise_steps = 5,
+                        client=None,
+
+                        survival_selector = survival_select_NSGA2,
+                        parent_selector = TournamentSelection_Dominated,
+                        survival_percentage = 0.5,
+                        crossover_probability=.1,
+                        mutate_probability=.7,
+                        mutate_then_crossover_probability=.1,
+                        crossover_then_mutate_probability=.1,
         ):
         super(TPOTRegressor,self).__init__(
             *args,
@@ -126,6 +135,15 @@ class TPOTRegressor(TPOTEstimator):
             validation_fraction = validation_fraction,
             subset_column = subset_column,
             stepwise_steps = stepwise_steps,
+            client=client,
+
+            survival_selector = survival_selector,
+            parent_selector = parent_selector,
+            survival_percentage = survival_percentage,
+            crossover_probability=crossover_probability,
+            mutate_probability=mutate_probability,
+            mutate_then_crossover_probability=mutate_then_crossover_probability,
+            crossover_then_mutate_probability=crossover_then_mutate_probability,
         )
 
 
@@ -197,6 +215,14 @@ class TPOTClassifier(TPOTEstimator):
 
                         stepwise_steps = 5,
                         client=None,
+
+                        survival_selector = survival_select_NSGA2,
+                        parent_selector = TournamentSelection_Dominated,
+                        survival_percentage = 0.5,
+                        crossover_probability=.1,
+                        mutate_probability=.7,
+                        mutate_then_crossover_probability=.1,
+                        crossover_then_mutate_probability=.1,
         ):
         super(TPOTClassifier,self).__init__(
             scorers = scorers, #these get passed into CV
@@ -251,6 +277,15 @@ class TPOTClassifier(TPOTEstimator):
             subset_column = subset_column,
             stepwise_steps = stepwise_steps,
             client=client,
+
+            survival_selector = survival_selector,
+            parent_selector = parent_selector,
+            survival_percentage = survival_percentage,
+            crossover_probability=crossover_probability,
+            mutate_probability=mutate_probability,
+            mutate_then_crossover_probability=mutate_then_crossover_probability,
+            crossover_then_mutate_probability=crossover_then_mutate_probability,
+
         )
 
 
