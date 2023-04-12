@@ -25,7 +25,7 @@ class BaseEvolver():
                     objective_functions,
                     objective_function_weights,
                     initial_population_size = None,
-                    population_scaling = .8, 
+                    population_scaling = .5, 
                     generations_until_end_population = 1,  
                     early_stop_tol = 0.001,
                     early_stop = None,
@@ -55,7 +55,7 @@ class BaseEvolver():
                     evalutation_early_stop_steps = None, 
                     final_score_strategy = "mean",
                     budget_range = None, 
-                    budget_scaling = .8, 
+                    budget_scaling = .5, 
                     generations_until_end_budget = 1,                    
                     stepwise_steps = 5,
 
@@ -323,7 +323,7 @@ class BaseEvolver():
             self._cluster = LocalCluster(n_workers=self.n_jobs, #if no client is passed in and no global client exists, create our own
                     threads_per_worker=1,
                     silence_logs=silence_logs,
-                    processes=False,
+                    processes=True,
                     memory_limit=self.memory_limit)
             self._client = Client(self._cluster)
         

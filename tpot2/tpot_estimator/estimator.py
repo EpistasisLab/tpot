@@ -83,6 +83,8 @@ class TPOTEstimator(BaseEstimator):
                         mutate_probability=.7,
                         mutate_then_crossover_probability=.1,
                         crossover_then_mutate_probability=.1,
+
+                        objective_function_names = None,
                         ):
                         
         '''
@@ -353,6 +355,8 @@ class TPOTEstimator(BaseEstimator):
         self.mutate_then_crossover_probability= mutate_then_crossover_probability
         self.crossover_then_mutate_probability= crossover_then_mutate_probability
 
+        self.objective_function_names = objective_function_names
+
         #Initialize other used params
 
 
@@ -381,7 +385,12 @@ class TPOTEstimator(BaseEstimator):
 
         self.objective_function_weights = [*scorers_weights, *other_objective_functions_weights]
         
-        self.objective_names = [f._score_func.__name__ if hasattr(f,"_score_func") else f.__name__ for f in self._scorers] + [f.__name__ for f in other_objective_functions]
+
+        if self.other_objective_functions is None:
+            obj_names = [f.__name__ for f in other_objective_functions]
+        else:
+            obj_names = self.objective_function_names
+        self.objective_names = [f._score_func.__name__ if hasattr(f,"_score_func") else f.__name__ for f in self._scorers] + obj_names
         
         
         if not isinstance(self.other_objectives_early_stop_tol, list):
@@ -413,7 +422,7 @@ class TPOTEstimator(BaseEstimator):
                 silence_logs = 50
             cluster = LocalCluster(n_workers=self.n_jobs, #if no client is passed in and no global client exists, create our own
                     threads_per_worker=1,
-                    processes=False,
+                    processes=True,
                     silence_logs=silence_logs,
                     memory_limit=self.memory_limit)
             _client = Client(cluster)
@@ -479,9 +488,11 @@ class TPOTEstimator(BaseEstimator):
 
         if self.n_initial_optimizations > 0:
             #tmp = partial(tpot2.estimator_objective_functions.cross_val_score_objective,scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column )
-            optuna_objective = lambda ind,  X=X, y=y , scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column: tpot2.estimator_objective_functions.cross_val_score_objective(
-                ind, 
-                X=X, y=y, scorers= scorers, cv=cv, memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column )
+            # optuna_objective = lambda ind,  X=X, y=y , scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column: tpot2.estimator_objective_functions.cross_val_score_objective(
+            #     ind, 
+            #     X=X, y=y, scorers= scorers, cv=cv, memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column )
+            
+            optuna_objective = partial(tpot2.estimator_objective_functions.cross_val_score_objective, X=X, y=y , scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column )
         else:
             optuna_objective = None
 
@@ -860,6 +871,8 @@ def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_fun
     
     if other_objective_functions is not None and len(other_objective_functions) >0:
         other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
+        #flatten
+        other_scores = np.array(other_scores).flatten().tolist()
     else:
         other_scores = []
         

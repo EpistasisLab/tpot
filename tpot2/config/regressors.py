@@ -32,7 +32,7 @@ from functools import partial
 def params_RandomForestRegressor(trial, name=None):
     return {
         'n_estimators': 100,
-        'max_features': trial.suggest_float(f'max_features_{name}', 0.05, 1.01),
+        'max_features': trial.suggest_float(f'max_features_{name}', 0.05, 1.0),
         'bootstrap': trial.suggest_categorical(name=f'bootstrap_{name}', choices=[True, False]),
         'min_samples_split': trial.suggest_int(f'min_samples_split_{name}', 2, 21),
         'min_samples_leaf': trial.suggest_int(f'min_samples_leaf_{name}', 1, 21),
