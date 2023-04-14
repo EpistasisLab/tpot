@@ -1,5 +1,7 @@
 # TPOT2 ALPHA
 
+![Tests](https://github.com/jay-m-dev/tpot2/actions/workflows/tests.yml/badge.svg)
+
 TPOT2 is a rewrite of TPOT with some additional functionality. Notably, we added support for graph-based pipelines and additional parameters to better specify the desired search space. 
 TPOT2 is currently in Alpha. This means that there will likely be some backwards incompatible changes to the API as we develop. Some implemented features may be buggy. There is a list of known issues written at the bottom of this README. Some features have placeholder names or are listed as "Experimental" in the doc string. These are features that may not be fully implemented and may or may work with all other features.
 
