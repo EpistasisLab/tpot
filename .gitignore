@@ -7,3 +7,6 @@ TPOT2.egg-info
 joblib/
 cache_folder/
 dask-worker-space/
+.tox/
+*.egg-info/
+.coverage
