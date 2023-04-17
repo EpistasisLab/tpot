@@ -30,7 +30,7 @@ class TPOTEstimator(BaseEstimator):
                         population_size = 100,
                         generations = 100,
                         initial_population_size = None,
-                        population_scaling = .8, 
+                        population_scaling = .5, 
                         generations_until_end_population = 1,  
                         callback: tpot2.CallBackInterface = None,
                         n_jobs=1,
@@ -56,10 +56,10 @@ class TPOTEstimator(BaseEstimator):
                         optimization_steps = 10,
                         periodic_checkpoint_folder = None,
                         threshold_evaluation_early_stop = None, 
-                        threshold_evaluation_scaling = 4,
+                        threshold_evaluation_scaling = .5,
                         min_history_threshold = 20,
                         selection_evaluation_early_stop = None, 
-                        selection_evaluation_scaling = 4, 
+                        selection_evaluation_scaling = .5, 
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol =None,
                         early_stop = None,
@@ -67,7 +67,7 @@ class TPOTEstimator(BaseEstimator):
                         memory = None,
                         cross_val_predict_cv = 0,
                         budget_range = None,
-                        budget_scaling = .8,
+                        budget_scaling = .5,
                         generations_until_end_budget = 1,  
                         preprocessing = False,  
                         validation_strategy = "none",
@@ -151,6 +151,11 @@ class TPOTEstimator(BaseEstimator):
             - 'passthrough' : A node that just passes though the input. Useful for passing through raw inputs into inner nodes.
             - 'feature_set_selector' : A selector that pulls out specific subsets of columns from the data. Only well defined as a leaf.
                                         Subsets are set with the subsets parameter.
+            - 'skrebate' : Includes ReliefF, SURF, SURFstar, MultiSURF.
+            - 'MDR' : Includes MDR.
+            - 'ContinuousMDR' : Includes ContinuousMDR.
+            - 'genetic encoders' : Includes Genetic Encoder methods as used in AutoQTL.
+            - 'FeatureEncodingFrequencySelector': Includes FeatureEncodingFrequencySelector method as used in AutoQTL.
             - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
         
 
@@ -167,6 +172,8 @@ class TPOTEstimator(BaseEstimator):
             - 'skrebate' : Includes ReliefF, SURF, SURFstar, MultiSURF.
             - 'MDR' : Includes MDR.
             - 'ContinuousMDR' : Includes ContinuousMDR.
+            - 'genetic encoders' : Includes Genetic Encoder methods as used in AutoQTL.
+            - 'FeatureEncodingFrequencySelector': Includes FeatureEncodingFrequencySelector method as used in AutoQTL.
             - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
             - None : If None and max_depth>1, the root_config_dict will be used for the inner nodes as well.
             
@@ -181,6 +188,11 @@ class TPOTEstimator(BaseEstimator):
             - 'passthrough' : A node that just passes though the input. Useful for passing through raw inputs into inner nodes.
             - 'feature_set_selector' : A selector that pulls out specific subsets of columns from the data. Only well defined as a leaf.
                                         Subsets are set with the subsets parameter.
+            - 'skrebate' : Includes ReliefF, SURF, SURFstar, MultiSURF.
+            - 'MDR' : Includes MDR.
+            - 'ContinuousMDR' : Includes ContinuousMDR.
+            - 'genetic encoders' : Includes Genetic Encoder methods as used in AutoQTL.
+            - 'FeatureEncodingFrequencySelector': Includes FeatureEncodingFrequencySelector method as used in AutoQTL.
             - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
             - None : If None, a leaf will not be required (i.e. the pipeline can be a single root node). Leaf nodes will be generated from the inner_config_dict.
 
@@ -829,6 +841,12 @@ def get_configuration_dictionary(options, n_samples, n_features, classification,
         
         elif option == "ContinuousMDR":
             config_dict.update(tpot2.config.make_ContinuousMDR_config_dictionary())
+
+        elif option == "FeatureEncodingFrequencySelector":
+            config_dict.update(tpot2.config.make_FeatureEncodingFrequencySelector_config_dictionary())
+
+        elif option == "genetic encoders":
+            config_dict.update(tpot2.config.make_genetic_encoders_config_dictionary())
 
         elif option == "passthrough":
             config_dict.update(tpot2.config.make_passthrough_config_dictionary())

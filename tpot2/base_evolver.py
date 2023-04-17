@@ -50,10 +50,10 @@ class BaseEvolver():
 
                     
                     threshold_evaluation_early_stop = None, 
-                    threshold_evaluation_scaling = .2,
+                    threshold_evaluation_scaling = .5,
                     min_history_threshold = 20,
                     selection_evaluation_early_stop = None,
-                    selection_evaluation_scaling = .1,
+                    selection_evaluation_scaling = .5,
                     evalutation_early_stop_steps = None, 
                     final_score_strategy = "mean",
                     budget_range = None, 
@@ -389,7 +389,7 @@ class BaseEvolver():
 
 
                 if self.early_stop:
-                    if self.budget is None or self.budget>=1:
+                    if self.budget is None or self.budget>=self.budget_range[-1]: #self.budget>=1:
                         #get sign of objective_function_weights
                         sign = np.sign(self.objective_function_weights)
                         #get best score for each objective

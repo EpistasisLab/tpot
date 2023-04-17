@@ -364,25 +364,6 @@ def params_ExtraTreesRegressor(trial, name=None):
     return params
 
 
-regressor_config_dictionary = {
-    #ElasticNet: params_ElasticNet,
-    ElasticNetCV: {
-                    'l1_ratio': [.1, .5, .7, .9, .95, .99, 1],
-                    'cv': 5,
-                    },
-    ExtraTreesRegressor: params_ExtraTreesRegressor,
-    GradientBoostingRegressor: params_GradientBoostingRegressor,
-    AdaBoostRegressor: params_AdaBoostRegressor,
-    DecisionTreeRegressor: params_DecisionTreeRegressor,
-    KNeighborsRegressor: params_KNeighborsRegressor,
-    LassoLarsCV: params_LassoLarsCV,
-    LinearSVR: params_LinearSVR,
-    RandomForestRegressor: params_RandomForestRegressor,
-    RidgeCV: {},
-    XGBRegressor: params_XGBRegressor,
-    SGDRegressor: params_SGDRegressor,
-
-}
 
 def make_regressor_config_dictionary(n_samples=10):
     n_samples = min(n_samples,100) #TODO optimize this

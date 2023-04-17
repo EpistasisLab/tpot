@@ -226,19 +226,6 @@ def params_MultinomialNB(trial, name=None):
     }
     return params
 
-classifier_config_dictionary = {
-    XGBClassifier: params_XGBClassifier,
-    #SVC: params_SVC,
-    DecisionTreeClassifier: params_DecisionTreeClassifier,
-    RandomForestClassifier: params_RandomForestClassifier,
-    LGBMClassifier: params_LGBMClassifier,
-    GradientBoostingClassifier: params_GradientBoostingClassifier,
-    KNeighborsClassifier:  params_KNeighborsClassifier,
-    LogisticRegression: params_LogisticRegression,
-    MLPClassifier: params_MLPClassifier_tpot,
-    SGDClassifier:params_SGDClassifier,
-    ExtraTreesClassifier:params_ExtraTreesClassifier,
-}
 
 def make_classifier_config_dictionary(n_samples=10):
     n_samples = min(n_samples,100) #TODO optimize this

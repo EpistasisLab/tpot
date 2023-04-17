@@ -3,9 +3,6 @@ import numpy as np
 import tpot2
 import networkx as nx
 from tpot2.representations.graph_pipeline_individual import GraphIndividual
-from tpot2.config.classifiers import classifier_config_dictionary
-from tpot2.config.transformers import transformer_config_dictionary
-from tpot2.config.selectors import selector_config_dictionary
 import random
 
 from tpot2.representations.graph_pipeline_individual.individual import create_node
