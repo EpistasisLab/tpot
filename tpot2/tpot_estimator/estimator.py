@@ -386,7 +386,7 @@ class TPOTEstimator(BaseEstimator):
         self.objective_function_weights = [*scorers_weights, *other_objective_functions_weights]
         
 
-        if self.other_objective_functions is None:
+        if self.objective_function_names is None:
             obj_names = [f.__name__ for f in other_objective_functions]
         else:
             obj_names = self.objective_function_names

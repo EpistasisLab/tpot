@@ -17,6 +17,7 @@ import distributed
 from dask.distributed import Client
 from dask.distributed import LocalCluster
 from tpot2.parent_selectors import survival_select_NSGA2, TournamentSelection_Dominated
+import math
 
 class BaseEvolver():
     def __init__(   self, 
@@ -35,9 +36,10 @@ class BaseEvolver():
                     callback: tpot2.CallBackInterface = None,
                     generations = 50,
                     n_jobs=1,
+                    
                     max_time_seconds=float("inf"), 
                     max_eval_time_seconds=60*5,
-                    max_step_time_seconds=float("inf"), 
+
 
                     n_initial_optimizations = 0,
                     optimization_objective = None,
@@ -120,11 +122,9 @@ class BaseEvolver():
         n_jobs : int
             Number of jobs to run in parallel
         max_time_seconds : float
-            Maximum time to run the optimization
+            Maximum time to run the optimization. If none or inf, will run until the end of the generations.
         max_eval_time_seconds : float
-            Maximum time to evaluate a single individual
-        max_step_time_seconds : float
-            Maximum time to run a single step. Not implemented
+            Maximum time to evaluate a single individual. If none or inf, there will be no timelimit per evaluation.
         n_initial_optimizations : int
             Number of individuals to optimize before starting the evolution.
         optimization_objective : function
@@ -197,10 +197,20 @@ class BaseEvolver():
         self.callback = callback 
         self.generations = generations 
         self.n_jobs = n_jobs
-        self.max_time_seconds = max_time_seconds  
-        self.max_eval_time_seconds = max_eval_time_seconds 
 
-        self.max_step_time_seconds = max_step_time_seconds
+
+        
+        if max_time_seconds  is None:
+            self.max_time_seconds = float("inf")
+        else:
+            self.max_time_seconds = max_time_seconds  
+        
+        #functools requires none for infinite time, doesn't support inf
+        if max_eval_time_seconds is not None and math.isinf(max_eval_time_seconds ):
+            self.max_eval_time_seconds = max_eval_time_seconds 
+        else:
+            self.max_eval_time_seconds = None
+
         
         self.n_initial_optimizations  = n_initial_optimizations  
         self.optimization_objective  = optimization_objective  
