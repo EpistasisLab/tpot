@@ -6,22 +6,52 @@ class SimpleEvolver(tpot2.BaseEvolver):
 
     def one_generation_step(self): #EA Algorithm goes here
 
+
         weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
         
-        var_ops = np.random.choice(list(self.variation_probabilities.keys()), size = self.population_size, p=list(self.variation_probabilities.values()))
+        #number of crossover pairs and mutation only parent to generate
+        n_crossover = int(self.cur_population_size*self.crossover_probability)
+        n_crossover_then_mutate = int(self.cur_population_size*self.crossover_then_mutate_probability)
+        n_mutate_then_crossover = int(self.cur_population_size*self.mutate_then_crossover_probability)
+        n_total_crossover_pairs = n_crossover + n_crossover_then_mutate + n_mutate_then_crossover
+        n_mutate_parents = self.cur_population_size - n_total_crossover_pairs
+
+        #get crossover pairs
+        if n_total_crossover_pairs > 0:
+            cx_parents_index = self.parent_selector(weighted_scores, k=n_total_crossover_pairs, n_parents=self.n_parents,   ) #TODO make it clear that we are concatenating scores...
+            cx_var_ops = np.concatenate([ np.repeat("crossover",n_crossover),
+                                        np.repeat("mutate_then_crossover",n_mutate_then_crossover),
+                                        np.repeat("crossover_then_mutate",n_crossover_then_mutate),
+                                        ])
+        else:
+            cx_parents_index = []
+            cx_var_ops = []
         
-        crossover_ops = [op for op in var_ops if 'crossover' in op] # Number of operators with crossover: 'crossover', 'mutate_and_crossover', 'crossover_and_mutate'
-        mutation_ops = [op for op in var_ops if op=='mutate']
+        #get mutation only parents
+        if n_mutate_parents > 0:
+            m_parents_index = self.parent_selector(weighted_scores, k=n_mutate_parents, n_parents=1,  ) #TODO make it clear that we are concatenating scores...
+            m_var_ops = np.repeat("mutate",len(m_parents_index))
+        else:
+            m_parents_index = []
+            m_var_ops = []
 
-        parents_index = self.selector(weighted_scores,k=len(crossover_ops), n_parents=2,   **self.selector_args)
-        offspring1 = self.population.create_offspring(np.array(self.population.population)[parents_index], crossover_ops) 
-        self.population.update_column(offspring1, column_names="Generation", data=self.generation, )
+        cx_parents = np.array(self.population.population)[cx_parents_index]
+        m_parents = np.array(self.population.population)[m_parents_index]
+        parents = list(cx_parents) + list(m_parents)
 
-        parents_index = self.selector(weighted_scores,k=len(mutation_ops), n_parents=1,   **self.selector_args)
-        offspring2 = self.population.create_offspring(np.array(self.population.population)[parents_index], mutation_ops) 
-        self.population.update_column(offspring2, column_names="Generation", data=self.generation, )
+        var_ops = np.concatenate([cx_var_ops, m_var_ops])
+        offspring = self.population.create_offspring(parents, var_ops, n_jobs=self.n_jobs) 
+        self.population.update_column(offspring, column_names="Generation", data=self.generation, )
+        #print("done making offspring")
 
-        self.population.set_population(offspring1+offspring2)
+        #print("evaluating")
         self.evaluate_population()
+        #print("done evaluating")
+
+        #Get survivors from current population
+        n_survivors = max(1,int(self.cur_population_size*self.survival_percentage)) #always keep at least one individual
+        weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
+        new_population_index = np.ravel(self.survival_selector(weighted_scores, k=n_survivors)) #TODO make it clear that we are concatenating scores...
+        self.population.set_population(np.array(self.population.population)[new_population_index])
 
 
