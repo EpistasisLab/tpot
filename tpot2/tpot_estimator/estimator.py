@@ -530,9 +530,9 @@ class TPOTEstimator(BaseEstimator):
                                                                 )
 
         if self.threshold_evaluation_early_stop is not None or self.selection_evaluation_early_stop is not None:
-            evalutation_early_stop_steps = self.cv
+            evaluation_early_stop_steps = self.cv
         else:
-            evalutation_early_stop_steps = None
+            evaluation_early_stop_steps = None
 
 
         X_future = _client.scatter(X)
@@ -575,7 +575,7 @@ class TPOTEstimator(BaseEstimator):
 
                                             selection_evaluation_early_stop = self.selection_evaluation_early_stop,
                                             selection_evaluation_scaling =  self.selection_evaluation_scaling,
-                                            evalutation_early_stop_steps = evalutation_early_stop_steps,
+                                            evaluation_early_stop_steps = evaluation_early_stop_steps,
 
                                             early_stop_tol = self.early_stop_tol,
                                             early_stop= self.early_stop,
