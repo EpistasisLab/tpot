@@ -80,7 +80,7 @@ class TPOTRegressor(TPOTEstimator):
             max_size=max_size, 
             max_children=max_children,
             root_config_dict=root_config_dict,
-            inner_config_dict=inner_config_dict
+            inner_config_dict=inner_config_dict,
             leaf_config_dict=leaf_config_dict,                        
             cross_val_predict_cv=cross_val_predict_cv,
             subsets=subsets,
@@ -118,10 +118,10 @@ class TPOTRegressor(TPOTEstimator):
             selection_evaluation_early_stop=selection_evaluation_early_stop, 
             selection_evaluation_scaling=selection_evaluation_scaling, 
             n_initial_optimizations=n_initial_optimizations,
-            optimization_cv=optimization_cv
+            optimization_cv=optimization_cv,
             max_optimize_time_seconds=max_optimize_time_seconds,
             optimization_steps=optimization_steps,
-            warm_startwarm_start=warm_start,
+            warm_start=warm_start,
             subset_column=subset_column,
             evolver=evolver,
             verbose=verbose,
@@ -205,7 +205,7 @@ class TPOTClassifier(TPOTEstimator):
             max_size=max_size, 
             max_children=max_children,
             root_config_dict=root_config_dict,
-            inner_config_dict=inner_config_dict
+            inner_config_dict=inner_config_dict,
             leaf_config_dict=leaf_config_dict,                        
             cross_val_predict_cv=cross_val_predict_cv,
             subsets=subsets,
@@ -243,10 +243,10 @@ class TPOTClassifier(TPOTEstimator):
             selection_evaluation_early_stop=selection_evaluation_early_stop, 
             selection_evaluation_scaling=selection_evaluation_scaling, 
             n_initial_optimizations=n_initial_optimizations,
-            optimization_cv=optimization_cv
+            optimization_cv=optimization_cv,
             max_optimize_time_seconds=max_optimize_time_seconds,
             optimization_steps=optimization_steps,
-            warm_startwarm_start=warm_start,
+            warm_start=warm_start,
             subset_column=subset_column,
             evolver=evolver,
             verbose=verbose,
