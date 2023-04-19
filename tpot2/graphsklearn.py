@@ -14,8 +14,7 @@ from sklearn.utils.validation import check_memory
 #attributes - "instance" -> instance of the type
 
 
-def plot(graph: nx.DiGraph
-    ):
+def plot(graph: nx.DiGraph):
     G = graph.reverse()
     try:
         pos = nx.planar_layout(G)  # positions for all nodes

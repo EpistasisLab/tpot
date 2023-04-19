@@ -59,13 +59,6 @@ def params_sklearn_feature_selection_SelectFromModel(trial, name=None, classifie
     return params
 
 
-selector_config_dictionary = {
-    SelectFwe: params_sklearn_feature_selection_SelectFwe,
-    SelectPercentile: params_sklearn_feature_selection_SelectPercentile,
-    VarianceThreshold: params_sklearn_feature_selection_VarianceThreshold,
-    #RFE: params_sklearn_feature_selection_RFE,
-    #SelectFromModel: params_sklearn_feature_selection_SelectFromModel,
-}
 
 def make_selector_config_dictionary(classifier=True):
     return {

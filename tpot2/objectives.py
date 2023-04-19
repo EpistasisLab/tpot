@@ -6,7 +6,7 @@ import traceback
 from collections.abc import Iterable
 import warnings
 from stopit import threading_timeoutable, TimeoutException
-from tpot2.evolutionary_algorithms import survival_select_NSGA2
+from tpot2.parent_selectors import survival_select_NSGA2
 import time
 import dask
 import stopit
@@ -84,7 +84,7 @@ def parallel_eval_objective_list(individual_list,
                                 timeout=None,
                                 n_expected_columns=None,
                                 client=None,
-                                **objective_kwargs    ):
+                                **objective_kwargs):
 
     #offspring_scores = Parallel(n_jobs=n_jobs)(delayed(eval_objective_list)(ind,  objective_list, verbose, timeout=timeout)  for ind in individual_list )
     
@@ -97,7 +97,9 @@ def parallel_eval_objective_list(individual_list,
         client = dask.distributed.get_client()
     futures = [client.submit(eval_objective_list, ind,  objective_list, verbose, timeout=timeout,**objective_kwargs)  for ind in individual_list]
     
-    dask.distributed.progress(futures, notebook=False)
+    if verbose >= 2:
+        dask.distributed.progress(futures, notebook=False)
+    
     dask.distributed.wait(futures)
     
     offspring_scores = []
@@ -111,69 +113,6 @@ def parallel_eval_objective_list(individual_list,
     if n_expected_columns is not None:
         offspring_scores = process_scores(offspring_scores, n_expected_columns)
     return offspring_scores
-
-
-
-#####################################
-
-#TODO
-def eval_objective_list_by_steps(   ind, 
-                                    objective_list, 
-                                    n_steps,
-                                    objective_function_weights,
-                                    final_score_strategy = "mean",
-                                    thresholds = None,
-                                    verbose=0,
-                                    **objective_kwargs):
-    
-    objective_function_signs = np.sign(objective_function_weights)
-
-    all_scores = []
-    for step in range(n_steps):
-        scores = np.concatenate([objective_nan_wrapper(ind, obj, verbose, step=step, **objective_kwargs) for obj in objective_list ])
-
-        all_scores.append(scores)
-
-        if final_score_strategy == 'mean':
-            final_scores  = scores.mean(axis=0)
-        elif final_score_strategy == 'last':
-            final_scores = scores[-1]
-
-        if thresholds is not None:
-            threshold = thresholds[step]
-            if all([s*w>t*w for s,t,w in zip(final_scores, threshold, objective_function_signs)  ]):
-                return scores, final_scores #early stopping
-
-        
-    return scores, final_scores
-
-#TODO
-def parallel_eval_objective_list_by_steps(individual_list,
-                                objective_list,
-                                objective_function_weights,
-                                n_steps,
-                                final_score_strategy = "mean",
-                                thresholds = None,
-                                n_jobs = 1,
-                                verbose=0,
-                                timeout=None,
-                                **objective_kwargs    ):
-
-    #offspring_scores = Parallel(n_jobs=n_jobs)(delayed(eval_objective_list)(ind,  objective_list, verbose, timeout=timeout)  for ind in individual_list )
-    delayed_values = [dask.delayed(eval_objective_list)(
-                                                            ind, 
-                                                            objective_list=objective_list, 
-                                                            n_steps=n_steps,
-                                                            objective_function_weights=objective_function_weights,
-                                                            final_score_strategy = final_score_strategy,
-                                                            thresholds = thresholds,
-                                                            verbose=verbose,
-                                                            timeout=timeout,
-                                                            **objective_kwargs)  for ind in individual_list]
-    offspring_scores = dask.compute(    *delayed_values,
-                                        num_workers=n_jobs,)
-    return offspring_scores
-
 
 
 ###################

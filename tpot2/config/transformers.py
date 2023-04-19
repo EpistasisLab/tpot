@@ -11,6 +11,7 @@ def params_sklearn_preprocessing_Binarizer(trial, name=None):
 def params_sklearn_decomposition_FastICA(trial, name=None, n_features=100):
     return {
         'algorithm': trial.suggest_categorical(f'algorithm_{name}', ['parallel', 'deflation']),
+        'whiten':'unit-variance',
     }
 
 def params_sklearn_cluster_FeatureAgglomeration(trial, name=None, n_features=100):
@@ -35,18 +36,11 @@ def params_sklearn_kernel_approximation_Nystroem(trial, name=None, n_features=10
     }
 
 def params_sklearn_decomposition_PCA(trial, name=None, n_features=100):
+    # keep the number of components required to explain 'variance_explained' of the variance
+    variance_explained = 1 - trial.suggest_float(f'n_components_{name}', 0.001, 0.5, log=True) #values closer to 1 are more likely
+    
     return {
-        #'iterated_power': trial.suggest_int(f'iterated_power_{name}', 1, 10),
-        #'n_components': trial.suggest_int(f'n_components_{name}', 1, n_features),
-        #'svd_solver': trial.suggest_categorical(f'svd_solver_{name}', ['auto', 'full', 'arpack', 'randomized']),
-        # 'tol': trial.suggest_float(f'tol_{name}', 1e-12, 1e-2),
-        # 'whiten': trial.suggest_categorical(f'whiten_{name}', [True, False]),
-
-        # 'svd_solver': 'full',
-        # 'n_components': trial.suggest_float(f'n_components_{name}',.8, .999),
-        
-        'svd_solver': 'randomized',
-        'iterated_power': trial.suggest_int(f'iterated_power_{name}', 1, 11),
+        'n_components': variance_explained,
     }
 
 
@@ -81,30 +75,6 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.kernel_approximation import RBFSampler
 from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import StandardScaler
-#from tpot.builtins import ZeroCount
-#from tpot.builtins import OneHotEncoder
-
-
-
-
-transformer_config_dictionary = {
-    Binarizer: params_sklearn_preprocessing_Binarizer,
-    FastICA: params_sklearn_decomposition_FastICA,
-    FeatureAgglomeration: params_sklearn_cluster_FeatureAgglomeration,
-    MaxAbsScaler: {},
-    MinMaxScaler: {},
-    Normalizer: params_sklearn_preprocessing_Normalizer,
-    Nystroem: params_sklearn_kernel_approximation_Nystroem,
-    PCA: params_sklearn_decomposition_PCA,
-    PolynomialFeatures: {},
-    RBFSampler: params_sklearn_kernel_approximation_RBFSampler,
-    RobustScaler: {},
-    StandardScaler: {},
-    #ZeroCount: params_tpot_builtins_ZeroCount,
-    #OneHotEncoder: params_tpot_builtins_OneHotEncoder,
-}
-
-
 
 def make_transformer_config_dictionary(n_features=10):
     #n_features = min(n_features,100) #TODO optimize this
@@ -128,3 +98,5 @@ def make_transformer_config_dictionary(n_features=10):
                 ZeroCount: params_tpot_builtins_ZeroCount,
                 OneHotEncoder: params_tpot_builtins_OneHotEncoder,
             }
+
+

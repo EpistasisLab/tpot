@@ -32,7 +32,7 @@ from functools import partial
 def params_RandomForestRegressor(trial, name=None):
     return {
         'n_estimators': 100,
-        'max_features': trial.suggest_float(f'max_features_{name}', 0.05, 1.01),
+        'max_features': trial.suggest_float(f'max_features_{name}', 0.05, 1.0),
         'bootstrap': trial.suggest_categorical(name=f'bootstrap_{name}', choices=[True, False]),
         'min_samples_split': trial.suggest_int(f'min_samples_split_{name}', 2, 21),
         'min_samples_leaf': trial.suggest_int(f'min_samples_leaf_{name}', 1, 21),
@@ -364,25 +364,6 @@ def params_ExtraTreesRegressor(trial, name=None):
     return params
 
 
-regressor_config_dictionary = {
-    #ElasticNet: params_ElasticNet,
-    ElasticNetCV: {
-                    'l1_ratio': [.1, .5, .7, .9, .95, .99, 1],
-                    'cv': 5,
-                    },
-    ExtraTreesRegressor: params_ExtraTreesRegressor,
-    GradientBoostingRegressor: params_GradientBoostingRegressor,
-    AdaBoostRegressor: params_AdaBoostRegressor,
-    DecisionTreeRegressor: params_DecisionTreeRegressor,
-    KNeighborsRegressor: params_KNeighborsRegressor,
-    LassoLarsCV: params_LassoLarsCV,
-    LinearSVR: params_LinearSVR,
-    RandomForestRegressor: params_RandomForestRegressor,
-    RidgeCV: {},
-    XGBRegressor: params_XGBRegressor,
-    SGDRegressor: params_SGDRegressor,
-
-}
 
 def make_regressor_config_dictionary(n_samples=10):
     n_samples = min(n_samples,100) #TODO optimize this
