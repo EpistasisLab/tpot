@@ -83,6 +83,7 @@ class TPOTEstimator(BaseEstimator):
                         verbose = 0,
                         periodic_checkpoint_folder = None, 
                         callback: tpot2.CallBackInterface = None,
+                        processes = True,
                         ):
                         
         '''
@@ -376,6 +377,10 @@ class TPOTEstimator(BaseEstimator):
         callback : tpot2.CallBackInterface, default=None
             Callback object. Not implemented
 
+        processes : bool, default=True
+            If True, will use multiprocessing to parallelize the optimization process. If False, will use threading.
+            True seems to perform better. However, False is required for interactive debugging.
+            
         '''
 
         # sklearn BaseEstimator must have a corresponding attribute for each parameter.
@@ -443,6 +448,8 @@ class TPOTEstimator(BaseEstimator):
 
         self.objective_function_names = objective_function_names
 
+        self.processes = processes
+
         #Initialize other used params
 
 
@@ -508,7 +515,7 @@ class TPOTEstimator(BaseEstimator):
                 silence_logs = 50
             cluster = LocalCluster(n_workers=self.n_jobs, #if no client is passed in and no global client exists, create our own
                     threads_per_worker=1,
-                    processes=True,
+                    processes=self.processes,
                     silence_logs=silence_logs,
                     memory_limit=self.memory_limit)
             _client = Client(cluster)

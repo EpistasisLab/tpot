@@ -66,6 +66,7 @@ class TPOTRegressor(TPOTEstimator):
                         verbose=0,
                         periodic_checkpoint_folder=None, 
                         callback: tpot2.CallBackInterface=None,
+                        processes = True,
         ):
         super(TPOTRegressor,self).__init__(
             scorers=scorers, 
@@ -127,6 +128,7 @@ class TPOTRegressor(TPOTEstimator):
             verbose=verbose,
             periodic_checkpoint_folder=periodic_checkpoint_folder, 
             callback=callback,
+            processes=processes,
 )
 
 
@@ -191,6 +193,7 @@ class TPOTClassifier(TPOTEstimator):
                         verbose=0,
                         periodic_checkpoint_folder=None, 
                         callback: tpot2.CallBackInterface=None,
+                        processes = True,
         ):
         super(TPOTClassifier,self).__init__(
                         scorers=scorers, 
@@ -252,6 +255,7 @@ class TPOTClassifier(TPOTEstimator):
             verbose=verbose,
             periodic_checkpoint_folder=periodic_checkpoint_folder, 
             callback=callback,
+            processes = processes,
         )
 
 
