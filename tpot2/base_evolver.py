@@ -526,11 +526,12 @@ class BaseEvolver():
     
     def one_generation_step(self, ): #your EA Algorithm goes here
         
-        n_survivors = max(1,int(self.cur_population_size*self.survival_percentage)) #always keep at least one individual
-        #Get survivors from current population
-        weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
-        new_population_index = np.ravel(self.survival_selector(weighted_scores, k=n_survivors)) #TODO make it clear that we are concatenating scores...
-        self.population.set_population(np.array(self.population.population)[new_population_index])
+        if self.survival_selector is not None:
+            n_survivors = max(1,int(self.cur_population_size*self.survival_percentage)) #always keep at least one individual
+            #Get survivors from current population
+            weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
+            new_population_index = np.ravel(self.survival_selector(weighted_scores, k=n_survivors)) #TODO make it clear that we are concatenating scores...
+            self.population.set_population(np.array(self.population.population)[new_population_index])
         weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
         
         #number of crossover pairs and mutation only parent to generate
