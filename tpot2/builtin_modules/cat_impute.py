@@ -1,3 +1,4 @@
+# %%
 # -*- coding: utf-8 -*-
 
 """Copyright (c) 2015 The auto-sklearn developers. All rights reserved.
@@ -64,6 +65,31 @@ def _X_selected(X, selected):
 
 
 
+def get_mask_from_categorical_features(X, categorical_features):
+    """
+    Params 
+    ------
+    X: pd.DataFrame or np.array
+        Dataframe to be processed
+    categorical_features: list
+        List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
+
+    Returns
+    -------
+    mask: list
+        List of booleans indicating which columns are categorical
+
+    """
+
+    if isinstance(X, pd.DataFrame):
+        mask = [col in categorical_features for col in X.columns]
+    elif isinstance(X, np.ndarray):
+        mask = [i in categorical_features for i in range(X.shape[1])]
+    else:
+        raise TypeError("X must be either a pandas DataFrame or a numpy array")
+    return mask
+
+
 class CatImpute(BaseEstimator, TransformerMixin):
 
 
@@ -87,6 +113,8 @@ class CatImpute(BaseEstimator, TransformerMixin):
         
         if self.categorical_features == "auto":
             self.categorical_features_ = auto_select_categorical_features(X)
+        else:
+            self.categorical_features_ = get_mask_from_categorical_features(X, self.categorical_features)
 
         if sum(self.categorical_features_) == 0:
             return self
@@ -152,3 +180,5 @@ class CatImpute(BaseEstimator, TransformerMixin):
                 return pd.concat([X_not_sel.reset_index(drop=True), X_sel.reset_index(drop=True)], axis=1)
             else:
                 return np.hstack((X_not_sel, X_sel))
+
+# %%
