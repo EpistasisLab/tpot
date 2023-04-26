@@ -194,6 +194,7 @@ class GraphIndividual(tpot2.BaseIndividual):
                                         self._mutate_remove_node,
                                         self._mutate_add_connection_from,
                                         self._mutate_remove_extra_edge,
+                                        self._mutate_insert_bypass_node,
                                         self._mutate_insert_inner_node,
                                         ]
 
@@ -738,7 +739,7 @@ class GraphIndividual(tpot2.BaseIndividual):
 
         return False
 
-    def _mutate_insert_inner_node(self):
+    def _mutate_insert_bypass_node(self):
         if self.max_size > self.graph.number_of_nodes():
             sorted_nodes_list = list(self.graph.nodes)
             sorted_nodes_list2 = list(self.graph.nodes)
@@ -760,6 +761,38 @@ class GraphIndividual(tpot2.BaseIndividual):
 
                                     self.graph.add_node(new_node)
                                     self.graph.add_edges_from([(node, new_node), (new_node, child_node)])
+                                    return True
+
+        return False
+
+
+    def _mutate_insert_inner_node(self):
+        if self.max_size > self.graph.number_of_nodes():
+            sorted_nodes_list = list(self.graph.nodes)
+            sorted_nodes_list2 = list(self.graph.nodes)
+            random.shuffle(sorted_nodes_list) #TODO: sort by number of children and/or parents? bias model one way or another
+            random.shuffle(sorted_nodes_list2)
+            for node in sorted_nodes_list:
+                if self.max_children > len(self.graph):
+                    
+                    #loop through children of node
+                    for child_node in list(self.graph.successors(node)):
+                        
+                        
+                        if child_node is not node and child_node not in nx.ancestors(self.graph, node):
+                            if self.leaf_config_dict is not None:
+                                #If if we are protecting leafs, dont add connection into a leaf
+                                if len(list(nx.descendants(self.graph,node))) ==0 :
+                                    continue
+                            
+                            #If adding this node will not make the graph too deep
+                            if np.isinf(self.max_depth) or  self.max_depth > graph_utils.get_max_path_through_node(self.graph, self.root, child_node): #this is pretty inneficient.
+
+                                    new_node = create_node(config_dict = self.inner_config_dict)
+
+                                    self.graph.add_node(new_node)
+                                    self.graph.add_edges_from([(node, new_node), (new_node, child_node)])
+                                    self.graph.remove_edge(node, child_node)
                                     return True
 
         return False
