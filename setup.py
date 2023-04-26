@@ -17,7 +17,7 @@ setup(
     version=package_version,
     author='Pedro Ribeiro',
     packages=find_packages(),
-    url='TODO', #TODO
+    url='https://github.com/EpistasisLab/tpot2',
     license='GNU/LGPLv3', #TODO
     entry_points={'console_scripts': ['tpot2=tpot2:main', ]},
     description=('Tree-based Pipeline Optimization Tool'),
