@@ -4,5 +4,4 @@ from .one_hot_encoder import OneHotEncoder
 from .cat_one_hot_encoder import CatOneHotEncoder
 from .arithmetictransformer import ArithmeticTransformer
 from .passthrough import Passthrough
-from .numeric_impute import NumericImpute
-from .cat_impute import CatImpute
+from .auto_imputer import AutoImputer, ColumnImputer
