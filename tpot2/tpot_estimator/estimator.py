@@ -39,6 +39,7 @@ class TPOTEstimator(BaseEstimator):
                         inner_config_dict=["selectors", "transformers"],
                         leaf_config_dict= None,                        
                         cross_val_predict_cv = 0,
+                        categorical_features = None,
                         subsets = None,
                         memory = None,
                         preprocessing = False,  
@@ -193,6 +194,11 @@ class TPOTEstimator(BaseEstimator):
             - >=2 : When fitting pipelines with inner classifiers or regressors, they will still be fit on the full dataset. 
                     However, the output to the next node will come from cross_val_predict with the specified number of folds.
          
+        categorical_features: list or None
+            Categorical columns to inpute and/or one hot encode during the preprocessing step. Used only if preprocessing is not False.
+            - None : If None, TPOT2 will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
+            - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
+
         subsets : str or list, default=None
             Sets the subsets that the FeatureSetSeletor will select from if set as an option in one of the configuration dictionaries.
             - str : If a string, it is assumed to be a path to a csv file with the subsets. 
@@ -385,69 +391,67 @@ class TPOTEstimator(BaseEstimator):
 
         # sklearn BaseEstimator must have a corresponding attribute for each parameter.
         # These should not be modified once set.
+
         self.scorers = scorers
         self.scorers_weights = scorers_weights
         self.classification = classification
-        self.population_size = population_size
-        self.generations = generations
-        self.initial_population_size = initial_population_size
-        self.population_scaling = population_scaling
-        self.generations_until_end_population = generations_until_end_population
-        self.callback = callback
-        self.n_jobs= n_jobs
         self.cv = cv
-        self.verbose = verbose
         self.other_objective_functions = other_objective_functions
         self.other_objective_functions_weights = other_objective_functions_weights
+        self.objective_function_names = objective_function_names
         self.bigger_is_better = bigger_is_better
-        self.evolver = evolver
-
         self.max_depth = max_depth
         self.max_size = max_size
         self.max_children = max_children
         self.root_config_dict= root_config_dict
         self.inner_config_dict= inner_config_dict
         self.leaf_config_dict= leaf_config_dict
-        self.subsets = subsets
-        self.max_time_seconds = max_time_seconds 
-        self.max_eval_time_seconds = max_eval_time_seconds
-        self.memory_limit = memory_limit
-        self.n_initial_optimizations  = n_initial_optimizations  
-        self.optimization_cv  = optimization_cv
-        self.max_optimize_time_seconds = max_optimize_time_seconds 
-        self.optimization_steps = optimization_steps 
-        self.periodic_checkpoint_folder = periodic_checkpoint_folder
-        self.threshold_evaluation_early_stop =threshold_evaluation_early_stop
-        self.threshold_evaluation_scaling =  threshold_evaluation_scaling
-        self.min_history_threshold = min_history_threshold
-        self.selection_evaluation_early_stop = selection_evaluation_early_stop
-        self.selection_evaluation_scaling =  selection_evaluation_scaling
-        self.scorers_early_stop_tol = scorers_early_stop_tol
-        self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
-        self.early_stop = early_stop
-        self.warm_start = warm_start
-        self.memory = memory
         self.cross_val_predict_cv = cross_val_predict_cv
-        self.budget_range = budget_range
-        self.budget_scaling = budget_scaling
-        self.generations_until_end_budget = generations_until_end_budget
+        self.categorical_features = categorical_features
+        self.subsets = subsets
+        self.memory = memory
         self.preprocessing = preprocessing
         self.validation_strategy = validation_strategy
         self.validation_fraction = validation_fraction
-        self.subset_column = subset_column
-        self.stepwise_steps = stepwise_steps
+        self.population_size = population_size
+        self.initial_population_size = initial_population_size
+        self.population_scaling = population_scaling
+        self.generations_until_end_population = generations_until_end_population
+        self.generations = generations
+        self.early_stop = early_stop
+        self.scorers_early_stop_tol = scorers_early_stop_tol
+        self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
+        self.max_time_seconds = max_time_seconds 
+        self.max_eval_time_seconds = max_eval_time_seconds
+        self.n_jobs= n_jobs
+        self.memory_limit = memory_limit
         self.client = client
-
-        self.survival_selector=survival_selector
-        self.parent_selector=parent_selector
         self.survival_percentage = survival_percentage
         self.crossover_probability = crossover_probability
         self.mutate_probability = mutate_probability
         self.mutate_then_crossover_probability= mutate_then_crossover_probability
         self.crossover_then_mutate_probability= crossover_then_mutate_probability
-
-        self.objective_function_names = objective_function_names
-
+        self.survival_selector=survival_selector
+        self.parent_selector=parent_selector
+        self.budget_range = budget_range
+        self.budget_scaling = budget_scaling
+        self.generations_until_end_budget = generations_until_end_budget
+        self.stepwise_steps = stepwise_steps
+        self.threshold_evaluation_early_stop =threshold_evaluation_early_stop
+        self.threshold_evaluation_scaling =  threshold_evaluation_scaling
+        self.min_history_threshold = min_history_threshold
+        self.selection_evaluation_early_stop = selection_evaluation_early_stop
+        self.selection_evaluation_scaling =  selection_evaluation_scaling
+        self.n_initial_optimizations  = n_initial_optimizations  
+        self.optimization_cv  = optimization_cv
+        self.max_optimize_time_seconds = max_optimize_time_seconds 
+        self.optimization_steps = optimization_steps 
+        self.warm_start = warm_start
+        self.subset_column = subset_column
+        self.evolver = evolver
+        self.verbose = verbose
+        self.periodic_checkpoint_folder = periodic_checkpoint_folder
+        self.callback = callback
         self.processes = processes
 
         #Initialize other used params
@@ -546,7 +550,11 @@ class TPOTEstimator(BaseEstimator):
         X_original = X
         if self.preprocessing:
             X = pd.DataFrame(X)
-            self._preprocessing_pipeline = sklearn.pipeline.make_pipeline(tpot2.CatImpute(), tpot2.NumericImpute(), tpot2.CatOneHotEncoder(),sklearn.preprocessing.StandardScaler())
+            if self.categorical_features is not None:
+                X[self.categorical_features] = X[self.categorical_features].astype(object)
+
+            
+            self._preprocessing_pipeline = sklearn.pipeline.make_pipeline(tpot2.builtin_modules.AutoImputer('all'), tpot2.builtin_modules.CatOneHotEncoder())
             X = self._preprocessing_pipeline.fit_transform(X)
         else:
             self._preprocessing_pipeline = None
