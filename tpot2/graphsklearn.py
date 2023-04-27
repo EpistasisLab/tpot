@@ -309,6 +309,8 @@ class GraphPipeline(_BaseComposition):
                                 topo_sort = self.topo_sorted_nodes,
                                 subset_col = subset_col,
                                 )
+        
+        return self
 
     def plot(self, ):
         plot(graph = self.graph)
