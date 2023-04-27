@@ -57,8 +57,15 @@ def get_mask_from_categorical_features(X, categorical_features):
 class CatOneHotEncoder(BaseEstimator, TransformerMixin):
 
 
-    def __init__(self, categorical_features='auto'):
+    def __init__(self, categorical_features='auto', drop=None, handle_unknown='error', sparse_output=False, min_frequency=None,max_categories=None):
+
         self.categorical_features = categorical_features
+        self.drop = drop
+        self.handle_unknown = handle_unknown
+        self.sparse_output = sparse_output
+        self.min_frequency = min_frequency
+        self.max_categories = max_categories
+
 
 
     def fit(self, X, y=None):
@@ -83,7 +90,12 @@ class CatOneHotEncoder(BaseEstimator, TransformerMixin):
         if sum(self.categorical_features_) == 0:
             return self
         
-        self.enc = sklearn.preprocessing.OneHotEncoder(categories='auto', handle_unknown='ignore',sparse_output=False)
+        self.enc = sklearn.preprocessing.OneHotEncoder( categories='auto',   
+                                                        drop = self.drop,
+                                                        handle_unknown = self.handle_unknown,
+                                                        sparse_output = self.sparse_output,
+                                                        min_frequency = self.min_frequency,
+                                                        max_categories = self.max_categories)
 
         #TODO make this more consistent with sklearn baseimputer/baseencoder
         if isinstance(X, pd.DataFrame):
