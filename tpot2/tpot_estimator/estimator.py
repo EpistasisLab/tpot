@@ -554,7 +554,7 @@ class TPOTEstimator(BaseEstimator):
                 X[self.categorical_features] = X[self.categorical_features].astype(object)
 
             
-            self._preprocessing_pipeline = sklearn.pipeline.make_pipeline(tpot2.builtin_modules.AutoImputer('all', categorical_strategy='most_frequent', numeric_strategy='median'), tpot2.builtin_modules.CatOneHotEncoder())
+            self._preprocessing_pipeline = sklearn.pipeline.make_pipeline(tpot2.builtin_modules.AutoImputer('all', categorical_strategy='most_frequent', numeric_strategy='median'), tpot2.builtin_modules.CatOneHotEncoder(min_frequency=0.0001))
             X = self._preprocessing_pipeline.fit_transform(X)
         else:
             self._preprocessing_pipeline = None
