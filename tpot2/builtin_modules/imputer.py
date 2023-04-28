@@ -77,7 +77,7 @@ class ColumnSimpleImputer(BaseEstimator, TransformerMixin):
             Feature labels
         """
 
-        if self.columns == "categorical" or self.columns == "numeric" and not isinstance(X, pd.DataFrame):
+        if (self.columns == "categorical" or self.columns == "numeric") and not isinstance(X, pd.DataFrame):
             raise ValueError(f"Invalid value for columns: {self.columns}. "
                              "Only 'all' or <list> is supported for np arrays")
 
@@ -94,6 +94,9 @@ class ColumnSimpleImputer(BaseEstimator, TransformerMixin):
             self.columns_ = self.columns
         else:
             raise ValueError(f"Invalid value for columns: {self.columns}")
+        
+        if len(self.columns_) == 0:
+            return self
         
         self.imputer = sklearn.impute.SimpleImputer(missing_values=self.missing_values,
                                                     strategy=self.strategy,
@@ -125,6 +128,9 @@ class ColumnSimpleImputer(BaseEstimator, TransformerMixin):
         X_out : sparse matrix if sparse=True else a 2-d array, dtype=int
             Transformed input.
         """
+        if len(self.columns_) == 0:
+            return X
+
         if isinstance(X, pd.DataFrame):
             X = X.copy()
             X[self.columns_] = self.imputer.transform(X[self.columns_])

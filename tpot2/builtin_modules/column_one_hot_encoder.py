@@ -25,41 +25,24 @@ def auto_select_categorical_features(X):
 
 def _X_selected(X, selected):
     """Split X into selected features and other features"""
-    X_sel = X[X.columns[selected]]
-    X_not_sel = X.drop(X.columns[selected], axis=1)
+    
+    if isinstance(X, pd.DataFrame):
+        X_sel = X[selected]
+        X_not_sel = X.drop(selected, axis=1)
+    else:
+        X_sel = X[:, selected]
+        X_not_sel = np.delete(X, selected, axis=1)
+
     return X_sel, X_not_sel
 
 
-def get_mask_from_categorical_features(X, categorical_features):
-    """
-    Params 
-    ------
-    X: pd.DataFrame or np.array
-        Dataframe to be processed
-    categorical_features: list
-        List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
 
-    Returns
-    -------
-    mask: list
-        List of booleans indicating which columns are categorical
-
-    """
-
-    if isinstance(X, pd.DataFrame):
-        mask = [col in categorical_features for col in X.columns]
-    elif isinstance(X, np.ndarray):
-        mask = [i in categorical_features for i in range(X.shape[1])]
-    else:
-        raise TypeError("X must be either a pandas DataFrame or a numpy array")
-    return mask
-
-class CatOneHotEncoder(BaseEstimator, TransformerMixin):
+class ColumnOneHotEncoder(BaseEstimator, TransformerMixin):
 
 
-    def __init__(self, categorical_features='auto', drop=None, handle_unknown='error', sparse_output=False, min_frequency=None,max_categories=None):
+    def __init__(self, columns='auto', drop=None, handle_unknown='error', sparse_output=False, min_frequency=None,max_categories=None):
 
-        self.categorical_features = categorical_features
+        self.columns = columns
         self.drop = drop
         self.handle_unknown = handle_unknown
         self.sparse_output = sparse_output
@@ -82,12 +65,27 @@ class CatOneHotEncoder(BaseEstimator, TransformerMixin):
             Feature labels
         """
         
-        if self.categorical_features == "auto":
-            self.categorical_features_ = auto_select_categorical_features(X)
-        else:
-            self.categorical_features_ = get_mask_from_categorical_features(X, self.categorical_features)
+        if (self.columns == "categorical" or self.columns == "numeric") and not isinstance(X, pd.DataFrame):
+            raise ValueError(f"Invalid value for columns: {self.columns}. "
+                             "Only 'all' or <list> is supported for np arrays")
 
-        if sum(self.categorical_features_) == 0:
+        if self.columns == "categorical":
+            self.columns_ = list(X.select_dtypes(exclude='number').columns)
+        elif self.columns == "numeric":
+            self.columns_ =  [col for col in X.columns if is_numeric_dtype(X[col])]
+        elif self.columns == "all":
+            if isinstance(X, pd.DataFrame):
+                self.columns_ = X.columns
+            else:
+                self.columns_ = list(range(X.shape[1]))
+        elif isinstance(self.columns, list):
+            self.columns_ = self.columns
+        else:
+            raise ValueError(f"Invalid value for columns: {self.columns}")
+
+
+
+        if len(self.columns_) == 0:
             return self
         
         self.enc = sklearn.preprocessing.OneHotEncoder( categories='auto',   
@@ -107,10 +105,10 @@ class CatOneHotEncoder(BaseEstimator, TransformerMixin):
                     X.rename(columns={col: f"X{col}"}, inplace=True)
 
 
-        if sum(self.categorical_features_) == X.shape[1]:
+        if len(self.columns_) == X.shape[1]:
             X_sel = self.enc.fit(X)
         else:
-            X_sel, X_not_sel = _X_selected(X, self.categorical_features_)
+            X_sel, X_not_sel = _X_selected(X, self.columns_)
             X_sel = self.enc.fit(X_sel)
         
         return self
@@ -130,7 +128,7 @@ class CatOneHotEncoder(BaseEstimator, TransformerMixin):
         """
 
     
-        if sum(self.categorical_features_) == 0:
+        if len(self.columns_) == 0:
             return X
         
         #TODO make this more consistent with sklearn baseimputer/baseencoder
@@ -141,11 +139,11 @@ class CatOneHotEncoder(BaseEstimator, TransformerMixin):
                     # if it's not a string, rename the column with "X" prefix
                     X.rename(columns={col: f"X{col}"}, inplace=True)
 
-        if sum(self.categorical_features_) == X.shape[1]:
+        if len(self.columns_) == X.shape[1]:
             return self.enc.transform(X)
         else:
 
-            X_sel, X_not_sel= _X_selected(X, self.categorical_features_)
+            X_sel, X_not_sel= _X_selected(X, self.columns_)
             X_sel = self.enc.transform(X_sel)
             
             #If X is dataframe
