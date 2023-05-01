@@ -51,7 +51,7 @@ def estimator_graph_individual_generator(
                             ind._mutate_insert_inner_node()
 
                 for _ in range(np.random.randint(0,ind.graph.number_of_nodes())):
-                     ind._mutate_add_connection_from()
+                     ind._mutate_add_edge()
                 
                 yield ind
 
