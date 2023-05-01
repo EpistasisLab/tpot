@@ -78,21 +78,25 @@ When designing custom objective functions, avoid the use of global variables.
 
 Don't Do:
 ```
-global_a = 10
-def foo_objective(est, X, y):
-    return my_scorer(est, X, y, a=global_a)
+global_X = [[1,2],[4,5]]
+global_y = [0,1]
+def foo(est):
+    return my_scorer(est, X=global_X, y=global_y)
+
 ```
 
 Instead use a partial
 
-
 ```
 from functools import partial
 
-def foo_scorer(est, X, y, a):
-    return my_scorer(est, X, y, a=a)
+def foo_scorer(est, X, y):
+    return my_scorer(est, X, y)
 
-final_scorer = partial(foo_scorer, a=10)
+if __name__=='__main__':
+    X = [[1,2],[4,5]]
+    y = [0,1]
+    final_scorer = partial(foo_scorer, X=X, y=y)
 ```
 
 Similarly when using lambda functions.
