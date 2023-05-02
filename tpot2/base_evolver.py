@@ -646,12 +646,14 @@ class BaseEvolver():
             return
 
         if self.max_eval_time_seconds is not None:
-            theoretical_timeout = (self.max_eval_time_seconds * len(individuals_to_evaluate)) / self.n_jobs
+            theoretical_timeout = self.max_eval_time_seconds * math.ceil(len(individuals_to_evaluate) / self.n_jobs)
             theoretical_timeout = theoretical_timeout*2
         else:
             theoretical_timeout = np.inf
         scheduled_timeout_time_left = self.scheduled_timeout_time - time.time()
         parallel_timeout = min(theoretical_timeout, scheduled_timeout_time_left)
+        if parallel_timeout < 0:
+            parallel_timeout = 10
         scores = tpot2.objectives.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
 
 
@@ -713,12 +715,14 @@ class BaseEvolver():
                 continue
             
             if self.max_eval_time_seconds is not None:
-                theoretical_timeout = (self.max_eval_time_seconds * len(unevaluated_individuals_this_step)) / self.n_jobs
+                theoretical_timeout = self.max_eval_time_seconds * math.ceil(len(individuals_to_evaluate) / self.n_jobs)
                 theoretical_timeout = theoretical_timeout*2
             else:
                 theoretical_timeout = np.inf
             scheduled_timeout_time_left = self.scheduled_timeout_time - time.time()
             parallel_timeout = min(theoretical_timeout, scheduled_timeout_time_left)
+            if parallel_timeout < 0:
+                parallel_timeout = 10
 
             scores = tpot2.objectives.parallel_eval_objective_list(individual_list=unevaluated_individuals_this_step,
                                     objective_list=self.objective_functions,

@@ -98,7 +98,7 @@ def parallel_eval_objective_list(individual_list,
         client = dask.distributed.get_client()
     futures = [client.submit(eval_objective_list, ind,  objective_list, verbose, timeout=timeout,**objective_kwargs)  for ind in individual_list]
     
-    if verbose >= 2:
+    if verbose >= 6:
         dask.distributed.progress(futures, notebook=False)
     
     try: 
@@ -106,6 +106,7 @@ def parallel_eval_objective_list(individual_list,
             parallel_timeout = None
         dask.distributed.wait(futures, timeout=parallel_timeout)
     except dask.distributed.TimeoutError:
+        print("terminating parallel evaluation due to timeout")
         pass
     
     offspring_scores = []
