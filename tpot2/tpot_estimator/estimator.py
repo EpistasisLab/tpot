@@ -778,8 +778,7 @@ class TPOTEstimator(BaseEstimator):
             self.fitted_pipeline_ = best_individual_pipeline 
         
         self.fitted_pipeline_.fit(X_original,y) #TODO use y_original as well?
-        if self.verbose >= 3:
-            best_individual.plot()
+
 
         if self.client is None: #no client was passed in
             #close cluster and client
