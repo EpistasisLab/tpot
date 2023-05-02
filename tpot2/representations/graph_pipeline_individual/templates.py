@@ -12,9 +12,8 @@ def estimator_graph_individual_generator(
                                                 root_config_dict,
                                                 inner_config_dict=None,
                                                 leaf_config_dict=None,
-                                                max_depth = np.inf,
                                                 max_size = np.inf, 
-                                                max_children = np.inf,
+                                                linear_pipeline = False,
                                                 **kwargs,
                                             ) :
 
@@ -35,23 +34,25 @@ def estimator_graph_individual_generator(
                                                     leaf_config_dict=leaf_config_dict,
                                                     root_config_dict=root_config_dict,
                                                     initial_graph = graph,
-                                                    max_depth = max_depth,
+
                                                     max_size = max_size, 
-                                                    max_children = max_children,
+                                                    linear_pipeline = linear_pipeline,
+
                                                     **kwargs,
                                                     )
                 
+                starting_ops = []
+                if inner_config_dict is not None:
+                    starting_ops.append(ind._mutate_insert_inner_node)
+                if leaf_config_dict is not None:
+                    starting_ops.append(ind._mutate_insert_leaf)
                 
-                
-                if n_nodes > 0:
-                    for _ in range(np.random.randint(0,min(n_nodes,3))):
-                        if random.random() < 0.5:
-                            ind._mutate_insert_leaf()
-                        else: 
-                            ind._mutate_insert_inner_node()
+                if len(starting_ops) > 0:
+                    if n_nodes > 0:
+                        for _ in range(np.random.randint(0,min(n_nodes,3))):
+                            func = np.random.choice(starting_ops)
+                            func()
 
-                for _ in range(np.random.randint(0,ind.graph.number_of_nodes())):
-                     ind._mutate_add_edge()
                 
                 yield ind
 

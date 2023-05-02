@@ -269,16 +269,16 @@ class BaseEvolver():
 
 
         
-        if max_time_seconds  is None:
+        if max_time_seconds is None:
             self.max_time_seconds = float("inf")
         else:
             self.max_time_seconds = max_time_seconds  
         
         #functools requires none for infinite time, doesn't support inf
         if max_eval_time_seconds is not None and math.isinf(max_eval_time_seconds ):
-            self.max_eval_time_seconds = max_eval_time_seconds 
-        else:
             self.max_eval_time_seconds = None
+        else:
+            self.max_eval_time_seconds = max_eval_time_seconds
 
         
         self.n_initial_optimizations  = n_initial_optimizations  
@@ -414,10 +414,12 @@ class BaseEvolver():
 
         start_time = time.time() 
         
-        last_save_time = time.time()
-        
         generations_without_improvement = np.array([0 for _ in range(len(self.objective_function_weights))])
         best_scores = [-np.inf for _ in range(len(self.objective_function_weights))]
+
+
+        self.scheduled_timeout_time = time.time() + self.max_time_seconds
+
 
         try: 
             for gen in tnrange(generations,desc="Generation", disable=self.verbose<1):
@@ -643,7 +645,14 @@ class BaseEvolver():
                 print("No new individuals to evaluate")
             return
 
-        scores = tpot2.objectives.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, **self.objective_kwargs)
+        if self.max_eval_time_seconds is not None:
+            theoretical_timeout = (self.max_eval_time_seconds * len(individuals_to_evaluate)) / self.n_jobs
+            theoretical_timeout = theoretical_timeout*2
+        else:
+            theoretical_timeout = np.inf
+        scheduled_timeout_time_left = self.scheduled_timeout_time - time.time()
+        parallel_timeout = min(theoretical_timeout, scheduled_timeout_time_left)
+        scores = tpot2.objectives.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
 
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
@@ -703,6 +712,14 @@ class BaseEvolver():
                     print("No new individuals to evaluate")
                 continue
             
+            if self.max_eval_time_seconds is not None:
+                theoretical_timeout = (self.max_eval_time_seconds * len(unevaluated_individuals_this_step)) / self.n_jobs
+                theoretical_timeout = theoretical_timeout*2
+            else:
+                theoretical_timeout = np.inf
+            scheduled_timeout_time_left = self.scheduled_timeout_time - time.time()
+            parallel_timeout = min(theoretical_timeout, scheduled_timeout_time_left)
+
             scores = tpot2.objectives.parallel_eval_objective_list(individual_list=unevaluated_individuals_this_step,
                                     objective_list=self.objective_functions,
                                     n_jobs = self.n_jobs,
@@ -713,6 +730,7 @@ class BaseEvolver():
                                     generation = self.generation,
                                     n_expected_columns=len(self.objective_names),
                                     client=self._client,
+                                    parallel_timeout=parallel_timeout,
                                     **self.objective_kwargs,
                                     )
 

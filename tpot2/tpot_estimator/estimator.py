@@ -32,9 +32,8 @@ class TPOTEstimator(BaseEstimator):
                         other_objective_functions_weights = [-1],
                         objective_function_names = None,
                         bigger_is_better = True,
-                        max_depth = np.inf,
                         max_size = np.inf, 
-                        max_children = np.inf,
+                        linear_pipeline = False,
                         root_config_dict= 'Auto',
                         inner_config_dict=["selectors", "transformers"],
                         leaf_config_dict= None,                        
@@ -121,14 +120,12 @@ class TPOTEstimator(BaseEstimator):
         bigger_is_better : bool, default=True
             If True, the objective function is maximized. If False, the objective function is minimized. Use negative weights to reverse the direction.
 
-        max_depth : int, default=np.inf
-            The maximum depth from any node to the root of the pipelines to be generated.
         
         max_size : int, default=np.inf
             The maximum number of nodes of the pipelines to be generated.
         
-        max_children : ind, default=np.inf 
-            The maximum number of children nodes in the pipelines can have. If set to 1, the pipelines will be linear.
+        linear_pipeline : bool, default=False
+            If True, the pipelines generated will be linear. If False, the pipelines generated will be directed acyclic graphs.
         
         root_config_dict : dict, default='auto'
             The configuration dictionary to use for the root node of the model.
@@ -400,9 +397,8 @@ class TPOTEstimator(BaseEstimator):
         self.other_objective_functions_weights = other_objective_functions_weights
         self.objective_function_names = objective_function_names
         self.bigger_is_better = bigger_is_better
-        self.max_depth = max_depth
         self.max_size = max_size
-        self.max_children = max_children
+        self.linear_pipeline = linear_pipeline
         self.root_config_dict= root_config_dict
         self.inner_config_dict= inner_config_dict
         self.leaf_config_dict= leaf_config_dict
@@ -625,9 +621,8 @@ class TPOTEstimator(BaseEstimator):
                                                             inner_config_dict=inner_config_dict,
                                                             root_config_dict=root_config_dict,
                                                             leaf_config_dict=leaf_config_dict,
-                                                            max_depth = self.max_depth,
                                                             max_size = self.max_size,
-                                                            max_children = self.max_children,
+                                                            linear_pipeline=self.linear_pipeline,
                                                                 )
 
         if self.threshold_evaluation_early_stop is not None or self.selection_evaluation_early_stop is not None:
