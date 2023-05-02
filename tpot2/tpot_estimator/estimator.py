@@ -587,7 +587,8 @@ class TPOTEstimator(BaseEstimator):
 
         if self.root_config_dict == 'Auto':
             if self.classification:
-                root_config_dict = get_configuration_dictionary("classifiers", n_samples, n_features, self.classification, subsets=self.subsets, feature_names=self.feature_names)
+                n_classes = len(np.unique(y))
+                root_config_dict = get_configuration_dictionary("classifiers", n_samples, n_features, self.classification, subsets=self.subsets, feature_names=self.feature_names, n_classes=n_classes)
             else:
                 root_config_dict = get_configuration_dictionary("regressors", n_samples, n_features, self.classification,subsets=self.subsets, feature_names=self.feature_names)
         else:
@@ -897,7 +898,7 @@ def _apply_make_pipeline(graphindividual, preprocessing_pipeline=None):
     except:
         return None
 
-def get_configuration_dictionary(options, n_samples, n_features, classification, subsets=None, feature_names=None):
+def get_configuration_dictionary(options, n_samples, n_features, classification, subsets=None, feature_names=None, n_classes=None):
     if options is None:
         return options
 
@@ -915,7 +916,7 @@ def get_configuration_dictionary(options, n_samples, n_features, classification,
             config_dict.update(tpot2.config.make_selector_config_dictionary(classification))
 
         elif option == "classifiers":
-            config_dict.update(tpot2.config.make_classifier_config_dictionary(n_samples=n_samples))
+            config_dict.update(tpot2.config.make_classifier_config_dictionary(n_samples=n_samples, n_classes=n_classes))
 
         elif option == "regressors":
             config_dict.update(tpot2.config.make_regressor_config_dictionary(n_samples=n_samples))

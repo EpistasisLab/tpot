@@ -114,10 +114,15 @@ def params_RandomForestClassifier(trial, name=None):
     return params
 
 
-def params_GradientBoostingClassifier(trial, name=None):
+def params_GradientBoostingClassifier(trial,n_classes=None, name=None):
+    if n_classes is not None and n_classes > 2:
+        loss = 'log_loss'
+    else:
+        loss = trial.suggest_categorical(name=f'loss_{name}', choices=['log_loss', 'exponential'])
+    
     params = {
         'n_estimators': 100,
-        'loss': trial.suggest_categorical(name=f'loss_{name}', choices=['log_loss', 'exponential']),
+        'loss': loss,
         'learning_rate': trial.suggest_float(f'learning_rate_{name}', 1e-3, 1, log=True),
         'min_samples_leaf': trial.suggest_int(f'min_samples_leaf_{name}', 1, 20),
         'min_samples_split': trial.suggest_int(f'min_samples_split_{name}', 2, 20),
@@ -227,7 +232,7 @@ def params_MultinomialNB(trial, name=None):
     return params
 
 
-def make_classifier_config_dictionary(n_samples=10):
+def make_classifier_config_dictionary(n_samples=10, n_classes=None):
     n_samples = min(n_samples,100) #TODO optimize this
 
 
@@ -235,7 +240,7 @@ def make_classifier_config_dictionary(n_samples=10):
             LogisticRegression: params_LogisticRegression,
             DecisionTreeClassifier: params_DecisionTreeClassifier,
             KNeighborsClassifier:  partial(params_KNeighborsClassifier,n_samples=n_samples),
-            GradientBoostingClassifier: params_GradientBoostingClassifier,
+            GradientBoostingClassifier: partial(params_GradientBoostingClassifier, n_classes=n_classes),
             ExtraTreesClassifier:params_ExtraTreesClassifier,
             RandomForestClassifier: params_RandomForestClassifier,
             SGDClassifier:params_SGDClassifier,
