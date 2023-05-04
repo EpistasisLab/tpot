@@ -1,7 +1,6 @@
 # TPOT2 ALPHA
 
 ![Tests](https://github.com/EpistasisLab/tpot2/actions/workflows/tests.yml/badge.svg)
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://github.com/EpistasisLab/tpot2/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/EpistasisLab/tpot2/total)](https://github.com/EpistasisLab/tpot2/releases)
 [![Latest Downloads](https://img.shields.io/github/downloads/EpistasisLab/tpot2/latest/total?sort=semver)](https://github.com/EpistasisLab/tpot2/releases)
 
