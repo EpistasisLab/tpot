@@ -18,6 +18,7 @@ from dask.distributed import Client
 from dask.distributed import LocalCluster
 from tpot2.parent_selectors import survival_select_NSGA2, TournamentSelection_Dominated
 import math
+from tpot2.utils import get_thresholds, beta_interpolation, remove_items, equalize_list, update_pareto_frontier
 
 class BaseEvolver():
     def __init__(   self, 
@@ -448,6 +449,9 @@ class BaseEvolver():
                     if time.time() - start_time > self.max_time_seconds:
                         break
                     self.step()
+                    
+                #update the pareto frontier
+                self.population.evaluated_individuals = update_pareto_frontier(self.population.evaluated_individuals, self.objective_names, self.objective_function_weights,self.generation-1)
 
                 if self.verbose >= 3:  
                     sign = np.sign(self.objective_function_weights)
@@ -812,71 +816,3 @@ class BaseEvolver():
 
                             new_population_index = survival_selector(weighted_scores, k=k)
                             cur_individuals = np.array(cur_individuals)[new_population_index]
-
-                    
-
-        
-
-
-
-
-
-
-
-
-
-def get_thresholds(scores, start=0, end=1, scale=.5, n=10,):
-       thresh = beta_interpolation(start=start, end=end, scale=scale, n=n)
-       return [np.percentile(scores, t) for t in thresh]
-
-
-
-
-
-def equalize_list(lst, n_steps):
-    step_size = len(lst) / n_steps
-    new_lst = []
-    for i in range(n_steps):
-        start_index = int(i * step_size)
-        end_index = int((i+1) * step_size)
-        if i == 0: # First segment
-            step_lst = [lst[start_index]] * (end_index - start_index)
-        elif i == n_steps-1: # Last segment
-            step_lst = [lst[-1]] * (end_index - start_index)
-        else: # Middle segment
-            segment = lst[start_index:end_index]
-            median_value = statistics.median(segment)
-            step_lst = [median_value] * (end_index - start_index)
-        new_lst.extend(step_lst)
-    return new_lst
-
-
-def beta_interpolation(start=0, end=1, scale=1, n=10, n_steps=None):
-    if n_steps is None:
-        n_steps = n
-    if n_steps > n:
-        n_steps = n
-    if scale <= 0:
-        scale = 0.0001
-    if scale >= 1:
-        scale = 0.9999
-
-    alpha = 2 * scale
-    beta = 2 - alpha
-    x = np.linspace(0,1,n)
-    values = scipy.special.betainc(alpha,beta,x)*(end-start)+start
-
-    if n_steps is not None:
-        return equalize_list(values, n_steps)
-    else:
-        return values
-
-#thanks chat gtp
-def remove_items(items, indexes_to_remove):
-    items = items.copy()
-    #if items is a numpy array, we need to convert to a list
-    if type(items) == np.ndarray:
-        items = items.tolist()
-    for index in sorted(indexes_to_remove, reverse=True):
-        del items[index]
-    return np.array(items)

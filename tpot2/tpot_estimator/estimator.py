@@ -700,11 +700,7 @@ class TPOTEstimator(BaseEstimator):
         
         self._evolver_instance.optimize()
         #self._evolver_instance.population.update_pareto_fronts(self.objective_names, self.objective_function_weights)
-        #self.make_evaluated_individuals()
-
-
-        self.evaluated_individuals = self._evolver_instance.population.evaluated_individuals.copy()
-        self.evaluated_individuals = get_pareto_front(self.evaluated_individuals, self.objective_names, self.objective_function_weights)
+        self.make_evaluated_individuals()
 
         if validation_strategy == 'reshuffled':
             best_pareto_front_idx = list(self.pareto_front.index)
@@ -856,31 +852,6 @@ class TPOTEstimator(BaseEstimator):
                 return self.evaluated_individuals
             else:
                 return self.evaluated_individuals[self.evaluated_individuals["Pareto_Front"]==0]
-
-
-def get_pareto_front(df, column_names, weights, invalid_values=["TIMEOUT","INVALID"], inplace=True, top=None):
-    dftmp = df[~df[column_names].isin(invalid_values).any(axis=1)]
-
-    if "Budget" in dftmp.columns:
-        #get rows with the max budget
-        dftmp = dftmp[dftmp["Budget"]==dftmp["Budget"].max()]
-
-
-    indeces = dftmp[~dftmp[column_names].isna().any(axis=1)].index.values
-    weighted_scores = df.loc[indeces][column_names].to_numpy()  * weights
-
-    pareto_fronts = tpot2.parent_selectors.nondominated_sorting(weighted_scores)
-
-    if not inplace:
-        df = pd.DataFrame(index=df.index,columns=["Pareto_Front"], data=[])
-    
-    df["Pareto_Front"] = np.nan
-
-    for i, front in enumerate(pareto_fronts):
-        for index in front:
-            df.loc[indeces[index], "Pareto_Front"] = i
-
-    return df
 
 
 def _convert_parents_tuples_to_integers(row, object_to_int):
