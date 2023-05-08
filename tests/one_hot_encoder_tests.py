@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 import scipy.sparse
-from sklearn.utils.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal
 from sklearn.datasets import load_iris, load_boston
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
