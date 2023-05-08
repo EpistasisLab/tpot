@@ -56,7 +56,7 @@ def remove_items(items, indexes_to_remove):
         del items[index]
     return np.array(items)
 
-def get_pareto_front(df, column_names, weights, invalid_values=["TIMEOUT","INVALID"], inplace=True, top=None):
+def get_pareto_front(df, column_names, weights, invalid_values=["TIMEOUT","INVALID"]):
     dftmp = df[~df[column_names].isin(invalid_values).any(axis=1)]
 
     if "Budget" in dftmp.columns:
@@ -64,21 +64,20 @@ def get_pareto_front(df, column_names, weights, invalid_values=["TIMEOUT","INVAL
         dftmp = dftmp[dftmp["Budget"]==dftmp["Budget"].max()]
 
 
-    indeces = dftmp[~dftmp[column_names].isna().any(axis=1)].index.values
-    weighted_scores = df.loc[indeces][column_names].to_numpy()  * weights
+    indexes = dftmp[~dftmp[column_names].isna().any(axis=1)].index.values
+    weighted_scores = df.loc[indexes][column_names].to_numpy()  * weights
 
     pareto_fronts = tpot2.parent_selectors.nondominated_sorting(weighted_scores)
 
-    if not inplace:
-        df = pd.DataFrame(index=df.index,columns=["Pareto_Front"], data=[])
+    df = pd.DataFrame(index=df.index,columns=["Pareto_Front"], data=[])
     
     df["Pareto_Front"] = np.nan
 
     for i, front in enumerate(pareto_fronts):
         for index in front:
-            df.loc[indeces[index], "Pareto_Front"] = i
+            df.loc[indexes[index], "Pareto_Front"] = i
 
-    return df
+    return df["Pareto_Front"]
 
 def update_pareto_frontier(df, column_names, weights,generation, invalid_values=["TIMEOUT","INVALID"]):
     dftmp = df[~df[column_names].isin(invalid_values).any(axis=1)]
@@ -92,8 +91,8 @@ def update_pareto_frontier(df, column_names, weights,generation, invalid_values=
     dftmp = dftmp[~dftmp[column_names].isna().any(axis=1)]
     if "Pareto_Front" in dftmp.columns:
         dftmp = dftmp[(dftmp["Pareto_Front"]==0) | (dftmp["Generation"] == generation)]
-    indeces = dftmp.index.values
-    weighted_scores = df.loc[indeces][column_names].to_numpy()  * weights
+    indexes = dftmp.index.values
+    weighted_scores = df.loc[indexes][column_names].to_numpy()  * weights
 
     pareto_fronts = tpot2.parent_selectors.nondominated_sorting(weighted_scores)
     
@@ -101,6 +100,6 @@ def update_pareto_frontier(df, column_names, weights,generation, invalid_values=
 
     for i, front in enumerate(pareto_fronts):
         for index in front:
-            df.loc[indeces[index], "Pareto_Front"] = i
+            df.loc[indexes[index], "Pareto_Front"] = i
 
     return df

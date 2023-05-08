@@ -385,6 +385,28 @@ class TPOTEstimator(BaseEstimator):
             If True, will use multiprocessing to parallelize the optimization process. If False, will use threading.
             True seems to perform better. However, False is required for interactive debugging.
             
+        Attributes
+        ----------
+
+        fitted_pipeline_ : GraphPipeline
+            A fitted instance of the GraphPipeline that inherits from sklearn BaseEstimator. This is fitted on the full X, y passed to fit.
+
+        evaluated_individuals : A pandas data frame containing data for all evaluated individuals in the run. 
+            Columns: 
+            - *objective functions : The first few columns correspond to the passed in scorers and objective functions
+            - Parents : A tuple containing the indexes of the pipelines used to generate the pipeline of that row. If NaN, this pipeline was generated randomly in the initial population.
+            - Variation_Function : Which variation function was used to mutate or crossover the parents. If NaN, this pipeline was generated randomly in the initial population.
+            - Individual : The internal representation of the individual that is used during the evolutionary algorithm. This is not an sklearn BaseEstimator.
+            - Generation : The generation the pipeline first appeared. 
+            - Pareto_Front	: The nondominated front that this pipeline belongs to. 0 means that its scores is not strictly dominated by any other individual. 
+                            To save on computational time, the best frontier is updated iteratively each generation. 
+                            The pipelines with the 0th pareto front do represent the exact best frontier. However, the pipelines with pareto front >= 1 are only in reference to the other pipelines in the final population.
+                            All other pipelines are set to NaN. 
+            - Instance	: The unfitted GraphPipeline BaseEstimator. 
+            - *validation objective functions : Objective function scores evaluated on the validation set.
+            - Validation_Pareto_Front : The full pareto front calculated on the validation set. This is calculated for all pipelines with Pareto_Front equal to 0. Unlike the Pareto_Front which only calculates the frontier and the final population, the Validation Pareto Front is calculated for all pipelines tested on the validation set.
+            
+        pareto_front : The same pandas dataframe as evaluated individuals, but containing only the frontier pareto front pipelines.
         '''
 
         # sklearn BaseEstimator must have a corresponding attribute for each parameter.
@@ -638,16 +660,29 @@ class TPOTEstimator(BaseEstimator):
 
         #.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column),
         #tmp = partial(objective_function_generator, scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions )
-        self.final_object_function_list =[ lambda pipeline_individual, X, y,is_classification=self.classification,
-                scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions,
-                 memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column, **kwargs: objective_function_generator(
-                                pipeline_individual,
-                                #ind,
-                                X, y, 
-                                is_classification=is_classification,
-                                scorers= scorers, cv=cv, other_objective_functions=other_objective_functions,
-                                memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column,
-                                **kwargs,
+        self.final_object_function_list =[ lambda pipeline_individual, 
+                                            X, 
+                                            y,
+                                            is_classification=self.classification,
+                                            scorers= self._scorers, 
+                                            cv=self.cv_gen, 
+                                            other_objective_functions=self.other_objective_functions,
+                                            memory=self.memory, 
+                                            cross_val_predict_cv=self.cross_val_predict_cv, 
+                                            subset_column=self.subset_column, 
+                                            **kwargs: 
+                                            objective_function_generator(
+                                                pipeline_individual,
+                                                X, 
+                                                y, 
+                                                is_classification=is_classification,
+                                                scorers= scorers, 
+                                                cv=cv, 
+                                                other_objective_functions=other_objective_functions,
+                                                memory=memory, 
+                                                cross_val_predict_cv=cross_val_predict_cv, 
+                                                subset_column=subset_column,
+                                                **kwargs,
                                 )]
 
 
@@ -704,28 +739,47 @@ class TPOTEstimator(BaseEstimator):
 
         if validation_strategy == 'reshuffled':
             best_pareto_front_idx = list(self.pareto_front.index)
-            best_pareto_front = self.pareto_front.loc[best_pareto_front_idx]['Instance']
+            best_pareto_front = list(self.pareto_front.loc[best_pareto_front_idx]['Individual'])
             
             #reshuffle rows
             X, y = sklearn.utils.shuffle(X, y, random_state=1)
             X_future = _client.scatter(X)
             y_future = _client.scatter(y)
 
-            val_objective_function_list = [lambda ind, X, y, is_classification=self.classification,scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions, **kwargs: objective_function_generator(
+            val_objective_function_list = [lambda   ind, 
+                                                    X, 
+                                                    y, 
+                                                    is_classification=self.classification,
+                                                    scorers= self._scorers, 
+                                                    cv=self.cv_gen, 
+                                                    other_objective_functions=self.other_objective_functions, 
+                                                    memory=self.memory, 
+                                                    cross_val_predict_cv=self.cross_val_predict_cv, 
+                                                    subset_column=self.subset_column, 
+                                                    **kwargs: objective_function_generator(
                                                                                                 ind,
-                                                                                                X,y, 
+                                                                                                X,
+                                                                                                y, 
                                                                                                 is_classification=is_classification,
-                                                                                                scorers= scorers, cv=cv, other_objective_functions=other_objective_functions,
+                                                                                                scorers= scorers, 
+                                                                                                cv=cv, 
+                                                                                                other_objective_functions=other_objective_functions,
+                                                                                                memory=memory, 
+                                                                                                cross_val_predict_cv=cross_val_predict_cv, 
+                                                                                                subset_column=subset_column,
                                                                                                 **kwargs,
                                                                                                 )]
             
+            objective_kwargs = {"X": X_future, "y": y_future}
             val_scores = tpot2.objectives.parallel_eval_objective_list(
                 best_pareto_front,
-                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client, X= X_future, y= y_future)
+                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
             self.evaluated_individuals.loc[best_pareto_front_idx,val_objective_names] = val_scores
+
+            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
 
         elif validation_strategy == 'split':
 
@@ -735,24 +789,42 @@ class TPOTEstimator(BaseEstimator):
             X_val_future = _client.scatter(X_val)
             y_val_future = _client.scatter(y_val)
 
-
+            objective_kwargs = {"X": X_future, "y": y_future, "X_val" : X_val_future, "y_val":y_val_future }
+            
             best_pareto_front_idx = list(self.pareto_front.index)
-            best_pareto_front = self.pareto_front.loc[best_pareto_front_idx]['Instance']
-            val_objective_function_list = [lambda ind, X, y, X_val, y_val, scorers= self._scorers, other_objective_functions=self.other_objective_functions, **kwargs: val_objective_function_generator(
-                ind,
-                X,y,
-                X_val, y_val, 
-                scorers= scorers, other_objective_functions=other_objective_functions,
-                **kwargs,
-                )]
+            best_pareto_front = list(self.pareto_front.loc[best_pareto_front_idx]['Individual'])
+            val_objective_function_list = [lambda   ind, 
+                                                    X, 
+                                                    y, 
+                                                    X_val, 
+                                                    y_val, 
+                                                    scorers= self._scorers, 
+                                                    other_objective_functions=self.other_objective_functions, 
+                                                    memory=self.memory, 
+                                                    cross_val_predict_cv=self.cross_val_predict_cv, 
+                                                    subset_column=self.subset_column, 
+                                                    **kwargs: val_objective_function_generator(
+                                                        ind,
+                                                        X,
+                                                        y,
+                                                        X_val, 
+                                                        y_val, 
+                                                        scorers= scorers, 
+                                                        other_objective_functions=other_objective_functions,
+                                                        memory=memory, 
+                                                        cross_val_predict_cv=cross_val_predict_cv, 
+                                                        subset_column=subset_column,
+                                                        **kwargs,
+                                                        )]
             
             val_scores = tpot2.objectives.parallel_eval_objective_list(
                 best_pareto_front,
-                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names),client=_client, X=X_future, y=y_future, X_val=X_val_future, y_val=y_val_future)
+                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names),client=_client, **objective_kwargs)
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
             self.evaluated_individuals.loc[best_pareto_front_idx,val_objective_names] = val_scores
+            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
         else:
             self.objective_names_for_selection = self.objective_names
 
@@ -964,18 +1036,17 @@ def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_fun
         
     return np.concatenate([cv_obj_scores,other_scores])
 
-
-def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test, scorers, other_objective_functions, memory=None, cross_val_predict_cv=None, subset_column=None, ):
+def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test, scorers, other_objective_functions, memory, cross_val_predict_cv, subset_column):
     #subsample the data
     pipeline = pipeline.export_pipeline(memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column)
     fitted_pipeline = sklearn.base.clone(pipeline)
     fitted_pipeline.fit(X_train, y_train)
 
-    this_fold_scores = [sklearn.metrics.get_scorer(scorer)(fitted_pipeline, X_test, y_test) for scorer in scorers] 
-    
+    if len(scorers) > 0:
+        scores =[sklearn.metrics.get_scorer(scorer)(fitted_pipeline, X_test, y_test) for scorer in scorers] 
+
     other_scores = []
-    #TODO use same exported pipeline as for each objective
     if other_objective_functions is not None and len(other_objective_functions) >0:
         other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
     
-    return np.concatenate([this_fold_scores,other_scores])
+    return np.concatenate([scores,other_scores])
