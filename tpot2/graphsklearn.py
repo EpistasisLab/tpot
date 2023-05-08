@@ -281,6 +281,11 @@ class GraphPipeline(_BaseComposition):
         except: 
             pass
         
+    def __str__(self):
+        if len(self.graph.edges) > 0:
+            return str(self.graph.edges)
+        else:
+            return str(self.graph.nodes)
 
     def fit(self, X, y, subset_col = None):
         # if self.subset_column is not None and self.subset_values is not None:
@@ -309,6 +314,8 @@ class GraphPipeline(_BaseComposition):
                                 topo_sort = self.topo_sorted_nodes,
                                 subset_col = subset_col,
                                 )
+        
+        return self
 
     def plot(self, ):
         plot(graph = self.graph)

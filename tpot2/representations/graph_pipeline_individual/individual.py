@@ -13,6 +13,7 @@ from itertools import combinations
 from .graph_utils import graph_utils
 import itertools
 import baikal
+import copy
 
 class NodeLabel():
     def __init__(self, *,
@@ -104,9 +105,8 @@ class GraphIndividual(tpot2.BaseIndividual):
                 inner_config_dict=None, 
                 leaf_config_dict=None,
                 initial_graph = None,
-                max_depth = np.inf,
                 max_size = np.inf, 
-                max_children = np.inf,
+                linear_pipeline = False,
                 name=None,
                 crossover_same_depth = False,
                 crossover_same_recursive_depth = True,
@@ -119,16 +119,13 @@ class GraphIndividual(tpot2.BaseIndividual):
         self.__debug = False
 
         self.root_config_dict = root_config_dict
-        if inner_config_dict is None:
-            self.inner_config_dict = self.root_config_dict
-        else:
-            self.inner_config_dict = inner_config_dict
+        self.inner_config_dict = inner_config_dict
         self.leaf_config_dict = leaf_config_dict
 
-        self.max_depth = max_depth
+
         self.max_size = max_size
         self.name = name
-        self.max_children = max_children
+
         self.crossover_same_depth = crossover_same_depth
         self.crossover_same_recursive_depth = crossover_same_recursive_depth
 
@@ -188,25 +185,30 @@ class GraphIndividual(tpot2.BaseIndividual):
         #self.root =list(nx.topological_sort(self.graph))[0]
 
 
-        self.mutate_methods_list = [    self._mutate_get_new_hyperparameter,
-                                        self._mutate_replace_method, 
-                                        self._mutate_insert_leaf,
+        self.mutate_methods_list =     [self._mutate_hyperparameters,
+                                        self._mutate_replace_node, 
                                         self._mutate_remove_node,
-                                        self._mutate_add_connection_from,
-                                        self._mutate_remove_extra_edge,
-                                        self._mutate_insert_inner_node,
+                                        ]
+        
+        self.crossover_methods_list = [
+                                        #self._crossover_swap_node,
+                                        #self._crossover_hyperparameters,
+                                        self._crossover_swap_branch,
+                                        #self._crossover_take_branch,
+                                        #self._crossover_swap_leaf_at_node,
                                         ]
 
+        if self.inner_config_dict is not None:
+            self.mutate_methods_list.append(self._mutate_insert_inner_node)
+            self.crossover_methods_list.append(self._crossover_take_branch) #this is the only crossover method that can create inner nodes
+            if not linear_pipeline:
+                self.mutate_methods_list.append(self._mutate_insert_bypass_node)
+
+        if not linear_pipeline:
+            self.mutate_methods_list.append(self._mutate_insert_leaf)
 
 
-        self.crossover_methods_list = [
-                                    #self._crossover_swap_node,
-                                    #self._crossover_hyperparameters,
-                                    self._crossover_swap_branch_with_all_children,
-                                    self._crossover_combine_and_prune,
-                                    self._crossover_take_branch_with_all_children,
-                                    #self._crossover_swap_leaf_at_node,
-                                            ]
+
 
         if self.unique_subset_values is not None:
             self.crossover_methods_list.append(self._crossover_row_subsets)
@@ -258,58 +260,7 @@ class GraphIndividual(tpot2.BaseIndividual):
             for node in noncompliant_leafs:
                 self.graph.add_edge(node, random.choice(compliant_leafs))
 
-    # max_depth = np.inf,
-    # max_size = np.inf, 
-    # max_children = np.inf,
-    def prune_to_limits(self,):
-        
 
-
-        #Find all leaves that are too deep,
-        # Get the sequence for the longest path
-        # remove nodes from path, starting from the leaves 
-
-
-        # nodelist = graph_utils.get_leaves(self.graph)
-        # if not np.isinf(self.max_depth):
-        #     for node in nodelist:
-        #         done = False
-        #         while not done: #TODO make more efficient
-        #             done = True
-        #             max_path = graph_utils.get_max_path_size(self.graph, self.root, node, return_path=True)
-        #             if len(max_path) > self.max_depth:
-        #                 max_path.reverse()
-        #                 if self.leaf_config_dict is not None:
-        #                     max_path.remove(node)
-        #                 number_to_remove = len(max_path) - self.max_depth
-        #                 #max_path.remove(node)
-        #                 for i in range(number_to_remove):
-        #                     graph_utils.remove_and_stitch(self.graph, max_path[i])
-        #                     done = False
-                        
-
-            
-        #max_size
-        nodelist = list(self.graph.nodes)
-        nodelist.remove(self.root)
-        if len(nodelist) > self.max_size:
-            random.shuffle(nodelist)
-            for n in nodelist[0:len(nodelist) - self.max_size]:
-                graph_utils.remove_and_stitch(self.graph, n)
-
-        #max children
-        nodelist= list(self.graph.nodes)
-        for node in nodelist:
-            #if a node has more children than allowed
-            successors = list(self.graph.successors(node))
-            num_successors = len(successors)
-            if num_successors > self.max_children:
-                #move the extra children
-                random.shuffle(successors)
-                for c in successors[0:num_successors-self.max_children]:
-                    self.graph.remove_edge(node,c)
-
-        graph_utils.remove_nodes_disconnected_from_node(self.graph, self.root)
 
 
     def _merge_duplicated_nodes(self): 
@@ -556,9 +507,6 @@ class GraphIndividual(tpot2.BaseIndividual):
         return graph._mutate()
 
     def _mutate(self,):
-        
-
-        
         random.shuffle(self.mutate_methods_list)
         for mutate_method in self.mutate_methods_list:
             if mutate_method():
@@ -582,7 +530,6 @@ class GraphIndividual(tpot2.BaseIndividual):
                             print('something went wrong with ', mutate_method)
                         except: 
                             pass
-
                 
                 return True
             
@@ -593,9 +540,12 @@ class GraphIndividual(tpot2.BaseIndividual):
             self.row_subset_selector.mutate()
 
 
-    def _mutate_get_new_hyperparameter(self):
+    def _mutate_hyperparameters(self):
+        '''
+        Mutates the hyperparameters for a randomly chosen node in the graph.
+        '''
         sorted_nodes_list = list(self.graph.nodes)
-        random.shuffle(sorted_nodes_list) #TODO: sort by number of children and/or parents? bias model one way or another
+        random.shuffle(sorted_nodes_list) 
         for node in sorted_nodes_list:
             if isinstance(node,GraphIndividual):
                 continue
@@ -606,8 +556,11 @@ class GraphIndividual(tpot2.BaseIndividual):
             return True
         return False
 
-    #cannot replace method with the same method
-    def _mutate_replace_method(self):
+    def _mutate_replace_node(self):
+        '''
+        Replaces the method in a randomly chosen node by a method from the available methods for that node.
+
+        '''
         sorted_nodes_list = list(self.graph.nodes)
         random.shuffle(sorted_nodes_list) 
         for node in sorted_nodes_list:
@@ -624,66 +577,64 @@ class GraphIndividual(tpot2.BaseIndividual):
         return False
 
 
-    #removes a random node and connects its parents to its children
-    # if the node is a leaf, and leafs are protected, randomly assign existing leaf
     def _mutate_remove_node(self):
+        '''
+        Removes a randomly chosen node and connects its parents to its children.
+        If the node is the only leaf for an inner node and 'leaf_config_dict' is not none, we do not remove it.
+        '''
         nodes_list = list(self.graph.nodes)
         nodes_list.remove(self.root)
         leaves = graph_utils.get_leaves(self.graph)
-        #random.shuffle(sorted_nodes_list) #TODO: sort by number of children and/or parents? bias model one way or another
+
         while len(nodes_list) > 0:
-            node = random.choices(nodes_list, weights=[1/((len(list(nx.neighbors(self.graph, n)))+1)**100) for n in nodes_list])[0]
+            node = random.choices(nodes_list,)[0]
             nodes_list.remove(node)
 
-            if self.leaf_config_dict is not None and len(list(nx.descendants(self.graph,node))) == 0 : #if we are protecting leafs and node is a leaf
+            if self.leaf_config_dict is not None and len(list(nx.descendants(self.graph,node))) == 0 : #if the node is a leaf
                 if len(leaves) <= 1:
                     continue #dont remove the last leaf
                 leaf_parents = self.graph.predecessors(node)
-                graph_utils.remove_and_stitch(self.graph, node)
-                leaves.remove(node)
-                for p in leaf_parents:
-                    # if p has no children, randomly assign a child from leaves
-                    if len(list(nx.descendants(self.graph,p))) < 1:
-                        new_child = random.choice(leaves)
-                        self.graph.add_edge(p, new_child)
 
-                
-                #TODO make more efficient
-                if any([len(list(nx.descendants(self.graph,lp))) < 2 for lp in leaf_parents]): #dont remove a leaf if it is the only input into another node.
+                # if any of the parents of the node has one one child, continue
+                if any([len(list(self.graph.successors(lp))) < 2 for lp in leaf_parents]): #dont remove a leaf if it is the only input into another node.
                     continue
+
+                graph_utils.remove_and_stitch(self.graph, node)
+                graph_utils.remove_nodes_disconnected_from_node(self.graph, self.root)
+                return True
 
             else:
                 graph_utils.remove_and_stitch(self.graph, node)
+                graph_utils.remove_nodes_disconnected_from_node(self.graph, self.root)
+                return True
             
-            return True
         return False
 
-        #loop through nodes and delete an edge to one of it's extra parents
-    def _mutate_remove_extra_edge(self):
+    def _mutate_remove_edge(self):
+        '''
+        Deletes an edge as long as deleting that edge does not make the graph disconnected.
+        '''
         sorted_nodes_list = list(self.graph.nodes)
-        random.shuffle(sorted_nodes_list) #TODO: sort by number of children and/or parents? bias model one way or another
+        random.shuffle(sorted_nodes_list) 
         for child_node in sorted_nodes_list:
             parents = list(self.graph.predecessors(child_node))
             if len(parents) > 1: # if it has more than one parent, you can remove an edge (if this is the only child of a node, it will become a leaf)
 
                 for parent_node in parents:
-                    #if we are protecting leafs and parent node is a leaf, skip
+                    # if removing the egde will make the parent_node a leaf node, skip
                     if self.leaf_config_dict is not None and len(list(self.graph.successors(parent_node))) < 2: 
                         continue
 
-                    
                     self.graph.remove_edge(parent_node, child_node)
                     return True
         return False
 
-    def _mutate_add_connection_from(self):
+    def _mutate_add_edge(self):
         '''
-        Randomly add an edge from a node to another node that is not an ancestor of the first node
+        Randomly add an edge from a node to another node that is not an ancestor of the first node.
         '''
         sorted_nodes_list = list(self.graph.nodes)
-        sorted_nodes_list2 = list(self.graph.nodes)
-        random.shuffle(sorted_nodes_list) #TODO: sort by number of children and/or parents? bias model one way or another
-        random.shuffle(sorted_nodes_list2)
+        random.shuffle(sorted_nodes_list)
         for child_node in sorted_nodes_list:
             for parent_node in sorted_nodes_list:
                 if self.leaf_config_dict is not None:
@@ -691,18 +642,14 @@ class GraphIndividual(tpot2.BaseIndividual):
                         continue
                 
                 # skip if
-                # parent and child are the same node
-                # edge already exists
-                # child is an ancestor of parent
-                if  (child_node is not parent_node) and not self.graph.has_edge(parent_node,child_node) and (child_node not in nx.ancestors(self.graph, parent_node)): 
-                    
+                # - parent and child are the same node
+                # - edge already exists
+                # - child is an ancestor of parent
+                if  (child_node is not parent_node) and not self.graph.has_edge(parent_node,child_node) and (child_node not in nx.ancestors(self.graph, parent_node)):         
                     self.graph.add_edge(parent_node,child_node)
                     return True
 
         return False
-
-
-
 
 
     def _mutate_insert_leaf(self):
@@ -719,24 +666,41 @@ class GraphIndividual(tpot2.BaseIndividual):
                     
                     
                     continue
+      
+                #If node *is* the root or is not a leaf, add leaf node. (dont want to add leaf on top of leaf)
+                if self.leaf_config_dict is not None:
+                    new_node = create_node(self.leaf_config_dict)
+                else:
+                    new_node = create_node(self.inner_config_dict)
 
-                if self.max_children > len(list(self.graph.successors(node))):
-                    if np.isinf(self.max_depth) or  self.max_depth >= 1+  graph_utils.get_max_path_size(self.graph, self.root, node): #stackoverflow, check, can it be more efficient?:
-                        
-
-                        
-                            #If node *is* the root or is not a leaf, add leaf node. (dont want to add leaf on top of leaf)
-                        if self.leaf_config_dict is not None:
-                            new_node = create_node(self.leaf_config_dict)
-                        else:
-                            new_node = create_node(self.inner_config_dict)
-
-
-                        self.graph.add_node(new_node)
-                        self.graph.add_edge(node, new_node)
-                        return True
+                self.graph.add_node(new_node)
+                self.graph.add_edge(node, new_node)
+                return True
 
         return False
+
+    def _mutate_insert_bypass_node(self):
+        if self.max_size > self.graph.number_of_nodes():
+            sorted_nodes_list = list(self.graph.nodes)
+            sorted_nodes_list2 = list(self.graph.nodes)
+            random.shuffle(sorted_nodes_list) #TODO: sort by number of children and/or parents? bias model one way or another
+            random.shuffle(sorted_nodes_list2)
+            for node in sorted_nodes_list:  
+                for child_node in sorted_nodes_list2:
+                    if child_node is not node and child_node not in nx.ancestors(self.graph, node):
+                        if self.leaf_config_dict is not None:
+                            #If if we are protecting leafs, dont add connection into a leaf
+                            if len(list(nx.descendants(self.graph,node))) ==0 :
+                                continue
+
+                            new_node = create_node(config_dict = self.inner_config_dict)
+
+                            self.graph.add_node(new_node)
+                            self.graph.add_edges_from([(node, new_node), (new_node, child_node)])
+                            return True
+
+        return False
+
 
     def _mutate_insert_inner_node(self):
         if self.max_size > self.graph.number_of_nodes():
@@ -745,22 +709,21 @@ class GraphIndividual(tpot2.BaseIndividual):
             random.shuffle(sorted_nodes_list) #TODO: sort by number of children and/or parents? bias model one way or another
             random.shuffle(sorted_nodes_list2)
             for node in sorted_nodes_list:
-                if self.max_children > len(self.graph):
-                    for child_node in sorted_nodes_list2:
-                        if child_node is not node and child_node not in nx.ancestors(self.graph, node):
-                            if self.leaf_config_dict is not None:
-                                #If if we are protecting leafs, dont add connection into a leaf
-                                if len(list(nx.descendants(self.graph,node))) ==0 :
-                                    continue
-                            
-                            #If adding this node will not make the graph too deep
-                            if np.isinf(self.max_depth) or  self.max_depth > graph_utils.get_max_path_through_node(self.graph, self.root, child_node): #this is pretty inneficient.
+                #loop through children of node
+                for child_node in list(self.graph.successors(node)):
+                    
+                    if child_node is not node and child_node not in nx.ancestors(self.graph, node):
+                        if self.leaf_config_dict is not None:
+                            #If if we are protecting leafs, dont add connection into a leaf
+                            if len(list(nx.descendants(self.graph,node))) ==0 :
+                                continue
+                        
+                            new_node = create_node(config_dict = self.inner_config_dict)
 
-                                    new_node = create_node(config_dict = self.inner_config_dict)
-
-                                    self.graph.add_node(new_node)
-                                    self.graph.add_edges_from([(node, new_node), (new_node, child_node)])
-                                    return True
+                            self.graph.add_node(new_node)
+                            self.graph.add_edges_from([(node, new_node), (new_node, child_node)])
+                            self.graph.remove_edge(node, child_node)
+                            return True
 
         return False
 
@@ -810,7 +773,6 @@ class GraphIndividual(tpot2.BaseIndividual):
 
         return ind1,ind2
 
-    #TODO make more efficient
     def crossover(self, ind2):
         '''
         self is the first individual, ind2 is the second individual
@@ -838,22 +800,12 @@ class GraphIndividual(tpot2.BaseIndividual):
         random.shuffle(self.crossover_methods_list)
         for crossover_method in self.crossover_methods_list:
             if crossover_method(Graph):
-                self.prune_to_limits()
                 self._merge_duplicated_nodes()
-                #Graph.prune_to_limits()
-                #Graph._merge_duplicated_nodes()
-
-            # if self.leaf_config_dict is not None:
-            #     self.fix_noncompliant_leafs()
-
-            self._merge_duplicated_nodes()
-
-            return True
+                return True
 
         if self.__debug:
             try:
                 nx.find_cycle(self.graph)
-                #nx.find_cycle(Graph.graph)
                 print('something went wrong with ', crossover_method)
             except: 
                 pass
@@ -861,17 +813,15 @@ class GraphIndividual(tpot2.BaseIndividual):
         return False
 
 
-
-    #Mutators for the whole graph
-    #TODO
-
     def _crossover_row_subsets(self, G2):
         if self.unique_subset_values is not None and G2.unique_subset_values is not None:
             self.row_subset_selector.crossover(G2.row_subset_selector)
     
 
     def _crossover_swap_node(self, G2):
-
+        '''
+        Swaps randomly chosen node from Parent1 with a randomly chosen node from Parent2.
+        '''
         if self.crossover_same_depth:
             pair_gen = graph_utils.select_nodes_same_depth(self.graph, self.root, G2.graph, G2.root)
         else:
@@ -902,31 +852,29 @@ class GraphIndividual(tpot2.BaseIndividual):
 
 
 
-    def _crossover_swap_branch_with_all_children(self, G2):
-
+    def _crossover_swap_branch(self, G2):
+        '''
+        swaps a branch from parent1 with a branch from parent2. does not modify parent2
+        '''
         if self.crossover_same_depth:
             pair_gen = graph_utils.select_nodes_same_depth(self.graph, self.root, G2.graph, G2.root)
         else:
             pair_gen = graph_utils.select_nodes_randomly(self.graph, G2.graph)
 
         for node1, node2 in pair_gen:
-
-            if node1 is self.root or node2 is G2.root:
+            #TODO: if root is in inner_config_dict, then do use it?
+            if node1 is self.root or node2 is G2.root: #dont want to add root as inner node
                 continue
             
-            #if node1 has fewer children than max_children, skip
-            if len(list(self.graph.successors(node1))) < self.max_children:
-                continue
+            #check if node1 is a leaf and leafs are protected, don't add an input to the leave 
+            if self.leaf_config_dict is not None: #if we are protecting leaves, 
+                node1_is_leaf = len(list(self.graph.successors(node1))) == 0
+                node2_is_leaf = len(list(G2.graph.successors(node2))) == 0
+                #if not ((node1_is_leaf and node1_is_leaf) or (not node1_is_leaf and not node2_is_leaf)): #if node1 is a leaf
+                if (node1_is_leaf and (not node2_is_leaf)) or ( (not node1_is_leaf) and node2_is_leaf):
+                    #only continue if node1 and node2 are both leaves or both not leaves
+                    continue
 
-            #check if node2 type is in the list of allowed types
-            #is node2 is graph individual
-            if isinstance(node2,GraphIndividual):
-                if not ((isinstance(node2,GraphIndividual) and ("Recursive" in self.inner_config_dict or "Recursive" in self.leaf_config_dict))):
-                    continue
-            else:
-                if node2.method_class not in self.inner_config_dict: #in case node2 is a root with method that is not supposed to be an inner node #TODO if we should check for leaf config dict?
-                    continue
-            
             temp_graph_1 = self.graph.copy()
             temp_graph_1.remove_node(node1)
             graph_utils.remove_nodes_disconnected_from_node(temp_graph_1, self.root)
@@ -938,28 +886,25 @@ class GraphIndividual(tpot2.BaseIndividual):
                 if n not in n2_descendants and n is not node2: #removes all nodes not in the branch
                     branch2.remove_node(n)
 
-            leaves = graph_utils.get_leaves(branch2)
-            #if node1 plus node2 branch has more than max_children, skip
-            if branch2.number_of_nodes() + temp_graph_1.number_of_nodes() > self.max_size:
+            branch2 = copy.deepcopy(branch2)
+            branch2_root = graph_utils.get_roots(branch2)[0]
+            temp_graph_1.add_edges_from(branch2.edges)
+            for p in list(self.graph.predecessors(node1)):
+                temp_graph_1.add_edge(p,branch2_root)
+
+            if temp_graph_1.number_of_nodes() > self.max_size:
                 continue
-            
+
             self.graph = temp_graph_1
-            #TODO check depth
-            #if max_depth of node1 plus node2 branch is greater than max_depth, skip 
-            # if np.isinf(self.max_depth) or  self.max_depth >= 1+  graph_utils.get_max_path_size(self.graph, self.root, node1) + graph_utils.get_max_path_size(branch2, node2, leaves[0]):
-            #     continue
-
-            self.graph.add_edges_from(branch2.edges)
-            for p in nx.descendants(self.graph,node1):
-                self.graph.add_edge(p,node2)
-
 
             return True
         return False
 
-    #picks two twos with same type and swaps hyperparameters
     #TODO: Currently returns true even if hyperparameters are blank
     def _crossover_hyperparameters(self, G2):
+        '''
+        Swaps the hyperparamters of one randomly chosen node in Parent1 with the hyperparameters of randnomly chosen node in Parent2.
+        '''
         if self.crossover_same_depth:
             pair_gen = graph_utils.select_nodes_same_depth(self.graph, self.root, G2.graph, G2.root)
         else:
@@ -1007,32 +952,32 @@ class GraphIndividual(tpot2.BaseIndividual):
                         self.graph.add_edge(node1, c)
                         success = True
 
-
         return success
 
 
-
-    def _crossover_take_branch_with_all_children(self, G2):
-
+    def _crossover_take_branch(self, G2):
+        '''
+        Takes a subgraph from Parent2 and add it to a randomly chosen node in Parent1.
+        '''
         if self.crossover_same_depth:
             pair_gen = graph_utils.select_nodes_same_depth(self.graph, self.root, G2.graph, G2.root)
         else:
             pair_gen = graph_utils.select_nodes_randomly(self.graph, G2.graph)
 
         for node1, node2 in pair_gen:
-            #if node1 has fewer children than max_children, skip
-            if len(list(self.graph.successors(node1))) < self.max_children:
+            #TODO: if root is in inner_config_dict, then do use it?
+            if node2 is G2.root: #dont want to add root as inner node
+                continue
+            
+
+            #check if node1 is a leaf and leafs are protected, don't add an input to the leave 
+            if self.leaf_config_dict is not None and len(list(self.graph.successors(node1))) == 0:
                 continue
 
-            #check if node2 type is in the list of allowed types
-            #is node2 is graph individual
-            if isinstance(node2,GraphIndividual):
-                if not ((isinstance(node2,GraphIndividual) and ("Recursive" in self.inner_config_dict or "Recursive" in self.leaf_config_dict))):
-                    continue
-            else:
-                if node2.method_class not in self.inner_config_dict: #in case node2 is a root with method that is not supposed to be an inner node 
-                    continue
-            
+            #icheck if node2 is graph individual
+            # if isinstance(node2,GraphIndividual):
+            #     if not ((isinstance(node2,GraphIndividual) and ("Recursive" in self.inner_config_dict or "Recursive" in self.leaf_config_dict))):
+            #         continue
 
             #isolating the branch
             branch2 = G2.graph.copy()
@@ -1041,19 +986,14 @@ class GraphIndividual(tpot2.BaseIndividual):
                 if n not in n2_descendants and n is not node2: #removes all nodes not in the branch
                     branch2.remove_node(n)
 
-            leaves = graph_utils.get_leaves(branch2)
             #if node1 plus node2 branch has more than max_children, skip
             if branch2.number_of_nodes() + self.graph.number_of_nodes() > self.max_size:
                 continue
 
-            #TODO check depth
-            #if max_depth of node1 plus node2 branch is greater than max_depth, skip 
-            # if np.isinf(self.max_depth) or  self.max_depth >= 1+  graph_utils.get_max_path_size(self.graph, self.root, node1) + graph_utils.get_max_path_size(branch2, node2, leaves[0]):
-            #     continue
-
+            branch2 = copy.deepcopy(branch2)
+            branch2_root = graph_utils.get_roots(branch2)[0]
             self.graph.add_edges_from(branch2.edges)
-            self.graph.add_edge(node1,node2)
-
+            self.graph.add_edge(node1,branch2_root)
 
             return True
         return False
@@ -1062,25 +1002,6 @@ class GraphIndividual(tpot2.BaseIndividual):
     def _crossover_swap_all_leafs(self, G2):
         pass
 
-    #TODO
-    def _crossover_combine_and_prune(self, G2):
-        taget_size = (self.graph.number_of_nodes() + G2.graph.number_of_nodes())/2
-
-        branch2 = G2.graph.copy()
-        root_children = list(branch2.successors(G2.root))
-        branch2.remove_node(G2.root)
-        self.graph.add_edges_from(branch2.edges)
-        for c in root_children:
-            self.graph.add_edge(self.root, c)
-        
-        self._merge_duplicated_nodes()
-
-        #prune
-        while self.graph.number_of_nodes() > taget_size:
-            if not self._mutate_remove_node():
-                break
-
-        return True
 
     #TODO: currently ignores ensembles, make it include nodes inside of ensembles
     def optimize(self, objective_function, steps=5):
@@ -1153,6 +1074,8 @@ class GraphIndividual(tpot2.BaseIndividual):
         #TODO how to separate full model?
         pass
 
+    def __str__(self):
+        return self.export_pipeline().__str__()
 
     def unique_id(self) -> GraphKey:
         if self.key is None:

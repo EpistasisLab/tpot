@@ -61,14 +61,14 @@ def objective_nan_wrapper(  individual,
             return value
         except func_timeout.exceptions.FunctionTimedOut:
             if verbose >= 4:
-                print(f'WARNING AN INDIVIDUAL TIMED OUT')
+                print(f'WARNING AN INDIVIDUAL TIMED OUT: \n {individual} \n')
             return ["TIMEOUT"]
         except Exception as e:
             if verbose == 4:
-                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION \n {e}')
+                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION \n {individual} \n {e} \n')
             if verbose >= 5:
                 trace = traceback.format_exc()
-                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION \n {e} \n {trace}')
+                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION \n {individual} \n {e} \n {trace}')
             return ["INVALID"]
         
 
@@ -84,6 +84,7 @@ def parallel_eval_objective_list(individual_list,
                                 timeout=None,
                                 n_expected_columns=None,
                                 client=None,
+                                parallel_timeout=None,
                                 **objective_kwargs):
 
     #offspring_scores = Parallel(n_jobs=n_jobs)(delayed(eval_objective_list)(ind,  objective_list, verbose, timeout=timeout)  for ind in individual_list )
@@ -97,18 +98,35 @@ def parallel_eval_objective_list(individual_list,
         client = dask.distributed.get_client()
     futures = [client.submit(eval_objective_list, ind,  objective_list, verbose, timeout=timeout,**objective_kwargs)  for ind in individual_list]
     
-    if verbose >= 2:
+    if verbose >= 6:
         dask.distributed.progress(futures, notebook=False)
     
-    dask.distributed.wait(futures)
+    try: 
+        if parallel_timeout is not None and np.isinf(parallel_timeout):
+            parallel_timeout = None
+        dask.distributed.wait(futures, timeout=parallel_timeout)
+    except dask.distributed.TimeoutError:
+        print("terminating parallel evaluation due to timeout")
+        pass
     
     offspring_scores = []
     # todo optimize this
-    for future in futures:
-        if not future.exception():
-            offspring_scores.append(future.result())
-        else:
+    for individual, future in zip(individual_list, futures):
+        if not future.done():
+            future.cancel()
+            offspring_scores.append(["TIMEOUT"])
+            if verbose >= 4:
+                print(f'WARNING AN INDIVIDUAL TIMED OUT: \n {individual} \n')
+        elif future.exception():
             offspring_scores.append(["INVALID"])
+            if verbose == 4:
+                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION \n {individual} \n {future.exception()} \n')
+            if verbose >= 5:
+                trace = traceback.format_exc()
+                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION \n {individual} \n {future.exception()} \n {future.traceback()}')
+        else:
+            offspring_scores.append(future.result())
+            
 
     if n_expected_columns is not None:
         offspring_scores = process_scores(offspring_scores, n_expected_columns)

@@ -1,3 +1,4 @@
+# %%
 # -*- coding: utf-8 -*-
 
 """Copyright (c) 2015 The auto-sklearn developers. All rights reserved.
@@ -41,34 +42,25 @@ import sklearn.impute
 
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
+import sklearn.compose
 
 
-
-def auto_select_categorical_features(X):
-
-    if not isinstance(X, pd.DataFrame):
-        return []
-    
-    feature_mask = []
-    for column in X.columns:
-        feature_mask.append(not is_numeric_dtype(X[column]))
-
-    return feature_mask
-
-
-def _X_selected(X, selected):
-    """Split X into selected features and other features"""
-    X_sel = X[X.columns[selected]]
-    X_not_sel = X.drop(X.columns[selected], axis=1)
-    return X_sel, X_not_sel
-
-
-
-class CatImpute(BaseEstimator, TransformerMixin):
-
-
-    def __init__(self, categorical_features='auto'):
-        self.categorical_features = categorical_features
+class ColumnSimpleImputer(BaseEstimator, TransformerMixin):
+    def __init__(self,  columns="all",         
+                        missing_values=np.nan,
+                        strategy="mean",
+                        fill_value=None,
+                        copy=True,
+                        add_indicator=False,
+                        keep_empty_features=False,):
+        
+        self.columns = columns
+        self.missing_values = missing_values
+        self.strategy = strategy
+        self.fill_value = fill_value
+        self.copy = copy
+        self.add_indicator = add_indicator
+        self.keep_empty_features = keep_empty_features
 
 
     def fit(self, X, y=None):
@@ -84,34 +76,45 @@ class CatImpute(BaseEstimator, TransformerMixin):
         y: array-like {n_samples,} (Optional, ignored)
             Feature labels
         """
-        
-        if self.categorical_features == "auto":
-            self.categorical_features_ = auto_select_categorical_features(X)
 
-        if sum(self.categorical_features_) == 0:
-            return self
+        if (self.columns == "categorical" or self.columns == "numeric") and not isinstance(X, pd.DataFrame):
+            raise ValueError(f"Invalid value for columns: {self.columns}. "
+                             "Only 'all' or <list> is supported for np arrays")
 
-        #TODO make this more consistent with sklearn baseimputer/baseencoder
-        if isinstance(X, pd.DataFrame):
-            for col in X.columns:
-                # check if the column name is not a string
-                if not isinstance(col, str):
-                    # if it's not a string, rename the column with "X" prefix
-                    X.rename(columns={col: f"X{col}"}, inplace=True)
-
-        self.enc = sklearn.impute.SimpleImputer(strategy='most_frequent')
-        if isinstance(X, pd.DataFrame):
-            self.enc.set_output(transform="pandas")
-
-        if sum(self.categorical_features_) == X.shape[1]:
-            
-            X_sel = self.enc.fit(X)
+        if self.columns == "categorical":
+            self.columns_ = list(X.select_dtypes(exclude='number').columns)
+        elif self.columns == "numeric":
+            self.columns_ =  [col for col in X.columns if is_numeric_dtype(X[col])]
+        elif self.columns == "all":
+            if isinstance(X, pd.DataFrame):
+                self.columns_ = X.columns
+            else:
+                self.columns_ = list(range(X.shape[1]))
+        elif isinstance(self.columns, list):
+            self.columns_ = self.columns
         else:
-            X_sel, X_not_sel = _X_selected(X, self.categorical_features_)
-            X_sel = self.enc.fit(X_sel)
+            raise ValueError(f"Invalid value for columns: {self.columns}")
         
+        if len(self.columns_) == 0:
+            return self
+        
+        self.imputer = sklearn.impute.SimpleImputer(missing_values=self.missing_values,
+                                                    strategy=self.strategy,
+                                                    fill_value=self.fill_value,
+                                                    copy=self.copy,
+                                                    add_indicator=self.add_indicator,
+                                                    keep_empty_features=self.keep_empty_features)
+        
+        if isinstance(X, pd.DataFrame):
+            self.imputer.set_output(transform="pandas")
+
+        if isinstance(X, pd.DataFrame):
+            self.imputer.fit(X[self.columns_], y)
+        else:
+            self.imputer.fit(X[:, self.columns_], y)
+
         return self
-  
+
     def transform(self, X):
         """Transform X using one-hot encoding.
 
@@ -125,30 +128,16 @@ class CatImpute(BaseEstimator, TransformerMixin):
         X_out : sparse matrix if sparse=True else a 2-d array, dtype=int
             Transformed input.
         """
-
-    
-        if sum(self.categorical_features_) == 0:
+        if len(self.columns_) == 0:
             return X
 
-        #TODO make this more consistent with sklearn baseimputer/baseencoder
         if isinstance(X, pd.DataFrame):
-            for col in X.columns:
-                # check if the column name is not a string
-                if not isinstance(col, str):
-                    # if it's not a string, rename the column with "X" prefix
-                    X.rename(columns={col: f"X{col}"}, inplace=True)
-
-        if sum(self.categorical_features_) == X.shape[1]:
-            return self.enc.transform(X)
+            X = X.copy()
+            X[self.columns_] = self.imputer.transform(X[self.columns_])
+            return X
         else:
+            X = np.copy(X)
+            X[:, self.columns_] = self.imputer.transform(X[:, self.columns_])
+            return X
 
-            X_sel, X_not_sel= _X_selected(X, self.categorical_features_)
-            X_sel = self.enc.transform(X_sel)
-            
-            #If X is dataframe
-            if isinstance(X, pd.DataFrame):
-            
-                X_sel = pd.DataFrame(X_sel, columns=self.enc.get_feature_names_out())
-                return pd.concat([X_not_sel.reset_index(drop=True), X_sel.reset_index(drop=True)], axis=1)
-            else:
-                return np.hstack((X_not_sel, X_sel))
+
