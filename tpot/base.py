@@ -1420,7 +1420,7 @@ class TPOTBase(BaseEstimator):
         )
         sklearn_pipeline = eval(sklearn_pipeline_str, self.operators_context)
         sklearn_pipeline.memory = self._memory
-        if self.random_state:
+        if self.random_state is not None:
             # Fix random state when the operator allows
             set_param_recursive(
                 sklearn_pipeline.steps, "random_state", self.random_state
