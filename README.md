@@ -1,6 +1,8 @@
 # TPOT2 ALPHA
 
 ![Tests](https://github.com/EpistasisLab/tpot2/actions/workflows/tests.yml/badge.svg)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/tpot2?label=pypi%20downloads)](https://pypi.org/project/TPOT2)
+[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/tpot2?label=conda%20downloads)](https://anaconda.org/conda-forge/tpot2)
 
 TPOT2 is a rewrite of TPOT with some additional functionality. Notably, we added support for graph-based pipelines and additional parameters to better specify the desired search space. 
 TPOT2 is currently in Alpha. This means that there will likely be some backwards incompatible changes to the API as we develop. Some implemented features may be buggy. There is a list of known issues written at the bottom of this README. Some features have placeholder names or are listed as "Experimental" in the doc string. These are features that may not be fully implemented and may or may work with all other features.
@@ -10,7 +12,7 @@ If you are interested in using the current stable release of TPOT, you can do th
 
 ## License
 
-Please see the [repository license](https://github.com/EpistasisLab/tpot/blob/master/LICENSE) for the licensing and usage information for TPOT2.
+Please see the [repository license](https://github.com/EpistasisLab/tpot2/blob/main/LICENSE) for the licensing and usage information for TPOT2.
 Generally, we have licensed TPOT2 to make it as widely usable as possible.
 
 
