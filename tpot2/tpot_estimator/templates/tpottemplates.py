@@ -68,6 +68,9 @@ class TPOTRegressor(TPOTEstimator):
                         callback: tpot2.CallBackInterface=None,
                         processes = True,
         ):
+        """
+        See TPOTEstimator for documentation
+        """
         super(TPOTRegressor,self).__init__(
             scorers=scorers, 
             scorers_weights=scorers_weights,
@@ -196,6 +199,9 @@ class TPOTClassifier(TPOTEstimator):
                         callback: tpot2.CallBackInterface=None,
                         processes = True,
         ):
+        """
+        See TPOTEstimator for documentation
+        """
         super(TPOTClassifier,self).__init__(
                         scorers=scorers, 
             scorers_weights=scorers_weights,

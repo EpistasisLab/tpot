@@ -29,38 +29,4 @@ jobs:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: twine upload dist/*
-  build-and-publish-conda:
-    needs: build-and-publish-pypi
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Setup Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-         conda install -c conda-forge grayskull conda-build anaconda-client -y
-
-    - name: Build conda recipe from PYPI
-      run: |
-        $CONDA/bin/grayskull pypi tpot2
-    
-    - name: Update meta.yaml
-      run: |
-        sed -i "/tpot2 --help/d" tpot2/meta.yaml
-        sed -i "/^  license:/ s/.*/  license: LGPLv3/" tpot2/meta.yaml
-        sed -i "/^  license_file:/ s/.*/  license_file: ..\/LICENSE/" tpot2/meta.yaml
-        
-    - name: Build package with conda-forge
-      run: |
-        $CONDA/bin/conda-build tpot2 -c conda-forge
-
-    - name: Upload to conda-forge
-      env:
-        CONDA_API_TOKEN: ${{ secrets.CONDA_API_TOKEN }}
-      run: |
-        $CONDA/bin/anaconda -t $CONDA_API_TOKEN upload -u conda-forge $CONDA/conda-bld/noarch/*.tar.bz2
+  

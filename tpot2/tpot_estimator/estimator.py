@@ -95,38 +95,27 @@ class TPOTEstimator(BaseEstimator):
         scorers : (list, scorer)
             A scorer or list of scorers to be used in the cross-validation process. 
             see https://scikit-learn.org/stable/modules/model_evaluation.html
-        
         scorers_weights : list
             A list of weights to be applied to the scorers during the optimization process.
-        
         classification : bool
             If True, the problem is treated as a classification problem. If False, the problem is treated as a regression problem.
             Used to determine the CV strategy.
-        
         cv : int, cross-validator
             - (int): Number of folds to use in the cross-validation process. By uses the sklearn.model_selection.KFold cross-validator for regression and StratifiedKFold for classification. In both cases, shuffled is set to True.
             - (sklearn.model_selection.BaseCrossValidator): A cross-validator to use in the cross-validation process.
                 - max_depth (int): The maximum depth from any node to the root of the pipelines to be generated.
-        
         other_objective_functions : list, default=[tpot2.estimator_objective_functions.average_path_length_objective]
             A list of other objective functions to apply to the pipeline.
-        
         other_objective_functions_weights : list, default=[-1]
             A list of weights to be applied to the other objective functions.
-        
         objective_function_names : list, default=None
             A list of names to be applied to the objective functions. If None, will use the names of the objective functions.
-        
         bigger_is_better : bool, default=True
             If True, the objective function is maximized. If False, the objective function is minimized. Use negative weights to reverse the direction.
-
-        
         max_size : int, default=np.inf
             The maximum number of nodes of the pipelines to be generated.
-        
         linear_pipeline : bool, default=False
             If True, the pipelines generated will be linear. If False, the pipelines generated will be directed acyclic graphs.
-        
         root_config_dict : dict, default='auto'
             The configuration dictionary to use for the root node of the model.
             If 'auto', will use "classifiers" if classification=True, else "regressors".
@@ -144,7 +133,6 @@ class TPOTEstimator(BaseEstimator):
             - 'genetic encoders' : Includes Genetic Encoder methods as used in AutoQTL.
             - 'FeatureEncodingFrequencySelector': Includes FeatureEncodingFrequencySelector method as used in AutoQTL.
             - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
-        
         inner_config_dict : dict, default=["selectors", "transformers"]
             The configuration dictionary to use for the inner nodes of the model generation.
             Default ["selectors", "transformers"]
@@ -163,7 +151,6 @@ class TPOTEstimator(BaseEstimator):
             - 'FeatureEncodingFrequencySelector': Includes FeatureEncodingFrequencySelector method as used in AutoQTL.
             - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
             - None : If None and max_depth>1, the root_config_dict will be used for the inner nodes as well.
-        
         leaf_config_dict : dict, default=None 
             The configuration dictionary to use for the leaf node of the model. If set, leaf nodes must be from this dictionary.
             Otherwise leaf nodes will be generated from the root_config_dict. 
@@ -183,19 +170,15 @@ class TPOTEstimator(BaseEstimator):
             - 'FeatureEncodingFrequencySelector': Includes FeatureEncodingFrequencySelector method as used in AutoQTL.
             - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
             - None : If None, a leaf will not be required (i.e. the pipeline can be a single root node). Leaf nodes will be generated from the inner_config_dict.
-        
         cross_val_predict_cv : int, default=0
             Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
-            
             - 0-1 : When set to 0 or 1, the cross_val_predict function will not be used. The next layer will get the outputs from fitting and transforming the full dataset.
             - >=2 : When fitting pipelines with inner classifiers or regressors, they will still be fit on the full dataset. 
                     However, the output to the next node will come from cross_val_predict with the specified number of folds.
-         
         categorical_features: list or None
             Categorical columns to inpute and/or one hot encode during the preprocessing step. Used only if preprocessing is not False.
             - None : If None, TPOT2 will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
             - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
-
         subsets : str or list, default=None
             Sets the subsets that the FeatureSetSeletor will select from if set as an option in one of the configuration dictionaries.
             - str : If a string, it is assumed to be a path to a csv file with the subsets. 
@@ -203,8 +186,6 @@ class TPOTEstimator(BaseEstimator):
             - list or np.ndarray : If a list or np.ndarray, it is assumed to be a list of subsets.
             - None : If None, each column will be treated as a subset. One column will be selected per subset.
             If subsets is None, each column will be treated as a subset. One column will be selected per subset.
-
-
         memory: Memory object or string, default=None
             If supplied, pipeline will cache each transformer after calling fit. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
@@ -220,177 +201,131 @@ class TPOTEstimator(BaseEstimator):
                 and TPOT does NOT clean the caching directory up upon shutdown.
             - None:
                 TPOT does not use memory caching.
-
         preprocessing : bool or BaseEstimator/Pipeline, 
             EXPERIMENTAL
             A pipeline that will be used to preprocess the data before CV.
             - bool : If True, will use a default preprocessing pipeline.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
-              
         validation_strategy : str, default='none'
             EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT2 may overfit the cross validation score. A second validation set can be used to select the final pipeline.
             - 'auto' : Automatically determine the validation strategy based on the dataset shape.
             - 'reshuffled' : Use the same data for cross validation and final validation, but with different splits for the folds. This is the default for small datasets. 
             - 'split' : Use a separate validation set for final validation. Data will be split according to validation_fraction. This is the default for medium datasets. 
             - 'none' : Do not use a separate validation set for final validation. Select based on the original cross-validation score. This is the default for large datasets.
-
         validation_fraction : float, default=0.2
-          EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
-        
+            EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
         population_size : int, default=50
             Size of the population
-        
         initial_population_size : int, default=None
             Size of the initial population. If None, population_size will be used.
-        
         population_scaling : int, default=0.5
             Scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
-        
         generations_until_end_population : int, default=1  
             Number of generations until the population size reaches population_size            
-        
         generations : int, default=50
             Number of generations to run
-        
         early_stop : int, default=None
             Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
-        
         scorers_early_stop_tol : 
             -list of floats
                 list of tolerances for each scorer. If the difference between the best score and the current score is less than the tolerance, the individual is considered to have converged
                 If an index of the list is None, that item will not be used for early stopping
             -int 
                 If an int is given, it will be used as the tolerance for all objectives
-        
         other_objectives_early_stop_tol : 
             -list of floats
                 list of tolerances for each of the other objective function. If the difference between the best score and the current score is less than the tolerance, the individual is considered to have converged
                 If an index of the list is None, that item will not be used for early stopping
             -int 
                 If an int is given, it will be used as the tolerance for all objectives
-    
         max_time_seconds : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
-        
         max_eval_time_seconds : float, default=60*5
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
-        
         n_jobs : int, default=1
             Number of processes to run in parallel.
-        
         memory_limit : str, default="4GB"
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
-        
         client : dask.distributed.Client, default=None
             A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit. 
-        
         survival_percentage : float, default=1
             Percentage of the population size to utilize for mutation and crossover at the beginning of the generation. The rest are discarded. Individuals are selected with the selector passed into survival_selector. The value of this parameter must be between 0 and 1, inclusive. 
             For example, if the population size is 100 and the survival percentage is .5, 50 individuals will be selected with NSGA2 from the existing population. These will be used for mutation and crossover to generate the next 100 individuals for the next generation. The remainder are discarded from the live population. In the next generation, there will now be the 50 parents + the 100 individuals for a total of 150. Surivival percentage is based of the population size parameter and not the existing population size. Therefore, in the next generation we will still select 50 individuals from the currently existing 150.
-        
         crossover_probability : float, default=.2
             Probability of generating a new individual by crossover between two individuals.
-        
         mutate_probability : float, default=.7
             Probability of generating a new individual by crossover between one individuals.
-        
         mutate_then_crossover_probability : float, default=.05
             Probability of generating a new individual by mutating two individuals followed by crossover.
-        
         crossover_then_mutate_probability : float, default=.05
             Probability of generating a new individual by crossover between two individuals followed by a mutation of the resulting individual.
-        
         n_parents : int, default=2
             Number of parents to use for crossover. Must be greater than 1.
-        
         survival_selector : function, default=survival_select_NSGA2
             Function to use to select individuals for survival. Must take a matrix of scores and return selected indexes.
             Used to selected population_size * survival_percentage individuals at the start of each generation to use for mutation and crossover.
-        
         parent_selector : function, default=parent_select_NSGA2
             Function to use to select pairs parents for crossover and individuals for mutation. Must take a matrix of scores and return selected indexes.
-        
         budget_range : list [start, end], default=None
             A starting and ending budget to use for the budget scaling.
-        
         budget_scaling float : [0,1], default=0.5
             A scaling factor to use when determining how fast we move the budget from the start to end budget.
-        
         generations_until_end_budget : int, default=1
             The number of generations to run before reaching the max budget.
-        
         stepwise_steps : int, default=1
             The number of staircase steps to take when scaling the budget and population size.
-        
         threshold_evaluation_early_stop : list [start, end], default=None
             starting and ending percentile to use as a threshold for the evaluation early stopping.
             Values between 0 and 100.
-        
         threshold_evaluation_scaling : float [0,inf), default=0.5
             A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
             Must be greater than zero. Higher numbers will move the threshold to the end faster.
-        
         min_history_threshold : int, default=0
             The minimum number of previous scores needed before using threshold early stopping.
-        
         selection_evaluation_early_stop : list, default=None
             A lower and upper percent of the population size to select each round of CV.
             Values between 0 and 1.
-        
         selection_evaluation_scaling : float, default=0.5 
             A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
             Must be greater than zero. Higher numbers will move the threshold to the end faster.
-        
         n_initial_optimizations : int, default=0
             Number of individuals to optimize before starting the evolution.
-        
         optimization_cv : int 
-           Number of folds to use for the optuna optimization's internal cross-validation.
-        
+            Number of folds to use for the optuna optimization's internal cross-validation.
         max_optimize_time_seconds : float, default=60*5
             Maximum time to run an optimization
-        
         optimization_steps : int, default=10
             Number of steps per optimization
-          
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
-         
         subset_column : str or int, default=None
             EXPERIMENTAL The column to use for the subset selection. Must also pass in unique_subset_values to GraphIndividual to function.
-         
         evolver : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver), default=eaNSGA2_Evolver
             The evolver to use for the optimization process. See tpot2.evolutionary_algorithms
             - type : an type or subclass of a BaseEvolver
             - "nsga2" : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver
-        
         verbose : int, default=1 
             How much information to print during the optimization process. Higher values include the information from lower values.
             0. nothing
             1. progress bar
-            
             3. best individual
             4. warnings
             >=5. full warnings trace
             6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
-        
         periodic_checkpoint_folder : str, default=None
             Folder to save the population to periodically. If None, no periodic saving will be done.
             If provided, training will resume from this checkpoint.
-        
         callback : tpot2.CallBackInterface, default=None
             Callback object. Not implemented
-
         processes : bool, default=True
             If True, will use multiprocessing to parallelize the optimization process. If False, will use threading.
             True seems to perform better. However, False is required for interactive debugging.
-            
+
+
         Attributes
         ----------
-
         fitted_pipeline_ : GraphPipeline
             A fitted instance of the GraphPipeline that inherits from sklearn BaseEstimator. This is fitted on the full X, y passed to fit.
-
         evaluated_individuals : A pandas data frame containing data for all evaluated individuals in the run. 
             Columns: 
             - *objective functions : The first few columns correspond to the passed in scorers and objective functions
@@ -405,7 +340,6 @@ class TPOTEstimator(BaseEstimator):
             - Instance	: The unfitted GraphPipeline BaseEstimator. 
             - *validation objective functions : Objective function scores evaluated on the validation set.
             - Validation_Pareto_Front : The full pareto front calculated on the validation set. This is calculated for all pipelines with Pareto_Front equal to 0. Unlike the Pareto_Front which only calculates the frontier and the final population, the Validation Pareto Front is calculated for all pipelines tested on the validation set.
-            
         pareto_front : The same pandas dataframe as evaluated individuals, but containing only the frontier pareto front pipelines.
         '''
 

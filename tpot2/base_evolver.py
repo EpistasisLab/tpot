@@ -85,141 +85,100 @@ class BaseEvolver():
         ----------
         individual_generator : generator
             Generator that yields new base individuals. Used to generate initial population.
-        
         objective_functions : list of callables
             list of functions that get applied to the individual and return a float or list of floats
             If an objective function returns multiple values, they are all concatenated in order 
             with respect to objective_function_weights and early_stop_tol.
-        
         objective_function_weights : list of floats
             list of weights for each objective function. Sign flips whether bigger is better or not
-        
         objective_names : list of strings, default=None
             Names of the objectives. If None, objective0, objective1, etc. will be used
-        
         objective_kwargs : dict, default=None
             Dictionary of keyword arguments to pass to the objective function
-        
         bigger_is_better : bool, default=True
             If True, the objective function is maximized. If False, the objective function is minimized. Use negative weights to reverse the direction.
-        
         population_size : int, default=50
             Size of the population
-        
         initial_population_size : int, default=None
             Size of the initial population. If None, population_size will be used.
-        
         population_scaling : int, default=0.5
             Scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
-        
         generations_until_end_population : int, default=1  
             Number of generations until the population size reaches population_size            
-        
         generations : int, default=50
             Number of generations to run
-        
         early_stop : int, default=None
             Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
-        
         early_stop_tol : float, list of floats, or None, default=0.001
             -list of floats
                 list of tolerances for each objective function. If the difference between the best score and the current score is less than the tolerance, the individual is considered to have converged
                 If an index of the list is None, that item will not be used for early stopping
             -int 
                 If an int is given, it will be used as the tolerance for all objectives
-        
         max_time_seconds : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
-        
         max_eval_time_seconds : float, default=60*5
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
-        
         n_jobs : int, default=1
             Number of processes to run in parallel.
-        
         memory_limit : str, default="4GB"
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
-        
         client : dask.distributed.Client, default=None
             A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit. 
-        
         survival_percentage : float, default=1
             Percentage of the population size to utilize for mutation and crossover at the beginning of the generation. The rest are discarded. Individuals are selected with the selector passed into survival_selector. The value of this parameter must be between 0 and 1, inclusive. 
             For example, if the population size is 100 and the survival percentage is .5, 50 individuals will be selected with NSGA2 from the existing population. These will be used for mutation and crossover to generate the next 100 individuals for the next generation. The remainder are discarded from the live population. In the next generation, there will now be the 50 parents + the 100 individuals for a total of 150. Surivival percentage is based of the population size parameter and not the existing population size. Therefore, in the next generation we will still select 50 individuals from the currently existing 150.
-        
         crossover_probability : float, default=.2
             Probability of generating a new individual by crossover between two individuals.
-        
         mutate_probability : float, default=.7
             Probability of generating a new individual by crossover between one individuals.
-        
         mutate_then_crossover_probability : float, default=.05
             Probability of generating a new individual by mutating two individuals followed by crossover.
-        
         crossover_then_mutate_probability : float, default=.05
             Probability of generating a new individual by crossover between two individuals followed by a mutation of the resulting individual.
-        
         n_parents : int, default=2
             Number of parents to use for crossover. Must be greater than 1.
-        
         survival_selector : function, default=survival_select_NSGA2
             Function to use to select individuals for survival. Must take a matrix of scores and return selected indexes.
             Used to selected population_size * survival_percentage individuals at the start of each generation to use for mutation and crossover.
-        
         parent_selector : function, default=parent_select_NSGA2
             Function to use to select pairs parents for crossover and individuals for mutation. Must take a matrix of scores and return selected indexes.
-        
         budget_range : list [start, end], default=None
             A starting and ending budget to use for the budget scaling.
-        
         budget_scaling float : [0,1], default=0.5
             A scaling factor to use when determining how fast we move the budget from the start to end budget.
-        
         generations_until_end_budget : int, default=1
             The number of generations to run before reaching the max budget.
-        
         stepwise_steps : int, default=1
             The number of staircase steps to take when scaling the budget and population size.
-        
         threshold_evaluation_early_stop : list [start, end], default=None
             starting and ending percentile to use as a threshold for the evaluation early stopping.
             Values between 0 and 100.
-        
         threshold_evaluation_scaling : float [0,inf), default=0.5
             A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
             Must be greater than zero. Higher numbers will move the threshold to the end faster.
-        
         min_history_threshold : int, default=0
             The minimum number of previous scores needed before using threshold early stopping.
-        
         selection_evaluation_early_stop : list, default=None
             A lower and upper percent of the population size to select each round of CV.
             Values between 0 and 1.
-        
         selection_evaluation_scaling : float, default=0.5 
             A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
             Must be greater than zero. Higher numbers will move the threshold to the end faster.
-        
         evaluation_early_stop_steps : int, default=1
             The number of steps that will be taken from the objective function. (e.g., the number of CV folds to evaluate)
-        
         final_score_strategy : str, default="mean" 
             The strategy to use when determining the final score for an individual.
             "mean": The mean of all objective scores
             "last": The score returned by the last call. Currently each objective is evaluated with a clone of the individual.
-        
         n_initial_optimizations : int, default=0
             Number of individuals to optimize before starting the evolution.
-        
         optimization_objective : function, default=None
             Function to optimize the individual with. If None, the first objective function will be used
-        
         max_optimize_time_seconds : float, default=60*5
             Maximum time to run an optimization
-        
         optimization_steps : int, default=10
             Number of steps per optimization
-        
         verbose : int, default=0
             How much information to print during the optimization process. Higher values include the information from lower values.
             0. nothing
@@ -228,11 +187,9 @@ class BaseEvolver():
             3. best individual
             4. warnings
             >=5. full warnings trace
-        
         periodic_checkpoint_folder : str, default=None
             Folder to save the population to periodically. If None, no periodic saving will be done.
             If provided, training will resume from this checkpoint.
-        
         callback : tpot2.CallBackInterface, default=None
             Callback object. Not implemented
         """
