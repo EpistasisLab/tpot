@@ -15,9 +15,15 @@ def params_sklearn_decomposition_FastICA(trial, name=None, n_features=100):
     }
 
 def params_sklearn_cluster_FeatureAgglomeration(trial, name=None, n_features=100):
+    
+    linkage = trial.suggest_categorical(f'linkage_{name}', ['ward', 'complete', 'average'])
+    if linkage == 'ward':
+        metric = 'euclidean'
+    else:
+        metric = trial.suggest_categorical(f'metric_{name}', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine'])
     return {
-        'metric': trial.suggest_categorical(f'metric_{name}', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine']),
-        'linkage': trial.suggest_categorical(f'linkage_{name}', ['ward', 'complete', 'average']),
+        'linkage': linkage,
+        'metric': metric,
         'n_clusters': trial.suggest_int(f'n_clusters_{name}', 2, 4), #TODO perhaps a percentage of n_features
     }
 
