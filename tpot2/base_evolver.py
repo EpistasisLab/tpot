@@ -3,7 +3,7 @@
 from abc import abstractmethod
 import tpot2
 import typing
-from tqdm import tqdm, tnrange, tqdm_notebook
+import tqdm
 from tpot2.individual import BaseIndividual
 import time
 import numpy as np
@@ -423,8 +423,16 @@ class BaseEvolver():
 
 
         try: 
-            for gen in tnrange(generations,desc="Generation", disable=self.verbose<1):
-                
+            #for gen in tnrange(generations,desc="Generation", disable=self.verbose<1):
+            done = False
+            gen = 0
+            if self.verbose >= 1:
+                if generations is None or np.isinf(generations):
+                    pbar = tqdm.tqdm(total=0)
+                else:
+                    pbar = tqdm.tqdm(total=generations)
+                pbar.set_description("Generation")
+            while not done:
                 # Generation 0 is the initial population
                 if self.generation == 0:
                     if self.population_file is not None:
@@ -469,14 +477,14 @@ class BaseEvolver():
                         sign = np.sign(self.objective_function_weights)
                         #get best score for each objective
                         valid_df = self.population.evaluated_individuals[~self.population.evaluated_individuals[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names]*sign
-                        cur_best_scores = valid_df.max(axis=0)*sign
+                        cur_best_scores = valid_df.max(axis=0)
                         cur_best_scores = cur_best_scores.to_numpy()
                         #cur_best_scores =  self.population.get_column(self.population.population, column_names=self.objective_names).max(axis=0)*sign #TODO this assumes the current population is the best
                         
-                        improved = ( np.array(best_scores) - np.array(cur_best_scores) <= np.array(self.early_stop_tol) )
+                        improved = ( np.array(cur_best_scores) - np.array(best_scores) >= np.array(self.early_stop_tol) )
                         not_improved = np.logical_not(improved)
-                        generations_without_improvement = generations_without_improvement* not_improved + not_improved #set to zero if not improved, else increment
-
+                        generations_without_improvement = generations_without_improvement * not_improved + not_improved #set to zero if not improved, else increment
+                        pass
                         #update best score
                         best_scores = [max(best_scores[i], cur_best_scores[i]) for i in range(len(self.objective_names))]
 
@@ -488,6 +496,13 @@ class BaseEvolver():
                 #save population
                 if self.population_file is not None: # and time.time() - last_save_time > 60*10:
                     pickle.dump(self.population, open(self.population_file, "wb"))
+
+                gen += 1
+                if self.verbose >= 1:
+                    pbar.update(1)
+
+                if generations is not None and gen >= generations:
+                    done = True
 
         except KeyboardInterrupt:
             if self.verbose >= 3:
@@ -614,9 +629,11 @@ class BaseEvolver():
 
         #Get the selectors survival rates per step
         if self.selection_evaluation_early_stop is not None:
-            lower = self.selection_evaluation_early_stop[0]
-            upper = self.selection_evaluation_early_stop[1]
-            survival_counts = self.cur_population_size*(scipy.special.betainc(1,self.threshold_evaluation_scaling,np.linspace(0,1,self.evaluation_early_stop_steps))*(upper-lower)+lower)
+            lower = self.cur_population_size*self.selection_evaluation_early_stop[0]
+            upper = self.cur_population_size*self.selection_evaluation_early_stop[1]
+            #survival_counts = self.cur_population_size*(scipy.special.betainc(1,self.selection_evaluation_scaling,np.linspace(0,1,self.evaluation_early_stop_steps))*(upper-lower)+lower)
+            
+            survival_counts = beta_interpolation(start=lower, end=upper, scale=self.selection_evaluation_scaling, n=self.evaluation_early_stop_steps, n_steps=self.evaluation_early_stop_steps)
             self.survival_counts = survival_counts.astype(int)
         else:
             self.survival_counts = None

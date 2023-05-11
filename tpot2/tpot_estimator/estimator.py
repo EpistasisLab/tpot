@@ -51,7 +51,7 @@ class TPOTEstimator(BaseEstimator):
                         generations = 50,
                         early_stop = None,
                         scorers_early_stop_tol = 0.001,
-                        other_objectives_early_stop_tol =None,
+                        other_objectives_early_stop_tol = None,
                         max_time_seconds=float('inf'), 
                         max_eval_time_seconds=60*10, 
                         n_jobs=1,
@@ -567,6 +567,14 @@ class TPOTEstimator(BaseEstimator):
 
 
         X_original = X
+        y_original = y
+        if isinstance(self.cv, int) or isinstance(self.cv, float):
+            n_folds = self.cv
+        else:
+            n_folds = self.cv.n_splits
+
+        X, y = remove_underrepresented_classes(X, y, n_folds)
+        
         if self.preprocessing:
             #X = pd.DataFrame(X)
 
@@ -594,10 +602,7 @@ class TPOTEstimator(BaseEstimator):
 
         #Set up the configuation dictionaries and the search spaces
 
-        if isinstance(self.cv, int) or isinstance(self.cv, float):
-            n_folds = self.cv
-        else:
-            n_folds = self.cv.n_splits
+
 
         n_samples= int(math.floor(X.shape[0]/n_folds))
         n_features=X.shape[1]
@@ -847,7 +852,7 @@ class TPOTEstimator(BaseEstimator):
         else:
             self.fitted_pipeline_ = best_individual_pipeline 
         
-        self.fitted_pipeline_.fit(X_original,y) #TODO use y_original as well?
+        self.fitted_pipeline_.fit(X_original,y_original) #TODO use y_original as well?
 
 
         if self.client is None: #no client was passed in
@@ -1022,6 +1027,13 @@ def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_fun
         else:
             x,y = sklearn.utils.resample(x,y, n_samples=int(budget*len(x)), replace=False, random_state=1)
 
+        if isinstance(cv, int) or isinstance(cv, float):
+            n_splits = cv
+        else:
+            n_splits = cv.n_splits
+
+        x,y = remove_underrepresented_classes(x, y, n_splits)
+
     if len(scorers) > 0:
         cv_obj_scores = tpot2.estimator_objective_functions.cross_val_score_objective(sklearn.base.clone(pipeline),x,y,scorers=scorers, cv=cv , fold=step)
     else:
@@ -1050,3 +1062,25 @@ def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test,
         other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
     
     return np.concatenate([scores,other_scores])
+
+
+def remove_underrepresented_classes(x, y, min_count):
+    if isinstance(y, (np.ndarray, pd.Series)):
+        unique, counts = np.unique(y, return_counts=True)
+        if min(counts) >= min_count:
+            return x, y
+        keep_classes = unique[counts >= min_count]
+        mask = np.isin(y, keep_classes)
+        x = x[mask]
+        y = y[mask]
+    elif isinstance(y, pd.DataFrame):
+        counts = y.apply(pd.Series.value_counts)
+        if min(counts) >= min_count:
+            return x, y
+        keep_classes = counts.index[counts >= min_count].tolist()
+        mask = y.isin(keep_classes).all(axis=1)
+        x = x[mask]
+        y = y[mask]
+    else:
+        raise TypeError("y must be a numpy array or a pandas Series/DataFrame")
+    return x, y
