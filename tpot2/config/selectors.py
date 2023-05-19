@@ -8,6 +8,7 @@ from sklearn.feature_selection import SelectFromModel
 import sklearn.feature_selection
 from functools import partial
 from sklearn.ensemble import ExtraTreesRegressor, ExtraTreesClassifier
+from tpot2.builtin_modules import RFE_ExtraTreesClassifier, SelectFromModel_ExtraTreesClassifier, RFE_ExtraTreesRegressor, SelectFromModel_ExtraTreesRegressor
 
 from .classifiers import params_ExtraTreesClassifier
 from .regressors import params_ExtraTreesRegressor
@@ -31,40 +32,78 @@ def params_sklearn_feature_selection_VarianceThreshold(trial, name=None):
     
 
 #TODO add more estimator options? How will that interact with optuna?
-def params_sklearn_feature_selection_RFE(trial, name=None, classifier=True):
-    if classifier:
-        estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, name=f"RFE_{name}"))
-    else:
-        estimator = ExtraTreesRegressor(**params_ExtraTreesRegressor(trial, name=f"RFE_{name}"))
+# def params_sklearn_feature_selection_RFE(trial, name=None, classifier=True):
+#     if classifier:
+#         estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, name=f"RFE_{name}"))
+#     else:
+#         estimator = ExtraTreesRegressor(**params_ExtraTreesRegressor(trial, name=f"RFE_{name}"))
     
+#     params = {
+#             'step': trial.suggest_float(f'step_{name}', 1e-4, 1.0, log=False),
+#             'estimator' : estimator,
+#             }
+
+#     return params
+
+
+# def params_sklearn_feature_selection_SelectFromModel(trial, name=None, classifier=True):
+#     if classifier:
+#         estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, name=f"SFM_{name}"))
+#     else:
+#         estimator = ExtraTreesRegressor(**params_ExtraTreesRegressor(trial, name=f"SFM_{name}"))
+    
+#     params = {
+#             'threshold': trial.suggest_float(f'threshold_{name}', 1e-4, 1.0, log=True),
+#             'estimator' : estimator,
+#             }
+
+#     return params
+
+
+
+def params_sklearn_feature_selection_RFE_wrapped(trial, name=None, classifier=True):
     params = {
             'step': trial.suggest_float(f'step_{name}', 1e-4, 1.0, log=False),
-            'estimator' : estimator,
             }
+    
+    if classifier:
+        estimator_params = params_ExtraTreesClassifier(trial, name=f"RFE_{name}")
+    else:
+        estimator_params = params_ExtraTreesRegressor(trial, name=f"RFE_{name}")
+    
+    params.update(estimator_params)
 
     return params
 
 
-def params_sklearn_feature_selection_SelectFromModel(trial, name=None, classifier=True):
-    if classifier:
-        estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, name=f"SFM_{name}"))
-    else:
-        estimator = ExtraTreesRegressor(**params_ExtraTreesRegressor(trial, name=f"SFM_{name}"))
-    
+def params_sklearn_feature_selection_SelectFromModel_wrapped(trial, name=None, classifier=True):
     params = {
-            'threshold': trial.suggest_float(f'threshold_{name}', 1e-4, 1.0, log=True),
-            'estimator' : estimator,
-            }
+        'threshold': trial.suggest_float(f'threshold_{name}', 1e-4, 1.0, log=True),
+        }
+        
+    if classifier:
+        estimator_params = params_ExtraTreesClassifier(trial, name=f"SFM_{name}")
+    else:
+        estimator_params = params_ExtraTreesRegressor(trial, name=f"SFM_{name}")
+    
+    params.update(estimator_params)
 
     return params
 
 
 
 def make_selector_config_dictionary(classifier=True):
-    return {
-                SelectFwe: params_sklearn_feature_selection_SelectFwe,
-                SelectPercentile: params_sklearn_feature_selection_SelectPercentile,
-                VarianceThreshold: params_sklearn_feature_selection_VarianceThreshold,
-                RFE: partial(params_sklearn_feature_selection_RFE, classifier=classifier),
-                SelectFromModel: partial(params_sklearn_feature_selection_SelectFromModel, classifier=classifier),
-            }
+    if classifier:
+        params =    {RFE_ExtraTreesClassifier : partial(params_sklearn_feature_selection_RFE_wrapped, classifier=classifier),
+                    SelectFromModel_ExtraTreesClassifier : partial(params_sklearn_feature_selection_SelectFromModel_wrapped, classifier=classifier),
+                    }
+    else:
+        params =    {RFE_ExtraTreesRegressor : partial(params_sklearn_feature_selection_RFE_wrapped, classifier=classifier),
+                    SelectFromModel_ExtraTreesRegressor : partial(params_sklearn_feature_selection_SelectFromModel_wrapped, classifier=classifier),
+                    }
+    
+    params.update({ SelectFwe: params_sklearn_feature_selection_SelectFwe,
+                    SelectPercentile: params_sklearn_feature_selection_SelectPercentile,
+                    VarianceThreshold: params_sklearn_feature_selection_VarianceThreshold,})
+
+    return params

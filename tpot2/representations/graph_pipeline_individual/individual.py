@@ -21,11 +21,13 @@ class NodeLabel():
         #intialized, but may change later
             method_class = None, #transformer or baseestimator
             hyperparameters=None,
+            label=None,
     ):
 
         #intializable, but may change later
         self.method_class = method_class #transformer or baseestimator
         self.hyperparameters = hyperparameters
+        self.label = label
 
 from functools import partial
 #@https://stackoverflow.com/questions/20530455/isomorphic-comparison-of-networkx-graph-objects-instead-of-the-default-address
@@ -1094,7 +1096,14 @@ class GraphIndividual(tpot2.BaseIndividual):
 
         return self.key
 
-
+    def full_node_list(self):
+        node_list = list(self.graph.nodes)
+        for node in node_list:
+            if isinstance(node, GraphIndividual):
+                node_list.pop(node_list.index(node))
+                node_list.extend(node.graph.nodes)
+        return node_list
+                
 
 
 

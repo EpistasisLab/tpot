@@ -116,14 +116,13 @@ def parallel_eval_objective_list(individual_list,
             future.cancel()
             offspring_scores.append(["TIMEOUT"])
             if verbose >= 4:
-                print(f'WARNING AN INDIVIDUAL TIMED OUT: \n {individual} \n')
+                print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {individual} \n')
         elif future.exception():
             offspring_scores.append(["INVALID"])
             if verbose == 4:
-                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION \n {individual} \n {future.exception()} \n')
+                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION (Dask Future) \n {individual} \n {future.exception()} \n')
             if verbose >= 5:
-                trace = traceback.format_exc()
-                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION \n {individual} \n {future.exception()} \n {future.traceback()}')
+                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION (Dask Future) \n {individual} \n {future.exception()} \n {future.traceback()}')
         else:
             offspring_scores.append(future.result())
             

@@ -84,6 +84,10 @@ class TPOTEstimator(BaseEstimator):
                         periodic_checkpoint_folder = None, 
                         callback: tpot2.CallBackInterface = None,
                         processes = True,
+
+                        optuna_optimize_pareto_front = False,
+                        optuna_optimize_pareto_front_trials = 100,
+                        optuna_optimize_pareto_front_timeout = 60*10,
                         ):
                         
         '''
@@ -473,6 +477,10 @@ class TPOTEstimator(BaseEstimator):
         self.callback = callback
         self.processes = processes
 
+        self.optuna_optimize_pareto_front = optuna_optimize_pareto_front
+        self.optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials
+        self.optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout
+
         #Initialize other used params
 
 
@@ -624,15 +632,7 @@ class TPOTEstimator(BaseEstimator):
         inner_config_dict = get_configuration_dictionary(self.inner_config_dict, n_samples, n_features, self.classification,subsets=self.subsets, feature_names=self.feature_names)
         leaf_config_dict = get_configuration_dictionary(self.leaf_config_dict, n_samples, n_features, self.classification, subsets=self.subsets, feature_names=self.feature_names)
 
-        if self.n_initial_optimizations > 0:
-            #tmp = partial(tpot2.estimator_objective_functions.cross_val_score_objective,scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column )
-            # optuna_objective = lambda ind,  X=X, y=y , scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column: tpot2.estimator_objective_functions.cross_val_score_objective(
-            #     ind, 
-            #     X=X, y=y, scorers= scorers, cv=cv, memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column )
-            
-            optuna_objective = partial(tpot2.estimator_objective_functions.cross_val_score_objective, X=X, y=y , scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column )
-        else:
-            optuna_objective = None
+
 
 
         #check if self.cv is a number
@@ -644,7 +644,31 @@ class TPOTEstimator(BaseEstimator):
 
         else:
             self.cv_gen = sklearn.model_selection.check_cv(self.cv, y, classifier=self.classification)
-
+        
+        def objective_function(pipeline_individual, 
+                                            X, 
+                                            y,
+                                            is_classification=self.classification,
+                                            scorers= self._scorers, 
+                                            cv=self.cv_gen, 
+                                            other_objective_functions=self.other_objective_functions,
+                                            memory=self.memory, 
+                                            cross_val_predict_cv=self.cross_val_predict_cv, 
+                                            subset_column=self.subset_column, 
+                                            **kwargs): 
+            return objective_function_generator(
+                pipeline_individual,
+                X, 
+                y, 
+                is_classification=is_classification,
+                scorers= scorers, 
+                cv=cv, 
+                other_objective_functions=other_objective_functions,
+                memory=memory, 
+                cross_val_predict_cv=cross_val_predict_cv, 
+                subset_column=subset_column,
+                **kwargs,
+            )
 
         self.individual_generator_instance = tpot2.estimator_graph_individual_generator(   
                                                             inner_config_dict=inner_config_dict,
@@ -663,38 +687,10 @@ class TPOTEstimator(BaseEstimator):
         X_future = _client.scatter(X)
         y_future = _client.scatter(y)
 
-        #.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column),
-        #tmp = partial(objective_function_generator, scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions )
-        self.final_object_function_list =[ lambda pipeline_individual, 
-                                            X, 
-                                            y,
-                                            is_classification=self.classification,
-                                            scorers= self._scorers, 
-                                            cv=self.cv_gen, 
-                                            other_objective_functions=self.other_objective_functions,
-                                            memory=self.memory, 
-                                            cross_val_predict_cv=self.cross_val_predict_cv, 
-                                            subset_column=self.subset_column, 
-                                            **kwargs: 
-                                            objective_function_generator(
-                                                pipeline_individual,
-                                                X, 
-                                                y, 
-                                                is_classification=is_classification,
-                                                scorers= scorers, 
-                                                cv=cv, 
-                                                other_objective_functions=other_objective_functions,
-                                                memory=memory, 
-                                                cross_val_predict_cv=cross_val_predict_cv, 
-                                                subset_column=subset_column,
-                                                **kwargs,
-                                )]
-
-
         #If warm start and we have an evolver instance, use the existing one
         if not(self.warm_start and self._evolver_instance is not None):
             self._evolver_instance = self._evolver(   individual_generator=self.individual_generator_instance, 
-                                            objective_functions=self.final_object_function_list,
+                                            objective_functions= [objective_function],
                                             objective_function_weights = self.objective_function_weights,
                                             objective_names=self.objective_names,
                                             bigger_is_better = self.bigger_is_better,
@@ -705,7 +701,9 @@ class TPOTEstimator(BaseEstimator):
                                             verbose = self.verbose,
                                             max_time_seconds =      self.max_time_seconds ,
                                             max_eval_time_seconds = self.max_eval_time_seconds,
-                                            optimization_objective=optuna_objective,
+                                            optimization_objective=None,
+                                            n_initial_optimizations=self.n_initial_optimizations,
+
                                             periodic_checkpoint_folder = self.periodic_checkpoint_folder,
                                             threshold_evaluation_early_stop = self.threshold_evaluation_early_stop,
                                             threshold_evaluation_scaling =  self.threshold_evaluation_scaling,
@@ -741,6 +739,15 @@ class TPOTEstimator(BaseEstimator):
         self._evolver_instance.optimize()
         #self._evolver_instance.population.update_pareto_fronts(self.objective_names, self.objective_function_weights)
         self.make_evaluated_individuals()
+
+
+        if self.optuna_optimize_pareto_front:
+            pareto_front_inds = self.pareto_front['Individual'].values
+            all_graphs, all_scores = tpot2.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, max_time_seconds=self.optuna_optimize_pareto_front_timeout, **{"X": X_future, "y": y_future})
+            all_scores = tpot2.process_scores(all_scores, len(self.objective_function_weights))
+            
+            self.evaluated_individuals = pd.DataFrame(np.column_stack((all_graphs, all_scores)), columns=["Individual"] + self.objective_names)
+            tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
 
         if validation_strategy == 'reshuffled':
             best_pareto_front_idx = list(self.pareto_front.index)

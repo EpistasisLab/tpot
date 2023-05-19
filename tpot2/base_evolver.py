@@ -18,7 +18,8 @@ from dask.distributed import Client
 from dask.distributed import LocalCluster
 from tpot2.parent_selectors import survival_select_NSGA2, TournamentSelection_Dominated
 import math
-from tpot2.utils import get_thresholds, beta_interpolation, remove_items, equalize_list, update_pareto_frontier
+from tpot2.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
+
 
 class BaseEvolver():
     def __init__(   self, 
@@ -458,9 +459,6 @@ class BaseEvolver():
                         break
                     self.step()
                     
-                #update the pareto frontier
-                self.population.evaluated_individuals = update_pareto_frontier(self.population.evaluated_individuals, self.objective_names, self.objective_function_weights,self.generation-1)
-
                 if self.verbose >= 3:  
                     sign = np.sign(self.objective_function_weights)
                     valid_df = self.population.evaluated_individuals[~self.population.evaluated_individuals[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names]*sign
@@ -521,6 +519,7 @@ class BaseEvolver():
             self._client.close()
             self._cluster.close()
 
+        tpot2.utils.get_pareto_frontier(self.population.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
 
     def step(self,):
         if self.population_size_list is not None:

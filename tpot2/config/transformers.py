@@ -1,6 +1,17 @@
 from functools import partial
 from tpot2.builtin_modules import ZeroCount, OneHotEncoder
-import numpy as np
+from sklearn.preprocessing import Binarizer
+from sklearn.decomposition import FastICA
+from sklearn.cluster import FeatureAgglomeration
+from sklearn.preprocessing import MaxAbsScaler
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import Normalizer
+from sklearn.kernel_approximation import Nystroem
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.kernel_approximation import RBFSampler
+from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import StandardScaler
 
 
 def params_sklearn_preprocessing_Binarizer(trial, name=None):
@@ -69,18 +80,7 @@ def params_tpot_builtins_OneHotEncoder(trial, name=None):
 
 
     
-from sklearn.preprocessing import Binarizer
-from sklearn.decomposition import FastICA
-from sklearn.cluster import FeatureAgglomeration
-from sklearn.preprocessing import MaxAbsScaler
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import Normalizer
-from sklearn.kernel_approximation import Nystroem
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.kernel_approximation import RBFSampler
-from sklearn.preprocessing import RobustScaler
-from sklearn.preprocessing import StandardScaler
+
 
 def make_transformer_config_dictionary(n_features=10):
     #n_features = min(n_features,100) #TODO optimize this
