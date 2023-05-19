@@ -18,8 +18,14 @@ from dask.distributed import Client
 from dask.distributed import LocalCluster
 import math
 
-EVOLVERS = {"nsga2":tpot2.BaseEvolver}
+from dask import config as cfg
 
+
+def set_dask_settings():
+    cfg.set({'distributed.scheduler.worker-ttl': None})
+    cfg.set({'distributed.scheduler.allowed-failures':1})
+
+EVOLVERS = {"nsga2":tpot2.BaseEvolver}
 
 
 #TODO inherit from _BaseComposition?
@@ -84,6 +90,8 @@ class TPOTEstimator(BaseEstimator):
                         periodic_checkpoint_folder = None, 
                         callback: tpot2.CallBackInterface = None,
                         processes = True,
+
+                        scatter = False,
 
                         optuna_optimize_pareto_front = False,
                         optuna_optimize_pareto_front_trials = 100,
@@ -477,6 +485,9 @@ class TPOTEstimator(BaseEstimator):
         self.callback = callback
         self.processes = processes
 
+
+        self.scatter = scatter
+
         self.optuna_optimize_pareto_front = optuna_optimize_pareto_front
         self.optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials
         self.optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout
@@ -531,6 +542,9 @@ class TPOTEstimator(BaseEstimator):
         
         self._evolver_instance = None
         self.evaluated_individuals = None
+
+
+        set_dask_settings()
 
 
     def fit(self, X, y):
@@ -683,9 +697,12 @@ class TPOTEstimator(BaseEstimator):
         else:
             evaluation_early_stop_steps = None
 
-
-        X_future = _client.scatter(X)
-        y_future = _client.scatter(y)
+        if self.scatter:
+            X_future = _client.scatter(X)
+            y_future = _client.scatter(y)
+        else:
+            X_future = X
+            y_future = y
 
         #If warm start and we have an evolver instance, use the existing one
         if not(self.warm_start and self._evolver_instance is not None):
@@ -755,8 +772,13 @@ class TPOTEstimator(BaseEstimator):
             
             #reshuffle rows
             X, y = sklearn.utils.shuffle(X, y, random_state=1)
-            X_future = _client.scatter(X)
-            y_future = _client.scatter(y)
+
+            if self.scatter:
+                X_future = _client.scatter(X)
+                y_future = _client.scatter(y)
+            else:
+                X_future = X
+                y_future = y
 
             val_objective_function_list = [lambda   ind, 
                                                     X, 
@@ -795,11 +817,17 @@ class TPOTEstimator(BaseEstimator):
 
         elif validation_strategy == 'split':
 
-            
-            X_future = _client.scatter(X)
-            y_future = _client.scatter(y)
-            X_val_future = _client.scatter(X_val)
-            y_val_future = _client.scatter(y_val)
+
+            if self.scatter:            
+                X_future = _client.scatter(X)
+                y_future = _client.scatter(y)
+                X_val_future = _client.scatter(X_val)
+                y_val_future = _client.scatter(y_val)
+            else:
+                X_future = X
+                y_future = y
+                X_val_future = X_val
+                y_val_future = y_val
 
             objective_kwargs = {"X": X_future, "y": y_future, "X_val" : X_val_future, "y_val":y_val_future }
             
