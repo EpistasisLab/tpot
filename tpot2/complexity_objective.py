@@ -90,7 +90,7 @@ def forest_complexity(forest):
     all_trees = np.array(forest.estimators_)
     if len(all_trees.shape)>1:
         all_trees = all_trees.ravel()
-    sum(tree_complexity(tree) for tree in all_trees)
+    return sum(tree_complexity(tree) for tree in all_trees)
 
 def knn_complexity(knn):
     return knn.n_neighbors
