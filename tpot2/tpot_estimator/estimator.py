@@ -96,6 +96,7 @@ class TPOTEstimator(BaseEstimator):
                         optuna_optimize_pareto_front = False,
                         optuna_optimize_pareto_front_trials = 100,
                         optuna_optimize_pareto_front_timeout = 60*10,
+                        optuna_storage = "sqlite:///optuna.db",
                         ):
                         
         '''
@@ -491,6 +492,7 @@ class TPOTEstimator(BaseEstimator):
         self.optuna_optimize_pareto_front = optuna_optimize_pareto_front
         self.optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials
         self.optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout
+        self.optuna_storage = optuna_storage
 
         #Initialize other used params
 
@@ -760,7 +762,7 @@ class TPOTEstimator(BaseEstimator):
 
         if self.optuna_optimize_pareto_front:
             pareto_front_inds = self.pareto_front['Individual'].values
-            all_graphs, all_scores = tpot2.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, max_time_seconds=self.optuna_optimize_pareto_front_timeout, **{"X": X_future, "y": y_future})
+            all_graphs, all_scores = tpot2.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, storage=self.optuna_storage, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, max_time_seconds=self.optuna_optimize_pareto_front_timeout, **{"X": X_future, "y": y_future})
             all_scores = tpot2.process_scores(all_scores, len(self.objective_function_weights))
             
             self.evaluated_individuals = pd.DataFrame(np.column_stack((all_graphs, all_scores)), columns=["Individual"] + self.objective_names)

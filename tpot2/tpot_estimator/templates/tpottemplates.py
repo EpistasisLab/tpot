@@ -71,6 +71,7 @@ class TPOTRegressor(TPOTEstimator):
                         optuna_optimize_pareto_front = False,
                         optuna_optimize_pareto_front_trials = 100,
                         optuna_optimize_pareto_front_timeout = 60*10,
+                        optuna_storage = "sqlite:///optuna.db",
         ):
         super(TPOTRegressor,self).__init__(
             scorers=scorers, 
@@ -137,6 +138,7 @@ class TPOTRegressor(TPOTEstimator):
             optuna_optimize_pareto_front = optuna_optimize_pareto_front,
             optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials,
             optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout,
+            optuna_storage = optuna_storage,
 )
 
 
@@ -207,6 +209,7 @@ class TPOTClassifier(TPOTEstimator):
                         optuna_optimize_pareto_front = False,
                         optuna_optimize_pareto_front_trials = 100,
                         optuna_optimize_pareto_front_timeout = 60*10,
+                        optuna_storage = "sqlite:///optuna.db",
         ):
         super(TPOTClassifier,self).__init__(
                         scorers=scorers, 
@@ -274,6 +277,7 @@ class TPOTClassifier(TPOTEstimator):
             optuna_optimize_pareto_front = optuna_optimize_pareto_front,
             optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials,
             optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout,
+            optuna_storage = optuna_storage,
         )
 
 

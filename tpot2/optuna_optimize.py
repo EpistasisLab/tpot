@@ -91,7 +91,7 @@ def get_all_individuals_from_study(study, graphindividual, n_returned_models='al
     return all_graphs, all_scores
 
 
-def simple_parallel_optuna(individuals,  objective_function, objective_function_weights, client, steps=5, verbose=0, max_eval_time_seconds=60*5, max_time_seconds=60*20, **objective_kwargs):
+def simple_parallel_optuna(individuals,  objective_function, objective_function_weights, client, storage, steps=5, verbose=0, max_eval_time_seconds=60*5, max_time_seconds=60*20, **objective_kwargs):
     num_workers = len(client.scheduler_info()['workers'])
     worker_per_individual = max(1,int(np.floor(num_workers/len(individuals))))
     remainder = num_workers%len(individuals)
@@ -105,7 +105,7 @@ def simple_parallel_optuna(individuals,  objective_function, objective_function_
     studies = []
     for i, ind in enumerate(individuals):
         label_nodes_in_graphindividual(ind)
-        study  = optuna.create_study(directions=directions, storage="sqlite:////home/ribeirop/Projects/TPOT_Dev/Z_Deleteme/ex3.db", load_if_exists=False)
+        study  = optuna.create_study(directions=directions, storage=f"{storage}", load_if_exists=False)
         studies.append(study)
         if i == 0:
             n_futures = worker_per_individual + remainder
