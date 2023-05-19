@@ -67,6 +67,10 @@ class TPOTRegressor(TPOTEstimator):
                         periodic_checkpoint_folder=None, 
                         callback: tpot2.CallBackInterface=None,
                         processes = True,
+                        scatter = False,
+                        optuna_optimize_pareto_front = False,
+                        optuna_optimize_pareto_front_trials = 100,
+                        optuna_optimize_pareto_front_timeout = 60*10,
         ):
         super(TPOTRegressor,self).__init__(
             scorers=scorers, 
@@ -129,6 +133,10 @@ class TPOTRegressor(TPOTEstimator):
             periodic_checkpoint_folder=periodic_checkpoint_folder, 
             callback=callback,
             processes=processes,
+            scatter = scatter,
+            optuna_optimize_pareto_front = optuna_optimize_pareto_front,
+            optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials,
+            optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout,
 )
 
 
@@ -195,6 +203,10 @@ class TPOTClassifier(TPOTEstimator):
                         periodic_checkpoint_folder=None, 
                         callback: tpot2.CallBackInterface=None,
                         processes = True,
+                        scatter = False,
+                        optuna_optimize_pareto_front = False,
+                        optuna_optimize_pareto_front_trials = 100,
+                        optuna_optimize_pareto_front_timeout = 60*10,
         ):
         super(TPOTClassifier,self).__init__(
                         scorers=scorers, 
@@ -258,6 +270,10 @@ class TPOTClassifier(TPOTEstimator):
             periodic_checkpoint_folder=periodic_checkpoint_folder, 
             callback=callback,
             processes = processes,
+            scatter = scatter,
+            optuna_optimize_pareto_front = optuna_optimize_pareto_front,
+            optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials,
+            optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout,
         )
 
 
