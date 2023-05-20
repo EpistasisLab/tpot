@@ -3,6 +3,8 @@ import optuna
 import numpy as np
 import copy
 import dask
+import traceback
+
 
 # labels all nodes in the graph with a unique ID.
 # This allows use to identify exact nodes in the copies on the graph.
@@ -23,9 +25,7 @@ def optuna_optimize_full_graph(graphindividual, objective_function, objective_fu
     graphindividual = copy.deepcopy(graphindividual)
     nodes_list = graphindividual.full_node_list()
 
-    if study is None:
-        study = optuna.create_study(directions=list(np.repeat('maximize',len(objective_function_weights))))
-    
+
     nodes_to_optimize = []
     for node in nodes_list:
         if not isinstance(node, NodeLabel) or isinstance(graphindividual.select_config_dict(node)[node.method_class],dict):
@@ -118,7 +118,7 @@ def simple_parallel_optuna(individuals,  objective_function, objective_function_
         
         trials_per_thread = int(np.ceil(steps/n_futures))
         for _ in range(n_futures):
-            futures.append(client.submit(optuna_optimize_full_graph, graphindividual=ind, objective_function=objective_function, objective_function_weights=objective_function_weights, steps=trials_per_thread, verbose=verbose, max_eval_time_seconds=max_eval_time_seconds, max_time_seconds=max_time_seconds, study=study, relabel=False, **objective_kwargs))
+            futures.append(client.submit(optuna_optimize_full_graph, graphindividual=ind, objective_function=objective_function, objective_function_weights=objective_function_weights, steps=trials_per_thread, verbose=verbose, max_eval_time_seconds=max_eval_time_seconds, max_time_seconds=max_time_seconds, study=study, relabel=False, pure=False, **objective_kwargs))
 
     
     dask.distributed.wait(futures)
