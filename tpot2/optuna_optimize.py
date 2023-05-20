@@ -101,11 +101,15 @@ def simple_parallel_optuna(individuals,  objective_function, objective_function_
 
     directions = np.repeat('maximize',len(objective_function_weights))
 
+    backend_storage = optuna.storages.InMemoryStorage()
+    dask_storage = optuna.integration.DaskStorage(storage=backend_storage)
+
     futures = []
     studies = []
     for i, ind in enumerate(individuals):
         label_nodes_in_graphindividual(ind)
-        study  = optuna.create_study(directions=directions, storage=f"{storage}", load_if_exists=False)
+        #study  = optuna.create_study(directions=directions, storage=f"{storage}", load_if_exists=False)
+        study  = optuna.create_study(directions=directions, storage=dask_storage, load_if_exists=False)
         studies.append(study)
         if i == 0:
             n_futures = worker_per_individual + remainder
