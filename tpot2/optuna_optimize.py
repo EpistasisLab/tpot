@@ -102,7 +102,7 @@ def simple_parallel_optuna(individuals,  objective_function, objective_function_
     directions = np.repeat('maximize',len(objective_function_weights))
 
     backend_storage = optuna.storages.InMemoryStorage()
-    dask_storage = optuna.integration.DaskStorage(storage=backend_storage)
+    dask_storage = optuna.integration.DaskStorage(storage=backend_storage, client=client)
 
     futures = []
     studies = []
