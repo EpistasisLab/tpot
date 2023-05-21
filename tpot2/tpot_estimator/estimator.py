@@ -91,7 +91,7 @@ class TPOTEstimator(BaseEstimator):
                         callback: tpot2.CallBackInterface = None,
                         processes = True,
 
-                        scatter = False,
+                        scatter = True,
 
                         optuna_optimize_pareto_front = False,
                         optuna_optimize_pareto_front_trials = 100,
@@ -762,10 +762,17 @@ class TPOTEstimator(BaseEstimator):
 
         if self.optuna_optimize_pareto_front:
             pareto_front_inds = self.pareto_front['Individual'].values
-            all_graphs, all_scores = tpot2.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, storage=self.optuna_storage, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, max_time_seconds=self.optuna_optimize_pareto_front_timeout, **{"X": X_future, "y": y_future})
+            all_graphs, all_scores = tpot2.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, storage=self.optuna_storage, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, max_time_seconds=self.optuna_optimize_pareto_front_timeout, **{"X": X, "y": y})
             all_scores = tpot2.process_scores(all_scores, len(self.objective_function_weights))
             
-            self.evaluated_individuals = pd.DataFrame(np.column_stack((all_graphs, all_scores)), columns=["Individual"] + self.objective_names)
+            if len(all_graphs) > 0:
+                df = pd.DataFrame(np.column_stack((all_graphs, all_scores,np.repeat("Optuna",len(all_graphs)))), columns=["Individual"] + self.objective_names +["Parents"])
+                for obj in self.objective_names:
+                    df[obj] = df[obj].apply(convert_to_float)
+                
+                self.evaluated_individuals = pd.concat([self.evaluated_individuals, df], ignore_index=True)
+            else:
+                print("WARNING NO OPTUNA TRIALS COMPLETED")
             tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
 
         if validation_strategy == 'reshuffled':
@@ -1121,3 +1128,10 @@ def remove_underrepresented_classes(x, y, min_count):
     else:
         raise TypeError("y must be a numpy array or a pandas Series/DataFrame")
     return x, y
+
+
+def convert_to_float(x):
+    try:
+        return float(x)
+    except ValueError:
+        return x
