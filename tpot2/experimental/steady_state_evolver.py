@@ -213,10 +213,13 @@ class SteadyStateEvolver():
         start_time = time.time() 
         
         try: 
-            done = False
-            gen = 0
+            
+            
             if self.verbose >= 1:
-                pbar = tqdm.tqdm(total=0)
+                if self.max_evaluated_individuals is not None:
+                    pbar = tqdm.tqdm(total=self.max_evaluated_individuals)
+                else:
+                    pbar = tqdm.tqdm(total=0)
                 pbar.set_description("Evaluations")
 
             #submit initial population
@@ -230,6 +233,7 @@ class SteadyStateEvolver():
                                             "budget": budget,}
                 submitted_inds.add(individual.unique_id())
 
+            done = False
             while not done:
 
                 #check if any futures are finished
@@ -248,7 +252,8 @@ class SteadyStateEvolver():
                     this_budget = submitted_futures[completed_future]["budget"]
                     this_time = submitted_futures[completed_future]["time"]
 
-
+                    if len(scores) < len(self.objective_names):
+                        scores = [scores[0] for _ in range(len(self.objective_names))]
                     self.population.update_column(this_individual, column_names=self.objective_names, data=scores)
                     if budget is not None:
                         self.population.update_column(this_individual, column_names="Budget", data=this_budget)
@@ -259,11 +264,13 @@ class SteadyStateEvolver():
                         pbar.update(1)
 
                     count += 1
-                    if count >min(self.min_individuals_finished, len(submitted_futures)):
+                    if count > min(self.min_individuals_finished, len(submitted_futures)):
                         break
 
                 self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="INVALID")
                 self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
+                
+                
                 #check if we should stop
                 if self.verbose >= 3:  
                     sign = np.sign(self.objective_function_weights)
@@ -296,12 +303,31 @@ class SteadyStateEvolver():
                                 print("Early stop")
                             break
 
+                #Survival Selection
+                if self.survival_selector is not None:
+                    parents_df = self.population.get_column(self.population.population, column_names=self.objective_names + ["Individual"], to_numpy=False)
+                    evaluated = parents_df[~parents_df[self.objective_names].isna().any(axis=1)]
+                    unevaluated = parents_df[parents_df[self.objective_names].isna().any(axis=1)]
+
+                    cur_evaluated_population = parents_df["Individual"].to_numpy()
+                    if len(cur_evaluated_population) > self.population_size:
+                        scores = evaluated[self.objective_names].to_numpy()
+                        weighted_scores = scores * self.objective_function_weights
+                        new_population_index = np.ravel(self.survival_selector(weighted_scores, k=self.population_size)) #TODO make it clear that we are concatenating scores...
+                    
+                        #set new population
+                        cur_evaluated_population = np.array(cur_evaluated_population)[new_population_index]
+                        cur_evaluated_population = np.concatenate([cur_evaluated_population, unevaluated["Individual"].to_numpy()])
+                        self.population.set_population(cur_evaluated_population)
+
                 #create new individuals and add to queue
                 n_individuals_to_submit = self.max_queue_size - len(submitted_futures)
                 if n_individuals_to_submit > 0:
-                    parents_df = self.population.get_column(self.population.population, column_names=self.objective_names, to_numpy=False)
+                    parents_df = self.population.get_column(self.population.population, column_names=self.objective_names+ ["Individual"], to_numpy=False)
                     parents_df = parents_df[~parents_df[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)]
                     parents_df = parents_df[~parents_df[self.objective_names].isna().any(axis=1)]
+
+                    cur_evaluated_population = parents_df["Individual"].to_numpy()
                     scores = parents_df[self.objective_names].to_numpy()
                     weighted_scores = scores * self.objective_function_weights
                     #number of crossover pairs and mutation only parent to generate
@@ -314,9 +340,9 @@ class SteadyStateEvolver():
                     parents = []
                     for op in var_ops:
                         if op == "mutate":
-                            parents.extend(np.array(self.population.population)[self.parent_selector(weighted_scores, k=1, n_parents=1,  )])
+                            parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=1,  )])
                         else:
-                            parents.extend(np.array(self.population.population)[self.parent_selector(weighted_scores, k=1, n_parents=2,  )])
+                            parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=2,  )])
 
                     offspring = self.population.create_offspring(parents, var_ops, n_jobs=self.n_jobs)
 
@@ -339,11 +365,13 @@ class SteadyStateEvolver():
                 #check if done
                 #if we evaluated enough individuals or time is up, stop
                 if self.max_time_seconds is not None and time.time() - start_time > self.max_time_seconds:
+                    print("BAR!")
                     if self.verbose >= 3:
                         print("Time limit reached")
                     done = True
                 
                 if len(self.population.evaluated_individuals.dropna(subset=self.objective_names)) >= self.max_evaluated_individuals:
+                    print("FOO!")
                     done = True
 
         except KeyboardInterrupt:

@@ -29,7 +29,7 @@ EVOLVERS = {"nsga2":tpot2.BaseEvolver}
 
 
 #TODO inherit from _BaseComposition?
-class TPOTEstimator(BaseEstimator):
+class TPOTEstimatorSteadyState(BaseEstimator):
     def __init__(self,  scorers, 
                         scorers_weights,
                         classification,
@@ -50,11 +50,15 @@ class TPOTEstimator(BaseEstimator):
                         preprocessing = False,  
                         validation_strategy = "none",
                         validation_fraction = .2,
+
+                        initial_population_size = 50,
+                        max_queue_size = 1,
+                        min_individuals_finished = 1,
                         population_size = 50,
-                        initial_population_size = None,
-                        population_scaling = .5, 
-                        generations_until_end_population = 1,  
-                        generations = 50,
+                        max_evaluated_individuals = 50,
+
+                        
+
                         early_stop = None,
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol = None,
@@ -72,20 +76,12 @@ class TPOTEstimator(BaseEstimator):
                         parent_selector = TournamentSelection_Dominated,
                         budget_range = None,
                         budget_scaling = .5,
-                        generations_until_end_budget = 1,  
+                        individuals_until_end_budget = 1,  
                         stepwise_steps = 5,
-                        threshold_evaluation_early_stop = None, 
-                        threshold_evaluation_scaling = .5,
-                        min_history_threshold = 20,
-                        selection_evaluation_early_stop = None, 
-                        selection_evaluation_scaling = .5, 
-                        n_initial_optimizations = 0,
-                        optimization_cv = 3,
-                        max_optimize_time_seconds=60*20,
-                        optimization_steps = 10,
+
                         warm_start = False,
                         subset_column = None,
-                        evolver = "nsga2",
+
                         verbose = 0,
                         periodic_checkpoint_folder = None, 
                         callback: tpot2.CallBackInterface = None,
@@ -119,7 +115,6 @@ class TPOTEstimator(BaseEstimator):
         cv : int, cross-validator
             - (int): Number of folds to use in the cross-validation process. By uses the sklearn.model_selection.KFold cross-validator for regression and StratifiedKFold for classification. In both cases, shuffled is set to True.
             - (sklearn.model_selection.BaseCrossValidator): A cross-validator to use in the cross-validation process.
-                - max_depth (int): The maximum depth from any node to the root of the pipelines to be generated.
         
         other_objective_functions : list, default=[tpot2.estimator_objective_functions.average_path_length_objective]
             A list of other objective functions to apply to the pipeline.
@@ -329,7 +324,7 @@ class TPOTEstimator(BaseEstimator):
         budget_scaling float : [0,1], default=0.5
             A scaling factor to use when determining how fast we move the budget from the start to end budget.
         
-        generations_until_end_budget : int, default=1
+        individuals_until_end_budget : int, default=1
             The number of generations to run before reaching the max budget.
         
         stepwise_steps : int, default=1
@@ -447,9 +442,7 @@ class TPOTEstimator(BaseEstimator):
         self.validation_fraction = validation_fraction
         self.population_size = population_size
         self.initial_population_size = initial_population_size
-        self.population_scaling = population_scaling
-        self.generations_until_end_population = generations_until_end_population
-        self.generations = generations
+
         self.early_stop = early_stop
         self.scorers_early_stop_tol = scorers_early_stop_tol
         self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
@@ -467,20 +460,12 @@ class TPOTEstimator(BaseEstimator):
         self.parent_selector=parent_selector
         self.budget_range = budget_range
         self.budget_scaling = budget_scaling
-        self.generations_until_end_budget = generations_until_end_budget
+        self.individuals_until_end_budget = individuals_until_end_budget
         self.stepwise_steps = stepwise_steps
-        self.threshold_evaluation_early_stop =threshold_evaluation_early_stop
-        self.threshold_evaluation_scaling =  threshold_evaluation_scaling
-        self.min_history_threshold = min_history_threshold
-        self.selection_evaluation_early_stop = selection_evaluation_early_stop
-        self.selection_evaluation_scaling =  selection_evaluation_scaling
-        self.n_initial_optimizations  = n_initial_optimizations  
-        self.optimization_cv  = optimization_cv
-        self.max_optimize_time_seconds = max_optimize_time_seconds 
-        self.optimization_steps = optimization_steps 
+
         self.warm_start = warm_start
         self.subset_column = subset_column
-        self.evolver = evolver
+
         self.verbose = verbose
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
         self.callback = callback
@@ -493,6 +478,11 @@ class TPOTEstimator(BaseEstimator):
         self.optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials
         self.optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout
         self.optuna_storage = optuna_storage
+
+
+        self.max_queue_size = max_queue_size
+        self.min_individuals_finished = min_individuals_finished
+        self.max_evaluated_individuals = max_evaluated_individuals
 
         #Initialize other used params
 
@@ -513,10 +503,7 @@ class TPOTEstimator(BaseEstimator):
         self._scorers = [sklearn.metrics.get_scorer(scoring) for scoring in self._scorers]
         self._scorers_early_stop_tol = self.scorers_early_stop_tol
         
-        if isinstance(self.evolver, str):
-            self._evolver = EVOLVERS[self.evolver]
-        else:
-            self._evolver = self.evolver
+        self._evolver = tpot2.SteadyStateEvolver
         
        
 
@@ -694,10 +681,7 @@ class TPOTEstimator(BaseEstimator):
                                                             linear_pipeline=self.linear_pipeline,
                                                                 )
 
-        if self.threshold_evaluation_early_stop is not None or self.selection_evaluation_early_stop is not None:
-            evaluation_early_stop_steps = self.cv
-        else:
-            evaluation_early_stop_steps = None
+
 
         if self.scatter:
             X_future = _client.scatter(X)
@@ -714,33 +698,26 @@ class TPOTEstimator(BaseEstimator):
                                             objective_names=self.objective_names,
                                             bigger_is_better = self.bigger_is_better,
                                             population_size= self.population_size,
-                                            generations=self.generations,
+
                                             initial_population_size = self._initial_population_size,
                                             n_jobs=self.n_jobs,
                                             verbose = self.verbose,
                                             max_time_seconds =      self.max_time_seconds ,
                                             max_eval_time_seconds = self.max_eval_time_seconds,
-                                            optimization_objective=None,
-                                            n_initial_optimizations=self.n_initial_optimizations,
+                                            
+                                            
 
                                             periodic_checkpoint_folder = self.periodic_checkpoint_folder,
-                                            threshold_evaluation_early_stop = self.threshold_evaluation_early_stop,
-                                            threshold_evaluation_scaling =  self.threshold_evaluation_scaling,
-                                            min_history_threshold = self.min_history_threshold,
 
-                                            selection_evaluation_early_stop = self.selection_evaluation_early_stop,
-                                            selection_evaluation_scaling =  self.selection_evaluation_scaling,
-                                            evaluation_early_stop_steps = evaluation_early_stop_steps,
 
                                             early_stop_tol = self.early_stop_tol,
                                             early_stop= self.early_stop,
                                             
                                             budget_range = self.budget_range,
                                             budget_scaling = self.budget_scaling,
-                                            generations_until_end_budget = self.generations_until_end_budget,
+                                            individuals_until_end_budget = self.individuals_until_end_budget,
 
-                                            population_scaling = self.population_scaling,
-                                            generations_until_end_population = self.generations_until_end_population,
+
                                             stepwise_steps = self.stepwise_steps,
                                             client = _client,
                                             objective_kwargs = {"X": X_future, "y": y_future},
@@ -752,6 +729,10 @@ class TPOTEstimator(BaseEstimator):
                                             mutate_then_crossover_probability= self.mutate_then_crossover_probability,
                                             crossover_then_mutate_probability= self.crossover_then_mutate_probability,
                                             
+
+                                            max_queue_size = self.max_queue_size,
+                                            min_individuals_finished = self.min_individuals_finished,
+                                            max_evaluated_individuals = self.max_evaluated_individuals
                                             )
 
         

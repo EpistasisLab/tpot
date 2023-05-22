@@ -252,6 +252,4 @@ def make_classifier_config_dictionary(n_samples=10, n_classes=None):
             SVC: params_SVC,
             #: params_LGBMClassifier, # logistic regression and SVM/SVC are just special cases of this one? remove?
             MLPClassifier: params_MLPClassifier_tpot,
-             
-            
         }

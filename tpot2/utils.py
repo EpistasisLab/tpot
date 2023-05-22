@@ -73,7 +73,7 @@ def is_pareto_efficient(scores, return_mask = True):
     n_points = scores.shape[0]
     next_point_index = 0  # Next index in the is_efficient array to search for
     while next_point_index<len(scores):
-        nondominated_point_mask = np.any(scores<scores[next_point_index], axis=1)
+        nondominated_point_mask = np.any(scores>scores[next_point_index], axis=1)
         nondominated_point_mask[next_point_index] = True
         is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
         scores = scores[nondominated_point_mask]
@@ -96,7 +96,9 @@ def get_pareto_frontier(df, column_names, weights, invalid_values=["TIMEOUT","IN
     indexes = dftmp[~dftmp[column_names].isna().any(axis=1)].index.values
     weighted_scores = df.loc[indexes][column_names].to_numpy()  * weights
     mask = is_pareto_efficient(weighted_scores, return_mask = True)
+    df["Pareto_Front"] = np.nan
     df.loc[indexes[mask], "Pareto_Front"] = 0
+    
 
 
 def get_pareto_front(df, column_names, weights, invalid_values=["TIMEOUT","INVALID"]):
