@@ -96,7 +96,7 @@ def get_pareto_frontier(df, column_names, weights, invalid_values=["TIMEOUT","IN
     indexes = dftmp[~dftmp[column_names].isna().any(axis=1)].index.values
     weighted_scores = df.loc[indexes][column_names].to_numpy()  * weights
     mask = is_pareto_efficient(weighted_scores, return_mask = True)
-    df["Pareto_Front"] = np.nan
+    df["Pareto_Front"] = np.nan #TODO this will get deprecated
     df.loc[indexes[mask], "Pareto_Front"] = 0
     
 
