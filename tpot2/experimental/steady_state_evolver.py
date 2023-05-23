@@ -89,8 +89,6 @@ class SteadyStateEvolver():
         self.verbose  = verbose  
         self.callback = callback 
         self.n_jobs = n_jobs
-
-
         
         if max_time_seconds is None:
             self.max_time_seconds = float("inf")
@@ -178,8 +176,6 @@ class SteadyStateEvolver():
             initial_population = [next(self.individual_generator) for _ in range(self.initial_population_size)]
             self.population.add_to_population(initial_population)
 
-
-        tpot2.set_dask_settings()
 
     def optimize(self):
 
@@ -331,23 +327,29 @@ class SteadyStateEvolver():
                     parents_df = parents_df[~parents_df[self.objective_names].isna().any(axis=1)]
 
                     cur_evaluated_population = parents_df["Individual"].to_numpy()
-                    scores = parents_df[self.objective_names].to_numpy()
-                    weighted_scores = scores * self.objective_function_weights
-                    #number of crossover pairs and mutation only parent to generate
+                    if len(cur_evaluated_population) > 0:
+                        scores = parents_df[self.objective_names].to_numpy()
+                        weighted_scores = scores * self.objective_function_weights
+                        #number of crossover pairs and mutation only parent to generate
 
-                    if len(parents_df) < 2:
-                        var_ops = ["mutate" for _ in range(n_individuals_to_submit)]
-                    else:
-                        var_ops = [np.random.choice(["crossover","mutate_then_crossover","crossover_then_mutate",'mutate']) for _ in range(n_individuals_to_submit)]
-                    
-                    parents = []
-                    for op in var_ops:
-                        if op == "mutate":
-                            parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=1,  )])
+                        if len(parents_df) < 2:
+                            var_ops = ["mutate" for _ in range(n_individuals_to_submit)]
                         else:
-                            parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=2,  )])
+                            var_ops = [np.random.choice(["crossover","mutate_then_crossover","crossover_then_mutate",'mutate']) for _ in range(n_individuals_to_submit)]
+                        
+                        parents = []
+                        for op in var_ops:
+                            if op == "mutate":
+                                parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=1,  )])
+                            else:
+                                parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=2,  )])
 
-                    offspring = self.population.create_offspring(parents, var_ops, n_jobs=self.n_jobs)
+                        offspring = self.population.create_offspring(parents, var_ops, n_jobs=self.n_jobs)
+
+                    if len(cur_evaluated_population) == 0 and len(submitted_futures) < self.max_queue_size:
+                        n_individuals_to_create = self.max_queue_size - len(submitted_futures)
+                        initial_population = [next(self.individual_generator) for _ in range(n_individuals_to_create)]
+                        self.population.add_to_population(initial_population)
 
                 individuals_to_evaluate = self.get_unevaluated_individuals(self.objective_names, budget=budget,)
                 individuals_to_evaluate = [ind for ind in individuals_to_evaluate if ind.unique_id() not in submitted_inds]
