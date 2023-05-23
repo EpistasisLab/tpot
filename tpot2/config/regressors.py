@@ -54,26 +54,13 @@ def params_SGDRegressor(trial, name=None):
     }
     return params
 
-
-
-
-# Linear Regression parameters
-def params_LinearRegression(trial, name=None):
-    params = {
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
-        'normalize': trial.suggest_categorical(f'normalize_{name}', [True, False]),
-        'copy_X': trial.suggest_categorical(f'copy_X_{name}', [True, False]),
-        # 'positive': trial.suggest_categorical(f'positive_{name}', [True, False]),
-    }
-    return params
-
 # Ridge parameters
 def params_Ridge(trial, name=None):
     params = {
         'alpha': trial.suggest_float(f'alpha_{name}', 0.0, 1.0),
         'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
 
-        'copy_X': trial.suggest_categorical(f'copy_X_{name}', [True, False]),
+
         #'max_iter': trial.suggest_int(f'max_iter_{name}', 100, 1000),
         'tol': trial.suggest_float(f'tol_{name}', 1e-5, 1e-1, log=True),
         'solver': trial.suggest_categorical(f'solver_{name}', ['auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga']),
@@ -88,10 +75,10 @@ def params_Lasso(trial, name=None):
         'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
         # 'normalize': trial.suggest_categorical(f'normalize_{name}', [True, False]),
         'precompute': trial.suggest_categorical(f'precompute_{name}', [True, False, 'auto']),
-        'copy_X': trial.suggest_categorical(f'copy_X_{name}', [True, False]),
+
         #'max_iter': trial.suggest_int(f'max_iter_{name}', 100, 1000),
         'tol': trial.suggest_float(f'tol_{name}', 1e-5, 1e-1, log=True),
-        'warm_start': trial.suggest_categorical(f'warm_start_{name}', [True, False]),
+
         'positive': trial.suggest_categorical(f'positive_{name}', [True, False]),
         'selection': trial.suggest_categorical(f'selection_{name}', ['cyclic', 'random']),
     }

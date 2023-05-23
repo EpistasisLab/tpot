@@ -237,14 +237,25 @@ class SteadyStateEvolver():
                 count = 0
                 for completed_future in dask.distributed.as_completed(list(submitted_futures.keys())):
                     #get scores and update
-                    if not future.done():
+                    if not completed_future.done():
                         print("This shouldnt happen?")
-                    if future.exception() or future.status == "error":
+                        print(completed_future)
+                    if completed_future.exception() or completed_future.status == "error":
                         print("Exception in future")
-                        print(future.exception())
+                        print(completed_future.exception())
                         scores = ["INVALID" for _ in range(len(self.objective_names))]
                     else:
-                        scores = completed_future.result()
+                        try:
+                            scores = completed_future.result()
+                        except Exception as e:
+                            print("Exception in future, but not caught by dask")
+                            print(e)
+                            print(completed_future.exception())
+                            print(completed_future)
+                            print("status", completed_future.status)
+                            print("done", completed_future.done())
+                            print("cancelld ", completed_future.cancelled())
+                            scores = ["INVALID" for _ in range(len(self.objective_names))]
 
                     #update population
                     this_individual = submitted_futures[completed_future]["individual"]
