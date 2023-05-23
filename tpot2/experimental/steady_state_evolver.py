@@ -179,6 +179,7 @@ class SteadyStateEvolver():
             self.population.add_to_population(initial_population)
 
 
+        tpot2.set_dask_settings()
 
     def optimize(self):
 
@@ -240,7 +241,9 @@ class SteadyStateEvolver():
                 count = 0
                 for completed_future in dask.distributed.as_completed(list(submitted_futures.keys())):
                     #get scores and update
-                    if future.exception():
+                    if not future.done():
+                        print("This shouldnt happen?")
+                    if future.exception() or future.status == "error":
                         print("Exception in future")
                         print(future.exception())
                         scores = ["INVALID" for _ in range(len(self.objective_names))]
@@ -378,8 +381,8 @@ class SteadyStateEvolver():
             if self.verbose >= 3:
                 print("KeyboardInterrupt")
             
-            self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="INVALID")
-            self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
+        self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="INVALID")
+        self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
 
 
         #done, cleanup futures
