@@ -370,13 +370,12 @@ class SteadyStateEvolver():
                 #check if done
                 #if we evaluated enough individuals or time is up, stop
                 if self.max_time_seconds is not None and time.time() - start_time > self.max_time_seconds:
-                    print("BAR!")
                     if self.verbose >= 3:
                         print("Time limit reached")
                     done = True
                 
                 if len(self.population.evaluated_individuals.dropna(subset=self.objective_names)) >= self.max_evaluated_individuals:
-                    print("FOO!")
+                    print("Evaluated enough individuals")
                     done = True
 
         except KeyboardInterrupt:
