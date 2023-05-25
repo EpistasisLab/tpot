@@ -3,7 +3,7 @@ name: Docs Build
 on:
   push:
     branches:
-      - mkdocs_no_exec
+      - main
 
 jobs:
   build_docs:
