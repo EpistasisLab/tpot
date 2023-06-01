@@ -1,9 +1,9 @@
 # Release Notes
 
 ## Version 0.12.0
--Fix numpy compatibility
--Dask optimizations
--Minor bug fixes
+- Fix numpy compatibility
+- Dask optimizations
+- Minor bug fixes
 
 ## Version 0.11.7
 
