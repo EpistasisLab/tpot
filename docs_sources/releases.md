@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 0.12.0
+-Fix numpy compatibility
+-Dask optimizations
+-Minor bug fixes
+
 ## Version 0.11.7
 
 - Fix compatibility issue with scikit-learn 0.24 and xgboost 1.3.0
