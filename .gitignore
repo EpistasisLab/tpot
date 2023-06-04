@@ -10,3 +10,5 @@ dask-worker-space/
 .tox/
 *.egg-info/
 .coverage
+target/
+.venv/

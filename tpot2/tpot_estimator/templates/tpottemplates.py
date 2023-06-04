@@ -73,6 +73,9 @@ class TPOTRegressor(TPOTEstimator):
                         optuna_optimize_pareto_front_timeout = 60*10,
                         optuna_storage = "sqlite:///optuna.db",
         ):
+        """
+        See TPOTEstimator for documentation
+        """
         super(TPOTRegressor,self).__init__(
             scorers=scorers, 
             scorers_weights=scorers_weights,
@@ -211,6 +214,9 @@ class TPOTClassifier(TPOTEstimator):
                         optuna_optimize_pareto_front_timeout = 60*10,
                         optuna_storage = "sqlite:///optuna.db",
         ):
+        """
+        See TPOTEstimator for documentation
+        """
         super(TPOTClassifier,self).__init__(
                         scorers=scorers, 
             scorers_weights=scorers_weights,
