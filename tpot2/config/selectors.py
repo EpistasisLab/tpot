@@ -32,32 +32,32 @@ def params_sklearn_feature_selection_VarianceThreshold(trial, name=None):
     
 
 #TODO add more estimator options? How will that interact with optuna?
-# def params_sklearn_feature_selection_RFE(trial, name=None, classifier=True):
-#     if classifier:
-#         estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, name=f"RFE_{name}"))
-#     else:
-#         estimator = ExtraTreesRegressor(**params_ExtraTreesRegressor(trial, name=f"RFE_{name}"))
+def params_sklearn_feature_selection_RFE(trial, name=None, classifier=True):
+    if classifier:
+        estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, name=f"RFE_{name}"))
+    else:
+        estimator = ExtraTreesRegressor(**params_ExtraTreesRegressor(trial, name=f"RFE_{name}"))
     
-#     params = {
-#             'step': trial.suggest_float(f'step_{name}', 1e-4, 1.0, log=False),
-#             'estimator' : estimator,
-#             }
+    params = {
+            'step': trial.suggest_float(f'step_{name}', 1e-4, 1.0, log=False),
+            'estimator' : estimator,
+            }
 
-#     return params
+    return params
 
 
-# def params_sklearn_feature_selection_SelectFromModel(trial, name=None, classifier=True):
-#     if classifier:
-#         estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, name=f"SFM_{name}"))
-#     else:
-#         estimator = ExtraTreesRegressor(**params_ExtraTreesRegressor(trial, name=f"SFM_{name}"))
+def params_sklearn_feature_selection_SelectFromModel(trial, name=None, classifier=True):
+    if classifier:
+        estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, name=f"SFM_{name}"))
+    else:
+        estimator = ExtraTreesRegressor(**params_ExtraTreesRegressor(trial, name=f"SFM_{name}"))
     
-#     params = {
-#             'threshold': trial.suggest_float(f'threshold_{name}', 1e-4, 1.0, log=True),
-#             'estimator' : estimator,
-#             }
+    params = {
+            'threshold': trial.suggest_float(f'threshold_{name}', 1e-4, 1.0, log=True),
+            'estimator' : estimator,
+            }
 
-#     return params
+    return params
 
 
 

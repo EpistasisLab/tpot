@@ -11,3 +11,5 @@ try:
     from .mdr_configs import make_skrebate_config_dictionary, make_MDR_config_dictionary, make_ContinuousMDR_config_dictionary
 except: #if optional packages are not installed
     pass
+
+from .classifiers import *
