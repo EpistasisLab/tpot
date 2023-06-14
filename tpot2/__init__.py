@@ -6,7 +6,7 @@ from .graphsklearn import *
 from .individual import *
 from .logbook import *
 from .population import *
-from .base_evolver import *
+from .evolvers import *
 from .objectives import *
 from .evolutionary_algorithms import *
 from .tpot_estimator import *
@@ -15,6 +15,7 @@ from .config import *
 from .representations import *
 from .parent_selectors import *
 from .utils import *
-from .complexity_objective import *
+from .objectives import *
 from .optuna_optimize import *
 from .experimental import *
+from .eval_utils import *

@@ -70,11 +70,6 @@ class BaseEvolver():
                     evaluation_early_stop_steps = None, 
                     final_score_strategy = "mean",
 
-                    n_initial_optimizations = 0,
-                    optimization_objective = None,
-                    max_optimize_time_seconds = 60*5,
-                    optimization_steps = 5,
-
                     verbose = 0, 
                     periodic_checkpoint_folder = None,
                     callback: tpot2.CallBackInterface = None,
@@ -172,14 +167,6 @@ class BaseEvolver():
             The strategy to use when determining the final score for an individual.
             "mean": The mean of all objective scores
             "last": The score returned by the last call. Currently each objective is evaluated with a clone of the individual.
-        n_initial_optimizations : int, default=0
-            Number of individuals to optimize before starting the evolution.
-        optimization_objective : function, default=None
-            Function to optimize the individual with. If None, the first objective function will be used
-        max_optimize_time_seconds : float, default=60*5
-            Maximum time to run an optimization
-        optimization_steps : int, default=10
-            Number of steps per optimization
         verbose : int, default=0
             How much information to print during the optimization process. Higher values include the information from lower values.
             0. nothing
@@ -240,10 +227,7 @@ class BaseEvolver():
             self.max_eval_time_seconds = max_eval_time_seconds
 
         
-        self.n_initial_optimizations  = n_initial_optimizations  
-        self.optimization_objective  = optimization_objective  
-        self.max_optimize_time_seconds = max_optimize_time_seconds 
-        self.optimization_steps = optimization_steps 
+
         
         self.generation = 0
 
@@ -366,8 +350,7 @@ class BaseEvolver():
             self._client = Client(self._cluster)
         
 
-        if self.n_initial_optimizations > 0:
-            self.optimize_population()
+
         if generations is None:
             generations = self.generations
 
@@ -552,12 +535,7 @@ class BaseEvolver():
 
 
     
-    def optimize_population(self,):
-        individuals_to_optimize = [copy.deepcopy(ind) for ind in self.population.population[0:self.n_initial_optimizations]]
-        tpot2.objectives.parallel_optimize_objective(individuals_to_optimize, self.optimization_objective, self.n_jobs, verbose=self.verbose, timeout=self.max_optimize_time_seconds)
-        self.population.set_population(individuals_to_optimize)
-        #self.population.update_log_list(individuals_to_optimize, scores, column_name="scores")
-        #self.population.remove_invalid_from_population(column_name="scores")
+
 
     # Gets a list of unevaluated individuals in the livepopulation, evaluates them, and removes failed attempts
     # TODO This could probably be an independent function?
@@ -589,7 +567,7 @@ class BaseEvolver():
             upper = self.cur_population_size*self.selection_evaluation_early_stop[1]
             #survival_counts = self.cur_population_size*(scipy.special.betainc(1,self.selection_evaluation_scaling,np.linspace(0,1,self.evaluation_early_stop_steps))*(upper-lower)+lower)
             
-            survival_counts = beta_interpolation(start=lower, end=upper, scale=self.selection_evaluation_scaling, n=self.evaluation_early_stop_steps, n_steps=self.evaluation_early_stop_steps)
+            survival_counts = np.array(beta_interpolation(start=lower, end=upper, scale=self.selection_evaluation_scaling, n=self.evaluation_early_stop_steps, n_steps=self.evaluation_early_stop_steps))
             self.survival_counts = survival_counts.astype(int)
         else:
             self.survival_counts = None
@@ -631,7 +609,7 @@ class BaseEvolver():
         parallel_timeout = min(theoretical_timeout, scheduled_timeout_time_left)
         if parallel_timeout < 0:
             parallel_timeout = 10
-        scores = tpot2.objectives.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
+        scores = tpot2.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
 
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
@@ -692,7 +670,7 @@ class BaseEvolver():
                 continue
             
             if self.max_eval_time_seconds is not None:
-                theoretical_timeout = self.max_eval_time_seconds * math.ceil(len(individuals_to_evaluate) / self.n_jobs)
+                theoretical_timeout = self.max_eval_time_seconds * math.ceil(len(unevaluated_individuals_this_step) / self.n_jobs)
                 theoretical_timeout = theoretical_timeout*2
             else:
                 theoretical_timeout = np.inf
@@ -701,7 +679,7 @@ class BaseEvolver():
             if parallel_timeout < 0:
                 parallel_timeout = 10
 
-            scores = tpot2.objectives.parallel_eval_objective_list(individual_list=unevaluated_individuals_this_step,
+            scores = tpot2.eval_utils.parallel_eval_objective_list(individual_list=unevaluated_individuals_this_step,
                                     objective_list=self.objective_functions,
                                     n_jobs = self.n_jobs,
                                     verbose=self.verbose,

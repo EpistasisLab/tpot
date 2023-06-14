@@ -39,6 +39,7 @@ def params_LogisticRegression(trial, name=None):
                   'l1_ratio': params['l1_ratio'],
                   'C': params['C'],
                   'n_jobs': 1,
+                  'max_iter': 1000,
                   }
     return param_grid
 
