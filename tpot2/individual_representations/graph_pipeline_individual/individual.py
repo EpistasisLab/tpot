@@ -14,6 +14,7 @@ from .graph_utils import graph_utils
 import itertools
 import baikal
 import copy
+from .. import BaseIndividual
 
 class NodeLabel():
     def __init__(self, *,
@@ -67,7 +68,7 @@ def node_match(n1,n2, matched_labels):
     return all( [ n1[m] == n2[m] for m in matched_labels])
 
 
-class GraphIndividual(tpot2.BaseIndividual):
+class GraphIndividual(BaseIndividual):
     '''
     An individual that contains a template for a graph sklearn pipeline. 
 

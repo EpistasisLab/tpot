@@ -1,19 +1,15 @@
 from sklearn.base import BaseEstimator
 from sklearn.utils.metaestimators import available_if
 import numpy as np
-import typing
 import sklearn.metrics
-import tpot2.objectives.estimator_objective_functions
-from functools import partial
 import tpot2.config
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
-from tpot2.parent_selectors import survival_select_NSGA2, TournamentSelection_Dominated
+from sklearn.utils.validation import check_is_fitted
+from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 from sklearn.preprocessing import LabelEncoder 
-from sklearn.utils.multiclass import unique_labels 
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import tpot2
-import distributed
 from dask.distributed import Client
 from dask.distributed import LocalCluster
 import math
@@ -26,7 +22,7 @@ def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
     cfg.set({'distributed.scheduler.allowed-failures':1})
 
-EVOLVERS = {"nsga2":tpot2.BaseEvolver}
+
 
 
 #TODO inherit from _BaseComposition?
@@ -35,8 +31,8 @@ class TPOTEstimator(BaseEstimator):
                         scorers_weights,
                         classification,
                         cv = 5,
-                        other_objective_functions=[tpot2.objectives.estimator_objective_functions.average_path_length_objective], #tpot2.objectives.estimator_objective_functions.number_of_nodes_objective],
-                        other_objective_functions_weights = [-1],
+                        other_objective_functions=[],
+                        other_objective_functions_weights = [],
                         objective_function_names = None,
                         bigger_is_better = True,
                         max_size = np.inf, 
@@ -77,7 +73,7 @@ class TPOTEstimator(BaseEstimator):
                         crossover_then_mutate_probability=.05,
                         n_parents = 2,
                         survival_selector = survival_select_NSGA2,
-                        parent_selector = TournamentSelection_Dominated,
+                        parent_selector = tournament_selection_dominated,
                         
                         #budget parameters
                         budget_range = None,
@@ -101,7 +97,7 @@ class TPOTEstimator(BaseEstimator):
                         warm_start = False,
                         subset_column = None,
                         periodic_checkpoint_folder = None, 
-                        callback: tpot2.CallBackInterface = None,
+                        callback = None,
                         
                         verbose = 0,
                         scatter = True,

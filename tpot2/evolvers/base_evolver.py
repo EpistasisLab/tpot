@@ -4,7 +4,7 @@ from abc import abstractmethod
 import tpot2
 import typing
 import tqdm
-from tpot2.individual import BaseIndividual
+from tpot2.individual_representations.individual import BaseIndividual
 import time
 import numpy as np
 import copy
@@ -16,7 +16,7 @@ from tqdm.dask import TqdmCallback
 import distributed
 from dask.distributed import Client
 from dask.distributed import LocalCluster
-from tpot2.parent_selectors import survival_select_NSGA2, TournamentSelection_Dominated
+from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 import math
 from tpot2.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
 
@@ -55,7 +55,7 @@ class BaseEvolver():
                     n_parents=2,
 
                     survival_selector = survival_select_NSGA2,
-                    parent_selector = TournamentSelection_Dominated,
+                    parent_selector = tournament_selection_dominated,
                     
                     budget_range = None, 
                     budget_scaling = .5, 
@@ -72,7 +72,7 @@ class BaseEvolver():
 
                     verbose = 0, 
                     periodic_checkpoint_folder = None,
-                    callback: tpot2.CallBackInterface = None,
+                    callback = None,
                     ) -> None:
         """
         Uses mutation, crossover, and optimization functions to evolve a population of individuals towards the given objective functions.

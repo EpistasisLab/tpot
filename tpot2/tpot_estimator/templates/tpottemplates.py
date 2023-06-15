@@ -2,7 +2,7 @@ import tpot2
 import numpy as np
 from ..estimator import TPOTEstimator
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
-from tpot2.parent_selectors import survival_select_NSGA2, TournamentSelection_Dominated
+from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 #TODO These do not follow sklearn conventions of __init__
 
 class TPOTRegressor(TPOTEstimator):

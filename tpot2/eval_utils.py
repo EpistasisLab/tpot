@@ -6,7 +6,7 @@ import traceback
 from collections.abc import Iterable
 import warnings
 from stopit import threading_timeoutable, TimeoutException
-from tpot2.parent_selectors import survival_select_NSGA2
+from tpot2.tpot2.selectors.parent_selectors import survival_select_NSGA2
 import time
 import dask
 import stopit

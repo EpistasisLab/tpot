@@ -1,4 +1,4 @@
-from tpot2.representations.graph_pipeline_individual.individual import *
+from tpot2.individual_representations.graph_pipeline_individual.individual import *
 import optuna
 import numpy as np
 import copy

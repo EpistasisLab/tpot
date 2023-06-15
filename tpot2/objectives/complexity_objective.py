@@ -1,4 +1,5 @@
 from tpot2 import GraphPipeline
+
 from sklearn.linear_model import SGDClassifier
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
@@ -155,6 +156,6 @@ def calculate_model_complexity(est):
         return 1
 
 
-def model_complexity_scorer(est, X, y):
+def complexity_scorer(est, X, y):
     return calculate_model_complexity(est)
 
