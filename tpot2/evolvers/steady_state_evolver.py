@@ -339,17 +339,17 @@ class SteadyStateEvolver():
                                 print("Early stop")
                             break
 
-                    #if we evaluated enough individuals or time is up, stop
-                    if self.max_time_seconds is not None and time.time() - start_time > self.max_time_seconds:
-                        if self.verbose >= 3:
-                            print("Time limit reached")
-                        done = True
-                        break
-                    
-                    if len(self.population.evaluated_individuals.dropna(subset=self.objective_names)) >= self.max_evaluated_individuals:
-                        print("Evaluated enough individuals")
-                        done = True
-                        break
+                #if we evaluated enough individuals or time is up, stop
+                if self.max_time_seconds is not None and time.time() - start_time > self.max_time_seconds:
+                    if self.verbose >= 3:
+                        print("Time limit reached")
+                    done = True
+                    break
+                
+                if len(self.population.evaluated_individuals.dropna(subset=self.objective_names)) >= self.max_evaluated_individuals:
+                    print("Evaluated enough individuals")
+                    done = True
+                    break
 
                 ###############################
                 # Step 3: Submit unevaluated individuals from the initial population

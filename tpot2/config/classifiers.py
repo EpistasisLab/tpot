@@ -236,7 +236,6 @@ def params_MultinomialNB(trial, name=None):
 def make_classifier_config_dictionary(n_samples=10, n_classes=None):
     n_samples = min(n_samples,100) #TODO optimize this
 
-
     return {
             LogisticRegression: params_LogisticRegression,
             DecisionTreeClassifier: params_DecisionTreeClassifier,
@@ -254,3 +253,4 @@ def make_classifier_config_dictionary(n_samples=10, n_classes=None):
             #: params_LGBMClassifier, # logistic regression and SVM/SVC are just special cases of this one? remove?
             MLPClassifier: params_MLPClassifier_tpot,
         }
+
