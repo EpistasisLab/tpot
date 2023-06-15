@@ -18,7 +18,7 @@ from dask.distributed import Client
 from dask.distributed import LocalCluster
 from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 import math
-from tpot2.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
+from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
 import dask
 
 class SteadyStateEvolver():
@@ -227,7 +227,7 @@ class SteadyStateEvolver():
             for individual in individuals_to_evaluate:
                 if len(submitted_futures) >= self.max_queue_size:
                     break
-                future = self._client.submit(tpot2.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
+                future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
                 
                 submitted_futures[future] = {"individual": individual,
                                             "time": time.time(),
@@ -358,7 +358,7 @@ class SteadyStateEvolver():
                 individuals_to_evaluate = [ind for ind in individuals_to_evaluate if ind.unique_id() not in submitted_inds]
                 for individual in individuals_to_evaluate:
                     if self.max_queue_size > len(submitted_futures):
-                        future = self._client.submit(tpot2.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
+                        future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
                         
                         submitted_futures[future] = {"individual": individual,
                                                     "time": time.time(),
@@ -443,7 +443,7 @@ class SteadyStateEvolver():
                 individuals_to_evaluate = [ind for ind in individuals_to_evaluate if ind.unique_id() not in submitted_inds]
                 for individual in individuals_to_evaluate:
                     if self.max_queue_size > len(submitted_futures):
-                        future = self._client.submit(tpot2.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
+                        future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
                         
                         submitted_futures[future] = {"individual": individual,
                                                     "time": time.time(),

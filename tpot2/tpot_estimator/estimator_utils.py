@@ -4,6 +4,8 @@ import sklearn.base
 import tpot2
 import pandas as pd
 
+from .cross_val_utils import cross_val_score_objective
+
 def convert_parents_tuples_to_integers(row, object_to_int):
     if type(row) == list or type(row) == np.ndarray or type(row) == tuple:
         return tuple(object_to_int[obj] for obj in row)
@@ -108,7 +110,7 @@ def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_fun
         x,y = remove_underrepresented_classes(x, y, n_splits)
 
     if len(scorers) > 0:
-        cv_obj_scores = tpot2.objectives.estimator_objective_functions.cross_val_score_objective(sklearn.base.clone(pipeline),x,y,scorers=scorers, cv=cv , fold=step)
+        cv_obj_scores = cross_val_score_objective(sklearn.base.clone(pipeline),x,y,scorers=scorers, cv=cv , fold=step)
     else:
         cv_obj_scores = []
     

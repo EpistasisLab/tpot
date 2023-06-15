@@ -18,7 +18,7 @@ from dask.distributed import Client
 from dask.distributed import LocalCluster
 from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 import math
-from tpot2.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
+from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
 
 
 class BaseEvolver():
@@ -609,7 +609,7 @@ class BaseEvolver():
         parallel_timeout = min(theoretical_timeout, scheduled_timeout_time_left)
         if parallel_timeout < 0:
             parallel_timeout = 10
-        scores = tpot2.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
+        scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
 
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
@@ -679,7 +679,7 @@ class BaseEvolver():
             if parallel_timeout < 0:
                 parallel_timeout = 10
 
-            scores = tpot2.eval_utils.parallel_eval_objective_list(individual_list=unevaluated_individuals_this_step,
+            scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individual_list=unevaluated_individuals_this_step,
                                     objective_list=self.objective_functions,
                                     n_jobs = self.n_jobs,
                                     verbose=self.verbose,

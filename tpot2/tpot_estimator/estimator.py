@@ -672,7 +672,7 @@ class TPOTEstimator(BaseEstimator):
                 **kwargs,
             )
 
-        self.individual_generator_instance = tpot2.estimator_graph_individual_generator(   
+        self.individual_generator_instance = tpot2.individual_representations.graph_pipeline_individual.estimator_graph_individual_generator(   
                                                             inner_config_dict=inner_config_dict,
                                                             root_config_dict=root_config_dict,
                                                             leaf_config_dict=leaf_config_dict,
@@ -746,8 +746,8 @@ class TPOTEstimator(BaseEstimator):
 
         if self.optuna_optimize_pareto_front:
             pareto_front_inds = self.pareto_front['Individual'].values
-            all_graphs, all_scores = tpot2.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, storage=self.optuna_storage, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, max_time_seconds=self.optuna_optimize_pareto_front_timeout, **{"X": X, "y": y})
-            all_scores = tpot2.process_scores(all_scores, len(self.objective_function_weights))
+            all_graphs, all_scores = tpot2.individual_representations.graph_pipeline_individual.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, storage=self.optuna_storage, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, max_time_seconds=self.optuna_optimize_pareto_front_timeout, **{"X": X, "y": y})
+            all_scores = tpot2.utils.eval_utils.process_scores(all_scores, len(self.objective_function_weights))
             
             if len(all_graphs) > 0:
                 df = pd.DataFrame(np.column_stack((all_graphs, all_scores,np.repeat("Optuna",len(all_graphs)))), columns=["Individual"] + self.objective_names +["Parents"])
@@ -799,7 +799,7 @@ class TPOTEstimator(BaseEstimator):
                                                                                                 )]
             
             objective_kwargs = {"X": X_future, "y": y_future}
-            val_scores = tpot2.objectives.parallel_eval_objective_list(
+            val_scores = tpot2.utils.eval_utils.parallel_eval_objective_list(
                 best_pareto_front,
                 val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
 
@@ -807,7 +807,7 @@ class TPOTEstimator(BaseEstimator):
             self.objective_names_for_selection = val_objective_names
             self.evaluated_individuals.loc[best_pareto_front_idx,val_objective_names] = val_scores
 
-            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
 
         elif validation_strategy == 'split':
 
@@ -851,14 +851,14 @@ class TPOTEstimator(BaseEstimator):
                                                         **kwargs,
                                                         )]
             
-            val_scores = tpot2.objectives.parallel_eval_objective_list(
+            val_scores = tpot2.utils.eval_utils.parallel_eval_objective_list(
                 best_pareto_front,
                 val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names),client=_client, **objective_kwargs)
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
             self.evaluated_individuals.loc[best_pareto_front_idx,val_objective_names] = val_scores
-            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
         else:
             self.objective_names_for_selection = self.objective_names
 

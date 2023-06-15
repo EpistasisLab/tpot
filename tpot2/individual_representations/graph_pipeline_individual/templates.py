@@ -30,7 +30,7 @@ def estimator_graph_individual_generator(
                 root = create_node(config_dict={k:root_config_dict[k]})
                 graph.add_node(root)
                 
-                ind = tpot2.GraphIndividual(    inner_config_dict=inner_config_dict,  
+                ind = GraphIndividual(    inner_config_dict=inner_config_dict,  
                                                     leaf_config_dict=leaf_config_dict,
                                                     root_config_dict=root_config_dict,
                                                     initial_graph = graph,
