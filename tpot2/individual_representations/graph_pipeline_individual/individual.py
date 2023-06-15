@@ -14,6 +14,7 @@ from .graph_utils import graph_utils
 import itertools
 import baikal
 import copy
+from .. import BaseIndividual
 
 class NodeLabel():
     def __init__(self, *,
@@ -21,11 +22,13 @@ class NodeLabel():
         #intialized, but may change later
             method_class = None, #transformer or baseestimator
             hyperparameters=None,
+            label=None,
     ):
 
         #intializable, but may change later
         self.method_class = method_class #transformer or baseestimator
         self.hyperparameters = hyperparameters
+        self.label = label
 
 from functools import partial
 #@https://stackoverflow.com/questions/20530455/isomorphic-comparison-of-networkx-graph-objects-instead-of-the-default-address
@@ -65,7 +68,7 @@ def node_match(n1,n2, matched_labels):
     return all( [ n1[m] == n2[m] for m in matched_labels])
 
 
-class GraphIndividual(tpot2.BaseIndividual):
+class GraphIndividual(BaseIndividual):
     '''
     An individual that contains a template for a graph sklearn pipeline. 
 
@@ -1094,7 +1097,14 @@ class GraphIndividual(tpot2.BaseIndividual):
 
         return self.key
 
-
+    def full_node_list(self):
+        node_list = list(self.graph.nodes)
+        for node in node_list:
+            if isinstance(node, GraphIndividual):
+                node_list.pop(node_list.index(node))
+                node_list.extend(node.graph.nodes)
+        return node_list
+                
 
 
 

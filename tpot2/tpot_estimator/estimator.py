@@ -1,24 +1,27 @@
 from sklearn.base import BaseEstimator
 from sklearn.utils.metaestimators import available_if
 import numpy as np
-import typing
 import sklearn.metrics
-import tpot2.estimator_objective_functions
-from functools import partial
 import tpot2.config
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
-from tpot2.parent_selectors import survival_select_NSGA2, TournamentSelection_Dominated
+from sklearn.utils.validation import check_is_fitted
+from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 from sklearn.preprocessing import LabelEncoder 
-from sklearn.utils.multiclass import unique_labels 
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import tpot2
-import distributed
 from dask.distributed import Client
 from dask.distributed import LocalCluster
 import math
+from .estimator_utils import *
 
-EVOLVERS = {"nsga2":tpot2.BaseEvolver}
+from dask import config as cfg
+
+
+def set_dask_settings():
+    cfg.set({'distributed.scheduler.worker-ttl': None})
+    cfg.set({'distributed.scheduler.allowed-failures':1})
+
 
 
 
@@ -28,8 +31,8 @@ class TPOTEstimator(BaseEstimator):
                         scorers_weights,
                         classification,
                         cv = 5,
-                        other_objective_functions=[tpot2.estimator_objective_functions.average_path_length_objective], #tpot2.estimator_objective_functions.number_of_nodes_objective],
-                        other_objective_functions_weights = [-1],
+                        other_objective_functions=[],
+                        other_objective_functions_weights = [],
                         objective_function_names = None,
                         bigger_is_better = True,
                         max_size = np.inf, 
@@ -41,49 +44,64 @@ class TPOTEstimator(BaseEstimator):
                         categorical_features = None,
                         subsets = None,
                         memory = None,
-                        preprocessing = False,  
-                        validation_strategy = "none",
-                        validation_fraction = .2,
+                        preprocessing = False,
                         population_size = 50,
                         initial_population_size = None,
                         population_scaling = .5, 
                         generations_until_end_population = 1,  
                         generations = 50,
+                        max_time_seconds=float('inf'), 
+                        max_eval_time_seconds=60*10, 
+                        validation_strategy = "none",
+                        validation_fraction = .2,
+                        
+                        #early stopping parameters 
                         early_stop = None,
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol =None,
-                        max_time_seconds=float('inf'), 
-                        max_eval_time_seconds=60*10, 
-                        n_jobs=1,
-                        memory_limit = "4GB",
-                        client = None,
+                        threshold_evaluation_early_stop = None, 
+                        threshold_evaluation_scaling = .5,
+                        selection_evaluation_early_stop = None, 
+                        selection_evaluation_scaling = .5, 
+                        min_history_threshold = 20,
+                        
+                        #evolver parameters
                         survival_percentage = 1,
                         crossover_probability=.2,
                         mutate_probability=.7,
                         mutate_then_crossover_probability=.05,
                         crossover_then_mutate_probability=.05,
+                        n_parents = 2,
                         survival_selector = survival_select_NSGA2,
-                        parent_selector = TournamentSelection_Dominated,
+                        parent_selector = tournament_selection_dominated,
+                        
+                        #budget parameters
                         budget_range = None,
                         budget_scaling = .5,
                         generations_until_end_budget = 1,  
                         stepwise_steps = 5,
-                        threshold_evaluation_early_stop = None, 
-                        threshold_evaluation_scaling = .5,
-                        min_history_threshold = 20,
-                        selection_evaluation_early_stop = None, 
-                        selection_evaluation_scaling = .5, 
-                        n_initial_optimizations = 0,
-                        optimization_cv = 3,
-                        max_optimize_time_seconds=60*20,
-                        optimization_steps = 10,
+                        
+
+                        optuna_optimize_pareto_front = False,
+                        optuna_optimize_pareto_front_trials = 100,
+                        optuna_optimize_pareto_front_timeout = 60*10,
+                        optuna_storage = "sqlite:///optuna.db",
+                        
+                        #dask parameters
+                        n_jobs=1,
+                        memory_limit = "4GB",
+                        client = None,
+                        processes = True,
+                        
+                        #debugging and logging parameters
                         warm_start = False,
                         subset_column = None,
-                        evolver = "nsga2",
-                        verbose = 0,
                         periodic_checkpoint_folder = None, 
-                        callback: tpot2.CallBackInterface = None,
-                        processes = True,
+                        callback = None,
+                        
+                        verbose = 0,
+                        scatter = True,
+
                         ):
                         
         '''
@@ -108,7 +126,7 @@ class TPOTEstimator(BaseEstimator):
             - (sklearn.model_selection.BaseCrossValidator): A cross-validator to use in the cross-validation process.
                 - max_depth (int): The maximum depth from any node to the root of the pipelines to be generated.
         
-        other_objective_functions : list, default=[tpot2.estimator_objective_functions.average_path_length_objective]
+        other_objective_functions : list, default=[tpot2.objectives.estimator_objective_functions.average_path_length_objective]
             A list of other objective functions to apply to the pipeline.
         
         other_objective_functions_weights : list, default=[-1]
@@ -226,16 +244,6 @@ class TPOTEstimator(BaseEstimator):
             A pipeline that will be used to preprocess the data before CV.
             - bool : If True, will use a default preprocessing pipeline.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
-              
-        validation_strategy : str, default='none'
-            EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT2 may overfit the cross validation score. A second validation set can be used to select the final pipeline.
-            - 'auto' : Automatically determine the validation strategy based on the dataset shape.
-            - 'reshuffled' : Use the same data for cross validation and final validation, but with different splits for the folds. This is the default for small datasets. 
-            - 'split' : Use a separate validation set for final validation. Data will be split according to validation_fraction. This is the default for medium datasets. 
-            - 'none' : Do not use a separate validation set for final validation. Select based on the original cross-validation score. This is the default for large datasets.
-
-        validation_fraction : float, default=0.2
-          EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
         
         population_size : int, default=50
             Size of the population
@@ -251,6 +259,22 @@ class TPOTEstimator(BaseEstimator):
         
         generations : int, default=50
             Number of generations to run
+            
+        max_time_seconds : float, default=float("inf")
+            Maximum time to run the optimization. If none or inf, will run until the end of the generations.
+        
+        max_eval_time_seconds : float, default=60*5
+            Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
+            
+        validation_strategy : str, default='none'
+            EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT2 may overfit the cross validation score. A second validation set can be used to select the final pipeline.
+            - 'auto' : Automatically determine the validation strategy based on the dataset shape.
+            - 'reshuffled' : Use the same data for cross validation and final validation, but with different splits for the folds. This is the default for small datasets. 
+            - 'split' : Use a separate validation set for final validation. Data will be split according to validation_fraction. This is the default for medium datasets. 
+            - 'none' : Do not use a separate validation set for final validation. Select based on the original cross-validation score. This is the default for large datasets.
+
+        validation_fraction : float, default=0.2
+          EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
         
         early_stop : int, default=None
             Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
@@ -269,20 +293,29 @@ class TPOTEstimator(BaseEstimator):
             -int 
                 If an int is given, it will be used as the tolerance for all objectives
     
-        max_time_seconds : float, default=float("inf")
-            Maximum time to run the optimization. If none or inf, will run until the end of the generations.
+        threshold_evaluation_early_stop : list [start, end], default=None
+            starting and ending percentile to use as a threshold for the evaluation early stopping.
+            Values between 0 and 100.
         
-        max_eval_time_seconds : float, default=60*5
-            Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
+        threshold_evaluation_scaling : float [0,inf), default=0.5
+            A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
+            Must be greater than zero. Higher numbers will move the threshold to the end faster.
         
-        n_jobs : int, default=1
-            Number of processes to run in parallel.
+        selection_evaluation_early_stop : list, default=None
+            A lower and upper percent of the population size to select each round of CV.
+            Values between 0 and 1.
         
-        memory_limit : str, default="4GB"
-            Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
+        selection_evaluation_scaling : float, default=0.5 
+            A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
+            Must be greater than zero. Higher numbers will move the threshold to the end faster.    
         
-        client : dask.distributed.Client, default=None
-            A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit. 
+        min_history_threshold : int, default=0
+            The minimum number of previous scores needed before using threshold early stopping.
+        
+        evolver : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver), default=eaNSGA2_Evolver
+            The evolver to use for the optimization process. See tpot2.evolutionary_algorithms
+            - type : an type or subclass of a BaseEvolver
+            - "nsga2" : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver
         
         survival_percentage : float, default=1
             Percentage of the population size to utilize for mutation and crossover at the beginning of the generation. The rest are discarded. Individuals are selected with the selector passed into survival_selector. The value of this parameter must be between 0 and 1, inclusive. 
@@ -322,48 +355,34 @@ class TPOTEstimator(BaseEstimator):
         stepwise_steps : int, default=1
             The number of staircase steps to take when scaling the budget and population size.
         
-        threshold_evaluation_early_stop : list [start, end], default=None
-            starting and ending percentile to use as a threshold for the evaluation early stopping.
-            Values between 0 and 100.
+            
+        n_jobs : int, default=1
+            Number of processes to run in parallel.
         
-        threshold_evaluation_scaling : float [0,inf), default=0.5
-            A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
-            Must be greater than zero. Higher numbers will move the threshold to the end faster.
+        memory_limit : str, default="4GB"
+            Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
         
-        min_history_threshold : int, default=0
-            The minimum number of previous scores needed before using threshold early stopping.
+        client : dask.distributed.Client, default=None
+            A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit. 
         
-        selection_evaluation_early_stop : list, default=None
-            A lower and upper percent of the population size to select each round of CV.
-            Values between 0 and 1.
-        
-        selection_evaluation_scaling : float, default=0.5 
-            A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
-            Must be greater than zero. Higher numbers will move the threshold to the end faster.
-        
-        n_initial_optimizations : int, default=0
-            Number of individuals to optimize before starting the evolution.
-        
-        optimization_cv : int 
-           Number of folds to use for the optuna optimization's internal cross-validation.
-        
-        max_optimize_time_seconds : float, default=60*5
-            Maximum time to run an optimization
-        
-        optimization_steps : int, default=10
-            Number of steps per optimization
+        processes : bool, default=True
+            If True, will use multiprocessing to parallelize the optimization process. If False, will use threading.
+            True seems to perform better. However, False is required for interactive debugging.
+            
           
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
          
         subset_column : str or int, default=None
             EXPERIMENTAL The column to use for the subset selection. Must also pass in unique_subset_values to GraphIndividual to function.
-         
-        evolver : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver), default=eaNSGA2_Evolver
-            The evolver to use for the optimization process. See tpot2.evolutionary_algorithms
-            - type : an type or subclass of a BaseEvolver
-            - "nsga2" : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver
         
+        periodic_checkpoint_folder : str, default=None
+            Folder to save the population to periodically. If None, no periodic saving will be done.
+            If provided, training will resume from this checkpoint.
+        
+        callback : tpot2.CallBackInterface, default=None
+            Callback object. Not implemented
+            
         verbose : int, default=1 
             How much information to print during the optimization process. Higher values include the information from lower values.
             0. nothing
@@ -374,16 +393,6 @@ class TPOTEstimator(BaseEstimator):
             >=5. full warnings trace
             6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
         
-        periodic_checkpoint_folder : str, default=None
-            Folder to save the population to periodically. If None, no periodic saving will be done.
-            If provided, training will resume from this checkpoint.
-        
-        callback : tpot2.CallBackInterface, default=None
-            Callback object. Not implemented
-
-        processes : bool, default=True
-            If True, will use multiprocessing to parallelize the optimization process. If False, will use threading.
-            True seems to perform better. However, False is required for interactive debugging.
             
         Attributes
         ----------
@@ -461,17 +470,20 @@ class TPOTEstimator(BaseEstimator):
         self.min_history_threshold = min_history_threshold
         self.selection_evaluation_early_stop = selection_evaluation_early_stop
         self.selection_evaluation_scaling =  selection_evaluation_scaling
-        self.n_initial_optimizations  = n_initial_optimizations  
-        self.optimization_cv  = optimization_cv
-        self.max_optimize_time_seconds = max_optimize_time_seconds 
-        self.optimization_steps = optimization_steps 
         self.warm_start = warm_start
         self.subset_column = subset_column
-        self.evolver = evolver
         self.verbose = verbose
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
         self.callback = callback
         self.processes = processes
+
+
+        self.scatter = scatter
+
+        self.optuna_optimize_pareto_front = optuna_optimize_pareto_front
+        self.optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials
+        self.optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout
+        self.optuna_storage = optuna_storage
 
         #Initialize other used params
 
@@ -492,13 +504,8 @@ class TPOTEstimator(BaseEstimator):
         self._scorers = [sklearn.metrics.get_scorer(scoring) for scoring in self._scorers]
         self._scorers_early_stop_tol = self.scorers_early_stop_tol
         
-        if isinstance(self.evolver, str):
-            self._evolver = EVOLVERS[self.evolver]
-        else:
-            self._evolver = self.evolver
+        self._evolver = tpot2.evolvers.BaseEvolver
         
-       
-
         self.objective_function_weights = [*scorers_weights, *other_objective_functions_weights]
         
 
@@ -523,6 +530,9 @@ class TPOTEstimator(BaseEstimator):
         
         self._evolver_instance = None
         self.evaluated_individuals = None
+
+
+        set_dask_settings()
 
 
     def fit(self, X, y):
@@ -567,6 +577,14 @@ class TPOTEstimator(BaseEstimator):
 
 
         X_original = X
+        y_original = y
+        if isinstance(self.cv, int) or isinstance(self.cv, float):
+            n_folds = self.cv
+        else:
+            n_folds = self.cv.n_splits
+
+        X, y = remove_underrepresented_classes(X, y, n_folds)
+        
         if self.preprocessing:
             #X = pd.DataFrame(X)
 
@@ -594,10 +612,7 @@ class TPOTEstimator(BaseEstimator):
 
         #Set up the configuation dictionaries and the search spaces
 
-        if isinstance(self.cv, int) or isinstance(self.cv, float):
-            n_folds = self.cv
-        else:
-            n_folds = self.cv.n_splits
+
 
         n_samples= int(math.floor(X.shape[0]/n_folds))
         n_features=X.shape[1]
@@ -619,15 +634,7 @@ class TPOTEstimator(BaseEstimator):
         inner_config_dict = get_configuration_dictionary(self.inner_config_dict, n_samples, n_features, self.classification,subsets=self.subsets, feature_names=self.feature_names)
         leaf_config_dict = get_configuration_dictionary(self.leaf_config_dict, n_samples, n_features, self.classification, subsets=self.subsets, feature_names=self.feature_names)
 
-        if self.n_initial_optimizations > 0:
-            #tmp = partial(tpot2.estimator_objective_functions.cross_val_score_objective,scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column )
-            # optuna_objective = lambda ind,  X=X, y=y , scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column: tpot2.estimator_objective_functions.cross_val_score_objective(
-            #     ind, 
-            #     X=X, y=y, scorers= scorers, cv=cv, memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column )
-            
-            optuna_objective = partial(tpot2.estimator_objective_functions.cross_val_score_objective, X=X, y=y , scorers= self._scorers, cv=self.optimization_cv, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column )
-        else:
-            optuna_objective = None
+
 
 
         #check if self.cv is a number
@@ -639,9 +646,33 @@ class TPOTEstimator(BaseEstimator):
 
         else:
             self.cv_gen = sklearn.model_selection.check_cv(self.cv, y, classifier=self.classification)
+        
+        def objective_function(pipeline_individual, 
+                                            X, 
+                                            y,
+                                            is_classification=self.classification,
+                                            scorers= self._scorers, 
+                                            cv=self.cv_gen, 
+                                            other_objective_functions=self.other_objective_functions,
+                                            memory=self.memory, 
+                                            cross_val_predict_cv=self.cross_val_predict_cv, 
+                                            subset_column=self.subset_column, 
+                                            **kwargs): 
+            return objective_function_generator(
+                pipeline_individual,
+                X, 
+                y, 
+                is_classification=is_classification,
+                scorers= scorers, 
+                cv=cv, 
+                other_objective_functions=other_objective_functions,
+                memory=memory, 
+                cross_val_predict_cv=cross_val_predict_cv, 
+                subset_column=subset_column,
+                **kwargs,
+            )
 
-
-        self.individual_generator_instance = tpot2.estimator_graph_individual_generator(   
+        self.individual_generator_instance = tpot2.individual_representations.graph_pipeline_individual.estimator_graph_individual_generator(   
                                                             inner_config_dict=inner_config_dict,
                                                             root_config_dict=root_config_dict,
                                                             leaf_config_dict=leaf_config_dict,
@@ -654,42 +685,17 @@ class TPOTEstimator(BaseEstimator):
         else:
             evaluation_early_stop_steps = None
 
-
-        X_future = _client.scatter(X)
-        y_future = _client.scatter(y)
-
-        #.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column),
-        #tmp = partial(objective_function_generator, scorers= self._scorers, cv=self.cv_gen, other_objective_functions=self.other_objective_functions )
-        self.final_object_function_list =[ lambda pipeline_individual, 
-                                            X, 
-                                            y,
-                                            is_classification=self.classification,
-                                            scorers= self._scorers, 
-                                            cv=self.cv_gen, 
-                                            other_objective_functions=self.other_objective_functions,
-                                            memory=self.memory, 
-                                            cross_val_predict_cv=self.cross_val_predict_cv, 
-                                            subset_column=self.subset_column, 
-                                            **kwargs: 
-                                            objective_function_generator(
-                                                pipeline_individual,
-                                                X, 
-                                                y, 
-                                                is_classification=is_classification,
-                                                scorers= scorers, 
-                                                cv=cv, 
-                                                other_objective_functions=other_objective_functions,
-                                                memory=memory, 
-                                                cross_val_predict_cv=cross_val_predict_cv, 
-                                                subset_column=subset_column,
-                                                **kwargs,
-                                )]
-
+        if self.scatter:
+            X_future = _client.scatter(X)
+            y_future = _client.scatter(y)
+        else:
+            X_future = X
+            y_future = y
 
         #If warm start and we have an evolver instance, use the existing one
         if not(self.warm_start and self._evolver_instance is not None):
             self._evolver_instance = self._evolver(   individual_generator=self.individual_generator_instance, 
-                                            objective_functions=self.final_object_function_list,
+                                            objective_functions= [objective_function],
                                             objective_function_weights = self.objective_function_weights,
                                             objective_names=self.objective_names,
                                             bigger_is_better = self.bigger_is_better,
@@ -700,7 +706,7 @@ class TPOTEstimator(BaseEstimator):
                                             verbose = self.verbose,
                                             max_time_seconds =      self.max_time_seconds ,
                                             max_eval_time_seconds = self.max_eval_time_seconds,
-                                            optimization_objective=optuna_objective,
+
                                             periodic_checkpoint_folder = self.periodic_checkpoint_folder,
                                             threshold_evaluation_early_stop = self.threshold_evaluation_early_stop,
                                             threshold_evaluation_scaling =  self.threshold_evaluation_scaling,
@@ -737,14 +743,36 @@ class TPOTEstimator(BaseEstimator):
         #self._evolver_instance.population.update_pareto_fronts(self.objective_names, self.objective_function_weights)
         self.make_evaluated_individuals()
 
+
+        if self.optuna_optimize_pareto_front:
+            pareto_front_inds = self.pareto_front['Individual'].values
+            all_graphs, all_scores = tpot2.individual_representations.graph_pipeline_individual.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, storage=self.optuna_storage, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, max_time_seconds=self.optuna_optimize_pareto_front_timeout, **{"X": X, "y": y})
+            all_scores = tpot2.utils.eval_utils.process_scores(all_scores, len(self.objective_function_weights))
+            
+            if len(all_graphs) > 0:
+                df = pd.DataFrame(np.column_stack((all_graphs, all_scores,np.repeat("Optuna",len(all_graphs)))), columns=["Individual"] + self.objective_names +["Parents"])
+                for obj in self.objective_names:
+                    df[obj] = df[obj].apply(convert_to_float)
+                
+                self.evaluated_individuals = pd.concat([self.evaluated_individuals, df], ignore_index=True)
+            else:
+                print("WARNING NO OPTUNA TRIALS COMPLETED")
+        
+        tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+
         if validation_strategy == 'reshuffled':
             best_pareto_front_idx = list(self.pareto_front.index)
             best_pareto_front = list(self.pareto_front.loc[best_pareto_front_idx]['Individual'])
             
             #reshuffle rows
             X, y = sklearn.utils.shuffle(X, y, random_state=1)
-            X_future = _client.scatter(X)
-            y_future = _client.scatter(y)
+
+            if self.scatter:
+                X_future = _client.scatter(X)
+                y_future = _client.scatter(y)
+            else:
+                X_future = X
+                y_future = y
 
             val_objective_function_list = [lambda   ind, 
                                                     X, 
@@ -771,7 +799,7 @@ class TPOTEstimator(BaseEstimator):
                                                                                                 )]
             
             objective_kwargs = {"X": X_future, "y": y_future}
-            val_scores = tpot2.objectives.parallel_eval_objective_list(
+            val_scores = tpot2.utils.eval_utils.parallel_eval_objective_list(
                 best_pareto_front,
                 val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
 
@@ -779,15 +807,21 @@ class TPOTEstimator(BaseEstimator):
             self.objective_names_for_selection = val_objective_names
             self.evaluated_individuals.loc[best_pareto_front_idx,val_objective_names] = val_scores
 
-            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
 
         elif validation_strategy == 'split':
 
-            
-            X_future = _client.scatter(X)
-            y_future = _client.scatter(y)
-            X_val_future = _client.scatter(X_val)
-            y_val_future = _client.scatter(y_val)
+
+            if self.scatter:            
+                X_future = _client.scatter(X)
+                y_future = _client.scatter(y)
+                X_val_future = _client.scatter(X_val)
+                y_val_future = _client.scatter(y_val)
+            else:
+                X_future = X
+                y_future = y
+                X_val_future = X_val
+                y_val_future = y_val
 
             objective_kwargs = {"X": X_future, "y": y_future, "X_val" : X_val_future, "y_val":y_val_future }
             
@@ -817,14 +851,14 @@ class TPOTEstimator(BaseEstimator):
                                                         **kwargs,
                                                         )]
             
-            val_scores = tpot2.objectives.parallel_eval_objective_list(
+            val_scores = tpot2.utils.eval_utils.parallel_eval_objective_list(
                 best_pareto_front,
                 val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names),client=_client, **objective_kwargs)
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
             self.evaluated_individuals.loc[best_pareto_front_idx,val_objective_names] = val_scores
-            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
         else:
             self.objective_names_for_selection = self.objective_names
 
@@ -847,7 +881,7 @@ class TPOTEstimator(BaseEstimator):
         else:
             self.fitted_pipeline_ = best_individual_pipeline 
         
-        self.fitted_pipeline_.fit(X_original,y) #TODO use y_original as well?
+        self.fitted_pipeline_.fit(X_original,y_original) #TODO use y_original as well?
 
 
         if self.client is None: #no client was passed in
@@ -908,9 +942,9 @@ class TPOTEstimator(BaseEstimator):
             objects = list(self.evaluated_individuals.index)
             object_to_int = dict(zip(objects, range(len(objects))))
             self.evaluated_individuals = self.evaluated_individuals.set_index(self.evaluated_individuals.index.map(object_to_int))
-            self.evaluated_individuals['Parents'] = self.evaluated_individuals['Parents'].apply(lambda row: _convert_parents_tuples_to_integers(row, object_to_int))
+            self.evaluated_individuals['Parents'] = self.evaluated_individuals['Parents'].apply(lambda row: convert_parents_tuples_to_integers(row, object_to_int))
 
-            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: _apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline))
+            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline))
 
         return self.evaluated_individuals
         
@@ -926,127 +960,3 @@ class TPOTEstimator(BaseEstimator):
                 return self.evaluated_individuals[self.evaluated_individuals["Pareto_Front"]==0]
 
 
-def _convert_parents_tuples_to_integers(row, object_to_int):
-    if type(row) == list or type(row) == np.ndarray or type(row) == tuple:
-        return tuple(object_to_int[obj] for obj in row)
-    else:
-        return np.nan
-
-def _apply_make_pipeline(graphindividual, preprocessing_pipeline=None):
-    try: 
-        if preprocessing_pipeline is None:
-            return graphindividual.export_pipeline()
-        else:
-            return sklearn.pipeline.make_pipeline(sklearn.base.clone(preprocessing_pipeline), graphindividual.export_pipeline())
-    except:
-        return None
-
-def get_configuration_dictionary(options, n_samples, n_features, classification, subsets=None, feature_names=None, n_classes=None):
-    if options is None:
-        return options
-
-    if isinstance(options, dict):
-        return recursive_with_defaults(options, n_samples, n_features, classification, subsets=subsets, feature_names=feature_names)
-    
-    if not isinstance(options, list):
-        options = [options]
-
-    config_dict = {}
-
-    for option in options:
-
-        if option == "selectors":
-            config_dict.update(tpot2.config.make_selector_config_dictionary(classification))
-
-        elif option == "classifiers":
-            config_dict.update(tpot2.config.make_classifier_config_dictionary(n_samples=n_samples, n_classes=n_classes))
-
-        elif option == "regressors":
-            config_dict.update(tpot2.config.make_regressor_config_dictionary(n_samples=n_samples))
-
-        elif option == "transformers":
-            config_dict.update(tpot2.config.make_transformer_config_dictionary(n_features=n_features))
-        
-        elif option == "arithmetic_transformer":
-            config_dict.update(tpot2.config.make_arithmetic_transformer_config_dictionary())
-
-        elif option == "feature_set_selector":
-            config_dict.update(tpot2.config.make_FSS_config_dictionary(subsets, n_features, feature_names=feature_names))
-
-        elif option == "skrebate":
-            config_dict.update(tpot2.config.make_skrebate_config_dictionary(n_features=n_features))
-        
-        elif option == "MDR":
-            config_dict.update(tpot2.config.make_MDR_config_dictionary())
-        
-        elif option == "ContinuousMDR":
-            config_dict.update(tpot2.config.make_ContinuousMDR_config_dictionary())
-
-        elif option == "FeatureEncodingFrequencySelector":
-            config_dict.update(tpot2.config.make_FeatureEncodingFrequencySelector_config_dictionary())
-
-        elif option == "genetic encoders":
-            config_dict.update(tpot2.config.make_genetic_encoders_config_dictionary())
-
-        elif option == "passthrough":
-            config_dict.update(tpot2.config.make_passthrough_config_dictionary())
-        
-
-        else:
-            config_dict.update(recursive_with_defaults(option, n_samples, n_features, classification, subsets=subsets, feature_names=feature_names))
-
-    if len(config_dict) == 0:
-        raise ValueError("No valid configuration options were provided. Please check the options you provided and try again.")
-
-    return config_dict
-
-def recursive_with_defaults(config_dict, n_samples, n_features, classification, subsets=None, feature_names=None):
-    
-    for key in 'leaf_config_dict', 'root_config_dict', 'inner_config_dict', 'Recursive':
-        if key in config_dict:
-            value = config_dict[key]
-            if key=="Resursive":
-                config_dict[key] = recursive_with_defaults(value,n_samples, n_features, classification, subsets=None, feature_names=None)
-            else:
-                config_dict[key] = get_configuration_dictionary(value, n_samples, n_features, classification, subsets, feature_names)
-        
-    return config_dict
-
-
-
-def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_functions, memory=None, cross_val_predict_cv=None, subset_column=None, step=None, budget=None, generation=1,is_classification=True):
-    pipeline = pipeline.export_pipeline(memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column)
-    if budget is not None and budget < 1:
-        if is_classification:
-            x,y = sklearn.utils.resample(x,y, stratify=y, n_samples=int(budget*len(x)), replace=False, random_state=1)
-        else:
-            x,y = sklearn.utils.resample(x,y, n_samples=int(budget*len(x)), replace=False, random_state=1)
-
-    if len(scorers) > 0:
-        cv_obj_scores = tpot2.estimator_objective_functions.cross_val_score_objective(sklearn.base.clone(pipeline),x,y,scorers=scorers, cv=cv , fold=step)
-    else:
-        cv_obj_scores = []
-    
-    if other_objective_functions is not None and len(other_objective_functions) >0:
-        other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
-        #flatten
-        other_scores = np.array(other_scores).flatten().tolist()
-    else:
-        other_scores = []
-        
-    return np.concatenate([cv_obj_scores,other_scores])
-
-def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test, scorers, other_objective_functions, memory, cross_val_predict_cv, subset_column):
-    #subsample the data
-    pipeline = pipeline.export_pipeline(memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column)
-    fitted_pipeline = sklearn.base.clone(pipeline)
-    fitted_pipeline.fit(X_train, y_train)
-
-    if len(scorers) > 0:
-        scores =[sklearn.metrics.get_scorer(scorer)(fitted_pipeline, X_test, y_test) for scorer in scorers] 
-
-    other_scores = []
-    if other_objective_functions is not None and len(other_objective_functions) >0:
-        other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
-    
-    return np.concatenate([scores,other_scores])

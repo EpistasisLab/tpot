@@ -1,0 +1,7 @@
+mkdocs==1.4.2
+mkdocs-material==9.1.6
+mkdocs-include-markdown-plugin==4.0.4
+nbconvert==7.4.0
+mkdocs-jupyter==0.24.1
+mkdocstrings==0.21.2
+mkdocstrings-python==0.10.1

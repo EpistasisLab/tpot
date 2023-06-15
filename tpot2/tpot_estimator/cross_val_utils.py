@@ -1,13 +1,9 @@
-from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import roc_auc_score
-import numpy as np
 import time
 import sklearn.metrics
-import networkx as nx
 from collections.abc import Iterable
 import pandas as pd
-
-
+import sklearn
+import numpy as np
 
 def cross_val_score_objective(pipeline, X, y, scorers, cv, fold=None):
     #check if scores is not iterable
@@ -64,12 +60,8 @@ def cross_val_score_objective(pipeline, X, y, scorers, cv, fold=None):
 
 
 
-def number_of_nodes_objective(graph_pipeline):
-    return graph_pipeline.graph.number_of_nodes()
 
 
-def average_path_length_objective(graph_pipeline):
 
-    path_lengths =  nx.shortest_path_length(graph_pipeline.graph, source=graph_pipeline.root)
-    return np.mean(np.array(list(path_lengths.values())))+1
+
 

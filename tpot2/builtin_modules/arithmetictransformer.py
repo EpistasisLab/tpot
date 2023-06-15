@@ -81,3 +81,373 @@ def issorted(x, rev=False):
     return False
 
 
+
+
+class AddTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return np.expand_dims(np.sum(X,1),1)
+
+class mul_neg_1_Transformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return X*-1
+    
+class MulTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return np.expand_dims(np.prod(X,1),1)
+
+class SafeReciprocalTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return np.divide(1.0, X.astype(float), out=np.zeros_like(X).astype(float), where=X!=0) #TODO remove astypefloat?
+
+class EQTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return np.expand_dims(np.all(X == X[0,:], axis = 1),1).astype(float)
+
+class NETransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return 1- np.expand_dims(np.all(X == X[0,:], axis = 1),1).astype(float)
+
+
+
+class GETransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        result = X >= 0
+        return  result.astype(float)
+
+
+class GTTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        result = X > 0
+        return  result.astype(float)
+
+
+class GTTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        result = X > 0
+        return  result.astype(float)
+
+
+class LETransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        result = X <= 0
+        return  result.astype(float)
+
+
+class LTTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        result = X < 0
+        return  result.astype(float)
+
+
+class MinTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return np.expand_dims(np.amin(X,1),1)
+
+
+
+class MaxTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return np.expand_dims(np.amax(X,1),1)
+
+
+class ZeroTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return np.zeros((X.shape[0],1))
+
+
+class OneTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self):
+          pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return np.ones((X.shape[0],1))
+
+
+class NTransformer(BaseEstimator,TransformerMixin):
+
+    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
+    def __init__(self, n):
+        self.n = n
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        transformed_X = np.array(self.transform_helper(np.array(X)))
+        if transformed_X.dtype != float:
+            transformed_X = transformed_X.astype(float)
+        
+        return transformed_X
+
+    def transform_helper(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            X = np.expand_dims(X,0)
+        return np.ones((X.shape[0],1))*self.n

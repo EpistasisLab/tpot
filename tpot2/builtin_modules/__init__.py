@@ -5,3 +5,4 @@ from .column_one_hot_encoder import ColumnOneHotEncoder
 from .arithmetictransformer import ArithmeticTransformer
 from .passthrough import Passthrough
 from .imputer import ColumnSimpleImputer
+from .selector_wrappers import RFE_ExtraTreesClassifier, SelectFromModel_ExtraTreesClassifier, RFE_ExtraTreesRegressor, SelectFromModel_ExtraTreesRegressor

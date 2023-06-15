@@ -1,6 +1,17 @@
 from functools import partial
 from tpot2.builtin_modules import ZeroCount, OneHotEncoder
-import numpy as np
+from sklearn.preprocessing import Binarizer
+from sklearn.decomposition import FastICA
+from sklearn.cluster import FeatureAgglomeration
+from sklearn.preprocessing import MaxAbsScaler
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import Normalizer
+from sklearn.kernel_approximation import Nystroem
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.kernel_approximation import RBFSampler
+from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import StandardScaler
 
 
 def params_sklearn_preprocessing_Binarizer(trial, name=None):
@@ -15,9 +26,15 @@ def params_sklearn_decomposition_FastICA(trial, name=None, n_features=100):
     }
 
 def params_sklearn_cluster_FeatureAgglomeration(trial, name=None, n_features=100):
+    
+    linkage = trial.suggest_categorical(f'linkage_{name}', ['ward', 'complete', 'average'])
+    if linkage == 'ward':
+        metric = 'euclidean'
+    else:
+        metric = trial.suggest_categorical(f'metric_{name}', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine'])
     return {
-        'metric': trial.suggest_categorical(f'metric_{name}', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine']),
-        'linkage': trial.suggest_categorical(f'linkage_{name}', ['ward', 'complete', 'average']),
+        'linkage': linkage,
+        'metric': metric,
         'n_clusters': trial.suggest_int(f'n_clusters_{name}', 2, 4), #TODO perhaps a percentage of n_features
     }
 
@@ -63,18 +80,7 @@ def params_tpot_builtins_OneHotEncoder(trial, name=None):
 
 
     
-from sklearn.preprocessing import Binarizer
-from sklearn.decomposition import FastICA
-from sklearn.cluster import FeatureAgglomeration
-from sklearn.preprocessing import MaxAbsScaler
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import Normalizer
-from sklearn.kernel_approximation import Nystroem
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.kernel_approximation import RBFSampler
-from sklearn.preprocessing import RobustScaler
-from sklearn.preprocessing import StandardScaler
+
 
 def make_transformer_config_dictionary(n_features=10):
     #n_features = min(n_features,100) #TODO optimize this

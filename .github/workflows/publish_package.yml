@@ -1,11 +1,11 @@
-name: Publish to TestPyPI
+name: Publish Package
 
 on:
   release:
     types: [published]
 
 jobs:
-  build-and-publish:
+  build-and-publish-pypi:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -24,8 +24,9 @@ jobs:
     - name: Build package
       run: python setup.py sdist bdist_wheel
 
-    - name: Upload to TestPyPI
+    - name: Upload to PyPI
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: twine upload dist/*
+  

@@ -1,2 +1,3 @@
-from .estimator import *
-from .templates import *
+from .estimator import TPOTEstimator
+from .steady_state_estimator import TPOTEstimatorSteadyState
+from .templates import TPOTClassifier, TPOTRegressor

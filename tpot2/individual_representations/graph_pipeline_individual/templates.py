@@ -2,10 +2,10 @@
 import numpy as np
 import tpot2
 import networkx as nx
-from tpot2.representations.graph_pipeline_individual import GraphIndividual
+from tpot2.individual_representations.graph_pipeline_individual import GraphIndividual
 import random
 
-from tpot2.representations.graph_pipeline_individual.individual import create_node
+from tpot2.individual_representations.graph_pipeline_individual.individual import create_node
 
 
 def estimator_graph_individual_generator(
@@ -30,7 +30,7 @@ def estimator_graph_individual_generator(
                 root = create_node(config_dict={k:root_config_dict[k]})
                 graph.add_node(root)
                 
-                ind = tpot2.GraphIndividual(    inner_config_dict=inner_config_dict,  
+                ind = GraphIndividual(    inner_config_dict=inner_config_dict,  
                                                     leaf_config_dict=leaf_config_dict,
                                                     root_config_dict=root_config_dict,
                                                     initial_graph = graph,

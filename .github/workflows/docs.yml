@@ -1,0 +1,46 @@
+name: Docs Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install .
+          pip install -r docs/requirements_docs.txt
+
+      # - name: Convert notebooks to HTML
+      #   # if: ${{ github.event_name == 'push' && contains(github.event.head_commit.modified, 'Tutorial/') && contains(github.event.head_commit.modified, '.ipynb') }}
+      #   run: |
+      #     # jupyter nbconvert --to html --allow-errors --no-input --show-input --template classic --output-dir docs/tutorial Tutorial/*.ipynb
+      #     jupyter nbconvert --to html --allow-errors --template classic --output-dir docs/tutorial Tutorial/*.ipynb
+
+      # - name: Build Tutorial Table of Contents
+      #   run: |
+      #     bash docs/scripts/build_tutorial_toc.sh
+
+      - name: Build Documentation sources
+        run: |
+          bash docs/scripts/build_docs_sources.sh
+
+      - name: Build mkdocs.yml
+        run: |
+          bash docs/scripts/build_mkdocs.sh
+
+      - name: Build and Deploy Docs
+        run: |
+          mkdocs gh-deploy --force --clean --verbose

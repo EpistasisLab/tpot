@@ -3,7 +3,7 @@ import copy
 import copy
 import typing
 import tpot2
-from tpot2.individual import BaseIndividual
+from tpot2.individual_representations.individual import BaseIndividual
 from traitlets import Bool
 import collections
 import pandas as pd

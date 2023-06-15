@@ -1,8 +1,9 @@
 from numpy import iterable
 import tpot2
 import random
+from .. import BaseIndividual
 
-class SubsetSelector(tpot2.BaseIndividual):
+class SubsetSelector(BaseIndividual):
     def __init__(   self,
                     values,
                     initial_set = None,
