@@ -499,7 +499,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self._scorers = [sklearn.metrics.get_scorer(scoring) for scoring in self._scorers]
         self._scorers_early_stop_tol = self.scorers_early_stop_tol
         
-        self._evolver = tpot2.SteadyStateEvolver
+        self._evolver = tpot2.evolvers.SteadyStateEvolver
         
        
 
