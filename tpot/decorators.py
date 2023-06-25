@@ -25,15 +25,16 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function
 from functools import wraps
+import os
 import warnings
 from .export_utils import expr_to_tree, generate_pipeline_code
 from deap import creator
 
-from stopit import threading_timeoutable, TimeoutException
+from stopit import threading_timeoutable
 
 
 NUM_TESTS = 10
-MAX_EVAL_SECS = 10
+MAX_EVAL_SECS = int(os.environ.get('TPOT_MAX_EVAL_SECS') or 10)
 
 
 def _pre_test(func):
@@ -79,7 +80,7 @@ def _pre_test(func):
                     try:
                         expr = func(self, *args, **kwargs)
                         pass_gen = True
-                    except:
+                    except Exception:
                         num_test_expr += 1
                         pass
                 # mutation operator returns tuple (ind,); crossover operator
@@ -115,6 +116,5 @@ def _pre_test(func):
                 num_test += 1
 
         return expr
-
 
     return check_pipeline
