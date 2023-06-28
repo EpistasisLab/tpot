@@ -417,8 +417,8 @@ class SteadyStateEvolver():
                         if len(parents_df) < 2:
                             var_ops = ["mutate" for _ in range(n_individuals_to_submit)]
                         else:
-                            var_ops = [np.random.choice(["crossover","mutate_then_crossover","crossover_then_mutate",'mutate']) for _ in range(n_individuals_to_submit)]
-                        
+                            var_ops = [np.random.choice(["crossover","mutate_then_crossover","crossover_then_mutate",'mutate'],p=[self.crossover_probability,self.mutate_then_crossover_probability, self.crossover_then_mutate_probability,self.mutate_probability]) for _ in range(n_individuals_to_submit)]
+
                         parents = []
                         for op in var_ops:
                             if op == "mutate":
