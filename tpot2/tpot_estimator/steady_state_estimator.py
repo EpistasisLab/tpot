@@ -63,7 +63,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         n_jobs=1,
                         memory_limit = "4GB",
                         client = None,
-                        survival_percentage = 1,
+
                         crossover_probability=.2,
                         mutate_probability=.7,
                         mutate_then_crossover_probability=.05,
@@ -287,11 +287,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         
         client : dask.distributed.Client, default=None
             A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit. 
-        
-        survival_percentage : float, default=1
-            Percentage of the population size to utilize for mutation and crossover at the beginning of the generation. The rest are discarded. Individuals are selected with the selector passed into survival_selector. The value of this parameter must be between 0 and 1, inclusive. 
-            For example, if the population size is 100 and the survival percentage is .5, 50 individuals will be selected with NSGA2 from the existing population. These will be used for mutation and crossover to generate the next 100 individuals for the next generation. The remainder are discarded from the live population. In the next generation, there will now be the 50 parents + the 100 individuals for a total of 150. Surivival percentage is based of the population size parameter and not the existing population size. Therefore, in the next generation we will still select 50 individuals from the currently existing 150.
-        
+
         crossover_probability : float, default=.2
             Probability of generating a new individual by crossover between two individuals.
         
@@ -309,7 +305,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         
         survival_selector : function, default=survival_select_NSGA2
             Function to use to select individuals for survival. Must take a matrix of scores and return selected indexes.
-            Used to selected population_size * survival_percentage individuals at the start of each generation to use for mutation and crossover.
+            Used to selected population_size individuals at the start of each generation to use for mutation and crossover.
         
         parent_selector : function, default=parent_select_NSGA2
             Function to use to select pairs parents for crossover and individuals for mutation. Must take a matrix of scores and return selected indexes.
@@ -447,7 +443,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.n_jobs= n_jobs
         self.memory_limit = memory_limit
         self.client = client
-        self.survival_percentage = survival_percentage
+
         self.crossover_probability = crossover_probability
         self.mutate_probability = mutate_probability
         self.mutate_then_crossover_probability= mutate_then_crossover_probability
@@ -719,7 +715,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                             objective_kwargs = {"X": X_future, "y": y_future},
                                             survival_selector=self.survival_selector,
                                             parent_selector=self.parent_selector,
-                                            survival_percentage = self.survival_percentage,
+
                                             crossover_probability = self.crossover_probability,
                                             mutate_probability = self.mutate_probability,
                                             mutate_then_crossover_probability= self.mutate_then_crossover_probability,

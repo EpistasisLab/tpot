@@ -47,7 +47,7 @@ class SteadyStateEvolver():
                     memory_limit="4GB",
                     client=None,
                     
-                    survival_percentage = 1,
+
                     crossover_probability=.2,
                     mutate_probability=.7,
                     mutate_then_crossover_probability=.05,
@@ -113,7 +113,7 @@ class SteadyStateEvolver():
 
         self.survival_selector=survival_selector
         self.parent_selector=parent_selector
-        self.survival_percentage = survival_percentage
+
         
         total_var_p = crossover_probability + mutate_probability + mutate_then_crossover_probability + crossover_then_mutate_probability
         self.crossover_probability = crossover_probability / total_var_p
