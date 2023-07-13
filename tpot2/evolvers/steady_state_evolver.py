@@ -32,10 +32,9 @@ class SteadyStateEvolver():
                     bigger_is_better = True,
 
                     initial_population_size = 50,
-                    max_queue_size = 1,
                     min_individuals_finished = 1,
                     population_size = 50,
-                    max_evaluated_individuals = 50, 
+                    max_evaluated_individuals = None, 
                     early_stop = None,
                     early_stop_tol = 0.001,
                     
@@ -69,7 +68,6 @@ class SteadyStateEvolver():
                     ) -> None:
 
 
-        self.max_queue_size = max_queue_size
         self.min_individuals_finished = min_individuals_finished
         self.max_evaluated_individuals = max_evaluated_individuals
         self.individuals_until_end_budget = individuals_until_end_budget
@@ -197,7 +195,8 @@ class SteadyStateEvolver():
                     memory_limit=self.memory_limit)
             self._client = Client(self._cluster)
         
-        self.max_queue_size = min(self.n_jobs, self.max_queue_size)
+
+        self.max_queue_size = len(self._client.cluster.workers)
 
         #set up logging params
         evaluated_count = 0
@@ -216,9 +215,9 @@ class SteadyStateEvolver():
             
             if self.verbose >= 1:
                 if self.max_evaluated_individuals is not None:
-                    pbar = tqdm.tqdm(total=self.max_evaluated_individuals)
+                    pbar = tqdm.tqdm(total=self.max_evaluated_individuals, miniters=1)
                 else:
-                    pbar = tqdm.tqdm(total=0)
+                    pbar = tqdm.tqdm(total=0, miniters=1)
                 pbar.set_description("Evaluations")
 
             #submit initial population
@@ -233,6 +232,7 @@ class SteadyStateEvolver():
                                             "time": time.time(),
                                             "budget": budget,}
                 submitted_inds.add(individual.unique_id())
+                self.population.update_column(individual, column_names="Submitted Timestamp", data=time.time())
 
             done = False
             while not done:
@@ -241,63 +241,65 @@ class SteadyStateEvolver():
                 # Step 1: Check for finished futures
                 ###############################
 
-                #check if any futures are finished
-                completed_futures_list = []
-                number_of_completed_futures_to_wait_for = min(self.min_individuals_finished, len(submitted_futures))
-                while len(completed_futures_list) < number_of_completed_futures_to_wait_for:
-                    
-                    #collect finished futures
-                    for completed_future in list(submitted_futures.keys()):
-                    
-                        #get scores and update                            
-                        if completed_future.done(): #if future is done
-                            #If the future is done but threw and error, record the error
-                            if completed_future.exception() or completed_future.status == "error": #if the future is done and threw an error
-                                print("Exception in future")
+                #wait for at least one future to finish or timeout
+                try:
+                    next(distributed.as_completed(submitted_futures, timeout=self.max_eval_time_seconds))
+                except dask.distributed.TimeoutError:
+                    pass
+
+                #Loop through all futures, collect completed and timeout futures.
+                for completed_future in list(submitted_futures.keys()):
+                
+                    #get scores and update                            
+                    if completed_future.done(): #if future is done
+                        #If the future is done but threw and error, record the error
+                        if completed_future.exception() or completed_future.status == "error": #if the future is done and threw an error
+                            print("Exception in future")
+                            print(completed_future.exception())
+                            scores = ["INVALID" for _ in range(len(self.objective_names))]
+                        else: #if the future is done and did not throw an error, get the scores
+                            try:
+                                scores = completed_future.result()
+                            except Exception as e:
+                                print("Exception in future, but not caught by dask")
+                                print(e)
                                 print(completed_future.exception())
+                                print(completed_future)
+                                print("status", completed_future.status)
+                                print("done", completed_future.done())
+                                print("cancelld ", completed_future.cancelled())
                                 scores = ["INVALID" for _ in range(len(self.objective_names))]
-                            else: #if the future is done and did not throw an error, get the scores
-                                try:
-                                    scores = completed_future.result()
-                                except Exception as e:
-                                    print("Exception in future, but not caught by dask")
-                                    print(e)
-                                    print(completed_future.exception())
-                                    print(completed_future)
-                                    print("status", completed_future.status)
-                                    print("done", completed_future.done())
-                                    print("cancelld ", completed_future.cancelled())
-                                    scores = ["INVALID" for _ in range(len(self.objective_names))]
-                        else: #if future is not done
-                            
-                            #check if the future has been running for too long, cancel the future
-                            if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_seconds*2:
-                                completed_future.cancel()
-                                
-                                if self.verbose >= 4:
-                                    print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {submitted_futures[completed_future]} \n')
-                                
-                                scores = ["TIMEOUT" for _ in range(len(self.objective_names))]
-                            else:
-                                continue #otherwise, continue to next future
+                    else: #if future is not done
                         
-                        completed_futures_list.append(completed_future)
+                        #check if the future has been running for too long, cancel the future
+                        if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_seconds*2:
+                            completed_future.cancel()
+                            
+                            if self.verbose >= 4:
+                                print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {submitted_futures[completed_future]} \n')
+                            
+                            scores = ["TIMEOUT" for _ in range(len(self.objective_names))]
+                        else:
+                            continue #otherwise, continue to next future
+                    
 
-                        #update population
-                        this_individual = submitted_futures[completed_future]["individual"]
-                        this_budget = submitted_futures[completed_future]["budget"]
-                        this_time = submitted_futures[completed_future]["time"]
 
-                        if len(scores) < len(self.objective_names):
-                            scores = [scores[0] for _ in range(len(self.objective_names))]
-                        self.population.update_column(this_individual, column_names=self.objective_names, data=scores)
-                        if budget is not None:
-                            self.population.update_column(this_individual, column_names="Budget", data=this_budget)
+                    #update population
+                    this_individual = submitted_futures[completed_future]["individual"]
+                    this_budget = submitted_futures[completed_future]["budget"]
+                    this_time = submitted_futures[completed_future]["time"]
 
-                        submitted_futures.pop(completed_future)
-                        submitted_inds.add(this_individual.unique_id())
-                        if self.verbose >= 1:
-                            pbar.update(1)
+                    if len(scores) < len(self.objective_names):
+                        scores = [scores[0] for _ in range(len(self.objective_names))]
+                    self.population.update_column(this_individual, column_names=self.objective_names, data=scores)
+                    self.population.update_column(this_individual, column_names="Completed Timestamp", data=time.time())
+                    if budget is not None:
+                        self.population.update_column(this_individual, column_names="Budget", data=this_budget)
+
+                    submitted_futures.pop(completed_future)
+                    submitted_inds.add(this_individual.unique_id())
+                    if self.verbose >= 1:
+                        pbar.update(1)
 
                 #now we have a list of completed futures
 
@@ -346,7 +348,7 @@ class SteadyStateEvolver():
                     done = True
                     break
                 
-                if len(self.population.evaluated_individuals.dropna(subset=self.objective_names)) >= self.max_evaluated_individuals:
+                if self.max_evaluated_individuals is not None and len(self.population.evaluated_individuals.dropna(subset=self.objective_names)) >= self.max_evaluated_individuals:
                     print("Evaluated enough individuals")
                     done = True
                     break
@@ -364,6 +366,8 @@ class SteadyStateEvolver():
                                                     "time": time.time(),
                                                     "budget": budget,}
                         submitted_inds.add(individual.unique_id())
+
+                        self.population.update_column(individual, column_names="Submitted Timestamp", data=time.time())
 
 
                 ###############################
@@ -426,7 +430,7 @@ class SteadyStateEvolver():
                             else:
                                 parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=2,  )])
 
-                        _offspring = self.population.create_offspring(parents, var_ops, n_jobs=self.n_jobs, add_to_population=True)
+                        _offspring = self.population.create_offspring(parents, var_ops, n_jobs=1, add_to_population=True)
                         
                     # If we don't have enough evaluated individuals to use as parents for variation, we create new individuals randomly
                     # This can happen if the individuals in the initial population are invalid
