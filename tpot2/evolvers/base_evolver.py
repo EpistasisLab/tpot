@@ -616,6 +616,7 @@ class BaseEvolver():
         if budget is not None:
             self.population.update_column(individuals_to_evaluate, column_names="Budget", data=budget)
 
+        self.population.update_column(individuals_to_evaluate, column_names="Completed Timestamp", data=time.time())
         self.population.remove_invalid_from_population(column_names=self.objective_names)
         self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
 

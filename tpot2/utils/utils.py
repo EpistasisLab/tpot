@@ -97,7 +97,7 @@ def get_pareto_frontier(df, column_names, weights, invalid_values=["TIMEOUT","IN
     weighted_scores = df.loc[indexes][column_names].to_numpy()  * weights
     mask = is_pareto_efficient(weighted_scores, return_mask = True)
     df["Pareto_Front"] = np.nan #TODO this will get deprecated
-    df.loc[indexes[mask], "Pareto_Front"] = 0
+    df.loc[indexes[mask], "Pareto_Front"] = 1
     
 
 
@@ -120,6 +120,6 @@ def get_pareto_front(df, column_names, weights, invalid_values=["TIMEOUT","INVAL
 
     for i, front in enumerate(pareto_fronts):
         for index in front:
-            df.loc[indexes[index], "Pareto_Front"] = i
+            df.loc[indexes[index], "Pareto_Front"] = i+1
 
     return df["Pareto_Front"]

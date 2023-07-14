@@ -957,6 +957,6 @@ class TPOTEstimator(BaseEstimator):
             if "Pareto_Front" not in self.evaluated_individuals:
                 return self.evaluated_individuals
             else:
-                return self.evaluated_individuals[self.evaluated_individuals["Pareto_Front"]==0]
+                return self.evaluated_individuals[self.evaluated_individuals["Pareto_Front"]==1]
 
 
