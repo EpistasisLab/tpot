@@ -48,7 +48,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         validation_fraction = .2,
 
                         initial_population_size = 50,
-                        min_individuals_finished = 1,
                         population_size = 50,
                         max_evaluated_individuals = None,
 
@@ -471,7 +470,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.optuna_storage = optuna_storage
 
 
-        self.min_individuals_finished = min_individuals_finished
         self.max_evaluated_individuals = max_evaluated_individuals
 
         #Initialize other used params
@@ -720,7 +718,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                             crossover_then_mutate_probability= self.crossover_then_mutate_probability,
                                             
 
-                                            min_individuals_finished = self.min_individuals_finished,
                                             max_evaluated_individuals = self.max_evaluated_individuals
                                             )
 

@@ -32,7 +32,6 @@ class SteadyStateEvolver():
                     bigger_is_better = True,
 
                     initial_population_size = 50,
-                    min_individuals_finished = 1,
                     population_size = 50,
                     max_evaluated_individuals = None, 
                     early_stop = None,
@@ -67,8 +66,6 @@ class SteadyStateEvolver():
                     callback = None,
                     ) -> None:
 
-
-        self.min_individuals_finished = min_individuals_finished
         self.max_evaluated_individuals = max_evaluated_individuals
         self.individuals_until_end_budget = individuals_until_end_budget
 
@@ -453,6 +450,7 @@ class SteadyStateEvolver():
                                                     "time": time.time(),
                                                     "budget": budget,}
                         submitted_inds.add(individual.unique_id())
+                        self.population.update_column(individual, column_names="Submitted Timestamp", data=time.time())
 
 
                 #Checkpointing
