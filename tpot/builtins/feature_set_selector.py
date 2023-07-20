@@ -84,7 +84,7 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
             return dataframe.index[selector]
         elif isinstance(self.sel_subset, str):
             return selector
-        else: # list or tuple
+        elif isinstance(selector, tuple) or isinstance(selector, list)
             names = []
             for s in selector:
                 if isinstance(s, int):
@@ -92,6 +92,10 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
                 else:
                     name.append(s)
             return names
+        else:
+            raise TypeError("Subset selector must be of type int, str, tuple, "
+                            + "or list but was instead of type "
+                            + type(selector).__name__)
 
     def fit(self, X, y=None):
         """Fit FeatureSetSelector for feature selection
