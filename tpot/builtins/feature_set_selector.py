@@ -65,6 +65,34 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
         self.subset_list = subset_list
         self.sel_subset = sel_subset
 
+    def _subset_names(selector, dataframe):
+        """Return the name or names of the subset of a dataframe.
+
+        Parameters
+        ----------
+        selector: int or str or list or tuple of both
+            Selector of the subset
+        dataframe: Pandas DataFrame
+            Pandas Dataframe whence the subset is selected
+            
+        Returns
+        -------
+        name or names: str or list of str
+            Name or names of the subset to be selected
+        """
+        if isinstance(selector, int):
+            return dataframe.index[selector]
+        elif isinstance(self.sel_subset, str):
+            return selector
+        else: # list or tuple
+            names = []
+            for s in selector:
+                if isinstance(s, int):
+                    names.append(dataframe.index[s])
+                else:
+                    name.append(s)
+            return names
+
     def fit(self, X, y=None):
         """Fit FeatureSetSelector for feature selection
 
@@ -82,18 +110,7 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
         """
         subset_df = pd.read_csv(self.subset_list, header=0, index_col=0)
 
-        if isinstance(self.sel_subset, int):
-            self.sel_subset_name = subset_df.index[self.sel_subset]
-        elif isinstance(self.sel_subset, str):
-            self.sel_subset_name = self.sel_subset
-        else: # list or tuple
-            self.sel_subset_name = []
-            for s in self.sel_subset:
-                if isinstance(s, int):
-                    self.sel_subset_name.append(subset_df.index[s])
-                else:
-                    self.sel_subset_name.append(s)
-
+        self.sel_subset_name = _subset_names(self.sel_subset, subset_df)
 
         sel_features = subset_df.loc[self.sel_subset_name, 'Features']
         if not isinstance(sel_features, str):
