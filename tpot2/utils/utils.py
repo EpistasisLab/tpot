@@ -36,8 +36,8 @@ def beta_interpolation(start=0, end=1, scale=1, n=10, n_steps=None):
     if scale >= 1:
         scale = 0.9999
 
-    alpha = 2 * scale
-    beta = 2 - alpha
+    alpha = 3 * scale
+    beta = 3 - alpha
     x = np.linspace(0,1,n)
     values = scipy.special.betainc(alpha,beta,x)*(end-start)+start
 
