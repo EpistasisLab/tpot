@@ -20,7 +20,7 @@ from dask import config as cfg
 
 def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
-    cfg.set({'distributed.scheduler.allowed-failures':1})
+    cfg.set({'distributed.scheduler.allowed-failures':0})
 
 
 
