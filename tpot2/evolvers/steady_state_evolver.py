@@ -256,6 +256,9 @@ class SteadyStateEvolver():
                             print("Exception in future")
                             print(completed_future.exception())
                             scores = ["INVALID" for _ in range(len(self.objective_names))]
+                        elif completed_future.cancelled(): #if the future is done and was cancelled
+                            print("Cancelled future (likely memory related)")
+                            scores = ["INVALID" for _ in range(len(self.objective_names))]
                         else: #if the future is done and did not throw an error, get the scores
                             try:
                                 scores = completed_future.result()
