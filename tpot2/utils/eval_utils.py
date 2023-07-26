@@ -125,7 +125,7 @@ def parallel_eval_objective_list(individual_list,
                 print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION (Dask Future) \n {individual} \n {future.exception()} \n')
             if verbose >= 5:
                 print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION (Dask Future) \n {individual} \n {future.exception()} \n {future.traceback()}')
-        elif f.cancelled():
+        elif future.cancelled():
             offspring_scores.append(["INVALID"])
             if verbose == 4:
                 print(f'WARNING THIS INDIVIDUAL WAS CANCELED BY DASK (likely memory issue) \n {individual}')
