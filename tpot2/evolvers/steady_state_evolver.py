@@ -243,6 +243,8 @@ class SteadyStateEvolver():
                     next(distributed.as_completed(submitted_futures, timeout=self.max_eval_time_seconds))
                 except dask.distributed.TimeoutError:
                     pass
+                except dask.distributed.CancelledError:
+                    pass
 
                 #Loop through all futures, collect completed and timeout futures.
                 for completed_future in list(submitted_futures.keys()):

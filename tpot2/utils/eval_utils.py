@@ -108,6 +108,8 @@ def parallel_eval_objective_list(individual_list,
     except dask.distributed.TimeoutError:
         print("terminating parallel evaluation due to timeout")
         pass
+    except dask.distributed.CancelledError:
+        print("dask.distributed.CancelledError")
     
     offspring_scores = []
     # todo optimize this
