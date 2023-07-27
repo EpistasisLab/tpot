@@ -243,6 +243,8 @@ class SteadyStateEvolver():
                     next(distributed.as_completed(submitted_futures, timeout=self.max_eval_time_seconds))
                 except dask.distributed.TimeoutError:
                     pass
+                except dask.distributed.CancelledError:
+                    pass
 
                 #Loop through all futures, collect completed and timeout futures.
                 for completed_future in list(submitted_futures.keys()):
@@ -253,6 +255,9 @@ class SteadyStateEvolver():
                         if completed_future.exception() or completed_future.status == "error": #if the future is done and threw an error
                             print("Exception in future")
                             print(completed_future.exception())
+                            scores = ["INVALID" for _ in range(len(self.objective_names))]
+                        elif completed_future.cancelled(): #if the future is done and was cancelled
+                            print("Cancelled future (likely memory related)")
                             scores = ["INVALID" for _ in range(len(self.objective_names))]
                         else: #if the future is done and did not throw an error, get the scores
                             try:

@@ -20,7 +20,7 @@ from .estimator_utils import *
 
 def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
-    cfg.set({'distributed.scheduler.allowed-failures':0})
+    cfg.set({'distributed.scheduler.allowed-failures':1})
 
 
 

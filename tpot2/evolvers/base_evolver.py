@@ -525,7 +525,7 @@ class BaseEvolver():
         parents = list(cx_parents) + list(m_parents)
 
         var_ops = np.concatenate([cx_var_ops, m_var_ops])
-        offspring = self.population.create_offspring(parents, var_ops, n_jobs=self.n_jobs) 
+        offspring = self.population.create_offspring(parents, var_ops, n_jobs=1) 
         self.population.update_column(offspring, column_names="Generation", data=self.generation, )
         #print("done making offspring")
 

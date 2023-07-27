@@ -108,6 +108,8 @@ def parallel_eval_objective_list(individual_list,
     except dask.distributed.TimeoutError:
         print("terminating parallel evaluation due to timeout")
         pass
+    except dask.distributed.CancelledError:
+        print("dask.distributed.CancelledError")
     
     offspring_scores = []
     # todo optimize this
@@ -123,6 +125,11 @@ def parallel_eval_objective_list(individual_list,
                 print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION (Dask Future) \n {individual} \n {future.exception()} \n')
             if verbose >= 5:
                 print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION (Dask Future) \n {individual} \n {future.exception()} \n {future.traceback()}')
+        elif future.cancelled():
+            offspring_scores.append(["INVALID"])
+            if verbose == 4:
+                print(f'WARNING THIS INDIVIDUAL WAS CANCELED BY DASK (likely memory issue) \n {individual}')
+
         else:
             offspring_scores.append(future.result())
             
