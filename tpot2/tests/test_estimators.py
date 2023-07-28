@@ -14,8 +14,8 @@ def tpot_estimator():
                             classification=True,
                             n_jobs=1, 
                             early_stop=5,
-                            other_objective_functions= [ tpot2.estimator_objective_functions.average_path_length_objective,  tpot2.estimator_objective_functions.number_of_nodes_objective],
-                            other_objective_functions_weights=[-1, -1],
+                            other_objective_functions= [],
+                            other_objective_functions_weights=[],
                             verbose=1)
 
 @pytest.fixture
@@ -81,15 +81,11 @@ def test_tpot_estimator_config_dict_type():
 
 @pytest.fixture
 def tpot_classifier():
-    return tpot2.tpot_estimator.templates.TPOTClassifier(population_size=5,
-                                                    generations=2,
-                                                    verbose=1)
+    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_seconds=10,verbose=1)
 
 @pytest.fixture
 def tpot_regressor():
-    return tpot2.tpot_estimator.templates.TPOTRegressor(population_size=5,
-                                                    generations=2,
-                                                    verbose=1)
+    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=10,verbose=1)
 
 def test_tpot_classifier_fit(tpot_classifier,sample_dataset):
     #load iris dataset
