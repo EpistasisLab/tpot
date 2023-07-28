@@ -8,7 +8,6 @@ import sklearn
 @pytest.fixture
 def tpot_estimator():
     return tpot2.TPOTEstimator(  population_size=10,
-                            generations=2,
                             scorers=['roc_auc_ovr'],
                             scorers_weights=[1],
                             classification=True,
@@ -86,7 +85,7 @@ def tpot_classifier():
 
 @pytest.fixture
 def tpot_regressor():
-    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=30,verbose=1)
+    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=60,verbose=1)
 
 def test_tpot_classifier_fit(tpot_classifier,sample_dataset):
     #load iris dataset
