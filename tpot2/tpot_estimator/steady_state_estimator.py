@@ -570,7 +570,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         if isinstance(self.cv, int) or isinstance(self.cv, float):
             n_folds = self.cv
         else:
-            n_folds = self.cv.n_splits
+            n_folds = self.cv.get_n_splits(X, y)
 
         X, y = remove_underrepresented_classes(X, y, n_folds)
         
