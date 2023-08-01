@@ -3,8 +3,8 @@
 from abc import abstractmethod
 import tpot2
 import typing
-from tqdm import tqdm, tnrange, tqdm_notebook
-from tpot2.individual import BaseIndividual
+import tqdm
+from tpot2.individual_representations.individual import BaseIndividual
 import time
 import numpy as np
 import copy
@@ -16,9 +16,10 @@ from tqdm.dask import TqdmCallback
 import distributed
 from dask.distributed import Client
 from dask.distributed import LocalCluster
-from tpot2.parent_selectors import survival_select_NSGA2, TournamentSelection_Dominated
+from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 import math
-from tpot2.utils import get_thresholds, beta_interpolation, remove_items, equalize_list, update_pareto_frontier
+from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
+
 
 class BaseEvolver():
     def __init__(   self, 
@@ -54,7 +55,7 @@ class BaseEvolver():
                     n_parents=2,
 
                     survival_selector = survival_select_NSGA2,
-                    parent_selector = TournamentSelection_Dominated,
+                    parent_selector = tournament_selection_dominated,
                     
                     budget_range = None, 
                     budget_scaling = .5, 
@@ -69,14 +70,9 @@ class BaseEvolver():
                     evaluation_early_stop_steps = None, 
                     final_score_strategy = "mean",
 
-                    n_initial_optimizations = 0,
-                    optimization_objective = None,
-                    max_optimize_time_seconds = 60*5,
-                    optimization_steps = 5,
-
                     verbose = 0, 
                     periodic_checkpoint_folder = None,
-                    callback: tpot2.CallBackInterface = None,
+                    callback = None,
                     ) -> None:
         """
         Uses mutation, crossover, and optimization functions to evolve a population of individuals towards the given objective functions.
@@ -127,7 +123,7 @@ class BaseEvolver():
             A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit. 
         survival_percentage : float, default=1
             Percentage of the population size to utilize for mutation and crossover at the beginning of the generation. The rest are discarded. Individuals are selected with the selector passed into survival_selector. The value of this parameter must be between 0 and 1, inclusive. 
-            For example, if the population size is 100 and the survival percentage is .5, 50 individuals will be selected with NSGA2 from the existing population. These will be used for mutation and crossover to generate the next 100 individuals for the next generation. The remainder are discarded from the live population. In the next generation, there will now be the 50 parents + the 100 individuals for a total of 150. Surivival percentage is based of the population size parameter and not the existing population size. Therefore, in the next generation we will still select 50 individuals from the currently existing 150.
+            For example, if the population size is 100 and the survival percentage is .5, 50 individuals will be selected with NSGA2 from the existing population. These will be used for mutation and crossover to generate the next 100 individuals for the next generation. The remainder are discarded from the live population. In the next generation, there will now be the 50 parents + the 100 individuals for a total of 150. Surivival percentage is based of the population size parameter and not the existing population size (current population size when using successive halving). Therefore, in the next generation we will still select 50 individuals from the currently existing 150.
         crossover_probability : float, default=.2
             Probability of generating a new individual by crossover between two individuals.
         mutate_probability : float, default=.7
@@ -171,14 +167,6 @@ class BaseEvolver():
             The strategy to use when determining the final score for an individual.
             "mean": The mean of all objective scores
             "last": The score returned by the last call. Currently each objective is evaluated with a clone of the individual.
-        n_initial_optimizations : int, default=0
-            Number of individuals to optimize before starting the evolution.
-        optimization_objective : function, default=None
-            Function to optimize the individual with. If None, the first objective function will be used
-        max_optimize_time_seconds : float, default=60*5
-            Maximum time to run an optimization
-        optimization_steps : int, default=10
-            Number of steps per optimization
         verbose : int, default=0
             How much information to print during the optimization process. Higher values include the information from lower values.
             0. nothing
@@ -239,10 +227,7 @@ class BaseEvolver():
             self.max_eval_time_seconds = max_eval_time_seconds
 
         
-        self.n_initial_optimizations  = n_initial_optimizations  
-        self.optimization_objective  = optimization_objective  
-        self.max_optimize_time_seconds = max_optimize_time_seconds 
-        self.optimization_steps = optimization_steps 
+
         
         self.generation = 0
 
@@ -365,8 +350,7 @@ class BaseEvolver():
             self._client = Client(self._cluster)
         
 
-        if self.n_initial_optimizations > 0:
-            self.optimize_population()
+
         if generations is None:
             generations = self.generations
 
@@ -380,8 +364,16 @@ class BaseEvolver():
 
 
         try: 
-            for gen in tnrange(generations,desc="Generation", disable=self.verbose<1):
-                
+            #for gen in tnrange(generations,desc="Generation", disable=self.verbose<1):
+            done = False
+            gen = 0
+            if self.verbose >= 1:
+                if generations is None or np.isinf(generations):
+                    pbar = tqdm.tqdm(total=0)
+                else:
+                    pbar = tqdm.tqdm(total=generations)
+                pbar.set_description("Generation")
+            while not done:
                 # Generation 0 is the initial population
                 if self.generation == 0:
                     if self.population_file is not None:
@@ -407,9 +399,6 @@ class BaseEvolver():
                         break
                     self.step()
                     
-                #update the pareto frontier
-                self.population.evaluated_individuals = update_pareto_frontier(self.population.evaluated_individuals, self.objective_names, self.objective_function_weights,self.generation-1)
-
                 if self.verbose >= 3:  
                     sign = np.sign(self.objective_function_weights)
                     valid_df = self.population.evaluated_individuals[~self.population.evaluated_individuals[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names]*sign
@@ -426,14 +415,14 @@ class BaseEvolver():
                         sign = np.sign(self.objective_function_weights)
                         #get best score for each objective
                         valid_df = self.population.evaluated_individuals[~self.population.evaluated_individuals[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names]*sign
-                        cur_best_scores = valid_df.max(axis=0)*sign
+                        cur_best_scores = valid_df.max(axis=0)
                         cur_best_scores = cur_best_scores.to_numpy()
                         #cur_best_scores =  self.population.get_column(self.population.population, column_names=self.objective_names).max(axis=0)*sign #TODO this assumes the current population is the best
                         
-                        improved = ( np.array(best_scores) - np.array(cur_best_scores) <= np.array(self.early_stop_tol) )
+                        improved = ( np.array(cur_best_scores) - np.array(best_scores) >= np.array(self.early_stop_tol) )
                         not_improved = np.logical_not(improved)
-                        generations_without_improvement = generations_without_improvement* not_improved + not_improved #set to zero if not improved, else increment
-
+                        generations_without_improvement = generations_without_improvement * not_improved + not_improved #set to zero if not improved, else increment
+                        pass
                         #update best score
                         best_scores = [max(best_scores[i], cur_best_scores[i]) for i in range(len(self.objective_names))]
 
@@ -445,6 +434,13 @@ class BaseEvolver():
                 #save population
                 if self.population_file is not None: # and time.time() - last_save_time > 60*10:
                     pickle.dump(self.population, open(self.population_file, "wb"))
+
+                gen += 1
+                if self.verbose >= 1:
+                    pbar.update(1)
+
+                if generations is not None and gen >= generations:
+                    done = True
 
         except KeyboardInterrupt:
             if self.verbose >= 3:
@@ -463,6 +459,7 @@ class BaseEvolver():
             self._client.close()
             self._cluster.close()
 
+        tpot2.utils.get_pareto_frontier(self.population.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
 
     def step(self,):
         if self.population_size_list is not None:
@@ -528,7 +525,7 @@ class BaseEvolver():
         parents = list(cx_parents) + list(m_parents)
 
         var_ops = np.concatenate([cx_var_ops, m_var_ops])
-        offspring = self.population.create_offspring(parents, var_ops, n_jobs=self.n_jobs) 
+        offspring = self.population.create_offspring(parents, var_ops, n_jobs=1) 
         self.population.update_column(offspring, column_names="Generation", data=self.generation, )
         #print("done making offspring")
 
@@ -538,12 +535,7 @@ class BaseEvolver():
 
 
     
-    def optimize_population(self,):
-        individuals_to_optimize = [copy.deepcopy(ind) for ind in self.population.population[0:self.n_initial_optimizations]]
-        tpot2.objectives.parallel_optimize_objective(individuals_to_optimize, self.optimization_objective, self.n_jobs, verbose=self.verbose, timeout=self.max_optimize_time_seconds)
-        self.population.set_population(individuals_to_optimize)
-        #self.population.update_log_list(individuals_to_optimize, scores, column_name="scores")
-        #self.population.remove_invalid_from_population(column_name="scores")
+
 
     # Gets a list of unevaluated individuals in the livepopulation, evaluates them, and removes failed attempts
     # TODO This could probably be an independent function?
@@ -571,9 +563,11 @@ class BaseEvolver():
 
         #Get the selectors survival rates per step
         if self.selection_evaluation_early_stop is not None:
-            lower = self.selection_evaluation_early_stop[0]
-            upper = self.selection_evaluation_early_stop[1]
-            survival_counts = self.cur_population_size*(scipy.special.betainc(1,self.threshold_evaluation_scaling,np.linspace(0,1,self.evaluation_early_stop_steps))*(upper-lower)+lower)
+            lower = self.cur_population_size*self.selection_evaluation_early_stop[0]
+            upper = self.cur_population_size*self.selection_evaluation_early_stop[1]
+            #survival_counts = self.cur_population_size*(scipy.special.betainc(1,self.selection_evaluation_scaling,np.linspace(0,1,self.evaluation_early_stop_steps))*(upper-lower)+lower)
+            
+            survival_counts = np.array(beta_interpolation(start=lower, end=upper, scale=self.selection_evaluation_scaling, n=self.evaluation_early_stop_steps, n_steps=self.evaluation_early_stop_steps))
             self.survival_counts = survival_counts.astype(int)
         else:
             self.survival_counts = None
@@ -615,13 +609,14 @@ class BaseEvolver():
         parallel_timeout = min(theoretical_timeout, scheduled_timeout_time_left)
         if parallel_timeout < 0:
             parallel_timeout = 10
-        scores = tpot2.objectives.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
+        scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
 
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
         if budget is not None:
             self.population.update_column(individuals_to_evaluate, column_names="Budget", data=budget)
 
+        self.population.update_column(individuals_to_evaluate, column_names="Completed Timestamp", data=time.time())
         self.population.remove_invalid_from_population(column_names=self.objective_names)
         self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
 
@@ -676,7 +671,7 @@ class BaseEvolver():
                 continue
             
             if self.max_eval_time_seconds is not None:
-                theoretical_timeout = self.max_eval_time_seconds * math.ceil(len(individuals_to_evaluate) / self.n_jobs)
+                theoretical_timeout = self.max_eval_time_seconds * math.ceil(len(unevaluated_individuals_this_step) / self.n_jobs)
                 theoretical_timeout = theoretical_timeout*2
             else:
                 theoretical_timeout = np.inf
@@ -685,7 +680,7 @@ class BaseEvolver():
             if parallel_timeout < 0:
                 parallel_timeout = 10
 
-            scores = tpot2.objectives.parallel_eval_objective_list(individual_list=unevaluated_individuals_this_step,
+            scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individual_list=unevaluated_individuals_this_step,
                                     objective_list=self.objective_functions,
                                     n_jobs = self.n_jobs,
                                     verbose=self.verbose,

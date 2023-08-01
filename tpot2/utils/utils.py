@@ -36,8 +36,8 @@ def beta_interpolation(start=0, end=1, scale=1, n=10, n_steps=None):
     if scale >= 1:
         scale = 0.9999
 
-    alpha = 2 * scale
-    beta = 2 - alpha
+    alpha = 3 * scale
+    beta = 3 - alpha
     x = np.linspace(0,1,n)
     values = scipy.special.betainc(alpha,beta,x)*(end-start)+start
 
@@ -55,6 +55,51 @@ def remove_items(items, indexes_to_remove):
     for index in sorted(indexes_to_remove, reverse=True):
         del items[index]
     return np.array(items)
+
+
+
+# https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
+# bigger is better
+def is_pareto_efficient(scores, return_mask = True):
+    """
+    Find the pareto-efficient points
+    :param scores: An (n_points, n_scores) array
+    :param return_mask: True to return a mask
+    :return: An array of indices of pareto-efficient points.
+        If return_mask is True, this will be an (n_points, ) boolean array
+        Otherwise it will be a (n_efficient_points, ) integer array of indices.
+    """
+    is_efficient = np.arange(scores.shape[0])
+    n_points = scores.shape[0]
+    next_point_index = 0  # Next index in the is_efficient array to search for
+    while next_point_index<len(scores):
+        nondominated_point_mask = np.any(scores>scores[next_point_index], axis=1)
+        nondominated_point_mask[next_point_index] = True
+        is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
+        scores = scores[nondominated_point_mask]
+        next_point_index = np.sum(nondominated_point_mask[:next_point_index])+1
+    if return_mask:
+        is_efficient_mask = np.zeros(n_points, dtype = bool)
+        is_efficient_mask[is_efficient] = True
+        return is_efficient_mask
+    else:
+        return is_efficient
+
+def get_pareto_frontier(df, column_names, weights, invalid_values=["TIMEOUT","INVALID"]):
+    dftmp = df[~df[column_names].isin(invalid_values).any(axis=1)]
+
+    if "Budget" in dftmp.columns:
+        #get rows with the max budget
+        dftmp = dftmp[dftmp["Budget"]==dftmp["Budget"].max()]
+
+
+    indexes = dftmp[~dftmp[column_names].isna().any(axis=1)].index.values
+    weighted_scores = df.loc[indexes][column_names].to_numpy()  * weights
+    mask = is_pareto_efficient(weighted_scores, return_mask = True)
+    df["Pareto_Front"] = np.nan #TODO this will get deprecated
+    df.loc[indexes[mask], "Pareto_Front"] = 1
+    
+
 
 def get_pareto_front(df, column_names, weights, invalid_values=["TIMEOUT","INVALID"]):
     dftmp = df[~df[column_names].isin(invalid_values).any(axis=1)]
@@ -75,31 +120,6 @@ def get_pareto_front(df, column_names, weights, invalid_values=["TIMEOUT","INVAL
 
     for i, front in enumerate(pareto_fronts):
         for index in front:
-            df.loc[indexes[index], "Pareto_Front"] = i
+            df.loc[indexes[index], "Pareto_Front"] = i+1
 
     return df["Pareto_Front"]
-
-def update_pareto_frontier(df, column_names, weights,generation, invalid_values=["TIMEOUT","INVALID"]):
-    dftmp = df[~df[column_names].isin(invalid_values).any(axis=1)]
-
-    if "Budget" in dftmp.columns:
-        #get rows with the max budget
-        dftmp = dftmp[dftmp["Budget"]==dftmp["Budget"].max()]
-
-    
-    
-    dftmp = dftmp[~dftmp[column_names].isna().any(axis=1)]
-    if "Pareto_Front" in dftmp.columns:
-        dftmp = dftmp[(dftmp["Pareto_Front"]==0) | (dftmp["Generation"] == generation)]
-    indexes = dftmp.index.values
-    weighted_scores = df.loc[indexes][column_names].to_numpy()  * weights
-
-    pareto_fronts = tpot2.parent_selectors.nondominated_sorting(weighted_scores)
-    
-    df["Pareto_Front"] = np.nan
-
-    for i, front in enumerate(pareto_fronts):
-        for index in front:
-            df.loc[indexes[index], "Pareto_Front"] = i
-
-    return df

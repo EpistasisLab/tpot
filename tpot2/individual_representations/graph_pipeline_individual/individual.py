@@ -14,6 +14,7 @@ from .graph_utils import graph_utils
 import itertools
 import baikal
 import copy
+from .. import BaseIndividual
 
 class NodeLabel():
     def __init__(self, *,
@@ -21,11 +22,13 @@ class NodeLabel():
         #intialized, but may change later
             method_class = None, #transformer or baseestimator
             hyperparameters=None,
+            label=None,
     ):
 
         #intializable, but may change later
         self.method_class = method_class #transformer or baseestimator
         self.hyperparameters = hyperparameters
+        self.label = label
 
 from functools import partial
 #@https://stackoverflow.com/questions/20530455/isomorphic-comparison-of-networkx-graph-objects-instead-of-the-default-address
@@ -65,7 +68,7 @@ def node_match(n1,n2, matched_labels):
     return all( [ n1[m] == n2[m] for m in matched_labels])
 
 
-class GraphIndividual(tpot2.BaseIndividual):
+class GraphIndividual(BaseIndividual):
     '''
     An individual that contains a template for a graph sklearn pipeline. 
 
@@ -188,13 +191,18 @@ class GraphIndividual(tpot2.BaseIndividual):
         self.mutate_methods_list =     [self._mutate_hyperparameters,
                                         self._mutate_replace_node, 
                                         self._mutate_remove_node,
+                                        self._mutate_remove_edge,
+                                        self._mutate_add_edge,
+                                        self._mutate_insert_leaf,
+                                        self._mutate_insert_bypass_node,
+                                        self._mutate_insert_inner_node,
                                         ]
         
         self.crossover_methods_list = [
                                         #self._crossover_swap_node,
                                         #self._crossover_hyperparameters,
                                         self._crossover_swap_branch,
-                                        #self._crossover_take_branch,
+                                        self._crossover_take_branch,
                                         #self._crossover_swap_leaf_at_node,
                                         ]
 
@@ -1094,7 +1102,14 @@ class GraphIndividual(tpot2.BaseIndividual):
 
         return self.key
 
-
+    def full_node_list(self):
+        node_list = list(self.graph.nodes)
+        for node in node_list:
+            if isinstance(node, GraphIndividual):
+                node_list.pop(node_list.index(node))
+                node_list.extend(node.graph.nodes)
+        return node_list
+                
 
 
 

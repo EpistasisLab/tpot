@@ -8,6 +8,7 @@ from sklearn.feature_selection import SelectFromModel
 import sklearn.feature_selection
 from functools import partial
 from sklearn.ensemble import ExtraTreesRegressor, ExtraTreesClassifier
+from tpot2.builtin_modules import RFE_ExtraTreesClassifier, SelectFromModel_ExtraTreesClassifier, RFE_ExtraTreesRegressor, SelectFromModel_ExtraTreesRegressor
 
 from .classifiers import params_ExtraTreesClassifier
 from .regressors import params_ExtraTreesRegressor
@@ -60,11 +61,49 @@ def params_sklearn_feature_selection_SelectFromModel(trial, name=None, classifie
 
 
 
-def make_selector_config_dictionary(classifier=True):
-    return {
-                SelectFwe: params_sklearn_feature_selection_SelectFwe,
-                SelectPercentile: params_sklearn_feature_selection_SelectPercentile,
-                VarianceThreshold: params_sklearn_feature_selection_VarianceThreshold,
-                RFE: partial(params_sklearn_feature_selection_RFE, classifier=classifier),
-                SelectFromModel: partial(params_sklearn_feature_selection_SelectFromModel, classifier=classifier),
+def params_sklearn_feature_selection_RFE_wrapped(trial, name=None, classifier=True):
+    params = {
+            'step': trial.suggest_float(f'step_{name}', 1e-4, 1.0, log=False),
             }
+    
+    if classifier:
+        estimator_params = params_ExtraTreesClassifier(trial, name=f"RFE_{name}")
+    else:
+        estimator_params = params_ExtraTreesRegressor(trial, name=f"RFE_{name}")
+    
+    params.update(estimator_params)
+
+    return params
+
+
+def params_sklearn_feature_selection_SelectFromModel_wrapped(trial, name=None, classifier=True):
+    params = {
+        'threshold': trial.suggest_float(f'threshold_{name}', 1e-4, 1.0, log=True),
+        }
+        
+    if classifier:
+        estimator_params = params_ExtraTreesClassifier(trial, name=f"SFM_{name}")
+    else:
+        estimator_params = params_ExtraTreesRegressor(trial, name=f"SFM_{name}")
+    
+    params.update(estimator_params)
+
+    return params
+
+
+
+def make_selector_config_dictionary(classifier=True):
+    if classifier:
+        params =    {RFE_ExtraTreesClassifier : partial(params_sklearn_feature_selection_RFE_wrapped, classifier=classifier),
+                    SelectFromModel_ExtraTreesClassifier : partial(params_sklearn_feature_selection_SelectFromModel_wrapped, classifier=classifier),
+                    }
+    else:
+        params =    {RFE_ExtraTreesRegressor : partial(params_sklearn_feature_selection_RFE_wrapped, classifier=classifier),
+                    SelectFromModel_ExtraTreesRegressor : partial(params_sklearn_feature_selection_SelectFromModel_wrapped, classifier=classifier),
+                    }
+    
+    params.update({ SelectFwe: params_sklearn_feature_selection_SelectFwe,
+                    SelectPercentile: params_sklearn_feature_selection_SelectPercentile,
+                    VarianceThreshold: params_sklearn_feature_selection_VarianceThreshold,})
+
+    return params

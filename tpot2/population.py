@@ -3,7 +3,7 @@ import copy
 import copy
 import typing
 import tpot2
-from tpot2.individual import BaseIndividual
+from tpot2.individual_representations.individual import BaseIndividual
 from traitlets import Bool
 import collections
 import pandas as pd
@@ -300,16 +300,30 @@ def get_id(individual):
     return individual.unique_id()
 
 def parallel_create_offspring(parents_list, var_op_list, n_jobs=1):
-    delayed_offspring = []
+    if n_jobs == 1:
+        return nonparallel_create_offpring(parents_list, var_op_list)
+    else:
+        delayed_offspring = []
+        for parents, var_op in zip(parents_list,var_op_list):
+            #TODO put this loop in population class
+            if var_op in built_in_var_ops_dict:
+                var_op = built_in_var_ops_dict[var_op]
+            delayed_offspring.append(dask.delayed(copy_and_change)(parents, var_op))
+
+        offspring = dask.compute(*delayed_offspring,
+                                num_workers=n_jobs, threads_per_worker=1)
+        return offspring
+
+def nonparallel_create_offpring(parents_list, var_op_list, n_jobs=1):
+    offspring = []
     for parents, var_op in zip(parents_list,var_op_list):
         #TODO put this loop in population class
         if var_op in built_in_var_ops_dict:
             var_op = built_in_var_ops_dict[var_op]
-        delayed_offspring.append(dask.delayed(copy_and_change)(parents, var_op))
+        offspring.append(copy_and_change(parents, var_op))
 
-    offspring = dask.compute(*delayed_offspring,
-                             num_workers=n_jobs, threads_per_worker=1)
     return offspring
+
 
 def copy_and_change(parents, var_op):
     offspring = copy.deepcopy(parents)

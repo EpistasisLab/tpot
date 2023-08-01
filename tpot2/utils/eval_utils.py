@@ -6,7 +6,7 @@ import traceback
 from collections.abc import Iterable
 import warnings
 from stopit import threading_timeoutable, TimeoutException
-from tpot2.parent_selectors import survival_select_NSGA2
+from tpot2.selectors import survival_select_NSGA2
 import time
 import dask
 import stopit
@@ -108,6 +108,8 @@ def parallel_eval_objective_list(individual_list,
     except dask.distributed.TimeoutError:
         print("terminating parallel evaluation due to timeout")
         pass
+    except dask.distributed.CancelledError:
+        print("dask.distributed.CancelledError")
     
     offspring_scores = []
     # todo optimize this
@@ -116,14 +118,18 @@ def parallel_eval_objective_list(individual_list,
             future.cancel()
             offspring_scores.append(["TIMEOUT"])
             if verbose >= 4:
-                print(f'WARNING AN INDIVIDUAL TIMED OUT: \n {individual} \n')
+                print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {individual} \n')
         elif future.exception():
             offspring_scores.append(["INVALID"])
             if verbose == 4:
-                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION \n {individual} \n {future.exception()} \n')
+                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION (Dask Future) \n {individual} \n {future.exception()} \n')
             if verbose >= 5:
-                trace = traceback.format_exc()
-                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION \n {individual} \n {future.exception()} \n {future.traceback()}')
+                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION (Dask Future) \n {individual} \n {future.exception()} \n {future.traceback()}')
+        elif future.cancelled():
+            offspring_scores.append(["INVALID"])
+            if verbose == 4:
+                print(f'WARNING THIS INDIVIDUAL WAS CANCELED BY DASK (likely memory issue) \n {individual}')
+
         else:
             offspring_scores.append(future.result())
             

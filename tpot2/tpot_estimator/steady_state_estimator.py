@@ -3,20 +3,20 @@ from sklearn.utils.metaestimators import available_if
 import numpy as np
 import sklearn.metrics
 import tpot2.config
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import  check_is_fitted
 from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 from sklearn.preprocessing import LabelEncoder 
-
+from sklearn.utils.multiclass import unique_labels 
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import tpot2
+
 from dask.distributed import Client
 from dask.distributed import LocalCluster
 import math
-from .estimator_utils import *
 
 from dask import config as cfg
-
+from .estimator_utils import *
 
 def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
@@ -24,14 +24,13 @@ def set_dask_settings():
 
 
 
-
 #TODO inherit from _BaseComposition?
-class TPOTEstimator(BaseEstimator):
-    def __init__(self,  scorers, 
-                        scorers_weights,
-                        classification,
+class TPOTEstimatorSteadyState(BaseEstimator):
+    def __init__(self,  scorers= [], 
+                        scorers_weights = [],
+                        classification = False,
                         cv = 5,
-                        other_objective_functions=[],
+                        other_objective_functions=[], #tpot2.objectives.estimator_objective_functions.number_of_nodes_objective],
                         other_objective_functions_weights = [],
                         objective_function_names = None,
                         bigger_is_better = True,
@@ -44,64 +43,50 @@ class TPOTEstimator(BaseEstimator):
                         categorical_features = None,
                         subsets = None,
                         memory = None,
-                        preprocessing = False,
-                        population_size = 50,
-                        initial_population_size = None,
-                        population_scaling = .5, 
-                        generations_until_end_population = 1,  
-                        generations = 50,
-                        max_time_seconds=float('inf'), 
-                        max_eval_time_seconds=60*10, 
+                        preprocessing = False,  
                         validation_strategy = "none",
                         validation_fraction = .2,
+
+                        initial_population_size = 50,
+                        population_size = 50,
+                        max_evaluated_individuals = None,
+
                         
-                        #early stopping parameters 
+
                         early_stop = None,
                         scorers_early_stop_tol = 0.001,
-                        other_objectives_early_stop_tol =None,
-                        threshold_evaluation_early_stop = None, 
-                        threshold_evaluation_scaling = .5,
-                        selection_evaluation_early_stop = None, 
-                        selection_evaluation_scaling = .5, 
-                        min_history_threshold = 20,
-                        
-                        #evolver parameters
-                        survival_percentage = 1,
+                        other_objectives_early_stop_tol = None,
+                        max_time_seconds=float('inf'), 
+                        max_eval_time_seconds=60*10, 
+                        n_jobs=1,
+                        memory_limit = "4GB",
+                        client = None,
+
                         crossover_probability=.2,
                         mutate_probability=.7,
                         mutate_then_crossover_probability=.05,
                         crossover_then_mutate_probability=.05,
-                        n_parents = 2,
                         survival_selector = survival_select_NSGA2,
                         parent_selector = tournament_selection_dominated,
-                        
-                        #budget parameters
                         budget_range = None,
                         budget_scaling = .5,
-                        generations_until_end_budget = 1,  
+                        individuals_until_end_budget = 1,  
                         stepwise_steps = 5,
-                        
+
+                        warm_start = False,
+                        subset_column = None,
+
+                        verbose = 0,
+                        periodic_checkpoint_folder = None, 
+                        callback = None,
+                        processes = True,
+
+                        scatter = True,
 
                         optuna_optimize_pareto_front = False,
                         optuna_optimize_pareto_front_trials = 100,
                         optuna_optimize_pareto_front_timeout = 60*10,
                         optuna_storage = "sqlite:///optuna.db",
-                        
-                        #dask parameters
-                        n_jobs=1,
-                        memory_limit = "4GB",
-                        client = None,
-                        processes = True,
-                        
-                        #debugging and logging parameters
-                        warm_start = False,
-                        subset_column = None,
-                        periodic_checkpoint_folder = None, 
-                        callback = None,
-                        
-                        verbose = 0,
-                        scatter = True,
-
                         ):
                         
         '''
@@ -124,7 +109,6 @@ class TPOTEstimator(BaseEstimator):
         cv : int, cross-validator
             - (int): Number of folds to use in the cross-validation process. By uses the sklearn.model_selection.KFold cross-validator for regression and StratifiedKFold for classification. In both cases, shuffled is set to True.
             - (sklearn.model_selection.BaseCrossValidator): A cross-validator to use in the cross-validation process.
-                - max_depth (int): The maximum depth from any node to the root of the pipelines to be generated.
         
         other_objective_functions : list, default=[tpot2.objectives.estimator_objective_functions.average_path_length_objective]
             A list of other objective functions to apply to the pipeline.
@@ -244,6 +228,16 @@ class TPOTEstimator(BaseEstimator):
             A pipeline that will be used to preprocess the data before CV.
             - bool : If True, will use a default preprocessing pipeline.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
+              
+        validation_strategy : str, default='none'
+            EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT2 may overfit the cross validation score. A second validation set can be used to select the final pipeline.
+            - 'auto' : Automatically determine the validation strategy based on the dataset shape.
+            - 'reshuffled' : Use the same data for cross validation and final validation, but with different splits for the folds. This is the default for small datasets. 
+            - 'split' : Use a separate validation set for final validation. Data will be split according to validation_fraction. This is the default for medium datasets. 
+            - 'none' : Do not use a separate validation set for final validation. Select based on the original cross-validation score. This is the default for large datasets.
+
+        validation_fraction : float, default=0.2
+          EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
         
         population_size : int, default=50
             Size of the population
@@ -259,22 +253,6 @@ class TPOTEstimator(BaseEstimator):
         
         generations : int, default=50
             Number of generations to run
-            
-        max_time_seconds : float, default=float("inf")
-            Maximum time to run the optimization. If none or inf, will run until the end of the generations.
-        
-        max_eval_time_seconds : float, default=60*5
-            Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
-            
-        validation_strategy : str, default='none'
-            EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT2 may overfit the cross validation score. A second validation set can be used to select the final pipeline.
-            - 'auto' : Automatically determine the validation strategy based on the dataset shape.
-            - 'reshuffled' : Use the same data for cross validation and final validation, but with different splits for the folds. This is the default for small datasets. 
-            - 'split' : Use a separate validation set for final validation. Data will be split according to validation_fraction. This is the default for medium datasets. 
-            - 'none' : Do not use a separate validation set for final validation. Select based on the original cross-validation score. This is the default for large datasets.
-
-        validation_fraction : float, default=0.2
-          EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
         
         early_stop : int, default=None
             Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
@@ -293,34 +271,21 @@ class TPOTEstimator(BaseEstimator):
             -int 
                 If an int is given, it will be used as the tolerance for all objectives
     
-        threshold_evaluation_early_stop : list [start, end], default=None
-            starting and ending percentile to use as a threshold for the evaluation early stopping.
-            Values between 0 and 100.
+        max_time_seconds : float, default=float("inf")
+            Maximum time to run the optimization. If none or inf, will run until the end of the generations.
         
-        threshold_evaluation_scaling : float [0,inf), default=0.5
-            A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
-            Must be greater than zero. Higher numbers will move the threshold to the end faster.
+        max_eval_time_seconds : float, default=60*5
+            Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
         
-        selection_evaluation_early_stop : list, default=None
-            A lower and upper percent of the population size to select each round of CV.
-            Values between 0 and 1.
+        n_jobs : int, default=1
+            Number of processes to run in parallel.
         
-        selection_evaluation_scaling : float, default=0.5 
-            A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
-            Must be greater than zero. Higher numbers will move the threshold to the end faster.    
+        memory_limit : str, default="4GB"
+            Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
         
-        min_history_threshold : int, default=0
-            The minimum number of previous scores needed before using threshold early stopping.
-        
-        evolver : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver), default=eaNSGA2_Evolver
-            The evolver to use for the optimization process. See tpot2.evolutionary_algorithms
-            - type : an type or subclass of a BaseEvolver
-            - "nsga2" : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver
-        
-        survival_percentage : float, default=1
-            Percentage of the population size to utilize for mutation and crossover at the beginning of the generation. The rest are discarded. Individuals are selected with the selector passed into survival_selector. The value of this parameter must be between 0 and 1, inclusive. 
-            For example, if the population size is 100 and the survival percentage is .5, 50 individuals will be selected with NSGA2 from the existing population. These will be used for mutation and crossover to generate the next 100 individuals for the next generation. The remainder are discarded from the live population. In the next generation, there will now be the 50 parents + the 100 individuals for a total of 150. Surivival percentage is based of the population size parameter and not the existing population size (current population size when using successive halving). Therefore, in the next generation we will still select 50 individuals from the currently existing 150.
-        
+        client : dask.distributed.Client, default=None
+            A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit. 
+
         crossover_probability : float, default=.2
             Probability of generating a new individual by crossover between two individuals.
         
@@ -338,7 +303,7 @@ class TPOTEstimator(BaseEstimator):
         
         survival_selector : function, default=survival_select_NSGA2
             Function to use to select individuals for survival. Must take a matrix of scores and return selected indexes.
-            Used to selected population_size * survival_percentage individuals at the start of each generation to use for mutation and crossover.
+            Used to selected population_size individuals at the start of each generation to use for mutation and crossover.
         
         parent_selector : function, default=parent_select_NSGA2
             Function to use to select pairs parents for crossover and individuals for mutation. Must take a matrix of scores and return selected indexes.
@@ -349,40 +314,54 @@ class TPOTEstimator(BaseEstimator):
         budget_scaling float : [0,1], default=0.5
             A scaling factor to use when determining how fast we move the budget from the start to end budget.
         
-        generations_until_end_budget : int, default=1
+        individuals_until_end_budget : int, default=1
             The number of generations to run before reaching the max budget.
         
         stepwise_steps : int, default=1
             The number of staircase steps to take when scaling the budget and population size.
         
-            
-        n_jobs : int, default=1
-            Number of processes to run in parallel.
+        threshold_evaluation_early_stop : list [start, end], default=None
+            starting and ending percentile to use as a threshold for the evaluation early stopping.
+            Values between 0 and 100.
         
-        memory_limit : str, default="4GB"
-            Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
+        threshold_evaluation_scaling : float [0,inf), default=0.5
+            A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
+            Must be greater than zero. Higher numbers will move the threshold to the end faster.
         
-        client : dask.distributed.Client, default=None
-            A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit. 
+        min_history_threshold : int, default=0
+            The minimum number of previous scores needed before using threshold early stopping.
         
-        processes : bool, default=True
-            If True, will use multiprocessing to parallelize the optimization process. If False, will use threading.
-            True seems to perform better. However, False is required for interactive debugging.
-            
+        selection_evaluation_early_stop : list, default=None
+            A lower and upper percent of the population size to select each round of CV.
+            Values between 0 and 1.
+        
+        selection_evaluation_scaling : float, default=0.5 
+            A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
+            Must be greater than zero. Higher numbers will move the threshold to the end faster.
+        
+        n_initial_optimizations : int, default=0
+            Number of individuals to optimize before starting the evolution.
+        
+        optimization_cv : int 
+           Number of folds to use for the optuna optimization's internal cross-validation.
+        
+        max_optimize_time_seconds : float, default=60*5
+            Maximum time to run an optimization
+        
+        optimization_steps : int, default=10
+            Number of steps per optimization
           
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
          
         subset_column : str or int, default=None
             EXPERIMENTAL The column to use for the subset selection. Must also pass in unique_subset_values to GraphIndividual to function.
+         
+        evolver : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver), default=eaNSGA2_Evolver
+            The evolver to use for the optimization process. See tpot2.evolutionary_algorithms
+            - type : an type or subclass of a BaseEvolver
+            - "nsga2" : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver
         
-        periodic_checkpoint_folder : str, default=None
-            Folder to save the population to periodically. If None, no periodic saving will be done.
-            If provided, training will resume from this checkpoint.
-        
-        callback : tpot2.CallBackInterface, default=None
-            Callback object. Not implemented
-            
         verbose : int, default=1 
             How much information to print during the optimization process. Higher values include the information from lower values.
             0. nothing
@@ -393,6 +372,16 @@ class TPOTEstimator(BaseEstimator):
             >=5. full warnings trace
             6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
         
+        periodic_checkpoint_folder : str, default=None
+            Folder to save the population to periodically. If None, no periodic saving will be done.
+            If provided, training will resume from this checkpoint.
+        
+        callback : tpot2.CallBackInterface, default=None
+            Callback object. Not implemented
+
+        processes : bool, default=True
+            If True, will use multiprocessing to parallelize the optimization process. If False, will use threading.
+            True seems to perform better. However, False is required for interactive debugging.
             
         Attributes
         ----------
@@ -443,9 +432,7 @@ class TPOTEstimator(BaseEstimator):
         self.validation_fraction = validation_fraction
         self.population_size = population_size
         self.initial_population_size = initial_population_size
-        self.population_scaling = population_scaling
-        self.generations_until_end_population = generations_until_end_population
-        self.generations = generations
+
         self.early_stop = early_stop
         self.scorers_early_stop_tol = scorers_early_stop_tol
         self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
@@ -454,7 +441,7 @@ class TPOTEstimator(BaseEstimator):
         self.n_jobs= n_jobs
         self.memory_limit = memory_limit
         self.client = client
-        self.survival_percentage = survival_percentage
+
         self.crossover_probability = crossover_probability
         self.mutate_probability = mutate_probability
         self.mutate_then_crossover_probability= mutate_then_crossover_probability
@@ -463,15 +450,12 @@ class TPOTEstimator(BaseEstimator):
         self.parent_selector=parent_selector
         self.budget_range = budget_range
         self.budget_scaling = budget_scaling
-        self.generations_until_end_budget = generations_until_end_budget
+        self.individuals_until_end_budget = individuals_until_end_budget
         self.stepwise_steps = stepwise_steps
-        self.threshold_evaluation_early_stop =threshold_evaluation_early_stop
-        self.threshold_evaluation_scaling =  threshold_evaluation_scaling
-        self.min_history_threshold = min_history_threshold
-        self.selection_evaluation_early_stop = selection_evaluation_early_stop
-        self.selection_evaluation_scaling =  selection_evaluation_scaling
+
         self.warm_start = warm_start
         self.subset_column = subset_column
+
         self.verbose = verbose
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
         self.callback = callback
@@ -484,6 +468,9 @@ class TPOTEstimator(BaseEstimator):
         self.optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials
         self.optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout
         self.optuna_storage = optuna_storage
+
+
+        self.max_evaluated_individuals = max_evaluated_individuals
 
         #Initialize other used params
 
@@ -504,8 +491,10 @@ class TPOTEstimator(BaseEstimator):
         self._scorers = [sklearn.metrics.get_scorer(scoring) for scoring in self._scorers]
         self._scorers_early_stop_tol = self.scorers_early_stop_tol
         
-        self._evolver = tpot2.evolvers.BaseEvolver
+        self._evolver = tpot2.evolvers.SteadyStateEvolver
         
+       
+
         self.objective_function_weights = [*scorers_weights, *other_objective_functions_weights]
         
 
@@ -680,10 +669,7 @@ class TPOTEstimator(BaseEstimator):
                                                             linear_pipeline=self.linear_pipeline,
                                                                 )
 
-        if self.threshold_evaluation_early_stop is not None or self.selection_evaluation_early_stop is not None:
-            evaluation_early_stop_steps = self.cv
-        else:
-            evaluation_early_stop_steps = None
+
 
         if self.scatter:
             X_future = _client.scatter(X)
@@ -700,42 +686,39 @@ class TPOTEstimator(BaseEstimator):
                                             objective_names=self.objective_names,
                                             bigger_is_better = self.bigger_is_better,
                                             population_size= self.population_size,
-                                            generations=self.generations,
+
                                             initial_population_size = self._initial_population_size,
                                             n_jobs=self.n_jobs,
                                             verbose = self.verbose,
                                             max_time_seconds =      self.max_time_seconds ,
                                             max_eval_time_seconds = self.max_eval_time_seconds,
+                                            
+                                            
 
                                             periodic_checkpoint_folder = self.periodic_checkpoint_folder,
-                                            threshold_evaluation_early_stop = self.threshold_evaluation_early_stop,
-                                            threshold_evaluation_scaling =  self.threshold_evaluation_scaling,
-                                            min_history_threshold = self.min_history_threshold,
 
-                                            selection_evaluation_early_stop = self.selection_evaluation_early_stop,
-                                            selection_evaluation_scaling =  self.selection_evaluation_scaling,
-                                            evaluation_early_stop_steps = evaluation_early_stop_steps,
 
                                             early_stop_tol = self.early_stop_tol,
                                             early_stop= self.early_stop,
                                             
                                             budget_range = self.budget_range,
                                             budget_scaling = self.budget_scaling,
-                                            generations_until_end_budget = self.generations_until_end_budget,
+                                            individuals_until_end_budget = self.individuals_until_end_budget,
 
-                                            population_scaling = self.population_scaling,
-                                            generations_until_end_population = self.generations_until_end_population,
+
                                             stepwise_steps = self.stepwise_steps,
                                             client = _client,
                                             objective_kwargs = {"X": X_future, "y": y_future},
                                             survival_selector=self.survival_selector,
                                             parent_selector=self.parent_selector,
-                                            survival_percentage = self.survival_percentage,
+
                                             crossover_probability = self.crossover_probability,
                                             mutate_probability = self.mutate_probability,
                                             mutate_then_crossover_probability= self.mutate_then_crossover_probability,
                                             crossover_then_mutate_probability= self.crossover_then_mutate_probability,
                                             
+
+                                            max_evaluated_individuals = self.max_evaluated_individuals
                                             )
 
         
