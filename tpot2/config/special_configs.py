@@ -65,7 +65,6 @@ def make_FSS_config_dictionary(subsets=None, n_features=None, feature_names=None
     
     if isinstance(subsets, str):
         df = pd.read_csv(subsets,header=None,index_col=0)
-        df.set_index(0,inplace=True)
         df['features'] = df.apply(lambda x: list([x[c] for c in df.columns]),axis=1) 
         subset_dict = {}
         for row in df.index:

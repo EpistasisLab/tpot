@@ -41,8 +41,8 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
         Parameters
         ----------
         sel_subset: list or int
-            If X is a dataframe, items in sel_subset must correspond to column names
-            If X is a numpy array, items in sel_subset must correspond to column indexes
+            If X is a dataframe, items in sel_subset list must correspond to column names
+            If X is a numpy array, items in sel_subset list must correspond to column indexes
             int: index of a single column
         Returns
         -------

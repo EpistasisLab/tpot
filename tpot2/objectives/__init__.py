@@ -1,6 +1,6 @@
 from .average_path_length_objective import average_path_length_objective
 from .number_of_nodes_objective import number_of_nodes_objective
-from .number_of_leaves_scorer import number_of_leaves_scorer
+from .number_of_leaves_scorer import number_of_leaves_scorer, number_of_leaves_objective
 from .complexity_objective import complexity_scorer
 
 
