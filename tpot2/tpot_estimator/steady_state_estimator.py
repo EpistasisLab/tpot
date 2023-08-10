@@ -54,6 +54,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         
 
                         early_stop = None,
+                        early_stop_seconds = None,
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol = None,
                         max_time_seconds=float('inf'), 
@@ -255,8 +256,11 @@ class TPOTEstimatorSteadyState(BaseEstimator):
             Number of generations to run
         
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of evaluated individuals without improvement before early stopping. Counted across all objectives independently. Triggered when all objectives have not improved by the given number of individuals.
         
+        early_stop_seconds : float, default=None
+            Number of seconds without improvement before early stopping. All objectives must not have improved for the given number of seconds for this to be triggered.
+
         scorers_early_stop_tol : 
             -list of floats
                 list of tolerances for each scorer. If the difference between the best score and the current score is less than the tolerance, the individual is considered to have converged
@@ -434,6 +438,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.initial_population_size = initial_population_size
 
         self.early_stop = early_stop
+        self.early_stop_seconds = early_stop_seconds
         self.scorers_early_stop_tol = scorers_early_stop_tol
         self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
         self.max_time_seconds = max_time_seconds 
@@ -701,6 +706,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
                                             early_stop_tol = self.early_stop_tol,
                                             early_stop= self.early_stop,
+                                            early_stop_seconds =  self.early_stop_seconds,
                                             
                                             budget_range = self.budget_range,
                                             budget_scaling = self.budget_scaling,

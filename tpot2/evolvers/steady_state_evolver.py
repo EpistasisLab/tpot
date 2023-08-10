@@ -35,6 +35,7 @@ class SteadyStateEvolver():
                     population_size = 50,
                     max_evaluated_individuals = None, 
                     early_stop = None,
+                    early_stop_seconds = None,
                     early_stop_tol = 0.001,
                     
 
@@ -146,6 +147,7 @@ class SteadyStateEvolver():
         
 
         self.early_stop_tol = early_stop_tol
+        self.early_stop_seconds = early_stop_seconds
         self.early_stop = early_stop
 
         if isinstance(self.early_stop_tol, float):
@@ -198,6 +200,7 @@ class SteadyStateEvolver():
         #set up logging params
         evaluated_count = 0
         generations_without_improvement = np.array([0 for _ in range(len(self.objective_function_weights))])
+        timestamp_of_last_improvement = np.array([time.time() for _ in range(len(self.objective_function_weights))])
         best_scores = [-np.inf for _ in range(len(self.objective_function_weights))]
         scheduled_timeout_time = time.time() + self.max_time_seconds
         budget = None
@@ -232,6 +235,7 @@ class SteadyStateEvolver():
                 self.population.update_column(individual, column_names="Submitted Timestamp", data=time.time())
 
             done = False
+            start_time = time.time()
             while not done:
                 
                 ###############################
@@ -321,7 +325,7 @@ class SteadyStateEvolver():
                     for i, obj in enumerate(self.objective_names):
                         print(f"Best {obj} score: {cur_best_scores[i]}")
 
-                if self.early_stop:
+                if self.early_stop or self.early_stop_seconds:
                     if self.budget is None or self.budget>=self.budget_range[-1]: #self.budget>=1:
                         #get sign of objective_function_weights
                         sign = np.sign(self.objective_function_weights)
@@ -334,14 +338,24 @@ class SteadyStateEvolver():
                         improved = ( np.array(cur_best_scores) - np.array(best_scores) >= np.array(self.early_stop_tol) )
                         not_improved = np.logical_not(improved)
                         generations_without_improvement = generations_without_improvement * not_improved + not_improved #set to zero if not improved, else increment
+                        
+                        timestamp_of_last_improvement = timestamp_of_last_improvement * not_improved + time.time()*improved #set to current time if improved
+                        
                         pass
                         #update best score
                         best_scores = [max(best_scores[i], cur_best_scores[i]) for i in range(len(self.objective_names))]
 
-                        if all(generations_without_improvement>self.early_stop):
-                            if self.verbose >= 3:
-                                print("Early stop")
-                            break
+                        if self.early_stop:
+                            if all(generations_without_improvement>self.early_stop):
+                                if self.verbose >= 3:
+                                    print(f"Early stop ({self.early_stop} individuals evaluated without improvement)")
+                                break
+                        
+                        if self.early_stop_seconds:
+                            if any(time.time() - timestamp_of_last_improvement > self.early_stop_seconds):
+                                if self.verbose >= 3:
+                                    print(f"Early stop  ({self.early_stop_seconds} seconds passed without improvement)")
+                                break
 
                 #if we evaluated enough individuals or time is up, stop
                 if self.max_time_seconds is not None and time.time() - start_time > self.max_time_seconds:
