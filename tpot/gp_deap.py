@@ -141,7 +141,6 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
                 # If there is no pair eligible for crossover, we still want to
                 # create diversity in the population, and do so by mutation instead.
                 ind_mu = mutate_random_individual(population, toolbox)
-                print(ind_mu.fitness.values)
                 offspring.append(ind_mu)
         elif op_choice < cxpb + mutpb:  # Apply mutation
             ind = mutate_random_individual(population, toolbox)
