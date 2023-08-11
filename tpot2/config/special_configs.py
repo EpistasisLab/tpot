@@ -2,6 +2,7 @@ from tpot2.builtin_modules import ArithmeticTransformer, FeatureSetSelector
 from functools import partial
 import pandas as pd
 import numpy as np
+from tpot2.builtin_modules import AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer
 
 # ArithmeticTransformer
 def params_arthmetic_operator(trial, name=None):
@@ -10,7 +11,20 @@ def params_arthmetic_operator(trial, name=None):
                 }
 
 def make_arithmetic_transformer_config_dictionary():
-        return {ArithmeticTransformer: params_arthmetic_operator}
+        return  {   
+                AddTransformer: {},
+                mul_neg_1_Transformer: {}, 
+                MulTransformer: {},
+                SafeReciprocalTransformer: {},
+                EQTransformer: {},
+                NETransformer: {},
+                GETransformer: {},
+                GTTransformer: {},
+                LETransformer: {},
+                LTTransformer: {},
+                MinTransformer: {}, 
+                MaxTransformer: {},
+        }
 
 
 
@@ -65,7 +79,6 @@ def make_FSS_config_dictionary(subsets=None, n_features=None, feature_names=None
     
     if isinstance(subsets, str):
         df = pd.read_csv(subsets,header=None,index_col=0)
-        df.set_index(0,inplace=True)
         df['features'] = df.apply(lambda x: list([x[c] for c in df.columns]),axis=1) 
         subset_dict = {}
         for row in df.index:

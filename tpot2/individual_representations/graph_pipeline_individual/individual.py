@@ -191,19 +191,10 @@ class GraphIndividual(BaseIndividual):
         self.mutate_methods_list =     [self._mutate_hyperparameters,
                                         self._mutate_replace_node, 
                                         self._mutate_remove_node,
-                                        self._mutate_remove_edge,
-                                        self._mutate_add_edge,
-                                        self._mutate_insert_leaf,
-                                        self._mutate_insert_bypass_node,
-                                        self._mutate_insert_inner_node,
                                         ]
         
         self.crossover_methods_list = [
-                                        #self._crossover_swap_node,
-                                        #self._crossover_hyperparameters,
                                         self._crossover_swap_branch,
-                                        self._crossover_take_branch,
-                                        #self._crossover_swap_leaf_at_node,
                                         ]
 
         if self.inner_config_dict is not None:
@@ -211,6 +202,8 @@ class GraphIndividual(BaseIndividual):
             self.crossover_methods_list.append(self._crossover_take_branch) #this is the only crossover method that can create inner nodes
             if not linear_pipeline:
                 self.mutate_methods_list.append(self._mutate_insert_bypass_node)
+                self.mutate_methods_list.append(self._mutate_remove_edge)
+                self.mutate_methods_list.append(self._mutate_add_edge)
 
         if not linear_pipeline:
             self.mutate_methods_list.append(self._mutate_insert_leaf)

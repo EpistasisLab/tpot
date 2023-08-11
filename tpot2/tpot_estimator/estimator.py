@@ -583,7 +583,8 @@ class TPOTEstimator(BaseEstimator):
         else:
             n_folds = self.cv.get_n_splits(X, y)
 
-        X, y = remove_underrepresented_classes(X, y, n_folds)
+        if self.classification:
+            X, y = remove_underrepresented_classes(X, y, n_folds)
         
         if self.preprocessing:
             #X = pd.DataFrame(X)
