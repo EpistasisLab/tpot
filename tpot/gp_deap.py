@@ -132,7 +132,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
             ind1, ind2 = pick_two_individuals_eligible_for_crossover(population)
             if ind1 is not None:
                 ind1_cx, _, evaluated_individuals_= toolbox.mate(ind1, ind2)
-                del ind1.fitness.values
+                del ind1_cx.fitness.values
 
                 if str(ind1_cx) in evaluated_individuals_:
                     ind1_cx = mutate_random_individual(population, toolbox)
