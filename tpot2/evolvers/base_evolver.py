@@ -645,7 +645,7 @@ class BaseEvolver():
     def evaluate_population_selection_early_stop(self,survival_counts, thresholds=None, budget=None):
 
 
-        survival_selector = tpot2.parent_selectors.survival_select_NSGA2
+        survival_selector = tpot2.selectors.survival_select_NSGA2
 
         ################
 
