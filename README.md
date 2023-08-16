@@ -17,6 +17,10 @@ If you are interested in using the current stable release of TPOT, you can do th
 Please see the [repository license](https://github.com/EpistasisLab/tpot2/blob/main/LICENSE) for the licensing and usage information for TPOT2.
 Generally, we have licensed TPOT2 to make it as widely usable as possible.
 
+## Documentation
+
+[The documentation webpage can be found here.](epistasislab.github.io/tpot2/)
+
 
 ## Installation
 
