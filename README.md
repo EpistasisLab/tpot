@@ -21,6 +21,7 @@ Generally, we have licensed TPOT2 to make it as widely usable as possible.
 
 [The documentation webpage can be found here.](epistasislab.github.io/tpot2/)
 
+We also recommend looking at the Tutorials folder for jupyter notebooks with examples and guides.
 
 ## Installation
 
