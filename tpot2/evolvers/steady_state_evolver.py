@@ -20,6 +20,7 @@ from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominate
 import math
 from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
 import dask
+import warnings
 
 class SteadyStateEvolver():
     def __init__(   self, 
@@ -451,9 +452,17 @@ class SteadyStateEvolver():
                     # If we don't have enough evaluated individuals to use as parents for variation, we create new individuals randomly
                     # This can happen if the individuals in the initial population are invalid
                     if len(cur_evaluated_population) == 0 and len(submitted_futures) < self.max_queue_size:
+                        
+                        initial_population = self.population.evaluated_individuals.iloc[:self.initial_population_size*3]
+                        invalid_initial_population = initial_population[initial_population[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)]
+                        if len(invalid_initial_population) >= self.initial_population_size*3: #if all individuals in the 3*initial population are invalid
+                            raise Exception("No individuals could be evaluated in the initial population. This may indicate a bug in the configuration, included models, or objective functions. Set verbose>=4 to see the errors that caused individuals to fail.")
+
                         n_individuals_to_create = self.max_queue_size - len(submitted_futures)
                         initial_population = [next(self.individual_generator) for _ in range(n_individuals_to_create)]
                         self.population.add_to_population(initial_population)
+
+                        
 
 
                 ###############################
