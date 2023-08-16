@@ -390,7 +390,7 @@ class BaseEvolver():
                         self.evaluate_population()
 
                     if len(self.population.population) == 0:
-                        raise Exception("No individuals could be evaluated in the initial population")
+                        raise Exception("No individuals could be evaluated in the initial population. This may indicate a bug in the configuration, included models, or objective functions. Set verbose>=4 to see the errors that caused individuals to fail.")
 
                     self.generation += 1
                 # Generation 1 is the first generation after the initial population
