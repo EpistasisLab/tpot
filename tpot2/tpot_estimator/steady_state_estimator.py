@@ -374,7 +374,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
             3. best individual
             4. warnings
             >=5. full warnings trace
-            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
+           
         
         periodic_checkpoint_folder : str, default=None
             Folder to save the population to periodically. If None, no periodic saving will be done.
