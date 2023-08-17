@@ -49,8 +49,8 @@ class TPOTEstimator(BaseEstimator):
                         initial_population_size = None,
                         population_scaling = .5, 
                         generations_until_end_population = 1,  
-                        generations = 50,
-                        max_time_seconds=float('inf'), 
+                        generations = None,
+                        max_time_seconds=3600, 
                         max_eval_time_seconds=60*10, 
                         validation_strategy = "none",
                         validation_fraction = .2,
@@ -71,7 +71,6 @@ class TPOTEstimator(BaseEstimator):
                         mutate_probability=.7,
                         mutate_then_crossover_probability=.05,
                         crossover_then_mutate_probability=.05,
-                        n_parents = 2,
                         survival_selector = survival_select_NSGA2,
                         parent_selector = tournament_selection_dominated,
                         
@@ -312,11 +311,6 @@ class TPOTEstimator(BaseEstimator):
         min_history_threshold : int, default=0
             The minimum number of previous scores needed before using threshold early stopping.
         
-        evolver : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver), default=eaNSGA2_Evolver
-            The evolver to use for the optimization process. See tpot2.evolutionary_algorithms
-            - type : an type or subclass of a BaseEvolver
-            - "nsga2" : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver
-        
         survival_percentage : float, default=1
             Percentage of the population size to utilize for mutation and crossover at the beginning of the generation. The rest are discarded. Individuals are selected with the selector passed into survival_selector. The value of this parameter must be between 0 and 1, inclusive. 
             For example, if the population size is 100 and the survival percentage is .5, 50 individuals will be selected with NSGA2 from the existing population. These will be used for mutation and crossover to generate the next 100 individuals for the next generation. The remainder are discarded from the live population. In the next generation, there will now be the 50 parents + the 100 individuals for a total of 150. Surivival percentage is based of the population size parameter and not the existing population size (current population size when using successive halving). Therefore, in the next generation we will still select 50 individuals from the currently existing 150.
@@ -332,9 +326,6 @@ class TPOTEstimator(BaseEstimator):
         
         crossover_then_mutate_probability : float, default=.05
             Probability of generating a new individual by crossover between two individuals followed by a mutation of the resulting individual.
-        
-        n_parents : int, default=2
-            Number of parents to use for crossover. Must be greater than 1.
         
         survival_selector : function, default=survival_select_NSGA2
             Function to use to select individuals for survival. Must take a matrix of scores and return selected indexes.
@@ -583,7 +574,8 @@ class TPOTEstimator(BaseEstimator):
         else:
             n_folds = self.cv.get_n_splits(X, y)
 
-        X, y = remove_underrepresented_classes(X, y, n_folds)
+        if self.classification:
+            X, y = remove_underrepresented_classes(X, y, n_folds)
         
         if self.preprocessing:
             #X = pd.DataFrame(X)
@@ -933,6 +925,11 @@ class TPOTEstimator(BaseEstimator):
     def classes_(self):
         """The classes labels. Only exist if the last step is a classifier."""
         return self.fitted_pipeline_.classes_
+    
+
+    @property
+    def _estimator_type(self):
+        return self.fitted_pipeline_._estimator_type
 
 
     def make_evaluated_individuals(self):

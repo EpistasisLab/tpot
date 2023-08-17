@@ -395,3 +395,7 @@ class GraphPipeline(_BaseComposition):
     def classes_(self):
         """The classes labels. Only exist if the last step is a classifier."""
         return self.graph.nodes[self.root]["instance"].classes_
+
+    @property
+    def _estimator_type(self):
+        return self.graph.nodes[self.root]["instance"]._estimator_type

@@ -18,7 +18,7 @@
 
 ## What are the relevant issues?
 
-[you can link directly to issues by entering # then the number of the issue, for example, #3 links to issue 3]
+[you can link directly to issues by entering # then the number of the issue]
 
 ## Screenshots (if appropriate)
 

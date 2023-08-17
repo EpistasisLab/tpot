@@ -20,6 +20,7 @@ from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominate
 import math
 from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
 import dask
+import warnings
 
 class SteadyStateEvolver():
     def __init__(   self, 
@@ -35,6 +36,7 @@ class SteadyStateEvolver():
                     population_size = 50,
                     max_evaluated_individuals = None, 
                     early_stop = None,
+                    early_stop_seconds = None,
                     early_stop_tol = 0.001,
                     
 
@@ -146,6 +148,7 @@ class SteadyStateEvolver():
         
 
         self.early_stop_tol = early_stop_tol
+        self.early_stop_seconds = early_stop_seconds
         self.early_stop = early_stop
 
         if isinstance(self.early_stop_tol, float):
@@ -198,6 +201,7 @@ class SteadyStateEvolver():
         #set up logging params
         evaluated_count = 0
         generations_without_improvement = np.array([0 for _ in range(len(self.objective_function_weights))])
+        timestamp_of_last_improvement = np.array([time.time() for _ in range(len(self.objective_function_weights))])
         best_scores = [-np.inf for _ in range(len(self.objective_function_weights))]
         scheduled_timeout_time = time.time() + self.max_time_seconds
         budget = None
@@ -232,6 +236,7 @@ class SteadyStateEvolver():
                 self.population.update_column(individual, column_names="Submitted Timestamp", data=time.time())
 
             done = False
+            start_time = time.time()
             while not done:
                 
                 ###############################
@@ -321,7 +326,7 @@ class SteadyStateEvolver():
                     for i, obj in enumerate(self.objective_names):
                         print(f"Best {obj} score: {cur_best_scores[i]}")
 
-                if self.early_stop:
+                if self.early_stop or self.early_stop_seconds:
                     if self.budget is None or self.budget>=self.budget_range[-1]: #self.budget>=1:
                         #get sign of objective_function_weights
                         sign = np.sign(self.objective_function_weights)
@@ -334,14 +339,24 @@ class SteadyStateEvolver():
                         improved = ( np.array(cur_best_scores) - np.array(best_scores) >= np.array(self.early_stop_tol) )
                         not_improved = np.logical_not(improved)
                         generations_without_improvement = generations_without_improvement * not_improved + not_improved #set to zero if not improved, else increment
+                        
+                        timestamp_of_last_improvement = timestamp_of_last_improvement * not_improved + time.time()*improved #set to current time if improved
+                        
                         pass
                         #update best score
                         best_scores = [max(best_scores[i], cur_best_scores[i]) for i in range(len(self.objective_names))]
 
-                        if all(generations_without_improvement>self.early_stop):
-                            if self.verbose >= 3:
-                                print("Early stop")
-                            break
+                        if self.early_stop:
+                            if all(generations_without_improvement>self.early_stop):
+                                if self.verbose >= 3:
+                                    print(f"Early stop ({self.early_stop} individuals evaluated without improvement)")
+                                break
+                        
+                        if self.early_stop_seconds:
+                            if any(time.time() - timestamp_of_last_improvement > self.early_stop_seconds):
+                                if self.verbose >= 3:
+                                    print(f"Early stop  ({self.early_stop_seconds} seconds passed without improvement)")
+                                break
 
                 #if we evaluated enough individuals or time is up, stop
                 if self.max_time_seconds is not None and time.time() - start_time > self.max_time_seconds:
@@ -437,9 +452,17 @@ class SteadyStateEvolver():
                     # If we don't have enough evaluated individuals to use as parents for variation, we create new individuals randomly
                     # This can happen if the individuals in the initial population are invalid
                     if len(cur_evaluated_population) == 0 and len(submitted_futures) < self.max_queue_size:
+                        
+                        initial_population = self.population.evaluated_individuals.iloc[:self.initial_population_size*3]
+                        invalid_initial_population = initial_population[initial_population[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)]
+                        if len(invalid_initial_population) >= self.initial_population_size*3: #if all individuals in the 3*initial population are invalid
+                            raise Exception("No individuals could be evaluated in the initial population. This may indicate a bug in the configuration, included models, or objective functions. Set verbose>=4 to see the errors that caused individuals to fail.")
+
                         n_individuals_to_create = self.max_queue_size - len(submitted_futures)
                         initial_population = [next(self.individual_generator) for _ in range(n_individuals_to_create)]
                         self.population.add_to_population(initial_population)
+
+                        
 
 
                 ###############################

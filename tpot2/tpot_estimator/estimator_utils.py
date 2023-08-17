@@ -107,8 +107,6 @@ def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_fun
         else:
             n_splits = cv.n_splits
 
-        x,y = remove_underrepresented_classes(x, y, n_splits)
-
     if len(scorers) > 0:
         cv_obj_scores = cross_val_score_objective(sklearn.base.clone(pipeline),x,y,scorers=scorers, cv=cv , fold=step)
     else:

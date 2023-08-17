@@ -54,6 +54,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         
 
                         early_stop = None,
+                        early_stop_seconds = None,
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol = None,
                         max_time_seconds=float('inf'), 
@@ -255,8 +256,11 @@ class TPOTEstimatorSteadyState(BaseEstimator):
             Number of generations to run
         
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of evaluated individuals without improvement before early stopping. Counted across all objectives independently. Triggered when all objectives have not improved by the given number of individuals.
         
+        early_stop_seconds : float, default=None
+            Number of seconds without improvement before early stopping. All objectives must not have improved for the given number of seconds for this to be triggered.
+
         scorers_early_stop_tol : 
             -list of floats
                 list of tolerances for each scorer. If the difference between the best score and the current score is less than the tolerance, the individual is considered to have converged
@@ -297,9 +301,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         
         crossover_then_mutate_probability : float, default=.05
             Probability of generating a new individual by crossover between two individuals followed by a mutation of the resulting individual.
-        
-        n_parents : int, default=2
-            Number of parents to use for crossover. Must be greater than 1.
         
         survival_selector : function, default=survival_select_NSGA2
             Function to use to select individuals for survival. Must take a matrix of scores and return selected indexes.
@@ -356,11 +357,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
          
         subset_column : str or int, default=None
             EXPERIMENTAL The column to use for the subset selection. Must also pass in unique_subset_values to GraphIndividual to function.
-         
-        evolver : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver), default=eaNSGA2_Evolver
-            The evolver to use for the optimization process. See tpot2.evolutionary_algorithms
-            - type : an type or subclass of a BaseEvolver
-            - "nsga2" : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver
         
         verbose : int, default=1 
             How much information to print during the optimization process. Higher values include the information from lower values.
@@ -370,7 +366,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
             3. best individual
             4. warnings
             >=5. full warnings trace
-            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
+           
         
         periodic_checkpoint_folder : str, default=None
             Folder to save the population to periodically. If None, no periodic saving will be done.
@@ -434,6 +430,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.initial_population_size = initial_population_size
 
         self.early_stop = early_stop
+        self.early_stop_seconds = early_stop_seconds
         self.scorers_early_stop_tol = scorers_early_stop_tol
         self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
         self.max_time_seconds = max_time_seconds 
@@ -572,7 +569,8 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         else:
             n_folds = self.cv.get_n_splits(X, y)
 
-        X, y = remove_underrepresented_classes(X, y, n_folds)
+        if self.classification:
+            X, y = remove_underrepresented_classes(X, y, n_folds)
         
         if self.preprocessing:
             #X = pd.DataFrame(X)
@@ -700,6 +698,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
                                             early_stop_tol = self.early_stop_tol,
                                             early_stop= self.early_stop,
+                                            early_stop_seconds =  self.early_stop_seconds,
                                             
                                             budget_range = self.budget_range,
                                             budget_scaling = self.budget_scaling,
@@ -917,6 +916,9 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         """The classes labels. Only exist if the last step is a classifier."""
         return self.fitted_pipeline_.classes_
 
+    @property
+    def _estimator_type(self):
+        return self.fitted_pipeline_._estimator_type
 
     def make_evaluated_individuals(self):
         #check if _evolver_instance exists

@@ -112,7 +112,7 @@ def get_pareto_front(df, column_names, weights, invalid_values=["TIMEOUT","INVAL
     indexes = dftmp[~dftmp[column_names].isna().any(axis=1)].index.values
     weighted_scores = df.loc[indexes][column_names].to_numpy()  * weights
 
-    pareto_fronts = tpot2.parent_selectors.nondominated_sorting(weighted_scores)
+    pareto_fronts = tpot2.selectors.nondominated_sorting(weighted_scores)
 
     df = pd.DataFrame(index=df.index,columns=["Pareto_Front"], data=[])
     
