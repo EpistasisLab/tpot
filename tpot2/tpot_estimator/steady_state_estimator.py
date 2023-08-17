@@ -302,9 +302,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         crossover_then_mutate_probability : float, default=.05
             Probability of generating a new individual by crossover between two individuals followed by a mutation of the resulting individual.
         
-        n_parents : int, default=2
-            Number of parents to use for crossover. Must be greater than 1.
-        
         survival_selector : function, default=survival_select_NSGA2
             Function to use to select individuals for survival. Must take a matrix of scores and return selected indexes.
             Used to selected population_size individuals at the start of each generation to use for mutation and crossover.
@@ -360,11 +357,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
          
         subset_column : str or int, default=None
             EXPERIMENTAL The column to use for the subset selection. Must also pass in unique_subset_values to GraphIndividual to function.
-         
-        evolver : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver), default=eaNSGA2_Evolver
-            The evolver to use for the optimization process. See tpot2.evolutionary_algorithms
-            - type : an type or subclass of a BaseEvolver
-            - "nsga2" : tpot2.evolutionary_algorithms.eaNSGA2.eaNSGA2_Evolver
         
         verbose : int, default=1 
             How much information to print during the optimization process. Higher values include the information from lower values.
