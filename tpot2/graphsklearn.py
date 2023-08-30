@@ -9,6 +9,7 @@ import pandas as pd
 
 from sklearn.utils.metaestimators import _BaseComposition
 from sklearn.utils.validation import check_memory
+from sklearn.preprocessing import LabelEncoder
 
 #labels - str
 #attributes - "instance" -> instance of the type
@@ -254,9 +255,42 @@ class GraphPipeline(_BaseComposition):
                 memory=None, #TODO memory caching like sklearn.pipeline
                 subset_column = None,
                 drop_subset_column = True,
+                use_label_encoder=False,
                 **kwargs,
                 ):
         super().__init__(**kwargs)
+        '''
+        An sklearn baseestimator that uses genetic programming to optimize a pipeline.
+        
+        Parameters
+        ----------
+
+        graph: networkx.DiGraph
+            A directed graph where the nodes are sklearn estimators and the edges are the inputs to those estimators.
+        
+        cross_val_predict_cv: int, cross-validation generator or an iterable, optional
+            Determines the cross-validation splitting strategy used in inner classifiers or regressors
+
+        method: str, optional
+            The prediction method to use for the inner classifiers or regressors. If 'auto', it will try to use predict_proba, decision_function, or predict in that order.
+
+        memory: str or object with the joblib.Memory interface, optional
+            Used to cache the fitted transformers of the pipeline. By default, no caching is performed. If a string is given, it is the path to the caching directory.
+
+        subset_column: int, optional
+            The column of X that contains the subset values. If None, all rows of X are used. If not None, only the rows of X where X[:,subset_column] is in subset_values are used.
+            Used to evolve pipelines where recursive graphs use different subsets of rows.
+
+        drop_subset_column: bool, optional
+            If True, the subset_column is dropped from X before being passed to the pipeline. If False, the subset_column is kept in X.
+
+        use_label_encoder: bool, optional
+            If True, the label encoder is used to encode the labels to be 0 to N. If False, the label encoder is not used.
+            Mainly useful for classifiers (XGBoost) that require labels to be ints from 0 to N.
+
+            Can also be a sklearn.preprocessing.LabelEncoder object. If so, that label encoder is used.
+
+        '''
 
         self.graph = graph
         self.cross_val_predict_cv = cross_val_predict_cv
@@ -264,6 +298,7 @@ class GraphPipeline(_BaseComposition):
         self.memory = memory
         self.subset_column = subset_column
         self.drop_subset_column = drop_subset_column
+        self.use_label_encoder = use_label_encoder
 
         setup_ordered_successors(graph)
 
@@ -272,6 +307,11 @@ class GraphPipeline(_BaseComposition):
         
         self.root = self.topo_sorted_nodes[-1]
 
+        if self.use_label_encoder:
+            if type(self.use_label_encoder) == LabelEncoder:
+                self.label_encoder = self.use_label_encoder
+            else:
+                self.label_encoder = LabelEncoder()
 
 
         #TODO clean this up
@@ -298,6 +338,12 @@ class GraphPipeline(_BaseComposition):
         #         indeces_to_keep = np.isin(X[:,self.subset_column], self._subset_values)
         #         X = X[indeces_to_keep]
         #         y = y[indeces_to_keep]
+
+        if self.use_label_encoder:
+            if type(self.use_label_encoder) == LabelEncoder:
+                y = self.label_encoder.transform(y)
+            else:
+                y = self.label_encoder.fit_transform(y)
 
         if self.subset_column is not None:
             subset_col = X[:,self.subset_column]
@@ -347,7 +393,12 @@ class GraphPipeline(_BaseComposition):
                     topo_sort = self.topo_sorted_nodes,
                     )
 
-        return self.graph.nodes[self.root]["instance"].predict(this_X, **predict_params)
+        preds = self.graph.nodes[self.root]["instance"].predict(this_X, **predict_params)
+
+        if self.use_label_encoder:
+            preds = self.label_encoder.inverse_transform(preds)
+
+        return preds
     
     @available_if(_estimator_has('predict_proba'))
     def predict_proba(self, X, **predict_params):
@@ -394,7 +445,11 @@ class GraphPipeline(_BaseComposition):
     @property
     def classes_(self):
         """The classes labels. Only exist if the last step is a classifier."""
-        return self.graph.nodes[self.root]["instance"].classes_
+        
+        if self.use_label_encoder:
+            return self.label_encoder.classes_
+        else:
+            return self.graph.nodes[self.root]["instance"].classes_
 
     @property
     def _estimator_type(self):

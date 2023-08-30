@@ -168,7 +168,12 @@ def convert_to_float(x):
 
 
 
-
+def check_if_y_is_encoded(y):
+    '''
+    checks if the target y is composed of sequential ints from 0 to N
+    '''
+    y = sorted(set(y))
+    return all(i == j for i, j in enumerate(y))
 
 
 
