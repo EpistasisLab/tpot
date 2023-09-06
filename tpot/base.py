@@ -2031,6 +2031,9 @@ class TPOTBase(BaseEstimator):
         """The classes labels. Only exist if the last step is a classifier."""
         return self.fitted_pipeline_.classes_
 
+    @property
+    def _estimator_type(self):
+        return self.fitted_pipeline_._estimator_type
 
 def _has_cuml():
     try:
