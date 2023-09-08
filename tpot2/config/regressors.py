@@ -42,11 +42,11 @@ def params_RandomForestRegressor(trial, name=None):
 # SGDRegressor parameters
 def params_SGDRegressor(trial, name=None):
     params = {
-        'loss': trial.suggest_categorical(f'loss_{name}', ['squared_loss', 'huber', 'epsilon_insensitive']),
+        'loss': trial.suggest_categorical(f'loss_{name}', ['huber', 'squared_error', 'epsilon_insensitive', 'squared_epsilon_insensitive']),
         'penalty': 'elasticnet',
         'alpha': trial.suggest_float(f'alpha_{name}', 1e-5, 0.01, log=True),
         'learning_rate': trial.suggest_categorical(f'learning_rate_{name}', ['invscaling', 'constant']),
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        'fit_intercept':True,
         'l1_ratio': trial.suggest_float(f'l1_ratio_{name}', 0.0, 1.0),
         'eta0': trial.suggest_float(f'eta0_{name}', 0.01, 1.0),
         'power_t': trial.suggest_float(f'power_t_{name}', 1e-5, 100.0, log=True)
@@ -58,7 +58,7 @@ def params_SGDRegressor(trial, name=None):
 def params_Ridge(trial, name=None):
     params = {
         'alpha': trial.suggest_float(f'alpha_{name}', 0.0, 1.0),
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        'fit_intercept': True,
 
 
         #'max_iter': trial.suggest_int(f'max_iter_{name}', 100, 1000),
@@ -72,7 +72,7 @@ def params_Ridge(trial, name=None):
 def params_Lasso(trial, name=None):
     params = {
         'alpha': trial.suggest_float(f'alpha_{name}', 0.0, 1.0),
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        'fit_intercept': True,
         # 'normalize': trial.suggest_categorical(f'normalize_{name}', [True, False]),
         'precompute': trial.suggest_categorical(f'precompute_{name}', [True, False, 'auto']),
 
@@ -95,7 +95,7 @@ def params_ElasticNet(trial, name=None):
 # Lars parameters
 def params_Lars(trial, name=None):
     params = {
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        'fit_intercept': True,
         'verbose': trial.suggest_categorical(f'verbose_{name}', [True, False]),
         'normalize': trial.suggest_categorical(f'normalize_{name}', [True, False]),
         
@@ -113,7 +113,7 @@ def params_OrthogonalMatchingPursuit(trial, name=None):
     params = {
         'n_nonzero_coefs': trial.suggest_int(f'n_nonzero_coefs_{name}', 1, 100),
         'tol': trial.suggest_float(f'tol_{name}', 1e-5, 1e-1, log=True),
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        'fit_intercept': True,
         'normalize': trial.suggest_categorical(f'normalize_{name}', [True, False]),
         'precompute': trial.suggest_categorical(f'precompute_{name}', ['auto', True, False]),
     }
@@ -129,7 +129,7 @@ def params_BayesianRidge(trial, name=None):
         'lambda_1': trial.suggest_float(f'lambda_1_{name}', 1e-6, 1e-1, log=True),
         'lambda_2': trial.suggest_float(f'lambda_2_{name}', 1e-6, 1e-1, log=True),
         'compute_score': trial.suggest_categorical(f'compute_score_{name}', [True, False]),
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        'fit_intercept': True,
         'normalize': trial.suggest_categorical(f'normalize_{name}', [True, False]),
         'copy_X': trial.suggest_categorical(f'copy_X_{name}', [True, False]),
     }
@@ -139,7 +139,7 @@ def params_BayesianRidge(trial, name=None):
 def params_LassoLars(trial, name=None):
     params = {
         'alpha': trial.suggest_float(f'alpha_{name}', 0.0, 1.0),
-        # 'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        # 'fit_intercept': True,
         # 'normalize': trial.suggest_categorical(f'normalize_{name}', [True, False]),
         # 'precompute': trial.suggest_categorical(f'precompute_{name}', ['auto_{name}', True, False]),
         #'max_iter': trial.suggest_int(f'max_iter_{name}', 100, 1000),
@@ -178,7 +178,7 @@ def params_ARDRegression(trial, name=None):
         'lambda_2': trial.suggest_float(f'lambda_2_{name}', 1e-6, 1e-1, log=True),
         'compute_score': trial.suggest_categorical(f'compute_score_{name}', [True, False]),
         'threshold_lambda': trial.suggest_int(f'threshold_lambda_{name}', 100, 1000),
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        'fit_intercept': True,
         'normalize': trial.suggest_categorical(f'normalize_{name}', [True, False]),
         'copy_X': trial.suggest_categorical(f'copy_X_{name}', [True, False]),
     }
@@ -191,7 +191,7 @@ def params_TheilSenRegressor(trial, name=None):
     params = {
         'n_subsamples': trial.suggest_int(f'n_subsamples_{name}', 10, 100),
         'max_subpopulation': trial.suggest_int(f'max_subpopulation_{name}', 100, 1000),
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        'fit_intercept': True,
         'copy_X': trial.suggest_categorical(f'copy_X_{name}', [True, False]),
         'verbose': trial.suggest_categorical(f'verbose_{name}', [True, False]),
     }
@@ -215,7 +215,7 @@ def params_Perceptron(trial, name=None):
         'penalty': trial.suggest_categorical(f'penalty_{name}', [None, 'l2', 'l1', 'elasticnet']),
         'alpha': trial.suggest_float(f'alpha_{name}', 1e-5, 1e-1, log=True),
         'l1_ratio': trial.suggest_float(f'l1_ratio_{name}', 0.0, 1.0),
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        'fit_intercept': True,
         #'max_iter': trial.suggest_int(f'max_iter_{name}', 100, 1000),
         'tol': trial.suggest_float(f'tol_{name}', 1e-5, 1e-1, log=True),
         'shuffle': trial.suggest_categorical(f'shuffle_{name}', [True, False]),
@@ -244,10 +244,6 @@ def params_MLPRegressor(trial, name=None):
 def params_GradientBoostingRegressor(trial, name=None):
     loss = trial.suggest_categorical(f'loss_{name}', ['ls', 'lad', 'huber', 'quantile'])
 
-    if loss == 'quantile' or loss == 'huber':
-        alpha = trial.suggest_float(f'alpha_{name}', 0.05, 0.95)
-    else:
-        alpha = None
     params = {
 
         'n_estimators': 100,
@@ -258,9 +254,13 @@ def params_GradientBoostingRegressor(trial, name=None):
         'min_samples_leaf': trial.suggest_int(f'min_samples_leaf_{name}', 1, 21),
         'subsample': 1-trial.suggest_float(f'subsample_{name}', 0.05, 1.00, log=True),
         'max_features': 1-trial.suggest_float(f'max_features_{name}', 0.05, 1.00, log=True),
-        'alpha': alpha,
 
     }
+
+    if loss == 'quantile' or loss == 'huber':
+        alpha = trial.suggest_float(f'alpha_{name}', 0.05, 0.95)
+        params['alpha'] = alpha
+
     return params
 
 

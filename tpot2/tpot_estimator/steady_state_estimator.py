@@ -17,6 +17,7 @@ import math
 
 from dask import config as cfg
 from .estimator_utils import *
+import warnings
 
 def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
@@ -46,6 +47,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         preprocessing = False,  
                         validation_strategy = "none",
                         validation_fraction = .2,
+                        disable_label_encoder = False,
 
                         initial_population_size = 50,
                         population_size = 50,
@@ -240,6 +242,10 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         validation_fraction : float, default=0.2
           EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
         
+        disable_label_encoder : bool, default=False
+            If True, TPOT will check if the target needs to be relabeled to be sequential ints from 0 to N. This is necessary for XGBoost compatibility. If the labels need to be encoded, TPOT2 will use sklearn.preprocessing.LabelEncoder to encode the labels. The encoder can be accessed via the self.label_encoder_ attribute.
+            If False, no additional label encoders will be used.
+
         population_size : int, default=50
             Size of the population
         
@@ -426,6 +432,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.preprocessing = preprocessing
         self.validation_strategy = validation_strategy
         self.validation_fraction = validation_fraction
+        self.disable_label_encoder = disable_label_encoder
         self.population_size = population_size
         self.initial_population_size = initial_population_size
 
@@ -517,6 +524,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self._evolver_instance = None
         self.evaluated_individuals = None
 
+        self.label_encoder_ = None
 
         set_dask_settings()
 
@@ -539,6 +547,11 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                     memory_limit=self.memory_limit)
             _client = Client(cluster)
 
+
+        if self.classification and not self.disable_label_encoder and not check_if_y_is_encoded(y):
+            warnings.warn("Labels are not encoded as ints from 0 to N. For compatibility with some classifiers such as sklearn, TPOT has encoded y with the sklearn LabelEncoder. When using pipelines outside the main TPOT estimator class, you can encode the labels with est.label_encoder_")
+            self.label_encoder_ = LabelEncoder()  
+            y = self.label_encoder_.fit_transform(y) 
 
         self.evaluated_individuals = None
         #determine validation strategy
@@ -891,7 +904,11 @@ class TPOTEstimatorSteadyState(BaseEstimator):
     def predict(self, X, **predict_params):
         check_is_fitted(self)
         #X = check_array(X)
-        return self.fitted_pipeline_.predict(X,**predict_params)
+        preds = self.fitted_pipeline_.predict(X,**predict_params)
+        if self.classification and self.label_encoder_:
+            preds = self.label_encoder_.inverse_transform(preds)
+            
+        return preds
     
     @available_if(_estimator_has('predict_proba'))
     def predict_proba(self, X, **predict_params):
@@ -914,7 +931,11 @@ class TPOTEstimatorSteadyState(BaseEstimator):
     @property
     def classes_(self):
         """The classes labels. Only exist if the last step is a classifier."""
-        return self.fitted_pipeline_.classes_
+        
+        if self.label_encoder_:
+            return self.label_encoder_.classes_
+        else:
+            return self.fitted_pipeline_.classes_
 
     @property
     def _estimator_type(self):
