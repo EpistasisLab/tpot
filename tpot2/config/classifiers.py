@@ -183,7 +183,7 @@ def params_SGDClassifier(trial, name=None):
         'penalty': 'elasticnet',
         'alpha': trial.suggest_float(f'alpha_{name}', 1e-5, 0.01, log=True),
         'learning_rate': trial.suggest_categorical(f'learning_rate_{name}', ['invscaling', 'constant']),
-        'fit_intercept': trial.suggest_categorical(f'fit_intercept_{name}', [True, False]),
+        'fit_intercept': True,
         'l1_ratio': trial.suggest_float(f'l1_ratio_{name}', 0.0, 1.0),
         'eta0': trial.suggest_float(f'eta0_{name}', 0.01, 1.0),
         'power_t': trial.suggest_float(f'power_t_{name}', 1e-5, 100.0, log=True),

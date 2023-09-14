@@ -29,7 +29,7 @@ A Python tool that automatically creates and optimizes machine learning pipeline
     zip_safe=True,
     install_requires=['numpy>=1.16.3',
                       'scipy>=1.3.1',
-                      'scikit-learn>=1.2.0',
+                      'scikit-learn>=1.3.0',
                       'update_checker>=0.16',
                       'tqdm>=4.36.1',
                       'stopit>=1.1.1',
