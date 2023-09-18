@@ -128,10 +128,10 @@ class TPOTEstimator(BaseEstimator):
             - (sklearn.model_selection.BaseCrossValidator): A cross-validator to use in the cross-validation process.
                 - max_depth (int): The maximum depth from any node to the root of the pipelines to be generated.
         
-        other_objective_functions : list, default=[tpot2.objectives.estimator_objective_functions.average_path_length_objective]
-            A list of other objective functions to apply to the pipeline.
+        other_objective_functions : list, default=[]
+            A list of other objective functions to apply to the pipeline. The function takes a single parameter for the graphpipeline estimator and returns either a single score or a list of scores.
         
-        other_objective_functions_weights : list, default=[-1]
+        other_objective_functions_weights : list, default=[]
             A list of weights to be applied to the other objective functions.
         
         objective_function_names : list, default=None
