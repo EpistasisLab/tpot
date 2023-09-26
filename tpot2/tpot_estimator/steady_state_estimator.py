@@ -59,7 +59,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         early_stop_seconds = None,
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol = None,
-                        max_time_seconds=float('inf'), 
+                        max_time_seconds=None, 
                         max_eval_time_seconds=60*10, 
                         n_jobs=1,
                         memory_limit = "4GB",

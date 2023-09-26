@@ -20,6 +20,11 @@ from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominate
 import math
 from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
 
+def ind_mutate(ind):
+    return ind.mutate()
+
+def ind_crossover(ind1, ind2):
+    return ind1.crossover(ind2)
 
 class BaseEvolver():
     def __init__(   self, 
@@ -52,6 +57,13 @@ class BaseEvolver():
                     mutate_probability=.7,
                     mutate_then_crossover_probability=.05,
                     crossover_then_mutate_probability=.05,
+                    
+                    mutation_functions = [ind_mutate],
+                    crossover_functions = [ind_crossover],
+
+                    mutation_function_weights = None,
+                    crossover_function_weights = None,
+                    
                     n_parents=2,
 
                     survival_selector = survival_select_NSGA2,
@@ -260,6 +272,20 @@ class BaseEvolver():
         self.mutate_probability = mutate_probability  / total_var_p
         self.mutate_then_crossover_probability= mutate_then_crossover_probability / total_var_p
         self.crossover_then_mutate_probability= crossover_then_mutate_probability / total_var_p
+
+
+        self.mutation_functions = mutation_functions
+        self.crossover_functions = crossover_functions
+
+        if mutation_function_weights is None:
+            self.mutation_function_weights = [1 for _ in range(len(mutation_functions))]
+        else:
+            self.mutation_function_weights = mutation_function_weights
+
+        if mutation_function_weights is None:
+            self.crossover_function_weights = [1 for _ in range(len(mutation_functions))]
+        else:
+            self.crossover_function_weights = crossover_function_weights
 
         self.n_parents = n_parents
 
@@ -488,44 +514,10 @@ class BaseEvolver():
         
         if self.survival_selector is not None:
             n_survivors = max(1,int(self.cur_population_size*self.survival_percentage)) #always keep at least one individual
-            #Get survivors from current population
-            weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
-            new_population_index = np.ravel(self.survival_selector(weighted_scores, k=n_survivors)) #TODO make it clear that we are concatenating scores...
-            self.population.set_population(np.array(self.population.population)[new_population_index])
-        weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
-        
-        #number of crossover pairs and mutation only parent to generate
-        n_crossover = int(self.cur_population_size*self.crossover_probability)
-        n_crossover_then_mutate = int(self.cur_population_size*self.crossover_then_mutate_probability)
-        n_mutate_then_crossover = int(self.cur_population_size*self.mutate_then_crossover_probability)
-        n_total_crossover_pairs = n_crossover + n_crossover_then_mutate + n_mutate_then_crossover
-        n_mutate_parents = self.cur_population_size - n_total_crossover_pairs
+            self.population.survival_select(selector=self.survival_selector, weights=self.objective_function_weights, columns_names=self.objective_names, n_survivors=n_survivors, inplace=True)
+            
 
-        #get crossover pairs
-        if n_total_crossover_pairs > 0:
-            cx_parents_index = self.parent_selector(weighted_scores, k=n_total_crossover_pairs, n_parents=self.n_parents,   ) #TODO make it clear that we are concatenating scores...
-            cx_var_ops = np.concatenate([ np.repeat("crossover",n_crossover),
-                                        np.repeat("mutate_then_crossover",n_mutate_then_crossover),
-                                        np.repeat("crossover_then_mutate",n_crossover_then_mutate),
-                                        ])
-        else:
-            cx_parents_index = []
-            cx_var_ops = []
-        
-        #get mutation only parents
-        if n_mutate_parents > 0:
-            m_parents_index = self.parent_selector(weighted_scores, k=n_mutate_parents, n_parents=1,  ) #TODO make it clear that we are concatenating scores...
-            m_var_ops = np.repeat("mutate",len(m_parents_index))
-        else:
-            m_parents_index = []
-            m_var_ops = []
-
-        cx_parents = np.array(self.population.population)[cx_parents_index]
-        m_parents = np.array(self.population.population)[m_parents_index]
-        parents = list(cx_parents) + list(m_parents)
-
-        var_ops = np.concatenate([cx_var_ops, m_var_ops])
-        offspring = self.population.create_offspring(parents, var_ops, n_jobs=1) 
+        offspring = self.population.parent_select_and_create_offspring(selector=self.parent_selector, n=self.cur_population_size, mutation_probability=self.mutate_probability, crossover_probability=self.crossover_probability, mutate_then_crossover_probability=self.mutate_then_crossover_probability, crossover_then_mutate_probability=self.crossover_then_mutate_probability,  weights=self.objective_function_weights, columns_names=self.objective_names, mutation_functions=self.mutation_functions, mutation_function_weights=self.mutation_function_weights, crossover_functions=self.crossover_functions, crossover_function_weights=self.crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True)
         self.population.update_column(offspring, column_names="Generation", data=self.generation, )
         #print("done making offspring")
 
@@ -768,3 +760,5 @@ class BaseEvolver():
 
                             new_population_index = survival_selector(weighted_scores, k=k)
                             cur_individuals = np.array(cur_individuals)[new_population_index]
+
+
