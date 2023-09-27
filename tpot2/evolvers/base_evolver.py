@@ -504,26 +504,43 @@ class BaseEvolver():
             self.budget = None
 
 
-
-        self.one_generation_step()
-        self.generation += 1
-        
-
-    
-    def one_generation_step(self, ): #your EA Algorithm goes here
-        
         if self.survival_selector is not None:
             n_survivors = max(1,int(self.cur_population_size*self.survival_percentage)) #always keep at least one individual
-            self.population.survival_select(selector=self.survival_selector, weights=self.objective_function_weights, columns_names=self.objective_names, n_survivors=n_survivors, inplace=True)
+            self.population.survival_select(    selector=self.survival_selector, 
+                                                weights=self.objective_function_weights, 
+                                                columns_names=self.objective_names, 
+                                                n_survivors=n_survivors, 
+                                                inplace=True)
             
 
-        offspring = self.population.parent_select_and_create_offspring(selector=self.parent_selector, n=self.cur_population_size, mutation_probability=self.mutate_probability, crossover_probability=self.crossover_probability, mutate_then_crossover_probability=self.mutate_then_crossover_probability, crossover_then_mutate_probability=self.crossover_then_mutate_probability,  weights=self.objective_function_weights, columns_names=self.objective_names, mutation_functions=self.mutation_functions, mutation_function_weights=self.mutation_function_weights, crossover_functions=self.crossover_functions, crossover_function_weights=self.crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True)
-        self.population.update_column(offspring, column_names="Generation", data=self.generation, )
-        #print("done making offspring")
-
-        #print("evaluating")
+        self.generate_offspring()
         self.evaluate_population()
-        #print("done evaluating")
+
+        self.generation += 1
+        
+    def generate_offspring(self, ): #your EA Algorithm goes here
+        
+
+        n_mutations = np.random.binomial(self.cur_population_size, self.mutate_probability)
+        n_crossover = self.cur_population_size - n_mutations
+        
+        cx_parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=n_crossover, n_parents=2)
+        m_parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=n_mutations, n_parents=1)
+
+        p = np.array([self.crossover_probability, self.mutate_then_crossover_probability, self.crossover_then_mutate_probability])
+        p = p/np.sum(p)
+        var_op_list = np.random.choice(["crossover", "mutate_then_crossover", "crossover_then_mutate"], size=n_crossover, p=p)
+        var_op_list = np.concatenate([var_op_list, ["mutate"]*n_mutations])
+
+        parents = list(cx_parents) + list(m_parents)
+
+
+        offspring = self.population.create_offspring2(parents, var_op_list, self.mutation_functions, self.mutation_function_weights, self.crossover_functions, self.crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True) 
+        
+        self.population.update_column(offspring, column_names="Generation", data=self.generation, )
+
+        
+
 
 
     
@@ -601,14 +618,17 @@ class BaseEvolver():
         parallel_timeout = min(theoretical_timeout, scheduled_timeout_time_left)
         if parallel_timeout < 0:
             parallel_timeout = 10
-        scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
+        
+        #scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
+        scores, start_times, end_times = tpot2.utils.eval_utils.parallel_eval_objective_list2(individuals_to_evaluate, self.objective_functions, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, **self.objective_kwargs)
 
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
         if budget is not None:
             self.population.update_column(individuals_to_evaluate, column_names="Budget", data=budget)
 
-        self.population.update_column(individuals_to_evaluate, column_names="Completed Timestamp", data=time.time())
+        self.population.update_column(individuals_to_evaluate, column_names="Completed Timestamp", data=start_times)
+        self.population.update_column(individuals_to_evaluate, column_names="Completed Timestamp", data=end_times)
         self.population.remove_invalid_from_population(column_names=self.objective_names)
         self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
 

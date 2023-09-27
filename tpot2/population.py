@@ -328,23 +328,7 @@ class Population():
 
     #TODO should we just generate one offspring per crossover? 
     def create_offspring2(self, parents_list, var_op_list, mutation_functions,mutation_function_weights, crossover_functions,crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True):
-        '''
-        parents_list: a list of lists of parents. 
-        var_op_list: a list of var_ops to apply to each list of parents. Should be the same length as parents_list.
 
-        for example:
-        parents_list = [[parent1, parent2], [parent3]]
-        var_op_list = ["crossover", "mutate"]
-
-        This will apply crossover to parent1 and parent2 and mutate to parent3.
-
-        Creates offspring from parents using the var_op_list.
-        If string, will use a built in method 
-            - "crossover" : crossover
-            - "mutate" : mutate
-            - "mutate_and_crossover" : mutate_and_crossover
-            - "cross_and_mutate" : cross_and_mutate
-        '''
         new_offspring = []
 
         all_offspring = []
