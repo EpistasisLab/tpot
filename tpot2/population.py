@@ -308,23 +308,6 @@ class Population():
             
         return new_offspring
 
-    def parent_select_and_create_offspring(self,selector, n, mutation_probability,crossover_probability, mutate_then_crossover_probability, crossover_then_mutate_probability,  weights, columns_names, mutation_functions,mutation_function_weights, crossover_functions,crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True):
-        n_mutations = np.random.binomial(n, mutation_probability)
-        n_crossover = n - n_mutations
-        
-        cx_parents = self.parent_select(selector=selector, weights=weights, columns_names=columns_names, k=n_crossover, n_parents=2)
-        m_parents = self.parent_select(selector=selector, weights=weights, columns_names=columns_names, k=n_mutations, n_parents=1)
-
-        p = np.array([crossover_probability, mutate_then_crossover_probability, crossover_then_mutate_probability])
-        p = p/np.sum(p)
-        var_op_list = np.random.choice(["crossover", "mutate_then_crossover", "crossover_then_mutate"], size=n_crossover, p=p)
-        var_op_list = np.concatenate([var_op_list, ["mutate"]*n_mutations])
-
-        parents = list(cx_parents) + list(m_parents)
-
-        offspring = self.create_offspring2(parents, var_op_list, mutation_functions, mutation_function_weights, crossover_functions,crossover_function_weights, add_to_population=add_to_population, keep_repeats=keep_repeats, mutate_until_unique=mutate_until_unique) 
-
-        return offspring
 
     #TODO should we just generate one offspring per crossover? 
     def create_offspring2(self, parents_list, var_op_list, mutation_functions,mutation_function_weights, crossover_functions,crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True):
