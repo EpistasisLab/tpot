@@ -494,7 +494,6 @@ class BaseEvolver():
             else:
                 self.cur_population_size = self.population_size
 
-                
         if self.budget_list is not None:
             if len(self.budget_list) <= self.generation:
                 self.budget = self.budget_range[-1]
@@ -502,7 +501,6 @@ class BaseEvolver():
                 self.budget = self.budget_list[self.generation]
         else:
             self.budget = None
-
 
         if self.survival_selector is not None:
             n_survivors = max(1,int(self.cur_population_size*self.survival_percentage)) #always keep at least one individual
@@ -512,15 +510,12 @@ class BaseEvolver():
                                                 n_survivors=n_survivors, 
                                                 inplace=True)
             
-
         self.generate_offspring()
         self.evaluate_population()
 
         self.generation += 1
         
     def generate_offspring(self, ): #your EA Algorithm goes here
-        
-
         n_mutations = np.random.binomial(self.cur_population_size, self.mutate_probability)
         n_crossover = self.cur_population_size - n_mutations
         
@@ -533,7 +528,6 @@ class BaseEvolver():
         var_op_list = np.concatenate([var_op_list, ["mutate"]*n_mutations])
 
         parents = list(cx_parents) + list(m_parents)
-
 
         offspring = self.population.create_offspring2(parents, var_op_list, self.mutation_functions, self.mutation_function_weights, self.crossover_functions, self.crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True) 
         
