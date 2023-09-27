@@ -627,7 +627,7 @@ class BaseEvolver():
         if budget is not None:
             self.population.update_column(individuals_to_evaluate, column_names="Budget", data=budget)
 
-        self.population.update_column(individuals_to_evaluate, column_names="Completed Timestamp", data=start_times)
+        self.population.update_column(individuals_to_evaluate, column_names="Submitted Timestamp", data=start_times)
         self.population.update_column(individuals_to_evaluate, column_names="Completed Timestamp", data=end_times)
         self.population.remove_invalid_from_population(column_names=self.objective_names)
         self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
@@ -692,21 +692,22 @@ class BaseEvolver():
             if parallel_timeout < 0:
                 parallel_timeout = 10
 
-            scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individual_list=unevaluated_individuals_this_step,
+            scores, start_times, end_times = tpot2.utils.eval_utils.parallel_eval_objective_list2(individual_list=unevaluated_individuals_this_step,
                                     objective_list=self.objective_functions,
-                                    n_jobs = self.n_jobs,
                                     verbose=self.verbose,
-                                    timeout=self.max_eval_time_seconds,
+                                    max_eval_time_seconds=self.max_eval_time_seconds,
                                     step=step,
                                     budget = self.budget,
                                     generation = self.generation,
                                     n_expected_columns=len(self.objective_names),
                                     client=self._client,
-                                    parallel_timeout=parallel_timeout,
                                     **self.objective_kwargs,
                                     )
 
             self.population.update_column(unevaluated_individuals_this_step, column_names=this_step_names, data=scores)
+            self.population.update_column(unevaluated_individuals_this_step, column_names="Submitted Timestamp", data=start_times)
+            self.population.update_column(unevaluated_individuals_this_step, column_names="Completed Timestamp", data=end_times)
+
 
             self.population.remove_invalid_from_population(column_names=this_step_names)
             self.population.remove_invalid_from_population(column_names=this_step_names, invalid_value="TIMEOUT")
