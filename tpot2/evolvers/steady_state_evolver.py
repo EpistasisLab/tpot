@@ -279,7 +279,7 @@ class SteadyStateEvolver():
                     else: #if future is not done
                         
                         #check if the future has been running for too long, cancel the future
-                        if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_seconds*2:
+                        if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_seconds*1.25:
                             completed_future.cancel()
                             
                             if self.verbose >= 4:

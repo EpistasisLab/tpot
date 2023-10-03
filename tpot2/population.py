@@ -86,7 +86,21 @@ class Population():
         self.callback=callback
         self.population = []
 
+    def survival_select(self, selector, weights, columns_names, n_survivors, inplace=True):
+        weighted_scores = self.get_column(self.population, column_names=columns_names) * weights
+        new_population_index = np.ravel(selector(weighted_scores, k=n_survivors)) #TODO make it clear that we are concatenating scores...
+        new_population = np.array(self.population)[new_population_index]
+        if inplace:
+            self.set_population(new_population)
+        return new_population
 
+    def parent_select(self, selector, weights, columns_names, k, n_parents):
+
+        weighted_scores = self.get_column(self.population, column_names=columns_names) * weights
+        parents_index = selector(weighted_scores, k=k, n_parents=n_parents)
+        parents = np.array(self.population)[parents_index]
+        return parents
+    
 
     #remove individuals that either do not have a column_name value or a nan in that value
     #TODO take into account when the value is not a list/tuple?
@@ -294,7 +308,78 @@ class Population():
             
         return new_offspring
 
-   
+
+    #TODO should we just generate one offspring per crossover? 
+    def create_offspring2(self, parents_list, var_op_list, mutation_functions,mutation_function_weights, crossover_functions,crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True):
+
+        new_offspring = []
+
+        all_offspring = []
+        chosen_ops = []
+
+        for parents, var_op in zip(parents_list,var_op_list):
+            #TODO put this loop in population class
+            if var_op == "mutation":
+                mutation_op = np.random.choice(mutation_functions, p=mutation_function_weights)
+                all_offspring.append(copy_and_mutate(parents, mutation_op))
+                chosen_ops.append(mutation_op.__name__)
+            
+            
+            elif var_op == "crossover":
+                crossover_op = np.random.choice(crossover_functions, p=crossover_function_weights)
+                all_offspring.append(copy_and_crossover(parents, crossover_op))
+                chosen_ops.append(crossover_op.__name__)
+            elif var_op == "mutate_then_crossover":
+
+                mutation_op1 = np.random.choice(mutation_functions, p=mutation_function_weights)
+                mutation_op2 = np.random.choice(mutation_functions, p=mutation_function_weights)
+                crossover_op = np.random.choice(crossover_functions, p=crossover_function_weights)
+                p1 = copy_and_mutate(parents[0], mutation_op1)
+                p2 = copy_and_mutate(parents[1], mutation_op2)
+                crossover_op(p1,p2)
+                all_offspring.append(p1)
+                chosen_ops.append(f"{mutation_op1.__name__} , {mutation_op2.__name__} , {crossover_op.__name__}")
+            elif var_op == "crossover_then_mutate":
+                crossover_op = np.random.choice(crossover_functions, p=crossover_function_weights)
+                child = copy_and_crossover(parents, crossover_op)
+                mutation_op = np.random.choice(mutation_functions, p=mutation_function_weights)
+                mutation_op(child)
+                all_offspring.append(child)
+                chosen_ops.append(f"{crossover_op.__name__} , {mutation_op.__name__}")
+
+
+        for parents, offspring, var_op in zip(parents_list, all_offspring, chosen_ops):
+            
+            # if var_op in built_in_var_ops_dict:
+            #     var_op = built_in_var_ops_dict[var_op]
+
+            # offspring = copy.deepcopy(parents)
+            # offspring = var_op(offspring)
+            # if isinstance(offspring, collections.abc.Iterable):
+            #     offspring = offspring[0] 
+
+            if add_to_population:
+                added = self.add_to_population(offspring, keep_repeats=keep_repeats, mutate_until_unique=mutate_until_unique)
+                if len(added) > 0:
+                    for new_child in added:
+                        parent_keys = [parent.unique_id() for parent in parents]
+                        if not pd.api.types.is_object_dtype(self.evaluated_individuals["Parents"]): #TODO Is there a cleaner way of doing this? Not required for some python environments?
+                            self.evaluated_individuals["Parents"] = self.evaluated_individuals["Parents"].astype('object')
+                        self.evaluated_individuals.at[new_child.unique_id(),"Parents"] = tuple(parent_keys)
+                        
+                        self.evaluated_individuals.at[new_child.unique_id(),"Variation_Function"] = var_op
+                        
+                        
+                        new_offspring.append(new_child)
+
+            else:
+                new_offspring.append(offspring)
+                            
+            
+        return new_offspring
+
+
+
 
 def get_id(individual):
     return individual.unique_id()
@@ -325,6 +410,8 @@ def nonparallel_create_offpring(parents_list, var_op_list, n_jobs=1):
     return offspring
 
 
+
+
 def copy_and_change(parents, var_op):
     offspring = copy.deepcopy(parents)
     offspring = var_op(offspring)
@@ -332,6 +419,19 @@ def copy_and_change(parents, var_op):
         offspring = offspring[0]
     return offspring
 
+def copy_and_mutate(parents, var_op):
+    offspring = copy.deepcopy(parents)
+    var_op(offspring)
+    if isinstance(offspring, collections.abc.Iterable):
+        offspring = offspring[0]
+    return offspring
+
+def copy_and_crossover(parents, var_op):
+    offspring = copy.deepcopy(parents)
+    var_op(offspring[0],offspring[1])
+    return offspring[0]
+
 def parallel_get_id(n_jobs, individual_list):
     id_list = Parallel(n_jobs=n_jobs)(delayed(get_id)(ind)  for ind in individual_list)
     return id_list
+
