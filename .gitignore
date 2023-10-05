@@ -12,3 +12,5 @@ dask-worker-space/
 .coverage
 target/
 .venv/
+build/*
+*.egg
