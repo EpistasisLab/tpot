@@ -1,11 +1,8 @@
 from sklearnex.ensemble import RandomForestClassifier
-from xgboost import XGBClassifier
 from sklearnex.neighbors import KNeighborsClassifier
 from sklearnex.svm import SVC
 from sklearnex.svm import NuSVC
 from sklearnex.linear_model import LogisticRegression
-
-from functools import partial
 
 
 def params_RandomForestClassifier(trial, name=None):
@@ -66,16 +63,6 @@ def params_NuSVC(trial, name=None):
         'probability': True,
     }
 
-def params_XGBClassifier(trial, name=None):
-    return {
-        'learning_rate': trial.suggest_float(f'learning_rate_{name}', 1e-3, 1, log=True),
-        'subsample': trial.suggest_float(f'subsample_{name}', 0.1, 1.0),
-        'min_child_weight': trial.suggest_int(f'min_child_weight_{name}', 1, 21),
-        'n_estimators': 100,
-        'max_depth': trial.suggest_int(f'max_depth_{name}', 1, 11),
-        'n_jobs': 1,
-    }
-
 def make_sklearnex_classifier_config_dictionary(n_samples=10, n_classes=None):
     return {
             RandomForestClassifier: params_RandomForestClassifier,
@@ -83,5 +70,4 @@ def make_sklearnex_classifier_config_dictionary(n_samples=10, n_classes=None):
             LogisticRegression: params_LogisticRegression,
             SVC: params_SVC,
             NuSVC: params_NuSVC,
-            XGBClassifier: params_XGBClassifier,
         }

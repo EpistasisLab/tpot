@@ -9,9 +9,6 @@ from sklearnex.svm import NuSVR
 from sklearnex.ensemble import RandomForestRegressor
 from sklearnex.neighbors import KNeighborsRegressor
 
-from xgboost import XGBRegressor
-from functools import partial
-
 
 def params_RandomForestRegressor(trial, name=None):
     return {
@@ -74,18 +71,6 @@ def params_NuSVR(trial, name=None):
         'tol': 0.005,
     }
 
-def params_XGBRegressor(trial, name=None):
-    return {
-        'learning_rate': trial.suggest_float(f'learning_rate_{name}', 1e-3, 1, log=True),
-        'subsample': trial.suggest_float(f'subsample_{name}', 0.05, 1.0),
-        'min_child_weight': trial.suggest_int(f'min_child_weight_{name}', 1, 21),
-        'n_estimators': 100,
-        'max_depth': trial.suggest_int(f'max_depth_{name}', 1, 11),
-        'nthread': 1,
-        'verbosity': 0,
-        'objective': 'reg:squarederror',
-    }
-
 def make_sklearnex_regressor_config_dictionary(n_samples=10):
     return {
         RandomForestRegressor: params_RandomForestRegressor,
@@ -96,5 +81,4 @@ def make_sklearnex_regressor_config_dictionary(n_samples=10):
         ElasticNet: params_ElasticNet,
         SVR: params_SVR,
         NuSVR: params_NuSVR,
-        XGBRegressor: params_XGBRegressor,
     }
