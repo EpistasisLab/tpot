@@ -33,7 +33,8 @@ class TPOTRegressor(TPOTEstimator):
                         periodic_checkpoint_folder = None, 
                         verbose = 0,
                         memory_limit = "4GB",
-                        client = None
+                        client = None,
+                        use_sklearnex = False
         ):
         """
         See TPOTEstimator for documentation
@@ -67,7 +68,8 @@ class TPOTRegressor(TPOTEstimator):
                         verbose = verbose,
                         classification=False,
                         memory_limit = memory_limit,
-                        client = client
+                        client = client,
+                        use_sklearnex=use_sklearnex
 )
 
 
@@ -99,7 +101,8 @@ class TPOTClassifier(TPOTEstimator):
                         periodic_checkpoint_folder = None, 
                         verbose = 0,
                         memory_limit = "4GB",
-                        client = None
+                        client = None,
+                        use_sklearnex = False
                         
         ):
         """
@@ -134,7 +137,8 @@ class TPOTClassifier(TPOTEstimator):
                         verbose = verbose,
                         classification=True,
                         memory_limit = memory_limit,
-                        client = client
+                        client = client,
+                        use_sklearnex=use_sklearnex
         )
 
 

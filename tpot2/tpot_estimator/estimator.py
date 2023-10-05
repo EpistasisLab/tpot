@@ -94,6 +94,9 @@ class TPOTEstimator(BaseEstimator):
                         memory_limit = "4GB",
                         client = None,
                         processes = True,
+
+                        #accelerators
+                        use_sklearnex=False,
                         
                         #debugging and logging parameters
                         warm_start = False,
@@ -367,6 +370,8 @@ class TPOTEstimator(BaseEstimator):
             If True, will use multiprocessing to parallelize the optimization process. If False, will use threading.
             True seems to perform better. However, False is required for interactive debugging.
             
+        use_sklearnex : bool, default=False
+            If True, will use sklearnex config files that leverage accelerations from the Intel(R) Extension for Sciki-learn.
           
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
@@ -475,6 +480,7 @@ class TPOTEstimator(BaseEstimator):
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
         self.callback = callback
         self.processes = processes
+        self.use_sklearnex = use_sklearnex
 
 
         self.scatter = scatter
@@ -632,9 +638,15 @@ class TPOTEstimator(BaseEstimator):
         if self.root_config_dict == 'Auto':
             if self.classification:
                 n_classes = len(np.unique(y))
-                root_config_dict = get_configuration_dictionary("classifiers", n_samples, n_features, self.classification, subsets=self.subsets, feature_names=self.feature_names, n_classes=n_classes)
+                if self.use_sklearnex:
+                    root_config_dict = get_configuration_dictionary("classifiers_sklearnex", n_samples, n_features, self.classification, subsets=self.subsets, feature_names=self.feature_names, n_classes=n_classes)
+                else:
+                    root_config_dict = get_configuration_dictionary("classifiers", n_samples, n_features, self.classification, subsets=self.subsets, feature_names=self.feature_names, n_classes=n_classes)
             else:
-                root_config_dict = get_configuration_dictionary("regressors", n_samples, n_features, self.classification,subsets=self.subsets, feature_names=self.feature_names)
+                if self.use_sklearnex:
+                    root_config_dict = get_configuration_dictionary("regressors_sklearnex", n_samples, n_features, self.classification,subsets=self.subsets, feature_names=self.feature_names)
+                else:
+                    root_config_dict = get_configuration_dictionary("regressors", n_samples, n_features, self.classification,subsets=self.subsets, feature_names=self.feature_names)
         else:
             root_config_dict = get_configuration_dictionary(self.root_config_dict, n_samples, n_features, self.classification, subsets=self.subsets,feature_names=self.feature_names)
 
