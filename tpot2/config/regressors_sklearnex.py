@@ -48,7 +48,7 @@ def params_Lasso(trial, name=None):
 
 def params_ElasticNet(trial, name=None):
     return {
-        'alpha': 1 - trial.suggest_float(f'alpha_{name}', 0.0, 1.0, log=True),
+        'alpha': 1 - trial.suggest_float(f'alpha_{name}', 0.0, 1.0),
         'l1_ratio': 1- trial.suggest_float(f'l1_ratio_{name}',0.0, 1.0),
         }
 
