@@ -8,6 +8,12 @@ from .autoqtl_builtins import make_FeatureEncodingFrequencySelector_config_dicti
 from .hyperparametersuggestor import *
 
 try:
+    from .classifiers_sklearnex import make_sklearnex_classifier_config_dictionary
+    from .regressors_sklearnex import make_sklearnex_regressor_config_dictionary
+except ModuleNotFoundError: #if optional packages are not installed
+    pass
+
+try:
     from .mdr_configs import make_skrebate_config_dictionary, make_MDR_config_dictionary, make_ContinuousMDR_config_dictionary
 except: #if optional packages are not installed
     pass
