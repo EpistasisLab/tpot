@@ -48,6 +48,21 @@ This is to ensure that you get the version that is compatible with your system.
 conda install --yes -c conda-forge 'lightgbm>=3.3.3'
 ```
 
+### Installing Extra Features with pip
+
+If you want to utilize the additional features provided by TPOT2 along with `scikit-learn` extensions, you can install them using `pip`. The command to install TPOT2 with these extra features is as follows:
+
+```
+pip install tpot2[sklearnex]
+```
+
+Please note that while these extensions can speed up scikit-learn packages, there are some important considerations:
+
+These extensions may not be fully developed and tested on Arm-based CPUs, such as M1 Macs. You might encounter compatibility issues or reduced performance on such systems.
+
+We recommend using Python 3.9 when installing these extra features, as it provides better compatibility and stability.
+
+
 ### Developer/Latest Branch Installation
 
 
