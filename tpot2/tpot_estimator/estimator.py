@@ -37,6 +37,10 @@ class TPOTEstimator(BaseEstimator):
                         other_objective_functions_weights = [],
                         objective_function_names = None,
                         bigger_is_better = True,
+
+                        hyperparameter_probability = 1,
+                        hyper_node_probability = 0,
+                        hyperparameter_alpha = 1,
                         max_size = np.inf, 
                         linear_pipeline = False,
                         root_config_dict= 'Auto',
@@ -427,6 +431,9 @@ class TPOTEstimator(BaseEstimator):
         self.other_objective_functions_weights = other_objective_functions_weights
         self.objective_function_names = objective_function_names
         self.bigger_is_better = bigger_is_better
+        self.hyperparameter_probability = hyperparameter_probability
+        self.hyper_node_probability = hyper_node_probability
+        self.hyperparameter_alpha = hyperparameter_alpha
         self.max_size = max_size
         self.linear_pipeline = linear_pipeline
         self.root_config_dict= root_config_dict
@@ -685,6 +692,9 @@ class TPOTEstimator(BaseEstimator):
                                                             leaf_config_dict=leaf_config_dict,
                                                             max_size = self.max_size,
                                                             linear_pipeline=self.linear_pipeline,
+                                                            hyperparameter_probability=self.hyperparameter_probability,
+                                                            hyper_node_probability=self.hyper_node_probability,
+                                                            hyperparameter_alpha=self.hyperparameter_alpha,
                                                                 )
 
         if self.threshold_evaluation_early_stop is not None or self.selection_evaluation_early_stop is not None:
