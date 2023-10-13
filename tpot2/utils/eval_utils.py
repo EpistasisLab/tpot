@@ -13,7 +13,7 @@ import stopit
 from dask.diagnostics import ProgressBar
 from tqdm.dask import TqdmCallback
 from dask.distributed import progress
-
+import distributed
 import func_timeout
 
 def process_scores(scores, n):
@@ -137,6 +137,108 @@ def parallel_eval_objective_list(individual_list,
     if n_expected_columns is not None:
         offspring_scores = process_scores(offspring_scores, n_expected_columns)
     return offspring_scores
+
+
+def parallel_eval_objective_list2(individual_list,
+                                objective_list,
+                                verbose=0,
+                                max_eval_time_seconds=None,
+                                n_expected_columns=None,
+                                client=None,
+                                **objective_kwargs):
+
+    individual_stack = list(individual_list)
+    max_queue_size = len(client.cluster.workers)
+    submitted_futures = {}
+    scores_dict = {}
+    submitted_inds = set()
+
+    while len(submitted_futures) < max_queue_size and len(individual_stack)>0:
+        individual = individual_stack.pop()
+        future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_seconds,**objective_kwargs)
+        
+        submitted_futures[future] = {"individual": individual,
+                                    "time": time.time(),}
+        
+        submitted_inds.add(individual.unique_id())
+    
+
+
+    while len(individual_stack)>0 or len(submitted_futures)>0:
+        #wait for at least one future to finish or timeout
+        try:
+            next(distributed.as_completed(submitted_futures, timeout=max_eval_time_seconds))
+        except dask.distributed.TimeoutError:
+            pass
+        except dask.distributed.CancelledError:
+            pass
+
+        #Loop through all futures, collect completed and timeout futures.
+        for completed_future in list(submitted_futures.keys()):
+            #get scores and update                            
+            if completed_future.done(): #if future is done
+                #If the future is done but threw and error, record the error
+                if completed_future.exception() or completed_future.status == "error": #if the future is done and threw an error
+                    print("Exception in future")
+                    print(completed_future.exception())
+                    scores = ["INVALID"]
+                elif completed_future.cancelled(): #if the future is done and was cancelled
+                    print("Cancelled future (likely memory related)")
+                    scores = ["INVALID"]
+                else: #if the future is done and did not throw an error, get the scores
+                    try:
+                        scores = completed_future.result()
+                    except Exception as e:
+                        print("Exception in future, but not caught by dask")
+                        print(e)
+                        print(completed_future.exception())
+                        print(completed_future)
+                        print("status", completed_future.status)
+                        print("done", completed_future.done())
+                        print("cancelld ", completed_future.cancelled())
+                        scores = ["INVALID"]
+            else: #if future is not done
+                
+                #check if the future has been running for too long, cancel the future
+                if time.time() - submitted_futures[completed_future]["time"] > max_eval_time_seconds*1.25:
+                    completed_future.cancel()
+                    
+                    if verbose >= 4:
+                        print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {submitted_futures[completed_future]} \n')
+                    
+                    scores = ["TIMEOUT"]
+                else:
+                    continue #otherwise, continue to next future
+        
+            #log scores
+            cur_individual = submitted_futures[completed_future]["individual"]
+            scores_dict[cur_individual] = {"scores": scores, 
+                                        "start_time": submitted_futures[completed_future]["time"],
+                                        "end_time": time.time(),
+                                        }
+            
+
+            #update submitted futures
+            submitted_futures.pop(completed_future)
+        
+        #submit new futures
+        while len(submitted_futures) < max_queue_size and len(individual_stack)>0:
+            individual = individual_stack.pop()
+            future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_seconds,**objective_kwargs)
+            
+            submitted_futures[future] = {"individual": individual,
+                                        "time": time.time(),}
+            
+            submitted_inds.add(individual.unique_id())
+
+
+    final_scores = [scores_dict[individual]["scores"] for individual in individual_list]
+    final_start_times = [scores_dict[individual]["start_time"] for individual in individual_list]
+    final_end_times = [scores_dict[individual]["end_time"] for individual in individual_list]
+
+    final_scores = process_scores(final_scores, n_expected_columns)
+
+    return final_scores, final_start_times, final_end_times
 
 
 ###################

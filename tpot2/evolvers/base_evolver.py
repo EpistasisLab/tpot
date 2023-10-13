@@ -20,6 +20,11 @@ from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominate
 import math
 from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
 
+def ind_mutate(ind):
+    return ind.mutate()
+
+def ind_crossover(ind1, ind2):
+    return ind1.crossover(ind2)
 
 class BaseEvolver():
     def __init__(   self, 
@@ -52,6 +57,13 @@ class BaseEvolver():
                     mutate_probability=.7,
                     mutate_then_crossover_probability=.05,
                     crossover_then_mutate_probability=.05,
+                    
+                    mutation_functions = [ind_mutate],
+                    crossover_functions = [ind_crossover],
+
+                    mutation_function_weights = None,
+                    crossover_function_weights = None,
+                    
                     n_parents=2,
 
                     survival_selector = survival_select_NSGA2,
@@ -261,6 +273,20 @@ class BaseEvolver():
         self.mutate_then_crossover_probability= mutate_then_crossover_probability / total_var_p
         self.crossover_then_mutate_probability= crossover_then_mutate_probability / total_var_p
 
+
+        self.mutation_functions = mutation_functions
+        self.crossover_functions = crossover_functions
+
+        if mutation_function_weights is None:
+            self.mutation_function_weights = [1 for _ in range(len(mutation_functions))]
+        else:
+            self.mutation_function_weights = mutation_function_weights
+
+        if mutation_function_weights is None:
+            self.crossover_function_weights = [1 for _ in range(len(mutation_functions))]
+        else:
+            self.crossover_function_weights = crossover_function_weights
+
         self.n_parents = n_parents
 
         if objective_kwargs is None:
@@ -468,7 +494,6 @@ class BaseEvolver():
             else:
                 self.cur_population_size = self.population_size
 
-                
         if self.budget_list is not None:
             if len(self.budget_list) <= self.generation:
                 self.budget = self.budget_range[-1]
@@ -477,61 +502,39 @@ class BaseEvolver():
         else:
             self.budget = None
 
-
-
-        self.one_generation_step()
-        self.generation += 1
-        
-
-    
-    def one_generation_step(self, ): #your EA Algorithm goes here
-        
         if self.survival_selector is not None:
             n_survivors = max(1,int(self.cur_population_size*self.survival_percentage)) #always keep at least one individual
-            #Get survivors from current population
-            weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
-            new_population_index = np.ravel(self.survival_selector(weighted_scores, k=n_survivors)) #TODO make it clear that we are concatenating scores...
-            self.population.set_population(np.array(self.population.population)[new_population_index])
-        weighted_scores = self.population.get_column(self.population.population, column_names=self.objective_names) * self.objective_function_weights
-        
-        #number of crossover pairs and mutation only parent to generate
-        n_crossover = int(self.cur_population_size*self.crossover_probability)
-        n_crossover_then_mutate = int(self.cur_population_size*self.crossover_then_mutate_probability)
-        n_mutate_then_crossover = int(self.cur_population_size*self.mutate_then_crossover_probability)
-        n_total_crossover_pairs = n_crossover + n_crossover_then_mutate + n_mutate_then_crossover
-        n_mutate_parents = self.cur_population_size - n_total_crossover_pairs
+            self.population.survival_select(    selector=self.survival_selector, 
+                                                weights=self.objective_function_weights, 
+                                                columns_names=self.objective_names, 
+                                                n_survivors=n_survivors, 
+                                                inplace=True)
+            
+        self.generate_offspring()
+        self.evaluate_population()
 
-        #get crossover pairs
-        if n_total_crossover_pairs > 0:
-            cx_parents_index = self.parent_selector(weighted_scores, k=n_total_crossover_pairs, n_parents=self.n_parents,   ) #TODO make it clear that we are concatenating scores...
-            cx_var_ops = np.concatenate([ np.repeat("crossover",n_crossover),
-                                        np.repeat("mutate_then_crossover",n_mutate_then_crossover),
-                                        np.repeat("crossover_then_mutate",n_crossover_then_mutate),
-                                        ])
-        else:
-            cx_parents_index = []
-            cx_var_ops = []
+        self.generation += 1
         
-        #get mutation only parents
-        if n_mutate_parents > 0:
-            m_parents_index = self.parent_selector(weighted_scores, k=n_mutate_parents, n_parents=1,  ) #TODO make it clear that we are concatenating scores...
-            m_var_ops = np.repeat("mutate",len(m_parents_index))
-        else:
-            m_parents_index = []
-            m_var_ops = []
+    def generate_offspring(self, ): #your EA Algorithm goes here
+        n_mutations = np.random.binomial(self.cur_population_size, self.mutate_probability)
+        n_crossover = self.cur_population_size - n_mutations
+        
+        cx_parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=n_crossover, n_parents=2)
+        m_parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=n_mutations, n_parents=1)
 
-        cx_parents = np.array(self.population.population)[cx_parents_index]
-        m_parents = np.array(self.population.population)[m_parents_index]
+        p = np.array([self.crossover_probability, self.mutate_then_crossover_probability, self.crossover_then_mutate_probability])
+        p = p/np.sum(p)
+        var_op_list = np.random.choice(["crossover", "mutate_then_crossover", "crossover_then_mutate"], size=n_crossover, p=p)
+        var_op_list = np.concatenate([var_op_list, ["mutate"]*n_mutations])
+
         parents = list(cx_parents) + list(m_parents)
 
-        var_ops = np.concatenate([cx_var_ops, m_var_ops])
-        offspring = self.population.create_offspring(parents, var_ops, n_jobs=1) 
+        offspring = self.population.create_offspring2(parents, var_op_list, self.mutation_functions, self.mutation_function_weights, self.crossover_functions, self.crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True) 
+        
         self.population.update_column(offspring, column_names="Generation", data=self.generation, )
-        #print("done making offspring")
 
-        #print("evaluating")
-        self.evaluate_population()
-        #print("done evaluating")
+        
+
 
 
     
@@ -609,14 +612,17 @@ class BaseEvolver():
         parallel_timeout = min(theoretical_timeout, scheduled_timeout_time_left)
         if parallel_timeout < 0:
             parallel_timeout = 10
-        scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
+        
+        #scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
+        scores, start_times, end_times = tpot2.utils.eval_utils.parallel_eval_objective_list2(individuals_to_evaluate, self.objective_functions, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, **self.objective_kwargs)
 
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
         if budget is not None:
             self.population.update_column(individuals_to_evaluate, column_names="Budget", data=budget)
 
-        self.population.update_column(individuals_to_evaluate, column_names="Completed Timestamp", data=time.time())
+        self.population.update_column(individuals_to_evaluate, column_names="Submitted Timestamp", data=start_times)
+        self.population.update_column(individuals_to_evaluate, column_names="Completed Timestamp", data=end_times)
         self.population.remove_invalid_from_population(column_names=self.objective_names)
         self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
 
@@ -680,21 +686,22 @@ class BaseEvolver():
             if parallel_timeout < 0:
                 parallel_timeout = 10
 
-            scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individual_list=unevaluated_individuals_this_step,
+            scores, start_times, end_times = tpot2.utils.eval_utils.parallel_eval_objective_list2(individual_list=unevaluated_individuals_this_step,
                                     objective_list=self.objective_functions,
-                                    n_jobs = self.n_jobs,
                                     verbose=self.verbose,
-                                    timeout=self.max_eval_time_seconds,
+                                    max_eval_time_seconds=self.max_eval_time_seconds,
                                     step=step,
                                     budget = self.budget,
                                     generation = self.generation,
                                     n_expected_columns=len(self.objective_names),
                                     client=self._client,
-                                    parallel_timeout=parallel_timeout,
                                     **self.objective_kwargs,
                                     )
 
             self.population.update_column(unevaluated_individuals_this_step, column_names=this_step_names, data=scores)
+            self.population.update_column(unevaluated_individuals_this_step, column_names="Submitted Timestamp", data=start_times)
+            self.population.update_column(unevaluated_individuals_this_step, column_names="Completed Timestamp", data=end_times)
+
 
             self.population.remove_invalid_from_population(column_names=this_step_names)
             self.population.remove_invalid_from_population(column_names=this_step_names, invalid_value="TIMEOUT")
@@ -768,3 +775,5 @@ class BaseEvolver():
 
                             new_population_index = survival_selector(weighted_scores, k=k)
                             cur_individuals = np.array(cur_individuals)[new_population_index]
+
+
