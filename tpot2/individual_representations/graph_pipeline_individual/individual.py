@@ -568,13 +568,12 @@ class GraphIndividual(BaseIndividual):
 
             if not completed_one:
 
-                get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=node,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
-                completed_one = True
+                _,_, completed_one = get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=node,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
             else:
                 if self.hyper_node_probability < random.random():
                     get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=node,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
-            return True
-        return False
+
+        return completed_one
     
     
 
@@ -1145,7 +1144,7 @@ def create_node(config_dict):
     if method_class == 'Recursive':
         node = GraphIndividual(**config_dict[method_class])
     else:
-        hyperparameters, params = get_hyperparameter(config_dict[method_class], nodelabel=None)
+        hyperparameters, params, _ = get_hyperparameter(config_dict[method_class], nodelabel=None)
 
         node = NodeLabel(
                                         method_class=method_class,
@@ -1172,17 +1171,18 @@ def random_weighted_sort(l,weights):
 
 
 def get_hyperparameter(config_func, nodelabel=None,  alpha=1, hyperparameter_probability=1):
+    changed = False
     if isinstance(config_func, dict):
-        return config_func, None
+        return config_func, None, changed
 
     if nodelabel is not None:
         trial = config.hyperparametersuggestor.Trial(old_params=nodelabel._params, alpha=alpha, hyperparameter_probability=hyperparameter_probability)
         new_params = config_func(trial)
-
+        changed = trial._params != nodelabel._params
         nodelabel._params = trial._params
         nodelabel.hyperparameters = new_params
     else:
         trial = config.hyperparametersuggestor.Trial(old_params=None, alpha=alpha, hyperparameter_probability=hyperparameter_probability)
         new_params = config_func(trial)
 
-    return  new_params, trial._params,
+    return  new_params, trial._params, changed
