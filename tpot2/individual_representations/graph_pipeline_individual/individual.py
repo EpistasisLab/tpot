@@ -567,10 +567,9 @@ class GraphIndividual(BaseIndividual):
                 continue
 
             if not completed_one:
-
                 _,_, completed_one = get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=node,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
             else:
-                if self.hyper_node_probability < random.random():
+                if self.hyper_node_probability > random.random():
                     get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=node,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
 
         return completed_one
