@@ -594,7 +594,7 @@ class GraphIndividual(BaseIndividual):
             else: 
                 #hyperparameters = self.select_config_dict(node)[node.method_class](config.hyperparametersuggestor)
                 #get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=None,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
-                new_node = create_node(self.select_config_dict(node)[node.method_class])
+                new_node = create_node(self.select_config_dict(node))
                 #TODO cleanup
                 node.hyperparameters = new_node.hyperparameters
                 node.method_class = new_node.method_class
