@@ -2,6 +2,13 @@ import random
 from scipy.stats import loguniform, logser #TODO: remove this dependency?
 import numpy as np #TODO: remove this dependency and use scipy instead?
 
+#function that selects selects items from a list with each having independent probability p of being selected
+def select(items, p):
+    selected = [item for item in items if random.random() < p]
+    #if selected is empty, select one item at random
+    if not selected:
+        return [random.choice(items)]
+    return selected
 
 
 class Trial():
@@ -13,8 +20,8 @@ class Trial():
         self.alpha = alpha
         self.hyperparameter_probability = hyperparameter_probability
 
-        if old_params is not None:
-            self.params_to_update = set(random.sample(list(old_params.keys()), max(int(len(old_params.keys())*self.hyperparameter_probability),1)))
+        if old_params is not None and len(old_params) > 0:
+            self.params_to_update = select(list(old_params.keys()), self.hyperparameter_probability)
         else:
             self.params_to_update = None
 
@@ -22,15 +29,12 @@ class Trial():
     #Replicating the API found in optuna: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.trial.Trial.html
     #copy-pasted some code
     def suggest_categorical(self, name, choices):
-        if self.params_to_update ==  None or name in self.params_to_update: #If this parameter is selected to be changed
+        if self.params_to_update ==  None or name in self.params_to_update or name not in self.old_params: #If this parameter is selected to be changed
             choice = self.suggest_categorical_(name, choices)
         else: #if this parameter is not selected to be changed
-            if name not in self.old_params: #if this parameter is not in the old params, then we need to choose a value for it
+            choice = self.old_params[name]
+            if choice not in choices: #if the old value is not in the choices, then we need to choose a value for it
                 choice = self.suggest_categorical_(name, choices)
-            else: #if this parameter is in the old params, then we can just use the old value
-                choice = self.old_params[name]
-                if choice not in choices: #if the old value is not in the choices, then we need to choose a value for it
-                    choice = self.suggest_categorical_(name, choices)
         
         self._params[name] = choice
         return choice
@@ -43,15 +47,11 @@ class Trial():
                         step = None,
                         log = False,
                         ):
-        if self.params_to_update ==  None or name in self.params_to_update: #If this parameter is selected to be changed
+        if self.params_to_update ==  None or name in self.params_to_update or name not in self.old_params: #If this parameter is selected to be changed
             choice = self.suggest_float_(name, low=low, high=high, step=step, log=log)
             if self.old_params is not None and name in self.old_params:
                 choice = self.alpha*choice + (1-self.alpha)*self.old_params[name]
         else: #if this parameter is not selected to be changed
-            
-            if name not in self.old_params:
-                choice = self.suggest_float_(name, low=low, high=high, step=step, log=log)
-            else:
                 choice = self.old_params[name]
 
         self._params[name] = choice
@@ -60,15 +60,12 @@ class Trial():
 
 
     def suggest_discrete_uniform(self, name, low, high, q):
-        if self.params_to_update ==  None or name in self.params_to_update:
+        if self.params_to_update ==  None or name in self.params_to_update or name not in self.old_params:
             choice = self.suggest_discrete_uniform_(name, low=low, high=high, q=q)
             if self.old_params is not None and name in self.old_params:
                 choice = self.alpha*choice + (1-self.alpha)*self.old_params[name]
         else:
-            if name not in self.old_params:
-                choice = self.suggest_discrete_uniform_(name, low=low, high=high, q=q)
-            else:
-                choice = self.old_params[name]
+            choice = self.old_params[name]
 
         self._params[name] = choice
         return choice
@@ -76,30 +73,24 @@ class Trial():
 
 
     def suggest_int(self, name, low, high, step=1, log=False):
-        if self.params_to_update ==  None or name in self.params_to_update:
+        if self.params_to_update ==  None or name in self.params_to_update or name not in self.old_params:
             choice = self.suggest_int_(name, low=low, high=high, step=step, log=log)
             if self.old_params is not None and name in self.old_params:
                 choice = int(self.alpha*choice + (1-self.alpha)*self.old_params[name])
         else:
-            if name not in self.old_params:
-                choice = self.suggest_int_(name, low=low, high=high, step=step, log=log)
-            else:
-                choice = self.old_params[name]
+            choice = self.old_params[name]
 
         self._params[name] = choice
         return choice
 
 
     def suggest_uniform(self, name, low, high):
-        if self.params_to_update ==  None or name in self.params_to_update:
+        if self.params_to_update ==  None or name in self.params_to_update or name not in self.old_params:
             choice = self.suggest_uniform_(name, low=low, high=high)
             if self.old_params is not None and name in self.old_params:
                 choice = self.alpha*choice + (1-self.alpha)*self.old_params[name]
         else:
-            if name not in self.old_params:
-                choice = self.suggest_uniform_(name, low=low, high=high)
-            else:
-                choice = self.old_params[name]
+            choice = self.old_params[name]
 
         self._params[name] = choice
         return choice
@@ -112,7 +103,6 @@ class Trial():
     def suggest_categorical_(self, name, choices):
         
         choice = random.choice(choices)
-        self._params[name] = choice
         return choice
 
     def suggest_float_(self, 
@@ -148,23 +138,19 @@ class Trial():
         if log:
             value = np.random.uniform(np.log(low),np.log(high))
             choice = np.e**value
-            self._params[name] = choice
             return choice
 
         else:
             if step is not None:
                 choice = np.random.choice(np.arange(low,high,step))
-                self._params[name] = choice
                 return choice
             else:
                 choice = np.random.uniform(low,high)
-                self._params[name] = choice
                 return choice
 
 
     def suggest_discrete_uniform_(self, name, low, high, q):
         choice = self.suggest_float(name, low, high, step=q)
-        self._params[name] = choice
         return choice
 
 
@@ -195,11 +181,9 @@ class Trial():
         if log:
             value = np.random.uniform(np.log(low),np.log(high))
             choice = int(np.e**value)
-            self._params[name] = choice
             return choice
         else:
             choice = np.random.choice(list(range(low,high,step)))
-            self._params[name] = choice
             return choice
 
     def suggest_uniform_(self, name, low, high):
