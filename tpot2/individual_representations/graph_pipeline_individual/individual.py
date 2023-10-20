@@ -29,6 +29,9 @@ class NodeLabel():
         self.method_class = method_class #transformer or baseestimator
         self.hyperparameters = hyperparameters
         self.label = label
+        self._params = None
+
+    
 
 from functools import partial
 #@https://stackoverflow.com/questions/20530455/isomorphic-comparison-of-networkx-graph-objects-instead-of-the-default-address
@@ -114,6 +117,9 @@ class GraphIndividual(BaseIndividual):
                 crossover_same_depth = False,
                 crossover_same_recursive_depth = True,
                 
+                hyperparameter_probability = 1,
+                hyper_node_probability = 0,
+                hyperparameter_alpha = 1,
 
                 unique_subset_values = None,
                 initial_subset_values = None,
@@ -134,6 +140,10 @@ class GraphIndividual(BaseIndividual):
 
         self.unique_subset_values = unique_subset_values
         self.initial_subset_values = initial_subset_values
+
+        self.hyperparameter_probability = hyperparameter_probability
+        self.hyper_node_probability = hyper_node_probability
+        self.hyperparameter_alpha = hyperparameter_alpha
 
         if self.unique_subset_values is not None:
             self.row_subset_selector = tpot2.representations.SubsetSelector(values=unique_subset_values, initial_set=initial_subset_values,k=20)
@@ -237,7 +247,8 @@ class GraphIndividual(BaseIndividual):
             if node.method_class is None:
                 node.method_class = random.choice(list(self.select_config_dict(node).keys()))
             if node.hyperparameters is None:
-                node.hyperparameters = self.select_config_dict(node)[node.method_class](config.hyperparametersuggestor)
+                get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=node,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
+            
 
     def fix_noncompliant_leafs(self):
         leafs = [node for node in self.graph.nodes if len(list(self.graph.successors(node)))==0]
@@ -254,6 +265,7 @@ class GraphIndividual(BaseIndividual):
             first_leaf = NodeLabel(config_dict=self.leaf_config_dict)
             first_leaf.method_class = random.choice(list(first_leaf.config_dict.keys())) #TODO: check when there is no new method
             first_leaf.hyperparameters = first_leaf.config_dict[first_leaf.method_class](config.hyperparametersuggestor)
+            get_hyperparameter(self.select_config_dict(first_leaf)[first_leaf.method_class], nodelabel=first_leaf,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
             compliant_leafs.append(first_leaf)
 
         #connect bad leaves to good leaves (making them internal nodes)
@@ -547,15 +559,23 @@ class GraphIndividual(BaseIndividual):
         '''
         sorted_nodes_list = list(self.graph.nodes)
         random.shuffle(sorted_nodes_list) 
+        completed_one = False
         for node in sorted_nodes_list:
             if isinstance(node,GraphIndividual):
                 continue
             if isinstance(self.select_config_dict(node)[node.method_class], dict):
                 continue
-            node.hyperparameters = self.select_config_dict(node)[node.method_class](config.hyperparametersuggestor) 
-            
-            return True
-        return False
+
+            if not completed_one:
+                _,_, completed_one = get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=node,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
+            else:
+                if self.hyper_node_probability > random.random():
+                    get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=node,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
+
+        return completed_one
+    
+    
+
 
     def _mutate_replace_node(self):
         '''
@@ -570,9 +590,16 @@ class GraphIndividual(BaseIndividual):
             node.method_class = random.choice(list(self.select_config_dict(node).keys())) 
             if isinstance(self.select_config_dict(node)[node.method_class], dict):
                 hyperparameters = self.select_config_dict(node)[node.method_class]
+                node.hyperparameters = hyperparameters
             else: 
-                hyperparameters = self.select_config_dict(node)[node.method_class](config.hyperparametersuggestor)
-            node.hyperparameters = hyperparameters
+                #hyperparameters = self.select_config_dict(node)[node.method_class](config.hyperparametersuggestor)
+                #get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=None,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
+                new_node = create_node(self.select_config_dict(node))
+                #TODO cleanup
+                node.hyperparameters = new_node.hyperparameters
+                node.method_class = new_node.method_class
+                node.label = new_node.label
+
             return True
             
         return False
@@ -1024,6 +1051,7 @@ class GraphIndividual(BaseIndividual):
                 def objective(trial):
                     params = self.select_config_dict(node)[node.method_class](trial)
                     node.hyperparameters = params
+                    
                     trial.set_user_attr('params', params)
                     try:
                         return objective_function(self)
@@ -1115,14 +1143,14 @@ def create_node(config_dict):
     if method_class == 'Recursive':
         node = GraphIndividual(**config_dict[method_class])
     else:
-        if isinstance(config_dict[method_class], dict):
-            hyperparameters = config_dict[method_class]
-        else: 
-            hyperparameters = config_dict[method_class](config.hyperparametersuggestor)
+        hyperparameters, params, _ = get_hyperparameter(config_dict[method_class], nodelabel=None)
 
         node = NodeLabel(
                                         method_class=method_class,
-                                        hyperparameters=hyperparameters)
+                                        hyperparameters=hyperparameters
+                                        )
+        node._params = params
+
     return node
 
 
@@ -1138,3 +1166,22 @@ def random_weighted_sort(l,weights):
         sorted_l.append(l[next_item])
     
     return sorted_l
+
+
+
+def get_hyperparameter(config_func, nodelabel=None,  alpha=1, hyperparameter_probability=1):
+    changed = False
+    if isinstance(config_func, dict):
+        return config_func, None, changed
+
+    if nodelabel is not None:
+        trial = config.hyperparametersuggestor.Trial(old_params=nodelabel._params, alpha=alpha, hyperparameter_probability=hyperparameter_probability)
+        new_params = config_func(trial)
+        changed = trial._params != nodelabel._params
+        nodelabel._params = trial._params
+        nodelabel.hyperparameters = new_params
+    else:
+        trial = config.hyperparametersuggestor.Trial(old_params=None, alpha=alpha, hyperparameter_probability=hyperparameter_probability)
+        new_params = config_func(trial)
+
+    return  new_params, trial._params, changed

@@ -14,6 +14,10 @@ def estimator_graph_individual_generator(
                                                 leaf_config_dict=None,
                                                 max_size = np.inf, 
                                                 linear_pipeline = False,
+
+                                                hyperparameter_probability = 1,
+                                                hyper_node_probability = 0,
+                                                hyperparameter_alpha = 1,
                                                 **kwargs,
                                             ) :
 
@@ -37,6 +41,9 @@ def estimator_graph_individual_generator(
 
                                                     max_size = max_size, 
                                                     linear_pipeline = linear_pipeline,
+                                                    hyperparameter_probability = hyperparameter_probability,
+                                                    hyper_node_probability = hyper_node_probability,
+                                                    hyperparameter_alpha = hyperparameter_alpha,
 
                                                     **kwargs,
                                                     )
