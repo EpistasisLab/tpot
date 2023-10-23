@@ -35,11 +35,11 @@ class Trial():
             choice = self.old_params[name]
             if choice not in choices: #if the old value is not in the choices, then we need to choose a value for it
                 choice = self.suggest_categorical_(name, choices)
-        
+
         self._params[name] = choice
         return choice
 
-    def suggest_float(self,        
+    def suggest_float(self,
                         name: str,
                         low: float,
                         high: float,
@@ -94,18 +94,18 @@ class Trial():
 
         self._params[name] = choice
         return choice
-        
+
 
 
 ####################################
     #Replicating the API found in optuna: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.trial.Trial.html
     #copy-pasted some code
     def suggest_categorical_(self, name, choices):
-        
+
         choice = random.choice(choices)
         return choice
 
-    def suggest_float_(self, 
+    def suggest_float_(self,
         name: str,
         low: float,
         high: float,
@@ -113,7 +113,7 @@ class Trial():
         step = None,
         log = False,
         ):
-        
+
         if log and step is not None:
             raise ValueError("The parameter `step` is not supported when `log` is true.")
 
@@ -157,7 +157,7 @@ class Trial():
     def suggest_int_(self, name, low, high, step=1, log=False):
         if low == high: #TODO check that this matches optuna's behaviour
             return low
-        
+
         if log and step >1:
             raise ValueError("The parameter `step`>1 is not supported when `log` is true.")
 
