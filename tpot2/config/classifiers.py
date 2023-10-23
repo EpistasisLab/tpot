@@ -88,7 +88,7 @@ def params_LinearSVC(trial, name=None):
         loss = 'squared_hinge'
     else:
         loss = trial.suggest_categorical(name=f'loss_{name}', choices=['hinge', 'squared_hinge'])
-    
+
     if loss == 'hinge' and penalty == 'l2':
         dual = True
     else:
@@ -97,7 +97,7 @@ def params_LinearSVC(trial, name=None):
     return {
         'penalty': penalty,
         'loss': loss,
-        'dual': dual, 
+        'dual': dual,
         'C': trial.suggest_float(f'C_{name}', 1e-4, 25, log=True),
     }
 
@@ -120,7 +120,7 @@ def params_GradientBoostingClassifier(trial,n_classes=None, name=None):
         loss = 'log_loss'
     else:
         loss = trial.suggest_categorical(name=f'loss_{name}', choices=['log_loss', 'exponential'])
-    
+
     params = {
         'n_estimators': 100,
         'loss': loss,
@@ -215,7 +215,7 @@ def params_MLPClassifier_large(trial, name=None):
         'max_iter' : 10000
     }
 
-    return params  
+    return params
 
 def params_BernoulliNB(trial, name=None):
     params = {
@@ -253,4 +253,3 @@ def make_classifier_config_dictionary(n_samples=10, n_classes=None):
             #: params_LGBMClassifier, # logistic regression and SVM/SVC are just special cases of this one? remove?
             MLPClassifier: params_MLPClassifier_tpot,
         }
-
