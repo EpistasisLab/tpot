@@ -1,4 +1,4 @@
-#TODO: how to best support transformers/selectors that take other transformers with their own hyperparameters? 
+#TODO: how to best support transformers/selectors that take other transformers with their own hyperparameters?
 import numpy as np
 from sklearn.feature_selection import SelectFwe
 from sklearn.feature_selection import SelectPercentile
@@ -29,7 +29,7 @@ def params_sklearn_feature_selection_VarianceThreshold(trial, name=None):
     return {
         'threshold': trial.suggest_float(f'threshold_{name}', 1e-4, .2, log=True)
     }
-    
+
 
 #TODO add more estimator options? How will that interact with optuna?
 def params_sklearn_feature_selection_RFE(trial, name=None, classifier=True):
@@ -37,7 +37,7 @@ def params_sklearn_feature_selection_RFE(trial, name=None, classifier=True):
         estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, name=f"RFE_{name}"))
     else:
         estimator = ExtraTreesRegressor(**params_ExtraTreesRegressor(trial, name=f"RFE_{name}"))
-    
+
     params = {
             'step': trial.suggest_float(f'step_{name}', 1e-4, 1.0, log=False),
             'estimator' : estimator,
@@ -51,7 +51,7 @@ def params_sklearn_feature_selection_SelectFromModel(trial, name=None, classifie
         estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, name=f"SFM_{name}"))
     else:
         estimator = ExtraTreesRegressor(**params_ExtraTreesRegressor(trial, name=f"SFM_{name}"))
-    
+
     params = {
             'threshold': trial.suggest_float(f'threshold_{name}', 1e-4, 1.0, log=True),
             'estimator' : estimator,
@@ -65,12 +65,12 @@ def params_sklearn_feature_selection_RFE_wrapped(trial, name=None, classifier=Tr
     params = {
             'step': trial.suggest_float(f'step_{name}', 1e-4, 1.0, log=False),
             }
-    
+
     if classifier:
         estimator_params = params_ExtraTreesClassifier(trial, name=f"RFE_{name}")
     else:
         estimator_params = params_ExtraTreesRegressor(trial, name=f"RFE_{name}")
-    
+
     params.update(estimator_params)
 
     return params
@@ -80,12 +80,12 @@ def params_sklearn_feature_selection_SelectFromModel_wrapped(trial, name=None, c
     params = {
         'threshold': trial.suggest_float(f'threshold_{name}', 1e-4, 1.0, log=True),
         }
-        
+
     if classifier:
         estimator_params = params_ExtraTreesClassifier(trial, name=f"SFM_{name}")
     else:
         estimator_params = params_ExtraTreesRegressor(trial, name=f"SFM_{name}")
-    
+
     params.update(estimator_params)
 
     return params
@@ -101,7 +101,7 @@ def make_selector_config_dictionary(classifier=True):
         params =    {RFE_ExtraTreesRegressor : partial(params_sklearn_feature_selection_RFE_wrapped, classifier=classifier),
                     SelectFromModel_ExtraTreesRegressor : partial(params_sklearn_feature_selection_SelectFromModel_wrapped, classifier=classifier),
                     }
-    
+
     params.update({ SelectFwe: params_sklearn_feature_selection_SelectFwe,
                     SelectPercentile: params_sklearn_feature_selection_SelectPercentile,
                     VarianceThreshold: params_sklearn_feature_selection_VarianceThreshold,})
