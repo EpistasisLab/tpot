@@ -516,19 +516,15 @@ class BaseEvolver():
         self.generation += 1
         
     def generate_offspring(self, ): #your EA Algorithm goes here
-        n_mutations = np.random.binomial(self.cur_population_size, self.mutate_probability)
-        n_crossover = self.cur_population_size - n_mutations
+        parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=self.cur_population_size, n_parents=2)
+        p = np.array([self.crossover_probability, self.mutate_then_crossover_probability, self.crossover_then_mutate_probability, self.mutate_probability])
+        p = p / p.sum()
+        var_op_list = np.random.choice(["crossover", "mutate_then_crossover", "crossover_then_mutate", "mutate"], size=self.cur_population_size, p=p)
+
+        for i, op in enumerate(var_op_list):
+            if op == "mutate":
+                parents[i] = parents[i][0] #mutations take a single individual
         
-        cx_parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=n_crossover, n_parents=2)
-        m_parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=n_mutations, n_parents=1)
-
-        p = np.array([self.crossover_probability, self.mutate_then_crossover_probability, self.crossover_then_mutate_probability])
-        p = p/np.sum(p)
-        var_op_list = np.random.choice(["crossover", "mutate_then_crossover", "crossover_then_mutate"], size=n_crossover, p=p)
-        var_op_list = np.concatenate([var_op_list, ["mutate"]*n_mutations])
-
-        parents = list(cx_parents) + list(m_parents)
-
         offspring = self.population.create_offspring2(parents, var_op_list, self.mutation_functions, self.mutation_function_weights, self.crossover_functions, self.crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True) 
         
         self.population.update_column(offspring, column_names="Generation", data=self.generation, )
