@@ -21,12 +21,12 @@ def apply_make_pipeline(graphindividual, preprocessing_pipeline=None):
     except:
         return None
 
-def get_configuration_dictionary(options, n_samples, n_features, classification, subsets=None, feature_names=None, n_classes=None):
+def get_configuration_dictionary(options, n_samples, n_features, classification, random_state, cv, subsets=None, feature_names=None, n_classes=None):
     if options is None:
         return options
 
     if isinstance(options, dict):
-        return recursive_with_defaults(options, n_samples, n_features, classification, subsets=subsets, feature_names=feature_names)
+        return recursive_with_defaults(options, n_samples, n_features, classification, random_state, cv, subsets=subsets, feature_names=feature_names, n_classes=n_classes)
 
     if not isinstance(options, list):
         options = [options]
@@ -36,22 +36,22 @@ def get_configuration_dictionary(options, n_samples, n_features, classification,
     for option in options:
 
         if option == "selectors":
-            config_dict.update(tpot2.config.make_selector_config_dictionary(classification))
+            config_dict.update(tpot2.config.make_selector_config_dictionary(random_state=random_state, classifier=classification))
 
         elif option == "classifiers":
-            config_dict.update(tpot2.config.make_classifier_config_dictionary(n_samples=n_samples, n_classes=n_classes))
+            config_dict.update(tpot2.config.make_classifier_config_dictionary(random_state=random_state, n_samples=n_samples, n_classes=n_classes))
 
         elif option == "classifiers_sklearnex":
-            config_dict.update(tpot2.config.make_sklearnex_classifier_config_dictionary(n_samples=n_samples, n_classes=n_classes))
+            config_dict.update(tpot2.config.make_sklearnex_classifier_config_dictionary(random_state=random_state, n_samples=n_samples, n_classes=n_classes))
 
         elif option == "regressors":
-            config_dict.update(tpot2.config.make_regressor_config_dictionary(n_samples=n_samples))
+            config_dict.update(tpot2.config.make_regressor_config_dictionary(random_state=random_state, cv=cv, n_samples=n_samples))
 
         elif option == "regressors_sklearnex":
-            config_dict.update(tpot2.config.make_sklearnex_regressor_config_dictionary(n_samples=n_samples))
+            config_dict.update(tpot2.config.make_sklearnex_regressor_config_dictionary(random_state=random_state, n_samples=n_samples))
 
         elif option == "transformers":
-            config_dict.update(tpot2.config.make_transformer_config_dictionary(n_features=n_features))
+            config_dict.update(tpot2.config.make_transformer_config_dictionary(random_state=random_state, n_features=n_features))
 
         elif option == "arithmetic_transformer":
             config_dict.update(tpot2.config.make_arithmetic_transformer_config_dictionary())
@@ -79,22 +79,22 @@ def get_configuration_dictionary(options, n_samples, n_features, classification,
 
 
         else:
-            config_dict.update(recursive_with_defaults(option, n_samples, n_features, classification, subsets=subsets, feature_names=feature_names))
+            config_dict.update(recursive_with_defaults(options, n_samples, n_features, classification, random_state, cv, subsets=subsets, feature_names=feature_names, n_classes=n_classes))
 
     if len(config_dict) == 0:
         raise ValueError("No valid configuration options were provided. Please check the options you provided and try again.")
 
     return config_dict
 
-def recursive_with_defaults(config_dict, n_samples, n_features, classification, subsets=None, feature_names=None):
+def recursive_with_defaults(config_dict, n_samples, n_features, classification, random_state, cv, subsets=None, feature_names=None, n_classes=None):
 
     for key in 'leaf_config_dict', 'root_config_dict', 'inner_config_dict', 'Recursive':
         if key in config_dict:
             value = config_dict[key]
             if key=="Resursive":
-                config_dict[key] = recursive_with_defaults(value,n_samples, n_features, classification, subsets=None, feature_names=None)
+                config_dict[key] = recursive_with_defaults(value, n_samples, n_features, classification, random_state, cv, subsets=None, feature_names=None, n_classes=None)
             else:
-                config_dict[key] = get_configuration_dictionary(value, n_samples, n_features, classification, subsets, feature_names)
+                config_dict[key] = get_configuration_dictionary(value, n_samples, n_features, classification, random_state, cv, subsets, feature_names, n_classes)
 
     return config_dict
 
