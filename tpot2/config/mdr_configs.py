@@ -2,6 +2,8 @@ from mdr import MDR, ContinuousMDR
 from skrebate import ReliefF, SURF, SURFstar, MultiSURF
 from functools import partial
 
+import numpy as np
+
 #MDR
 def params_MDR(trial, name=None):
     return {
@@ -58,4 +60,3 @@ def make_ContinuousMDR_config_dictionary():
     return {
         ContinuousMDR : params_ContinuousMDR
     }
-

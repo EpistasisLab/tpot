@@ -11,9 +11,9 @@ def params_arthmetic_operator(trial, name=None):
                 }
 
 def make_arithmetic_transformer_config_dictionary():
-        return  {   
+        return  {
                 AddTransformer: {},
-                mul_neg_1_Transformer: {}, 
+                mul_neg_1_Transformer: {},
                 MulTransformer: {},
                 SafeReciprocalTransformer: {},
                 EQTransformer: {},
@@ -22,7 +22,7 @@ def make_arithmetic_transformer_config_dictionary():
                 GTTransformer: {},
                 LETransformer: {},
                 LTTransformer: {},
-                MinTransformer: {}, 
+                MinTransformer: {},
                 MaxTransformer: {},
         }
 
@@ -65,10 +65,10 @@ def make_FSS_config_dictionary(subsets=None, n_features=None, feature_names=None
     Parameters
     ----------
     subsets: Sets the subsets to select from.
-        - str : If a string, it is assumed to be a path to a csv file with the subsets. 
+        - str : If a string, it is assumed to be a path to a csv file with the subsets.
             The first column is assumed to be the name of the subset and the remaining columns are the features in the subset.
         - list or np.ndarray : If a list or np.ndarray, it is assumed to be a list of subsets.
-    
+
     n_features: int the number of features in the dataset.
         If subsets is None, each column will be treated as a subset. One column will be selected per subset.
     """
@@ -76,10 +76,10 @@ def make_FSS_config_dictionary(subsets=None, n_features=None, feature_names=None
     #require at least of of the parameters
     if subsets is None and n_features is None:
         raise ValueError('At least one of the parameters must be provided')
-    
+
     if isinstance(subsets, str):
         df = pd.read_csv(subsets,header=None,index_col=0)
-        df['features'] = df.apply(lambda x: list([x[c] for c in df.columns]),axis=1) 
+        df['features'] = df.apply(lambda x: list([x[c] for c in df.columns]),axis=1)
         subset_dict = {}
         for row in df.index:
             subset_dict[row] = df.loc[row]['features']
