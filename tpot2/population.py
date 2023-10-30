@@ -262,7 +262,7 @@ class Population():
         self.add_to_population(new_population, rng_=rng, keep_repeats=keep_repeats)
 
     #TODO should we just generate one offspring per crossover?
-    def create_offspring(self, parents_list, var_op_list, add_to_population=True, keep_repeats=False, mutate_until_unique=True, n_jobs=1):
+    def create_offspring(self, parents_list, var_op_list, rng_, add_to_population=True, keep_repeats=False, mutate_until_unique=True, n_jobs=1):
         '''
         parents_list: a list of lists of parents.
         var_op_list: a list of var_ops to apply to each list of parents. Should be the same length as parents_list.
@@ -280,8 +280,9 @@ class Population():
             - "mutate_and_crossover" : mutate_and_crossover
             - "cross_and_mutate" : cross_and_mutate
         '''
+        rng = np.random.default_rng(rng_)
         new_offspring = []
-        all_offspring = parallel_create_offspring(parents_list, var_op_list, n_jobs=n_jobs)
+        all_offspring = parallel_create_offspring(parents_list, var_op_list, rng_=rng, n_jobs=n_jobs)
 
         for parents, offspring, var_op in zip(parents_list, all_offspring, var_op_list):
 
@@ -294,7 +295,7 @@ class Population():
             #     offspring = offspring[0]
 
             if add_to_population:
-                added = self.add_to_population(offspring, keep_repeats=keep_repeats, mutate_until_unique=mutate_until_unique)
+                added = self.add_to_population(offspring, rng_=rng, keep_repeats=keep_repeats, mutate_until_unique=mutate_until_unique)
                 if len(added) > 0:
                     for new_child in added:
                         parent_keys = [parent.unique_id() for parent in parents]
@@ -394,37 +395,40 @@ class Population():
 def get_id(individual):
     return individual.unique_id()
 
-def parallel_create_offspring(parents_list, var_op_list, n_jobs=1):
+def parallel_create_offspring(parents_list, var_op_list, rng_, n_jobs=1):
+    rng = np.random.default_rng(rng_)
     if n_jobs == 1:
-        return nonparallel_create_offpring(parents_list, var_op_list)
+        return nonparallel_create_offpring(parents_list, var_op_list, rng_=rng)
     else:
         delayed_offspring = []
         for parents, var_op in zip(parents_list,var_op_list):
             #TODO put this loop in population class
             if var_op in built_in_var_ops_dict:
                 var_op = built_in_var_ops_dict[var_op]
-            delayed_offspring.append(dask.delayed(copy_and_change)(parents, var_op))
+            delayed_offspring.append(dask.delayed(copy_and_change)(parents, var_op, rng_=rng))
 
         offspring = dask.compute(*delayed_offspring,
                                 num_workers=n_jobs, threads_per_worker=1)
         return offspring
 
-def nonparallel_create_offpring(parents_list, var_op_list, n_jobs=1):
+def nonparallel_create_offpring(parents_list, var_op_list, rng_, n_jobs=1):
+    rng = np.random.default_rng(rng_)
     offspring = []
     for parents, var_op in zip(parents_list,var_op_list):
         #TODO put this loop in population class
         if var_op in built_in_var_ops_dict:
             var_op = built_in_var_ops_dict[var_op]
-        offspring.append(copy_and_change(parents, var_op))
+        offspring.append(copy_and_change(parents, var_op, rng_=rng))
 
     return offspring
 
 
 
 
-def copy_and_change(parents, var_op):
+def copy_and_change(parents, var_op, rng_):
+    rng = np.random.default_rng(rng_)
     offspring = copy.deepcopy(parents)
-    offspring = var_op(offspring)
+    offspring = var_op(offspring, rng_=rng)
     if isinstance(offspring, collections.abc.Iterable):
         offspring = offspring[0]
     return offspring
