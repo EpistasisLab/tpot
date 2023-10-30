@@ -108,6 +108,9 @@ class TPOTEstimator(BaseEstimator):
                         verbose = 0,
                         scatter = True,
 
+                         # random seed for random number generator (rng)
+                        random_state = None,
+
                         ):
 
         '''
@@ -395,6 +398,13 @@ class TPOTEstimator(BaseEstimator):
             >=5. full warnings trace
             6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
+        random_state : int, None, default=None
+            A seed for reproducability of experiments. This value will be passed to numpy.random.default_rng() to create an instnce of the genrator to pass to other classes
+
+            - int
+                Will be used to create and lock in Generator instance with 'numpy.random.default_rng()'
+            - None
+                Will be used to create Generator for 'numpy.random.default_rng()' where a fresh, unpredictable entropy will be pulled from the OS
 
         Attributes
         ----------
@@ -491,6 +501,13 @@ class TPOTEstimator(BaseEstimator):
         self.optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout
         self.optuna_storage = optuna_storage
 
+        # create random number generator based on rng_seed
+        self.rng = np.random.default_rng(random_state)
+        # save random state passed to us for other functions that use random_state
+        self.random_state = random_state
+        # set the numpy seed so anything using it will be consistent as well
+        np.random.seed(random_state)
+
         #Initialize other used params
 
 
@@ -584,9 +601,9 @@ class TPOTEstimator(BaseEstimator):
 
         if validation_strategy == 'split':
             if self.classification:
-                X, X_val, y, y_val = train_test_split(X, y, test_size=self.validation_fraction, stratify=y, random_state=42)
+                X, X_val, y, y_val = train_test_split(X, y, test_size=self.validation_fraction, stratify=y, random_state=self.random_state)
             else:
-                X, X_val, y, y_val = train_test_split(X, y, test_size=self.validation_fraction, random_state=42)
+                X, X_val, y, y_val = train_test_split(X, y, test_size=self.validation_fraction, random_state=self.random_state)
 
 
         X_original = X
@@ -626,6 +643,16 @@ class TPOTEstimator(BaseEstimator):
 
         #Set up the configuation dictionaries and the search spaces
 
+        #check if self.cv is a number
+        if isinstance(self.cv, int) or isinstance(self.cv, float):
+            if self.classification:
+                self.cv_gen = sklearn.model_selection.StratifiedKFold(n_splits=self.cv, shuffle=True, random_state=self.random_state)
+            else:
+                self.cv_gen = sklearn.model_selection.KFold(n_splits=self.cv, shuffle=True, random_state=self.random_state)
+
+        else:
+            self.cv_gen = sklearn.model_selection.check_cv(self.cv, y, classifier=self.classification)
+
 
 
         n_samples= int(math.floor(X.shape[0]/n_folds))
@@ -639,27 +666,15 @@ class TPOTEstimator(BaseEstimator):
         if self.root_config_dict == 'Auto':
             if self.classification:
                 n_classes = len(np.unique(y))
-                root_config_dict = get_configuration_dictionary("classifiers", n_samples, n_features, self.classification, subsets=self.subsets, feature_names=self.feature_names, n_classes=n_classes)
+                root_config_dict = get_configuration_dictionary("classifiers", n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names, n_classes=n_classes)
             else:
-                root_config_dict = get_configuration_dictionary("regressors", n_samples, n_features, self.classification,subsets=self.subsets, feature_names=self.feature_names)
+                root_config_dict = get_configuration_dictionary("regressors", n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names)
         else:
-            root_config_dict = get_configuration_dictionary(self.root_config_dict, n_samples, n_features, self.classification, subsets=self.subsets,feature_names=self.feature_names)
+            root_config_dict = get_configuration_dictionary(self.root_config_dict, n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets,feature_names=self.feature_names)
 
-        inner_config_dict = get_configuration_dictionary(self.inner_config_dict, n_samples, n_features, self.classification,subsets=self.subsets, feature_names=self.feature_names)
-        leaf_config_dict = get_configuration_dictionary(self.leaf_config_dict, n_samples, n_features, self.classification, subsets=self.subsets, feature_names=self.feature_names)
+        inner_config_dict = get_configuration_dictionary(self.inner_config_dict, n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names)
+        leaf_config_dict = get_configuration_dictionary(self.leaf_config_dict, n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names)
 
-
-
-
-        #check if self.cv is a number
-        if isinstance(self.cv, int) or isinstance(self.cv, float):
-            if self.classification:
-                self.cv_gen = sklearn.model_selection.StratifiedKFold(n_splits=self.cv, shuffle=True, random_state=42)
-            else:
-                self.cv_gen = sklearn.model_selection.KFold(n_splits=self.cv, shuffle=True, random_state=42)
-
-        else:
-            self.cv_gen = sklearn.model_selection.check_cv(self.cv, y, classifier=self.classification)
 
         def objective_function(pipeline_individual,
                                             X,
@@ -695,6 +710,7 @@ class TPOTEstimator(BaseEstimator):
                                                             hyperparameter_probability=self.hyperparameter_probability,
                                                             hyper_node_probability=self.hyper_node_probability,
                                                             hyperparameter_alpha=self.hyperparameter_alpha,
+                                                            rng_=self.rng,
                                                                 )
 
         if self.threshold_evaluation_early_stop is not None or self.selection_evaluation_early_stop is not None:
@@ -753,6 +769,7 @@ class TPOTEstimator(BaseEstimator):
                                             mutate_then_crossover_probability= self.mutate_then_crossover_probability,
                                             crossover_then_mutate_probability= self.crossover_then_mutate_probability,
 
+                                            rng_=self.rng,
                                             )
 
 
@@ -782,7 +799,7 @@ class TPOTEstimator(BaseEstimator):
             best_pareto_front = list(self.pareto_front.loc[best_pareto_front_idx]['Individual'])
 
             #reshuffle rows
-            X, y = sklearn.utils.shuffle(X, y, random_state=1)
+            X, y = sklearn.utils.shuffle(X, y, random_state=self.random_state)
 
             if self.scatter:
                 X_future = _client.scatter(X)
