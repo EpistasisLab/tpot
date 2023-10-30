@@ -1,12 +1,11 @@
 import numpy as np
-import random
 
 # Deb, Pratab, Agarwal, and Meyarivan, “A fast elitist non-dominated sorting genetic algorithm for multi-objective optimization: NSGA-II”, 2002.
 # chatgpt
 
 def nondominated_sorting(matrix):
     """
-    Returns the indexes of the matrix 
+    Returns the indexes of the matrix
     bigger is better
     """
     # Initialize the front list and the rank list
@@ -20,7 +19,7 @@ def nondominated_sorting(matrix):
     # Initialize the list of points that dominate the current point
     dominating = [0 for _ in range(len(matrix))] #ni the number of solutions that denominate solution i
 
-    
+
     # Iterate over all points
     for p, p_scores in enumerate(matrix):
         # Iterate over all other points
@@ -31,7 +30,7 @@ def nondominated_sorting(matrix):
             # If the current point is dominated by the other point, add it to the list of dominated points
             elif dominates(q_scores, p_scores):
                 dominating[p] += 1
-        
+
         if dominating[p] == 0:
             fronts[0].add(p)
 
@@ -65,16 +64,16 @@ def crowding_distance(matrix):
     matrix = np.array(matrix)
     # Initialize the crowding distance for each point to zero
     crowding_distances = [0 for _ in range(len(matrix))]
-    
+
     # Iterate over each objective
     for objective_i in range(matrix.shape[1]):
         # Sort the points according to the current objective
         sorted_i = matrix[:, objective_i].argsort()
-        
+
         # Set the crowding distance of the first and last points to infinity
         crowding_distances[sorted_i[0]] = float("inf")
         crowding_distances[sorted_i[-1]] = float("inf")
-        
+
         if matrix[sorted_i[0]][objective_i] == matrix[sorted_i[-1]][objective_i]: # https://github.com/DEAP/deap/blob/f2a570567fa3dce156d7cfb0c50bc72f133258a1/deap/tools/emo.py#L135
             continue
 
@@ -88,7 +87,7 @@ def crowding_distance(matrix):
 
 
 
-def survival_select_NSGA2(scores, k,):
+def survival_select_NSGA2(scores, k, rng_):
 
     pareto_fronts = nondominated_sorting(scores)
 
@@ -109,5 +108,5 @@ def survival_select_NSGA2(scores, k,):
         chosen.extend(sorted_indeces[0:(k-len(chosen))])
 
         current_front_number += 1
-    
+
     return chosen

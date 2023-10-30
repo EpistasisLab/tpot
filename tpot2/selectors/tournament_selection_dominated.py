@@ -1,10 +1,9 @@
 import numpy as np
-import random
 
 from.nsgaii import nondominated_sorting, crowding_distance, dominates
 
 #based on deap
-def tournament_selection_dominated(scores, k, n_parents=2):
+def tournament_selection_dominated(scores, k, rng_, n_parents=2):
     """Select the best individual among *tournsize* randomly chosen
     individuals, *k* times. The returned list contains the indices of the chosen *individuals*.
     :param scores: The score matrix, where rows the individulas and the columns are the corresponds to scores on different objectives.
@@ -15,6 +14,8 @@ def tournament_selection_dominated(scores, k, n_parents=2):
     This function uses the :func:`~random.choice` function from the python base
     :mod:`random` module.
     """
+
+    rng = np.random.default_rng(rng_)
     pareto_fronts = nondominated_sorting(scores)
 
     # chosen = list(itertools.chain.from_iterable(fronts))
@@ -37,26 +38,20 @@ def tournament_selection_dominated(scores, k, n_parents=2):
 
     chosen = []
     for i in range(k*n_parents):
-        asp1 = random.randrange(len(scores))
-        asp2 = random.randrange(len(scores))
+        asp1 = rng.choice(len(scores))
+        asp2 = rng.choice(len(scores))
 
         if dominates(scores[asp1], scores[asp2]):
             chosen.append(asp1)
         elif dominates(scores[asp2], scores[asp1]):
             chosen.append(asp2)
-        
+
         elif crowding_dict[asp1] > crowding_dict[asp2]:
             chosen.append(asp1)
         elif crowding_dict[asp1] < crowding_dict[asp2]:
             chosen.append(asp2)
 
         else:
-            chosen.append(random.choice([asp1,asp2]))
-    
+            chosen.append(rng.choice([asp1,asp2]))
+
     return np.reshape(chosen, (k, n_parents))
-
-
-
-
-
-
