@@ -1,7 +1,6 @@
 from abc import abstractmethod
 import types
 import numpy as np
-import random
 import copy
 import copy
 import typing
@@ -11,32 +10,32 @@ class BaseIndividual:
 
 
     def __init__(self) -> None:
-
-
-        self.mutation_list = [] 
+        self.mutation_list = []
         self.crossover_list = []
 
-    
-    def mutate(self,):
+    def mutate(self, rng_):
+        rng = np.random.default_rng(rng_)
         mutation_list_copy = self.mutation_list.copy()
-        random.shuffle(mutation_list_copy)
+        rng.shuffle(mutation_list_copy)
         for func in mutation_list_copy:
             if func():
                 return True
         return False
 
-    def crossover(self, ind2):
+    def crossover(self, ind2, rng_):
+        rng = np.random.default_rng(rng_)
         crossover_list_copy = self.crossover_list.copy()
-        random.shuffle(crossover_list_copy)
+        rng.shuffle(crossover_list_copy)
         for func in crossover_list_copy:
             if func(ind2):
                 return True
         return False
 
     # a guided change of an individual when given an objective function
-    def optimize(self, objective_function, steps=5):
+    def optimize(self, rng_, objective_function, steps=5):
+        rng = np.random.default_rng(rng_)
         for _ in range(steps):
-            self.mutate()
+            self.mutate(rng_=rng)
 
     #Return a hashable unique to this individual setup
     #For use when evaluating whether or not an individual is 'the same' and another individual
