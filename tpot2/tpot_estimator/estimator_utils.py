@@ -21,12 +21,12 @@ def apply_make_pipeline(graphindividual, preprocessing_pipeline=None):
     except:
         return None
 
-def get_configuration_dictionary(options, n_samples, n_features, classification, random_state, cv, subsets=None, feature_names=None, n_classes=None):
+def get_configuration_dictionary(options, n_samples, n_features, classification, random_state=None, cv=None, subsets=None, feature_names=None, n_classes=None):
     if options is None:
         return options
 
     if isinstance(options, dict):
-        return recursive_with_defaults(options, n_samples, n_features, classification, random_state, cv, subsets=subsets, feature_names=feature_names, n_classes=n_classes)
+        return recursive_with_defaults(options, n_samples, n_features, classification, random_state=None, cv=None, subsets=subsets, feature_names=feature_names, n_classes=n_classes)
 
     if not isinstance(options, list):
         options = [options]
@@ -86,7 +86,7 @@ def get_configuration_dictionary(options, n_samples, n_features, classification,
 
     return config_dict
 
-def recursive_with_defaults(config_dict, n_samples, n_features, classification, random_state, cv, subsets=None, feature_names=None, n_classes=None):
+def recursive_with_defaults(config_dict, n_samples, n_features, classification, random_state=None, cv=None, subsets=None, feature_names=None, n_classes=None):
 
     for key in 'leaf_config_dict', 'root_config_dict', 'inner_config_dict', 'Recursive':
         if key in config_dict:
