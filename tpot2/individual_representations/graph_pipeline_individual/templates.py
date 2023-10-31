@@ -3,7 +3,6 @@ import numpy as np
 import tpot2
 import networkx as nx
 from tpot2.individual_representations.graph_pipeline_individual import GraphIndividual
-import random
 
 from tpot2.individual_representations.graph_pipeline_individual.individual import create_node
 
