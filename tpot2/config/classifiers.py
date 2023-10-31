@@ -18,7 +18,7 @@ import numpy as np
 
 
 
-def params_LogisticRegression(trial, random_state, name=None):
+def params_LogisticRegression(trial, random_state=None, name=None):
     params = {}
     params['solver'] = trial.suggest_categorical(name=f'solver_{name}',
                                                  choices=[f'newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'])
@@ -57,7 +57,7 @@ def params_KNeighborsClassifier(trial, name=None, n_samples=10):
     }
 
 
-def params_DecisionTreeClassifier(trial, random_state, name=None):
+def params_DecisionTreeClassifier(trial, random_state=None, name=None):
     return {
         'criterion': trial.suggest_categorical(f'criterion_{name}', ['gini', 'entropy']),
         'max_depth': trial.suggest_int(f'max_depth_{name}', 1, 11),
@@ -71,7 +71,7 @@ def params_DecisionTreeClassifier(trial, random_state, name=None):
     }
 
 
-def params_SVC(trial, random_state, name=None):
+def params_SVC(trial, random_state=None, name=None):
     return {
         'kernel': trial.suggest_categorical(name=f'kernel_{name}', choices=['poly', 'rbf', 'linear', 'sigmoid']),
         'C': trial.suggest_float(f'C_{name}', 1e-4, 25, log=True),
@@ -86,7 +86,7 @@ def params_SVC(trial, random_state, name=None):
     }
 
 
-def params_LinearSVC(trial, random_state, name=None):
+def params_LinearSVC(trial, random_state=None, name=None):
 
     penalty = trial.suggest_categorical(name=f'penalty_{name}', choices=['l1', 'l2'])
     if penalty == 'l1':
@@ -108,7 +108,7 @@ def params_LinearSVC(trial, random_state, name=None):
     }
 
 
-def params_RandomForestClassifier(trial, random_state, name=None):
+def params_RandomForestClassifier(trial, random_state=None, name=None):
     params = {
         'n_estimators': 100,
         'criterion': trial.suggest_categorical(name=f'criterion_{name}', choices=['gini', 'entropy']),
@@ -117,12 +117,12 @@ def params_RandomForestClassifier(trial, random_state, name=None):
         'min_samples_split': trial.suggest_int(f'min_samples_split_{name}', 2, 20),
         'min_samples_leaf': trial.suggest_int(f'min_samples_leaf_{name}', 1, 20),
         'n_jobs': 1,
-        'random_state': random_state,
+        'random_state': random_state
     }
     return params
 
 
-def params_GradientBoostingClassifier(trial, random_state, n_classes=None, name=None):
+def params_GradientBoostingClassifier(trial, random_state=None, n_classes=None, name=None):
 
     if n_classes is not None and n_classes > 2:
         loss = 'log_loss'
@@ -139,12 +139,12 @@ def params_GradientBoostingClassifier(trial, random_state, n_classes=None, name=
         'max_features': trial.suggest_float(f'max_features_{name}', 0.1, 1.0),
         'max_depth': trial.suggest_int(f'max_depth_{name}', 1, 10),
         'tol': 1e-4,
-        'random_state': random_state,
+        'random_state': random_state
     }
     return params
 
 
-def params_XGBClassifier(trial, random_state, name=None):
+def params_XGBClassifier(trial, random_state=None, name=None):
     return {
         'learning_rate': trial.suggest_float(f'learning_rate_{name}', 1e-3, 1, log=True),
         'subsample': trial.suggest_float(f'subsample_{name}', 0.1, 1.0),
@@ -154,11 +154,11 @@ def params_XGBClassifier(trial, random_state, name=None):
         'max_depth': trial.suggest_int(f'max_depth_{name}', 1, 11),
         'n_jobs': 1,
         #'use_label_encoder' : True,
-        'random_state': random_state,
+        'random_state': random_state
     }
 
 
-def params_LGBMClassifier(trial, random_state, name=None):
+def params_LGBMClassifier(trial, random_state=None, name=None):
     params = {
         'objective': 'binary',
         'metric': 'binary_logloss',
@@ -177,7 +177,7 @@ def params_LGBMClassifier(trial, random_state, name=None):
     return params
 
 
-def params_ExtraTreesClassifier(trial, random_state, name=None):
+def params_ExtraTreesClassifier(trial, random_state=None, name=None):
     params = {
         'n_estimators': 100,
         'criterion': trial.suggest_categorical(name=f'criterion_{name}', choices=["gini", "entropy"]),
@@ -186,11 +186,11 @@ def params_ExtraTreesClassifier(trial, random_state, name=None):
         'min_samples_leaf': trial.suggest_int(f'min_samples_leaf_{name}', 1, 21, step=1),
         'bootstrap': trial.suggest_categorical(f'bootstrap_{name}', [True, False]),
         'n_jobs': 1,
-        'random_state': random_state,
+        'random_state': random_state
     }
     return params
 
-def params_SGDClassifier(trial, random_state, name=None):
+def params_SGDClassifier(trial, random_state=None, name=None):
     params = {
         'loss': trial.suggest_categorical(f'loss_{name}', ['log_loss', 'modified_huber',]),
         'penalty': 'elasticnet',
@@ -206,11 +206,11 @@ def params_SGDClassifier(trial, random_state, name=None):
 
     return params
 
-def params_MLPClassifier_tpot(trial, random_state, name=None):
+def params_MLPClassifier_tpot(trial, random_state=None, name=None):
     params = {
         'alpha': trial.suggest_float(f'alpha_{name}', 1e-4, 1e-1, log=True),
         'learning_rate_init': trial.suggest_float(f'learning_rate_init_{name}', 1e-3, 1., log=True),
-        'random_state': random_state,
+        'random_state': random_state
     }
 
     return params
@@ -248,7 +248,7 @@ def params_MultinomialNB(trial, name=None):
     return params
 
 
-def make_classifier_config_dictionary(random_state, n_samples=10, n_classes=None):
+def make_classifier_config_dictionary(random_state=None, n_samples=10, n_classes=None):
     n_samples = min(n_samples,100) #TODO optimize this
 
     return {

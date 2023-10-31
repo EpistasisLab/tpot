@@ -32,7 +32,7 @@ def params_sklearn_feature_selection_VarianceThreshold(trial, name=None):
 
 
 #TODO add more estimator options? How will that interact with optuna?
-def params_sklearn_feature_selection_RFE(trial, random_state, name=None, classifier=True):
+def params_sklearn_feature_selection_RFE(trial, random_state=None, name=None, classifier=True):
 
     if classifier:
         estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, random_state=random_state, name=f"RFE_{name}"))
@@ -47,7 +47,7 @@ def params_sklearn_feature_selection_RFE(trial, random_state, name=None, classif
     return params
 
 
-def params_sklearn_feature_selection_SelectFromModel(trial, random_state, name=None, classifier=True):
+def params_sklearn_feature_selection_SelectFromModel(trial, random_state=None, name=None, classifier=True):
 
     if classifier:
         estimator = ExtraTreesClassifier(**params_ExtraTreesClassifier(trial, random_state=random_state, name=f"SFM_{name}"))
@@ -63,7 +63,7 @@ def params_sklearn_feature_selection_SelectFromModel(trial, random_state, name=N
 
 
 
-def params_sklearn_feature_selection_RFE_wrapped(trial, random_state, name=None, classifier=True):
+def params_sklearn_feature_selection_RFE_wrapped(trial, random_state=None, name=None, classifier=True):
 
     params = {
             'step': trial.suggest_float(f'step_{name}', 1e-4, 1.0, log=False),
@@ -79,7 +79,7 @@ def params_sklearn_feature_selection_RFE_wrapped(trial, random_state, name=None,
     return params
 
 
-def params_sklearn_feature_selection_SelectFromModel_wrapped(trial, random_state, name=None, classifier=True):
+def params_sklearn_feature_selection_SelectFromModel_wrapped(trial, random_state=None, name=None, classifier=True):
 
     params = {
         'threshold': trial.suggest_float(f'threshold_{name}', 1e-4, 1.0, log=True),
@@ -96,7 +96,7 @@ def params_sklearn_feature_selection_SelectFromModel_wrapped(trial, random_state
 
 
 
-def make_selector_config_dictionary(random_state, classifier=True):
+def make_selector_config_dictionary(random_state=None, classifier=True):
     if classifier:
         params =    {RFE_ExtraTreesClassifier : partial(params_sklearn_feature_selection_RFE_wrapped, random_state=random_state, classifier=classifier),
                     SelectFromModel_ExtraTreesClassifier : partial(params_sklearn_feature_selection_SelectFromModel_wrapped, random_state=random_state, classifier=classifier),

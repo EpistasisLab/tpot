@@ -3,7 +3,7 @@
 import numpy as np
 
 #function that selects selects items from a list with each having independent probability p of being selected
-def select(items, p, rng_):
+def select(items, p, rng_=None):
     rng = np.random.default_rng(rng_)
 
     selected = [item for item in items if rng.random() < p]
@@ -15,7 +15,7 @@ def select(items, p, rng_):
 
 class Trial():
 
-    def __init__(self, rng_, old_params=None, alpha=1, hyperparameter_probability=1):
+    def __init__(self, rng_=None, old_params=None, alpha=1, hyperparameter_probability=1):
         self.rng = np.random.default_rng(rng_)
 
         self._params = dict()

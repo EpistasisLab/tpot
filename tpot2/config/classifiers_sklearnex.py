@@ -8,7 +8,7 @@ import numpy as np
 
 from functools import partial
 
-def params_RandomForestClassifier(trial, random_state, name=None):
+def params_RandomForestClassifier(trial, random_state=None, name=None):
     return {
         'n_estimators': 100,
         'bootstrap': trial.suggest_categorical(name=f'bootstrap_{name}', choices=[True, False]),
@@ -25,7 +25,7 @@ def params_KNeighborsClassifier(trial, name=None, n_samples=10):
         'weights': trial.suggest_categorical(f'weights_{name}', ['uniform', 'distance']),
     }
 
-def params_LogisticRegression(trial, random_state, name=None):
+def params_LogisticRegression(trial, random_state=None, name=None):
     params = {}
     params['dual'] = False
     params['penalty'] = 'l2'
@@ -42,10 +42,10 @@ def params_LogisticRegression(trial, random_state, name=None):
         'dual': params['dual'],
         'C': trial.suggest_float(f'C_{name}', 1e-4, 1e4, log=True),
         'max_iter': 1000,
-        'random_state': random_state,
+        'random_state': random_state
     }
 
-def params_SVC(trial, random_state, name=None):
+def params_SVC(trial, random_state=None, name=None):
     return {
         'kernel': trial.suggest_categorical(name=f'kernel_{name}', choices=['poly', 'rbf', 'linear', 'sigmoid']),
         'C': trial.suggest_float(f'C_{name}', 1e-4, 25, log=True),
@@ -54,10 +54,10 @@ def params_SVC(trial, random_state, name=None):
         'max_iter': 3000,
         'tol': 0.005,
         'probability': True,
-        'random_state': random_state,
+        'random_state': random_state
     }
 
-def params_NuSVC(trial, random_state, name=None):
+def params_NuSVC(trial, random_state=None, name=None):
     return {
         'nu': trial.suggest_float(f'subsample_{name}', 0.05, 1.0),
         'kernel': trial.suggest_categorical(name=f'kernel_{name}', choices=['poly', 'rbf', 'linear', 'sigmoid']),
@@ -67,10 +67,10 @@ def params_NuSVC(trial, random_state, name=None):
         'max_iter': 3000,
         'tol': 0.005,
         'probability': True,
-        'random_state': random_state,
+        'random_state': random_state
     }
 
-def make_sklearnex_classifier_config_dictionary(random_state, n_samples=10, n_classes=None):
+def make_sklearnex_classifier_config_dictionary(random_state=None, n_samples=10, n_classes=None):
     return {
             RandomForestClassifier: partial(params_RandomForestClassifier, random_state=random_state),
             KNeighborsClassifier: partial(params_KNeighborsClassifier, n_samples=n_samples),

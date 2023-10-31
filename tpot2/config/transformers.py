@@ -26,7 +26,7 @@ def params_sklearn_decomposition_FastICA(trial, random_state, name=None, n_featu
         'n_components': trial.suggest_int(f'n_components_{name}', 1, n_features), # number of components wrt number of features
         'algorithm': trial.suggest_categorical(f'algorithm_{name}', ['parallel', 'deflation']),
         'whiten':'unit-variance',
-        'random_state': random_state,
+        'random_state': random_state
     }
 
 def params_sklearn_cluster_FeatureAgglomeration(trial, name=None, n_features=100):
@@ -52,7 +52,7 @@ def params_sklearn_kernel_approximation_Nystroem(trial, random_state, name=None,
         'gamma': trial.suggest_float(f'gamma_{name}', 0.0, 1.0),
         'kernel': trial.suggest_categorical(f'kernel_{name}', ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']),
         'n_components': trial.suggest_int(f'n_components_{name}', 1, n_features),
-        'random_state': random_state,
+        'random_state': random_state
     }
 
 def params_sklearn_decomposition_PCA(trial, random_state, name=None, n_features=100):
@@ -61,14 +61,14 @@ def params_sklearn_decomposition_PCA(trial, random_state, name=None, n_features=
 
     return {
         'n_components': variance_explained,
-        'random_state': random_state,
+        'random_state': random_state
     }
 
 def params_sklearn_kernel_approximation_RBFSampler(trial, random_state, name=None, n_features=100):
     return {
         'n_components': trial.suggest_int(f'n_components_{name}', 1, n_features),
         'gamma': trial.suggest_float(f'gamma_{name}', 0.0, 1.0),
-        'random_state': random_state,
+        'random_state': random_state
     }
 
 def params_tpot_builtins_ZeroCount(trial, name=None):
