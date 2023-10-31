@@ -106,7 +106,6 @@ class GraphIndividual(BaseIndividual):
     '''
     def __init__(
                 self,
-                rng_,
                 root_config_dict,
                 inner_config_dict=None,
                 leaf_config_dict=None,
@@ -123,6 +122,7 @@ class GraphIndividual(BaseIndividual):
 
                 unique_subset_values = None,
                 initial_subset_values = None,
+                rng_=None,
                 ):
 
         self.__debug = False
@@ -242,7 +242,7 @@ class GraphIndividual(BaseIndividual):
             return self.inner_config_dict
 
 
-    def initialize_all_nodes(self, rng_):
+    def initialize_all_nodes(self, rng_=None):
         rng = np.random.default_rng(rng_)
         for node in self.graph:
             if isinstance(node,GraphIndividual):
@@ -253,7 +253,7 @@ class GraphIndividual(BaseIndividual):
                 get_hyperparameter(self.select_config_dict(node)[node.method_class], nodelabel=node,  alpha=self.hyperparameter_alpha, hyperparameter_probability=self.hyperparameter_probability)
 
 
-    def fix_noncompliant_leafs(self, rng_):
+    def fix_noncompliant_leafs(self, rng_=None):
         rng = np.random.default_rng(rng_)
         leafs = [node for node in self.graph.nodes if len(list(self.graph.successors(node)))==0]
         compliant_leafs = []
@@ -517,13 +517,13 @@ class GraphIndividual(BaseIndividual):
     #############
 
     #TODO currently does not correctly return false when adding a leaf causes a duplicate node that is later merged
-    def mutate(self, rng_):
+    def mutate(self, rng_=None):
         rng = np.random.default_rng(rng_)
         self.key = None
         graph = self.select_graphindividual(rng_=rng)
         return graph._mutate(rng_=rng)
 
-    def _mutate(self, rng_):
+    def _mutate(self, rng_=None):
         rng = np.random.default_rng(rng_)
         rng.shuffle(self.mutate_methods_list)
         for mutate_method in self.mutate_methods_list:
@@ -553,13 +553,13 @@ class GraphIndividual(BaseIndividual):
 
         return False
 
-    def _mutate_row_subsets(self, rng_):
+    def _mutate_row_subsets(self, rng_=None):
         rng = np.random.default_rng(rng_)
         if self.unique_subset_values is not None:
             self.row_subset_selector.mutate(rng_=rng)
 
 
-    def _mutate_hyperparameters(self, rng_):
+    def _mutate_hyperparameters(self, rng_=None):
         '''
         Mutates the hyperparameters for a randomly chosen node in the graph.
         '''
@@ -584,7 +584,7 @@ class GraphIndividual(BaseIndividual):
 
 
 
-    def _mutate_replace_node(self, rng_):
+    def _mutate_replace_node(self, rng_=None):
         '''
         Replaces the method in a randomly chosen node by a method from the available methods for that node.
 
@@ -613,7 +613,7 @@ class GraphIndividual(BaseIndividual):
         return False
 
 
-    def _mutate_remove_node(self, rng_):
+    def _mutate_remove_node(self, rng_=None):
         '''
         Removes a randomly chosen node and connects its parents to its children.
         If the node is the only leaf for an inner node and 'leaf_config_dict' is not none, we do not remove it.
@@ -647,7 +647,7 @@ class GraphIndividual(BaseIndividual):
 
         return False
 
-    def _mutate_remove_edge(self, rng_):
+    def _mutate_remove_edge(self, rng_=None):
         '''
         Deletes an edge as long as deleting that edge does not make the graph disconnected.
         '''
@@ -667,7 +667,7 @@ class GraphIndividual(BaseIndividual):
                     return True
         return False
 
-    def _mutate_add_edge(self, rng_):
+    def _mutate_add_edge(self, rng_=None):
         '''
         Randomly add an edge from a node to another node that is not an ancestor of the first node.
         '''
@@ -691,7 +691,7 @@ class GraphIndividual(BaseIndividual):
         return False
 
 
-    def _mutate_insert_leaf(self, rng_):
+    def _mutate_insert_leaf(self, rng_=None):
         rng = np.random.default_rng(rng_)
         if self.max_size > self.graph.number_of_nodes():
             sorted_nodes_list = list(self.graph.nodes)
@@ -718,7 +718,7 @@ class GraphIndividual(BaseIndividual):
 
         return False
 
-    def _mutate_insert_bypass_node(self, rng_):
+    def _mutate_insert_bypass_node(self, rng_=None):
         rng = np.random.default_rng(rng_)
         if self.max_size > self.graph.number_of_nodes():
             sorted_nodes_list = list(self.graph.nodes)
@@ -742,7 +742,7 @@ class GraphIndividual(BaseIndividual):
         return False
 
 
-    def _mutate_insert_inner_node(self, rng_):
+    def _mutate_insert_inner_node(self, rng_=None):
         rng = np.random.default_rng(rng_)
         if self.max_size > self.graph.number_of_nodes():
             sorted_nodes_list = list(self.graph.nodes)
@@ -794,7 +794,7 @@ class GraphIndividual(BaseIndividual):
         return graphs
 
 
-    def select_graphindividual(self, rng_):
+    def select_graphindividual(self, rng_=None):
         rng = np.random.default_rng(rng_)
         graphs = self.get_graphs()
         weights = [g.graph.number_of_nodes() for g in graphs]
@@ -803,7 +803,7 @@ class GraphIndividual(BaseIndividual):
         return rng.choice(graphs, p=weights)
 
 
-    def select_graph_same_recursive_depth(self,ind1,ind2,rng_):
+    def select_graph_same_recursive_depth(self,ind1,ind2,rng_=None):
         rng = np.random.default_rng(rng_)
 
         graphs1 = ind1.get_graphs()
@@ -825,7 +825,7 @@ class GraphIndividual(BaseIndividual):
 
         return ind1,ind2
 
-    def crossover(self, ind2, rng_):
+    def crossover(self, ind2, rng_=None):
         '''
         self is the first individual, ind2 is the second individual
         If crossover_same_depth, it will select graphindividuals at the same recursive depth.
@@ -849,7 +849,7 @@ class GraphIndividual(BaseIndividual):
 
         return g1._crossover(g2, rng_=rng)
 
-    def _crossover(self, Graph, rng_):
+    def _crossover(self, Graph, rng_=None):
         rng = np.random.default_rng(rng_)
 
         rng.shuffle(self.crossover_methods_list)
@@ -868,13 +868,13 @@ class GraphIndividual(BaseIndividual):
         return False
 
 
-    def _crossover_row_subsets(self, G2, rng_):
+    def _crossover_row_subsets(self, G2, rng_=None):
         rng = np.random.default_rng(rng_)
         if self.unique_subset_values is not None and G2.unique_subset_values is not None:
             self.row_subset_selector.crossover(G2.row_subset_selector, rng_=rng)
 
 
-    def _crossover_swap_node(self, G2, rng_):
+    def _crossover_swap_node(self, G2, rng_=None):
         '''
         Swaps randomly chosen node from Parent1 with a randomly chosen node from Parent2.
         '''
@@ -910,7 +910,7 @@ class GraphIndividual(BaseIndividual):
 
 
 
-    def _crossover_swap_branch(self, G2, rng_):
+    def _crossover_swap_branch(self, G2, rng_=None):
         '''
         swaps a branch from parent1 with a branch from parent2. does not modify parent2
         '''
@@ -961,7 +961,7 @@ class GraphIndividual(BaseIndividual):
         return False
 
     #TODO: Currently returns true even if hyperparameters are blank
-    def _crossover_hyperparameters(self, G2, rng_):
+    def _crossover_hyperparameters(self, G2, rng_=None):
         '''
         Swaps the hyperparamters of one randomly chosen node in Parent1 with the hyperparameters of randnomly chosen node in Parent2.
         '''
@@ -986,7 +986,7 @@ class GraphIndividual(BaseIndividual):
 
     #not including the nodes, just their children
     #Finds leaves attached to nodes and swaps them
-    def _crossover_swap_leaf_at_node(self, G2, rng_):
+    def _crossover_swap_leaf_at_node(self, G2, rng_=None):
         rng = np.random.default_rng(rng_)
 
         if self.crossover_same_depth:
@@ -1019,7 +1019,7 @@ class GraphIndividual(BaseIndividual):
         return success
 
 
-    def _crossover_take_branch(self, G2, rng_):
+    def _crossover_take_branch(self, G2, rng_=None):
         '''
         Takes a subgraph from Parent2 and add it to a randomly chosen node in Parent1.
         '''
@@ -1065,7 +1065,7 @@ class GraphIndividual(BaseIndividual):
         return False
 
     #TODO: swap all leaf nodes
-    def _crossover_swap_all_leafs(self, G2, rng_):
+    def _crossover_swap_all_leafs(self, G2, rng_=None):
         pass
 
 
@@ -1174,7 +1174,7 @@ class GraphIndividual(BaseIndividual):
 
 
 
-def create_node(config_dict, rng_):
+def create_node(config_dict, rng_=None):
     '''
     Takes a config_dict and returns a node with a random method_class and hyperparameters
     '''
@@ -1195,7 +1195,7 @@ def create_node(config_dict, rng_):
     return node
 
 
-def random_weighted_sort(l,weights, rng_):
+def random_weighted_sort(l,weights, rng_=None):
     rng = np.random.default_rng(rng_)
     sorted_l = []
     indeces = {i: weights[i] for i in range(len(l))}
