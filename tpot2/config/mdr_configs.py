@@ -58,4 +58,3 @@ def make_ContinuousMDR_config_dictionary():
     return {
         ContinuousMDR : params_ContinuousMDR
     }
-

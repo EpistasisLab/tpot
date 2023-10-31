@@ -1,6 +1,6 @@
 import numpy as np
-import random
 
-def random_selector(scores,  k, n_parents=1,): 
-    chosen = random.choices(list(range(0,len(scores))), k=k*n_parents)
+def random_selector(scores,  k, rng_=None, n_parents=1, ):
+    rng = np.random.default_rng(rng_)
+    chosen = rng.choice(list(range(0,len(scores))), size=k*n_parents)
     return np.reshape(chosen, (k, n_parents))

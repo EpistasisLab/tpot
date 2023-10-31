@@ -1,6 +1,7 @@
 from tpot2.builtin_modules import genetic_encoders
 from tpot2.builtin_modules import feature_encoding_frequency_selector
 import sklearn
+import numpy as np
 
 def params_FeatureEncodingFrequencySelector(trial, name=None):
     return {
@@ -21,4 +22,3 @@ def make_genetic_encoders_config_dictionary():
                 genetic_encoders.UnderDominanceEncoder : {},
                 genetic_encoders.OverDominanceEncoder : {},
             }
-

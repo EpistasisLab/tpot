@@ -1,5 +1,5 @@
 import networkx as nx
-import random
+import numpy as np
 
 
 def remove_and_stitch(graph, node):
@@ -53,9 +53,11 @@ def invert_dictionary(d):
     for k, v in d.items():
         inv_map.setdefault(v, set()).add(k)
 
-    return inv_map 
+    return inv_map
 
-def select_nodes_same_depth(g1, node1, g2, node2):
+def select_nodes_same_depth(g1, node1, g2, node2, rng_=None):
+    rng = np.random.default_rng(rng_)
+
     g1_nodes = nx.shortest_path_length(g1, source=node1)
     g2_nodes = nx.shortest_path_length(g2, source=node2)
 
@@ -79,17 +81,19 @@ def select_nodes_same_depth(g1, node1, g2, node2):
                 for n2 in g2_nodes[i]:
                     possible_pairs.append( (n1,n2) )
 
-    random.shuffle(possible_pairs)
+    rng.shuffle(possible_pairs)
 
     for p in possible_pairs:
         yield p[0], p[1]
 
-def select_nodes_randomly(g1, g2,):
+def select_nodes_randomly(g1, g2, rng_=None):
+    rng = np.random.default_rng(rng_)
+
     sorted_self_nodes_list = list(g1.nodes)
-    random.shuffle(sorted_self_nodes_list)
+    rng.shuffle(sorted_self_nodes_list)
 
     sorted_other_nodes_list = list(g2.nodes)
-    random.shuffle(sorted_other_nodes_list)
+    rng.shuffle(sorted_other_nodes_list)
     for node1 in sorted_self_nodes_list:
         for node2 in sorted_other_nodes_list:
             yield node1, node2

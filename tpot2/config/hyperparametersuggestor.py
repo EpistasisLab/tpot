@@ -1,19 +1,23 @@
-import random
-from scipy.stats import loguniform, logser #TODO: remove this dependency?
-import numpy as np #TODO: remove this dependency and use scipy instead?
+# import random
+# from scipy.stats import loguniform, logser #TODO: remove this dependency?
+import numpy as np
 
 #function that selects selects items from a list with each having independent probability p of being selected
-def select(items, p):
-    selected = [item for item in items if random.random() < p]
+def select(items, p, rng_=None):
+    rng = np.random.default_rng(rng_)
+
+    selected = [item for item in items if rng.random() < p]
     #if selected is empty, select one item at random
     if not selected:
-        return [random.choice(items)]
+        return [rng.choice(items)]
     return selected
 
 
 class Trial():
 
-    def __init__(self, old_params=None, alpha=1, hyperparameter_probability=1):
+    def __init__(self, rng_=None, old_params=None, alpha=1, hyperparameter_probability=1):
+        self.rng = np.random.default_rng(rng_)
+
         self._params = dict()
 
         self.old_params = old_params
@@ -21,7 +25,7 @@ class Trial():
         self.hyperparameter_probability = hyperparameter_probability
 
         if old_params is not None and len(old_params) > 0:
-            self.params_to_update = select(list(old_params.keys()), self.hyperparameter_probability)
+            self.params_to_update = select(list(old_params.keys()), self.hyperparameter_probability, rng_=self.rng)
         else:
             self.params_to_update = None
 
@@ -35,11 +39,11 @@ class Trial():
             choice = self.old_params[name]
             if choice not in choices: #if the old value is not in the choices, then we need to choose a value for it
                 choice = self.suggest_categorical_(name, choices)
-        
+
         self._params[name] = choice
         return choice
 
-    def suggest_float(self,        
+    def suggest_float(self,
                         name: str,
                         low: float,
                         high: float,
@@ -94,18 +98,18 @@ class Trial():
 
         self._params[name] = choice
         return choice
-        
+
 
 
 ####################################
     #Replicating the API found in optuna: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.trial.Trial.html
     #copy-pasted some code
     def suggest_categorical_(self, name, choices):
-        
-        choice = random.choice(choices)
+
+        choice = self.rng.choice(choices)
         return choice
 
-    def suggest_float_(self, 
+    def suggest_float_(self,
         name: str,
         low: float,
         high: float,
@@ -113,7 +117,7 @@ class Trial():
         step = None,
         log = False,
         ):
-        
+
         if log and step is not None:
             raise ValueError("The parameter `step` is not supported when `log` is true.")
 
@@ -136,16 +140,16 @@ class Trial():
 
         #TODO check this produces correct output
         if log:
-            value = np.random.uniform(np.log(low),np.log(high))
+            value = self.rng.uniform(np.log(low),np.log(high))
             choice = np.e**value
             return choice
 
         else:
             if step is not None:
-                choice = np.random.choice(np.arange(low,high,step))
+                choice = self.rng.choice(np.arange(low,high,step))
                 return choice
             else:
-                choice = np.random.uniform(low,high)
+                choice = self.rng.uniform(low,high)
                 return choice
 
 
@@ -157,7 +161,7 @@ class Trial():
     def suggest_int_(self, name, low, high, step=1, log=False):
         if low == high: #TODO check that this matches optuna's behaviour
             return low
-        
+
         if log and step >1:
             raise ValueError("The parameter `step`>1 is not supported when `log` is true.")
 
@@ -179,11 +183,11 @@ class Trial():
             )
 
         if log:
-            value = np.random.uniform(np.log(low),np.log(high))
+            value = self.rng.uniform(np.log(low),np.log(high))
             choice = int(np.e**value)
             return choice
         else:
-            choice = np.random.choice(list(range(low,high,step)))
+            choice = self.rng.choice(list(range(low,high,step)))
             return choice
 
     def suggest_uniform_(self, name, low, high):
