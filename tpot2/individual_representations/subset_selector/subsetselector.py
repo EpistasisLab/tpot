@@ -6,7 +6,7 @@ from .. import BaseIndividual
 class SubsetSelector(BaseIndividual):
     def __init__(   self,
                     values,
-                    rng_,
+                    rng_=None,
                     initial_set = None,
                     k=1, #step size for shuffling
                 ):
@@ -29,7 +29,7 @@ class SubsetSelector(BaseIndividual):
         self.mutation_list = [self._mutate_add, self._mutate_remove]
         self.crossover_list = [self._crossover_swap]
 
-    def _mutate_add(self, rng_):
+    def _mutate_add(self, rng_=None):
         rng = np.random.default_rng(rng_)
         not_included = list(self.values.difference(self.subsets))
         if len(not_included) > 1:
@@ -38,12 +38,12 @@ class SubsetSelector(BaseIndividual):
         else:
             return False
 
-    def _mutate_remove(self, rng_):
+    def _mutate_remove(self, rng_=None):
         rng = np.random.default_rng(rng_)
         if len(self.subsets) > 1:
             self.subsets = self.subsets - set(rng.choice(list(self.subsets), k=min(self.k, len(self.subsets)-1) ))
 
-    def _crossover_swap(self, ss2, rng_):
+    def _crossover_swap(self, ss2, rng_=None):
         rng = np.random.default_rng(rng_)
         diffs = self.subsets.symmetric_difference(ss2.subsets)
 

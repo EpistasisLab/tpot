@@ -13,7 +13,7 @@ class BaseIndividual:
         self.mutation_list = []
         self.crossover_list = []
 
-    def mutate(self, rng_):
+    def mutate(self, rng_=None):
         rng = np.random.default_rng(rng_)
         mutation_list_copy = self.mutation_list.copy()
         rng.shuffle(mutation_list_copy)
@@ -22,7 +22,7 @@ class BaseIndividual:
                 return True
         return False
 
-    def crossover(self, ind2, rng_):
+    def crossover(self, ind2, rng_=None):
         rng = np.random.default_rng(rng_)
         crossover_list_copy = self.crossover_list.copy()
         rng.shuffle(crossover_list_copy)
@@ -32,7 +32,7 @@ class BaseIndividual:
         return False
 
     # a guided change of an individual when given an objective function
-    def optimize(self, rng_, objective_function, steps=5):
+    def optimize(self, objective_function, rng_=None , steps=5):
         rng = np.random.default_rng(rng_)
         for _ in range(steps):
             self.mutate(rng_=rng)
