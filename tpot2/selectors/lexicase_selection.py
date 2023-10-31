@@ -1,6 +1,6 @@
 import numpy as np
 
-def lexicase_selection(scores, k, rng_, n_parents=1,):
+def lexicase_selection(scores, k, rng_=None, n_parents=1,):
     """Select the best individual according to Lexicase Selection, *k* times.
     The returned list contains the indices of the chosen *individuals*.
     :param scores: The score matrix, where rows the individulas and the columns are the corresponds to scores on different objectives.

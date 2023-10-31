@@ -3,7 +3,7 @@ import numpy as np
 from.nsgaii import nondominated_sorting, crowding_distance, dominates
 
 #based on deap
-def tournament_selection_dominated(scores, k, rng_, n_parents=2):
+def tournament_selection_dominated(scores, k, rng_=None, n_parents=2):
     """Select the best individual among *tournsize* randomly chosen
     individuals, *k* times. The returned list contains the indices of the chosen *individuals*.
     :param scores: The score matrix, where rows the individulas and the columns are the corresponds to scores on different objectives.

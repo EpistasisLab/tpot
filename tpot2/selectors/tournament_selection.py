@@ -1,6 +1,6 @@
 import numpy as np
 
-def tournament_selection(scores, k, rng_, n_parents=1, tournament_size=2, score_index=0):
+def tournament_selection(scores, k, rng_=None, n_parents=1, tournament_size=2, score_index=0):
     """Select the best individual among *tournsize* randomly chosen
     individuals, *k* times. The returned list contains the indices of the chosen *individuals*.
     :param scores: The score matrix, where rows the individulas and the columns are the corresponds to scores on different objectives.
