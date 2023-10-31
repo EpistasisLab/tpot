@@ -21,7 +21,7 @@ def params_sklearn_preprocessing_Binarizer(trial, name=None):
         'threshold': trial.suggest_float(f'threshold_{name}', 0.0, 1.0),
     }
 
-def params_sklearn_decomposition_FastICA(trial, random_state, name=None, n_features=100):
+def params_sklearn_decomposition_FastICA(trial, random_state=None, name=None, n_features=100):
     return {
         'n_components': trial.suggest_int(f'n_components_{name}', 1, n_features), # number of components wrt number of features
         'algorithm': trial.suggest_categorical(f'algorithm_{name}', ['parallel', 'deflation']),
@@ -47,7 +47,7 @@ def params_sklearn_preprocessing_Normalizer(trial, name=None):
         'norm': trial.suggest_categorical(f'norm_{name}', ['l1', 'l2', 'max']),
     }
 
-def params_sklearn_kernel_approximation_Nystroem(trial, random_state, name=None, n_features=100):
+def params_sklearn_kernel_approximation_Nystroem(trial, random_state=None, name=None, n_features=100):
     return {
         'gamma': trial.suggest_float(f'gamma_{name}', 0.0, 1.0),
         'kernel': trial.suggest_categorical(f'kernel_{name}', ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']),
@@ -55,7 +55,7 @@ def params_sklearn_kernel_approximation_Nystroem(trial, random_state, name=None,
         'random_state': random_state
     }
 
-def params_sklearn_decomposition_PCA(trial, random_state, name=None, n_features=100):
+def params_sklearn_decomposition_PCA(trial, random_state=None, name=None, n_features=100):
     # keep the number of components required to explain 'variance_explained' of the variance
     variance_explained = 1.0 - trial.suggest_float(f'n_components_{name}', 0.001, 0.5, log=True) #values closer to 1 are more likely
 
@@ -64,7 +64,7 @@ def params_sklearn_decomposition_PCA(trial, random_state, name=None, n_features=
         'random_state': random_state
     }
 
-def params_sklearn_kernel_approximation_RBFSampler(trial, random_state, name=None, n_features=100):
+def params_sklearn_kernel_approximation_RBFSampler(trial, random_state=None, name=None, n_features=100):
     return {
         'n_components': trial.suggest_int(f'n_components_{name}', 1, n_features),
         'gamma': trial.suggest_float(f'gamma_{name}', 0.0, 1.0),
@@ -79,7 +79,7 @@ def params_tpot_builtins_OneHotEncoder(trial, name=None):
 
     return {}
 
-def make_transformer_config_dictionary(random_state, n_features=10):
+def make_transformer_config_dictionary(random_state=None, n_features=10):
     #n_features = min(n_features,100) #TODO optimize this
     return {
                 Binarizer: params_sklearn_preprocessing_Binarizer,
