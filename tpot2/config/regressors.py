@@ -369,7 +369,7 @@ def params_ExtraTreesRegressor(trial, random_state=None, name=None):
 
 
 
-def make_regressor_config_dictionary(random_state=None, cv, n_samples=10):
+def make_regressor_config_dictionary(random_state=None, cv=None, n_samples=10):
     n_samples = min(n_samples,100) #TODO optimize this
 
 
