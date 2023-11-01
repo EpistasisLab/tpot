@@ -27,10 +27,10 @@ def estimator_graph_individual_generator(
 
             # if user specified limit, grab a random number between that limit
             if max_size is not np.inf:
-                n_nodes = rng.integers(0,max_size)
-            # else, grab random number between 0,10 (theaksaini)
+                n_nodes = rng.integers(1,max_size+1)
+            # else, grab random number between 1,11 (theaksaini)
             else:
-                n_nodes = rng.integers(0,10)
+                n_nodes = rng.integers(1,11)
 
             graph = nx.DiGraph()
             root = create_node(config_dict=root_config_dict, rng_=rng) # grab random root model method
@@ -56,6 +56,7 @@ def estimator_graph_individual_generator(
                 starting_ops.append(ind._mutate_insert_inner_node)
             if leaf_config_dict is not None:
                 starting_ops.append(ind._mutate_insert_leaf)
+                n_nodes -= 1
 
             if len(starting_ops) > 0:
                 for _ in range(n_nodes-1):
