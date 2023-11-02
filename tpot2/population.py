@@ -330,9 +330,9 @@ class Population():
 
         for parents, var_op in zip(parents_list,var_op_list):
             #TODO put this loop in population class
-            if var_op == "mutation":
+            if var_op == "mutate":
                 mutation_op = rng.choice(mutation_functions, p=mutation_function_weights)
-                all_offspring.append(copy_and_mutate(parents, mutation_op, rng_=rng))
+                all_offspring.append(copy_and_mutate(parents[0], mutation_op, rng_=rng))
                 chosen_ops.append(mutation_op.__name__)
 
 
