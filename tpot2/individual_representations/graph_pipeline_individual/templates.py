@@ -7,6 +7,7 @@ from tpot2.individual_representations.graph_pipeline_individual import GraphIndi
 from tpot2.individual_representations.graph_pipeline_individual.individual import create_node
 
 
+# will randomly generate individuals (no predefined order)
 def estimator_graph_individual_generator(
                                                 root_config_dict,
                                                 inner_config_dict=None,
@@ -22,47 +23,47 @@ def estimator_graph_individual_generator(
 
         rng = np.random.default_rng(rng_)
 
-        n_nodes = 0
         while True:
-            if n_nodes < max_size:
-                    n_nodes += 1
 
-            for k in root_config_dict.keys():
+            # if user specified limit, grab a random number between that limit
+            if max_size is not np.inf:
+                n_nodes = rng.integers(1,max_size+1)
+            # else, grab random number between 1,11 (theaksaini)
+            else:
+                n_nodes = rng.integers(1,11)
 
-                graph = nx.DiGraph()
-                root = create_node(config_dict={k:root_config_dict[k]}, rng_=rng)
-                graph.add_node(root)
+            graph = nx.DiGraph()
+            root = create_node(config_dict=root_config_dict, rng_=rng) # grab random root model method
+            graph.add_node(root)
 
-                ind = GraphIndividual(  rng_=rng,
-                                        inner_config_dict=inner_config_dict,
-                                        leaf_config_dict=leaf_config_dict,
-                                        root_config_dict=root_config_dict,
-                                        initial_graph = graph,
+            ind = GraphIndividual(  rng_=rng,
+                                    inner_config_dict=inner_config_dict,
+                                    leaf_config_dict=leaf_config_dict,
+                                    root_config_dict=root_config_dict,
+                                    initial_graph = graph,
 
-                                        max_size = max_size,
-                                        linear_pipeline = linear_pipeline,
-                                        hyperparameter_probability = hyperparameter_probability,
-                                        hyper_node_probability = hyper_node_probability,
-                                        hyperparameter_alpha = hyperparameter_alpha,
+                                    max_size = max_size,
+                                    linear_pipeline = linear_pipeline,
+                                    hyperparameter_probability = hyperparameter_probability,
+                                    hyper_node_probability = hyper_node_probability,
+                                    hyperparameter_alpha = hyperparameter_alpha,
 
-                                        **kwargs,
-                                        )
+                                    **kwargs,
+                                    )
 
-                starting_ops = []
-                if inner_config_dict is not None:
-                    starting_ops.append(ind._mutate_insert_inner_node)
-                if leaf_config_dict is not None:
-                    starting_ops.append(ind._mutate_insert_leaf)
+            starting_ops = []
+            if inner_config_dict is not None:
+                starting_ops.append(ind._mutate_insert_inner_node)
+            if leaf_config_dict is not None:
+                starting_ops.append(ind._mutate_insert_leaf)
+                n_nodes -= 1
 
-                if len(starting_ops) > 0:
-                    if n_nodes > 0:
-                        for _ in range(rng.integers(0,min(n_nodes,3))):
-                            func = rng.choice(starting_ops)
-                            func(rng_=rng)
+            if len(starting_ops) > 0:
+                for _ in range(n_nodes-1):
+                    func = rng.choice(starting_ops)
+                    func(rng_=rng)
 
-
-                yield ind
-
+            yield ind
 
 
 class BaggingCompositeGraphSklearn():
