@@ -619,23 +619,35 @@ class TPOTEstimator(BaseEstimator):
         if self.preprocessing:
             #X = pd.DataFrame(X)
 
+            if not isinstance(self.preprocessing, bool) and isinstance(self.preprocessing, sklearn.base.BaseEstimator):
+                self._preprocessing_pipeline = self.preprocessing
+
             #TODO: check if there are missing values in X before imputation. If not, don't include imputation in pipeline. Check if there are categorical columns. If not, don't include one hot encoding in pipeline
-            if isinstance(X, pd.DataFrame): #pandas dataframe
-                if self.categorical_features is not None:
-                    X[self.categorical_features] = X[self.categorical_features].astype(object)
-                self._preprocessing_pipeline = sklearn.pipeline.make_pipeline(tpot2.builtin_modules.ColumnSimpleImputer("categorical", strategy='most_frequent'), #impute categorical columns
-                                                                            tpot2.builtin_modules.ColumnSimpleImputer("numeric", strategy='mean'),              #impute numeric columns
-                                                                            tpot2.builtin_modules.ColumnOneHotEncoder("categorical", min_frequency=0.0001))     #one hot encode categorical columns
-                X = self._preprocessing_pipeline.fit_transform(X)
-            else:
-                if self.categorical_features is not None: #numpy array and categorical columns specified
-                    self._preprocessing_pipeline = sklearn.pipeline.make_pipeline(tpot2.builtin_modules.ColumnSimpleImputer(self.categorical_features, strategy='most_frequent'),   #impute categorical columns
-                                                                            tpot2.builtin_modules.ColumnSimpleImputer("all", strategy='mean'),                                      #impute remaining numeric columns
-                                                                            tpot2.builtin_modules.ColumnOneHotEncoder(self.categorical_features, min_frequency=0.0001))             #one hot encode categorical columns
-                else: #numpy array and no categorical columns specified, just do imputation
-                    self._preprocessing_pipeline = sklearn.pipeline.make_pipeline(tpot2.builtin_modules.ColumnSimpleImputer("all", strategy='mean'))
+            else: #if self.preprocessing is True or not a sklearn estimator
+                
+                pipeline_steps = []
 
+                if self.categorical_features is not None: #if categorical features are specified, use those
+                    pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnSimpleImputer(self.categorical_features, strategy='most_frequent')))
+                    pipeline_steps.append(("impute_numeric", tpot2.builtin_modules.ColumnSimpleImputer("numeric", strategy='mean')))
+                    pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnOneHotEncoder(self.categorical_features, strategy='most_frequent')))
 
+                else:
+                    if isinstance(X, pd.DataFrame):
+                        categorical_columns = X.select_dtypes(include=['object']).columns
+                        if len(categorical_columns) > 0:
+                            pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnSimpleImputer("categorical", strategy='most_frequent')))
+                            pipeline_steps.append(("impute_numeric", tpot2.builtin_modules.ColumnSimpleImputer("numeric", strategy='mean')))
+                            pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnOneHotEncoder("categorical", strategy='most_frequent')))
+                        else:
+                            pipeline_steps.append(("impute_numeric", tpot2.builtin_modules.ColumnSimpleImputer("all", strategy='mean')))
+                    else:
+                        pipeline_steps.append(("impute_numeric", tpot2.builtin_modules.ColumnSimpleImputer("all", strategy='mean')))
+                            
+                self._preprocessing_pipeline = sklearn.pipeline.Pipeline(pipeline_steps)
+
+            X = self._preprocessing_pipeline.fit_transform(X, y)
+            
         else:
             self._preprocessing_pipeline = None
 
