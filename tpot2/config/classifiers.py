@@ -14,9 +14,11 @@ from functools import partial
 
 from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
 
+import numpy as np
 
 
-def params_LogisticRegression(trial, name=None):
+
+def params_LogisticRegression(trial, random_state=None, name=None):
     params = {}
     params['solver'] = trial.suggest_categorical(name=f'solver_{name}',
                                                  choices=[f'newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'])
@@ -40,22 +42,22 @@ def params_LogisticRegression(trial, name=None):
                   'C': params['C'],
                   'n_jobs': 1,
                   'max_iter': 1000,
+                  'random_state': random_state
                   }
     return param_grid
 
 
 def params_KNeighborsClassifier(trial, name=None, n_samples=10):
     return {
-        #'n_neighbors': trial.suggest_int(f'n_neighbors_{name}', 1, 20 ), #TODO: set as a function of the number of samples
-        'n_neighbors': trial.suggest_int(f'n_neighbors_{name}', 1, n_samples, log=True ), #TODO: set as a function of the number of samples
+        'n_neighbors': trial.suggest_int(f'n_neighbors_{name}', 1, n_samples, log=True ),
         'weights': trial.suggest_categorical(f'weights_{name}', ['uniform', 'distance']),
         'p': trial.suggest_int('p', 1, 3),
-        'metric': trial.suggest_categorical(f'metric_{name}', ['euclidean', 'minkowski']),
+        'metric': str(trial.suggest_categorical(f'metric_{name}', ['euclidean', 'minkowski'])),
         'n_jobs': 1,
     }
 
 
-def params_DecisionTreeClassifier(trial, name=None):
+def params_DecisionTreeClassifier(trial, random_state=None, name=None):
     return {
         'criterion': trial.suggest_categorical(f'criterion_{name}', ['gini', 'entropy']),
         'max_depth': trial.suggest_int(f'max_depth_{name}', 1, 11),
@@ -65,10 +67,11 @@ def params_DecisionTreeClassifier(trial, name=None):
         'min_weight_fraction_leaf': 0.0,
         'max_features': trial.suggest_categorical(f'max_features_{name}', [ 'sqrt', 'log2']),
         'max_leaf_nodes': None,
+        'random_state': random_state
     }
 
 
-def params_SVC(trial, name=None):
+def params_SVC(trial, random_state=None, name=None):
     return {
         'kernel': trial.suggest_categorical(name=f'kernel_{name}', choices=['poly', 'rbf', 'linear', 'sigmoid']),
         'C': trial.suggest_float(f'C_{name}', 1e-4, 25, log=True),
@@ -79,16 +82,18 @@ def params_SVC(trial, name=None):
         'max_iter': 3000,
         'tol': 0.005,
         'probability': True,
+        'random_state': random_state
     }
 
 
-def params_LinearSVC(trial, name=None):
+def params_LinearSVC(trial, random_state=None, name=None):
+
     penalty = trial.suggest_categorical(name=f'penalty_{name}', choices=['l1', 'l2'])
     if penalty == 'l1':
         loss = 'squared_hinge'
     else:
         loss = trial.suggest_categorical(name=f'loss_{name}', choices=['hinge', 'squared_hinge'])
-    
+
     if loss == 'hinge' and penalty == 'l2':
         dual = True
     else:
@@ -97,12 +102,13 @@ def params_LinearSVC(trial, name=None):
     return {
         'penalty': penalty,
         'loss': loss,
-        'dual': dual, 
+        'dual': dual,
         'C': trial.suggest_float(f'C_{name}', 1e-4, 25, log=True),
+        'random_state': random_state
     }
 
 
-def params_RandomForestClassifier(trial, name=None):
+def params_RandomForestClassifier(trial, random_state=None, name=None):
     params = {
         'n_estimators': 100,
         'criterion': trial.suggest_categorical(name=f'criterion_{name}', choices=['gini', 'entropy']),
@@ -111,16 +117,18 @@ def params_RandomForestClassifier(trial, name=None):
         'min_samples_split': trial.suggest_int(f'min_samples_split_{name}', 2, 20),
         'min_samples_leaf': trial.suggest_int(f'min_samples_leaf_{name}', 1, 20),
         'n_jobs': 1,
+        'random_state': random_state
     }
     return params
 
 
-def params_GradientBoostingClassifier(trial,n_classes=None, name=None):
+def params_GradientBoostingClassifier(trial, random_state=None, n_classes=None, name=None):
+
     if n_classes is not None and n_classes > 2:
         loss = 'log_loss'
     else:
         loss = trial.suggest_categorical(name=f'loss_{name}', choices=['log_loss', 'exponential'])
-    
+
     params = {
         'n_estimators': 100,
         'loss': loss,
@@ -131,11 +139,12 @@ def params_GradientBoostingClassifier(trial,n_classes=None, name=None):
         'max_features': trial.suggest_float(f'max_features_{name}', 0.1, 1.0),
         'max_depth': trial.suggest_int(f'max_depth_{name}', 1, 10),
         'tol': 1e-4,
+        'random_state': random_state
     }
     return params
 
 
-def params_XGBClassifier(trial, name=None):
+def params_XGBClassifier(trial, random_state=None, name=None):
     return {
         'learning_rate': trial.suggest_float(f'learning_rate_{name}', 1e-3, 1, log=True),
         'subsample': trial.suggest_float(f'subsample_{name}', 0.1, 1.0),
@@ -145,10 +154,11 @@ def params_XGBClassifier(trial, name=None):
         'max_depth': trial.suggest_int(f'max_depth_{name}', 1, 11),
         'n_jobs': 1,
         #'use_label_encoder' : True,
+        'random_state': random_state
     }
 
 
-def params_LGBMClassifier(trial, name=None):
+def params_LGBMClassifier(trial, random_state=None, name=None):
     params = {
         'objective': 'binary',
         'metric': 'binary_logloss',
@@ -159,13 +169,15 @@ def params_LGBMClassifier(trial, name=None):
         'deterministic': True,
         'force_row_wise': True,
         'n_jobs': 1,
+        'random_state': random_state
+
     }
     if 2 ** params['max_depth'] > params['num_leaves']:
         params['num_leaves'] = 2 ** params['max_depth']
     return params
 
 
-def params_ExtraTreesClassifier(trial, name=None):
+def params_ExtraTreesClassifier(trial, random_state=None, name=None):
     params = {
         'n_estimators': 100,
         'criterion': trial.suggest_categorical(name=f'criterion_{name}', choices=["gini", "entropy"]),
@@ -174,10 +186,11 @@ def params_ExtraTreesClassifier(trial, name=None):
         'min_samples_leaf': trial.suggest_int(f'min_samples_leaf_{name}', 1, 21, step=1),
         'bootstrap': trial.suggest_categorical(f'bootstrap_{name}', [True, False]),
         'n_jobs': 1,
+        'random_state': random_state
     }
     return params
 
-def params_SGDClassifier(trial, name=None):
+def params_SGDClassifier(trial, random_state=None, name=None):
     params = {
         'loss': trial.suggest_categorical(f'loss_{name}', ['log_loss', 'modified_huber',]),
         'penalty': 'elasticnet',
@@ -188,20 +201,21 @@ def params_SGDClassifier(trial, name=None):
         'eta0': trial.suggest_float(f'eta0_{name}', 0.01, 1.0),
         'power_t': trial.suggest_float(f'power_t_{name}', 1e-5, 100.0, log=True),
         'n_jobs': 1,
+        'random_state': random_state
     }
 
     return params
 
-def params_MLPClassifier_tpot(trial, name=None):
+def params_MLPClassifier_tpot(trial, random_state=None, name=None):
     params = {
         'alpha': trial.suggest_float(f'alpha_{name}', 1e-4, 1e-1, log=True),
-        'learning_rate_init': trial.suggest_float(f'learning_rate_init_{name}', 1e-3, 1., log=True)
+        'learning_rate_init': trial.suggest_float(f'learning_rate_init_{name}', 1e-3, 1., log=True),
+        'random_state': random_state
     }
 
     return params
 
 def params_MLPClassifier_large(trial, name=None):
-
     n_layers = trial.suggest_int(f'n_layers_{name}', 2, 3)
     layers = []
     for i in range(n_layers):
@@ -215,7 +229,8 @@ def params_MLPClassifier_large(trial, name=None):
         'max_iter' : 10000
     }
 
-    return params  
+    return params
+
 
 def params_BernoulliNB(trial, name=None):
     params = {
@@ -233,24 +248,23 @@ def params_MultinomialNB(trial, name=None):
     return params
 
 
-def make_classifier_config_dictionary(n_samples=10, n_classes=None):
+def make_classifier_config_dictionary(random_state=None, n_samples=10, n_classes=None):
     n_samples = min(n_samples,100) #TODO optimize this
 
     return {
-            LogisticRegression: params_LogisticRegression,
-            DecisionTreeClassifier: params_DecisionTreeClassifier,
+            LogisticRegression: partial(params_LogisticRegression, random_state=random_state),
+            DecisionTreeClassifier: partial(params_DecisionTreeClassifier, random_state=random_state),
             KNeighborsClassifier:  partial(params_KNeighborsClassifier,n_samples=n_samples),
-            GradientBoostingClassifier: partial(params_GradientBoostingClassifier, n_classes=n_classes),
-            ExtraTreesClassifier:params_ExtraTreesClassifier,
-            RandomForestClassifier: params_RandomForestClassifier,
-            SGDClassifier:params_SGDClassifier,
+            GradientBoostingClassifier: partial(params_GradientBoostingClassifier, random_state=random_state, n_classes=n_classes),
+            ExtraTreesClassifier: partial(params_ExtraTreesClassifier, random_state=random_state),
+            RandomForestClassifier: partial(params_RandomForestClassifier, random_state=random_state),
+            SGDClassifier: partial(params_SGDClassifier, random_state=random_state),
             GaussianNB: {},
             BernoulliNB: params_BernoulliNB,
             MultinomialNB: params_MultinomialNB,
-            XGBClassifier: params_XGBClassifier,
-            #LinearSVC: params_LinearSVC,
-            SVC: params_SVC,
+            XGBClassifier: partial(params_XGBClassifier, random_state=random_state),
+            #LinearSVC: partial(params_LinearSVC, random_state=random_state),
+            SVC: partial(params_SVC, random_state=random_state),
             #: params_LGBMClassifier, # logistic regression and SVM/SVC are just special cases of this one? remove?
-            MLPClassifier: params_MLPClassifier_tpot,
+            MLPClassifier: partial(params_MLPClassifier_tpot, random_state=random_state),
         }
-

@@ -13,7 +13,7 @@ def convert_parents_tuples_to_integers(row, object_to_int):
         return np.nan
 
 def apply_make_pipeline(graphindividual, preprocessing_pipeline=None):
-    try: 
+    try:
         if preprocessing_pipeline is None:
             return graphindividual.export_pipeline()
         else:
@@ -21,13 +21,13 @@ def apply_make_pipeline(graphindividual, preprocessing_pipeline=None):
     except:
         return None
 
-def get_configuration_dictionary(options, n_samples, n_features, classification, subsets=None, feature_names=None, n_classes=None):
+def get_configuration_dictionary(options, n_samples, n_features, classification, random_state=None, cv=None, subsets=None, feature_names=None, n_classes=None):
     if options is None:
         return options
 
     if isinstance(options, dict):
-        return recursive_with_defaults(options, n_samples, n_features, classification, subsets=subsets, feature_names=feature_names)
-    
+        return recursive_with_defaults(options, n_samples, n_features, classification, random_state=None, cv=None, subsets=subsets, feature_names=feature_names, n_classes=n_classes)
+
     if not isinstance(options, list):
         options = [options]
 
@@ -36,23 +36,23 @@ def get_configuration_dictionary(options, n_samples, n_features, classification,
     for option in options:
 
         if option == "selectors":
-            config_dict.update(tpot2.config.make_selector_config_dictionary(classification))
+            config_dict.update(tpot2.config.make_selector_config_dictionary(random_state=random_state, classifier=classification))
 
         elif option == "classifiers":
-            config_dict.update(tpot2.config.make_classifier_config_dictionary(n_samples=n_samples, n_classes=n_classes))
+            config_dict.update(tpot2.config.make_classifier_config_dictionary(random_state=random_state, n_samples=n_samples, n_classes=n_classes))
 
         elif option == "classifiers_sklearnex":
-            config_dict.update(tpot2.config.make_sklearnex_classifier_config_dictionary(n_samples=n_samples, n_classes=n_classes))
+            config_dict.update(tpot2.config.make_sklearnex_classifier_config_dictionary(random_state=random_state, n_samples=n_samples, n_classes=n_classes))
 
         elif option == "regressors":
-            config_dict.update(tpot2.config.make_regressor_config_dictionary(n_samples=n_samples))
+            config_dict.update(tpot2.config.make_regressor_config_dictionary(random_state=random_state, cv=cv, n_samples=n_samples))
 
         elif option == "regressors_sklearnex":
-            config_dict.update(tpot2.config.make_sklearnex_regressor_config_dictionary(n_samples=n_samples))
+            config_dict.update(tpot2.config.make_sklearnex_regressor_config_dictionary(random_state=random_state, n_samples=n_samples))
 
         elif option == "transformers":
-            config_dict.update(tpot2.config.make_transformer_config_dictionary(n_features=n_features))
-        
+            config_dict.update(tpot2.config.make_transformer_config_dictionary(random_state=random_state, n_features=n_features))
+
         elif option == "arithmetic_transformer":
             config_dict.update(tpot2.config.make_arithmetic_transformer_config_dictionary())
 
@@ -61,10 +61,10 @@ def get_configuration_dictionary(options, n_samples, n_features, classification,
 
         elif option == "skrebate":
             config_dict.update(tpot2.config.make_skrebate_config_dictionary(n_features=n_features))
-        
+
         elif option == "MDR":
             config_dict.update(tpot2.config.make_MDR_config_dictionary())
-        
+
         elif option == "continuousMDR":
             config_dict.update(tpot2.config.make_ContinuousMDR_config_dictionary())
 
@@ -76,26 +76,26 @@ def get_configuration_dictionary(options, n_samples, n_features, classification,
 
         elif option == "passthrough":
             config_dict.update(tpot2.config.make_passthrough_config_dictionary())
-        
+
 
         else:
-            config_dict.update(recursive_with_defaults(option, n_samples, n_features, classification, subsets=subsets, feature_names=feature_names))
+            config_dict.update(recursive_with_defaults(options, n_samples, n_features, classification, random_state, cv, subsets=subsets, feature_names=feature_names, n_classes=n_classes))
 
     if len(config_dict) == 0:
         raise ValueError("No valid configuration options were provided. Please check the options you provided and try again.")
 
     return config_dict
 
-def recursive_with_defaults(config_dict, n_samples, n_features, classification, subsets=None, feature_names=None):
-    
+def recursive_with_defaults(config_dict, n_samples, n_features, classification, random_state=None, cv=None, subsets=None, feature_names=None, n_classes=None):
+
     for key in 'leaf_config_dict', 'root_config_dict', 'inner_config_dict', 'Recursive':
         if key in config_dict:
             value = config_dict[key]
             if key=="Resursive":
-                config_dict[key] = recursive_with_defaults(value,n_samples, n_features, classification, subsets=None, feature_names=None)
+                config_dict[key] = recursive_with_defaults(value, n_samples, n_features, classification, random_state, cv, subsets=None, feature_names=None, n_classes=None)
             else:
-                config_dict[key] = get_configuration_dictionary(value, n_samples, n_features, classification, subsets, feature_names)
-        
+                config_dict[key] = get_configuration_dictionary(value, n_samples, n_features, classification, random_state, cv, subsets, feature_names, n_classes)
+
     return config_dict
 
 
@@ -117,14 +117,14 @@ def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_fun
         cv_obj_scores = cross_val_score_objective(sklearn.base.clone(pipeline),x,y,scorers=scorers, cv=cv , fold=step)
     else:
         cv_obj_scores = []
-    
+
     if other_objective_functions is not None and len(other_objective_functions) >0:
         other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
         #flatten
         other_scores = np.array(other_scores).flatten().tolist()
     else:
         other_scores = []
-        
+
     return np.concatenate([cv_obj_scores,other_scores])
 
 def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test, scorers, other_objective_functions, memory, cross_val_predict_cv, subset_column):
@@ -134,12 +134,12 @@ def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test,
     fitted_pipeline.fit(X_train, y_train)
 
     if len(scorers) > 0:
-        scores =[sklearn.metrics.get_scorer(scorer)(fitted_pipeline, X_test, y_test) for scorer in scorers] 
+        scores =[sklearn.metrics.get_scorer(scorer)(fitted_pipeline, X_test, y_test) for scorer in scorers]
 
     other_scores = []
     if other_objective_functions is not None and len(other_objective_functions) >0:
         other_scores = [obj(sklearn.base.clone(pipeline)) for obj in other_objective_functions]
-    
+
     return np.concatenate([scores,other_scores])
 
 
@@ -170,7 +170,7 @@ def convert_to_float(x):
         return float(x)
     except ValueError:
         return x
-    
+
 
 
 
@@ -180,9 +180,3 @@ def check_if_y_is_encoded(y):
     '''
     y = sorted(set(y))
     return all(i == j for i, j in enumerate(y))
-
-
-
-
-
-
