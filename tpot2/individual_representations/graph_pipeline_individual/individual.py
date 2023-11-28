@@ -1193,7 +1193,10 @@ def random_weighted_sort(l,weights, rng_=None):
     sorted_l = []
     indeces = {i: weights[i] for i in range(len(l))}
     while len(indeces) > 0:
-        next_item = rng.choice(list(indeces.keys()), p=list(indeces.values()))
+        keys = list(indeces.keys())
+        p = np.array([indeces[k] for k in keys])
+        p = p / p.sum()
+        next_item = rng.choice(list(indeces.keys()), p=p)
         indeces.pop(next_item)
         sorted_l.append(l[next_item])
 
