@@ -37,7 +37,7 @@ This project is hosted at https://github.com/EpistasisLab/tpot
     zip_safe=True,
     install_requires=['numpy>=1.16.3',
                     'scipy>=1.3.1',
-                    'scikit-learn>=0.22.0',
+                    'scikit-learn>=1.0.0',
                     'deap>=1.2',
                     'update_checker>=0.16',
                     'tqdm>=4.36.1',
