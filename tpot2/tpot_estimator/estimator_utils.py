@@ -79,7 +79,7 @@ def get_configuration_dictionary(options, n_samples, n_features, classification,
 
 
         else:
-            config_dict.update(recursive_with_defaults(options, n_samples, n_features, classification, random_state, cv, subsets=subsets, feature_names=feature_names, n_classes=n_classes))
+            config_dict.update(recursive_with_defaults(option, n_samples, n_features, classification, random_state, cv, subsets=subsets, feature_names=feature_names, n_classes=n_classes))
 
     if len(config_dict) == 0:
         raise ValueError("No valid configuration options were provided. Please check the options you provided and try again.")
