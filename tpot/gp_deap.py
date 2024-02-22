@@ -93,7 +93,7 @@ def mutate_random_individual(population, toolbox):
 
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
-    """Part of an evolutionary algorithm applying only the variation part
+    r"""Part of an evolutionary algorithm applying only the variation part
     (crossover, mutation **or** reproduction). The modified individuals have
     their fitness invalidated. The individuals are cloned so returned
     population is independent of the input population.
@@ -177,7 +177,7 @@ def initialize_stats_dict(individual):
 def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
                    stats=None, halloffame=None, verbose=0,
                    per_generation_function=None, log_file=None):
-    """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
+    r"""This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param population: A list of individuals.
     :param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
                     operators.
