@@ -935,7 +935,8 @@ class TPOTBase(BaseEstimator):
                 raise RuntimeError(
                     "There was an error in the TPOT optimization "
                     "process. This could be because the data was "
-                    "not formatted properly, or because data for "
+                    "not formatted properly, because a timeout "
+                    "was reached or because data for "
                     "a regression problem was provided to the "
                     "TPOTClassifier object. Please make sure you "
                     "passed the data to TPOT correctly. If you "
