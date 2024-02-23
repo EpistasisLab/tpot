@@ -1106,7 +1106,7 @@ This is the same parallelization framework used by scikit-learn. But it may cras
 <p>More information about these start methods can be found in the <a href="https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods">multiprocessing documentation</a>.</p>
 <h2 id="parallel-training-with-dask">Parallel Training with Dask</h2>
 <p>For large problems or working on Jupyter notebook, we highly recommend that you can distribute the work on a <a href="http://dask.pydata.org/en/latest/">Dask</a> cluster.
-The <a href="https://mybinder.org/v2/gh/dask/dask-examples/master?filepath=machine-learning%2Ftpot.ipynb">dask-examples binder</a> has a runnable example
+The <a href="https://mybinder.org/v2/gh/dask/dask-examples/main?filepath=machine-learning%2Ftpot.ipynb">dask-examples binder</a> has a runnable example
 with a small dask cluster.</p>
 <p>To use your Dask cluster to fit a TPOT model, specify the <code>use_dask</code> keyword when you create the TPOT estimator. <strong>Note: if <code>use_dask=True</code>, TPOT will use as many cores as available on the your Dask cluster. If <code>n_jobs</code> is specified, then it will control the chunk size (10*<code>n_jobs</code> if it is less then offspring size) of parallel training.</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">estimator</span> <span class="o">=</span> <span class="n">TPOTEstimator</span><span class="p">(</span><span class="n">use_dask</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
