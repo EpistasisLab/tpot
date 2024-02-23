@@ -86,6 +86,8 @@ def _pre_test(func):
                 # returns tuple of (ind1, ind2)
 
                 expr_tuple = expr if isinstance(expr, tuple) else (expr,)
+                if func.__name__ == "_mate_operator":
+                    expr_tuple = expr_tuple[0:2]
                 for expr_test in expr_tuple:
                     pipeline_code = generate_pipeline_code(
                         expr_to_tree(expr_test, self._pset),
