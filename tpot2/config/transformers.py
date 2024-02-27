@@ -1,7 +1,7 @@
 from functools import partial
 import numpy as np
 
-from tpot2.builtin_modules import ZeroCount, OneHotEncoder
+from tpot2.builtin_modules import ZeroCount, OneHotEncoder, ColumnOneHotEncoder
 from sklearn.preprocessing import Binarizer
 from sklearn.decomposition import FastICA
 from sklearn.cluster import FeatureAgglomeration
@@ -99,5 +99,5 @@ def make_transformer_config_dictionary(random_state=None, n_features=10):
                 RobustScaler: {},
                 StandardScaler: {},
                 ZeroCount: params_tpot_builtins_ZeroCount,
-                OneHotEncoder: params_tpot_builtins_OneHotEncoder,
+                ColumnOneHotEncoder: params_tpot_builtins_OneHotEncoder,
             }

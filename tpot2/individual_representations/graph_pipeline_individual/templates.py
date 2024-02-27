@@ -54,7 +54,7 @@ def estimator_graph_individual_generator(
             starting_ops = []
             if inner_config_dict is not None:
                 starting_ops.append(ind._mutate_insert_inner_node)
-            if leaf_config_dict is not None:
+            if leaf_config_dict is not None or inner_config_dict is not None:
                 starting_ops.append(ind._mutate_insert_leaf)
                 n_nodes -= 1
 
