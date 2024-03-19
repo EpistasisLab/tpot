@@ -67,10 +67,10 @@ class SteadyStateEvolver():
                     periodic_checkpoint_folder = None,
                     callback = None,
 
-                    rng_=None
+                    rng=None
                     ) -> None:
 
-        self.rng = np.random.default_rng(rng_)
+        self.rng = np.random.default_rng(rng)
 
         self.max_evaluated_individuals = max_evaluated_individuals
         self.individuals_until_end_budget = individuals_until_end_budget
@@ -176,7 +176,7 @@ class SteadyStateEvolver():
         if self.population is None:
             self.population = tpot2.Population(column_names=init_names)
             initial_population = [next(self.individual_generator) for _ in range(self.initial_population_size)]
-            self.population.add_to_population(initial_population, rng_=self.rng)
+            self.population.add_to_population(initial_population, rng=self.rng)
 
 
     def optimize(self):
@@ -404,13 +404,13 @@ class SteadyStateEvolver():
                         if len(cur_evaluated_population) > self.population_size:
                             scores = evaluated[self.objective_names].to_numpy()
                             weighted_scores = scores * self.objective_function_weights
-                            new_population_index = np.ravel(self.survival_selector(weighted_scores, k=self.population_size, rng_=self.rng)) #TODO make it clear that we are concatenating scores...
+                            new_population_index = np.ravel(self.survival_selector(weighted_scores, k=self.population_size, rng=self.rng)) #TODO make it clear that we are concatenating scores...
 
                             #set new population
                             try:
                                 cur_evaluated_population = np.array(cur_evaluated_population)[new_population_index]
                                 cur_evaluated_population = np.concatenate([cur_evaluated_population, unevaluated["Individual"].to_numpy()])
-                                self.population.set_population(cur_evaluated_population, rng_=self.rng)
+                                self.population.set_population(cur_evaluated_population, rng=self.rng)
                             except Exception as e:
                                 print("Exception in survival selection")
                                 print(e)
@@ -447,11 +447,11 @@ class SteadyStateEvolver():
                         parents = []
                         for op in var_ops:
                             if op == "mutate":
-                                parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=1, rng_=self.rng)])
+                                parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=1, rng=self.rng)])
                             else:
-                                parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=2, rng_=self.rng)])
+                                parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=2, rng=self.rng)])
 
-                        _offspring = self.population.create_offspring(parents, var_ops, rng_=self.rng, n_jobs=1, add_to_population=True)
+                        _offspring = self.population.create_offspring(parents, var_ops, rng=self.rng, n_jobs=1, add_to_population=True)
 
                     # If we don't have enough evaluated individuals to use as parents for variation, we create new individuals randomly
                     # This can happen if the individuals in the initial population are invalid

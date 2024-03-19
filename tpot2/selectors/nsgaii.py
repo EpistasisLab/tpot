@@ -87,7 +87,7 @@ def crowding_distance(matrix):
 
 
 
-def survival_select_NSGA2(scores, k, rng_=None):
+def survival_select_NSGA2(scores, k, rng=None):
 
     pareto_fronts = nondominated_sorting(scores)
 

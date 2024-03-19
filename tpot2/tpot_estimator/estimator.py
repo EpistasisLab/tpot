@@ -38,14 +38,9 @@ class TPOTEstimator(BaseEstimator):
                         objective_function_names = None,
                         bigger_is_better = True,
 
-                        hyperparameter_probability = 1,
-                        hyper_node_probability = 0,
-                        hyperparameter_alpha = 1,
-                        max_size = np.inf,
-                        linear_pipeline = False,
-                        root_config_dict= 'Auto',
-                        inner_config_dict=["selectors", "transformers"],
-                        leaf_config_dict= None,
+                        search_space = None,
+
+
                         cross_val_predict_cv = 0,
                         categorical_features = None,
                         subsets = None,
@@ -101,7 +96,6 @@ class TPOTEstimator(BaseEstimator):
 
                         #debugging and logging parameters
                         warm_start = False,
-                        subset_column = None,
                         periodic_checkpoint_folder = None,
                         callback = None,
 
@@ -147,69 +141,6 @@ class TPOTEstimator(BaseEstimator):
         bigger_is_better : bool, default=True
             If True, the objective function is maximized. If False, the objective function is minimized. Use negative weights to reverse the direction.
 
-
-        max_size : int, default=np.inf
-            The maximum number of nodes of the pipelines to be generated.
-
-        linear_pipeline : bool, default=False
-            If True, the pipelines generated will be linear. If False, the pipelines generated will be directed acyclic graphs.
-
-        root_config_dict : dict, default='auto'
-            The configuration dictionary to use for the root node of the model.
-            If 'auto', will use "classifiers" if classification=True, else "regressors".
-            - 'selectors' : A selection of sklearn Selector methods.
-            - 'classifiers' : A selection of sklearn Classifier methods.
-            - 'regressors' : A selection of sklearn Regressor methods.
-            - 'transformers' : A selection of sklearn Transformer methods.
-            - 'arithmetic_transformer' : A selection of sklearn Arithmetic Transformer methods that replicate symbolic classification/regression operators.
-            - 'passthrough' : A node that just passes though the input. Useful for passing through raw inputs into inner nodes.
-            - 'feature_set_selector' : A selector that pulls out specific subsets of columns from the data. Only well defined as a leaf.
-                                        Subsets are set with the subsets parameter.
-            - 'skrebate' : Includes ReliefF, SURF, SURFstar, MultiSURF.
-            - 'MDR' : Includes MDR.
-            - 'ContinuousMDR' : Includes ContinuousMDR.
-            - 'genetic encoders' : Includes Genetic Encoder methods as used in AutoQTL.
-            - 'FeatureEncodingFrequencySelector': Includes FeatureEncodingFrequencySelector method as used in AutoQTL.
-            - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
-
-        inner_config_dict : dict, default=["selectors", "transformers"]
-            The configuration dictionary to use for the inner nodes of the model generation.
-            Default ["selectors", "transformers"]
-            - 'selectors' : A selection of sklearn Selector methods.
-            - 'classifiers' : A selection of sklearn Classifier methods.
-            - 'regressors' : A selection of sklearn Regressor methods.
-            - 'transformers' : A selection of sklearn Transformer methods.
-            - 'arithmetic_transformer' : A selection of sklearn Arithmetic Transformer methods that replicate symbolic classification/regression operators.
-            - 'passthrough' : A node that just passes though the input. Useful for passing through raw inputs into inner nodes.
-            - 'feature_set_selector' : A selector that pulls out specific subsets of columns from the data. Only well defined as a leaf.
-                                        Subsets are set with the subsets parameter.
-            - 'skrebate' : Includes ReliefF, SURF, SURFstar, MultiSURF.
-            - 'MDR' : Includes MDR.
-            - 'ContinuousMDR' : Includes ContinuousMDR.
-            - 'genetic encoders' : Includes Genetic Encoder methods as used in AutoQTL.
-            - 'FeatureEncodingFrequencySelector': Includes FeatureEncodingFrequencySelector method as used in AutoQTL.
-            - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
-            - None : If None and max_depth>1, the root_config_dict will be used for the inner nodes as well.
-
-        leaf_config_dict : dict, default=None
-            The configuration dictionary to use for the leaf node of the model. If set, leaf nodes must be from this dictionary.
-            Otherwise leaf nodes will be generated from the root_config_dict.
-            Default None
-            - 'selectors' : A selection of sklearn Selector methods.
-            - 'classifiers' : A selection of sklearn Classifier methods.
-            - 'regressors' : A selection of sklearn Regressor methods.
-            - 'transformers' : A selection of sklearn Transformer methods.
-            - 'arithmetic_transformer' : A selection of sklearn Arithmetic Transformer methods that replicate symbolic classification/regression operators.
-            - 'passthrough' : A node that just passes though the input. Useful for passing through raw inputs into inner nodes.
-            - 'feature_set_selector' : A selector that pulls out specific subsets of columns from the data. Only well defined as a leaf.
-                                        Subsets are set with the subsets parameter.
-            - 'skrebate' : Includes ReliefF, SURF, SURFstar, MultiSURF.
-            - 'MDR' : Includes MDR.
-            - 'ContinuousMDR' : Includes ContinuousMDR.
-            - 'genetic encoders' : Includes Genetic Encoder methods as used in AutoQTL.
-            - 'FeatureEncodingFrequencySelector': Includes FeatureEncodingFrequencySelector method as used in AutoQTL.
-            - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
-            - None : If None, a leaf will not be required (i.e. the pipeline can be a single root node). Leaf nodes will be generated from the inner_config_dict.
 
         cross_val_predict_cv : int, default=0
             Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
@@ -378,9 +309,6 @@ class TPOTEstimator(BaseEstimator):
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
 
-        subset_column : str or int, default=None
-            EXPERIMENTAL The column to use for the subset selection. Must also pass in unique_subset_values to GraphIndividual to function.
-
         periodic_checkpoint_folder : str, default=None
             Folder to save the population to periodically. If None, no periodic saving will be done.
             If provided, training will resume from this checkpoint.
@@ -441,14 +369,9 @@ class TPOTEstimator(BaseEstimator):
         self.other_objective_functions_weights = other_objective_functions_weights
         self.objective_function_names = objective_function_names
         self.bigger_is_better = bigger_is_better
-        self.hyperparameter_probability = hyperparameter_probability
-        self.hyper_node_probability = hyper_node_probability
-        self.hyperparameter_alpha = hyperparameter_alpha
-        self.max_size = max_size
-        self.linear_pipeline = linear_pipeline
-        self.root_config_dict= root_config_dict
-        self.inner_config_dict= inner_config_dict
-        self.leaf_config_dict= leaf_config_dict
+
+        self.search_space = search_space
+
         self.cross_val_predict_cv = cross_val_predict_cv
         self.categorical_features = categorical_features
         self.subsets = subsets
@@ -487,7 +410,6 @@ class TPOTEstimator(BaseEstimator):
         self.selection_evaluation_early_stop = selection_evaluation_early_stop
         self.selection_evaluation_scaling =  selection_evaluation_scaling
         self.warm_start = warm_start
-        self.subset_column = subset_column
         self.verbose = verbose
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
         self.callback = callback
@@ -501,7 +423,7 @@ class TPOTEstimator(BaseEstimator):
         self.optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout
         self.optuna_storage = optuna_storage
 
-        # create random number generator based on rng_seed
+        # create random number generator based on rngseed
         self.rng = np.random.default_rng(random_state)
         # save random state passed to us for other functions that use random_state
         self.random_state = random_state
@@ -675,17 +597,6 @@ class TPOTEstimator(BaseEstimator):
         else:
             self.feature_names = None
 
-        if self.root_config_dict == 'Auto':
-            if self.classification:
-                n_classes = len(np.unique(y))
-                root_config_dict = get_configuration_dictionary("classifiers", n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names, n_classes=n_classes)
-            else:
-                root_config_dict = get_configuration_dictionary("regressors", n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names)
-        else:
-            root_config_dict = get_configuration_dictionary(self.root_config_dict, n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets,feature_names=self.feature_names)
-
-        inner_config_dict = get_configuration_dictionary(self.inner_config_dict, n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names)
-        leaf_config_dict = get_configuration_dictionary(self.leaf_config_dict, n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names)
 
 
         def objective_function(pipeline_individual,
@@ -697,7 +608,6 @@ class TPOTEstimator(BaseEstimator):
                                             other_objective_functions=self.other_objective_functions,
                                             memory=self.memory,
                                             cross_val_predict_cv=self.cross_val_predict_cv,
-                                            subset_column=self.subset_column,
                                             **kwargs):
             return objective_function_generator(
                 pipeline_individual,
@@ -709,21 +619,10 @@ class TPOTEstimator(BaseEstimator):
                 other_objective_functions=other_objective_functions,
                 memory=memory,
                 cross_val_predict_cv=cross_val_predict_cv,
-                subset_column=subset_column,
                 **kwargs,
             )
 
-        self.individual_generator_instance = tpot2.individual_representations.graph_pipeline_individual.estimator_graph_individual_generator(
-                                                            inner_config_dict=inner_config_dict,
-                                                            root_config_dict=root_config_dict,
-                                                            leaf_config_dict=leaf_config_dict,
-                                                            max_size = self.max_size,
-                                                            linear_pipeline=self.linear_pipeline,
-                                                            hyperparameter_probability=self.hyperparameter_probability,
-                                                            hyper_node_probability=self.hyper_node_probability,
-                                                            hyperparameter_alpha=self.hyperparameter_alpha,
-                                                            rng_=self.rng,
-                                                                )
+
 
         if self.threshold_evaluation_early_stop is not None or self.selection_evaluation_early_stop is not None:
             evaluation_early_stop_steps = self.cv
@@ -737,9 +636,14 @@ class TPOTEstimator(BaseEstimator):
             X_future = X
             y_future = y
 
+        def ind_generator(rng):
+            rng = np.random.default_rng(rng)
+            while True:
+                yield self.search_space.generate(rng)
+
         #If warm start and we have an evolver instance, use the existing one
         if not(self.warm_start and self._evolver_instance is not None):
-            self._evolver_instance = self._evolver(   individual_generator=self.individual_generator_instance,
+            self._evolver_instance = self._evolver(   individual_generator=ind_generator(self.rng),
                                             objective_functions= [objective_function],
                                             objective_function_weights = self.objective_function_weights,
                                             objective_names=self.objective_names,
@@ -781,7 +685,7 @@ class TPOTEstimator(BaseEstimator):
                                             mutate_then_crossover_probability= self.mutate_then_crossover_probability,
                                             crossover_then_mutate_probability= self.crossover_then_mutate_probability,
 
-                                            rng_=self.rng,
+                                            rng=self.rng,
                                             )
 
 
@@ -829,7 +733,7 @@ class TPOTEstimator(BaseEstimator):
                                                     other_objective_functions=self.other_objective_functions,
                                                     memory=self.memory,
                                                     cross_val_predict_cv=self.cross_val_predict_cv,
-                                                    subset_column=self.subset_column,
+
                                                     **kwargs: objective_function_generator(
                                                                                                 ind,
                                                                                                 X,
@@ -840,7 +744,6 @@ class TPOTEstimator(BaseEstimator):
                                                                                                 other_objective_functions=other_objective_functions,
                                                                                                 memory=memory,
                                                                                                 cross_val_predict_cv=cross_val_predict_cv,
-                                                                                                subset_column=subset_column,
                                                                                                 **kwargs,
                                                                                                 )]
 
@@ -882,7 +785,6 @@ class TPOTEstimator(BaseEstimator):
                                                     other_objective_functions=self.other_objective_functions,
                                                     memory=self.memory,
                                                     cross_val_predict_cv=self.cross_val_predict_cv,
-                                                    subset_column=self.subset_column,
                                                     **kwargs: val_objective_function_generator(
                                                         ind,
                                                         X,
@@ -893,7 +795,6 @@ class TPOTEstimator(BaseEstimator):
                                                         other_objective_functions=other_objective_functions,
                                                         memory=memory,
                                                         cross_val_predict_cv=cross_val_predict_cv,
-                                                        subset_column=subset_column,
                                                         **kwargs,
                                                         )]
 
@@ -920,7 +821,7 @@ class TPOTEstimator(BaseEstimator):
         self.selected_best_score =  self.evaluated_individuals.loc[best_idx]
 
 
-        best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column)
+        best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
 
         if self.preprocessing:
             self.fitted_pipeline_ = sklearn.pipeline.make_pipeline(sklearn.base.clone(self._preprocessing_pipeline), best_individual_pipeline )

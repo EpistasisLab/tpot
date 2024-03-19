@@ -2,13 +2,15 @@
 #TODO: are all the imports in the init files done correctly?
 #TODO clean up import organization
 
+from .individual import BaseIndividual
+
 from .graphsklearn import GraphPipeline
 from .population import Population
 
 from . import builtin_modules
 from . import utils
 from . import config
-from . import individual_representations
+from . import search_spaces
 from . import evolvers
 from . import objectives
 from . import selectors
