@@ -11,17 +11,23 @@ from ConfigSpace import ConfigurationSpace
 
 class EstimatorNodeIndividual(SklearnIndividual):
     def __init__(self, method: type, 
-                        space: ConfigurationSpace,
+                        space: ConfigurationSpace|dict, #TODO If a dict is passed, hyperparameters are fixed and not learned. Is this confusing? Should we make a second node type?
                         rng=None) -> None:
         super().__init__()
         self.method = method
         self.space = space
         
-        rng = np.random.default_rng(rng)
-        self.space.seed(rng.integers(0, 2**32))
-        self.hyperparameters = self.space.sample_configuration().get_dictionary()
+        if isinstance(space, dict):
+            self.space = space
+        else:
+            rng = np.random.default_rng(rng)
+            self.space.seed(rng.integers(0, 2**32))
+            self.hyperparameters = self.space.sample_configuration().get_dictionary()
 
     def mutate(self, rng=None):
+        if isinstance(self.space, dict): 
+            return False
+        
         rng = np.random.default_rng(rng)
         self.space.seed(rng.integers(0, 2**32))
         self.hyperparameters = self.space.sample_configuration().get_dictionary()
@@ -29,6 +35,9 @@ class EstimatorNodeIndividual(SklearnIndividual):
         return True
 
     def crossover(self, other, rng=None):
+        if isinstance(self.space, dict):
+            return False
+        
         rng = np.random.default_rng(rng)
         if self.method != other.method:
             return False

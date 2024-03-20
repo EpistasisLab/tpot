@@ -13,12 +13,12 @@ Normalizer_configspace = ConfigurationSpace(
 )
 
 PCA_configspace = ConfigurationSpace(
-    space={'n_components': Float('n_components', bounds=(0.001, 0.999))}
+    space={'n_components': Float('n_components', bounds=(0.5, 0.999))}
 )
 
-ZeroCount_configspace = ConfigurationSpace()
+ZeroCount_configspace = {}
 
-OneHotEncoder_configspace = ConfigurationSpace() #TODO include the parameter for max unique values
+OneHotEncoder_configspace = {} #TODO include the parameter for max unique values
 
 def get_FastICA_configspace(n_features=100, random_state=None):
     
@@ -35,7 +35,7 @@ def get_FastICA_configspace(n_features=100, random_state=None):
         space = space
 
     )
-
+#TODO conditional parameters
 def get_FeatureAgglomeration_configspace(n_features=100):
     return ConfigurationSpace(
         space = {

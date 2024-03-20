@@ -22,12 +22,13 @@ MDR_configspace = ConfigurationSpace(
 )
 
 
-skrebate_ReliefF_configspace = ConfigurationSpace(
-    space = {
-        'n_features_to_select': Integer('n_features_to_select', bounds=(1, 10), log=True),
-        'n_neighbors': Integer('n_neighbors', bounds=(1,500), log=True),
-    }
-)
+def get_skrebate_SURF_config_space(n_features=10):
+    return ConfigurationSpace(
+        space = {
+            'n_features_to_select': Integer('n_features_to_select', bounds=(1, n_features), log=True),
+            'n_neighbors': Integer('n_neighbors', bounds=(2,500), log=True),
+        }
+    )
 
 
 def make_skrebate_SURF_config_space(n_features=10):
