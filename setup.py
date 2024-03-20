@@ -33,7 +33,7 @@ A Python tool that automatically creates and optimizes machine learning pipeline
                       'update_checker>=0.16',
                       'tqdm>=4.36.1',
                       'stopit>=1.1.1',
-                      'pandas>=1.5.3,<2.0.0',
+                      'pandas>=2.2.0',
                       'joblib>=1.1.1',
                       'xgboost>=1.7.0',
                       'matplotlib>=3.6.2',
