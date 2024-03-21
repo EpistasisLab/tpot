@@ -181,11 +181,11 @@ def parallel_eval_objective_list2(individual_list,
                 if completed_future.exception() or completed_future.status == "error": #if the future is done and threw an error
                     print("Exception in future")
                     print(completed_future.exception())
-                    scores = [np.nan]
+                    scores = [np.nan for _ in range(n_expected_columns)]
                     eval_error = "INVALID"
                 elif completed_future.cancelled(): #if the future is done and was cancelled
                     print("Cancelled future (likely memory related)")
-                    scores = [np.nan]
+                    scores = [np.nan for _ in range(n_expected_columns)]
                     eval_error = "INVALID"
                 else: #if the future is done and did not throw an error, get the scores
                     try:
@@ -193,10 +193,10 @@ def parallel_eval_objective_list2(individual_list,
                         #check if scores contain "INVALID" or "TIMEOUT"
                         if "INVALID" in scores:
                             eval_error = "INVALID"
-                            scores = [np.nan]
+                            scores = [np.nan for _ in range(n_expected_columns)]
                         elif "TIMEOUT" in scores:
                             eval_error = "TIMEOUT"
-                            scores = [np.nan]
+                            scores = [np.nan for _ in range(n_expected_columns)]
                         else:
                             eval_error = None
                         
@@ -208,7 +208,7 @@ def parallel_eval_objective_list2(individual_list,
                         print("status", completed_future.status)
                         print("done", completed_future.done())
                         print("cancelld ", completed_future.cancelled())
-                        scores = [np.nan]
+                        scores = [np.nan for _ in range(n_expected_columns)]
                         eval_error = "INVALID"
             else: #if future is not done
                 
@@ -219,7 +219,7 @@ def parallel_eval_objective_list2(individual_list,
                     if verbose >= 4:
                         print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {submitted_futures[completed_future]} \n')
                     
-                    scores = [np.nan]
+                    scores = [np.nan for _ in range(n_expected_columns)]
                     eval_error = "TIMEOUT"
                 else:
                     continue #otherwise, continue to next future
@@ -251,9 +251,7 @@ def parallel_eval_objective_list2(individual_list,
     final_start_times = [scores_dict[individual]["start_time"] for individual in individual_list]
     final_end_times = [scores_dict[individual]["end_time"] for individual in individual_list]
     final_eval_errors = [scores_dict[individual]["eval_error"] for individual in individual_list]
-
     final_scores = process_scores(final_scores, n_expected_columns)
-
     return final_scores, final_start_times, final_end_times, final_eval_errors
 
 
