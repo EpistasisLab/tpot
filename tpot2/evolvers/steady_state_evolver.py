@@ -257,20 +257,31 @@ class SteadyStateEvolver():
 
                 #Loop through all futures, collect completed and timeout futures.
                 for completed_future in list(submitted_futures.keys()):
-
+                    eval_error = None
                     #get scores and update
                     if completed_future.done(): #if future is done
                         #If the future is done but threw and error, record the error
                         if completed_future.exception() or completed_future.status == "error": #if the future is done and threw an error
                             print("Exception in future")
                             print(completed_future.exception())
-                            scores = ["INVALID" for _ in range(len(self.objective_names))]
+                            scores = [np.nan for _ in range(len(self.objective_names))]
+                            eval_error = "INVALID"
                         elif completed_future.cancelled(): #if the future is done and was cancelled
                             print("Cancelled future (likely memory related)")
-                            scores = ["INVALID" for _ in range(len(self.objective_names))]
+                            scores = [np.nan for _ in range(len(self.objective_names))]
+                            eval_error = "INVALID"
                         else: #if the future is done and did not throw an error, get the scores
                             try:
                                 scores = completed_future.result()
+
+                                #check if scores contain "INVALID" or "TIMEOUT"
+                                if "INVALID" in scores:
+                                    eval_error = "INVALID"
+                                    scores = [np.nan]
+                                elif "TIMEOUT" in scores:
+                                    eval_error = "TIMEOUT"
+                                    scores = [np.nan]
+
                             except Exception as e:
                                 print("Exception in future, but not caught by dask")
                                 print(e)
@@ -279,7 +290,8 @@ class SteadyStateEvolver():
                                 print("status", completed_future.status)
                                 print("done", completed_future.done())
                                 print("cancelld ", completed_future.cancelled())
-                                scores = ["INVALID" for _ in range(len(self.objective_names))]
+                                scores = [np.nan for _ in range(len(self.objective_names))]
+                                eval_error = "INVALID"
                     else: #if future is not done
 
                         #check if the future has been running for too long, cancel the future
@@ -289,7 +301,8 @@ class SteadyStateEvolver():
                             if self.verbose >= 4:
                                 print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {submitted_futures[completed_future]} \n')
 
-                            scores = ["TIMEOUT" for _ in range(len(self.objective_names))]
+                            scores = [np.nan for _ in range(len(self.objective_names))]
+                            eval_error = "TIMEOUT"
                         else:
                             continue #otherwise, continue to next future
 
@@ -304,6 +317,7 @@ class SteadyStateEvolver():
                         scores = [scores[0] for _ in range(len(self.objective_names))]
                     self.population.update_column(this_individual, column_names=self.objective_names, data=scores)
                     self.population.update_column(this_individual, column_names="Completed Timestamp", data=time.time())
+                    self.population.update_column(this_individual, column_names="Eval Error", data=eval_error)
                     if budget is not None:
                         self.population.update_column(this_individual, column_names="Budget", data=this_budget)
 
@@ -314,9 +328,8 @@ class SteadyStateEvolver():
 
                 #now we have a list of completed futures
 
-
-                self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="INVALID")
-                self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
+                self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="INVALID")
+                self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="TIMEOUT")
 
 
                 ###############################
