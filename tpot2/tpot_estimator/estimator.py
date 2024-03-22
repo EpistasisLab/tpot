@@ -83,10 +83,7 @@ class TPOTEstimator(BaseEstimator):
                         stepwise_steps = 5,
 
 
-                        optuna_optimize_pareto_front = False,
-                        optuna_optimize_pareto_front_trials = 100,
-                        optuna_optimize_pareto_front_timeout = 60*10,
-                        optuna_storage = "sqlite:///optuna.db",
+
 
                         #dask parameters
                         n_jobs=1,
@@ -418,10 +415,7 @@ class TPOTEstimator(BaseEstimator):
 
         self.scatter = scatter
 
-        self.optuna_optimize_pareto_front = optuna_optimize_pareto_front
-        self.optuna_optimize_pareto_front_trials = optuna_optimize_pareto_front_trials
-        self.optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout
-        self.optuna_storage = optuna_storage
+
 
         # create random number generator based on rngseed
         self.rng = np.random.default_rng(random_state)
@@ -694,19 +688,7 @@ class TPOTEstimator(BaseEstimator):
         self.make_evaluated_individuals()
 
 
-        if self.optuna_optimize_pareto_front:
-            pareto_front_inds = self.pareto_front['Individual'].values
-            all_graphs, all_scores = tpot2.individual_representations.graph_pipeline_individual.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, storage=self.optuna_storage, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, max_time_seconds=self.optuna_optimize_pareto_front_timeout, **{"X": X, "y": y})
-            all_scores = tpot2.utils.eval_utils.process_scores(all_scores, len(self.objective_function_weights))
 
-            if len(all_graphs) > 0:
-                df = pd.DataFrame(np.column_stack((all_graphs, all_scores,np.repeat("Optuna",len(all_graphs)))), columns=["Individual"] + self.objective_names +["Parents"])
-                for obj in self.objective_names:
-                    df[obj] = df[obj].apply(convert_to_float)
-
-                self.evaluated_individuals = pd.concat([self.evaluated_individuals, df], ignore_index=True)
-            else:
-                print("WARNING NO OPTUNA TRIALS COMPLETED")
 
         tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
 
@@ -821,7 +803,9 @@ class TPOTEstimator(BaseEstimator):
         self.selected_best_score =  self.evaluated_individuals.loc[best_idx]
 
 
-        best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
+        #TODO
+        #best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
+        best_individual_pipeline = best_individual.export_pipeline()
 
         if self.preprocessing:
             self.fitted_pipeline_ = sklearn.pipeline.make_pipeline(sklearn.base.clone(self._preprocessing_pipeline), best_individual_pipeline )

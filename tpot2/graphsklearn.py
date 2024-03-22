@@ -62,47 +62,34 @@ def _method_name(name, estimator, method):
         return method
 
 
-def estimator_fit_transform_override_cross_val_predict(estimator, X, y, cv=5, method='auto',subset_indexes=None,  **fit_params):
+def estimator_fit_transform_override_cross_val_predict(estimator, X, y, cv=5, method='auto', **fit_params):
 
     method = _method_name(name=estimator.__class__.__name__, estimator=estimator, method=method)
     
     if cv > 1:
-        #TODO subset indexes for cross val predict
         preds = sklearn.model_selection.cross_val_predict(estimator=estimator, X=X, y=y, cv=cv, method=method, **fit_params)
         estimator.fit(X,y, **fit_params)
     
     
     else:
-        if subset_indexes is None:
-            estimator.fit(X,y, **fit_params)
-            func = getattr(estimator,method)
-            preds = func(X)
-        else:
-            this_X = X[subset_indexes]
-            this_y = y[subset_indexes]
-            estimator.fit(this_X, this_y, **fit_params)
-            func = getattr(estimator,method)
-            preds = func(X)
+        estimator.fit(X,y, **fit_params)
+        func = getattr(estimator,method)
+        preds = func(X)
+
 
     return preds, estimator
 
 
 # https://github.com/scikit-learn/scikit-learn/blob/7db5b6a98/sklearn/pipeline.py#L883
-def _fit_transform_one(model, X, y, fit_transform=True, subset_indexes=None, **fit_params):
+def _fit_transform_one(model, X, y, fit_transform=True, **fit_params):
     """Fit and transform one step in a pipeline."""
 
-    if subset_indexes is None:
-        if fit_transform and hasattr(model, "fit_transform"):
-            res = model.fit_transform(X, y, **fit_params)
-        else:
-            res = model.fit(X, y, **fit_params).transform(X)
-            #return model
-
+    if fit_transform and hasattr(model, "fit_transform"):
+        res = model.fit_transform(X, y, **fit_params)
     else:
-        this_X = X[subset_indexes]
-        this_y = y[subset_indexes]
-        model.fit(this_X, this_y, **fit_params)
-        res = model.transform(X)
+        res = model.fit(X, y, **fit_params).transform(X)
+        #return model
+
 
     return res, model
 
@@ -110,7 +97,6 @@ def _fit_transform_one(model, X, y, fit_transform=True, subset_indexes=None, **f
 def fit_sklearn_digraph(graph: nx.DiGraph,
         X,
         y,
-        subset_col = None,
         method='auto',
         cross_val_predict_cv = 0, #func(est,X,y) -> transformed_X
         memory = None,
@@ -137,22 +123,15 @@ def fit_sklearn_digraph(graph: nx.DiGraph,
         else: #in node has inputs, get those
             this_X = np.hstack([transformed_steps[child] for child in get_ordered_successors(graph, node)])
 
-
-        subset_indexes = None
-        if subset_col is not None and "subset_values" in graph.nodes[node]:
-            #get indexes of subset_col that are in subset_values
-            subset_values = graph.nodes[node]["subset_values"]
-            subset_indexes = np.where(np.isin(subset_col, subset_values))[0]
-
         # Removed so that the cache is the same for all models. Not including transform would index it seperately 
         #if i == len(topo_sort)-1: #last method doesn't need transformed.
         #    instance.fit(this_X, y)
         
 
         if issubclass(type(instance), sklearn.base.RegressorMixin) or issubclass(type(instance), sklearn.base.ClassifierMixin):
-            transformed, instance = estimator_fit_transform_override_cross_val_predict_cached(instance, this_X, y, cv=cross_val_predict_cv, method=method,subset_indexes=subset_indexes)
+            transformed, instance = estimator_fit_transform_override_cross_val_predict_cached(instance, this_X, y, cv=cross_val_predict_cv, method=method)
         else:
-            transformed, instance = fit_transform_one_cached(instance, this_X, y, subset_indexes=subset_indexes)#instance.fit_transform(this_X,y)
+            transformed, instance = fit_transform_one_cached(instance, this_X, y)#instance.fit_transform(this_X,y)
         
         graph.nodes[node]["instance"] = instance
 
@@ -253,8 +232,6 @@ class GraphPipeline(_BaseComposition):
                 cross_val_predict_cv=0, #signature function(estimator, X, y=none)
                 method='auto',
                 memory=None, #TODO memory caching like sklearn.pipeline
-                subset_column = None,
-                drop_subset_column = True,
                 use_label_encoder=False,
                 **kwargs,
                 ):
@@ -277,13 +254,6 @@ class GraphPipeline(_BaseComposition):
         memory: str or object with the joblib.Memory interface, optional
             Used to cache the fitted transformers of the pipeline. By default, no caching is performed. If a string is given, it is the path to the caching directory.
 
-        subset_column: int, optional
-            The column of X that contains the subset values. If None, all rows of X are used. If not None, only the rows of X where X[:,subset_column] is in subset_values are used.
-            Used to evolve pipelines where recursive graphs use different subsets of rows.
-
-        drop_subset_column: bool, optional
-            If True, the subset_column is dropped from X before being passed to the pipeline. If False, the subset_column is kept in X.
-
         use_label_encoder: bool, optional
             If True, the label encoder is used to encode the labels to be 0 to N. If False, the label encoder is not used.
             Mainly useful for classifiers (XGBoost) that require labels to be ints from 0 to N.
@@ -296,8 +266,6 @@ class GraphPipeline(_BaseComposition):
         self.cross_val_predict_cv = cross_val_predict_cv
         self.method = method
         self.memory = memory
-        self.subset_column = subset_column
-        self.drop_subset_column = drop_subset_column
         self.use_label_encoder = use_label_encoder
 
         setup_ordered_successors(graph)
@@ -327,17 +295,8 @@ class GraphPipeline(_BaseComposition):
         else:
             return str(self.graph.nodes)
 
-    def fit(self, X, y, subset_col = None):
-        # if self.subset_column is not None and self.subset_values is not None:
-            
-        #     if isinstance(X, pd.DataFrame):
-        #         indeces_to_keep = X[self.subset_column].isin(self._subset_values)
-        #         X = X[indeces_to_keep]
-        #         y = y[indeces_to_keep]
-        #     else:
-        #         indeces_to_keep = np.isin(X[:,self.subset_column], self._subset_values)
-        #         X = X[indeces_to_keep]
-        #         y = y[indeces_to_keep]
+    def fit(self, X, y):
+
 
         if self.use_label_encoder:
             if type(self.use_label_encoder) == LabelEncoder:
@@ -345,11 +304,7 @@ class GraphPipeline(_BaseComposition):
             else:
                 y = self.label_encoder.fit_transform(y)
 
-        if self.subset_column is not None:
-            subset_col = X[:,self.subset_column]
 
-            if self.drop_subset_column:
-                X = np.delete(X, self.subset_column, axis=1)
 
         fit_sklearn_digraph(   graph=self.graph,
                                 X=X,
@@ -358,7 +313,6 @@ class GraphPipeline(_BaseComposition):
                                 cross_val_predict_cv = self.cross_val_predict_cv,
                                 memory = self.memory,
                                 topo_sort = self.topo_sorted_nodes,
-                                subset_col = subset_col,
                                 )
         
         return self
@@ -380,11 +334,7 @@ class GraphPipeline(_BaseComposition):
 
     @available_if(_estimator_has('predict'))
     def predict(self, X, **predict_params):
-        if self.subset_column is not None:
-            subset_col = X[:,self.subset_column]
 
-            if self.drop_subset_column:
-                X = np.delete(X, self.subset_column, axis=1)
 
         this_X = get_inputs_to_node(self.graph,
                     X, 
@@ -402,9 +352,7 @@ class GraphPipeline(_BaseComposition):
     
     @available_if(_estimator_has('predict_proba'))
     def predict_proba(self, X, **predict_params):
-        if self.subset_column is not None:
-            if self.drop_subset_column:
-                X = np.delete(X, self.subset_column, axis=1)
+
 
         this_X = get_inputs_to_node(self.graph,
                     X, 
@@ -416,9 +364,7 @@ class GraphPipeline(_BaseComposition):
     
     @available_if(_estimator_has('decision_function'))
     def decision_function(self, X, **predict_params):
-        if self.subset_column is not None:
-            if self.drop_subset_column:
-                X = np.delete(X, self.subset_column, axis=1)
+
         this_X = get_inputs_to_node(self.graph,
                     X, 
                     self.root,
@@ -429,10 +375,6 @@ class GraphPipeline(_BaseComposition):
     
     @available_if(_estimator_has('transform'))
     def transform(self, X, **predict_params):
-
-        if self.subset_column is not None:
-            if self.drop_subset_column:
-                X = np.delete(X, self.subset_column, axis=1)
                 
         this_X = get_inputs_to_node(self.graph,
                     X, 

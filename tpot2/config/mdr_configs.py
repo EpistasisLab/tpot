@@ -1,6 +1,3 @@
-from mdr import MDR, ContinuousMDR
-from skrebate import ReliefF, SURF, SURFstar, MultiSURF
-from functools import partial
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 

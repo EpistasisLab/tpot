@@ -39,14 +39,14 @@ def get_KNeighborsClassifier_ConfigurationSpace(n_samples=10):
             ) 
 
 
-def get_DecisionTreeClassifier_ConfigurationSpace(random_state=None):
+def get_DecisionTreeClassifier_ConfigurationSpace(random_state=None, n_featues=20):
 
     space = {
         'criterion': Categorical("criterion", ['gini', 'entropy']),
-        'max_depth': Integer("max_depth", bounds=(1, 20)),
-        'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
-        'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 21)),
-        'max_features': Categorical("max_features", ['sqrt', 'log2']),
+        'max_depth': Integer("max_depth", bounds=(1, 2*n_featues)),
+        'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
+        'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
+        'max_features': Categorical("max_features", [1.0, 'sqrt', 'log2']),
         'min_weight_fraction_leaf': 0.0,
     }
     
@@ -126,11 +126,15 @@ def get_GradientBoostingClassifier_ConfigurationSpace(random_state=None, n_class
         'n_estimators': 100,
         'loss': loss,
         'learning_rate': Float("learning_rate", bounds=(1e-3, 1), log=True),
-        'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
+        'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 200)),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
         'subsample': Float("subsample", bounds=(0.1, 1.0)),
         'max_features': Float("max_features", bounds=(0.1, 1.0)),
         'max_depth': Integer("max_depth", bounds=(1, 10)),
+
+        #TODO include max leaf nodes?
+        #TODO validation fraction + n_iter_no_change? maybe as conditional
+
         'tol': 1e-4,
     }
 
@@ -185,8 +189,8 @@ def get_ExtraTreesClassifier_ConfigurationSpace(random_state=None):
             'n_estimators': 100,
             'criterion': Categorical("criterion", ["gini", "entropy"]),
             'max_features': Float("max_features", bounds=(0.05, 1.00)),
-            'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
-            'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 21)),
+            'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
+            'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
             'bootstrap': Categorical("bootstrap", [True, False]),
             'n_jobs': 1,
         }
@@ -236,6 +240,7 @@ def get_MLPClassifier_ConfigurationSpace(random_state=None):
         space = space
     )
 
+GaussianNB_ConfigurationSpace = {}
 
 def get_BernoulliNB_ConfigurationSpace():
     return ConfigurationSpace(

@@ -12,6 +12,7 @@ def convert_parents_tuples_to_integers(row, object_to_int):
     else:
         return np.nan
 
+#TODO add kwargs
 def apply_make_pipeline(graphindividual, preprocessing_pipeline=None):
     try:
         if preprocessing_pipeline is None:
@@ -100,8 +101,8 @@ def recursive_with_defaults(config_dict, n_samples, n_features, classification, 
 
 
 
-def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_functions, memory=None, cross_val_predict_cv=None, subset_column=None, step=None, budget=None, generation=1,is_classification=True):
-    pipeline = pipeline.export_pipeline(memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column)
+def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_functions, step=None, budget=None, generation=1, is_classification=True, **pipeline_kwargs):
+    pipeline = pipeline.export_pipeline(**pipeline_kwargs)
     if budget is not None and budget < 1:
         if is_classification:
             x,y = sklearn.utils.resample(x,y, stratify=y, n_samples=int(budget*len(x)), replace=False, random_state=1)
@@ -127,9 +128,9 @@ def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_fun
 
     return np.concatenate([cv_obj_scores,other_scores])
 
-def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test, scorers, other_objective_functions, memory, cross_val_predict_cv, subset_column):
+def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test, scorers, other_objective_functions, **pipeline_kwargs):
     #subsample the data
-    pipeline = pipeline.export_pipeline(memory=memory, cross_val_predict_cv=cross_val_predict_cv, subset_column=subset_column)
+    pipeline = pipeline.export_pipeline(**pipeline_kwargs)
     fitted_pipeline = sklearn.base.clone(pipeline)
     fitted_pipeline.fit(X_train, y_train)
 
