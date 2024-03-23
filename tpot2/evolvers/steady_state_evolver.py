@@ -22,6 +22,15 @@ from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, 
 import dask
 import warnings
 
+
+def ind_mutate(ind, rng_):
+    rng = np.random.default_rng(rng_)
+    return ind.mutate(rng_=rng)
+
+def ind_crossover(ind1, ind2, rng_):
+    rng = np.random.default_rng(rng_)
+    return ind1.crossover(ind2, rng_=rng)
+
 class SteadyStateEvolver():
     def __init__(   self,
                     individual_generator ,
@@ -241,6 +250,8 @@ class SteadyStateEvolver():
 
             done = False
             start_time = time.time()
+
+            enough_parents_evaluated=False
             while not done:
 
                 ###############################
@@ -442,33 +453,56 @@ class SteadyStateEvolver():
                 ###############################
                 n_individuals_to_submit = self.max_queue_size - len(submitted_futures)
                 if n_individuals_to_submit > 0:
-                    parents_df = self.population.get_column(self.population.population, column_names=self.objective_names+ ["Individual"], to_numpy=False)
-                    parents_df = parents_df[~parents_df[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)]
-                    parents_df = parents_df[~parents_df[self.objective_names].isna().any(axis=1)]
+                    #count non-nan values in the objective columns
+                    if not enough_parents_evaluated:
+                        parents_df = self.population.get_column(self.population.population, column_names=self.objective_names, to_numpy=False)
+                        scores = parents_df[self.objective_names[0]].to_numpy()
+                        #count non-nan values in the objective columns
+                        n_evaluated = np.count_nonzero(~np.isnan(scores))
+                        if n_evaluated >0 :
+                            enough_parents_evaluated=True
+                    
+                    # parents_df = self.population.get_column(self.population.population, column_names=self.objective_names+ ["Individual"], to_numpy=False)
+                    # parents_df = parents_df[~parents_df[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)]
+                    # parents_df = parents_df[~parents_df[self.objective_names].isna().any(axis=1)]
 
-                    cur_evaluated_population = parents_df["Individual"].to_numpy()
-                    if len(cur_evaluated_population) > 0:
-                        scores = parents_df[self.objective_names].to_numpy()
-                        weighted_scores = scores * self.objective_function_weights
-                        #number of crossover pairs and mutation only parent to generate
+                    # cur_evaluated_population = parents_df["Individual"].to_numpy()
+                    # if len(cur_evaluated_population) > 0:
+                    #     scores = parents_df[self.objective_names].to_numpy()
+                    #     weighted_scores = scores * self.objective_function_weights
+                    #     #number of crossover pairs and mutation only parent to generate
 
-                        if len(parents_df) < 2:
-                            var_ops = ["mutate" for _ in range(n_individuals_to_submit)]
-                        else:
-                            var_ops = [self.rng.choice(["crossover","mutate_then_crossover","crossover_then_mutate",'mutate'],p=[self.crossover_probability,self.mutate_then_crossover_probability, self.crossover_then_mutate_probability,self.mutate_probability]) for _ in range(n_individuals_to_submit)]
+                    #     if len(parents_df) < 2:
+                    #         var_ops = ["mutate" for _ in range(n_individuals_to_submit)]
+                    #     else:
+                    #         var_ops = [self.rng.choice(["crossover","mutate_then_crossover","crossover_then_mutate",'mutate'],p=[self.crossover_probability,self.mutate_then_crossover_probability, self.crossover_then_mutate_probability,self.mutate_probability]) for _ in range(n_individuals_to_submit)]
 
-                        parents = []
-                        for op in var_ops:
+                    #     parents = []
+                    #     for op in var_ops:
+                    #         if op == "mutate":
+                    #             parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=1, rng_=self.rng)])
+                    #         else:
+                    #             parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=2, rng_=self.rng)])
+
+                    #     #_offspring = self.population.create_offspring2(parents, var_ops, rng_=self.rng, add_to_population=True)
+                    #     offspring = self.population.create_offspring2(parents, var_ops, [ind_mutate], None, [ind_crossover], None, add_to_population=True, keep_repeats=False, mutate_until_unique=True, rng_=self.rng)
+
+                    if enough_parents_evaluated:
+
+                        parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=n_individuals_to_submit, n_parents=2, rng_=self.rng)
+                        p = np.array([self.crossover_probability, self.mutate_then_crossover_probability, self.crossover_then_mutate_probability, self.mutate_probability])
+                        p = p / p.sum()
+                        var_op_list = self.rng.choice(["crossover", "mutate_then_crossover", "crossover_then_mutate", "mutate"], size=n_individuals_to_submit, p=p)
+
+                        for i, op in enumerate(var_op_list):
                             if op == "mutate":
-                                parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=1, rng_=self.rng)])
-                            else:
-                                parents.extend(np.array(cur_evaluated_population)[self.parent_selector(weighted_scores, k=1, n_parents=2, rng_=self.rng)])
+                                parents[i] = parents[i][0] #mutations take a single individual
 
-                        _offspring = self.population.create_offspring(parents, var_ops, rng_=self.rng, n_jobs=1, add_to_population=True)
+                        offspring = self.population.create_offspring2(parents, var_op_list, [ind_mutate], None, [ind_crossover], None, add_to_population=True, keep_repeats=False, mutate_until_unique=True, rng_=self.rng)
 
                     # If we don't have enough evaluated individuals to use as parents for variation, we create new individuals randomly
                     # This can happen if the individuals in the initial population are invalid
-                    if len(cur_evaluated_population) == 0 and len(submitted_futures) < self.max_queue_size:
+                    elif len(submitted_futures) < self.max_queue_size:
 
                         initial_population = self.population.evaluated_individuals.iloc[:self.initial_population_size*3]
                         invalid_initial_population = initial_population[initial_population[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)]
