@@ -152,7 +152,6 @@ def parallel_eval_objective_list2(individual_list,
     submitted_futures = {}
     scores_dict = {}
     submitted_inds = set()
-    eval_error = None
     while len(submitted_futures) < max_queue_size and len(individual_stack)>0:
         individual = individual_stack.pop()
         future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_seconds,**objective_kwargs)
