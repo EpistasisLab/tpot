@@ -303,7 +303,7 @@ class GraphPipelineIndividual(SklearnIndividual):
             pair_gen = select_nodes_randomly(self.graph, G2.graph, rng=rng)
 
         for node1, node2 in pair_gen:
-            #TODO: if root is in inner_config_dict, then do use it?
+            #TODO: if root is in inner_search_space, then do use it?
             if node1 is self.root or node2 is G2.root: #dont want to add root as inner node
                 continue
 
@@ -354,7 +354,7 @@ class GraphPipelineIndividual(SklearnIndividual):
             pair_gen = select_nodes_randomly(self.graph, G2.graph, rng=rng)
 
         for node1, node2 in pair_gen:
-            #TODO: if root is in inner_config_dict, then do use it?
+            #TODO: if root is in inner_search_space, then do use it?
             if node2 is G2.root: #dont want to add root as inner node
                 continue
 
@@ -365,7 +365,7 @@ class GraphPipelineIndividual(SklearnIndividual):
 
             #icheck if node2 is graph individual
             # if isinstance(node2,GraphIndividual):
-            #     if not ((isinstance(node2,GraphIndividual) and ("Recursive" in self.inner_config_dict or "Recursive" in self.leaf_search_space))):
+            #     if not ((isinstance(node2,GraphIndividual) and ("Recursive" in self.inner_search_space or "Recursive" in self.leaf_search_space))):
             #         continue
 
             #isolating the branch
@@ -624,9 +624,8 @@ class GraphPipeline(SklearnIndividualGenerator):
     def __init__(self, root_search_space : SklearnIndividualGenerator, 
                         leaf_search_space : SklearnIndividualGenerator = None, 
                         inner_search_space : SklearnIndividualGenerator =None, 
-                        max_size: int = 10,
-                        crossover_same_depth=False,
-                        rng=None) -> None:
+                        max_size: int = np.inf,
+                        crossover_same_depth=False) -> None:
         
         """
         Generates a directed acyclic graph of variable size. Search spaces for root, leaf, and inner nodes can be defined separately if desired.
@@ -642,4 +641,21 @@ class GraphPipeline(SklearnIndividualGenerator):
         self.crossover_same_depth = crossover_same_depth
 
     def generate(self, rng=None):
-        return GraphPipelineIndividual(self.search_space, self.leaf_search_space, self.inner_search_space, self.max_size, self.crossover_same_depth, rng=rng)  
+        rng = np.random.default_rng(rng)
+        ind =  GraphPipelineIndividual(self.search_space, self.leaf_search_space, self.inner_search_space, self.max_size, self.crossover_same_depth, rng=rng)  
+            # if user specified limit, grab a random number between that limit
+        
+        n_nodes = min(rng.integers(1, self.max_size), 5)
+        starting_ops = []
+        if self.inner_search_space is not None:
+            starting_ops.append(ind._mutate_insert_inner_node)
+        if self.leaf_search_space is not None or self.inner_search_space is not None:
+            starting_ops.append(ind._mutate_insert_leaf)
+            n_nodes -= 1
+
+        if len(starting_ops) > 0:
+            for _ in range(n_nodes-1):
+                func = rng.choice(starting_ops)
+                func(rng=rng)
+
+        return ind
