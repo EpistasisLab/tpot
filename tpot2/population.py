@@ -85,6 +85,7 @@ class Population():
             column_names = ["Parents", "Variation_Function"]
         self.evaluated_individuals = pd.DataFrame(columns=column_names)
         self.evaluated_individuals["Parents"] = self.evaluated_individuals["Parents"].astype('object')
+        
         self.use_unique_id = True #Todo clean this up. perhaps pull unique_id() out of baseestimator and have it be supplied as a function
         self.n_jobs = n_jobs
         self.callback=callback
@@ -125,7 +126,6 @@ class Population():
         '''
         if isinstance(column_names, str): #TODO check this
             column_names = [column_names]
-        new_pop = []
         is_valid = lambda ind: ind.unique_id() not in self.evaluated_individuals.index or invalid_value not in self.evaluated_individuals.loc[ind.unique_id(),column_names].to_list()
         self.population = [ind for ind in self.population if is_valid(ind)]
 
@@ -301,13 +301,15 @@ class Population():
                         parent_keys = [parent.unique_id() for parent in parents]
                         if not pd.api.types.is_object_dtype(self.evaluated_individuals["Parents"]): #TODO Is there a cleaner way of doing this? Not required for some python environments?
                             self.evaluated_individuals["Parents"] = self.evaluated_individuals["Parents"].astype('object')
+                        if not pd.api.types.is_object_dtype(self.evaluated_individuals["Variation_Function"]):#TODO Is there a cleaner way of doing this? Not required for some python environments?
+                            self.evaluated_individuals["Variation_Function"] = self.evaluated_individuals["Variation_Function"].astype('object')
                         self.evaluated_individuals.at[new_child.unique_id(),"Parents"] = tuple(parent_keys)
 
                         #if var_op is a function
                         if hasattr(var_op, '__call__'):
                             self.evaluated_individuals.at[new_child.unique_id(),"Variation_Function"] = var_op.__name__
                         else:
-                            self.evaluated_individuals.at[new_child.unique_id(),"Variation_Function"] = var_op
+                            self.evaluated_individuals.at[new_child.unique_id(),"Variation_Function"] = str(var_op)
 
 
                         new_offspring.append(new_child)
@@ -377,8 +379,16 @@ class Population():
                         if not pd.api.types.is_object_dtype(self.evaluated_individuals["Parents"]): #TODO Is there a cleaner way of doing this? Not required for some python environments?
                             self.evaluated_individuals["Parents"] = self.evaluated_individuals["Parents"].astype('object')
                         self.evaluated_individuals.at[new_child.unique_id(),"Parents"] = tuple(parent_keys)
+                        
+                        #check if Variation_Function variable is an object type
+                        if not pd.api.types.is_object_dtype(self.evaluated_individuals["Variation_Function"]): #TODO Is there a cleaner way of doing this? Not required for some python environments?
+                            self.evaluated_individuals["Variation_Function"] = self.evaluated_individuals["Variation_Function"].astype('object')
 
-                        self.evaluated_individuals.at[new_child.unique_id(),"Variation_Function"] = var_op
+                        #if var_op is a function
+                        if hasattr(var_op, '__call__'):
+                            self.evaluated_individuals.at[new_child.unique_id(),"Variation_Function"] = var_op.__name__
+                        else:
+                            self.evaluated_individuals.at[new_child.unique_id(),"Variation_Function"] = str(var_op)
 
 
                         new_offspring.append(new_child)
