@@ -1137,7 +1137,10 @@ class GraphIndividual(BaseIndividual):
         pass
 
     def __str__(self):
-        return self.export_pipeline().__str__()
+        try:
+            return f"<GraphIdnividual {0}".format(self.export_pipeline().__str__())
+        except:
+            return "<Invalid GraphIdnividual>"
 
     def unique_id(self) -> GraphKey:
         if self.key is None:
