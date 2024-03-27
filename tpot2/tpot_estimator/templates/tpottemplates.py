@@ -13,14 +13,7 @@ class TPOTRegressor(TPOTEstimator):
                         other_objective_functions_weights = [],
                         objective_function_names = None,
                         bigger_is_better = True,
-                        max_size = np.inf, 
-                        linear_pipeline = False,
-                        root_config_dict= 'Auto',
-                        inner_config_dict=["selectors", "transformers"],
-                        leaf_config_dict= None,                        
-                        cross_val_predict_cv = 0,
                         categorical_features = None,
-                        subsets = None,
                         memory = None,
                         preprocessing = False,
                         max_time_seconds=3600, 
@@ -38,6 +31,15 @@ class TPOTRegressor(TPOTEstimator):
         """
         See TPOTEstimator for documentation
         """
+
+        search_space = tpot2.search_spaces.pipelines.GraphPipeline(
+            root_search_space= tpot2.config.get_search_space("regressors"),
+            leaf_search_space = None, 
+            inner_search_space = tpot2.config.get_search_space(["selectors","transformers","regressors"]),
+            max_size = 10,
+        )
+
+
         super(TPOTRegressor,self).__init__(
                         scorers=scorers, 
                         scorers_weights=scorers_weights,
@@ -46,14 +48,10 @@ class TPOTRegressor(TPOTEstimator):
                         other_objective_functions_weights = other_objective_functions_weights,
                         objective_function_names = objective_function_names,
                         bigger_is_better = bigger_is_better,
-                        max_size = max_size, 
-                        linear_pipeline = linear_pipeline,
-                        root_config_dict = root_config_dict,
-                        inner_config_dict=inner_config_dict,
-                        leaf_config_dict= leaf_config_dict,                        
-                        cross_val_predict_cv = cross_val_predict_cv,
+
+                        search_space=search_space,
+
                         categorical_features = categorical_features,
-                        subsets = subsets,
                         memory = memory,
                         preprocessing = preprocessing,
                         max_time_seconds=max_time_seconds, 
@@ -79,14 +77,7 @@ class TPOTClassifier(TPOTEstimator):
                         other_objective_functions_weights = [],
                         objective_function_names = None,
                         bigger_is_better = True,
-                        max_size = np.inf, 
-                        linear_pipeline = False,
-                        root_config_dict= 'Auto',
-                        inner_config_dict=["selectors", "transformers"],
-                        leaf_config_dict= None,                        
-                        cross_val_predict_cv = 0,
                         categorical_features = None,
-                        subsets = None,
                         memory = None,
                         preprocessing = False,
                         max_time_seconds=3600, 
@@ -105,6 +96,15 @@ class TPOTClassifier(TPOTEstimator):
         """
         See TPOTEstimator for documentation
         """
+
+        search_space = tpot2.search_spaces.pipelines.GraphPipeline(
+            root_search_space= tpot2.config.get_search_space("classifiers"),
+            leaf_search_space = None, 
+            inner_search_space = tpot2.config.get_search_space(["selectors","transformers","classifiers"]),
+            max_size = 10,
+        )
+
+
         super(TPOTClassifier,self).__init__(
                         scorers=scorers, 
                         scorers_weights=scorers_weights,
@@ -113,14 +113,8 @@ class TPOTClassifier(TPOTEstimator):
                         other_objective_functions_weights = other_objective_functions_weights,
                         objective_function_names = objective_function_names,
                         bigger_is_better = bigger_is_better,
-                        max_size = max_size, 
-                        linear_pipeline = linear_pipeline,
-                        root_config_dict = root_config_dict,
-                        inner_config_dict=inner_config_dict,
-                        leaf_config_dict= leaf_config_dict,                        
-                        cross_val_predict_cv = cross_val_predict_cv,
+                        search_space=search_space,
                         categorical_features = categorical_features,
-                        subsets = subsets,
                         memory = memory,
                         preprocessing = preprocessing,
                         max_time_seconds=max_time_seconds, 

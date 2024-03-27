@@ -151,7 +151,7 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
 
 class GeneticFeatureSelectorNode(SklearnIndividualGenerator):
     def __init__(self,                     
-                    mask,
+                    n_features,
                     start_p=0.2,
                     mutation_rate = 0.5,
                     crossover_rate = 0.5,
@@ -159,7 +159,7 @@ class GeneticFeatureSelectorNode(SklearnIndividualGenerator):
                     crossover_rate_rate = 0,
                     rng=None,):
         
-        self.mask = mask
+        self.n_features = n_features
         self.start_p = start_p
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
@@ -168,7 +168,7 @@ class GeneticFeatureSelectorNode(SklearnIndividualGenerator):
         self.rng = rng
 
     def generate(self, rng=None) -> SklearnIndividual:
-        return GeneticFeatureSelectorIndividual(   mask=self.mask,
+        return GeneticFeatureSelectorIndividual(   mask=self.n_features,
                                                     start_p=self.start_p,
                                                     mutation_rate=self.mutation_rate,
                                                     crossover_rate=self.crossover_rate,

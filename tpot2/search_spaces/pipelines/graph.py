@@ -48,7 +48,7 @@ class GraphPipelineIndividual(SklearnIndividual):
             self.graph.add_edge(self.root, self.leaf)
 
         self.mutate_methods_list = [self._mutate_insert_leaf, self._mutate_insert_inner_node, self._mutate_remove_node, self._mutate_node]
-        self.crossover_methods_list = [self._crossover_swap_branch, self._crossover_swap_node, self._crossover_take_branch]  #TODO self._crossover_nodes, 
+        self.crossover_methods_list = [self._crossover_swap_branch,]#[self._crossover_swap_branch, self._crossover_swap_node, self._crossover_take_branch]  #TODO self._crossover_nodes, 
 
         self.merge_duplicated_nodes_toggle = True
 
@@ -461,7 +461,7 @@ class GraphPipelineIndividual(SklearnIndividual):
 
 
 
-
+    #TODO edit so that G2 is not modified
     def _crossover_swap_node(self, G2, rng=None):
         '''
         Swaps randomly chosen node from Parent1 with a randomly chosen node from Parent2.
@@ -617,7 +617,7 @@ class GraphPipelineIndividual(SklearnIndividual):
 
 
     def unique_id(self):
-        return 
+        return self
     
 
 class GraphPipeline(SklearnIndividualGenerator):

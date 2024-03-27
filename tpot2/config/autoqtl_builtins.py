@@ -6,17 +6,12 @@ import numpy as np
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 
-def get_FeatureEncodingFrequencySelector_ConfigurationSpace():
-    return ConfigurationSpace(
-        space = {
-            'threshold': Float("threshold", bounds=(0, .35))
-        }
-    )
+FeatureEncodingFrequencySelector_ConfigurationSpace = ConfigurationSpace(
+    space = {
+        'threshold': Float("threshold", bounds=(0, .35))
+    }
+)
 
-def get_encoder_ConfigurationSpace():
-    return ConfigurationSpace(
-        space = {}
-    )
 
 # genetic_encoders.DominantEncoder : {},
 # genetic_encoders.RecessiveEncoder : {},

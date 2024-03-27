@@ -18,7 +18,7 @@ class EstimatorNodeIndividual(SklearnIndividual):
         self.space = space
         
         if isinstance(space, dict):
-            self.space = space
+            self.hyperparameters = space
         else:
             rng = np.random.default_rng(rng)
             self.space.seed(rng.integers(0, 2**32))

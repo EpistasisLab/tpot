@@ -17,21 +17,19 @@ def get_ArithmeticTransformer_ConfigurationSpace():
 
 
 
-# def make_arithmetic_transformer_config_dictionary():
-#         return  {
-#                 AddTransformer: {},
-#                 mul_neg_1_Transformer: {},
-#                 MulTransformer: {},
-#                 SafeReciprocalTransformer: {},
-#                 EQTransformer: {},
-#                 NETransformer: {},
-#                 GETransformer: {},
-#                 GTTransformer: {},
-#                 LETransformer: {},
-#                 LTTransformer: {},
-#                 MinTransformer: {},
-#                 MaxTransformer: {},
-#         }
+# AddTransformer: {}
+# mul_neg_1_Transformer: {}
+# MulTransformer: {}
+# SafeReciprocalTransformer: {}
+# EQTransformer: {}
+# NETransformer: {}
+# GETransformer: {}
+# GTTransformer: {}
+# LETransformer: {}
+# LTTransformer: {}
+# MinTransformer: {}
+# MaxTransformer: {}
+
 
 
 def get_FeatureSetSelector_ConfigurationSpace(names_list = None, subset_dict=None):

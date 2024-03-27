@@ -1,13 +1,6 @@
-from sklearnex.ensemble import RandomForestClassifier
-from sklearnex.neighbors import KNeighborsClassifier
-from sklearnex.svm import SVC
-from sklearnex.svm import NuSVC
-from sklearnex.linear_model import LogisticRegression
-
-import numpy as np
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
-from functools import partial
+
 
 def get_RandomForestClassifier_ConfigurationSpace(random_state=None):
     space = {

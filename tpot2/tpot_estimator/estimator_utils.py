@@ -102,7 +102,8 @@ def recursive_with_defaults(config_dict, n_samples, n_features, classification, 
 
 
 def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_functions, step=None, budget=None, generation=1, is_classification=True, **pipeline_kwargs):
-    pipeline = pipeline.export_pipeline(**pipeline_kwargs)
+    #pipeline = pipeline.export_pipeline(**pipeline_kwargs)
+    pipeline = pipeline.export_pipeline()
     if budget is not None and budget < 1:
         if is_classification:
             x,y = sklearn.utils.resample(x,y, stratify=y, n_samples=int(budget*len(x)), replace=False, random_state=1)

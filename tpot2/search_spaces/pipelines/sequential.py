@@ -47,7 +47,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
         return sklearn.pipeline.make_pipeline(*[step.export_pipeline() for step in self.pipeline])
     
     def unique_id(self):
-        return tuple([step.unique_id() for step in self.pipeline])
+        return self
 
 
 class SequentialPipeline(SklearnIndividualGenerator):

@@ -23,7 +23,7 @@ class SklearnIndividual(tpot2.BaseIndividual):
         return
     
     def unique_id(self):
-        return
+        return self
     
 
 class SklearnIndividualGenerator():

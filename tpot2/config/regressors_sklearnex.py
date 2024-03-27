@@ -1,18 +1,3 @@
-from sklearnex.linear_model import LinearRegression
-from sklearnex.linear_model import Ridge
-from sklearnex.linear_model import Lasso
-from sklearnex.linear_model import ElasticNet
-
-from sklearnex.svm import SVR
-from sklearnex.svm import NuSVR
-
-from sklearnex.ensemble import RandomForestRegressor
-from sklearnex.neighbors import KNeighborsRegressor
-
-import numpy as np
-
-from functools import partial
-
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 
@@ -42,9 +27,6 @@ def get_KNeighborsRegressor_ConfigurationSpace(n_samples=100):
             'weights': Categorical("weights", ['uniform', 'distance']),
         }
     )
-
-LinearRegression_configspace = ConfigurationSpace()
-
 
 
 def get_Ridge_ConfigurationSpace(random_state=None):
@@ -107,16 +89,6 @@ def get_SVR_ConfigurationSpace(random_state=None):
     return ConfigurationSpace(
         space = space
     )
-
-def params_NuSVR(trial, name=None):
-    return {
-        'nu': trial.suggest_float(f'subsample_{name}', 0.05, 1.0),
-        'kernel': trial.suggest_categorical(name=f'kernel_{name}', choices=['poly', 'rbf', 'linear', 'sigmoid']),
-        'C': trial.suggest_float(f'C_{name}', 1e-4, 25, log=True),
-        'degree': trial.suggest_int(f'degree_{name}', 1, 4),
-        'max_iter': 3000,
-        'tol': 0.005,
-    }
 
 def get_NuSVR_ConfigurationSpace(random_state=None):
     space = {
