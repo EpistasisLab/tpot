@@ -14,6 +14,7 @@ package_version = calculate_version()
 
 setup(
     name='TPOT2',
+    python_requires='<3.12', #for configspace compatibility
     version=package_version,
     author='Pedro Ribeiro',
     packages=find_packages(),
@@ -48,6 +49,7 @@ A Python tool that automatically creates and optimizes machine learning pipeline
                       'dask-ml>=2022.5.27',
                       'dask-jobqueue>=0.8.1',
                       'func_timeout>=4.3.5',
+                      'configspace>=0.7.1',
                      ],
     extras_require={
         'skrebate': ['skrebate>=0.3.4'],

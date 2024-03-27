@@ -55,8 +55,8 @@ def invert_dictionary(d):
 
     return inv_map
 
-def select_nodes_same_depth(g1, node1, g2, node2, rng_=None):
-    rng = np.random.default_rng(rng_)
+def select_nodes_same_depth(g1, node1, g2, node2, rng=None):
+    rng = np.random.default_rng(rng)
 
     g1_nodes = nx.shortest_path_length(g1, source=node1)
     g2_nodes = nx.shortest_path_length(g2, source=node2)
@@ -86,8 +86,8 @@ def select_nodes_same_depth(g1, node1, g2, node2, rng_=None):
     for p in possible_pairs:
         yield p[0], p[1]
 
-def select_nodes_randomly(g1, g2, rng_=None):
-    rng = np.random.default_rng(rng_)
+def select_nodes_randomly(g1, g2, rng=None):
+    rng = np.random.default_rng(rng)
 
     sorted_self_nodes_list = list(g1.nodes)
     rng.shuffle(sorted_self_nodes_list)

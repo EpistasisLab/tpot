@@ -483,7 +483,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.optuna_optimize_pareto_front_timeout = optuna_optimize_pareto_front_timeout
         self.optuna_storage = optuna_storage
 
-        # create random number generator based on rng_seed
+        # create random number generator based on rngseed
         self.rng = np.random.default_rng(random_state)
         # save random state passed to us for other functions that use random_state
         self.random_state = random_state
@@ -759,7 +759,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
                                             max_evaluated_individuals = self.max_evaluated_individuals,
 
-                                            rng_=self.rng,
+                                            rng=self.rng,
                                             )
 
 

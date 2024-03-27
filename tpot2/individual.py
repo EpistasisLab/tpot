@@ -13,8 +13,8 @@ class BaseIndividual:
         self.mutation_list = []
         self.crossover_list = []
 
-    def mutate(self, rng_=None):
-        rng = np.random.default_rng(rng_)
+    def mutate(self, rng=None):
+        rng = np.random.default_rng(rng)
         mutation_list_copy = self.mutation_list.copy()
         rng.shuffle(mutation_list_copy)
         for func in mutation_list_copy:
@@ -22,8 +22,8 @@ class BaseIndividual:
                 return True
         return False
 
-    def crossover(self, ind2, rng_=None):
-        rng = np.random.default_rng(rng_)
+    def crossover(self, ind2, rng=None):
+        rng = np.random.default_rng(rng)
         crossover_list_copy = self.crossover_list.copy()
         rng.shuffle(crossover_list_copy)
         for func in crossover_list_copy:
@@ -32,10 +32,10 @@ class BaseIndividual:
         return False
 
     # a guided change of an individual when given an objective function
-    def optimize(self, objective_function, rng_=None , steps=5):
-        rng = np.random.default_rng(rng_)
+    def optimize(self, objective_function, rng=None , steps=5):
+        rng = np.random.default_rng(rng)
         for _ in range(steps):
-            self.mutate(rng_=rng)
+            self.mutate(rng=rng)
 
     #Return a hashable unique to this individual setup
     #For use when evaluating whether or not an individual is 'the same' and another individual

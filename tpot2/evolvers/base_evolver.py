@@ -4,7 +4,7 @@ from abc import abstractmethod
 import tpot2
 import typing
 import tqdm
-from tpot2.individual_representations.individual import BaseIndividual
+from tpot2 import BaseIndividual
 import time
 import numpy as np
 import copy
@@ -20,13 +20,13 @@ from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominate
 import math
 from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
 
-def ind_mutate(ind, rng_):
-    rng = np.random.default_rng(rng_)
-    return ind.mutate(rng_=rng)
+def ind_mutate(ind, rng):
+    rng = np.random.default_rng(rng)
+    return ind.mutate(rng=rng)
 
-def ind_crossover(ind1, ind2, rng_):
-    rng = np.random.default_rng(rng_)
-    return ind1.crossover(ind2, rng_=rng)
+def ind_crossover(ind1, ind2, rng):
+    rng = np.random.default_rng(rng)
+    return ind1.crossover(ind2, rng=rng)
 
 class BaseEvolver():
     def __init__(   self,
@@ -87,7 +87,7 @@ class BaseEvolver():
                     verbose = 0,
                     periodic_checkpoint_folder = None,
                     callback = None,
-                    rng_=None,
+                    rng=None,
 
                     ) -> None:
         """
@@ -196,7 +196,7 @@ class BaseEvolver():
             If provided, training will resume from this checkpoint.
         callback : tpot2.CallBackInterface, default=None
             Callback object. Not implemented
-        rng_ : Numpy.Random.Generator, None, default=None
+        rng : Numpy.Random.Generator, None, default=None
             An object for reproducability of experiments. This value will be passed to numpy.random.default_rng() to create an instnce of the genrator to pass to other classes
 
             - Numpy.Random.Generator
@@ -205,7 +205,7 @@ class BaseEvolver():
                 Will be used to create Generator for 'numpy.random.default_rng()' where a fresh, unpredictable entropy will be pulled from the OS
         """
 
-        self.rng = np.random.default_rng(rng_)
+        self.rng = np.random.default_rng(rng)
 
         if threshold_evaluation_early_stop is not None or selection_evaluation_early_stop is not None:
             if evaluation_early_stop_steps is None:
@@ -522,7 +522,7 @@ class BaseEvolver():
                                                 columns_names=self.objective_names,
                                                 n_survivors=n_survivors,
                                                 inplace=True,
-                                                rng_=self.rng,)
+                                                rng=self.rng,)
 
         self.generate_offspring()
         self.evaluate_population()
@@ -530,7 +530,7 @@ class BaseEvolver():
         self.generation += 1
 
     def generate_offspring(self, ): #your EA Algorithm goes here
-        parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=self.cur_population_size, n_parents=2, rng_=self.rng)
+        parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=self.cur_population_size, n_parents=2, rng=self.rng)
         p = np.array([self.crossover_probability, self.mutate_then_crossover_probability, self.crossover_then_mutate_probability, self.mutate_probability])
         p = p / p.sum()
         var_op_list = self.rng.choice(["crossover", "mutate_then_crossover", "crossover_then_mutate", "mutate"], size=self.cur_population_size, p=p)
@@ -539,7 +539,7 @@ class BaseEvolver():
             if op == "mutate":
                 parents[i] = parents[i][0] #mutations take a single individual
 
-        offspring = self.population.create_offspring2(parents, var_op_list, self.mutation_functions, self.mutation_function_weights, self.crossover_functions, self.crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True, rng_=self.rng)
+        offspring = self.population.create_offspring2(parents, var_op_list, self.mutation_functions, self.mutation_function_weights, self.crossover_functions, self.crossover_function_weights, add_to_population=True, keep_repeats=False, mutate_until_unique=True, rng=self.rng)
 
         self.population.update_column(offspring, column_names="Generation", data=self.generation, )
 
