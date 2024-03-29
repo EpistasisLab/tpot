@@ -1,10 +1,6 @@
 import tpot2
 import numpy as np
-import pandas as pd
-import sklearn
-from tpot2 import config
 from typing import Generator, List, Tuple, Union
-import random
 from ..base import SklearnIndividual, SklearnIndividualGenerator
 import networkx as nx
 import copy
@@ -12,20 +8,67 @@ import matplotlib.pyplot as plt
 import itertools
 from .graph_utils import *
 from ..nodes.estimator_node import EstimatorNodeIndividual
-
+from typing import Union, Callable
+import sklearn
 
 class GraphPipelineIndividual(SklearnIndividual):
-    def __init__(self,  
-                        root_search_space : SklearnIndividualGenerator, 
-                        leaf_search_space : SklearnIndividualGenerator = None, 
-                        inner_search_space : SklearnIndividualGenerator =None, 
-                        max_size: int = 10,
-                        crossover_same_depth=False,
-                        rng=None) -> None:
-        """
-        Generates a tree shaped pipeline individual. Can be used to export a sklearn Pipeline that uses feature unions to merge branches of the pipeline.
+    """
+        Defines a search space of pipelines in the shape of a Directed Acyclic Graphs. The search spaces for root, leaf, and inner nodes can be defined separately if desired.
+        Each graph will have a single root serving as the final estimator which is drawn from the `root_search_space`. If the `leaf_search_space` is defined, all leaves 
+        in the pipeline will be drawn from that search space. If the `leaf_search_space` is not defined, all leaves will be drawn from the `inner_search_space`.
+        Nodes that are not leaves or roots will be drawn from the `inner_search_space`. If the `inner_search_space` is not defined, there will be no inner nodes.
+
+        `cross_val_predict_cv`, `method`, `memory`, and `use_label_encoder` are passed to the GraphPipeline object when the pipeline is exported and not directly used in the search space.
+
+        Exports to a GraphPipeline object.
+
+        Parameters
+        ----------
+
+        root_search_space: SklearnIndividualGenerator
+            The search space for the root node of the graph. This node will be the final estimator in the pipeline.
         
+        inner_search_space: SklearnIndividualGenerator, optional
+            The search space for the inner nodes of the graph. If not defined, there will be no inner nodes.
+        
+        leaf_search_space: SklearnIndividualGenerator, optional
+            The search space for the leaf nodes of the graph. If not defined, the leaf nodes will be drawn from the inner_search_space.
+            
+        crossover_same_depth: bool, optional
+            If True, crossover will only occur between nodes at the same depth in the graph. If False, crossover will occur between nodes at any depth.
+        
+        cross_val_predict_cv: int, cross-validation generator or an iterable, optional
+            Determines the cross-validation splitting strategy used in inner classifiers or regressors
+
+        method: str, optional
+            The prediction method to use for the inner classifiers or regressors. If 'auto', it will try to use predict_proba, decision_function, or predict in that order.
+
+        memory: str or object with the joblib.Memory interface, optional
+            Used to cache the input and outputs of nodes to prevent refitting or computationally heavy transformations. By default, no caching is performed. If a string is given, it is the path to the caching directory.
+
+        use_label_encoder: bool, optional
+            If True, the label encoder is used to encode the labels to be 0 to N. If False, the label encoder is not used.
+            Mainly useful for classifiers (XGBoost) that require labels to be ints from 0 to N.
+            Can also be a sklearn.preprocessing.LabelEncoder object. If so, that label encoder is used.
+        
+        rng: int, RandomState instance or None, optional
+            Seed for sampling the first graph instance. 
+            
         """
+    
+    def __init__(
+            self,  
+            root_search_space: SklearnIndividualGenerator, 
+            leaf_search_space: SklearnIndividualGenerator = None, 
+            inner_search_space: SklearnIndividualGenerator = None, 
+            max_size: int = np.inf,
+            crossover_same_depth: bool = False,
+            cross_val_predict_cv: Union[int, Callable] = 0, #signature function(estimator, X, y=none)
+            method: str = 'auto',
+            memory=None,
+            use_label_encoder: bool = False,
+            rng=None):
+        
         super().__init__()
 
         self.__debug = False
@@ -37,6 +80,11 @@ class GraphPipelineIndividual(SklearnIndividual):
         self.inner_search_space = inner_search_space
         self.max_size = max_size
         self.crossover_same_depth = crossover_same_depth
+
+        self.cross_val_predict_cv = cross_val_predict_cv
+        self.method = method
+        self.memory = memory
+        self.use_label_encoder = use_label_encoder
 
         self.root = self.root_search_space.generate(rng)
         self.graph = nx.DiGraph()
@@ -535,7 +583,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         return graph_changed
 
 
-    def export_pipeline(self, **graph_pipeline_args):
+    def export_pipeline(self):
         estimator_graph = self.graph.copy()
 
         #mapping = {node:node.method_class(**node.hyperparameters) for node in estimator_graph}
@@ -561,7 +609,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         for label, instance in label_to_instance.items():
             estimator_graph.nodes[label]["instance"] = instance
 
-        return tpot2.GraphPipeline(graph=estimator_graph, **graph_pipeline_args)
+        return tpot2.GraphPipeline(graph=estimator_graph, memory=self.memory, use_label_encoder=self.use_label_encoder, method=self.method, cross_val_predict_cv=self.cross_val_predict_cv)
     
     
     def plot(self):
@@ -621,28 +669,74 @@ class GraphPipelineIndividual(SklearnIndividual):
     
 
 class GraphPipeline(SklearnIndividualGenerator):
-    def __init__(self, root_search_space : SklearnIndividualGenerator, 
-                        leaf_search_space : SklearnIndividualGenerator = None, 
-                        inner_search_space : SklearnIndividualGenerator =None, 
-                        max_size: int = np.inf,
-                        crossover_same_depth=False) -> None:
+    def __init__(self, 
+        root_search_space: SklearnIndividualGenerator, 
+        leaf_search_space: SklearnIndividualGenerator = None, 
+        inner_search_space: SklearnIndividualGenerator = None, 
+        max_size: int = np.inf,
+        crossover_same_depth: bool = False,
+        cross_val_predict_cv: Union[int, Callable] = 0, #signature function(estimator, X, y=none)
+        method: str = 'auto',
+        memory=None,
+        use_label_encoder: bool = False,):
         
         """
-        Generates a directed acyclic graph of variable size. Search spaces for root, leaf, and inner nodes can be defined separately if desired.
+        Defines a search space of pipelines in the shape of a Directed Acyclic Graphs. The search spaces for root, leaf, and inner nodes can be defined separately if desired.
+        Each graph will have a single root serving as the final estimator which is drawn from the `root_search_space`. If the `leaf_search_space` is defined, all leaves 
+        in the pipeline will be drawn from that search space. If the `leaf_search_space` is not defined, all leaves will be drawn from the `inner_search_space`.
+        Nodes that are not leaves or roots will be drawn from the `inner_search_space`. If the `inner_search_space` is not defined, there will be no inner nodes.
 
+        `cross_val_predict_cv`, `method`, `memory`, and `use_label_encoder` are passed to the GraphPipeline object when the pipeline is exported and not directly used in the search space.
 
+        Exports to a GraphPipeline object.
+
+        Parameters
+        ----------
+
+        root_search_space: SklearnIndividualGenerator
+            The search space for the root node of the graph. This node will be the final estimator in the pipeline.
+        
+        inner_search_space: SklearnIndividualGenerator, optional
+            The search space for the inner nodes of the graph. If not defined, there will be no inner nodes.
+        
+        leaf_search_space: SklearnIndividualGenerator, optional
+            The search space for the leaf nodes of the graph. If not defined, the leaf nodes will be drawn from the inner_search_space.
+            
+        crossover_same_depth: bool, optional
+            If True, crossover will only occur between nodes at the same depth in the graph. If False, crossover will occur between nodes at any depth.
+        
+        cross_val_predict_cv: int, cross-validation generator or an iterable, optional
+            Determines the cross-validation splitting strategy used in inner classifiers or regressors
+
+        method: str, optional
+            The prediction method to use for the inner classifiers or regressors. If 'auto', it will try to use predict_proba, decision_function, or predict in that order.
+
+        memory: str or object with the joblib.Memory interface, optional
+            Used to cache the input and outputs of nodes to prevent refitting or computationally heavy transformations. By default, no caching is performed. If a string is given, it is the path to the caching directory.
+
+        use_label_encoder: bool, optional
+            If True, the label encoder is used to encode the labels to be 0 to N. If False, the label encoder is not used.
+            Mainly useful for classifiers (XGBoost) that require labels to be ints from 0 to N.
+            Can also be a sklearn.preprocessing.LabelEncoder object. If so, that label encoder is used.
+            
         """
 
 
-        self.search_space = root_search_space
+        self.root_search_space = root_search_space
         self.leaf_search_space = leaf_search_space
         self.inner_search_space = inner_search_space
         self.max_size = max_size
         self.crossover_same_depth = crossover_same_depth
 
+        self.cross_val_predict_cv = cross_val_predict_cv
+        self.method = method
+        self.memory = memory
+        self.use_label_encoder = use_label_encoder
+
     def generate(self, rng=None):
         rng = np.random.default_rng(rng)
-        ind =  GraphPipelineIndividual(self.search_space, self.leaf_search_space, self.inner_search_space, self.max_size, self.crossover_same_depth, rng=rng)  
+        ind =  GraphPipelineIndividual(self.root_search_space, self.leaf_search_space, self.inner_search_space, self.max_size, self.crossover_same_depth, 
+                                       self.cross_val_predict_cv, self.method, self.memory, self.use_label_encoder, rng=rng)  
             # if user specified limit, grab a random number between that limit
         
         n_nodes = min(rng.integers(1, self.max_size), 5)

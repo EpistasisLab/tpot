@@ -231,7 +231,7 @@ class GraphPipeline(_BaseComposition):
                 graph,
                 cross_val_predict_cv=0, #signature function(estimator, X, y=none)
                 method='auto',
-                memory=None, #TODO memory caching like sklearn.pipeline
+                memory=None,
                 use_label_encoder=False,
                 **kwargs,
                 ):
@@ -252,7 +252,7 @@ class GraphPipeline(_BaseComposition):
             The prediction method to use for the inner classifiers or regressors. If 'auto', it will try to use predict_proba, decision_function, or predict in that order.
 
         memory: str or object with the joblib.Memory interface, optional
-            Used to cache the fitted transformers of the pipeline. By default, no caching is performed. If a string is given, it is the path to the caching directory.
+            Used to cache the input and outputs of nodes to prevent refitting or computationally heavy transformations. By default, no caching is performed. If a string is given, it is the path to the caching directory.
 
         use_label_encoder: bool, optional
             If True, the label encoder is used to encode the labels to be 0 to N. If False, the label encoder is not used.
