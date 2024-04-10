@@ -6,7 +6,7 @@ import networkx as nx
 import copy
 import matplotlib.pyplot as plt
 import itertools
-from .graph_utils import *
+from ..graph_utils import *
 from ..nodes.estimator_node import EstimatorNodeIndividual
 from typing import Union, Callable
 import sklearn
@@ -360,7 +360,8 @@ class GraphPipelineIndividual(SklearnIndividual):
                 node1_is_leaf = len(list(self.graph.successors(node1))) == 0
                 node2_is_leaf = len(list(G2.graph.successors(node2))) == 0
                 #if not ((node1_is_leaf and node1_is_leaf) or (not node1_is_leaf and not node2_is_leaf)): #if node1 is a leaf
-                if (node1_is_leaf and (not node2_is_leaf)) or ( (not node1_is_leaf) and node2_is_leaf):
+                #if (node1_is_leaf and (not node2_is_leaf)) or ( (not node1_is_leaf) and node2_is_leaf):
+                if not node1_is_leaf:
                     #only continue if node1 and node2 are both leaves or both not leaves
                     continue
 

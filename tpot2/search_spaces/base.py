@@ -29,8 +29,8 @@ class SklearnIndividual(tpot2.BaseIndividual):
         return self
     
     @final
-    def export_flattened_graphpipeline(self) -> tpot2.GraphPipeline:
-        return flatten_to_graphpipeline(self.export_pipeline())
+    def export_flattened_graphpipeline(self, **graphpipeline_kwargs) -> tpot2.GraphPipeline:
+        return flatten_to_graphpipeline(self.export_pipeline(), **graphpipeline_kwargs)
 
 class SklearnIndividualGenerator():
     def __init__(self,):
@@ -109,7 +109,7 @@ def flatten_any(est):
         return flatten_estimator(est)
 
 
-def flatten_to_graphpipeline(est):
+def flatten_to_graphpipeline(est, **graphpipeline_kwargs):
     #rename nodes to string representation of the instance and put the instance in the node attributes
     flattened_full_graph = flatten_any(est)
 
@@ -131,4 +131,4 @@ def flatten_to_graphpipeline(est):
     for label, instance in label_to_instance.items():
         flattened_full_graph.nodes[label]["instance"] = instance
 
-    return tpot2.GraphPipeline(flattened_full_graph)
+    return tpot2.GraphPipeline(flattened_full_graph, **graphpipeline_kwargs)

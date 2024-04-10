@@ -4,5 +4,3 @@ from .sequential import *
 from .graph import *
 from .tree import *
 from .wrapper import *
-
-from . import graph_utils

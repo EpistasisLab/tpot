@@ -18,7 +18,8 @@ from . import special_configs
 from . import classifiers_sklearnex
 from . import regressors_sklearnex
 
-
+from ConfigSpace import ConfigurationSpace
+from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 
 #autoqtl_builtins
 from tpot2.builtin_modules import genetic_encoders
@@ -163,7 +164,7 @@ GROUPNAMES = {
         "classifiers" :  ["LogisticRegression", "DecisionTreeClassifier", "KNeighborsClassifier", "GradientBoostingClassifier",  "ExtraTreesClassifier", "RandomForestClassifier", "SGDClassifier", "GaussianNB", "BernoulliNB", "MultinomialNB", "XGBClassifier", "SVC", "MLPClassifier"],
         "regressors" : ["ElasticNetCV", "ExtraTreesRegressor", "GradientBoostingRegressor", "AdaBoostRegressor", "DecisionTreeRegressor", "KNeighborsRegressor", "LassoLarsCV", "SVR", "RandomForestRegressor", "RidgeCV", "XGBRegressor", "SGDRegressor" ],
         "transformers":  ["Binarizer", "Normalizer", "PCA", "ZeroCount", "OneHotEncoder", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler"],
-        "arithmatic": ["AddTransformer", "mul_neg_1_Transformer", "MulTransformer", "SafeReciprocalTransformer", "EQTransformer", "NETransformer", "GETransformer", "GTTransformer", "LETransformer", "LTTransformer", "MinTransformer", "MaxTransformer", "ZeroTransformer", "OneTransformer", "NTransformer"],
+        "arithmatic": ["AddTransformer", "mul_neg_1_Transformer", "MulTransformer", "SafeReciprocalTransformer", "EQTransformer", "NETransformer", "GETransformer", "GTTransformer", "LETransformer", "LTTransformer", "MinTransformer", "MaxTransformer"],
         "imputers": [],
         "skrebate": ["ReliefF", "SURF", "SURFstar", "MultiSURF"],
         "genetic_encoders": ["DominantEncoder", "RecessiveEncoder", "HeterosisEncoder", "UnderDominanceEncoder", "OverDominanceEncoder"],
@@ -286,7 +287,13 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
         case "OneTransformer":
             return {}
         case "NTransformer":
-            return {}
+            return ConfigurationSpace(
+
+                space = {
+
+                    'n': Float("n", bounds=(-1e3, 1e3), log=True),
+                }
+            ) 
         
         #imputers.py
 
