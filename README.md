@@ -38,6 +38,34 @@ conda create --name tpot2env python=3.10
 conda activate tpot2env
 ```
 
+### Packages Used
+
+python version <3.12
+numpy
+scipy
+scikit-learn
+update_checker
+tqdm
+stopit
+pandas
+joblib
+xgboost
+matplotlib
+traitlets
+lightgbm
+optuna
+baikal
+jupyter
+networkx>
+dask
+distributed
+dask-ml
+dask-jobqueue
+func_timeout
+configspace
+
+Many of the hyperparameter ranges used in our configspaces were adapted from either the original TPOT package or the AutoSklearn package. 
+
 ### Note for M1 Mac or other Arm-based CPU users
 
 You need to install the lightgbm package directly from conda using the following command before installing TPOT2. 

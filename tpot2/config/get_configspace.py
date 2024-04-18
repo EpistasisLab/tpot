@@ -192,6 +192,8 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
 
 
         #classifiers.py
+        case "LinearDiscriminantAnalysis":
+            return classifiers.get_LinearDiscriminantAnalysis_ConfigurationSpace()
         case "AdaBoostClassifier":
             return classifiers.get_AdaBoostClassifier_ConfigurationSpace(random_state=random_state)
         case "LogisticRegression":
@@ -232,6 +234,10 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
             return regressors.ElasticNetCV_configspace
         case "RidgeCV":
             return {}
+        case "PassiveAggressiveClassifier":
+            return classifiers.get_PassiveAggressiveClassifier_ConfigurationSpace(random_state=random_state)
+        case "QuadraticDiscriminantAnalysis":
+            return classifiers.get_QuadraticDiscriminantAnalysis_ConfigurationSpace()
 
         #regressors.py
         case "RandomForestRegressor":
