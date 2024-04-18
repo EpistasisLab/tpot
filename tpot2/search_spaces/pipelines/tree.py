@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from .graph import GraphPipelineIndividual, GraphPipeline
 
 
-from .graph_utils import *
+from ..graph_utils import *
 
 class TreePipelineIndividual(GraphPipelineIndividual):
     def __init__(self,  

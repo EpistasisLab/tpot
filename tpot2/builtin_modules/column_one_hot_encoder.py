@@ -44,6 +44,7 @@ class ColumnOneHotEncoder(BaseEstimator, TransformerMixin):
         ----------
 
         columns : str, list, default='auto'
+            Determines which columns to onehot encode with sklearn.preprocessing.OneHotEncoder.
             - 'auto' : Automatically select categorical features based on columns with less than 10 unique values
             - 'categorical' : Automatically select categorical features
             - 'numeric' : Automatically select numeric features

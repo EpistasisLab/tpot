@@ -159,16 +159,6 @@ Setting `verbose` to 5 can be helpful during debugging as it will print out the 
 We welcome you to check the existing issues for bugs or enhancements to work on. If you have an idea for an extension to TPOT2, please file a new issue so we can discuss it.
 
 
-### Known issues
-* TPOT2 uses the func_timeout package to terminate long running pipelines. The early termination signal may fail on particular estimators and cause TPOT2 to run for longer than intended. If you are using your own custom configuration dictionaries, and are noticing that TPOT2 is running for longer than intended, this may be the issue. We are currently looking into it. Sometimes restarting TPOT2 resolves the issue.
-* Periodic checkpoint folder may not correctly resume if using budget and/or initial_population size.
-* Population class is slow to add new individuals. The Population class needs to be updated to use a dictionary for storage rather than a pandas dataframe.
-* Crossover may sometimes go over the size restrictions.
-* Memory caching with GraphPipeline may miss some nodes where the ordering on inputs happens to be different between two nodes. 
-
-
-
-
 ### Support for TPOT2
 
 TPOT2 was developed in the [Artificial Intelligence Innovation (A2I) Lab](http://epistasis.org/) at Cedars-Sinai with funding from the [NIH](http://www.nih.gov/) under grants U01 AG066833 and R01 LM010098. We are incredibly grateful for the support of the NIH and the Cedars-Sinai during the development of this project.

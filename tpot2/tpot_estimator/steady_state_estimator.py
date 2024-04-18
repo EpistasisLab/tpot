@@ -27,7 +27,9 @@ def set_dask_settings():
 
 #TODO inherit from _BaseComposition?
 class TPOTEstimatorSteadyState(BaseEstimator):
-    def __init__(self,  scorers= [],
+    def __init__(self,  
+                        search_space,
+                        scorers= [],
                         scorers_weights = [],
                         classification = False,
                         cv = 5,
@@ -35,15 +37,14 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         other_objective_functions_weights = [],
                         objective_function_names = None,
                         bigger_is_better = True,
-                        max_size = np.inf,
-                        linear_pipeline = False,
-                        root_config_dict= 'Auto',
-                        inner_config_dict=["selectors", "transformers"],
-                        leaf_config_dict= None,
+
+                        
+                        export_graphpipeline = False,
                         cross_val_predict_cv = 0,
+                        memory = None,
+
                         categorical_features = None,
                         subsets = None,
-                        memory = None,
                         preprocessing = False,
                         validation_strategy = "none",
                         validation_fraction = .2,
@@ -77,7 +78,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         stepwise_steps = 5,
 
                         warm_start = False,
-                        subset_column = None,
 
                         verbose = 0,
                         periodic_checkpoint_folder = None,
@@ -364,8 +364,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
 
-        subset_column : str or int, default=None
-            EXPERIMENTAL The column to use for the subset selection. Must also pass in unique_subset_values to GraphIndividual to function.
 
         verbose : int, default=1
             How much information to print during the optimization process. Higher values include the information from lower values.
@@ -422,6 +420,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         # sklearn BaseEstimator must have a corresponding attribute for each parameter.
         # These should not be modified once set.
 
+        self.search_space = search_space
         self.scorers = scorers
         self.scorers_weights = scorers_weights
         self.classification = classification
@@ -430,15 +429,18 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.other_objective_functions_weights = other_objective_functions_weights
         self.objective_function_names = objective_function_names
         self.bigger_is_better = bigger_is_better
-        self.max_size = max_size
-        self.linear_pipeline = linear_pipeline
-        self.root_config_dict= root_config_dict
-        self.inner_config_dict= inner_config_dict
-        self.leaf_config_dict= leaf_config_dict
+
+        self.export_graphpipeline = export_graphpipeline
         self.cross_val_predict_cv = cross_val_predict_cv
+        self.memory = memory
+
+        if self.cross_val_predict_cv !=0 or self.memory is not None:
+            if not self.export_graphpipeline:
+                raise ValueError("cross_val_predict_cv and memory parameters are parameters for GraphPipeline. To enable these options export_graphpipeline to be True. Otherwise these can be passed into the relevant Search spaces as parameters.")
+
+
         self.categorical_features = categorical_features
         self.subsets = subsets
-        self.memory = memory
         self.preprocessing = preprocessing
         self.validation_strategy = validation_strategy
         self.validation_fraction = validation_fraction
@@ -468,7 +470,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.stepwise_steps = stepwise_steps
 
         self.warm_start = warm_start
-        self.subset_column = subset_column
 
         self.verbose = verbose
         self.periodic_checkpoint_folder = periodic_checkpoint_folder
@@ -660,17 +661,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         else:
             self.feature_names = None
 
-        if self.root_config_dict == 'Auto':
-            if self.classification:
-                n_classes = len(np.unique(y))
-                root_config_dict = get_configuration_dictionary("classifiers", n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names, n_classes=n_classes)
-            else:
-                root_config_dict = get_configuration_dictionary("regressors", n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names)
-        else:
-            root_config_dict = get_configuration_dictionary(self.root_config_dict, n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets,feature_names=self.feature_names)
-
-        inner_config_dict = get_configuration_dictionary(self.inner_config_dict, n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names)
-        leaf_config_dict = get_configuration_dictionary(self.leaf_config_dict, n_samples, n_features, self.classification, self.random_state, self.cv_gen, subsets=self.subsets, feature_names=self.feature_names)
 
 
 
@@ -681,9 +671,9 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                             scorers= self._scorers,
                                             cv=self.cv_gen,
                                             other_objective_functions=self.other_objective_functions,
+                                            export_graphpipeline=self.export_graphpipeline,
                                             memory=self.memory,
                                             cross_val_predict_cv=self.cross_val_predict_cv,
-                                            subset_column=self.subset_column,
                                             **kwargs):
             return objective_function_generator(
                 pipeline_individual,
@@ -693,19 +683,16 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                 scorers= scorers,
                 cv=cv,
                 other_objective_functions=other_objective_functions,
+                export_graphpipeline=export_graphpipeline,
                 memory=memory,
                 cross_val_predict_cv=cross_val_predict_cv,
-                subset_column=subset_column,
                 **kwargs,
             )
 
-        self.individual_generator_instance = tpot2.individual_representations.graph_pipeline_individual.estimator_graph_individual_generator(
-                                                            inner_config_dict=inner_config_dict,
-                                                            root_config_dict=root_config_dict,
-                                                            leaf_config_dict=leaf_config_dict,
-                                                            max_size = self.max_size,
-                                                            linear_pipeline=self.linear_pipeline,
-                                                                )
+        def ind_generator(rng):
+            rng = np.random.default_rng(rng)
+            while True:
+                yield self.search_space.generate(rng)
 
 
 
@@ -718,7 +705,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
         #If warm start and we have an evolver instance, use the existing one
         if not(self.warm_start and self._evolver_instance is not None):
-            self._evolver_instance = self._evolver(   individual_generator=self.individual_generator_instance,
+            self._evolver_instance = self._evolver(   individual_generator=ind_generator(self.rng),
                                             objective_functions= [objective_function],
                                             objective_function_weights = self.objective_function_weights,
                                             objective_names=self.objective_names,
@@ -805,9 +792,10 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                                     scorers= self._scorers,
                                                     cv=self.cv_gen,
                                                     other_objective_functions=self.other_objective_functions,
+                                                    export_graphpipeline=self.export_graphpipeline,
                                                     memory=self.memory,
                                                     cross_val_predict_cv=self.cross_val_predict_cv,
-                                                    subset_column=self.subset_column,
+
                                                     **kwargs: objective_function_generator(
                                                                                                 ind,
                                                                                                 X,
@@ -816,9 +804,9 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                                                                                 scorers= scorers,
                                                                                                 cv=cv,
                                                                                                 other_objective_functions=other_objective_functions,
+                                                                                                export_graphpipeline=export_graphpipeline,
                                                                                                 memory=memory,
                                                                                                 cross_val_predict_cv=cross_val_predict_cv,
-                                                                                                subset_column=subset_column,
                                                                                                 **kwargs,
                                                                                                 )]
 
@@ -858,9 +846,9 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                                     y_val,
                                                     scorers= self._scorers,
                                                     other_objective_functions=self.other_objective_functions,
+                                                    export_graphpipeline=self.export_graphpipeline,
                                                     memory=self.memory,
                                                     cross_val_predict_cv=self.cross_val_predict_cv,
-                                                    subset_column=self.subset_column,
                                                     **kwargs: val_objective_function_generator(
                                                         ind,
                                                         X,
@@ -869,9 +857,9 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                                         y_val,
                                                         scorers= scorers,
                                                         other_objective_functions=other_objective_functions,
+                                                        export_graphpipeline=export_graphpipeline,
                                                         memory=memory,
                                                         cross_val_predict_cv=cross_val_predict_cv,
-                                                        subset_column=subset_column,
                                                         **kwargs,
                                                         )]
 
@@ -898,7 +886,10 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.selected_best_score =  self.evaluated_individuals.loc[best_idx]
 
 
-        best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv, subset_column=self.subset_column)
+        if self.export_graphpipeline:
+            best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
+        else:
+            best_individual_pipeline = best_individual.export_pipeline()
 
         if self.preprocessing:
             self.fitted_pipeline_ = sklearn.pipeline.make_pipeline(sklearn.base.clone(self._preprocessing_pipeline), best_individual_pipeline )
@@ -979,7 +970,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
             self.evaluated_individuals = self.evaluated_individuals.set_index(self.evaluated_individuals.index.map(object_to_int))
             self.evaluated_individuals['Parents'] = self.evaluated_individuals['Parents'].apply(lambda row: convert_parents_tuples_to_integers(row, object_to_int))
 
-            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline))
+            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline, export_graphpipeline=self.export_graphpipeline, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv))
 
         return self.evaluated_individuals
 

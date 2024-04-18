@@ -18,7 +18,8 @@ from . import special_configs
 from . import classifiers_sklearnex
 from . import regressors_sklearnex
 
-
+from ConfigSpace import ConfigurationSpace
+from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 
 #autoqtl_builtins
 from tpot2.builtin_modules import genetic_encoders
@@ -51,6 +52,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.kernel_approximation import RBFSampler
 from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import PowerTransformer, QuantileTransformer
 
 
 from sklearn.feature_selection import SelectFwe
@@ -61,13 +63,12 @@ from sklearn.feature_selection import SelectFromModel
 
 import sklearn.feature_selection
 
-
+#TODO create a selectomixin using these?
 from sklearn.feature_selection import f_classif
 from sklearn.feature_selection import f_regression
 
 
 from sklearn.linear_model import SGDRegressor
-from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import ElasticNet
@@ -75,21 +76,26 @@ from sklearn.linear_model import Lars
 from sklearn.linear_model import LassoLars, LassoLarsCV
 from sklearn.linear_model import RidgeCV
 
+from sklearn.svm import SVR, SVC
+from sklearn.svm import LinearSVR, LinearSVC
 
-from sklearn.svm import SVR
-from sklearn.svm import LinearSVR
-
-from sklearn.ensemble import AdaBoostRegressor, GradientBoostingRegressor,RandomForestRegressor
+from sklearn.ensemble import AdaBoostRegressor, AdaBoostClassifier, GradientBoostingRegressor,RandomForestRegressor
 from sklearn.ensemble import BaggingRegressor
 from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.linear_model import ElasticNetCV
 
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.linear_model import PassiveAggressiveClassifier
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.linear_model import ARDRegression
+from sklearn.gaussian_process import GaussianProcessRegressor
+
+from sklearn.gaussian_process import GaussianProcessRegressor
+
 from xgboost import XGBRegressor
-
-
-from tpot2.builtin_modules import RFE_ExtraTreesClassifier, SelectFromModel_ExtraTreesClassifier, RFE_ExtraTreesRegressor, SelectFromModel_ExtraTreesRegressor
 
 
 from tpot2.builtin_modules import AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer
@@ -98,8 +104,11 @@ from tpot2.builtin_modules import AddTransformer, mul_neg_1_Transformer, MulTran
 #MDR
 
 
-all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, MLPClassifier, DecisionTreeClassifier, XGBClassifier, KNeighborsClassifier, SVC, LogisticRegression, LGBMClassifier, LinearSVC, GaussianNB, BernoulliNB, MultinomialNB, ExtraTreesRegressor, RandomForestRegressor, GradientBoostingRegressor, BaggingRegressor, DecisionTreeRegressor, KNeighborsRegressor, XGBRegressor, RFE_ExtraTreesClassifier, SelectFromModel_ExtraTreesClassifier, RFE_ExtraTreesRegressor, SelectFromModel_ExtraTreesRegressor, ZeroCount, OneHotEncoder, ColumnOneHotEncoder, Binarizer, FastICA, FeatureAgglomeration, MaxAbsScaler, MinMaxScaler, Normalizer, Nystroem, PCA, PolynomialFeatures, RBFSampler, RobustScaler, StandardScaler, SelectFwe, SelectPercentile, VarianceThreshold, RFE, SelectFromModel, f_classif, f_regression, SGDRegressor, LinearRegression, Ridge, Lasso, ElasticNet, Lars, LassoLars, LassoLarsCV, RidgeCV, SVR, LinearSVR, AdaBoostRegressor, GradientBoostingRegressor, RandomForestRegressor, BaggingRegressor, ExtraTreesRegressor, DecisionTreeRegressor, KNeighborsRegressor, ElasticNetCV,
+all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, MLPClassifier, DecisionTreeClassifier, XGBClassifier, KNeighborsClassifier, SVC, LogisticRegression, LGBMClassifier, LinearSVC, GaussianNB, BernoulliNB, MultinomialNB, ExtraTreesRegressor, RandomForestRegressor, GradientBoostingRegressor, BaggingRegressor, DecisionTreeRegressor, KNeighborsRegressor, XGBRegressor,  ZeroCount, OneHotEncoder, ColumnOneHotEncoder, Binarizer, FastICA, FeatureAgglomeration, MaxAbsScaler, MinMaxScaler, Normalizer, Nystroem, PCA, PolynomialFeatures, RBFSampler, RobustScaler, StandardScaler, SelectFwe, SelectPercentile, VarianceThreshold, SGDRegressor, Ridge, Lasso, ElasticNet, Lars, LassoLars, LassoLarsCV, RidgeCV, SVR, LinearSVR, AdaBoostRegressor, GradientBoostingRegressor, RandomForestRegressor, BaggingRegressor, ExtraTreesRegressor, DecisionTreeRegressor, KNeighborsRegressor, ElasticNetCV,
+               AdaBoostClassifier,
+               GaussianProcessRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor,
                AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer,
+               PowerTransformer, QuantileTransformer,ARDRegression, QuadraticDiscriminantAnalysis, PassiveAggressiveClassifier, LinearDiscriminantAnalysis,
                ]
 
 
@@ -117,36 +126,21 @@ if 'skrebate' in sys.modules:
     all_methods.append(MultiSURF)
 
 if 'sklearnex' in sys.modules:
-    from sklearnex.linear_model import LinearRegression
-    from sklearnex.linear_model import Ridge
-    from sklearnex.linear_model import Lasso
-    from sklearnex.linear_model import ElasticNet
-    from sklearnex.svm import SVR
-    from sklearnex.svm import NuSVR
-    from sklearnex.ensemble import RandomForestRegressor
-    from sklearnex.neighbors import KNeighborsRegressor
+    import sklearnex
 
-    from sklearnex.ensemble import RandomForestClassifier
-    from sklearnex.neighbors import KNeighborsClassifier
-    from sklearnex.svm import SVC
-    from sklearnex.svm import NuSVC
-    from sklearnex.linear_model import LogisticRegression
-
-
-    all_methods.append(LinearRegression)
-    all_methods.append(Ridge)
-    all_methods.append(Lasso)
-    all_methods.append(ElasticNet)
-    all_methods.append(SVR)
-    all_methods.append(NuSVR)
-    all_methods.append(RandomForestRegressor)
-    all_methods.append(KNeighborsRegressor)
-    
-    all_methods.append(RandomForestClassifier)
-    all_methods.append(KNeighborsClassifier)
-    all_methods.append(SVC)
-    all_methods.append(NuSVC)
-    all_methods.append(LogisticRegression)
+    all_methods.append(sklearnex.linear_model.LinearRegression)
+    all_methods.append(sklearnex.linear_model.Ridge)
+    all_methods.append(sklearnex.linear_model.Lasso)
+    all_methods.append(sklearnex.linear_model.ElasticNet)
+    all_methods.append(sklearnex.svm.SVR)
+    all_methods.append(sklearnex.svm.NuSVR)
+    all_methods.append(sklearnex.ensemble.RandomForestRegressor)
+    all_methods.append(sklearnex.neighbors.KNeighborsRegressor)
+    all_methods.append(sklearnex.ensemble.RandomForestClassifier)
+    all_methods.append(sklearnex.neighbors.KNeighborsClassifier)
+    all_methods.append(sklearnex.svm.SVC)
+    all_methods.append(sklearnex.svm.NuSVC)
+    all_methods.append(sklearnex.linear_model.LogisticRegression)
 
 
 STRING_TO_CLASS = {
@@ -160,10 +154,15 @@ GROUPNAMES = {
         "selectors": ["SelectFwe", "SelectPercentile", "VarianceThreshold",],
         "selectors_classification": ["SelectFwe", "SelectPercentile", "VarianceThreshold", "RFE_classification", "SelectFromModel_classification"],
         "selectors_regression": ["SelectFwe", "SelectPercentile", "VarianceThreshold", "RFE_regression", "SelectFromModel_regression"],
-        "classifiers" :  ["LogisticRegression", "DecisionTreeClassifier", "KNeighborsClassifier", "GradientBoostingClassifier",  "ExtraTreesClassifier", "RandomForestClassifier", "SGDClassifier", "GaussianNB", "BernoulliNB", "MultinomialNB", "XGBClassifier", "SVC", "MLPClassifier"],
-        "regressors" : ["ElasticNetCV", "ExtraTreesRegressor", "GradientBoostingRegressor", "AdaBoostRegressor", "DecisionTreeRegressor", "KNeighborsRegressor", "LassoLarsCV", "SVR", "RandomForestRegressor", "RidgeCV", "XGBRegressor", "SGDRegressor" ],
-        "transformers":  ["Binarizer", "Normalizer", "PCA", "ZeroCount", "OneHotEncoder", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler"],
-        "arithmatic": ["AddTransformer", "mul_neg_1_Transformer", "MulTransformer", "SafeReciprocalTransformer", "EQTransformer", "NETransformer", "GETransformer", "GTTransformer", "LETransformer", "LTTransformer", "MinTransformer", "MaxTransformer", "ZeroTransformer", "OneTransformer", "NTransformer"],
+        "classifiers" :  ['AdaBoostClassifier', 'BernoulliNB', 'DecisionTreeClassifier', 'ExtraTreesClassifier', 'GaussianNB', 'HistGradientBoostingClassifier', 'KNeighborsClassifier','LinearDiscriminantAnalysis', 'LogisticRegression', "LinearSVC", "SVC", 'MLPClassifier', 'MultinomialNB', "PassiveAggressiveClassifier", "QuadraticDiscriminantAnalysis", 'RandomForestClassifier', 'SGDClassifier', 'XGBClassifier'],
+        "regressors" : ['AdaBoostRegressor', "ARDRegression", 'DecisionTreeRegressor', 'ExtraTreesRegressor', 'GaussianProcessRegressor', 'HistGradientBoostingRegressor', 'KNeighborsRegressor',  'LinearSVR', "MLPRegressor", 'RandomForestRegressor', 'SGDRegressor', 'SVR', 'XGBRegressor'],
+        
+        
+        "transformers":  ["Binarizer", "PCA", "ZeroCount", "ColumnOneHotEncoder", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer"],
+        "scalers": ["MinMaxScaler", "RobustScaler", "StandardScaler", "MaxAbsScaler", "Normalizer", ],
+        "all_transformers" : ["transformers", "scalers"],
+
+        "arithmatic": ["AddTransformer", "mul_neg_1_Transformer", "MulTransformer", "SafeReciprocalTransformer", "EQTransformer", "NETransformer", "GETransformer", "GTTransformer", "LETransformer", "LTTransformer", "MinTransformer", "MaxTransformer"],
         "imputers": [],
         "skrebate": ["ReliefF", "SURF", "SURFstar", "MultiSURF"],
         "genetic_encoders": ["DominantEncoder", "RecessiveEncoder", "HeterosisEncoder", "UnderDominanceEncoder", "OverDominanceEncoder"],
@@ -193,20 +192,24 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
 
 
         #classifiers.py
+        case "AdaBoostClassifier":
+            return classifiers.get_AdaBoostClassifier_ConfigurationSpace(random_state=random_state)
         case "LogisticRegression":
-            return classifiers.get_LogisticRegression_ConfigurationSpace(random_state=random_state)
+            return classifiers.get_LogisticRegression_ConfigurationSpace(n_samples=n_samples, n_features=n_features, random_state=random_state)
         case "KNeighborsClassifier":
             return classifiers.get_KNeighborsClassifier_ConfigurationSpace(n_samples=n_samples)
         case "DecisionTreeClassifier":
-            return classifiers.get_DecisionTreeClassifier_ConfigurationSpace(random_state=random_state)
+            return classifiers.get_DecisionTreeClassifier_ConfigurationSpace(n_featues=n_features, random_state=random_state)
         case "SVC":
             return classifiers.get_SVC_ConfigurationSpace(random_state=random_state)
         case "LinearSVC":
             return classifiers.get_LinearSVC_ConfigurationSpace(random_state=random_state)
         case "RandomForestClassifier":
-            return classifiers.get_RandomForestClassifier_ConfigurationSpace(random_state=random_state)
+            return classifiers.get_RandomForestClassifier_ConfigurationSpace(n_features=n_features, random_state=random_state)
         case "GradientBoostingClassifier":
-            return classifiers.get_GradientBoostingClassifier_ConfigurationSpace(n_classes=n_classes)
+            return classifiers.get_GradientBoostingClassifier_ConfigurationSpace(n_features=n_features, random_state=random_state)
+        case "HistGradientBoostingClassifier":
+            return classifiers.get_HistGradientBoostingClassifier_ConfigurationSpace(n_features=n_features, random_state=random_state)
         case "XGBClassifier":
             return classifiers.get_XGBClassifier_ConfigurationSpace(random_state=random_state)
         case "LGBMClassifier":
@@ -223,7 +226,63 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
             return classifiers.get_MultinomialNB_ConfigurationSpace()
         case "GaussianNB":
             return {}
-        
+        case "LassoLarsCV":
+            return {}
+        case "ElasticNetCV":
+            return regressors.ElasticNetCV_configspace
+        case "RidgeCV":
+            return {}
+
+        #regressors.py
+        case "RandomForestRegressor":
+            return regressors.get_RandomForestRegressor_ConfigurationSpace(random_state=random_state)
+        case "SGDRegressor":
+            return regressors.get_SGDRegressor_ConfigurationSpace(random_state=random_state)
+        case "Ridge":
+            return regressors.get_Ridge_ConfigurationSpace(random_state=random_state)
+        case "Lasso":
+            return regressors.get_Lasso_ConfigurationSpace(random_state=random_state)
+        case "ElasticNet":
+            return regressors.get_ElasticNet_ConfigurationSpace(random_state=random_state)
+        case "Lars":
+            return regressors.get_Lars_ConfigurationSpace(random_state=random_state)
+        case "OthogonalMatchingPursuit":
+            return regressors.get_OthogonalMatchingPursuit_ConfigurationSpace()
+        case "BayesianRidge":
+            return regressors.get_BayesianRidge_ConfigurationSpace()
+        case "LassoLars":
+            return regressors.get_LassoLars_ConfigurationSpace(random_state=random_state)
+        case "BaggingRegressor":
+            return regressors.get_BaggingRegressor_ConfigurationSpace(random_state=random_state)
+        case "ARDRegression":
+            return regressors.get_ARDRegression_ConfigurationSpace()
+        case "TheilSenRegressor":
+            return regressors.get_TheilSenRegressor_ConfigurationSpace(random_state=random_state)
+        case "Perceptron":
+            return regressors.get_Perceptron_ConfigurationSpace(random_state=random_state)
+        case "DecisionTreeRegressor":
+            return regressors.get_DecisionTreeRegressor_ConfigurationSpace(n_features=n_features, random_state=random_state)
+        case "LinearSVR":
+            return regressors.get_LinearSVR_ConfigurationSpace(random_state=random_state)
+        case "SVR":
+            return regressors.get_SVR_ConfigurationSpace()
+        case "XGBRegressor":
+            return regressors.get_XGBRegressor_ConfigurationSpace(random_state=random_state)
+        case "AdaBoostRegressor":
+            return regressors.get_AdaBoostRegressor_ConfigurationSpace(random_state=random_state)
+        case "ExtraTreesRegressor":
+            return regressors.get_ExtraTreesRegressor_ConfigurationSpace(random_state=random_state)
+        case "GradientBoostingRegressor":
+            return regressors.get_GradientBoostingRegressor_ConfigurationSpace(n_features=n_features, random_state=random_state)
+        case "HistGradientBoostingRegressor":
+            return regressors.get_HistGradientBoostingRegressor_ConfigurationSpace(n_features=n_features, random_state=random_state)
+        case "MLPRegressor":
+            return regressors.get_MLPRegressor_ConfigurationSpace(random_state=random_state)
+        case "KNeighborsRegressor":
+            return regressors.get_KNeighborsRegressor_ConfigurationSpace(n_samples=n_samples)
+        case "GaussianProcessRegressor":
+            return regressors.get_GaussianProcessRegressor_ConfigurationSpace(n_features=n_features, random_state=random_state)
+
         #transformers.py
         case "Binarizer":
             return transformers.Binarizer_configspace
@@ -243,7 +302,23 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
             return transformers.get_Nystroem_configspace(n_features=n_features, random_state=random_state)
         case "RBFSampler":
             return transformers.get_RBFSampler_configspace(n_features=n_features, random_state=random_state)
-        
+        case "MinMaxScaler":
+            return {}
+        case "PowerTransformer":
+            return {}
+        case "QuantileTransformer":
+            return transformers.get_QuantileTransformer_configspace(random_state=random_state)
+        case "RobustScaler":
+            return transformers.RobustScaler_configspace
+        case "ColumnOneHotEncoder":
+            return {}
+        case "MaxAbsScaler":
+            return {}
+        case "PolynomialFeatures":
+            return transformers.PolynomialFeatures_configspace
+        case "StandardScaler":
+            return {}
+
         #selectors.py
         case "SelectFwe":
             return selectors.SelectFwe_configspace 
@@ -255,6 +330,7 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
             return selectors.RFE_configspace_part
         case "SelectFromModel":
             return selectors.SelectFromModel_configspace_part
+
         
         #special_configs.py
         case "AddTransformer":
@@ -286,7 +362,13 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
         case "OneTransformer":
             return {}
         case "NTransformer":
-            return {}
+            return ConfigurationSpace(
+
+                space = {
+
+                    'n': Float("n", bounds=(-1e3, 1e3)),
+                }
+            ) 
         
         #imputers.py
 
@@ -334,7 +416,8 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
         case "KNeighborsRegressor_sklearnex":
             return regressors_sklearnex.get_KNeighborsRegressor_ConfigurationSpace(n_samples=n_samples)
 
-    return {}
+    #raise error
+    raise ValueError(f"Could not find configspace for {name}")
    
 
 def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_state=None):
@@ -352,9 +435,12 @@ def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_st
         return get_search_space(name_list, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
 
     if name is None:
+        warnings.warn(f"name is None")
         return None
 
     if name not in STRING_TO_CLASS:
+        print("FOOO ", name)
+        warnings.warn(f"Could not find class for {name}")
         return None
     
     return get_node(name, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
@@ -363,6 +449,8 @@ def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_st
 def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None):
 
     #these are wrappers that take in another estimator as a parameter
+    # TODO Add AdaBoostRegressor, AdaBoostClassifier as wrappers? wrap a decision tree with different params?
+    # TODO add other meta-estimators?
     if name == "RFE_classification":
         rfe_sp = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         ext = get_node("ExtraTreesClassifier", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
@@ -379,7 +467,26 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
         sfm_sp = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         ext = get_node("ExtraTreesRegressor", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return WrapperPipeline(nodegen=ext, method=SelectFromModel, configspace=sfm_sp)
-
+    
+    #these are nodes that have special search spaces which require custom parsing of the hyperparameters
+    if name == "RobustScaler":
+        configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=transformers.robust_scaler_hyperparameter_parser)
+    if name == "GradientBoostingClassifier" or name == "HistGradientBoosting":
+        configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.GradientBoostingClassifier_hyperparameter_parser)
+    if name == "GradientBoostingRegressor" or name == "HistGradientBoostingRegressor":
+        configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.GradientBoostingRegressor_hyperparameter_parser)
+    if name == "MLPClassifier":
+        configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.MLPClassifier_hyperparameter_parser)
+    if name == "MLPRegressor":
+        configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.MLPRegressor_hyperparameter_parser)
+    if name == "GaussianProcessRegressor":
+        configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.GaussianProcessRegressor_hyperparameter_parser)
 
     configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
     if configspace is None:

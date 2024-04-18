@@ -1,17 +1,11 @@
 #All abstract methods in the Evolutionary_Optimization module
-
-from abc import abstractmethod
 import tpot2
 import typing
 import tqdm
-from tpot2.individual_representations import BaseIndividual
 import time
 import numpy as np
-import copy
-import scipy
 import os
 import pickle
-import statistics
 from tqdm.dask import TqdmCallback
 import distributed
 from dask.distributed import Client

@@ -29,7 +29,9 @@ def set_dask_settings():
 
 #TODO inherit from _BaseComposition?
 class TPOTEstimator(BaseEstimator):
-    def __init__(self,  scorers,
+    def __init__(self,  
+                        search_space,
+                        scorers,
                         scorers_weights,
                         classification,
                         cv = 5,
@@ -38,13 +40,12 @@ class TPOTEstimator(BaseEstimator):
                         objective_function_names = None,
                         bigger_is_better = True,
 
-                        search_space = None,
-
-
+                        export_graphpipeline = False,
                         cross_val_predict_cv = 0,
+                        memory = None,
+
                         categorical_features = None,
                         subsets = None,
-                        memory = None,
                         preprocessing = False,
                         population_size = 50,
                         initial_population_size = None,
@@ -87,7 +88,7 @@ class TPOTEstimator(BaseEstimator):
 
                         #dask parameters
                         n_jobs=1,
-                        memory_limit = "4GB",
+                        memory_limit = None,
                         client = None,
                         processes = True,
 
@@ -369,10 +370,17 @@ class TPOTEstimator(BaseEstimator):
 
         self.search_space = search_space
 
+        self.export_graphpipeline = export_graphpipeline
         self.cross_val_predict_cv = cross_val_predict_cv
+        self.memory = memory
+
+        if self.cross_val_predict_cv !=0 or self.memory is not None:
+            if not self.export_graphpipeline:
+                raise ValueError("cross_val_predict_cv and memory parameters are parameters for GraphPipeline. To enable these options export_graphpipeline to be True. Otherwise these can be passed into the relevant Search spaces as parameters.")
+
         self.categorical_features = categorical_features
         self.subsets = subsets
-        self.memory = memory
+        
         self.preprocessing = preprocessing
         self.validation_strategy = validation_strategy
         self.validation_fraction = validation_fraction
@@ -600,6 +608,7 @@ class TPOTEstimator(BaseEstimator):
                                             scorers= self._scorers,
                                             cv=self.cv_gen,
                                             other_objective_functions=self.other_objective_functions,
+                                            export_graphpipeline=self.export_graphpipeline,
                                             memory=self.memory,
                                             cross_val_predict_cv=self.cross_val_predict_cv,
                                             **kwargs):
@@ -611,6 +620,7 @@ class TPOTEstimator(BaseEstimator):
                 scorers= scorers,
                 cv=cv,
                 other_objective_functions=other_objective_functions,
+                export_graphpipeline=export_graphpipeline,
                 memory=memory,
                 cross_val_predict_cv=cross_val_predict_cv,
                 **kwargs,
@@ -713,6 +723,7 @@ class TPOTEstimator(BaseEstimator):
                                                     scorers= self._scorers,
                                                     cv=self.cv_gen,
                                                     other_objective_functions=self.other_objective_functions,
+                                                    export_graphpipeline=self.export_graphpipeline,
                                                     memory=self.memory,
                                                     cross_val_predict_cv=self.cross_val_predict_cv,
 
@@ -724,6 +735,7 @@ class TPOTEstimator(BaseEstimator):
                                                                                                 scorers= scorers,
                                                                                                 cv=cv,
                                                                                                 other_objective_functions=other_objective_functions,
+                                                                                                export_graphpipeline=export_graphpipeline,
                                                                                                 memory=memory,
                                                                                                 cross_val_predict_cv=cross_val_predict_cv,
                                                                                                 **kwargs,
@@ -738,7 +750,8 @@ class TPOTEstimator(BaseEstimator):
             self.objective_names_for_selection = val_objective_names
             self.evaluated_individuals.loc[best_pareto_front_idx,val_objective_names] = val_scores
 
-            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=val_objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+
 
         elif validation_strategy == 'split':
 
@@ -765,6 +778,7 @@ class TPOTEstimator(BaseEstimator):
                                                     y_val,
                                                     scorers= self._scorers,
                                                     other_objective_functions=self.other_objective_functions,
+                                                    export_graphpipeline=self.export_graphpipeline,
                                                     memory=self.memory,
                                                     cross_val_predict_cv=self.cross_val_predict_cv,
                                                     **kwargs: val_objective_function_generator(
@@ -775,6 +789,7 @@ class TPOTEstimator(BaseEstimator):
                                                         y_val,
                                                         scorers= scorers,
                                                         other_objective_functions=other_objective_functions,
+                                                        export_graphpipeline=export_graphpipeline,
                                                         memory=memory,
                                                         cross_val_predict_cv=cross_val_predict_cv,
                                                         **kwargs,
@@ -787,11 +802,11 @@ class TPOTEstimator(BaseEstimator):
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
             self.evaluated_individuals.loc[best_pareto_front_idx,val_objective_names] = val_scores
-            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_front(self.evaluated_individuals, val_objective_names, self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=val_objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
         else:
             self.objective_names_for_selection = self.objective_names
-
-        val_scores = self.evaluated_individuals[~self.evaluated_individuals[self.objective_names_for_selection].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names_for_selection].astype(float)
+        
+        val_scores = self.evaluated_individuals[~self.evaluated_individuals[self.objective_names_for_selection].isna().all(1)][self.objective_names_for_selection]
         weighted_scores = val_scores*self.objective_function_weights
 
         if self.bigger_is_better:
@@ -805,7 +820,10 @@ class TPOTEstimator(BaseEstimator):
 
         #TODO
         #best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
-        best_individual_pipeline = best_individual.export_pipeline()
+        if self.export_graphpipeline:
+            best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
+        else:
+            best_individual_pipeline = best_individual.export_pipeline()
 
         if self.preprocessing:
             self.fitted_pipeline_ = sklearn.pipeline.make_pipeline(sklearn.base.clone(self._preprocessing_pipeline), best_individual_pipeline )
@@ -888,7 +906,7 @@ class TPOTEstimator(BaseEstimator):
             self.evaluated_individuals = self.evaluated_individuals.set_index(self.evaluated_individuals.index.map(object_to_int))
             self.evaluated_individuals['Parents'] = self.evaluated_individuals['Parents'].apply(lambda row: convert_parents_tuples_to_integers(row, object_to_int))
 
-            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline))
+            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline, export_graphpipeline=self.export_graphpipeline, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv))
 
         return self.evaluated_individuals
 

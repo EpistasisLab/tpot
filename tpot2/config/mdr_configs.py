@@ -14,7 +14,7 @@ MDR_configspace = ConfigurationSpace(
 
 
 
-def get_skrebate_ReliefF_config_space(n_features=10):
+def get_skrebate_ReliefF_config_space(n_features):
     return ConfigurationSpace(
         space = {
             'n_features_to_select': Integer('n_features_to_select', bounds=(1, n_features), log=True),
@@ -23,7 +23,7 @@ def get_skrebate_ReliefF_config_space(n_features=10):
     )
 
 
-def get_skrebate_SURF_config_space(n_features=10):
+def get_skrebate_SURF_config_space(n_features):
     return ConfigurationSpace(
         space = {
             'n_features_to_select': Integer('n_features_to_select', bounds=(1, n_features), log=True),
@@ -31,13 +31,13 @@ def get_skrebate_SURF_config_space(n_features=10):
 )
 
 
-def get_skrebate_SURFstar_config_space(n_features=10):
+def get_skrebate_SURFstar_config_space(n_features):
     return ConfigurationSpace(
         space = {
             'n_features_to_select': Integer('n_features_to_select', bounds=(1, n_features), log=True),
         }
 )
-def get_skrebate_MultiSURF_config_space(n_features=10):
+def get_skrebate_MultiSURF_config_space(n_features):
     return ConfigurationSpace(
         space = {
             'n_features_to_select': Integer('n_features_to_select', bounds=(1, n_features), log=True),
