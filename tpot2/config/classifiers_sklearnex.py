@@ -2,7 +2,7 @@ from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 
 
-def get_RandomForestClassifier_ConfigurationSpace(random_state=None):
+def get_RandomForestClassifier_ConfigurationSpace(random_state):
     space = {
             'n_estimators': 100, #TODO make this a higher number? learned?
             'bootstrap': Categorical("bootstrap", [True, False]),
@@ -19,7 +19,7 @@ def get_RandomForestClassifier_ConfigurationSpace(random_state=None):
         space = space
     )
 
-def get_KNeighborsClassifier_ConfigurationSpace(n_samples=10):
+def get_KNeighborsClassifier_ConfigurationSpace(n_samples):
     return ConfigurationSpace(
         space = {
             'n_neighbors': Integer("n_neighbors", bounds=(1, max(n_samples, 100)), log=True),
@@ -29,7 +29,7 @@ def get_KNeighborsClassifier_ConfigurationSpace(n_samples=10):
 
 
 #TODO add conditionals
-def get_LogisticRegression_ConfigurationSpace(random_state=None):
+def get_LogisticRegression_ConfigurationSpace(random_state):
     space = {
         'solver': Categorical("solver", ['liblinear', 'sag', 'saga']),
         'penalty': Categorical("penalty", ['l1', 'l2']),
@@ -45,7 +45,7 @@ def get_LogisticRegression_ConfigurationSpace(random_state=None):
         space = space
     )
 
-def get_SVC_ConfigurationSpace(random_state=None):
+def get_SVC_ConfigurationSpace(random_state):
     space = {
         'kernel': Categorical("kernel", ['poly', 'rbf', 'linear', 'sigmoid']),
         'C': Float("C", bounds=(1e-4, 25), log=True),
@@ -62,7 +62,7 @@ def get_SVC_ConfigurationSpace(random_state=None):
         space = space
     )
 
-def get_NuSVC_ConfigurationSpace(random_state=None):
+def get_NuSVC_ConfigurationSpace(random_state):
     space = {
         'nu': Float("nu", bounds=(0.05, 1.0)),
         'kernel': Categorical("kernel", ['poly', 'rbf', 'linear', 'sigmoid']),

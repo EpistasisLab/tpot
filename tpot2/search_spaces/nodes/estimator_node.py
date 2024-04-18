@@ -1,21 +1,44 @@
 # try https://automl.github.io/ConfigSpace/main/api/hyperparameters.html
-import tpot2
+
 import numpy as np
-import pandas as pd
-import sklearn
-from tpot2 import config
-from typing import Generator, List, Tuple, Union
-import random
 from ..base import SklearnIndividual, SklearnIndividualGenerator
 from ConfigSpace import ConfigurationSpace
+from typing import final
+
+NONE_SPECIAL_STRING = "<NONE>"
+TRUE_SPECIAL_STRING = "<TRUE>"
+FALSE_SPECIAL_STRING = "<FALSE>"
+
+
+def default_hyperparameter_parser(params:dict) -> dict:
+    return params
+
 
 class EstimatorNodeIndividual(SklearnIndividual):
+    """
+    Note that ConfigurationSpace does not support None as a parameter. Instead, use the special string "<NONE>". TPOT will automatically replace instances of this string with the Python None. 
+
+    Parameters
+    ----------
+    method : type
+        The class of the estimator to be used
+
+    space : ConfigurationSpace|dict
+        The hyperparameter space to be used. If a dict is passed, hyperparameters are fixed and not learned.
+    
+    """
     def __init__(self, method: type, 
                         space: ConfigurationSpace|dict, #TODO If a dict is passed, hyperparameters are fixed and not learned. Is this confusing? Should we make a second node type?
+                        hyperparameter_parser: callable = None,
                         rng=None) -> None:
         super().__init__()
         self.method = method
         self.space = space
+        
+        if hyperparameter_parser is None:
+            self.hyperparameter_parser = default_hyperparameter_parser
+        else:
+            self.hyperparameter_parser = hyperparameter_parser
         
         if isinstance(space, dict):
             self.hyperparameters = space
@@ -23,6 +46,8 @@ class EstimatorNodeIndividual(SklearnIndividual):
             rng = np.random.default_rng(rng)
             self.space.seed(rng.integers(0, 2**32))
             self.hyperparameters = self.space.sample_configuration().get_dictionary()
+
+        self.check_hyperparameters_for_None()
 
     def mutate(self, rng=None):
         if isinstance(self.space, dict): 
@@ -32,6 +57,7 @@ class EstimatorNodeIndividual(SklearnIndividual):
         self.space.seed(rng.integers(0, 2**32))
         self.hyperparameters = self.space.sample_configuration().get_dictionary()
 
+        self.check_hyperparameters_for_None()
         return True
 
     def crossover(self, other, rng=None):
@@ -48,17 +74,34 @@ class EstimatorNodeIndividual(SklearnIndividual):
                 if hyperparameter in other.hyperparameters:
                     self.hyperparameters[hyperparameter] = other.hyperparameters[hyperparameter]
 
+        self.check_hyperparameters_for_None()
+
+        return True
+
+    def check_hyperparameters_for_None(self):
+        for key, value in self.hyperparameters.items():
+            #if string
+            if isinstance(value, str):
+                if value == NONE_SPECIAL_STRING:
+                    self.hyperparameters[key] = None
+                elif value == TRUE_SPECIAL_STRING:
+                    self.hyperparameters[key] = True
+                elif value == FALSE_SPECIAL_STRING:
+                    self.hyperparameters[key] = False
+
+    @final #this method should not be overridden, instead override hyperparameter_parser
     def export_pipeline(self, **kwargs):
-        return self.method(**self.hyperparameters)
+        return self.method(**self.hyperparameter_parser(self.hyperparameters))
     
     def unique_id(self):
         #return a dictionary of the method and the hyperparameters
         return (self.method, self.hyperparameters)
 
 class EstimatorNode(SklearnIndividualGenerator):
-    def __init__(self, method, space):
+    def __init__(self, method, space, hyperparameter_parser=default_hyperparameter_parser):
         self.method = method
         self.space = space
+        self.hyperparameter_parser = hyperparameter_parser
 
     def generate(self, rng=None):
-        return EstimatorNodeIndividual(self.method, self.space)
+        return EstimatorNodeIndividual(self.method, self.space, hyperparameter_parser=self.hyperparameter_parser, rng=rng)
