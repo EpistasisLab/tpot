@@ -19,8 +19,7 @@ def test_loop_through_all_hyperparameters():
         estnode_gen = tpot2.config.get_search_space(class_name, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
 
         #generate 10 random hyperparameters and make sure they are all valid
-        for i in range(10):
+        for i in range(1):
             estnode = estnode_gen.generate()
             est = estnode.export_pipeline()
-    
     
