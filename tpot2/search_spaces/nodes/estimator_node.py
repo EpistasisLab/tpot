@@ -45,7 +45,7 @@ class EstimatorNodeIndividual(SklearnIndividual):
         else:
             rng = np.random.default_rng(rng)
             self.space.seed(rng.integers(0, 2**32))
-            self.hyperparameters = self.space.sample_configuration().get_dictionary()
+            self.hyperparameters = dict(self.space.sample_configuration())
 
         self.check_hyperparameters_for_None()
 
@@ -55,7 +55,7 @@ class EstimatorNodeIndividual(SklearnIndividual):
         
         rng = np.random.default_rng(rng)
         self.space.seed(rng.integers(0, 2**32))
-        self.hyperparameters = self.space.sample_configuration().get_dictionary()
+        self.hyperparameters = dict(self.space.sample_configuration())
 
         self.check_hyperparameters_for_None()
         return True
