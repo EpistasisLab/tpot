@@ -4,11 +4,29 @@ from sklearn.datasets import load_iris
 import random
 import sklearn
 
+@pytest.fixture
+def sample_dataset():
+    X_train, y_train = load_iris(return_X_y=True)
+    return X_train, y_train
+
 #standard test
 @pytest.fixture
 def tpot_estimator():
-    return tpot2.TPOTEstimator(  population_size=10,
-                            generations=5,
+
+    n_classes=3
+    n_samples=100
+    n_features=100
+
+    search_space = tpot2.search_spaces.pipelines.GraphPipeline(
+            root_search_space= tpot2.config.get_search_space("classifiers", n_samples=n_samples, n_features=n_features, n_classes=n_classes),
+            leaf_search_space = None, 
+            inner_search_space = tpot2.config.get_search_space(["selectors","transformers","classifiers"],n_samples=n_samples, n_features=n_features, n_classes=n_classes),
+            max_size = 10,
+        )
+    return tpot2.TPOTEstimator(  
+                            search_space=search_space,
+                            population_size=10,
+                            generations=2,
                             scorers=['roc_auc_ovr'],
                             scorers_weights=[1],
                             classification=True,
@@ -16,13 +34,18 @@ def tpot_estimator():
                             early_stop=5,
                             other_objective_functions= [],
                             other_objective_functions_weights=[],
-                            max_time_seconds=300,
+                            max_time_seconds=30,
                             verbose=3)
 
 @pytest.fixture
-def sample_dataset():
-    X_train, y_train = load_iris(return_X_y=True)
-    return X_train, y_train
+def tpot_classifier():
+    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_seconds=10,verbose=3)
+
+@pytest.fixture
+def tpot_regressor():
+    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=10,verbose=3)
+
+
 
 def test_tpot_estimator_fit(tpot_estimator,sample_dataset):
     #load iris dataset
@@ -80,13 +103,7 @@ def test_tpot_estimator_config_dict_type():
 
 
 
-@pytest.fixture
-def tpot_classifier():
-    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_seconds=10,verbose=3)
 
-@pytest.fixture
-def tpot_regressor():
-    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=10,verbose=3)
 
 def test_tpot_classifier_fit(tpot_classifier,sample_dataset):
     #load iris dataset

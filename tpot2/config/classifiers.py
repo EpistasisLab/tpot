@@ -292,8 +292,8 @@ def get_PassiveAggressiveClassifier_ConfigurationSpace(random_state):
 #TODO support auto shrinkage when solver is svd. may require custom node
 def get_LinearDiscriminantAnalysis_ConfigurationSpace():
 
-    solver = Categorical("solver", ['svd', 'lsqr', 'eigen']),
-    shrinkage = Float("shrinkage", bounds=(0, 1)),
+    solver = Categorical("solver", ['svd', 'lsqr', 'eigen'])
+    shrinkage = Float("shrinkage", bounds=(0, 1))
 
     shrinkcond = NotEqualsCondition(shrinkage, solver, 'svd')
 
@@ -301,7 +301,7 @@ def get_LinearDiscriminantAnalysis_ConfigurationSpace():
     cs.add_hyperparameters([solver, shrinkage])
     cs.add_conditions([shrinkcond])
 
-    return 
+    return cs
 
 
 
