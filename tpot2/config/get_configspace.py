@@ -88,7 +88,10 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.linear_model import ElasticNetCV
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-
+from sklearn.linear_model import PassiveAggressiveClassifier
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.linear_model import ARDRegression
+from sklearn.gaussian_process import GaussianProcessRegressor
 
 from sklearn.gaussian_process import GaussianProcessRegressor
 
@@ -105,7 +108,7 @@ all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, Grad
                AdaBoostClassifier,
                GaussianProcessRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor,
                AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer,
-               PowerTransformer, QuantileTransformer,
+               PowerTransformer, QuantileTransformer,ARDRegression, QuadraticDiscriminantAnalysis, PassiveAggressiveClassifier, LinearDiscriminantAnalysis,
                ]
 
 
@@ -145,17 +148,14 @@ STRING_TO_CLASS = {
 }
 
 
-from sklearn.linear_model import PassiveAggressiveClassifier
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from sklearn.linear_model import ARDRegression
-from sklearn.gaussian_process import GaussianProcessRegressor
+
 
 GROUPNAMES = {
         "selectors": ["SelectFwe", "SelectPercentile", "VarianceThreshold",],
         "selectors_classification": ["SelectFwe", "SelectPercentile", "VarianceThreshold", "RFE_classification", "SelectFromModel_classification"],
         "selectors_regression": ["SelectFwe", "SelectPercentile", "VarianceThreshold", "RFE_regression", "SelectFromModel_regression"],
-        "classifiers" :  ['AdaBoostClassifier', 'BernoulliNB', 'DecisionTreeClassifier', 'ExtraTreesClassifier', 'GaussianNB', 'HistGradientBoostingClassifier', 'KNeighborsClassifier', 'LogisticRegression', "LinearSVC", "SVC", 'MLPClassifier', 'MultinomialNB', "PassiveAggressiveClassifier", "QuadraticDiscriminantAnalysis", 'RandomForestClassifier', 'SGDClassifier', 'XGBClassifier'],
-        "regressors" : ['AdaBoostRegressor', "ARDRegression", 'DecisionTreeRegressor', 'ExtraTreesRegressor', 'GaussianProcessRegressor', 'HistGradientBoostingRegressor', 'KNeighborsRegressor', 'LinearDiscriminantAnalysis', 'LinearSVR', "MLPRegressor", 'RandomForestRegressor', 'SGDRegressor', 'SVR', 'XGBRegressor'],
+        "classifiers" :  ['AdaBoostClassifier', 'BernoulliNB', 'DecisionTreeClassifier', 'ExtraTreesClassifier', 'GaussianNB', 'HistGradientBoostingClassifier', 'KNeighborsClassifier','LinearDiscriminantAnalysis', 'LogisticRegression', "LinearSVC", "SVC", 'MLPClassifier', 'MultinomialNB', "PassiveAggressiveClassifier", "QuadraticDiscriminantAnalysis", 'RandomForestClassifier', 'SGDClassifier', 'XGBClassifier'],
+        "regressors" : ['AdaBoostRegressor', "ARDRegression", 'DecisionTreeRegressor', 'ExtraTreesRegressor', 'GaussianProcessRegressor', 'HistGradientBoostingRegressor', 'KNeighborsRegressor',  'LinearSVR', "MLPRegressor", 'RandomForestRegressor', 'SGDRegressor', 'SVR', 'XGBRegressor'],
         
         
         "transformers":  ["Binarizer", "PCA", "ZeroCount", "ColumnOneHotEncoder", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer"],
