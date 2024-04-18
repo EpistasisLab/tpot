@@ -1,6 +1,6 @@
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
-
+from ..search_spaces.nodes.estimator_node import NONE_SPECIAL_STRING, TRUE_SPECIAL_STRING, FALSE_SPECIAL_STRING
 
 def get_RandomForestClassifier_ConfigurationSpace(random_state):
     space = {
@@ -66,10 +66,9 @@ def get_NuSVC_ConfigurationSpace(random_state):
     space = {
         'nu': Float("nu", bounds=(0.05, 1.0)),
         'kernel': Categorical("kernel", ['poly', 'rbf', 'linear', 'sigmoid']),
-        'C': Float("C", bounds=(1e-4, 25), log=True),
+        #'C': Float("C", bounds=(1e-4, 25), log=True),
         'degree': Integer("degree", bounds=(1, 4)),
-        #TODO work around for None value?
-        #'class_weight': Categorical("class_weight", [None, 'balanced']),
+        'class_weight': Categorical("class_weight", [NONE_SPECIAL_STRING, 'balanced']),
         'max_iter': 3000,
         'tol': 0.005,
         'probability': Categorical("probability", [True]), # configspace doesn't allow bools as a default value? but does allow them as a value inside a Categorical

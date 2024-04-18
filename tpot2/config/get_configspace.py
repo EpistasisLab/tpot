@@ -2,6 +2,7 @@ import importlib.util
 import sys
 import numpy as np
 import warnings
+import importlib.util
 
 from ..search_spaces.nodes import EstimatorNode
 from ..search_spaces.pipelines import ChoicePipeline, WrapperPipeline
@@ -27,7 +28,7 @@ from tpot2.builtin_modules import feature_encoding_frequency_selector
 
 from sklearn.linear_model import SGDClassifier
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier
-from sklearn.neural_network import MLPClassifier
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -101,51 +102,64 @@ from xgboost import XGBRegressor
 from tpot2.builtin_modules import AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer
 
 
+from tpot2.builtin_modules.genetic_encoders import DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder 
+
 #MDR
 
 
 all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, MLPClassifier, DecisionTreeClassifier, XGBClassifier, KNeighborsClassifier, SVC, LogisticRegression, LGBMClassifier, LinearSVC, GaussianNB, BernoulliNB, MultinomialNB, ExtraTreesRegressor, RandomForestRegressor, GradientBoostingRegressor, BaggingRegressor, DecisionTreeRegressor, KNeighborsRegressor, XGBRegressor,  ZeroCount, OneHotEncoder, ColumnOneHotEncoder, Binarizer, FastICA, FeatureAgglomeration, MaxAbsScaler, MinMaxScaler, Normalizer, Nystroem, PCA, PolynomialFeatures, RBFSampler, RobustScaler, StandardScaler, SelectFwe, SelectPercentile, VarianceThreshold, SGDRegressor, Ridge, Lasso, ElasticNet, Lars, LassoLars, LassoLarsCV, RidgeCV, SVR, LinearSVR, AdaBoostRegressor, GradientBoostingRegressor, RandomForestRegressor, BaggingRegressor, ExtraTreesRegressor, DecisionTreeRegressor, KNeighborsRegressor, ElasticNetCV,
-               AdaBoostClassifier,
+               AdaBoostClassifier,MLPRegressor,
                GaussianProcessRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor,
                AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer,
                PowerTransformer, QuantileTransformer,ARDRegression, QuadraticDiscriminantAnalysis, PassiveAggressiveClassifier, LinearDiscriminantAnalysis,
+               DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder,
                ]
 
 
 #if mdr is installed
-if 'mdr' in sys.modules:
+if importlib.util.find_spec('mdr') is not None:
     from mdr import MDR, ContinuousMDR
     all_methods.append(MDR)
     all_methods.append(ContinuousMDR)
 
-if 'skrebate' in sys.modules:
+if importlib.util.find_spec('skrebate') is not None:
     from skrebate import ReliefF, SURF, SURFstar, MultiSURF
     all_methods.append(ReliefF)
     all_methods.append(SURF)
     all_methods.append(SURFstar)
     all_methods.append(MultiSURF)
 
-if 'sklearnex' in sys.modules:
-    import sklearnex
-
-    all_methods.append(sklearnex.linear_model.LinearRegression)
-    all_methods.append(sklearnex.linear_model.Ridge)
-    all_methods.append(sklearnex.linear_model.Lasso)
-    all_methods.append(sklearnex.linear_model.ElasticNet)
-    all_methods.append(sklearnex.svm.SVR)
-    all_methods.append(sklearnex.svm.NuSVR)
-    all_methods.append(sklearnex.ensemble.RandomForestRegressor)
-    all_methods.append(sklearnex.neighbors.KNeighborsRegressor)
-    all_methods.append(sklearnex.ensemble.RandomForestClassifier)
-    all_methods.append(sklearnex.neighbors.KNeighborsClassifier)
-    all_methods.append(sklearnex.svm.SVC)
-    all_methods.append(sklearnex.svm.NuSVC)
-    all_methods.append(sklearnex.linear_model.LogisticRegression)
-
-
 STRING_TO_CLASS = {
     t.__name__: t for t in all_methods
 }
+
+if importlib.util.find_spec('sklearnex') is not None:
+    import sklearnex
+    import sklearnex.linear_model
+    import sklearnex.svm
+    import sklearnex.ensemble
+    import sklearnex.neighbors
+
+
+    sklearnex_methods = []
+
+    sklearnex_methods.append(sklearnex.linear_model.LinearRegression)
+    sklearnex_methods.append(sklearnex.linear_model.Ridge)
+    sklearnex_methods.append(sklearnex.linear_model.Lasso)
+    sklearnex_methods.append(sklearnex.linear_model.ElasticNet)
+    sklearnex_methods.append(sklearnex.svm.SVR)
+    sklearnex_methods.append(sklearnex.svm.NuSVR)
+    sklearnex_methods.append(sklearnex.ensemble.RandomForestRegressor)
+    sklearnex_methods.append(sklearnex.neighbors.KNeighborsRegressor)
+    sklearnex_methods.append(sklearnex.ensemble.RandomForestClassifier)
+    sklearnex_methods.append(sklearnex.neighbors.KNeighborsClassifier)
+    sklearnex_methods.append(sklearnex.svm.SVC)
+    sklearnex_methods.append(sklearnex.svm.NuSVC)
+    sklearnex_methods.append(sklearnex.linear_model.LogisticRegression)
+
+    STRING_TO_CLASS.update({f"{t.__name__}_sklearnex": t for t in sklearnex_methods})
+
+
 
 
 
@@ -439,15 +453,6 @@ def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_st
     if name in GROUPNAMES:
         name_list = GROUPNAMES[name]
         return get_search_space(name_list, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
-
-    if name is None:
-        warnings.warn(f"name is None")
-        return None
-
-    if name not in STRING_TO_CLASS:
-        print("FOOO ", name)
-        warnings.warn(f"Could not find class for {name}")
-        return None
     
     return get_node(name, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
 
@@ -458,21 +463,21 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
     # TODO Add AdaBoostRegressor, AdaBoostClassifier as wrappers? wrap a decision tree with different params?
     # TODO add other meta-estimators?
     if name == "RFE_classification":
-        rfe_sp = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        rfe_sp = get_configspace(name="RFE", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         ext = get_node("ExtraTreesClassifier", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return WrapperPipeline(nodegen=ext, method=RFE, configspace=rfe_sp)
+        return WrapperPipeline(nodegen=ext, method=RFE, space=rfe_sp)
     if name == "RFE_regression":
-        rfe_sp = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        rfe_sp = get_configspace(name="RFE", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         ext = get_node("ExtraTreesRegressor", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return WrapperPipeline(nodegen=ext, method=RFE, configspace=rfe_sp)
+        return WrapperPipeline(nodegen=ext, method=RFE, space=rfe_sp)
     if name == "SelectFromModel_classification":
-        sfm_sp = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        sfm_sp = get_configspace(name="SelectFromModel", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         ext = get_node("ExtraTreesClassifier", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return WrapperPipeline(nodegen=ext, method=SelectFromModel, configspace=sfm_sp)
+        return WrapperPipeline(nodegen=ext, method=SelectFromModel, space=sfm_sp)
     if name == "SelectFromModel_regression":
-        sfm_sp = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        sfm_sp = get_configspace(name="SelectFromModel", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         ext = get_node("ExtraTreesRegressor", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return WrapperPipeline(nodegen=ext, method=SelectFromModel, configspace=sfm_sp)
+        return WrapperPipeline(nodegen=ext, method=SelectFromModel, space=sfm_sp)
     
     #these are nodes that have special search spaces which require custom parsing of the hyperparameters
     if name == "RobustScaler":

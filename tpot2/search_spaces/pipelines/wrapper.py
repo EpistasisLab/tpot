@@ -21,14 +21,14 @@ class WrapperPipelineIndividual(SklearnIndividual):
         super().__init__()
         
         self.nodegen = nodegen
-        self.node = np.random.default_rng(rng).choice(self.nodegen).generate()
+        self.node = self.nodegen.generate(rng)
 
 
         self.method = method
         self.space = space
         rng = np.random.default_rng(rng)
         self.space.seed(rng.integers(0, 2**32))
-        self.hyperparameters = self.space.sample_configuration().get_dictionary()
+        self.hyperparameters = dict(self.space.sample_configuration())
 
         
         
@@ -43,7 +43,7 @@ class WrapperPipelineIndividual(SklearnIndividual):
     def _mutate_hyperparameters(self, rng=None):
         rng = np.random.default_rng(rng)
         self.space.seed(rng.integers(0, 2**32))
-        self.hyperparameters = self.space.sample_configuration().get_dictionary()
+        self.hyperparameters = dict(self.space.sample_configuration())
         return True
     
     def _mutate_node(self, rng=None):
