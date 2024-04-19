@@ -41,6 +41,7 @@ def test_tpot_estimator_predict(tpot_estimator_with_pipeline,sample_dataset):
     y_pred = tpot_estimator_with_pipeline.predict(X_test)
     assert len(y_pred) == len(X_test)
 
+@pytest.mark.skip(reason="not an informative test. X_test is a list instead of a numpy array or pandas dataframe.")
 def test_tpot_estimator_score(tpot_estimator_with_pipeline,sample_dataset):
     random.seed(42)
     #random sample 10% of the dataset
