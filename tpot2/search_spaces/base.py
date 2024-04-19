@@ -40,10 +40,6 @@ class SklearnIndividualGenerator():
         pass
 
 
-
-
-
-
 def flatten_graphpipeline(est):
     flattened_full_graph = est.graph.copy()
 

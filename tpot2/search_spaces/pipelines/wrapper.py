@@ -13,7 +13,8 @@ class WrapperPipelineIndividual(SklearnIndividual):
     def __init__(self, 
                  nodegen: SklearnIndividualGenerator, 
                  method: type, 
-                space: ConfigurationSpace,
+                 space: ConfigurationSpace,
+                 hyperparameter_parser: callable = None,
                  rng=None) -> None:
 
 
@@ -30,7 +31,7 @@ class WrapperPipelineIndividual(SklearnIndividual):
         self.space.seed(rng.integers(0, 2**32))
         self.hyperparameters = dict(self.space.sample_configuration())
 
-        
+        self.hyperparameters_parser = hyperparameter_parser
         
 
     def mutate(self, rng=None):
@@ -53,14 +54,24 @@ class WrapperPipelineIndividual(SklearnIndividual):
         return self.node.crossover(other.node, rng)
     
     def export_pipeline(self):
+        
+        if self.hyperparameters_parser is not None:
+            final_params = self.hyperparameters_parser(self.hyperparameters)
+        else:
+            final_params = self.hyperparameters
 
         est = self.node.export_pipeline()
-        wrapped_est = self.method(est, **self.hyperparameters)
+        wrapped_est = self.method(est, **final_params)
         return wrapped_est
     
-    
     def unique_id(self):
-        return self.node.unique_id()
+
+        if self.hyperparameters_parser is not None:
+            final_params = self.hyperparameters_parser(self.hyperparameters)
+        else:
+            final_params = self.hyperparameters
+
+        return (self.method, str(tuple(sorted(list(final_params.items())))) ,self.node.unique_id())
     
 
 class WrapperPipeline(SklearnIndividualGenerator):

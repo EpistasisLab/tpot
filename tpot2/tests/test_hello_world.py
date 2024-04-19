@@ -17,10 +17,6 @@ def test_hello_world(test_input, expected):
     assert test_input is expected
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
-def test_divide_by_zero():
-    assert 1 / 0 == 1
-
 
 def test_print(capture_stdout):
     print("Hello World")

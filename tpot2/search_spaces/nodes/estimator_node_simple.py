@@ -12,7 +12,7 @@ class EstimatorNodeIndividual(SklearnIndividual):
     def __init__(self, method, space ) -> None:
         super().__init__()
         self.method = method
-        self.space = space
+        self.space = space #a dictionary. keys are hyperparameters, values are the space of the hyperparameter. If list, then hyperparameter is categorical. If tuple, then hyperparameter is continuous. If single value, then hyperparameter is fixed.
         
         self._mutate_hyperparameters()
 

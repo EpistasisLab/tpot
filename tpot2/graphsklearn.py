@@ -11,6 +11,8 @@ from sklearn.utils.metaestimators import _BaseComposition
 from sklearn.utils.validation import check_memory
 from sklearn.preprocessing import LabelEncoder
 
+from sklearn.base import is_classifier, is_regressor
+
 #labels - str
 #attributes - "instance" -> instance of the type
 
@@ -128,7 +130,7 @@ def fit_sklearn_digraph(graph: nx.DiGraph,
         #    instance.fit(this_X, y)
         
 
-        if issubclass(type(instance), sklearn.base.RegressorMixin) or issubclass(type(instance), sklearn.base.ClassifierMixin):
+        if is_classifier(instance) or is_regressor(instance):
             transformed, instance = estimator_fit_transform_override_cross_val_predict_cached(instance, this_X, y, cv=cross_val_predict_cv, method=method)
         else:
             transformed, instance = fit_transform_one_cached(instance, this_X, y)#instance.fit_transform(this_X,y)
@@ -168,7 +170,7 @@ def transform_sklearn_digraph(graph: nx.DiGraph,
         else:
             this_X = np.hstack([transformed_steps[child] for child in get_ordered_successors(graph, node)])
             
-        if issubclass(type(instance), sklearn.base.RegressorMixin) or issubclass(type(instance), sklearn.base.ClassifierMixin):
+        if is_classifier(instance) or is_regressor(instance):
             this_method = _method_name(instance.__class__.__name__, instance, method)
             transformed = getattr(instance, this_method)(this_X)
         else:
