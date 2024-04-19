@@ -3,7 +3,7 @@ from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 from ConfigSpace import EqualsCondition, OrConjunction, NotEqualsCondition, InCondition
 from ..search_spaces.nodes.estimator_node import NONE_SPECIAL_STRING, TRUE_SPECIAL_STRING, FALSE_SPECIAL_STRING
 import numpy as np
-
+import sklearn
 
 
 #TODO Conditional search space to prevent invalid combinations of hyperparameters
@@ -439,3 +439,41 @@ def MLPClassifier_hyperparameter_parser(params):
         'early_stopping': params['early_stopping'],
     }
     return hyperparameters
+
+###
+
+
+###
+
+def get_GaussianProcessClassifier_ConfigurationSpace(n_features, random_state):
+    space = {
+        'n_features': n_features,
+        'alpha': Float("alpha", bounds=(1e-14, 1.0), log=True),
+        'thetaL': Float("thetaL", bounds=(1e-10, 1e-3), log=True),
+        'thetaU': Float("thetaU", bounds=(1.0, 100000), log=True),
+    }
+
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
+    
+    return ConfigurationSpace(
+        space = space
+    )
+
+def GaussianProcessClassifier_hyperparameter_parser(params):
+    kernel = sklearn.gaussian_process.kernels.RBF(
+        length_scale = [1.0]*params['n_features'],
+        length_scale_bounds=[(params['thetaL'], params['thetaU'])] * params['n_features'],
+    )
+    final_params = {"kernel": kernel, 
+                    "alpha": params['alpha'],
+                    "n_restarts_optimizer": 10,
+                    "optimizer": "fmin_l_bfgs_b",
+                    "normalize_y": True,
+                    "copy_X_train": True,
+                    }
+    
+    if "random_state" in params:
+        final_params['random_state'] = params['random_state']
+    
+    return final_params
