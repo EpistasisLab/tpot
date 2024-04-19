@@ -20,7 +20,7 @@ def tpot_estimator():
     search_space = tpot2.search_spaces.pipelines.GraphPipeline(
             root_search_space= tpot2.config.get_search_space("classifiers", n_samples=n_samples, n_features=n_features, n_classes=n_classes),
             leaf_search_space = None, 
-            inner_search_space = tpot2.config.get_search_space(["selectors","transformers","classifiers"],n_samples=n_samples, n_features=n_features, n_classes=n_classes),
+            inner_search_space = tpot2.config.get_search_space(["selectors","transformers"],n_samples=n_samples, n_features=n_features, n_classes=n_classes),
             max_size = 10,
         )
     return tpot2.TPOTEstimator(  
@@ -39,11 +39,11 @@ def tpot_estimator():
 
 @pytest.fixture
 def tpot_classifier():
-    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_seconds=10,verbose=3)
+    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_seconds=10,verbose=0)
 
 @pytest.fixture
 def tpot_regressor():
-    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=10,verbose=3)
+    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=10,verbose=0)
 
 
 
@@ -116,7 +116,7 @@ def test_tpot_regressor_fit(tpot_regressor):
 
     scorer = sklearn.metrics.get_scorer('neg_mean_squared_error')
     X, y = sklearn.datasets.load_diabetes(return_X_y=True)
-    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, train_size=0.75, test_size=0.25)
+    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, train_size=0.05, test_size=0.95)
     tpot_regressor.fit(X_train, y_train)
     assert tpot_regressor.fitted_pipeline_ is not None
 

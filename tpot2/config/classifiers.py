@@ -307,7 +307,7 @@ def get_LinearDiscriminantAnalysis_ConfigurationSpace():
 
 #### Gradient Boosting Classifiers
 
-def get_GradientBoostingClassifier_ConfigurationSpace(n_features, random_state):
+def get_GradientBoostingClassifier_ConfigurationSpace(n_classes, n_features, random_state):
     early_stop = Categorical("early_stop", ["off", "valid", "train"])
     n_iter_no_change = Integer("n_iter_no_change",bounds=(1,20))
     validation_fraction = Float("validation_fraction", bounds=(0.01, 0.4))
@@ -316,7 +316,6 @@ def get_GradientBoostingClassifier_ConfigurationSpace(n_features, random_state):
     validation_fraction_cond = EqualsCondition(validation_fraction, early_stop, "valid")
 
     space = {
-        'loss': Categorical("loss", ['log_loss', 'exponential']),
         'learning_rate': Float("learning_rate", bounds=(1e-3, 1), log=True),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 200)),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
@@ -326,6 +325,11 @@ def get_GradientBoostingClassifier_ConfigurationSpace(n_features, random_state):
         'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
         'tol': 1e-4,
     }
+
+    if n_classes == 2:
+        space['loss']= Categorical("loss", ['log_loss', 'exponential'])
+    else:
+        space['loss'] = "log_loss"
 
     if random_state is not None: #This is required because configspace doesn't allow None as a value
         space['random_state'] = random_state

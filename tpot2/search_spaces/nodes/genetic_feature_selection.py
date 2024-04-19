@@ -146,7 +146,7 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
     
 
     def unique_id(self):
-        return self.mask
+        return tuple(self.mask)
     
 
 class GeneticFeatureSelectorNode(SklearnIndividualGenerator):

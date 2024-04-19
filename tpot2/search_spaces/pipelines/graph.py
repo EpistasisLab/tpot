@@ -10,6 +10,7 @@ from ..graph_utils import *
 from ..nodes.estimator_node import EstimatorNodeIndividual
 from typing import Union, Callable
 import sklearn
+from functools import partial
 
 class GraphPipelineIndividual(SklearnIndividual):
     """
@@ -100,10 +101,10 @@ class GraphPipelineIndividual(SklearnIndividual):
 
         self.merge_duplicated_nodes_toggle = True
 
+        self.graphkey = None
 
     def mutate(self, rng=None):
         rng = np.random.default_rng(rng)
-        self.key = None
 
         rng.shuffle(self.mutate_methods_list)
         for mutate_method in self.mutate_methods_list:
@@ -130,7 +131,8 @@ class GraphPipelineIndividual(SklearnIndividual):
                             print('something went wrong with ', mutate_method)
                         except:
                             pass
-
+                        
+                self.graphkey = None
                 return True
 
         return False
@@ -335,6 +337,9 @@ class GraphPipelineIndividual(SklearnIndividual):
                 print('something went wrong with ', crossover_method)
             except:
                 pass
+        
+        if finished:
+            self.graphkey = None
 
         return finished
 
@@ -661,12 +666,17 @@ class GraphPipelineIndividual(SklearnIndividual):
         plt.show()
 
 
-
-
-
-
     def unique_id(self):
-        return self
+        if self.graphkey is None:
+            #copy self.graph
+            new_graph = self.graph.copy()
+            for n in new_graph.nodes:
+                new_graph.nodes[n]['label'] = n.unique_id()
+            
+            new_graph = nx.convert_node_labels_to_integers(new_graph)
+            self.graphkey = GraphKey(new_graph)
+        
+        return self.graphkey
     
 
 class GraphPipeline(SklearnIndividualGenerator):
@@ -754,3 +764,42 @@ class GraphPipeline(SklearnIndividualGenerator):
                 func(rng=rng)
 
         return ind
+    
+
+
+
+
+class GraphKey():
+    '''
+    A class that can be used as a key for a graph.
+
+    Parameters
+    ----------
+    graph : (nx.Graph)
+        The graph to use as a key. Node Attributes are used for the hash.
+    matched_label : (str)
+        The node attribute to consider for the hash.
+    '''
+
+    def __init__(self, graph, matched_label='label') -> None:#['hyperparameters', 'method_class']) -> None:
+
+
+        self.graph = graph
+        self.matched_label = matched_label
+        self.node_match = partial(node_match, matched_labels=[matched_label])
+        self.key = int(nx.weisfeiler_lehman_graph_hash(self.graph, node_attr=self.matched_label),16) #hash(tuple(sorted([val for (node, val) in self.graph.degree()])))
+
+
+    #If hash is different, node is definitely different
+    # https://arxiv.org/pdf/2002.06653.pdf
+    def __hash__(self) -> int:
+
+        return self.key
+
+    #If hash is same, use __eq__ to know if they are actually different
+    def __eq__(self, other):
+        return nx.is_isomorphic(self.graph, other.graph, node_match=self.node_match)
+
+def node_match(n1,n2, matched_labels):
+    return all( [ n1[m] == n2[m] for m in matched_labels])
+

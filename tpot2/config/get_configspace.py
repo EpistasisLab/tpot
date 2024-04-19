@@ -223,7 +223,7 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
         case "RandomForestClassifier":
             return classifiers.get_RandomForestClassifier_ConfigurationSpace(n_features=n_features, random_state=random_state)
         case "GradientBoostingClassifier":
-            return classifiers.get_GradientBoostingClassifier_ConfigurationSpace(n_features=n_features, random_state=random_state)
+            return classifiers.get_GradientBoostingClassifier_ConfigurationSpace(n_classes=n_classes, n_features=n_features, random_state=random_state)
         case "HistGradientBoostingClassifier":
             return classifiers.get_HistGradientBoostingClassifier_ConfigurationSpace(n_features=n_features, random_state=random_state)
         case "XGBClassifier":
