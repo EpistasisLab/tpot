@@ -11,16 +11,13 @@ from pandas.api.types import is_numeric_dtype
 
 
 
-def auto_select_categorical_features(X):
+def auto_select_categorical_features(X, min_unique=10,):
 
-    if not isinstance(X, pd.DataFrame):
-        return []
-    
-    feature_mask = []
-    for column in X.columns:
-        feature_mask.append(not is_numeric_dtype(X[column]))
+    if isinstance(X, pd.DataFrame):
+        return [col for col in X.columns if len(X[col].unique()) < min_unique]
+    else:
+        return [i for i in range(X.shape[1]) if len(np.unique(X[:, i])) < min_unique]
 
-    return feature_mask
 
 
 def _X_selected(X, selected):
@@ -41,6 +38,21 @@ class ColumnOneHotEncoder(BaseEstimator, TransformerMixin):
 
 
     def __init__(self, columns='auto', drop=None, handle_unknown='error', sparse_output=False, min_frequency=None,max_categories=None):
+        '''
+        
+        Parameters
+        ----------
+
+        columns : str, list, default='auto'
+            - 'auto' : Automatically select categorical features based on columns with less than 10 unique values
+            - 'categorical' : Automatically select categorical features
+            - 'numeric' : Automatically select numeric features
+            - 'all' : Select all features
+            - list : A list of columns to select
+        
+        drop, handle_unknown, sparse_output, min_frequency, max_categories : see sklearn.preprocessing.OneHotEncoder
+
+        '''
 
         self.columns = columns
         self.drop = drop
@@ -73,6 +85,8 @@ class ColumnOneHotEncoder(BaseEstimator, TransformerMixin):
             self.columns_ = list(X.select_dtypes(exclude='number').columns)
         elif self.columns == "numeric":
             self.columns_ =  [col for col in X.columns if is_numeric_dtype(X[col])]
+        elif self.columns == "auto":
+            self.columns_ = auto_select_categorical_features(X)
         elif self.columns == "all":
             if isinstance(X, pd.DataFrame):
                 self.columns_ = X.columns

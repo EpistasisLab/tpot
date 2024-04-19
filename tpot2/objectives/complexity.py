@@ -142,7 +142,7 @@ complexity_objective_per_estimator =    {   LogisticRegression: _count_nonzero_c
 
 def calculate_model_complexity(est):
     if isinstance(est, sklearn.pipeline.Pipeline) or isinstance(est, sklearn.pipeline.FeatureUnion):
-        return sum(calculate_model_complexity(estimator) for estimator in est.steps)
+        return sum(calculate_model_complexity(estimator) for _,estimator in est.steps)
     if isinstance(est, GraphPipeline):
         return sum(calculate_model_complexity(est.graph.nodes[node]['instance']) for node in est.graph.nodes)
 

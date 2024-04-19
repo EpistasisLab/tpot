@@ -483,9 +483,10 @@ class BaseEvolver():
         except KeyboardInterrupt:
             if self.verbose >= 3:
                 print("KeyboardInterrupt")
-
             self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="INVALID")
             self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
+            self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="INVALID")
+            self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="TIMEOUT")
 
 
 
@@ -623,8 +624,7 @@ class BaseEvolver():
             parallel_timeout = 10
 
         #scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
-        scores, start_times, end_times = tpot2.utils.eval_utils.parallel_eval_objective_list2(individuals_to_evaluate, self.objective_functions, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, **self.objective_kwargs)
-
+        scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(individuals_to_evaluate, self.objective_functions, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, **self.objective_kwargs)
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
         if budget is not None:
@@ -632,8 +632,9 @@ class BaseEvolver():
 
         self.population.update_column(individuals_to_evaluate, column_names="Submitted Timestamp", data=start_times)
         self.population.update_column(individuals_to_evaluate, column_names="Completed Timestamp", data=end_times)
-        self.population.remove_invalid_from_population(column_names=self.objective_names)
-        self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
+        self.population.update_column(individuals_to_evaluate, column_names="Eval Error", data=eval_errors)
+        self.population.remove_invalid_from_population(column_names="Eval Error")
+        self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="TIMEOUT")
 
     def get_unevaluated_individuals(self, column_names, budget=None, individual_list=None):
         if individual_list is not None:
@@ -695,7 +696,7 @@ class BaseEvolver():
             if parallel_timeout < 0:
                 parallel_timeout = 10
 
-            scores, start_times, end_times = tpot2.utils.eval_utils.parallel_eval_objective_list2(individual_list=unevaluated_individuals_this_step,
+            scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(individual_list=unevaluated_individuals_this_step,
                                     objective_list=self.objective_functions,
                                     verbose=self.verbose,
                                     max_eval_time_seconds=self.max_eval_time_seconds,
@@ -706,14 +707,14 @@ class BaseEvolver():
                                     client=self._client,
                                     **self.objective_kwargs,
                                     )
-
+            
             self.population.update_column(unevaluated_individuals_this_step, column_names=this_step_names, data=scores)
             self.population.update_column(unevaluated_individuals_this_step, column_names="Submitted Timestamp", data=start_times)
             self.population.update_column(unevaluated_individuals_this_step, column_names="Completed Timestamp", data=end_times)
+            self.population.update_column(unevaluated_individuals_this_step, column_names="Eval Error", data=eval_errors)
 
-
-            self.population.remove_invalid_from_population(column_names=this_step_names)
-            self.population.remove_invalid_from_population(column_names=this_step_names, invalid_value="TIMEOUT")
+            self.population.remove_invalid_from_population(column_names="Eval Error")
+            self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="TIMEOUT")
 
             #remove invalids:
             invalids = []
