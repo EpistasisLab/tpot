@@ -131,7 +131,7 @@ class GraphPipelineIndividual(SklearnIndividual):
                             print('something went wrong with ', mutate_method)
                         except:
                             pass
-                        
+
                 self.graphkey = None
                 return True
 
@@ -568,11 +568,11 @@ class GraphPipelineIndividual(SklearnIndividual):
             node_list = list(self.graph.nodes)
             merged = True
             for node, other_node in itertools.product(node_list, node_list):
-                if node is other_node or (not isinstance(node, EstimatorNodeIndividual)) or (not isinstance(other_node, EstimatorNodeIndividual)): #TODO make this account for other types of nodes. maybe add a __eq__ method to the nodes
+                if node is other_node:
                     continue
 
                 #If nodes are same class/hyperparameters
-                if node.method == other_node.method and node.hyperparameters == other_node.hyperparameters:
+                if node.unique_id() == other_node.unique_id():
                     node_children = set(self.graph.successors(node))
                     other_node_children = set(self.graph.successors(other_node))
                     #if nodes have identical children, they can be merged

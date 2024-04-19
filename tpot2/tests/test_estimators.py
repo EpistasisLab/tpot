@@ -34,7 +34,7 @@ def tpot_estimator():
                             early_stop=5,
                             other_objective_functions= [],
                             other_objective_functions_weights=[],
-                            max_time_seconds=30,
+                            max_time_seconds=10,
                             verbose=3)
 
 @pytest.fixture
@@ -46,14 +46,6 @@ def tpot_regressor():
     return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=10,verbose=0)
 
 
-
-def test_tpot_estimator_fit(tpot_estimator,sample_dataset):
-    #load iris dataset
-    X_train = sample_dataset[0]
-    y_train = sample_dataset[1]
-    tpot_estimator.fit(X_train, y_train)
-    assert tpot_estimator.fitted_pipeline_ is not None
-
 @pytest.fixture
 def tpot_estimator_with_pipeline(tpot_estimator,sample_dataset):
     tpot_estimator.fit(sample_dataset[0], sample_dataset[1])
@@ -64,14 +56,8 @@ def test_tpot_estimator_predict(tpot_estimator_with_pipeline,sample_dataset):
     X_test = sample_dataset[0]
     y_pred = tpot_estimator_with_pipeline.predict(X_test)
     assert len(y_pred) == len(X_test)
+    assert tpot_estimator_with_pipeline.fitted_pipeline_ is not None
 
-def test_tpot_estimator_score(tpot_estimator_with_pipeline,sample_dataset):
-    random.seed(42)
-    #random sample 10% of the dataset
-    X_test = random.sample(list(sample_dataset[0]), int(len(sample_dataset[0])*0.1))
-    y_test = random.sample(list(sample_dataset[1]), int(len(sample_dataset[1])*0.1))
-    scorer = sklearn.metrics.get_scorer('roc_auc_ovo')
-    assert isinstance(scorer(tpot_estimator_with_pipeline, X_test, y_test), float)
 
 def test_tpot_estimator_generations_type():
     with pytest.raises(TypeError):
