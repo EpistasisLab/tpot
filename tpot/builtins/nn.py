@@ -120,6 +120,7 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
         # pylint: disable=no-member
 
         self._init_model(X, y)
+        self.classes_ = np.unique(y)
 
         assert _pytorch_model_is_fully_initialized(self)
 
