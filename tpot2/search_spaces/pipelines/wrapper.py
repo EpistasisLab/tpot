@@ -10,19 +10,20 @@ from ConfigSpace import ConfigurationSpace
 
 
 class WrapperPipelineIndividual(SklearnIndividual):
-    def __init__(self, 
-                 nodegen: SklearnIndividualGenerator, 
-                 method: type, 
-                 space: ConfigurationSpace,
-                 hyperparameter_parser: callable = None,
-                 rng=None) -> None:
+    def __init__(
+            self, 
+            method: type, 
+            space: ConfigurationSpace,
+            estimator_search_space: SklearnIndividualGenerator, 
+            hyperparameter_parser: callable = None,
+            rng=None) -> None:
 
 
 
         super().__init__()
         
-        self.nodegen = nodegen
-        self.node = self.nodegen.generate(rng)
+        self.estimator_search_space = estimator_search_space
+        self.node = self.estimator_search_space.generate(rng)
 
 
         self.method = method
@@ -75,10 +76,11 @@ class WrapperPipelineIndividual(SklearnIndividual):
     
 
 class WrapperPipeline(SklearnIndividualGenerator):
-    def __init__(self, nodegen: SklearnIndividualGenerator, 
-                 method: type, 
-                space: ConfigurationSpace,
-                ) -> None:
+    def __init__(
+            self, 
+            estimator_search_space: SklearnIndividualGenerator, 
+            method: type, 
+            space: ConfigurationSpace) -> None:
         
         """
         This search space is for wrapping a sklearn estimator with a method that takes another estimator and hyperparameters as arguments.
@@ -87,9 +89,9 @@ class WrapperPipeline(SklearnIndividualGenerator):
         """
 
 
-        self.nodegen = nodegen
+        self.estimator_search_space = estimator_search_space
         self.method = method
         self.space = space
 
     def generate(self, rng=None):
-        return WrapperPipelineIndividual(self.nodegen, self.method, self.space, rng)
+        return WrapperPipelineIndividual(self.estimator_search_space, self.method, self.space, rng)

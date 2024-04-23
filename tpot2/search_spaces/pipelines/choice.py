@@ -8,11 +8,11 @@ import random
 from ..base import SklearnIndividual, SklearnIndividualGenerator
 
 class ChoicePipelineIndividual(SklearnIndividual):
-    def __init__(self, choice_list : List[SklearnIndividualGenerator], rng=None) -> None:
+    def __init__(self, search_spaces : List[SklearnIndividualGenerator], rng=None) -> None:
         super().__init__()
         
-        self.choice_list = choice_list
-        self.node = np.random.default_rng(rng).choice(self.choice_list).generate()
+        self.search_spaces = search_spaces
+        self.node = np.random.default_rng(rng).choice(self.search_spaces).generate()
         
 
     def mutate(self, rng=None):
@@ -23,7 +23,7 @@ class ChoicePipelineIndividual(SklearnIndividual):
             return self._mutate_node(rng)
     
     def _mutate_select_new_node(self, rng=None):
-        self.node = random.choice(self.choice_list).generate()
+        self.node = random.choice(self.search_spaces).generate()
         return True
     
     def _mutate_node(self, rng=None):
@@ -40,8 +40,8 @@ class ChoicePipelineIndividual(SklearnIndividual):
     
 
 class ChoicePipeline(SklearnIndividualGenerator):
-    def __init__(self, choice_list : List[SklearnIndividualGenerator] ) -> None:
-        self.choice_list = choice_list
+    def __init__(self, search_spaces : List[SklearnIndividualGenerator] ) -> None:
+        self.search_spaces = search_spaces
 
     """
     Takes in a list of search spaces. Will select one node from the search space.
@@ -49,4 +49,4 @@ class ChoicePipeline(SklearnIndividualGenerator):
     """
 
     def generate(self, rng=None):
-        return ChoicePipelineIndividual(self.choice_list)
+        return ChoicePipelineIndividual(self.search_spaces)

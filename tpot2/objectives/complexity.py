@@ -1,74 +1,28 @@
 from tpot2 import GraphPipeline
-
-from sklearn.linear_model import SGDClassifier
-from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.tree import DecisionTreeClassifier
-from xgboost import XGBClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
-from lightgbm import LGBMClassifier
-from sklearn.svm import LinearSVC
-
-from functools import partial
-#import GaussianNB
-
-from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
-
-from sklearn.linear_model import SGDRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import Ridge
-from sklearn.linear_model import Lasso
-from sklearn.linear_model import ElasticNet
-from sklearn.linear_model import Lars
-from sklearn.linear_model import LassoLars, LassoLarsCV
-from sklearn.linear_model import RidgeCV
-
-
-from sklearn.svm import SVR
-from sklearn.svm import LinearSVR
-
-from sklearn.ensemble import AdaBoostRegressor, GradientBoostingRegressor,RandomForestRegressor
-from sklearn.ensemble import BaggingRegressor
-from sklearn.ensemble import ExtraTreesRegressor
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.linear_model import ElasticNetCV
-
-
-
-from xgboost import XGBRegressor
-from functools import partial
-
-
-#TODO: how to best support transformers/selectors that take other transformers with their own hyperparameters? 
 import numpy as np
-from sklearn.feature_selection import SelectFwe
-from sklearn.feature_selection import SelectPercentile
-from sklearn.feature_selection import VarianceThreshold
-from sklearn.feature_selection import RFE
-from sklearn.feature_selection import SelectFromModel
-import sklearn.feature_selection
-from functools import partial
-from sklearn.ensemble import ExtraTreesRegressor, ExtraTreesClassifier
-from tpot2.builtin_modules import RFE_ExtraTreesClassifier, SelectFromModel_ExtraTreesClassifier, RFE_ExtraTreesRegressor, SelectFromModel_ExtraTreesRegressor
+import sklearn
 
-
-from functools import partial
-from tpot2.builtin_modules import ZeroCount, OneHotEncoder
-from sklearn.preprocessing import Binarizer
-from sklearn.decomposition import FastICA
+from tpot2.builtin_modules import genetic_encoders, feature_encoding_frequency_selector
+from tpot2.builtin_modules import AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer
+from tpot2.builtin_modules.genetic_encoders import DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder 
+from tpot2.builtin_modules import ZeroCount, ColumnOneHotEncoder
+from sklearn.linear_model import SGDClassifier, LogisticRegression, SGDRegressor, Ridge, Lasso, ElasticNet, Lars, LassoLars, LassoLarsCV, RidgeCV, ElasticNetCV, PassiveAggressiveClassifier, ARDRegression
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, ExtraTreesRegressor, ExtraTreesClassifier, AdaBoostRegressor, AdaBoostClassifier, GradientBoostingRegressor,RandomForestRegressor, BaggingRegressor, ExtraTreesRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor
+from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from xgboost import XGBClassifier, XGBRegressor
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.svm import SVC, SVR, LinearSVR, LinearSVC
+from lightgbm import LGBMClassifier
+from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
+from sklearn.decomposition import FastICA, PCA
 from sklearn.cluster import FeatureAgglomeration
-from sklearn.preprocessing import MaxAbsScaler
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import Normalizer
-from sklearn.kernel_approximation import Nystroem
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.kernel_approximation import RBFSampler
-from sklearn.preprocessing import RobustScaler
-from sklearn.preprocessing import StandardScaler
+from sklearn.kernel_approximation import Nystroem, RBFSampler
+from sklearn.preprocessing import StandardScaler, PowerTransformer, QuantileTransformer, RobustScaler, PolynomialFeatures, Normalizer, MinMaxScaler, MaxAbsScaler, Binarizer
+from sklearn.feature_selection import SelectFwe, SelectPercentile, VarianceThreshold, RFE, SelectFromModel
+from sklearn.feature_selection import f_classif, f_regression #TODO create a selectomixin using these?
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.gaussian_process import GaussianProcessRegressor, GaussianProcessClassifier
 
     # MultinomialNB: params_MultinomialNB,
 
@@ -125,15 +79,19 @@ def MultinomialNB_Complexity(model):
     return num_coefficients
 
 complexity_objective_per_estimator =    {   LogisticRegression: _count_nonzero_coefficients_and_intercept,
-                                            RandomForestClassifier : forest_complexity,
                                             SGDClassifier: _count_nonzero_coefficients_and_intercept,
+                                            LinearSVC : _count_nonzero_coefficients_and_intercept,
+                                            RandomForestClassifier : forest_complexity,
+                                            
                                             KNeighborsClassifier: knn_complexity,
                                             DecisionTreeClassifier: tree_complexity,
                                             GradientBoostingClassifier: forest_complexity,
                                             ExtraTreesClassifier: forest_complexity,
+
                                             XGBClassifier: calculate_xgb_model_complexity,
+
                                             SVC : support_vector_machine_complexity,
-                                            LinearSVC : _count_nonzero_coefficients_and_intercept,
+                                            
                                             MLPClassifier: sklearn_MLP_complexity,
                                             BernoulliNB: BernoulliNB_Complexity,
                                             GaussianNB: GaussianNB_Complexity,
@@ -141,8 +99,10 @@ complexity_objective_per_estimator =    {   LogisticRegression: _count_nonzero_c
 
 
 def calculate_model_complexity(est):
-    if isinstance(est, sklearn.pipeline.Pipeline) or isinstance(est, sklearn.pipeline.FeatureUnion):
+    if isinstance(est, sklearn.pipeline.Pipeline):
         return sum(calculate_model_complexity(estimator) for _,estimator in est.steps)
+    if isinstance(est, sklearn.pipeline.FeatureUnion):
+        return sum(calculate_model_complexity(estimator) for _,estimator in est.transformer_list)
     if isinstance(est, GraphPipeline):
         return sum(calculate_model_complexity(est.graph.nodes[node]['instance']) for node in est.graph.nodes)
 

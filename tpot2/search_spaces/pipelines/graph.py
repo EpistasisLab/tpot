@@ -689,7 +689,7 @@ class GraphPipeline(SklearnIndividualGenerator):
         cross_val_predict_cv: Union[int, Callable] = 0, #signature function(estimator, X, y=none)
         method: str = 'auto',
         memory=None,
-        use_label_encoder: bool = False,):
+        use_label_encoder: bool = False):
         
         """
         Defines a search space of pipelines in the shape of a Directed Acyclic Graphs. The search spaces for root, leaf, and inner nodes can be defined separately if desired.
