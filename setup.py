@@ -46,7 +46,7 @@ A Python tool that automatically creates and optimizes machine learning pipeline
                       'networkx>=3.0',
                       'dask>=2024.4.1',
                       'distributed>=2024.4.1',
-                      'dask-expr>=2024.4.1'
+                      'dask-expr>=2024.4.1',
                       'dask-ml>=2023.4.20',
                       'dask-jobqueue>=0.8.5',
                       'func_timeout>=4.3.5',
