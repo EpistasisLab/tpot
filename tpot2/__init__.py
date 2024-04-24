@@ -18,3 +18,7 @@ from . import tpot_estimator
 
 
 from .tpot_estimator import TPOTClassifier, TPOTRegressor, TPOTEstimator, TPOTEstimatorSteadyState
+
+from update_checker import update_check
+from ._version import __version__
+update_check("tpot2",__version__)
