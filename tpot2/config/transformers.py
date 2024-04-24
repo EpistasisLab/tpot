@@ -1,6 +1,7 @@
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
-
+from ConfigSpace import EqualsCondition, OrConjunction, NotEqualsCondition, InCondition
+import numpy as np
 
 Binarizer_configspace = ConfigurationSpace(
     space = {
@@ -42,15 +43,37 @@ def get_FastICA_configspace(n_features=100, random_state=None):
         space = space
 
     )
-#TODO conditional parameters
+
 def get_FeatureAgglomeration_configspace(n_features=100):
-    return ConfigurationSpace(
-        space = {
-            'linkage': Categorical('linkage', ['ward', 'complete', 'average']),
-            'metric': Categorical('metric', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine']),
-            'n_clusters': Integer('n_clusters', bounds=(2, n_features-1)),
-        }
-    )
+
+    linkage = Categorical('linkage', ['ward', 'complete', 'average'])
+    metric = Categorical('metric', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine'])
+    n_clusters = Integer('n_clusters', bounds=(2, 400))
+    pooling_func = Categorical('pooling_func', ['mean', 'median', 'max'])
+
+    metric_condition = NotEqualsCondition(metric, linkage, 'ward')
+
+    cs =  ConfigurationSpace()
+    cs.add_hyperparameters([linkage, metric, n_clusters, pooling_func])
+    cs.add_condition(metric_condition)
+    
+    return cs
+
+
+def FeatureAgglomeration_hyperparameter_parser(params):
+    new_params = params.copy()
+    if "pooling_func" in new_params:
+        if new_params["pooling_func"] == "mean":
+            new_params["pooling_func"] = np.mean
+        elif new_params["pooling_func"] == "median":
+            new_params["pooling_func"] = np.median
+        elif new_params["pooling_func"] == "max":
+            new_params["pooling_func"] = np.max
+        elif new_params["pooling_func"] == "min":
+            new_params["pooling_func"] = np.min
+
+    return new_params
+
 
 def get_Nystroem_configspace(n_features=100, random_state=None,):
 

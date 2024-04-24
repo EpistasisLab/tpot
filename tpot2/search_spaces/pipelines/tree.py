@@ -31,8 +31,7 @@ class TreePipeline(SklearnIndividualGenerator):
                         inner_search_space : SklearnIndividualGenerator =None, 
                         min_size: int = 2, 
                         max_size: int = 10,
-                        crossover_same_depth=False,
-                        rng=None) -> None:
+                        crossover_same_depth=False) -> None:
         
         """
         Generates a pipeline of variable length. Pipeline will have a tree structure similar to TPOT1.

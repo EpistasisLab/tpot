@@ -544,7 +544,7 @@ class TPOTEstimator(BaseEstimator):
             #X = pd.DataFrame(X)
 
             if not isinstance(self.preprocessing, bool) and isinstance(self.preprocessing, sklearn.base.BaseEstimator):
-                self._preprocessing_pipeline = self.preprocessing
+                self._preprocessing_pipeline = sklearn.base.clone(self.preprocessing)
 
             #TODO: check if there are missing values in X before imputation. If not, don't include imputation in pipeline. Check if there are categorical columns. If not, don't include one hot encoding in pipeline
             else: #if self.preprocessing is True or not a sklearn estimator
