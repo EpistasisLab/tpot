@@ -412,6 +412,36 @@ def get_GradientBoostingRegressor_ConfigurationSpace(n_features, random_state):
     cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
     return cs
 
+def GradientBoostingRegressor_hyperparameter_parser(params):
+
+    final_params = {
+        'loss': params['loss'],
+        'learning_rate': params['learning_rate'],
+        'min_samples_leaf': params['min_samples_leaf'],
+        'min_samples_split': params['min_samples_split'],
+        'max_features': params['max_features'],
+        'max_leaf_nodes': params['max_leaf_nodes'],
+        'max_depth': params['max_depth'],
+        'tol': params['tol'],
+        'subsample': params['subsample']
+    }
+
+    if 'random_state' in params:
+        final_params['random_state'] = params['random_state']
+
+    if params['early_stop'] == 'off':
+        final_params['n_iter_no_change'] = None
+        final_params['validation_fraction'] = None
+    elif params['early_stop'] == 'valid':
+        final_params['n_iter_no_change'] = params['n_iter_no_change']
+        final_params['validation_fraction'] = params['validation_fraction']
+    elif params['early_stop'] == 'train':
+        final_params['n_iter_no_change'] = params['n_iter_no_change']
+        final_params['validation_fraction'] = None
+
+
+    return final_params
+
 #only difference is l2_regularization
 def get_HistGradientBoostingRegressor_ConfigurationSpace(n_features, random_state):
     early_stop = Categorical("early_stop", ["off", "valid", "train"])
@@ -443,37 +473,38 @@ def get_HistGradientBoostingRegressor_ConfigurationSpace(n_features, random_stat
 
     return cs
 
-def GradientBoostingRegressor_hyperparameter_parser(params):
+
+def HistGradientBoostingRegressor_hyperparameter_parser(params):
 
     final_params = {
-        'loss': params['loss'],
         'learning_rate': params['learning_rate'],
         'min_samples_leaf': params['min_samples_leaf'],
         'max_features': params['max_features'],
         'max_leaf_nodes': params['max_leaf_nodes'],
         'max_depth': params['max_depth'],
         'tol': params['tol'],
+        'l2_regularization': params['l2_regularization']
     }
-
-    if "l2_regularization" in params:
-        final_params['l2_regularization'] = params['l2_regularization']
 
     if 'random_state' in params:
         final_params['random_state'] = params['random_state']
 
+    
     if params['early_stop'] == 'off':
-        final_params['n_iter_no_change'] = None
+        final_params['n_iter_no_change'] = 0
         final_params['validation_fraction'] = None
+        final_params['early_stopping'] = False
     elif params['early_stop'] == 'valid':
         final_params['n_iter_no_change'] = params['n_iter_no_change']
         final_params['validation_fraction'] = params['validation_fraction']
+        final_params['early_stopping'] = True
     elif params['early_stop'] == 'train':
         final_params['n_iter_no_change'] = params['n_iter_no_change']
         final_params['validation_fraction'] = None
+        final_params['early_stopping'] = True
 
 
     return final_params
-
 
 
 ###

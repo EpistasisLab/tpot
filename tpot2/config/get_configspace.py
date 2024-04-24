@@ -438,9 +438,12 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
     if name == "HistGradientBoostingClassifier":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.HistGradientBoostingClassifier_hyperparameter_parser)
-    if name == "GradientBoostingRegressor" or name == "HistGradientBoostingRegressor":
+    if name == "GradientBoostingRegressor":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.GradientBoostingRegressor_hyperparameter_parser)
+    if  name == "HistGradientBoostingRegressor":
+        configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.HistGradientBoostingRegressor_hyperparameter_parser)
     if name == "MLPClassifier":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.MLPClassifier_hyperparameter_parser)
