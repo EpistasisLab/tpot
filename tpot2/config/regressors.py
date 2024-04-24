@@ -495,7 +495,10 @@ def get_MLPRegressor_ConfigurationSpace(random_state):
     learning_rate = Float("learning_rate", bounds=(1e-4, 1e-1), log=True)
     early_stopping = Categorical("early_stopping", [True,False])
 
-    cs.add_hyperparameters([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping])
+    learning_rate_init = Float("learning_rate_init", bounds=(1e-4, 1e-1), log=True)
+    learning_rate = Categorical("learning_rate", ['constant', 'invscaling', 'adaptive'])
+
+    cs.add_hyperparameters([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping, learning_rate_init])
 
     return cs
 
@@ -505,8 +508,9 @@ def MLPRegressor_hyperparameter_parser(params):
         'hidden_layer_sizes' : [params['n_nodes_per_layer']]*params['n_hidden_layers'],
         'activation': params['activation'],
         'alpha': params['alpha'],
-        'learning_rate': params['learning_rate'],
         'early_stopping': params['early_stopping'],
+        'learning_rate_init': params['learning_rate_init'],
+        'learning_rate': params['learning_rate'],
     }
 
     if 'random_state' in params:

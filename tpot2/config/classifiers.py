@@ -406,7 +406,6 @@ def get_HistGradientBoostingClassifier_ConfigurationSpace(n_features, random_sta
     validation_fraction_cond = EqualsCondition(validation_fraction, early_stop, "valid")
 
     space = {
-        'loss': Categorical("loss", ['log_loss', 'exponential']),
         'learning_rate': Float("learning_rate", bounds=(1e-3, 1), log=True),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 200)),
         'max_features': Float("max_features", bounds=(0.1,1.0)), 
@@ -432,7 +431,6 @@ def get_HistGradientBoostingClassifier_ConfigurationSpace(n_features, random_sta
 def HistGradientBoostingClassifier_hyperparameter_parser(params):
 
     final_params = {
-        'loss': params['loss'],
         'learning_rate': params['learning_rate'],
         'min_samples_leaf': params['min_samples_leaf'],
         'max_features': params['max_features'],
@@ -477,12 +475,14 @@ def get_MLPClassifier_ConfigurationSpace(random_state):
 
     n_hidden_layers = Integer("n_hidden_layers", bounds=(1, 3))
     n_nodes_per_layer = Integer("n_nodes_per_layer", bounds=(16, 512))
-    activation = Categorical("activation", ['tanh', 'relu'])
-    alpha = Float("alpha", bounds=(1e-7, 1e-1), log=True)
-    learning_rate = Float("learning_rate", bounds=(1e-4, 1e-1), log=True)
+    activation = Categorical("activation", ["identity", "logistic",'tanh', 'relu'])
+    alpha = Float("alpha", bounds=(1e-4, 1e-1), log=True)
     early_stopping = Categorical("early_stopping", [True,False])
 
-    cs.add_hyperparameters([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping])
+    learning_rate_init = Float("learning_rate_init", bounds=(1e-4, 1e-1), log=True)
+    learning_rate = Categorical("learning_rate", ['constant', 'invscaling', 'adaptive'])
+
+    cs.add_hyperparameters([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping, learning_rate_init])
 
     return cs
 
@@ -492,8 +492,10 @@ def MLPClassifier_hyperparameter_parser(params):
         'hidden_layer_sizes' : [params['n_nodes_per_layer']]*params['n_hidden_layers'],
         'activation': params['activation'],
         'alpha': params['alpha'],
-        'learning_rate': params['learning_rate'],
         'early_stopping': params['early_stopping'],
+
+        'learning_rate_init': params['learning_rate_init'],
+        'learning_rate': params['learning_rate'],
     }
 
     if 'random_state' in params:

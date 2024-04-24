@@ -104,12 +104,15 @@ if importlib.util.find_spec('sklearnex') is not None:
 
 
 # not including "PassiveAggressiveClassifier" in classifiers since it is mainly for larger than memory datasets/online use cases
+
+# TODO need to subclass "GaussianProcessClassifier" and 'GaussianProcessRegressor'. These require n_features as a parameter for the kernel, but n_features may be different depending on selection functions or transformations previously in the pipeline.
+
 GROUPNAMES = {
         "selectors": ["SelectFwe", "SelectPercentile", "VarianceThreshold",],
         "selectors_classification": ["SelectFwe", "SelectPercentile", "VarianceThreshold", "RFE_classification", "SelectFromModel_classification"],
         "selectors_regression": ["SelectFwe", "SelectPercentile", "VarianceThreshold", "RFE_regression", "SelectFromModel_regression"],
-        "classifiers" :  ["LGBMRegressor", "BaggingClassifier", "GaussianProcessClassifier", 'AdaBoostClassifier', 'BernoulliNB', 'DecisionTreeClassifier', 'ExtraTreesClassifier', 'GaussianNB', 'HistGradientBoostingClassifier', 'KNeighborsClassifier','LinearDiscriminantAnalysis', 'LogisticRegression', "LinearSVC", "SVC", 'MLPClassifier', 'MultinomialNB',  "QuadraticDiscriminantAnalysis", 'RandomForestClassifier', 'SGDClassifier', 'XGBClassifier'],
-        "regressors" : ['AdaBoostRegressor', "ARDRegression", 'DecisionTreeRegressor', 'ExtraTreesRegressor', 'GaussianProcessRegressor', 'HistGradientBoostingRegressor', 'KNeighborsRegressor',  'LinearSVR', "MLPRegressor", 'RandomForestRegressor', 'SGDRegressor', 'SVR', 'XGBRegressor'],
+        "classifiers" :  ["LGBMRegressor", "BaggingClassifier", 'AdaBoostClassifier', 'BernoulliNB', 'DecisionTreeClassifier', 'ExtraTreesClassifier', 'GaussianNB', 'HistGradientBoostingClassifier', 'KNeighborsClassifier','LinearDiscriminantAnalysis', 'LogisticRegression', "LinearSVC", "SVC", 'MLPClassifier', 'MultinomialNB',  "QuadraticDiscriminantAnalysis", 'RandomForestClassifier', 'SGDClassifier', 'XGBClassifier'],
+        "regressors" : ['AdaBoostRegressor', "ARDRegression", 'DecisionTreeRegressor', 'ExtraTreesRegressor', 'HistGradientBoostingRegressor', 'KNeighborsRegressor',  'LinearSVR', "MLPRegressor", 'RandomForestRegressor', 'SGDRegressor', 'SVR', 'XGBRegressor'],
         
         
         "transformers":  ["Binarizer", "PCA", "ZeroCount", "ColumnOneHotEncoder", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer"],
@@ -263,7 +266,7 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
         case "FastICA":
             return transformers.get_FastICA_configspace(n_features=n_features, random_state=random_state)
         case "FeatureAgglomeration":
-            return transformers.get_FeatureAgglomeration_configspace(n_features=n_features,)
+            return transformers.get_FeatureAgglomeration_configspace(n_samples=n_samples)
         case "Nystroem":
             return transformers.get_Nystroem_configspace(n_features=n_features, random_state=random_state)
         case "RBFSampler":
