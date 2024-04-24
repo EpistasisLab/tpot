@@ -78,9 +78,10 @@ class WrapperPipelineIndividual(SklearnIndividual):
 class WrapperPipeline(SklearnIndividualGenerator):
     def __init__(
             self, 
-            estimator_search_space: SklearnIndividualGenerator, 
             method: type, 
-            space: ConfigurationSpace) -> None:
+            space: ConfigurationSpace,
+            estimator_search_space: SklearnIndividualGenerator, 
+            ) -> None:
         
         """
         This search space is for wrapping a sklearn estimator with a method that takes another estimator and hyperparameters as arguments.
@@ -94,4 +95,4 @@ class WrapperPipeline(SklearnIndividualGenerator):
         self.space = space
 
     def generate(self, rng=None):
-        return WrapperPipelineIndividual(self.estimator_search_space, self.method, self.space, rng)
+        return WrapperPipelineIndividual(method=self.method, space=self.space, estimator_search_space=self.estimator_search_space, rng=rng)

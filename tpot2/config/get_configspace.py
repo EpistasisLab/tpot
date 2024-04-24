@@ -194,6 +194,8 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
             return classifiers.get_QuadraticDiscriminantAnalysis_ConfigurationSpace()
         case "GaussianProcessClassifier":
             return classifiers.get_GaussianProcessClassifier_ConfigurationSpace(n_features=n_features, random_state=random_state)
+        case "BaggingClassifier":
+            return classifiers.get_BaggingClassifier_ConfigurationSpace(random_state=random_state)
 
         #regressors.py
         case "RandomForestRegressor":
@@ -244,7 +246,10 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
             return regressors.get_KNeighborsRegressor_ConfigurationSpace(n_samples=n_samples)
         case "GaussianProcessRegressor":
             return regressors.get_GaussianProcessRegressor_ConfigurationSpace(n_features=n_features, random_state=random_state)
-
+        case "LGBMRegressor":
+            return regressors.get_LGBMRegressor_ConfigurationSpace(random_state=random_state)
+        case "BaggingRegressor":
+            return regressors.get_BaggingRegressor_ConfigurationSpace(random_state=random_state)
 
         #transformers.py
         case "Binarizer":
@@ -424,9 +429,12 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
     if name == "RobustScaler":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=transformers.robust_scaler_hyperparameter_parser)
-    if name == "GradientBoostingClassifier" or name == "HistGradientBoosting":
+    if name == "GradientBoostingClassifier":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.GradientBoostingClassifier_hyperparameter_parser)
+    if name == "HistGradientBoostingClassifier":
+        configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.HistGradientBoostingClassifier_hyperparameter_parser)
     if name == "GradientBoostingRegressor" or name == "HistGradientBoostingRegressor":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.GradientBoostingRegressor_hyperparameter_parser)
@@ -444,7 +452,7 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
         return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.GaussianProcessClassifier_hyperparameter_parser)
     if name == "FeatureAgglomeration":
         configspace = get_configspace(name, n_features=n_features)
-        return EstimatorNode(FeatureAgglomeration, configspace, hyperparameter_parser=transformers.FeatureAgglomeration_hyperparameter_parser)
+        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=transformers.FeatureAgglomeration_hyperparameter_parser)
 
     configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
     if configspace is None:

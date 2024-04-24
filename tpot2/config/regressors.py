@@ -458,6 +458,9 @@ def GradientBoostingRegressor_hyperparameter_parser(params):
     if "l2_regularization" in params:
         final_params['l2_regularization'] = params['l2_regularization']
 
+    if 'random_state' in params:
+        final_params['random_state'] = params['random_state']
+
     if params['early_stop'] == 'off':
         final_params['n_iter_no_change'] = None
         final_params['validation_fraction'] = None
@@ -505,8 +508,53 @@ def MLPRegressor_hyperparameter_parser(params):
         'learning_rate': params['learning_rate'],
         'early_stopping': params['early_stopping'],
     }
+
+    if 'random_state' in params:
+        hyperparameters['random_state'] = params['random_state']
+
     return hyperparameters
 
 
-
+def get_BaggingRegressor_ConfigurationSpace(random_state):
+    space = {
+            'n_estimators': Integer("n_estimators", bounds=(3, 100)),
+            'max_samples': Float("max_samples", bounds=(0.1, 1.0)),
+            'max_features': Float("max_features", bounds=(0.1, 1.0)),
+            
+            'bootstrap_features': Categorical("bootstrap_features", [True, False]),
+            'n_jobs': 1,
+        }
     
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
+
+    bootstrap = Categorical("bootstrap", [True, False])
+    oob_score = Categorical("oob_score", [True, False])
+
+    oob_condition = EqualsCondition(oob_score, bootstrap, True)
+
+    cs = ConfigurationSpace(
+        space = space
+    )
+
+    cs.add_hyperparameters([bootstrap, oob_score])
+    cs.add_conditions([oob_condition])
+
+    return cs
+
+def get_LGBMRegressor_ConfigurationSpace(random_state,):
+
+    space = {
+            'boosting_type': Categorical("boosting_type", ['gbdt', 'dart', 'goss']),
+            'num_leaves': Integer("num_leaves", bounds=(2, 256)),
+            'max_depth': Integer("max_depth", bounds=(1, 10)),
+            'n_estimators': Integer("n_estimators", bounds=(10, 100)),
+            'n_jobs': 1,
+        }
+
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
+
+    return ConfigurationSpace(
+        space=space
+    )

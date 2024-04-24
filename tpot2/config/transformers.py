@@ -1,6 +1,7 @@
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 from ConfigSpace import EqualsCondition, OrConjunction, NotEqualsCondition, InCondition
+import numpy as np
 
 Binarizer_configspace = ConfigurationSpace(
     space = {
@@ -42,7 +43,7 @@ def get_FastICA_configspace(n_features=100, random_state=None):
         space = space
 
     )
-#TODO conditional parameters
+
 def get_FeatureAgglomeration_configspace(n_features=100):
 
     linkage = Categorical('linkage', ['ward', 'complete', 'average'])
@@ -58,18 +59,18 @@ def get_FeatureAgglomeration_configspace(n_features=100):
     
     return cs
 
-import numpy as np
+
 def FeatureAgglomeration_hyperparameter_parser(params):
     new_params = params.copy()
     if "pooling_func" in new_params:
         if new_params["pooling_func"] == "mean":
-            new_params = np.mean
+            new_params["pooling_func"] = np.mean
         elif new_params["pooling_func"] == "median":
-            new_params = np.median
+            new_params["pooling_func"] = np.median
         elif new_params["pooling_func"] == "max":
-            new_params = np.max
+            new_params["pooling_func"] = np.max
         elif new_params["pooling_func"] == "min":
-            new_params = np.min
+            new_params["pooling_func"] = np.min
 
     return new_params
 

@@ -6,7 +6,6 @@ import numpy as np
 import sklearn
 
 
-#TODO Conditional search space to prevent invalid combinations of hyperparameters
 def get_LogisticRegression_ConfigurationSpace(n_samples, n_features, random_state):
     
     dual = n_samples<=n_features
@@ -49,6 +48,32 @@ def get_KNeighborsClassifier_ConfigurationSpace(n_samples):
                 }
             ) 
 
+def get_BaggingClassifier_ConfigurationSpace(random_state):
+    space = {
+            'n_estimators': Integer("n_estimators", bounds=(3, 100)),
+            'max_samples': Float("max_samples", bounds=(0.1, 1.0)),
+            'max_features': Float("max_features", bounds=(0.1, 1.0)),
+            
+            'bootstrap_features': Categorical("bootstrap_features", [True, False]),
+            'n_jobs': 1,
+        }
+    
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
+
+    bootstrap = Categorical("bootstrap", [True, False])
+    oob_score = Categorical("oob_score", [True, False])
+
+    oob_condition = EqualsCondition(oob_score, bootstrap, True)
+
+    cs = ConfigurationSpace(
+        space = space
+    )
+
+    cs.add_hyperparameters([bootstrap, oob_score])
+    cs.add_conditions([oob_condition])
+
+    return cs
 
 def get_DecisionTreeClassifier_ConfigurationSpace(n_featues, random_state):
 
@@ -69,17 +94,14 @@ def get_DecisionTreeClassifier_ConfigurationSpace(n_featues, random_state):
         space = space
     )
 
-#TODO Conditional search spaces
+
 def get_LinearSVC_ConfigurationSpace(random_state):
     space = {"dual":"auto"}
         
     penalty = Categorical('penalty', ['l1', 'l2'])
     C = Float('C',  (0.01, 1e5), log=True)
     loss = Categorical('loss', ['hinge', 'squared_hinge'])
-
     loss_condition = EqualsCondition(loss, penalty, 'l2')
-
-
 
     if random_state is not None: #This is required because configspace doesn't allow None as a value
         space['random_state'] = random_state
@@ -341,17 +363,46 @@ def get_GradientBoostingClassifier_ConfigurationSpace(n_classes, n_features, ran
     cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
     return cs
 
+def GradientBoostingClassifier_hyperparameter_parser(params):
+
+    final_params = {
+        'loss': params['loss'],
+        'learning_rate': params['learning_rate'],
+        'min_samples_leaf': params['min_samples_leaf'],
+        'min_samples_split': params['min_samples_split'],
+        'max_features': params['max_features'],
+        'max_leaf_nodes': params['max_leaf_nodes'],
+        'max_depth': params['max_depth'],
+        'tol': params['tol'],
+        'subsample': params['subsample']
+    }
+
+    if 'random_state' in params:
+        final_params['random_state'] = params['random_state']
+
+    if params['early_stop'] == 'off':
+        final_params['n_iter_no_change'] = None
+        final_params['validation_fraction'] = None
+    elif params['early_stop'] == 'valid':
+        final_params['n_iter_no_change'] = params['n_iter_no_change']
+        final_params['validation_fraction'] = params['validation_fraction']
+    elif params['early_stop'] == 'train':
+        final_params['n_iter_no_change'] = params['n_iter_no_change']
+        final_params['validation_fraction'] = None
+
+
+    return final_params
 
 
 
 #only difference is l2_regularization
 def get_HistGradientBoostingClassifier_ConfigurationSpace(n_features, random_state):
-    early_stopping = Categorical("early_stopping", ["off", "valid", "train"])
+    early_stop = Categorical("early_stop", ["off", "valid", "train"])
     n_iter_no_change = Integer("n_iter_no_change",bounds=(1,20))
     validation_fraction = Float("validation_fraction", bounds=(0.01, 0.4))
 
-    n_iter_no_change_cond = InCondition(n_iter_no_change, early_stopping, ["valid", "train"] )
-    validation_fraction_cond = EqualsCondition(validation_fraction, early_stopping, "valid")
+    n_iter_no_change_cond = InCondition(n_iter_no_change, early_stop, ["valid", "train"] )
+    validation_fraction_cond = EqualsCondition(validation_fraction, early_stop, "valid")
 
     space = {
         'loss': Categorical("loss", ['log_loss', 'exponential']),
@@ -370,37 +421,42 @@ def get_HistGradientBoostingClassifier_ConfigurationSpace(n_features, random_sta
     cs = ConfigurationSpace(
         space = space
     )
-    cs.add_hyperparameters([n_iter_no_change, validation_fraction, early_stopping ])
+    cs.add_hyperparameters([n_iter_no_change, validation_fraction, early_stop ])
     cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
 
     return cs
 
-def GradientBoostingClassifier_hyperparameter_parser(params):
+
+
+def HistGradientBoostingClassifier_hyperparameter_parser(params):
 
     final_params = {
         'loss': params['loss'],
         'learning_rate': params['learning_rate'],
         'min_samples_leaf': params['min_samples_leaf'],
-        'min_samples_split': params['min_samples_split'],
-        'subsample': params['subsample'],
         'max_features': params['max_features'],
         'max_leaf_nodes': params['max_leaf_nodes'],
         'max_depth': params['max_depth'],
         'tol': params['tol'],
+        'l2_regularization': params['l2_regularization']
     }
 
-    if "l2_regularization" in params:
-        final_params['l2_regularization'] = params['l2_regularization']
+    if 'random_state' in params:
+        final_params['random_state'] = params['random_state']
 
+    
     if params['early_stop'] == 'off':
         final_params['n_iter_no_change'] = None
         final_params['validation_fraction'] = None
+        final_params['early_stopping'] = False
     elif params['early_stop'] == 'valid':
         final_params['n_iter_no_change'] = params['n_iter_no_change']
         final_params['validation_fraction'] = params['validation_fraction']
+        final_params['early_stopping'] = True
     elif params['early_stop'] == 'train':
         final_params['n_iter_no_change'] = params['n_iter_no_change']
         final_params['validation_fraction'] = None
+        final_params['early_stopping'] = True
 
 
     return final_params
@@ -438,6 +494,9 @@ def MLPClassifier_hyperparameter_parser(params):
         'learning_rate': params['learning_rate'],
         'early_stopping': params['early_stopping'],
     }
+
+    if 'random_state' in params:
+        hyperparameters['random_state'] = params['random_state']
     return hyperparameters
 
 ###
@@ -466,10 +525,8 @@ def GaussianProcessClassifier_hyperparameter_parser(params):
         length_scale_bounds=[(params['thetaL'], params['thetaU'])] * params['n_features'],
     )
     final_params = {"kernel": kernel, 
-                    "alpha": params['alpha'],
                     "n_restarts_optimizer": 10,
                     "optimizer": "fmin_l_bfgs_b",
-                    "normalize_y": True,
                     "copy_X_train": True,
                     }
     
