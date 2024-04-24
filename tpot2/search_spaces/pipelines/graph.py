@@ -750,7 +750,11 @@ class GraphPipeline(SklearnIndividualGenerator):
                                        self.cross_val_predict_cv, self.method, self.memory, self.use_label_encoder, rng=rng)  
             # if user specified limit, grab a random number between that limit
         
-        n_nodes = min(rng.integers(1, self.max_size), 5)
+        if self.max_size is None or self.max_size == np.inf:
+            n_nodes = rng.integers(1, 5)
+        else:
+            n_nodes = min(rng.integers(1, self.max_size), 5)
+        
         starting_ops = []
         if self.inner_search_space is not None:
             starting_ops.append(ind._mutate_insert_inner_node)
