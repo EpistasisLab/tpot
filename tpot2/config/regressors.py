@@ -549,6 +549,7 @@ def get_LGBMRegressor_ConfigurationSpace(random_state,):
             'num_leaves': Integer("num_leaves", bounds=(2, 256)),
             'max_depth': Integer("max_depth", bounds=(1, 10)),
             'n_estimators': Integer("n_estimators", bounds=(10, 100)),
+            'verbose':-1,
             'n_jobs': 1,
         }
 
