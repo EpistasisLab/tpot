@@ -22,6 +22,7 @@ class TreePipelineIndividual(GraphPipelineIndividual):
 
         self.crossover_methods_list = [self._crossover_swap_branch, self._crossover_swap_node, self._crossover_nodes]
         self.mutate_methods_list = [self._mutate_insert_leaf, self._mutate_insert_inner_node, self._mutate_remove_node, self._mutate_node]
+        self.merge_duplicated_nodes_toggle = False
  
     
 

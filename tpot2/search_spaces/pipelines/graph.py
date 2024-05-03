@@ -11,6 +11,7 @@ from ..nodes.estimator_node import EstimatorNodeIndividual
 from typing import Union, Callable
 import sklearn
 from functools import partial
+import random
 
 class GraphPipelineIndividual(SklearnIndividual):
     """
@@ -96,8 +97,13 @@ class GraphPipelineIndividual(SklearnIndividual):
             self.graph.add_node(self.leaf)
             self.graph.add_edge(self.root, self.leaf)
 
-        self.mutate_methods_list = [self._mutate_insert_leaf, self._mutate_insert_inner_node, self._mutate_remove_node, self._mutate_node]
-        self.crossover_methods_list = [self._crossover_swap_branch,]#[self._crossover_swap_branch, self._crossover_swap_node, self._crossover_take_branch]  #TODO self._crossover_nodes, 
+        if self.inner_search_space is None and self.leaf_search_space is None:
+            self.mutate_methods_list = [self._mutate_node]
+            self.crossover_methods_list = [self._crossover_swap_branch,]#[self._crossover_swap_branch, self._crossover_swap_node, self._crossover_take_branch]  #TODO self._crossover_nodes, 
+
+        else:
+            self.mutate_methods_list = [self._mutate_insert_leaf, self._mutate_insert_inner_node, self._mutate_remove_node, self._mutate_node]
+            self.crossover_methods_list = [self._crossover_swap_branch,]#[self._crossover_swap_branch, self._crossover_swap_node, self._crossover_take_branch]  #TODO self._crossover_nodes, 
 
         self.merge_duplicated_nodes_toggle = True
 
@@ -106,34 +112,34 @@ class GraphPipelineIndividual(SklearnIndividual):
     def mutate(self, rng=None):
         rng = np.random.default_rng(rng)
 
-        rng.shuffle(self.mutate_methods_list)
-        for mutate_method in self.mutate_methods_list:
-            if mutate_method(rng=rng):
-                
-                if self.merge_duplicated_nodes_toggle:
-                    self._merge_duplicated_nodes()
-
-                if self.__debug:
-                    print(mutate_method)
-
-                    if self.root not in self.graph.nodes:
-                        print('lost root something went wrong with ', mutate_method)
-
-                    if len(self.graph.predecessors(self.root)) > 0:
-                        print('root has parents ', mutate_method)
-
-                    if any([n in nx.ancestors(self.graph,n) for n in self.graph.nodes]):
-                        print('a node is connecting to itself...')
+        for i in range(0,random.randint(1,15)):
+            rng.shuffle(self.mutate_methods_list)
+            for mutate_method in self.mutate_methods_list:
+                if mutate_method(rng=rng):
+                    
+                    if self.merge_duplicated_nodes_toggle:
+                        self._merge_duplicated_nodes()
 
                     if self.__debug:
-                        try:
-                            nx.find_cycle(self.graph)
-                            print('something went wrong with ', mutate_method)
-                        except:
-                            pass
+                        print(mutate_method)
 
-                self.graphkey = None
-                return True
+                        if self.root not in self.graph.nodes:
+                            print('lost root something went wrong with ', mutate_method)
+
+                        if len(self.graph.predecessors(self.root)) > 0:
+                            print('root has parents ', mutate_method)
+
+                        if any([n in nx.ancestors(self.graph,n) for n in self.graph.nodes]):
+                            print('a node is connecting to itself...')
+
+                        if self.__debug:
+                            try:
+                                nx.find_cycle(self.graph)
+                                print('something went wrong with ', mutate_method)
+                            except:
+                                pass
+
+                    self.graphkey = None
 
         return False
 
@@ -168,6 +174,9 @@ class GraphPipelineIndividual(SklearnIndividual):
         return False
     
     def _mutate_insert_inner_node(self, rng=None):
+        """
+        Finds an edge in the graph and inserts a new node between the two nodes. Removes the edge between the two nodes.
+        """
         rng = np.random.default_rng(rng)
         if self.max_size > self.graph.number_of_nodes():
             sorted_nodes_list = list(self.graph.nodes)
@@ -184,12 +193,12 @@ class GraphPipelineIndividual(SklearnIndividual):
                             if len(list(nx.descendants(self.graph,node))) ==0 :
                                 continue
 
-                            new_node = self.inner_search_space.generate(rng)
+                        new_node = self.inner_search_space.generate(rng)
 
-                            self.graph.add_node(new_node)
-                            self.graph.add_edges_from([(node, new_node), (new_node, child_node)])
-                            self.graph.remove_edge(node, child_node)
-                            return True
+                        self.graph.add_node(new_node)
+                        self.graph.add_edges_from([(node, new_node), (new_node, child_node)])
+                        self.graph.remove_edge(node, child_node)
+                        return True
 
         return False
 
@@ -287,6 +296,10 @@ class GraphPipelineIndividual(SklearnIndividual):
         return False
         
     def _mutate_insert_bypass_node(self, rng=None):
+        """
+        Pick two nodes (doesn't necessarily need to be connected). Create a new node. connect one node to the new node and the new node to the other node.
+        Does not remove any edges.
+        """
         rng = np.random.default_rng(rng)
         if self.max_size > self.graph.number_of_nodes():
             sorted_nodes_list = list(self.graph.nodes)
@@ -301,11 +314,11 @@ class GraphPipelineIndividual(SklearnIndividual):
                             if len(list(nx.descendants(self.graph,node))) ==0 :
                                 continue
 
-                            new_node = self.inner_search_space.generate(rng)
+                        new_node = self.inner_search_space.generate(rng)
 
-                            self.graph.add_node(new_node)
-                            self.graph.add_edges_from([(node, new_node), (new_node, child_node)])
-                            return True
+                        self.graph.add_node(new_node)
+                        self.graph.add_edges_from([(node, new_node), (new_node, child_node)])
+                        return True
 
         return False
 

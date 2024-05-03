@@ -26,7 +26,28 @@ class SklearnIndividual(tpot2.BaseIndividual):
         return
     
     def unique_id(self):
+        """
+        Returns a unique identifier for the individual. Used for preventing duplicate individuals from being evaluated.
+        """
         return self
+    
+    #TODO currently TPOT2 population class manually uses the unique_id to generate the index for the population data frame.
+    #alternatively, the index could be the individual itself, with the __eq__ and __hash__ methods implemented.
+
+    # Though this breaks the graphpipeline. When a mutation is called, it changes the __eq__ and __hash__ outputs.
+    # Since networkx uses the hash and eq to determine if a node is already in the graph, this causes the graph thing that 
+    # This is a new node not in the graph. But this could be changed if when the graphpipeline mutates nodes, 
+    # it "replaces" the existing node with the mutated node. This would require a change in the graphpipeline class.
+
+    # def __eq__(self, other):
+    #     return self.unique_id() == other.unique_id()
+    
+    # def __hash__(self):
+    #     return hash(self.unique_id())
+
+    #number of components in the pipeline
+    def get_size(self):
+        return 1
     
     @final
     def export_flattened_graphpipeline(self, **graphpipeline_kwargs) -> tpot2.GraphPipeline:

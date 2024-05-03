@@ -60,7 +60,8 @@ class FSSIndividual(SklearnIndividual):
     
 
     def unique_id(self):
-        return ("FSS", self.selected_subset_name)
+        id_str = "FeatureSetSelector({0})".format(self.selected_subset_name)
+        return id_str
     
 
 class FSSNode(SklearnIndividualGenerator):

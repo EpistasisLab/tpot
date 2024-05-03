@@ -8,6 +8,7 @@ import random
 from ..base import SklearnIndividual, SklearnIndividualGenerator
 
 import copy
+from ..tuple_index import TupleIndex
 
 class DynamicLinearPipelineIndividual(SklearnIndividual):
     # takes in a single search space.
@@ -78,7 +79,9 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         return [step.export_pipeline(**graph_pipeline_args) for step in self.pipeline]
     
     def unique_id(self):
-        return tuple([step.unique_id() for step in self.pipeline])
+        l = [step.unique_id() for step in self.pipeline]
+        l = ["DynamicLinearPipeline"] + l
+        return TupleIndex(tuple(l))
     
 
 class DynamicLinearPipeline(SklearnIndividualGenerator):

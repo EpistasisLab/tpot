@@ -491,8 +491,8 @@ def HistGradientBoostingRegressor_hyperparameter_parser(params):
 
     
     if params['early_stop'] == 'off':
-        final_params['n_iter_no_change'] = 0
-        final_params['validation_fraction'] = None
+        # final_params['n_iter_no_change'] = 0
+        # final_params['validation_fraction'] = None
         final_params['early_stopping'] = False
     elif params['early_stop'] == 'valid':
         final_params['n_iter_no_change'] = params['n_iter_no_change']

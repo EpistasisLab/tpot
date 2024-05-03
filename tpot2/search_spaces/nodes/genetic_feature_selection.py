@@ -146,7 +146,9 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
     
 
     def unique_id(self):
-        return tuple(self.mask)
+        mask_idexes = np.where(self.mask)[0]
+        id_str = ','.join([str(i) for i in mask_idexes])
+        return id_str
     
 
 class GeneticFeatureSelectorNode(SklearnIndividualGenerator):

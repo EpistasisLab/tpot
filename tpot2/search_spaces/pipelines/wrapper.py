@@ -7,7 +7,7 @@ from typing import Generator, List, Tuple, Union
 import random
 from ..base import SklearnIndividual, SklearnIndividualGenerator
 from ConfigSpace import ConfigurationSpace
-
+from ..tuple_index import TupleIndex
 
 class WrapperPipelineIndividual(SklearnIndividual):
     def __init__(
@@ -65,14 +65,17 @@ class WrapperPipelineIndividual(SklearnIndividual):
         wrapped_est = self.method(est, **final_params)
         return wrapped_est
     
+
+
     def unique_id(self):
+        #return a dictionary of the method and the hyperparameters
+        method_str = self.method.__name__
+        params = list(self.hyperparameters.keys())
+        params = sorted(params)
 
-        if self.hyperparameters_parser is not None:
-            final_params = self.hyperparameters_parser(self.hyperparameters)
-        else:
-            final_params = self.hyperparameters
-
-        return (self.method, str(tuple(sorted(list(final_params.items())))) ,self.node.unique_id())
+        id_str = f"{method_str}({', '.join([f'{param}={self.hyperparameters[param]}' for param in params])})"
+        
+        return TupleIndex(("WrapperPipeline", id_str, self.node.unique_id()))
     
 
 class WrapperPipeline(SklearnIndividualGenerator):

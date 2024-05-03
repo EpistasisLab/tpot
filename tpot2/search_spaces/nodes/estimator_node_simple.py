@@ -53,7 +53,13 @@ class EstimatorNodeIndividual(SklearnIndividual):
     
     def unique_id(self):
         #return a dictionary of the method and the hyperparameters
-        return (self.method, self.hyperparameters)
+        method_str = self.method.__name__
+        params = list(self.hyperparameters.keys())
+        params = sorted(params)
+
+        id_str = f"{method_str}({', '.join([f'{param}={self.hyperparameters[param]}' for param in params])})"
+        
+        return id_str
 
 class EstimatorNode(SklearnIndividualGenerator):
     def __init__(self, method, space):

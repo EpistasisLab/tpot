@@ -8,20 +8,21 @@ import random
 from ..base import SklearnIndividual, SklearnIndividualGenerator
 from ..tuple_index import TupleIndex
 
-class SequentialPipelineIndividual(SklearnIndividual):
-    # takes in a list of search spaces. each space is a list of SklearnIndividualGenerators.
-    # will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
+class UnionPipelineIndividual(SklearnIndividual):
+    """
+    Takes in a list of search spaces. each space is a list of SklearnIndividualGenerators.
+    Will produce a FeatureUnion pipeline. Each step in the pipeline will correspond to the the search space provided in the same index.
+    The resulting pipeline will be a FeatureUnion of the steps in the pipeline.
+    
+    """
 
     def __init__(self, search_spaces : List[SklearnIndividualGenerator], rng=None) -> None:
         super().__init__()
         self.search_spaces = search_spaces
-        self.pipeline = []
 
+        self.pipeline = []
         for space in self.search_spaces:
             self.pipeline.append(space.generate(rng))
-
-        self.pipeline = np.array(self.pipeline)
-        
     
     def mutate(self, rng=None):
         rng = np.random.default_rng()
@@ -31,29 +32,17 @@ class SequentialPipelineIndividual(SklearnIndividual):
 
     def crossover(self, other, rng=None):
         #swap a random step in the pipeline with the corresponding step in the other pipeline
-        if len(self.pipeline) != len(other.pipeline):
-            return False
-        
-        if len(self.pipeline) < 2:
-            return False
-
         rng = np.random.default_rng()
-        cx_funcs = [self._crossover_swap_random_steps, self._crossover_swap_segment, self._crossover_inner_step]
 
+        cx_funcs = [self._crossover_swap_random_steps, self._crossover_inner_step]
         rng.shuffle(cx_funcs)
         for cx_func in cx_funcs:
             if cx_func(other, rng):
                 return True
-            
-        return False
 
+        return False
+    
     def _crossover_swap_step(self, other, rng):
-        if len(self.pipeline) != len(other.pipeline):
-            return False
-        
-        if len(self.pipeline) < 2:
-            return False
-        
         rng = np.random.default_rng()
         idx = rng.integers(1,len(self.pipeline))
 
@@ -69,24 +58,6 @@ class SequentialPipelineIndividual(SklearnIndividual):
 
         return True
 
-    def _crossover_swap_segment(self, other, rng):
-        if len(self.pipeline) != len(other.pipeline):
-            return False
-        
-        if len(self.pipeline) < 2:
-            return False
-        
-        rng = np.random.default_rng()
-        idx = rng.integers(1,len(self.pipeline))
-
-        left = rng.choice([True, False])
-        if left:
-            self.pipeline[:idx], other.pipeline[:idx] = other.pipeline[:idx], self.pipeline[:idx]
-        else:
-            self.pipeline[idx:], other.pipeline[idx:] = other.pipeline[idx:], self.pipeline[idx:]
-
-        return True
-    
     def _crossover_inner_step(self, other, rng):
         rng = np.random.default_rng()
         
@@ -99,15 +70,15 @@ class SequentialPipelineIndividual(SklearnIndividual):
         return crossover_success
     
     def export_pipeline(self):
-        return sklearn.pipeline.make_pipeline(*[step.export_pipeline() for step in self.pipeline])
+        return sklearn.pipeline.FeatureUnion(transformer_list=[step.export_pipeline() for step in self.pipeline])
     
     def unique_id(self):
         l = [step.unique_id() for step in self.pipeline]
-        l = ["SequentialPipeline"] + l
+        l = ["FeatureUnion"] + l
         return TupleIndex(tuple(l))
 
 
-class SequentialPipeline(SklearnIndividualGenerator):
+class UnionPipeline(SklearnIndividualGenerator):
     def __init__(self, search_spaces : List[SklearnIndividualGenerator] ) -> None:
         """
         Takes in a list of search spaces. will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
@@ -116,4 +87,4 @@ class SequentialPipeline(SklearnIndividualGenerator):
         self.search_spaces = search_spaces
 
     def generate(self, rng=None):
-        return SequentialPipelineIndividual(self.search_spaces)
+        return UnionPipelineIndividual(self.search_spaces)
