@@ -65,6 +65,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         self.pipeline[idx] = self.search_space.generate(rng)
         return True
     
+    #TODO mutate one step or multiple?
     def _mutate_inner_step(self, rng):
         rng = np.random.default_rng()
         indexes = rng.random(len(self.pipeline)) < 0.5

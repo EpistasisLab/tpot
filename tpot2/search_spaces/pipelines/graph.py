@@ -102,8 +102,8 @@ class GraphPipelineIndividual(SklearnIndividual):
             self.crossover_methods_list = [self._crossover_swap_branch,]#[self._crossover_swap_branch, self._crossover_swap_node, self._crossover_take_branch]  #TODO self._crossover_nodes, 
 
         else:
-            self.mutate_methods_list = [self._mutate_insert_leaf, self._mutate_insert_inner_node, self._mutate_remove_node, self._mutate_node]
-            self.crossover_methods_list = [self._crossover_swap_branch,]#[self._crossover_swap_branch, self._crossover_swap_node, self._crossover_take_branch]  #TODO self._crossover_nodes, 
+            self.mutate_methods_list = [self._mutate_insert_leaf, self._mutate_insert_inner_node, self._mutate_remove_node, self._mutate_node, self._mutate_insert_bypass_node]
+            self.crossover_methods_list = [self._crossover_swap_branch, self._crossover_nodes, self._crossover_take_branch ]#[self._crossover_swap_branch, self._crossover_swap_node, self._crossover_take_branch]  #TODO self._crossover_nodes, 
 
         self.merge_duplicated_nodes_toggle = True
 
