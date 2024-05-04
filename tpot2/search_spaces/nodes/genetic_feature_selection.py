@@ -64,7 +64,7 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
         
         return rng.choice(self.mutation_list)(rng)
     
-    def crossover(self, other, rng=None):
+    def _crossover(self, other, rng=None):
         rng = np.random.default_rng(rng)
         
         if rng.uniform() < self.crossover_rate_rate:

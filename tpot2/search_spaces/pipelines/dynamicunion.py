@@ -81,7 +81,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return mutated
 
 
-    def crossover(self, other, rng=None):
+    def _crossover(self, other, rng=None):
         rng = np.random.default_rng()
 
         cx_funcs = [self._crossover_swap_random_steps, self._crossover_inner_step]

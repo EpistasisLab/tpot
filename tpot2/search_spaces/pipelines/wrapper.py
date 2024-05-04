@@ -51,7 +51,7 @@ class WrapperPipelineIndividual(SklearnIndividual):
     def _mutate_node(self, rng=None):
         return self.node.mutate(rng)
 
-    def crossover(self, other, rng=None):
+    def _crossover(self, other, rng=None):
         return self.node.crossover(other.node, rng)
     
     def export_pipeline(self):

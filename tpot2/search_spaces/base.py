@@ -10,6 +10,10 @@ import sklearn
 import networkx as nx
 from . import graph_utils
 from typing import final
+from abc import ABC, abstractmethod
+
+
+
 
 class SklearnIndividual(tpot2.BaseIndividual):
 
@@ -18,8 +22,15 @@ class SklearnIndividual(tpot2.BaseIndividual):
 
     def mutate(self, rng=None):
         return
+
+    @final
+    def crossover(self, other, rng=None, **kwargs):
+        if not isinstance(other, type(self)):
+            return False
+        return self._crossover(other, rng=rng, **kwargs)
     
-    def crossover(self, other, rng=None):
+    @abstractmethod
+    def _crossover(self, other, rng=None):
         return
 
     def export_pipeline(self) -> BaseEstimator:

@@ -63,7 +63,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         return step.mutate(rng)
     
 
-    def crossover(self, other, rng=None):
+    def _crossover(self, other, rng=None):
         rng = np.random.default_rng()
 
         if len(self.pipeline) < 2 or len(other.pipeline) < 2:

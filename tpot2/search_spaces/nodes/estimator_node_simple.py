@@ -37,7 +37,7 @@ class EstimatorNodeIndividual(SklearnIndividual):
             
         return True
 
-    def crossover(self, other, rng=None):
+    def _crossover(self, other, rng=None):
         rng = np.random.default_rng(rng)
         if self.method != other.method:
             return False
