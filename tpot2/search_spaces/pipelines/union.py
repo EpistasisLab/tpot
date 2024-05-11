@@ -70,7 +70,7 @@ class UnionPipelineIndividual(SklearnIndividual):
         return crossover_success
     
     def export_pipeline(self):
-        return sklearn.pipeline.FeatureUnion(transformer_list=[step.export_pipeline() for step in self.pipeline])
+        return sklearn.pipeline.make_union(*[step.export_pipeline() for step in self.pipeline])
     
     def unique_id(self):
         l = [step.unique_id() for step in self.pipeline]

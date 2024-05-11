@@ -135,7 +135,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return crossover_success
     
     def export_pipeline(self):
-        return sklearn.pipeline.make_pipeline(*[step.export_pipeline() for step in self.pipeline])
+        return sklearn.pipeline.make_union(*[step.export_pipeline() for step in self.pipeline])
     
     def unique_id(self):
         l = [step.unique_id() for step in self.pipeline]

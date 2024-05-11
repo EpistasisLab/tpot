@@ -29,8 +29,13 @@ class WrapperPipelineIndividual(SklearnIndividual):
         self.method = method
         self.space = space
         rng = np.random.default_rng(rng)
-        self.space.seed(rng.integers(0, 2**32))
-        self.hyperparameters = dict(self.space.sample_configuration())
+        
+        if isinstance(space, dict):
+            self.hyperparameters = space
+        else:
+            rng = np.random.default_rng(rng)
+            self.space.seed(rng.integers(0, 2**32))
+            self.hyperparameters = dict(self.space.sample_configuration())
 
         self.hyperparameters_parser = hyperparameter_parser
         
@@ -43,6 +48,8 @@ class WrapperPipelineIndividual(SklearnIndividual):
             return self._mutate_node(rng)
     
     def _mutate_hyperparameters(self, rng=None):
+        if isinstance(self.space, dict): 
+            return False
         rng = np.random.default_rng(rng)
         self.space.seed(rng.integers(0, 2**32))
         self.hyperparameters = dict(self.space.sample_configuration())
@@ -83,7 +90,8 @@ class WrapperPipeline(SklearnIndividualGenerator):
             self, 
             method: type, 
             space: ConfigurationSpace,
-            estimator_search_space: SklearnIndividualGenerator, 
+            estimator_search_space: SklearnIndividualGenerator,
+            hyperparameter_parser: callable = None, 
             ) -> None:
         
         """
@@ -96,6 +104,7 @@ class WrapperPipeline(SklearnIndividualGenerator):
         self.estimator_search_space = estimator_search_space
         self.method = method
         self.space = space
+        self.hyperparameter_parser=hyperparameter_parser
 
     def generate(self, rng=None):
-        return WrapperPipelineIndividual(method=self.method, space=self.space, estimator_search_space=self.estimator_search_space, rng=rng)
+        return WrapperPipelineIndividual(method=self.method, space=self.space, estimator_search_space=self.estimator_search_space, hyperparameter_parser=self.hyperparameter_parser,  rng=rng)
