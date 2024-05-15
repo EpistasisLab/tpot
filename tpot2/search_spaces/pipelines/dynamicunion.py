@@ -107,7 +107,10 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         max_steps = int(min(len(self.pipeline), len(other.pipeline))/2)
         max_steps = max(max_steps, 1)
         
-        n_steps_to_swap = rng.integers(1, max_steps)
+        if max_steps == 1:
+            n_steps_to_swap = 1
+        else:
+            n_steps_to_swap = rng.integers(1, max_steps)
 
         other_indexes_to_take = rng.choice(len(other.pipeline), n_steps_to_swap, replace=False)
         self_indexes_to_replace = rng.choice(len(self.pipeline), n_steps_to_swap, replace=False)
