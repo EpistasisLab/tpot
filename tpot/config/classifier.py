@@ -81,7 +81,8 @@ classifier_config_dict = {
     'sklearn.neighbors.KNeighborsClassifier': {
         'n_neighbors': range(1, 101),
         'weights': ["uniform", "distance"],
-        'p': [1, 2]
+        'p': [1, 2],
+        'algorithm': ["kd_tree", "ball_tree"]  # using "brute" results in memory spikes
     },
 
     'sklearn.svm.LinearSVC': {
@@ -186,6 +187,13 @@ classifier_config_dict = {
 
     # Selectors
     'sklearn.feature_selection.SelectFwe': {
+        'alpha': np.arange(0, 0.05, 0.001),
+        'score_func': {
+            'sklearn.feature_selection.f_classif': None
+        }
+    },
+
+    'sklearn.feature_selection.SelectFdr': {
         'alpha': np.arange(0, 0.05, 0.001),
         'score_func': {
             'sklearn.feature_selection.f_classif': None
