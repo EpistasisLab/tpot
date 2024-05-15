@@ -51,7 +51,7 @@ class FSSIndividual(SklearnIndividual):
         self.sel_subset = self.subset_dict[self.selected_subset_name]
         
     
-    def crossover(self, other, rng=None):
+    def _crossover(self, other, rng=None):
         self.selected_subset_name = other.selected_subset_name
         self.sel_subset = other.sel_subset
 
@@ -60,7 +60,8 @@ class FSSIndividual(SklearnIndividual):
     
 
     def unique_id(self):
-        return ("FSS", self.selected_subset_name)
+        id_str = "FeatureSetSelector({0})".format(self.selected_subset_name)
+        return id_str
     
 
 class FSSNode(SklearnIndividualGenerator):

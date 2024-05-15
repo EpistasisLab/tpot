@@ -15,7 +15,7 @@ from . import evolvers
 from . import objectives
 from . import selectors
 from . import tpot_estimator
-
+from . import old_config_utils
 
 from .tpot_estimator import TPOTClassifier, TPOTRegressor, TPOTEstimator, TPOTEstimatorSteadyState
 

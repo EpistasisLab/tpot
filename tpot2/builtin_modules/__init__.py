@@ -6,3 +6,4 @@ from .arithmetictransformer import AddTransformer, mul_neg_1_Transformer, MulTra
 from .passthrough import Passthrough
 from .imputer import ColumnSimpleImputer
 from .selector_wrappers import RFE_ExtraTreesClassifier, SelectFromModel_ExtraTreesClassifier, RFE_ExtraTreesRegressor, SelectFromModel_ExtraTreesRegressor
+from .estimatortransformer import EstimatorTransformer

@@ -27,6 +27,7 @@ from tpot2.builtin_modules import genetic_encoders, feature_encoding_frequency_s
 from tpot2.builtin_modules import AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer
 from tpot2.builtin_modules.genetic_encoders import DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder 
 from tpot2.builtin_modules import ZeroCount, ColumnOneHotEncoder
+from tpot2.builtin_modules import Passthrough
 from sklearn.linear_model import SGDClassifier, LogisticRegression, SGDRegressor, Ridge, Lasso, ElasticNet, Lars, LassoLars, LassoLarsCV, RidgeCV, ElasticNetCV, PassiveAggressiveClassifier, ARDRegression
 from sklearn.ensemble import BaggingClassifier, RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, ExtraTreesRegressor, ExtraTreesClassifier, AdaBoostRegressor, AdaBoostClassifier, GradientBoostingRegressor,RandomForestRegressor, BaggingRegressor, ExtraTreesRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -53,6 +54,7 @@ all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, Grad
                PowerTransformer, QuantileTransformer,ARDRegression, QuadraticDiscriminantAnalysis, PassiveAggressiveClassifier, LinearDiscriminantAnalysis,
                DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder,
                GaussianProcessClassifier, BaggingClassifier,LGBMRegressor,
+               Passthrough,
                ]
 
 
@@ -147,6 +149,8 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
         case "OverDominanceEncoder":
             return {}
 
+        case "Passthrough":
+            return {}
 
         #classifiers.py
         case "LinearDiscriminantAnalysis":
@@ -335,7 +339,7 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
 
                 space = {
 
-                    'n': Float("n", bounds=(-1e3, 1e3)),
+                    'n': Float("n", bounds=(-1e2, 1e2)),
                 }
             ) 
         
@@ -389,19 +393,23 @@ def get_configspace(name, n_classes=3, n_samples=100, n_features=100, random_sta
     raise ValueError(f"Could not find configspace for {name}")
    
 
-def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_state=None):
+def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_state=None, return_choice_pipeline=True):
 
 
     #if list of names, return a list of EstimatorNodes
     if isinstance(name, list) or isinstance(name, np.ndarray):
-        search_spaces = [get_search_space(n, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state) for n in name]
+        search_spaces = [get_search_space(n, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state, return_choice_pipeline=False) for n in name]
         #remove Nones
         search_spaces = [s for s in search_spaces if s is not None]
-        return ChoicePipeline(search_spaces=search_spaces)
+
+        if return_choice_pipeline:
+            return ChoicePipeline(search_spaces=np.hstack(search_spaces))
+        else:
+            return np.hstack(search_spaces)
     
     if name in GROUPNAMES:
         name_list = GROUPNAMES[name]
-        return get_search_space(name_list, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
+        return get_search_space(name_list, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state, return_choice_pipeline=return_choice_pipeline)
     
     return get_node(name, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
 

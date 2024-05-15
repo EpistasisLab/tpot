@@ -77,13 +77,13 @@ class TPOTRegressor(TPOTEstimator):
                 search_space = tpot2.search_spaces.pipelines.GraphPipeline(
                     root_search_space= tpot2.config.get_search_space("regressors", **get_search_space_params),
                     leaf_search_space = None, 
-                    inner_search_space = tpot2.config.get_search_space(["selectors","transformers","regressors","scalers"],**get_search_space_params),
+                    inner_search_space = tpot2.config.get_search_space(["selectors","transformers","regressors","scalers","selectors_regression"],**get_search_space_params),
                 )
             else:
                 search_space = tpot2.search_spaces.pipelines.GraphPipeline(
                     root_search_space= tpot2.config.get_search_space("regressors", **get_search_space_params),
                     leaf_search_space = None, 
-                    inner_search_space = tpot2.config.get_search_space(["selectors","transformers","scalers"],**get_search_space_params),
+                    inner_search_space = tpot2.config.get_search_space(["selectors","transformers","scalers","selectors_regression"],**get_search_space_params),
                 )
 
             super(TPOTRegressor,self).__init__(
@@ -189,13 +189,13 @@ class TPOTClassifier(TPOTEstimator):
                 search_space = tpot2.search_spaces.pipelines.GraphPipeline(
                     root_search_space= tpot2.config.get_search_space("classifiers", **get_search_space_params),
                     leaf_search_space = None, 
-                    inner_search_space = tpot2.config.get_search_space(["selectors","transformers","classifiers", "scalers"], **get_search_space_params),
+                    inner_search_space = tpot2.config.get_search_space(["selectors","transformers","classifiers", "scalers","selectors_classification"], **get_search_space_params),
                 )
             else:
                 search_space = tpot2.search_spaces.pipelines.GraphPipeline(
                     root_search_space= tpot2.config.get_search_space("classifiers", **get_search_space_params),
                     leaf_search_space = None, 
-                    inner_search_space = tpot2.config.get_search_space(["selectors","transformers","scalers"], **get_search_space_params),
+                    inner_search_space = tpot2.config.get_search_space(["selectors","transformers","scalers","selectors_classification"], **get_search_space_params),
                 )
 
 

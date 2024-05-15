@@ -60,7 +60,7 @@ class EstimatorNodeIndividual(SklearnIndividual):
         self.check_hyperparameters_for_None()
         return True
 
-    def crossover(self, other, rng=None):
+    def _crossover(self, other, rng=None):
         if isinstance(self.space, dict):
             return False
         
@@ -95,7 +95,13 @@ class EstimatorNodeIndividual(SklearnIndividual):
     
     def unique_id(self):
         #return a dictionary of the method and the hyperparameters
-        return (self.method, str(tuple(sorted(list(self.hyperparameter_parser(self.hyperparameters).items())))))
+        method_str = self.method.__name__
+        params = list(self.hyperparameters.keys())
+        params = sorted(params)
+
+        id_str = f"{method_str}({', '.join([f'{param}={self.hyperparameters[param]}' for param in params])})"
+        
+        return id_str
 
 class EstimatorNode(SklearnIndividualGenerator):
     def __init__(self, method, space, hyperparameter_parser=default_hyperparameter_parser):

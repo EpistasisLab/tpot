@@ -6,8 +6,9 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SklearnIndividualGenerator, check_same_subclass
 from ConfigSpace import ConfigurationSpace
+
 
 class EstimatorNodeCustomIndividual(SklearnIndividual):
     def __init__(self, method: type, 
@@ -24,7 +25,7 @@ class EstimatorNodeCustomIndividual(SklearnIndividual):
         self.hyperparameters = self.sample_func(rng)
         return True
 
-    def crossover(self, other, rng=None):
+    def _crossover(self, other, rng=None):
         rng = np.random.default_rng(rng)
         if self.method != other.method:
             return False
@@ -40,7 +41,13 @@ class EstimatorNodeCustomIndividual(SklearnIndividual):
     
     def unique_id(self):
         #return a dictionary of the method and the hyperparameters
-        return (self.method, self.hyperparameters)
+        method_str = self.method.__name__
+        params = list(self.hyperparameters.keys())
+        params = sorted(params)
+
+        id_str = f"{method_str}({', '.join([f'{param}={self.hyperparameters[param]}' for param in params])})"
+        
+        return id_str
 
 class EstimatorNodeCustom(SklearnIndividualGenerator):
     def __init__(self,  method : type, 
