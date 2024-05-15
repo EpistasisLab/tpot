@@ -113,7 +113,7 @@ def convert_config_dict_to_choicepipeline(config_dict):
         search_spaces.append(get_node_space(key, value))
     return ChoicePipeline(search_spaces)
 
-
+#Note doesn't convert estimators so they passthrough inputs like in TPOT1
 def convert_config_dict_to_graphpipeline(config_dict):
     root_search_spaces = []
     inner_search_spaces = []
