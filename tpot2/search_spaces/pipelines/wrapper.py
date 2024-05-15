@@ -16,19 +16,26 @@ class WrapperPipelineIndividual(SklearnIndividual):
             space: ConfigurationSpace,
             estimator_search_space: SklearnIndividualGenerator, 
             hyperparameter_parser: callable = None,
+            wrapped_param_name: str = None,
             rng=None) -> None:
 
 
 
         super().__init__()
         
-        self.estimator_search_space = estimator_search_space
-        self.node = self.estimator_search_space.generate(rng)
+        
+        
 
 
         self.method = method
         self.space = space
+        self.estimator_search_space = estimator_search_space
+        self.hyperparameters_parser = hyperparameter_parser
+        self.wrapped_param_name = wrapped_param_name
+
+
         rng = np.random.default_rng(rng)
+        self.node = self.estimator_search_space.generate(rng)
         
         if isinstance(space, dict):
             self.hyperparameters = space
@@ -37,7 +44,7 @@ class WrapperPipelineIndividual(SklearnIndividual):
             self.space.seed(rng.integers(0, 2**32))
             self.hyperparameters = dict(self.space.sample_configuration())
 
-        self.hyperparameters_parser = hyperparameter_parser
+        
         
 
     def mutate(self, rng=None):
@@ -92,6 +99,7 @@ class WrapperPipeline(SklearnIndividualGenerator):
             space: ConfigurationSpace,
             estimator_search_space: SklearnIndividualGenerator,
             hyperparameter_parser: callable = None, 
+            wrapped_param_name: str = None
             ) -> None:
         
         """
@@ -105,6 +113,7 @@ class WrapperPipeline(SklearnIndividualGenerator):
         self.method = method
         self.space = space
         self.hyperparameter_parser=hyperparameter_parser
+        self.wrapped_param_name = wrapped_param_name
 
     def generate(self, rng=None):
-        return WrapperPipelineIndividual(method=self.method, space=self.space, estimator_search_space=self.estimator_search_space, hyperparameter_parser=self.hyperparameter_parser,  rng=rng)
+        return WrapperPipelineIndividual(method=self.method, space=self.space, estimator_search_space=self.estimator_search_space, hyperparameter_parser=self.hyperparameter_parser, wrapped_param_name=self.wrapped_param_name,  rng=rng)
