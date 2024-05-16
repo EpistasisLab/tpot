@@ -64,16 +64,62 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
     
 
     def _crossover(self, other, rng=None):
+        #swap a random step in the pipeline with the corresponding step in the other pipeline
+
+        rng = np.random.default_rng()
+        cx_funcs = [self._crossover_swap_random_steps, self._crossover_inner_step]
+
+        rng.shuffle(cx_funcs)
+        for cx_func in cx_funcs:
+            if cx_func(other, rng):
+                return True
+            
+        return False
+    
+    def _crossover_swap_random_steps(self, other, rng):
         rng = np.random.default_rng()
 
-        if len(self.pipeline) < 2 or len(other.pipeline) < 2:
-            return False
+        max_steps = int(min(len(self.pipeline), len(other.pipeline))/2)
+        max_steps = max(max_steps, 1)
+        
+        if max_steps == 1:
+            n_steps_to_swap = 1
+        else:
+            n_steps_to_swap = rng.integers(1, max_steps)
 
-        idx = rng.integers(1,len(self.pipeline))
-        idx2 = rng.integers(1,len(other.pipeline))
-        self.pipeline[idx:] = copy.deepcopy(other.pipeline[idx2:])
+        other_indexes_to_take = rng.choice(len(other.pipeline), n_steps_to_swap, replace=False)
+        self_indexes_to_replace = rng.choice(len(self.pipeline), n_steps_to_swap, replace=False)
+
+        # self.pipeline[self_indexes_to_replace], other.pipeline[other_indexes_to_take] = other.pipeline[other_indexes_to_take], self.pipeline[self_indexes_to_replace]
+        
+        for self_idx, other_idx in zip(self_indexes_to_replace, other_indexes_to_take):
+            self.pipeline[self_idx], other.pipeline[other_idx] = other.pipeline[other_idx], self.pipeline[self_idx]
         
         return True
+
+    def _crossover_swap_step(self, other, rng):
+        if len(self.pipeline) != len(other.pipeline):
+            return False
+        
+        if len(self.pipeline) < 2:
+            return False
+        
+        rng = np.random.default_rng()
+        idx = rng.integers(1,len(self.pipeline))
+
+        self.pipeline[idx], other.pipeline[idx] = other.pipeline[idx], self.pipeline[idx]
+        return True
+
+    def _crossover_inner_step(self, other, rng):
+        rng = np.random.default_rng()
+        
+        crossover_success = False
+        for idx in range(len(self.pipeline)):
+            if rng.random() < 0.5:
+                if self.pipeline[idx].crossover(other.pipeline[idx], rng):
+                    crossover_success = True
+                
+        return crossover_success
     
     def export_pipeline(self, **graph_pipeline_args):
         return [step.export_pipeline(**graph_pipeline_args) for step in self.pipeline]

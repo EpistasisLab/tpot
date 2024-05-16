@@ -51,11 +51,23 @@ class UnionPipelineIndividual(SklearnIndividual):
     
     def _crossover_swap_random_steps(self, other, rng):
         rng = np.random.default_rng()
-        #selet steps idxs with probability 0.5
-        idxs = rng.random(len(self.pipeline)) < 0.5
-        #swap steps
-        self.pipeline[idxs], other.pipeline[idxs] = other.pipeline[idxs], self.pipeline[idxs]
 
+        max_steps = int(min(len(self.pipeline), len(other.pipeline))/2)
+        max_steps = max(max_steps, 1)
+        
+        if max_steps == 1:
+            n_steps_to_swap = 1
+        else:
+            n_steps_to_swap = rng.integers(1, max_steps)
+
+        other_indexes_to_take = rng.choice(len(other.pipeline), n_steps_to_swap, replace=False)
+        self_indexes_to_replace = rng.choice(len(self.pipeline), n_steps_to_swap, replace=False)
+
+        # self.pipeline[self_indexes_to_replace], other.pipeline[other_indexes_to_take] = other.pipeline[other_indexes_to_take], self.pipeline[self_indexes_to_replace]
+        
+        for self_idx, other_idx in zip(self_indexes_to_replace, other_indexes_to_take):
+            self.pipeline[self_idx], other.pipeline[other_idx] = other.pipeline[other_idx], self.pipeline[self_idx]
+        
         return True
 
     def _crossover_inner_step(self, other, rng):
