@@ -5,5 +5,4 @@ from .arithmetictransformer import ArithmeticTransformer
 from .arithmetictransformer import AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer
 from .passthrough import Passthrough
 from .imputer import ColumnSimpleImputer
-from .selector_wrappers import RFE_ExtraTreesClassifier, SelectFromModel_ExtraTreesClassifier, RFE_ExtraTreesRegressor, SelectFromModel_ExtraTreesRegressor
 from .estimatortransformer import EstimatorTransformer
