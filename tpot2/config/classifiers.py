@@ -10,7 +10,7 @@ def get_LogisticRegression_ConfigurationSpace(n_samples, n_features, random_stat
     
     dual = n_samples<=n_features
 
-    dual = TRUE_SPECIAL_STRING if dual else FALSE_SPECIAL_STRING
+    dual = FALSE_SPECIAL_STRING
 
     space = {"solver":"saga",
                     "max_iter":1000,
@@ -21,6 +21,7 @@ def get_LogisticRegression_ConfigurationSpace(n_samples, n_features, random_stat
     penalty = Categorical('penalty', ['l1', 'l2',"elasticnet"], default='l2')
     C = Float('C',  (0.01, 1e5), log=True)
     l1_ratio = Float('l1_ratio', (0.0, 1.0))
+    class_weight = Categorical('class_weight', [NONE_SPECIAL_STRING, 'balanced'])
 
     l1_ratio_condition = EqualsCondition(l1_ratio, penalty, 'elasticnet')
     
@@ -29,7 +30,7 @@ def get_LogisticRegression_ConfigurationSpace(n_samples, n_features, random_stat
     
 
     cs = ConfigurationSpace(space)
-    cs.add_hyperparameters([penalty, C, l1_ratio])
+    cs.add_hyperparameters([penalty, C, l1_ratio, class_weight])
     cs.add_conditions([l1_ratio_condition])
 
     return cs
@@ -84,6 +85,7 @@ def get_DecisionTreeClassifier_ConfigurationSpace(n_featues, random_state):
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
         'max_features': Categorical("max_features", [NONE_SPECIAL_STRING, 'sqrt', 'log2']),
         'min_weight_fraction_leaf': 0.0,
+        'class_weight' : Categorical('class_weight', [NONE_SPECIAL_STRING, 'balanced']),
     }
     
 
@@ -94,7 +96,7 @@ def get_DecisionTreeClassifier_ConfigurationSpace(n_featues, random_state):
         space = space
     )
 
-
+#TODO Does not support predict_proba
 def get_LinearSVC_ConfigurationSpace(random_state):
     space = {"dual":"auto"}
         
@@ -120,12 +122,13 @@ def get_SVC_ConfigurationSpace(random_state):
             'max_iter': 3000,
             'probability':TRUE_SPECIAL_STRING}
         
-    kernel = Categorical("kernel", ['poly', 'rbf', 'sigmoid'])
+    kernel = Categorical("kernel", ['poly', 'rbf', 'sigmoid', 'linear'])
     C = Float('C',  (0.01, 1e5), log=True)
     degree = Integer("degree", bounds=(1, 5))
     gamma = Float("gamma", bounds=(1e-5, 8), log=True)
     shrinking = Categorical("shrinking", [True, False])
     coef0 = Float("coef0", bounds=(-1, 1))
+    class_weight = Categorical('class_weight', [NONE_SPECIAL_STRING, 'balanced'])
 
     degree_condition = EqualsCondition(degree, kernel, 'poly')
     gamma_condition = InCondition(gamma, kernel, ['rbf', 'poly'])
@@ -136,7 +139,7 @@ def get_SVC_ConfigurationSpace(random_state):
 
 
     cs = ConfigurationSpace(space)
-    cs.add_hyperparameters([kernel, C, coef0, degree, gamma, shrinking])
+    cs.add_hyperparameters([kernel, C, coef0, degree, gamma, shrinking, class_weight])
     cs.add_conditions([degree_condition, gamma_condition, coef0_condition])
 
     return cs
@@ -187,12 +190,11 @@ def get_XGBClassifier_ConfigurationSpace(random_state,):
 def get_LGBMClassifier_ConfigurationSpace(random_state,):
 
     space = {
-            'objective': 'binary',
-            'metric': 'binary_logloss',
             'boosting_type': Categorical("boosting_type", ['gbdt', 'dart', 'goss']),
             'num_leaves': Integer("num_leaves", bounds=(2, 256)),
             'max_depth': Integer("max_depth", bounds=(1, 10)),
             'n_estimators': Integer("n_estimators", bounds=(10, 100)),
+            'class_weight': Categorical("class_weight", [NONE_SPECIAL_STRING, 'balanced']),
             'verbose':-1,
             'n_jobs': 1,
         }
@@ -213,6 +215,7 @@ def get_ExtraTreesClassifier_ConfigurationSpace(random_state):
             'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
             'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
             'bootstrap': Categorical("bootstrap", [True, False]),
+            'class_weight': Categorical("class_weight", [NONE_SPECIAL_STRING, 'balanced']),
             'n_jobs': 1,
         }
     
@@ -228,7 +231,7 @@ def get_ExtraTreesClassifier_ConfigurationSpace(random_state):
 def get_SGDClassifier_ConfigurationSpace(random_state):
     
     space = {
-            'loss': Categorical("loss", ['squared_hinge', 'modified_huber']), #don't include hinge because we have LinearSVC, don't include log because we have LogisticRegression
+            'loss': Categorical("loss", ['modified_huber']), #don't include hinge because we have LinearSVC, don't include log because we have LogisticRegression. TODO 'squared_hinge'? doesn't support predict proba
             'penalty': 'elasticnet',
             'alpha': Float("alpha", bounds=(1e-5, 0.01), log=True),
             'l1_ratio': Float("l1_ratio", bounds=(0.0, 1.0)),

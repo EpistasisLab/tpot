@@ -33,9 +33,6 @@ class SequentialPipelineIndividual(SklearnIndividual):
         #swap a random step in the pipeline with the corresponding step in the other pipeline
         if len(self.pipeline) != len(other.pipeline):
             return False
-        
-        if len(self.pipeline) < 2:
-            return False
 
         rng = np.random.default_rng()
         cx_funcs = [self._crossover_swap_random_steps, self._crossover_swap_segment, self._crossover_inner_step]
@@ -51,8 +48,6 @@ class SequentialPipelineIndividual(SklearnIndividual):
         if len(self.pipeline) != len(other.pipeline):
             return False
         
-        if len(self.pipeline) < 2:
-            return False
         
         rng = np.random.default_rng()
         idx = rng.integers(1,len(self.pipeline))
@@ -61,12 +56,29 @@ class SequentialPipelineIndividual(SklearnIndividual):
         return True
     
     def _crossover_swap_random_steps(self, other, rng):
-        rng = np.random.default_rng()
-        #selet steps idxs with probability 0.5
-        idxs = rng.random(len(self.pipeline)) < 0.5
-        #swap steps
-        self.pipeline[idxs], other.pipeline[idxs] = other.pipeline[idxs], self.pipeline[idxs]
 
+        if len(self.pipeline) != len(other.pipeline):
+            return False
+        
+        if len(self.pipeline) < 2:
+            return False
+    
+        rng = np.random.default_rng()
+
+        max_steps = int(min(len(self.pipeline), len(other.pipeline))/2)
+        max_steps = max(max_steps, 1)
+        
+        if max_steps == 1:
+            n_steps_to_swap = 1
+        else:
+            n_steps_to_swap = rng.integers(1, max_steps)
+
+        indexes_to_swap = rng.choice(len(other.pipeline), n_steps_to_swap, replace=False)
+
+        for idx in indexes_to_swap:
+            self.pipeline[idx], other.pipeline[idx] = other.pipeline[idx], self.pipeline[idx]
+        
+        
         return True
 
     def _crossover_swap_segment(self, other, rng):
@@ -105,6 +117,8 @@ class SequentialPipelineIndividual(SklearnIndividual):
         l = [step.unique_id() for step in self.pipeline]
         l = ["SequentialPipeline"] + l
         return TupleIndex(tuple(l))
+    
+
 
 
 class SequentialPipeline(SklearnIndividualGenerator):
