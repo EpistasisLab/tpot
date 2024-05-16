@@ -143,4 +143,4 @@ class DynamicLinearPipeline(SklearnIndividualGenerator):
     """
 
     def generate(self, rng=None):
-        return DynamicLinearPipelineIndividual(self.search_space, self.min_length, self.max_length)   
+        return DynamicLinearPipelineIndividual(self.search_space, self.min_length, self.max_length, rng=rng)   
