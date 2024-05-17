@@ -386,10 +386,18 @@ def GradientBoostingClassifier_hyperparameter_parser(params):
         final_params['n_iter_no_change'] = None
         final_params['validation_fraction'] = None
     elif params['early_stop'] == 'valid':
-        final_params['n_iter_no_change'] = params['n_iter_no_change']
-        final_params['validation_fraction'] = params['validation_fraction']
+        #this is required because in crossover, its possible that n_iter_no_change is not in the params
+        if 'n_iter_no_change' not in params:
+            final_params['n_iter_no_change'] = 10
+        else:
+            final_params['n_iter_no_change'] = params['n_iter_no_change']    
+        if 'validation_fraction' not in params:
+            final_params['validation_fraction'] = 0.1
+        else:
+            final_params['validation_fraction'] = params['validation_fraction']
     elif params['early_stop'] == 'train':
-        final_params['n_iter_no_change'] = params['n_iter_no_change']
+        if 'n_iter_no_change' not in params:
+            final_params['n_iter_no_change'] = 10
         final_params['validation_fraction'] = None
 
 
@@ -445,16 +453,32 @@ def HistGradientBoostingClassifier_hyperparameter_parser(params):
         final_params['random_state'] = params['random_state']
 
     
+    
     if params['early_stop'] == 'off':
         # final_params['n_iter_no_change'] = 0
         final_params['validation_fraction'] = None
         final_params['early_stopping'] = False
     elif params['early_stop'] == 'valid':
-        final_params['n_iter_no_change'] = params['n_iter_no_change']
-        final_params['validation_fraction'] = params['validation_fraction']
+        
+        #this is required because in crossover, its possible that n_iter_no_change is not in the params
+        if 'n_iter_no_change' not in params:
+            final_params['n_iter_no_change'] = 10
+        else:
+            final_params['n_iter_no_change'] = params['n_iter_no_change']    
+        if 'validation_fraction' not in params:
+            final_params['validation_fraction'] = 0.1
+        else:
+            final_params['validation_fraction'] = params['validation_fraction']
+            
         final_params['early_stopping'] = True
     elif params['early_stop'] == 'train':
-        final_params['n_iter_no_change'] = params['n_iter_no_change']
+        
+        if 'n_iter_no_change' not in params:
+            final_params['n_iter_no_change'] = 10
+        else:
+            final_params['n_iter_no_change'] = params['n_iter_no_change']
+        
+        
         final_params['validation_fraction'] = None
         final_params['early_stopping'] = True
 
