@@ -99,4 +99,4 @@ class UnionPipeline(SklearnIndividualGenerator):
         self.search_spaces = search_spaces
 
     def generate(self, rng=None):
-        return UnionPipelineIndividual(self.search_spaces)
+        return UnionPipelineIndividual(self.search_spaces, rng=rng)

@@ -96,4 +96,6 @@ def select_nodes_randomly(g1, g2, rng=None):
     rng.shuffle(sorted_other_nodes_list)
     for node1 in sorted_self_nodes_list:
         for node2 in sorted_other_nodes_list:
+            if node1 is node2:
+                continue
             yield node1, node2

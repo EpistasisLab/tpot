@@ -219,13 +219,16 @@ def get_Perceptron_ConfigurationSpace(random_state):
 
 
 
-def get_DecisionTreeRegressor_ConfigurationSpace(n_features, random_state):
+def get_DecisionTreeRegressor_ConfigurationSpace(random_state):
     space = {
         'criterion': Categorical("criterion", ['squared_error', 'friedman_mse', 'mae']),
-        'max_depth': Integer("max_depth", bounds=(1, n_features*2)),
+        # 'max_depth': Integer("max_depth", bounds=(1, n_features*2)),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 21)),
     }
+
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
 
     return ConfigurationSpace(
         space = space
@@ -382,7 +385,7 @@ def GaussianProcessRegressor_hyperparameter_parser(params):
     return final_params
 
 ###
-def get_GradientBoostingRegressor_ConfigurationSpace(n_features, random_state):
+def get_GradientBoostingRegressor_ConfigurationSpace(random_state):
     early_stop = Categorical("early_stop", ["off", "valid", "train"])
     n_iter_no_change = Integer("n_iter_no_change",bounds=(1,20))
     validation_fraction = Float("validation_fraction", bounds=(0.01, 0.4))
@@ -396,9 +399,9 @@ def get_GradientBoostingRegressor_ConfigurationSpace(n_features, random_state):
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 200)),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
         'subsample': Float("subsample", bounds=(0.1, 1.0)),
-        'max_features': Integer("max_features", bounds=(1, max(1, n_features))),
+        'max_features': Float("max_features", bounds=(0.01, 1.00)),
         'max_leaf_nodes': Integer("max_leaf_nodes", bounds=(3, 2047)),
-        'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
+        'max_depth':NONE_SPECIAL_STRING, #'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
         'tol': 1e-4,
     }
 
@@ -443,7 +446,7 @@ def GradientBoostingRegressor_hyperparameter_parser(params):
     return final_params
 
 #only difference is l2_regularization
-def get_HistGradientBoostingRegressor_ConfigurationSpace(n_features, random_state):
+def get_HistGradientBoostingRegressor_ConfigurationSpace(random_state):
     early_stop = Categorical("early_stop", ["off", "valid", "train"])
     n_iter_no_change = Integer("n_iter_no_change",bounds=(1,20))
     validation_fraction = Float("validation_fraction", bounds=(0.01, 0.4))
@@ -457,7 +460,7 @@ def get_HistGradientBoostingRegressor_ConfigurationSpace(n_features, random_stat
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 200)),
         'max_features': Float("max_features", bounds=(0.1,1.0)), 
         'max_leaf_nodes': Integer("max_leaf_nodes", bounds=(3, 2047)),
-        'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
+        'max_depth':NONE_SPECIAL_STRING, #'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
         'l2_regularization': Float("l2_regularization", bounds=(1e-10, 1), log=True),
         'tol': 1e-4,
     }

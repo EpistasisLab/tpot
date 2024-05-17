@@ -16,7 +16,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
     
     """
 
-    def __init__(self, search_space : SklearnIndividualGenerator, max_estimators=None, rng=None) -> None:
+    def __init__(self, search_space : SklearnIndividualGenerator, max_estimators=None, allow_repeats=False, rng=None) -> None:
         super().__init__()
         self.search_space = search_space
         
@@ -25,7 +25,9 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         else:
             self.max_estimators = max_estimators
 
-        self.pipeline = []
+        self.allow_repeats = allow_repeats
+
+        self.union_dict = {}
         
         if self.max_estimators == np.inf:
             init_max = 3
@@ -35,7 +37,8 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         rng = np.random.default_rng(rng)
 
         for _ in range(rng.integers(1, init_max)):
-            self.pipeline.append(self.search_space.generate(rng))
+            self._mutate_add_step(rng)
+            
     
     def mutate(self, rng=None):
         rng = np.random.default_rng()
@@ -47,38 +50,39 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
     
     def _mutate_add_step(self, rng):
         rng = np.random.default_rng()
-        if len(self.pipeline) < self.max_estimators:
-            self.pipeline.append(self.search_space.generate(rng))
-            return True
+        max_attempts = 10
+        if len(self.union_dict) < self.max_estimators:
+            for _ in range(max_attempts):
+                new_step = self.search_space.generate(rng)
+                if new_step.unique_id() not in self.union_dict:
+                    self.union_dict[new_step.unique_id()] = new_step
+                    return True
         return False
     
     def _mutate_remove_step(self, rng):
         rng = np.random.default_rng()
-        if len(self.pipeline) > 1:
-            self.pipeline.pop(rng.integers(0, len(self.pipeline)))
+        if len(self.union_dict) > 1:
+            self.union_dict.pop( rng.choice(list(self.union_dict.keys())))  
             return True
         return False
 
     def _mutate_replace_step(self, rng):
-        rng = np.random.default_rng()
-        idx = rng.integers(0, len(self.pipeline))
-        self.pipeline[idx] = self.search_space.generate(rng)
-        return True
+        rng = np.random.default_rng()        
+        changed = self._mutate_remove_step(rng) or self._mutate_add_step(rng)
+        return changed
     
     #TODO mutate one step or multiple?
     def _mutate_inner_step(self, rng):
         rng = np.random.default_rng()
-        indexes = rng.random(len(self.pipeline)) < 0.5
-        indexes = np.where(indexes)[0]
-        mutated = False
-        if len(indexes) > 0:
-            for idx in indexes:
-                if self.pipeline[idx].mutate(rng):
-                    mutated = True
-        else:
-            mutated = self.pipeline[rng.integers(0, len(self.pipeline))].mutate(rng)
+        changed = False
+        values = list(self.union_dict.values())
+        for step in values:
+            if rng.random() < 0.5:
+                changed = step.mutate(rng) or changed
+        
+        self.union_dict = {step.unique_id(): step for step in values}
 
-        return mutated
+        return changed
 
 
     def _crossover(self, other, rng=None):
@@ -94,72 +98,85 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
     
     def _crossover_swap_step(self, other, rng):
         rng = np.random.default_rng()
-        idx = rng.integers(1,len(self.pipeline))
-        idx2 = rng.integers(1,len(other.pipeline))
+        changed = False
 
-        self.pipeline[idx], other.pipeline[idx2] = other.pipeline[idx2], self.pipeline[idx]
-        # self.pipeline[idx] = other.pipeline[idx2]
-        return True
+        self_step = rng.choice(list(self.union_dict.values()))
+        other_step = rng.choice(list(other.union_dict.values()))
+
+        if other_step.unique_id() in self.union_dict:
+            self.union_dict[other_step.unique_id()] = other_step
+            self.union_dict.pop(self_step.unique_id())
+            changed = True
+
+        if self_step.unique_id() in other.union_dict:
+            other.union_dict[self_step.unique_id()] = self_step
+            other.union_dict.pop(other_step.unique_id())
+
+        return changed
+        
+
+
     
     def _crossover_swap_random_steps(self, other, rng):
         rng = np.random.default_rng()
+        self_values = list(self.union_dict.values())
+        other_values = list(other.union_dict.values())
 
-        max_steps = int(min(len(self.pipeline), len(other.pipeline))/2)
-        max_steps = max(max_steps, 1)
-        
-        if max_steps == 1:
-            n_steps_to_swap = 1
-        else:
-            n_steps_to_swap = rng.integers(1, max_steps)
+        rng.shuffle(self_values)
+        rng.shuffle(other_values)
 
-        other_indexes_to_take = rng.choice(len(other.pipeline), n_steps_to_swap, replace=False)
-        self_indexes_to_replace = rng.choice(len(self.pipeline), n_steps_to_swap, replace=False)
+        self_idx = rng.integers(0,len(self_values))
+        other_idx = rng.integers(0,len(other_values))
 
-        # self.pipeline[self_indexes_to_replace], other.pipeline[other_indexes_to_take] = other.pipeline[other_indexes_to_take], self.pipeline[self_indexes_to_replace]
+        self_values[:self_idx], other_values[:other_idx] = other_values[:other_idx], self_values[:self_idx]
         
-        for self_idx, other_idx in zip(self_indexes_to_replace, other_indexes_to_take):
-            self.pipeline[self_idx], other.pipeline[other_idx] = other.pipeline[other_idx], self.pipeline[self_idx]
-        
+        self.union_dict = {step.unique_id(): step for step in self_values}
+        other.union_dict = {step.unique_id(): step for step in other_values}
+
         return True
-        
 
 
     def _crossover_inner_step(self, other, rng):
         rng = np.random.default_rng()
         
-        #randomly select pairs of steps to crossover
-        indexes = list(range(1, len(self.pipeline)))
-        other_indexes = list(range(1, len(other.pipeline)))
-        #shuffle
-        rng.shuffle(indexes)
-        rng.shuffle(other_indexes)
+        changed = False
+        self_values = list(self.union_dict.values())
+        other_values = list(other.union_dict.values())
 
-        crossover_success = False
-        for idx, other_idx in zip(indexes, other_indexes):
-            if self.pipeline[idx].crossover(other.pipeline[other_idx], rng):
-                crossover_success = True
-                
-        return crossover_success
-    
+        rng.shuffle(self_values)
+        rng.shuffle(other_values)
+
+        for self_step, other_step in zip(self_values, other_values):
+            if rng.random() < 0.5:
+                changed = self_step.crossover(other_step, rng) or changed
+
+        self.union_dict = {step.unique_id(): step for step in self_values}
+        other.union_dict = {step.unique_id(): step for step in other_values}
+
+
+
     def export_pipeline(self):
-        return sklearn.pipeline.make_union(*[step.export_pipeline() for step in self.pipeline])
+        values = list(self.union_dict.values())
+        return sklearn.pipeline.make_union(*[step.export_pipeline() for step in values])
     
     def unique_id(self):
-        l = [step.unique_id() for step in self.pipeline]
+        values = list(self.union_dict.values())
+        l = [step.unique_id() for step in values]
         # if all items are strings, then sort them
         if all([isinstance(x, str) for x in l]):
             l.sort()
         l = ["FeatureUnion"] + l
-        return TupleIndex(tuple(l))
-
+        return TupleIndex(frozenset(l))
 
 class DynamicUnionPipeline(SklearnIndividualGenerator):
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator] ) -> None:
+    def __init__(self, search_spaces : List[SklearnIndividualGenerator],max_estimators=None, allow_repeats=False ) -> None:
         """
         Takes in a list of search spaces. will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
         """
         
         self.search_spaces = search_spaces
+        self.max_estimators = max_estimators
+        self.allow_repeats = allow_repeats
 
     def generate(self, rng=None):
-        return DynamicUnionPipelineIndividual(self.search_spaces)
+        return DynamicUnionPipelineIndividual(self.search_spaces, max_estimators=self.max_estimators, allow_repeats=self.allow_repeats, rng=rng)

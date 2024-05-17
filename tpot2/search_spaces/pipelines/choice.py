@@ -49,4 +49,4 @@ class ChoicePipeline(SklearnIndividualGenerator):
     """
 
     def generate(self, rng=None):
-        return ChoicePipelineIndividual(self.search_spaces)
+        return ChoicePipelineIndividual(self.search_spaces, rng=rng)
