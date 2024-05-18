@@ -124,6 +124,22 @@ def get_QuantileTransformer_configspace(random_state=None):
     )
 
 
+def get_passkbinsdiscretizer_configspace(random_state=None):
+    space = {
+        'n_bins': Integer('n_bins', bounds=(3, 100)),
+        'encode': 'onehot-dense',
+        'strategy': Categorical('strategy', ['uniform', 'quantile', 'kmeans']),
+        # 'subsample': Categorical('subsample', ['auto', 'warn', 'ignore']),
+    }
+
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
+    
+    return ConfigurationSpace(
+        space = space
+
+    )
+
 
 ### ROBUST SCALER
 
@@ -134,3 +150,6 @@ RobustScaler_configspace = ConfigurationSpace({
 
 def robust_scaler_hyperparameter_parser(params):
     return {"quantile_range": (params["q_min"], params["q_max"])}
+
+
+

@@ -26,7 +26,7 @@ from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 from tpot2.builtin_modules import genetic_encoders, feature_encoding_frequency_selector
 from tpot2.builtin_modules import AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer
 from tpot2.builtin_modules.genetic_encoders import DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder 
-from tpot2.builtin_modules import ZeroCount, ColumnOneHotEncoder
+from tpot2.builtin_modules import ZeroCount, ColumnOneHotEncoder, PassKBinsDiscretizer
 from tpot2.builtin_modules import Passthrough
 from sklearn.linear_model import SGDClassifier, LogisticRegression, SGDRegressor, Ridge, Lasso, ElasticNet, Lars, LassoLars, LassoLarsCV, RidgeCV, ElasticNetCV, PassiveAggressiveClassifier, ARDRegression
 from sklearn.ensemble import BaggingClassifier, RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, ExtraTreesRegressor, ExtraTreesClassifier, AdaBoostRegressor, AdaBoostClassifier, GradientBoostingRegressor,RandomForestRegressor, BaggingRegressor, ExtraTreesRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor
@@ -55,6 +55,7 @@ all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, Grad
                DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder,
                GaussianProcessClassifier, BaggingClassifier,LGBMRegressor,
                Passthrough,
+               PassKBinsDiscretizer,
                ]
 
 
@@ -117,7 +118,7 @@ GROUPNAMES = {
         "regressors" : ["LGBMRegressor", 'AdaBoostRegressor', "ARDRegression", 'DecisionTreeRegressor', 'ExtraTreesRegressor', 'HistGradientBoostingRegressor', 'KNeighborsRegressor',  'LinearSVR', "MLPRegressor", 'RandomForestRegressor', 'SGDRegressor', 'SVR', 'XGBRegressor'],
         
         
-        "transformers":  ["Binarizer", "PCA", "ZeroCount", "ColumnOneHotEncoder", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer"],
+        "transformers":  ["PassKBinsDiscretizer", "Binarizer", "PCA", "ZeroCount", "ColumnOneHotEncoder", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer"],
         "scalers": ["MinMaxScaler", "RobustScaler", "StandardScaler", "MaxAbsScaler", "Normalizer", ],
         "all_transformers" : ["transformers", "scalers"],
 
@@ -291,6 +292,8 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
             return transformers.PolynomialFeatures_configspace
         case "StandardScaler":
             return {}
+        case "PassKBinsDiscretizer":
+            return transformers.get_passkbinsdiscretizer_configspace(random_state=random_state)
 
         #selectors.py
         case "SelectFwe":
