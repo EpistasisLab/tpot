@@ -115,12 +115,16 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
     def _crossover_inner_step(self, other, rng):
         rng = np.random.default_rng()
         
+        pipeline1_indexes= list(range(len(self.pipeline)))
+        pipeline2_indexes= list(range(len(other.pipeline)))
+
+        rng.shuffle(pipeline1_indexes)
+        rng.shuffle(pipeline2_indexes)
+
         crossover_success = False
-        for idx in range(len(self.pipeline)):
-            if rng.random() < 0.5:
-                if self.pipeline[idx].crossover(other.pipeline[idx], rng):
+        for idx1, idx2 in zip(pipeline1_indexes, pipeline2_indexes):
+                if self.pipeline[idx1].crossover(other.pipeline[idx2], rng):
                     crossover_success = True
-                
         return crossover_success
     
     def export_pipeline(self):
