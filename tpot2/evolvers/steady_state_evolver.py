@@ -342,7 +342,7 @@ class SteadyStateEvolver():
                 ###############################
                 if self.verbose >= 3:
                     sign = np.sign(self.objective_function_weights)
-                    valid_df = self.population.evaluated_individuals[~self.population.evaluated_individuals[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names]*sign
+                    valid_df = self.population.evaluated_individuals[~self.population.evaluated_individuals[["Eval Error"]].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names]*sign
                     cur_best_scores = valid_df.max(axis=0)*sign
                     cur_best_scores = cur_best_scores.to_numpy()
                     for i, obj in enumerate(self.objective_names):
@@ -353,7 +353,7 @@ class SteadyStateEvolver():
                         #get sign of objective_function_weights
                         sign = np.sign(self.objective_function_weights)
                         #get best score for each objective
-                        valid_df = self.population.evaluated_individuals[~self.population.evaluated_individuals[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names]*sign
+                        valid_df = self.population.evaluated_individuals[~self.population.evaluated_individuals[["Eval Error"]].isin(["TIMEOUT","INVALID"]).any(axis=1)][self.objective_names]*sign
                         cur_best_scores = valid_df.max(axis=0)
                         cur_best_scores = cur_best_scores.to_numpy()
                         #cur_best_scores =  self.population.get_column(self.population.population, column_names=self.objective_names).max(axis=0)*sign #TODO this assumes the current population is the best
@@ -499,7 +499,7 @@ class SteadyStateEvolver():
                     elif len(submitted_futures) < self.max_queue_size:
 
                         initial_population = self.population.evaluated_individuals.iloc[:self.initial_population_size*3]
-                        invalid_initial_population = initial_population[initial_population[self.objective_names].isin(["TIMEOUT","INVALID"]).any(axis=1)]
+                        invalid_initial_population = initial_population[initial_population[["Eval Error"]].isin(["TIMEOUT","INVALID"]).any(axis=1)]
                         if len(invalid_initial_population) >= self.initial_population_size*3: #if all individuals in the 3*initial population are invalid
                             raise Exception("No individuals could be evaluated in the initial population. This may indicate a bug in the configuration, included models, or objective functions. Set verbose>=4 to see the errors that caused individuals to fail.")
 
@@ -540,8 +540,8 @@ class SteadyStateEvolver():
         # Step 7: Cleanup
         ###############################
 
-        self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="INVALID")
-        self.population.remove_invalid_from_population(column_names=self.objective_names, invalid_value="TIMEOUT")
+        self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="INVALID")
+        self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="TIMEOUT")
 
 
         #done, cleanup futures
@@ -556,7 +556,7 @@ class SteadyStateEvolver():
             self._client.close()
             self._cluster.close()
 
-        tpot2.utils.get_pareto_frontier(self.population.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+        tpot2.utils.get_pareto_frontier(self.population.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights)
 
 
 

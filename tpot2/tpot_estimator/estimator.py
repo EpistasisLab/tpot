@@ -700,7 +700,7 @@ class TPOTEstimator(BaseEstimator):
 
 
 
-        tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+        tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights)
 
         if validation_strategy == 'reshuffled':
             best_pareto_front_idx = list(self.pareto_front.index)
@@ -742,15 +742,21 @@ class TPOTEstimator(BaseEstimator):
                                                                                                 )]
 
             objective_kwargs = {"X": X_future, "y": y_future}
-            val_scores = tpot2.utils.eval_utils.parallel_eval_objective_list(
-                best_pareto_front,
-                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+            # val_scores = tpot2.utils.eval_utils.parallel_eval_objective_list(
+            #     best_pareto_front,
+            #     val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+
+
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
             self.evaluated_individuals.loc[best_pareto_front_idx,val_objective_names] = val_scores
+            self.evaluated_individuals.loc[best_pareto_front_idx,'validation_start_times'] = start_times
+            self.evaluated_individuals.loc[best_pareto_front_idx,'validation_end_times'] = end_times
+            self.evaluated_individuals.loc[best_pareto_front_idx,'validation_eval_errors'] = eval_errors
 
-            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=val_objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=val_objective_names, weights=self.objective_function_weights)
 
 
         elif validation_strategy == 'split':
@@ -795,14 +801,19 @@ class TPOTEstimator(BaseEstimator):
                                                         **kwargs,
                                                         )]
 
-            val_scores = tpot2.utils.eval_utils.parallel_eval_objective_list(
-                best_pareto_front,
-                val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names),client=_client, **objective_kwargs)
+            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+
+
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
             self.evaluated_individuals.loc[best_pareto_front_idx,val_objective_names] = val_scores
-            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=val_objective_names, weights=self.objective_function_weights, invalid_values=["TIMEOUT","INVALID"])
+            self.evaluated_individuals.loc[best_pareto_front_idx,'validation_start_times'] = start_times
+            self.evaluated_individuals.loc[best_pareto_front_idx,'validation_end_times'] = end_times
+            self.evaluated_individuals.loc[best_pareto_front_idx,'validation_eval_errors'] = eval_errors
+
+            self.evaluated_individuals["Validation_Pareto_Front"] = tpot2.utils.get_pareto_frontier(self.evaluated_individuals, column_names=val_objective_names, weights=self.objective_function_weights)
+        
         else:
             self.objective_names_for_selection = self.objective_names
         
@@ -835,8 +846,15 @@ class TPOTEstimator(BaseEstimator):
 
         if self.client is None: #no client was passed in
             #close cluster and client
-            _client.close()
-            cluster.close()
+            # _client.close()
+            # cluster.close()
+            try:
+                _client.shutdown()
+                cluster.close()
+            #catch exception
+            except Exception as e:
+                print("Error shutting down client and cluster")
+                Warning(e)
 
         return self
 
