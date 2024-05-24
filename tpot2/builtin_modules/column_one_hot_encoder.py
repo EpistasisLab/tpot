@@ -37,7 +37,7 @@ def _X_selected(X, selected):
 class ColumnOneHotEncoder(BaseEstimator, TransformerMixin):
 
 
-    def __init__(self, columns='auto', drop=None, handle_unknown='error', sparse_output=False, min_frequency=None,max_categories=None):
+    def __init__(self, columns='auto', drop=None, handle_unknown='infrequent_if_exist', sparse_output=False, min_frequency=None,max_categories=None):
         '''
         
         Parameters

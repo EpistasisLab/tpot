@@ -6,3 +6,4 @@ from .arithmetictransformer import AddTransformer, mul_neg_1_Transformer, MulTra
 from .passthrough import Passthrough
 from .imputer import ColumnSimpleImputer
 from .estimatortransformer import EstimatorTransformer
+from .passkbinsdiscretizer import PassKBinsDiscretizer

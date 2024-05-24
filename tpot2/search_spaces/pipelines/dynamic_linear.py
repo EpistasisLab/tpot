@@ -14,13 +14,13 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
     # takes in a single search space.
     # will produce a pipeline of variable length. Each step in the pipeline will be pulled from the search space provided.
 
-    def __init__(self, search_space : SklearnIndividualGenerator, min_length: int, max_length: int ) -> None:
+    def __init__(self, search_space : SklearnIndividualGenerator, max_length: int , rng=None) -> None:
         super().__init__()
 
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
 
         self.search_space = search_space
-        self.min_length = min_length
+        self.min_length = 1
         self.max_length = max_length
 
         self.pipeline = self._generate_pipeline(rng)
@@ -29,6 +29,8 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         rng = np.random.default_rng()
         pipeline = []
         length = rng.integers(self.min_length, self.max_length)
+        length = min(length, 3)
+        
         for _ in range(length):
             pipeline.append(self.search_space.generate(rng))
         return pipeline
@@ -113,16 +115,20 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
     def _crossover_inner_step(self, other, rng):
         rng = np.random.default_rng()
         
+        pipeline1_indexes= list(range(len(self.pipeline)))
+        pipeline2_indexes= list(range(len(other.pipeline)))
+
+        rng.shuffle(pipeline1_indexes)
+        rng.shuffle(pipeline2_indexes)
+
         crossover_success = False
-        for idx in range(len(self.pipeline)):
-            if rng.random() < 0.5:
-                if self.pipeline[idx].crossover(other.pipeline[idx], rng):
+        for idx1, idx2 in zip(pipeline1_indexes, pipeline2_indexes):
+                if self.pipeline[idx1].crossover(other.pipeline[idx2], rng):
                     crossover_success = True
-                
         return crossover_success
     
-    def export_pipeline(self, **graph_pipeline_args):
-        return [step.export_pipeline(**graph_pipeline_args) for step in self.pipeline]
+    def export_pipeline(self):
+        return sklearn.pipeline.make_pipeline(*[step.export_pipeline() for step in self.pipeline])
     
     def unique_id(self):
         l = [step.unique_id() for step in self.pipeline]
@@ -131,9 +137,8 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
     
 
 class DynamicLinearPipeline(SklearnIndividualGenerator):
-    def __init__(self, search_space : SklearnIndividualGenerator, min_length: int, max_length: int ) -> None:
+    def __init__(self, search_space : SklearnIndividualGenerator, max_length: int ) -> None:
         self.search_space = search_space
-        self.min_length = min_length
         self.max_length = max_length
 
     """
@@ -143,4 +148,4 @@ class DynamicLinearPipeline(SklearnIndividualGenerator):
     """
 
     def generate(self, rng=None):
-        return DynamicLinearPipelineIndividual(self.search_space, self.min_length, self.max_length, rng=rng)   
+        return DynamicLinearPipelineIndividual(self.search_space, self.max_length, rng=rng)   

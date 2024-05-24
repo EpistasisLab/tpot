@@ -85,8 +85,9 @@ def is_pareto_efficient(scores, return_mask = True):
     else:
         return is_efficient
 
-def get_pareto_frontier(df, column_names, weights, invalid_values=["TIMEOUT","INVALID"]):
-    dftmp = df[~df[column_names].isin(invalid_values).any(axis=1)]
+def get_pareto_frontier(df, column_names, weights):
+    # dftmp = df[~df[column_names].isin(invalid_values).any(axis=1)]
+    dftmp = df[df[column_names].notnull().all(axis=1)]
 
     if "Budget" in dftmp.columns:
         #get rows with the max budget
@@ -101,8 +102,8 @@ def get_pareto_frontier(df, column_names, weights, invalid_values=["TIMEOUT","IN
     
 
 
-def get_pareto_front(df, column_names, weights, invalid_values=["TIMEOUT","INVALID"]):
-    dftmp = df[~df[column_names].isin(invalid_values).any(axis=1)]
+def get_pareto_front(df, column_names, weights):
+    dftmp = df[df[column_names].notnull().all(axis=1)]
 
     if "Budget" in dftmp.columns:
         #get rows with the max budget

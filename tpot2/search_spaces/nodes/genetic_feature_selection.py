@@ -50,6 +50,11 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
         else:
             self.mask = mask
 
+        # check if there are no features selected, if so select one
+        if sum(self.mask) == 0:
+            index = rng.choice(len(self.mask))
+            self.mask[index] = True
+
         self.mutation_list = [self._mutate_add, self._mutate_remove]
         self.crossover_list = [self._crossover_swap]
 

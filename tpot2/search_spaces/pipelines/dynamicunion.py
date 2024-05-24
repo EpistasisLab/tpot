@@ -153,7 +153,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         self.union_dict = {step.unique_id(): step for step in self_values}
         other.union_dict = {step.unique_id(): step for step in other_values}
 
-
+        return changed
 
     def export_pipeline(self):
         values = list(self.union_dict.values())
