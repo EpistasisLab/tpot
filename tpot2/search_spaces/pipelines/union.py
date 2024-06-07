@@ -34,7 +34,7 @@ class UnionPipelineIndividual(SklearnIndividual):
         #swap a random step in the pipeline with the corresponding step in the other pipeline
         rng = np.random.default_rng()
 
-        cx_funcs = [self._crossover_swap_random_steps, self._crossover_inner_step]
+        cx_funcs = [self._crossover_inner_step]
         rng.shuffle(cx_funcs)
         for cx_func in cx_funcs:
             if cx_func(other, rng):
