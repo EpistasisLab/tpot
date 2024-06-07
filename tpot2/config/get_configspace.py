@@ -27,7 +27,7 @@ from tpot2.builtin_modules import genetic_encoders, feature_encoding_frequency_s
 from tpot2.builtin_modules import AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer
 from tpot2.builtin_modules.genetic_encoders import DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder 
 from tpot2.builtin_modules import ZeroCount, ColumnOneHotEncoder, PassKBinsDiscretizer
-from tpot2.builtin_modules import Passthrough
+from tpot2.builtin_modules import Passthrough, SkipTransformer
 from sklearn.linear_model import SGDClassifier, LogisticRegression, SGDRegressor, Ridge, Lasso, ElasticNet, Lars, LassoLars, LassoLarsCV, RidgeCV, ElasticNetCV, PassiveAggressiveClassifier, ARDRegression
 from sklearn.ensemble import BaggingClassifier, RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, ExtraTreesRegressor, ExtraTreesClassifier, AdaBoostRegressor, AdaBoostClassifier, GradientBoostingRegressor,RandomForestRegressor, BaggingRegressor, ExtraTreesRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -54,7 +54,7 @@ all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, Grad
                PowerTransformer, QuantileTransformer,ARDRegression, QuadraticDiscriminantAnalysis, PassiveAggressiveClassifier, LinearDiscriminantAnalysis,
                DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder,
                GaussianProcessClassifier, BaggingClassifier,LGBMRegressor,
-               Passthrough,
+               Passthrough,SkipTransformer,
                PassKBinsDiscretizer,
                ]
 
@@ -151,6 +151,8 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
             return {}
 
         case "Passthrough":
+            return {}
+        case "SkipTransformer":
             return {}
 
         #classifiers.py
