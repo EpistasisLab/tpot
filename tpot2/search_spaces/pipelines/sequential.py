@@ -25,6 +25,14 @@ class SequentialPipelineIndividual(SklearnIndividual):
     #TODO, mutate all steps or just one?
     def mutate(self, rng=None):
         rng = np.random.default_rng()
+
+        # mutated = False
+        # for step in self.pipeline:
+        #     if rng.random() < 0.5:
+        #         if step.mutate(rng):
+        #             mutated = True
+        # return mutated
+
         step = rng.choice(self.pipeline)
         return step.mutate(rng)
      
@@ -102,6 +110,15 @@ class SequentialPipelineIndividual(SklearnIndividual):
     def _crossover_inner_step(self, other, rng):
         rng = np.random.default_rng()
         
+        # crossover_success = False
+        # for idx in range(len(self.pipeline)):
+        #     if rng.random() < 0.5:
+        #         if self.pipeline[idx].crossover(other.pipeline[idx], rng):
+        #             crossover_success = True
+                
+        # return crossover_success
+
+
         crossover_success = False
         for idx in range(len(self.pipeline)):
             if rng.random() < 0.5:
