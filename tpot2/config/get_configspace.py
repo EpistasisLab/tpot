@@ -27,7 +27,7 @@ from tpot2.builtin_modules import genetic_encoders, feature_encoding_frequency_s
 from tpot2.builtin_modules import AddTransformer, mul_neg_1_Transformer, MulTransformer, SafeReciprocalTransformer, EQTransformer, NETransformer, GETransformer, GTTransformer, LETransformer, LTTransformer, MinTransformer, MaxTransformer, ZeroTransformer, OneTransformer, NTransformer
 from tpot2.builtin_modules.genetic_encoders import DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder 
 from tpot2.builtin_modules import ZeroCount, ColumnOneHotEncoder, PassKBinsDiscretizer
-from tpot2.builtin_modules import Passthrough
+from tpot2.builtin_modules import Passthrough, SkipTransformer
 from sklearn.linear_model import SGDClassifier, LogisticRegression, SGDRegressor, Ridge, Lasso, ElasticNet, Lars, LassoLars, LassoLarsCV, RidgeCV, ElasticNetCV, PassiveAggressiveClassifier, ARDRegression
 from sklearn.ensemble import BaggingClassifier, RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, ExtraTreesRegressor, ExtraTreesClassifier, AdaBoostRegressor, AdaBoostClassifier, GradientBoostingRegressor,RandomForestRegressor, BaggingRegressor, ExtraTreesRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -45,7 +45,7 @@ from sklearn.feature_selection import SelectFwe, SelectPercentile, VarianceThres
 from sklearn.feature_selection import f_classif, f_regression #TODO create a selectomixin using these?
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from sklearn.gaussian_process import GaussianProcessRegressor, GaussianProcessClassifier
-
+from sklearn.impute import SimpleImputer
 
 all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, MLPClassifier, DecisionTreeClassifier, XGBClassifier, KNeighborsClassifier, SVC, LogisticRegression, LGBMClassifier, LinearSVC, GaussianNB, BernoulliNB, MultinomialNB, ExtraTreesRegressor, RandomForestRegressor, GradientBoostingRegressor, BaggingRegressor, DecisionTreeRegressor, KNeighborsRegressor, XGBRegressor,  ZeroCount, ColumnOneHotEncoder, Binarizer, FastICA, FeatureAgglomeration, MaxAbsScaler, MinMaxScaler, Normalizer, Nystroem, PCA, PolynomialFeatures, RBFSampler, RobustScaler, StandardScaler, SelectFwe, SelectPercentile, VarianceThreshold, SGDRegressor, Ridge, Lasso, ElasticNet, Lars, LassoLars, LassoLarsCV, RidgeCV, SVR, LinearSVR, AdaBoostRegressor, GradientBoostingRegressor, RandomForestRegressor, BaggingRegressor, ExtraTreesRegressor, DecisionTreeRegressor, KNeighborsRegressor, ElasticNetCV,
                AdaBoostClassifier,MLPRegressor,
@@ -54,8 +54,9 @@ all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, Grad
                PowerTransformer, QuantileTransformer,ARDRegression, QuadraticDiscriminantAnalysis, PassiveAggressiveClassifier, LinearDiscriminantAnalysis,
                DominantEncoder, RecessiveEncoder, HeterosisEncoder, UnderDominanceEncoder, OverDominanceEncoder,
                GaussianProcessClassifier, BaggingClassifier,LGBMRegressor,
-               Passthrough,
+               Passthrough,SkipTransformer,
                PassKBinsDiscretizer,
+               SimpleImputer,
                ]
 
 
@@ -123,7 +124,7 @@ GROUPNAMES = {
         "all_transformers" : ["transformers", "scalers"],
 
         "arithmatic": ["AddTransformer", "mul_neg_1_Transformer", "MulTransformer", "SafeReciprocalTransformer", "EQTransformer", "NETransformer", "GETransformer", "GTTransformer", "LETransformer", "LTTransformer", "MinTransformer", "MaxTransformer"],
-        "imputers": [],
+        "imputers": ["SimpleImputer"],
         "skrebate": ["ReliefF", "SURF", "SURFstar", "MultiSURF"],
         "genetic_encoders": ["DominantEncoder", "RecessiveEncoder", "HeterosisEncoder", "UnderDominanceEncoder", "OverDominanceEncoder"],
 
@@ -135,6 +136,8 @@ GROUPNAMES = {
 
 def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_state=None):
     match name:
+        case "SimpleImputer":
+            return imputers.simple_imputer_cs
 
         #autoqtl_builtins.py
         case "FeatureEncodingFrequencySelector":
@@ -151,6 +154,8 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
             return {}
 
         case "Passthrough":
+            return {}
+        case "SkipTransformer":
             return {}
 
         #classifiers.py
