@@ -47,7 +47,7 @@ def get_SGDRegressor_ConfigurationSpace(random_state):
     l1_ratio = Float("l1_ratio", bounds=(1e-7, 1.0), log=True)
     penalty = Categorical("penalty", ["l1", "l2", "elasticnet"])
     epsilon = Float("epsilon", bounds=(1e-5, 1e-1), log=True)
-    loss = Categorical("loss", ["squared_loss", "huber", "epsilon_insensitive", "squared_epsilon_insensitive",])
+    loss = Categorical("loss", ['epsilon_insensitive', 'squared_epsilon_insensitive', 'huber', 'squared_error'])
     eta0 = Float("eta0", bounds=(1e-7, 1e-1), log=True)
     learning_rate = Categorical("learning_rate", ['optimal', 'invscaling', 'constant'])
     power_t = Float("power_t", bounds=(1e-5, 1.0), log=True)
