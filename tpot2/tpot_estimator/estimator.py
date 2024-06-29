@@ -18,7 +18,9 @@ import math
 from .estimator_utils import *
 
 from dask import config as cfg
+from sklearn.experimental import enable_iterative_imputer
 
+from .default_search_spaces import get_default_search_space
 
 def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
@@ -110,7 +112,12 @@ class TPOTEstimator(BaseEstimator):
 
         Parameters
         ----------
-
+        default_search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
+            - String : The default search space to use for the optimization. This can be either "linear" or "graph". If "linear", will use the default linear pipeline search space. If "graph", will use the default graph pipeline search space.
+            - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
+                The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
+                TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
+        
         scorers : (list, scorer)
             A scorer or list of scorers to be used in the cross-validation process.
             see https://scikit-learn.org/stable/modules/model_evaluation.html
@@ -138,8 +145,6 @@ class TPOTEstimator(BaseEstimator):
 
         bigger_is_better : bool, default=True
             If True, the objective function is maximized. If False, the objective function is minimized. Use negative weights to reverse the direction.
-
-
         cross_val_predict_cv : int, default=0
             Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
 
@@ -640,10 +645,48 @@ class TPOTEstimator(BaseEstimator):
             X_future = X
             y_future = y
 
+        if self.classification:
+            n_classes = len(np.unique(y))
+        else:
+            n_classes = None
+
+        get_search_space_params = {"n_classes": n_classes, 
+                        "n_samples":len(y), 
+                        "n_features":X.shape[1], 
+                        "random_state":self.random_state}
+
+        self._search_space = get_default_search_space(self.search_space, classification=True, inner_predictors=True, **get_search_space_params)
+
+
+        if check_empty_values(X):
+            from sklearn.experimental import enable_iterative_imputer
+
+            from ConfigSpace import ConfigurationSpace
+            from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
+            iterative_imputer_cs = ConfigurationSpace(
+                space = {
+                    'n_nearest_features' : Categorical('n_nearest_features', [100]),
+                    'initial_strategy' : Categorical('initial_strategy', ['mean','median', 'most_frequent', ]),
+                    'add_indicator' : Categorical('add_indicator', [True, False]),
+                }
+            )
+
+            imputation_search = tpot2.search_spaces.pipelines.ChoicePipeline([
+                tpot2.config.get_search_space("SimpleImputer"),
+                tpot2.search_spaces.nodes.EstimatorNode(sklearn.impute.IterativeImputer, iterative_imputer_cs)
+            ])
+
+
+
+
+            self.search_space_final = tpot2.search_spaces.pipelines.SequentialPipeline(search_spaces=[ imputation_search, self._search_space], memory="sklearn_pipeline_memory")
+        else:
+            self.search_space_final = self._search_space
+
         def ind_generator(rng):
             rng = np.random.default_rng(rng)
             while True:
-                yield self.search_space.generate(rng)
+                yield self.search_space_final.generate(rng)
 
         #If warm start and we have an evolver instance, use the existing one
         if not(self.warm_start and self._evolver_instance is not None):
@@ -938,3 +981,21 @@ class TPOTEstimator(BaseEstimator):
                 return self.evaluated_individuals
             else:
                 return self.evaluated_individuals[self.evaluated_individuals["Pareto_Front"]==1]
+
+
+def check_empty_values(data):
+    """
+    Checks for empty values in a dataset.
+
+    Args:
+        data (numpy.ndarray or pandas.DataFrame): The dataset to check.
+
+    Returns:
+        bool: True if the dataset contains empty values, False otherwise.
+    """
+    if isinstance(data, pd.DataFrame):
+        return data.isnull().values.any()
+    elif isinstance(data, np.ndarray):
+        return np.isnan(data).any()
+    else:
+        raise ValueError("Unsupported data type")
