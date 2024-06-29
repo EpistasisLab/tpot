@@ -128,6 +128,7 @@ class TPOTBase(BaseEstimator):
         verbosity=0,
         disable_update_check=False,
         log_file=None,
+        customized_initial_population=None,
     ):
         """Set up the genetic programming algorithm for pipeline optimization.
 
@@ -310,6 +311,7 @@ class TPOTBase(BaseEstimator):
         self.disable_update_check = disable_update_check
         self.random_state = random_state
         self.log_file = log_file
+        self.customized_initial_population = customized_initial_population
 
     def _setup_template(self, template):
         self.template = template
@@ -557,6 +559,9 @@ class TPOTBase(BaseEstimator):
         self._toolbox.register(
             "population", tools.initRepeat, list, self._toolbox.individual
         )
+        self._toolbox.register(
+            "customized_population", self._initPopulation_customized, customized_initial_population = self.customized_initial_population
+        )
         self._toolbox.register("compile", self._compile_to_sklearn)
         self._toolbox.register("select", tools.selNSGA2)
         self._toolbox.register("mate", self._mate_operator)
@@ -764,7 +769,10 @@ class TPOTBase(BaseEstimator):
 
         # assign population, self._pop can only be not None if warm_start is enabled
         if not self._pop:
-            self._pop = self._toolbox.population(n=self.population_size)
+            if not self.customized_initial_population:
+                self._pop = self._toolbox.population(n=self.population_size) # generate initial population by default
+            else:
+                self._pop = self._toolbox.customized_population(customized_initial_population=self.customized_initial_population) # generate initial population by custom
 
         def pareto_eq(ind1, ind2):
             """Determine whether two individuals are equal on the Pareto front.
@@ -2025,6 +2033,21 @@ class TPOTBase(BaseEstimator):
                 for arg in reversed(prim.args):
                     stack.append((depth + 1, arg))
         return expr
+
+    def _initPopulation_customized(self, customized_initial_population):
+        iniPop = [] # a list of <class 'deap.creator.Individual'> pipelines
+        for individual_str in customized_initial_population:
+            individual = creator.Individual.from_string(individual_str, self._pset) # converting individual_str to individual
+            iniPop.append(individual)
+        "check if #customized initial pipelines <= #population"
+        if len(iniPop) <= self.population_size:
+            for _ in range(self.population_size - len(iniPop)):
+                individual_rand = self._toolbox.individual()
+                iniPop.append(individual_rand)
+            print(len(customized_initial_population), "customized pipelines +", self.population_size - len(customized_initial_population), "randomized pipelines as initial population.")
+        else:
+            raise Exception("the number of customized initial pipelines > the number of population size!")
+        return iniPop
 
 
     @property
