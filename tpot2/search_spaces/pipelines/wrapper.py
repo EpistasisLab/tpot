@@ -67,7 +67,7 @@ class WrapperPipelineIndividual(SklearnIndividual):
         if rng.choice([True, False]):
             return self._crossover_hyperparameters(other, rng)
         else:
-            self.estimator_search_space.crossover(other.estimator_search_space, rng)
+            self.node.crossover(other.estimator_search_space, rng)
     
 
     def _crossover_hyperparameters(self, other, rng=None):
