@@ -63,6 +63,7 @@ class WrapperPipelineIndividual(SklearnIndividual):
         return self.node.mutate(rng)
 
     def crossover(self, other, rng=None):
+        rng = np.random.default_rng(rng)
         if rng.choice([True, False]):
             return self._crossover_hyperparameters(other, rng)
         else:
