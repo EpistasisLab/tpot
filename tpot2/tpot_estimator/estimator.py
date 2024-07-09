@@ -112,7 +112,7 @@ class TPOTEstimator(BaseEstimator):
 
         Parameters
         ----------
-        default_search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
+        search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
             - String : The default search space to use for the optimization. This can be either "linear" or "graph". If "linear", will use the default linear pipeline search space. If "graph", will use the default graph pipeline search space.
             - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
                 The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
@@ -145,26 +145,13 @@ class TPOTEstimator(BaseEstimator):
 
         bigger_is_better : bool, default=True
             If True, the objective function is maximized. If False, the objective function is minimized. Use negative weights to reverse the direction.
+        
         cross_val_predict_cv : int, default=0
             Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
 
             - 0-1 : When set to 0 or 1, the cross_val_predict function will not be used. The next layer will get the outputs from fitting and transforming the full dataset.
             - >=2 : When fitting pipelines with inner classifiers or regressors, they will still be fit on the full dataset.
                     However, the output to the next node will come from cross_val_predict with the specified number of folds.
-
-        categorical_features: list or None
-            Categorical columns to inpute and/or one hot encode during the preprocessing step. Used only if preprocessing is not False.
-            - None : If None, TPOT2 will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
-            - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
-
-        subsets : str or list, default=None
-            Sets the subsets that the FeatureSetSeletor will select from if set as an option in one of the configuration dictionaries.
-            - str : If a string, it is assumed to be a path to a csv file with the subsets.
-                The first column is assumed to be the name of the subset and the remaining columns are the features in the subset.
-            - list or np.ndarray : If a list or np.ndarray, it is assumed to be a list of subsets.
-            - None : If None, each column will be treated as a subset. One column will be selected per subset.
-            If subsets is None, each column will be treated as a subset. One column will be selected per subset.
-
 
         memory: Memory object or string, default=None
             If supplied, pipeline will cache each transformer after calling fit. This feature
@@ -180,7 +167,20 @@ class TPOTEstimator(BaseEstimator):
                 TPOT uses the instance of joblib.Memory for memory caching,
                 and TPOT does NOT clean the caching directory up upon shutdown.
             - None:
-                TPOT does not use memory caching.
+                TPOT does not use memory caching.              
+
+        categorical_features: list or None
+            Categorical columns to inpute and/or one hot encode during the preprocessing step. Used only if preprocessing is not False.
+            - None : If None, TPOT2 will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
+            - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
+
+        subsets : str or list, default=None
+            Sets the subsets that the FeatureSetSeletor will select from if set as an option in one of the configuration dictionaries.
+            - str : If a string, it is assumed to be a path to a csv file with the subsets.
+                The first column is assumed to be the name of the subset and the remaining columns are the features in the subset.
+            - list or np.ndarray : If a list or np.ndarray, it is assumed to be a list of subsets.
+            - None : If None, each column will be treated as a subset. One column will be selected per subset.
+            If subsets is None, each column will be treated as a subset. One column will be selected per subset.
 
         preprocessing : bool or BaseEstimator/Pipeline,
             EXPERIMENTAL
@@ -328,6 +328,9 @@ class TPOTEstimator(BaseEstimator):
             4. warnings
             >=5. full warnings trace
             6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
+
+        scatter : bool, default=True
+            If True, will scatter the data to the dask workers. If False, will not scatter the data. This can be useful for debugging.
 
         random_state : int, None, default=None
             A seed for reproducability of experiments. This value will be passed to numpy.random.default_rng() to create an instnce of the genrator to pass to other classes
