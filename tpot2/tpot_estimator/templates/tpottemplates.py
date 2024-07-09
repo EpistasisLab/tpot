@@ -104,8 +104,8 @@ class TPOTRegressor(TPOTEstimator):
 
         preprocessing : bool or BaseEstimator/Pipeline,
             EXPERIMENTAL
-            A pipeline that will be used to preprocess the data before CV.
-            - bool : If True, will use a default preprocessing pipeline.
+            A pipeline that will be used to preprocess the data before CV. Note that the parameters for these steps are not optimized. Add them to the search space to be optimized.
+            - bool : If True, will use a default preprocessing pipeline which includes imputation followed by one hot encoding.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
 
         max_time_seconds : float, default=float("inf")
@@ -358,8 +358,8 @@ class TPOTClassifier(TPOTEstimator):
 
         preprocessing : bool or BaseEstimator/Pipeline,
             EXPERIMENTAL
-            A pipeline that will be used to preprocess the data before CV.
-            - bool : If True, will use a default preprocessing pipeline.
+            A pipeline that will be used to preprocess the data before CV. Note that the parameters for these steps are not optimized. Add them to the search space to be optimized.
+            - bool : If True, will use a default preprocessing pipeline which includes imputation followed by one hot encoding.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
 
         max_time_seconds : float, default=float("inf")

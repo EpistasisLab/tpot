@@ -184,8 +184,8 @@ class TPOTEstimator(BaseEstimator):
 
         preprocessing : bool or BaseEstimator/Pipeline,
             EXPERIMENTAL
-            A pipeline that will be used to preprocess the data before CV.
-            - bool : If True, will use a default preprocessing pipeline.
+            A pipeline that will be used to preprocess the data before CV. Note that the parameters for these steps are not optimized. Add them to the search space to be optimized.
+            - bool : If True, will use a default preprocessing pipeline which includes imputation followed by one hot encoding.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
 
         population_size : int, default=50
@@ -562,7 +562,7 @@ class TPOTEstimator(BaseEstimator):
                 if self.categorical_features is not None: #if categorical features are specified, use those
                     pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnSimpleImputer(self.categorical_features, strategy='most_frequent')))
                     pipeline_steps.append(("impute_numeric", tpot2.builtin_modules.ColumnSimpleImputer("numeric", strategy='mean')))
-                    pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnOneHotEncoder(self.categorical_features, strategy='most_frequent')))
+                    pipeline_steps.append(("ColumnOneHotEncoder", tpot2.builtin_modules.ColumnOneHotEncoder(self.categorical_features, strategy='most_frequent')))
 
                 else:
                     if isinstance(X, pd.DataFrame):
@@ -570,7 +570,7 @@ class TPOTEstimator(BaseEstimator):
                         if len(categorical_columns) > 0:
                             pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnSimpleImputer("categorical", strategy='most_frequent')))
                             pipeline_steps.append(("impute_numeric", tpot2.builtin_modules.ColumnSimpleImputer("numeric", strategy='mean')))
-                            pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnOneHotEncoder("categorical", strategy='most_frequent')))
+                            pipeline_steps.append(("ColumnOneHotEncoder", tpot2.builtin_modules.ColumnOneHotEncoder("categorical", strategy='most_frequent')))
                         else:
                             pipeline_steps.append(("impute_numeric", tpot2.builtin_modules.ColumnSimpleImputer("all", strategy='mean')))
                     else:
@@ -661,30 +661,34 @@ class TPOTEstimator(BaseEstimator):
         self._search_space = get_default_search_space(self.search_space, classification=True, inner_predictors=True, **get_search_space_params)
 
 
-        if check_empty_values(X):
-            from sklearn.experimental import enable_iterative_imputer
+        # TODO : Add check for empty values in X and if so, add imputation to the search space
+        # make this depend on self.preprocessing
+        # if check_empty_values(X):
+        #     from sklearn.experimental import enable_iterative_imputer
 
-            from ConfigSpace import ConfigurationSpace
-            from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
-            iterative_imputer_cs = ConfigurationSpace(
-                space = {
-                    'n_nearest_features' : Categorical('n_nearest_features', [100]),
-                    'initial_strategy' : Categorical('initial_strategy', ['mean','median', 'most_frequent', ]),
-                    'add_indicator' : Categorical('add_indicator', [True, False]),
-                }
-            )
+        #     from ConfigSpace import ConfigurationSpace
+        #     from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
+        #     iterative_imputer_cs = ConfigurationSpace(
+        #         space = {
+        #             'n_nearest_features' : Categorical('n_nearest_features', [100]),
+        #             'initial_strategy' : Categorical('initial_strategy', ['mean','median', 'most_frequent', ]),
+        #             'add_indicator' : Categorical('add_indicator', [True, False]),
+        #         }
+        #     )
 
-            imputation_search = tpot2.search_spaces.pipelines.ChoicePipeline([
-                tpot2.config.get_search_space("SimpleImputer"),
-                tpot2.search_spaces.nodes.EstimatorNode(sklearn.impute.IterativeImputer, iterative_imputer_cs)
-            ])
-
-
+        #     imputation_search = tpot2.search_spaces.pipelines.ChoicePipeline([
+        #         tpot2.config.get_search_space("SimpleImputer"),
+        #         tpot2.search_spaces.nodes.EstimatorNode(sklearn.impute.IterativeImputer, iterative_imputer_cs)
+        #     ])
 
 
-            self.search_space_final = tpot2.search_spaces.pipelines.SequentialPipeline(search_spaces=[ imputation_search, self._search_space], memory="sklearn_pipeline_memory")
-        else:
-            self.search_space_final = self._search_space
+
+
+        #     self.search_space_final = tpot2.search_spaces.pipelines.SequentialPipeline(search_spaces=[ imputation_search, self._search_space], memory="sklearn_pipeline_memory")
+        # else:
+        #     self.search_space_final = self._search_space
+
+        self.search_space_final = self._search_space
 
         def ind_generator(rng):
             rng = np.random.default_rng(rng)
