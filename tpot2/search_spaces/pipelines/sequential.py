@@ -44,7 +44,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
             return False
 
         rng = np.random.default_rng(rng)
-        cx_funcs = [self._crossover_swap_random_steps, self._crossover_swap_segment, self._crossover_inner_step]
+        cx_funcs = [self._crossover_swap_multiple_nodes, self._crossover_swap_segment, self._crossover_node]
 
         rng.shuffle(cx_funcs)
         for cx_func in cx_funcs:
@@ -53,7 +53,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
             
         return False
 
-    def _crossover_swap_step(self, other, rng):
+    def _crossover_swap_node(self, other, rng):
         if len(self.pipeline) != len(other.pipeline):
             return False
         
@@ -64,7 +64,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
         self.pipeline[idx], other.pipeline[idx] = other.pipeline[idx], self.pipeline[idx]
         return True
     
-    def _crossover_swap_random_steps(self, other, rng):
+    def _crossover_swap_multiple_nodes(self, other, rng):
 
         if len(self.pipeline) != len(other.pipeline):
             return False
@@ -108,7 +108,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
 
         return True
     
-    def _crossover_inner_step(self, other, rng):
+    def _crossover_node(self, other, rng):
         rng = np.random.default_rng(rng)
         
         # crossover_success = False

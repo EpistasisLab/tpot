@@ -69,7 +69,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         #swap a random step in the pipeline with the corresponding step in the other pipeline
 
         rng = np.random.default_rng(rng)
-        cx_funcs = [self._crossover_swap_random_steps, self._crossover_inner_step]
+        cx_funcs = [self._crossover_swap_multiple_nodes, self._crossover_node]
 
         rng.shuffle(cx_funcs)
         for cx_func in cx_funcs:
@@ -78,7 +78,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
             
         return False
     
-    def _crossover_swap_random_steps(self, other, rng):
+    def _crossover_swap_multiple_nodes(self, other, rng):
         rng = np.random.default_rng(rng)
 
         max_steps = int(min(len(self.pipeline), len(other.pipeline))/2)
@@ -99,7 +99,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         
         return True
 
-    def _crossover_swap_step(self, other, rng):
+    def _crossover_swap_node(self, other, rng):
         if len(self.pipeline) != len(other.pipeline):
             return False
         
@@ -112,7 +112,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         self.pipeline[idx], other.pipeline[idx] = other.pipeline[idx], self.pipeline[idx]
         return True
 
-    def _crossover_inner_step(self, other, rng):
+    def _crossover_node(self, other, rng):
         rng = np.random.default_rng(rng)
         
         pipeline1_indexes= list(range(len(self.pipeline)))

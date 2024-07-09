@@ -42,7 +42,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
     
     def mutate(self, rng=None):
         rng = np.random.default_rng(rng)
-        mutation_funcs = [self._mutate_add_step, self._mutate_remove_step, self._mutate_replace_step, self._mutate_inner_step]
+        mutation_funcs = [self._mutate_add_step, self._mutate_remove_step, self._mutate_replace_step, self._mutate_note]
         rng.shuffle(mutation_funcs)
         for mutation_func in mutation_funcs:
             if mutation_func(rng):
@@ -72,7 +72,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return changed
     
     #TODO mutate one step or multiple?
-    def _mutate_inner_step(self, rng):
+    def _mutate_note(self, rng):
         rng = np.random.default_rng(rng)
         changed = False
         values = list(self.union_dict.values())
@@ -88,7 +88,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
     def _crossover(self, other, rng=None):
         rng = np.random.default_rng(rng)
 
-        cx_funcs = [self._crossover_swap_random_steps, self._crossover_inner_step]
+        cx_funcs = [self._crossover_swap_multiple_nodes, self._crossover_node]
         rng.shuffle(cx_funcs)
         for cx_func in cx_funcs:
             if cx_func(other, rng):
@@ -96,7 +96,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
 
         return False
     
-    def _crossover_swap_step(self, other, rng):
+    def _crossover_swap_node(self, other, rng):
         rng = np.random.default_rng(rng)
         changed = False
 
@@ -117,7 +117,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
 
 
     
-    def _crossover_swap_random_steps(self, other, rng):
+    def _crossover_swap_multiple_nodes(self, other, rng):
         rng = np.random.default_rng(rng)
         self_values = list(self.union_dict.values())
         other_values = list(other.union_dict.values())
@@ -136,7 +136,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return True
 
 
-    def _crossover_inner_step(self, other, rng):
+    def _crossover_node(self, other, rng):
         rng = np.random.default_rng(rng)
         
         changed = False
