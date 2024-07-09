@@ -29,7 +29,7 @@ class ChoicePipelineIndividual(SklearnIndividual):
     def _mutate_node(self, rng=None):
         return self.node.mutate(rng)
 
-    def _crossover(self, other, rng=None):
+    def crossover(self, other, rng=None):
         return self.node.crossover(other.node, rng)
     
     def export_pipeline(self):

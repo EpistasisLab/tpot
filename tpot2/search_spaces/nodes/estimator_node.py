@@ -60,7 +60,7 @@ class EstimatorNodeIndividual(SklearnIndividual):
         self.check_hyperparameters_for_None()
         return True
 
-    def _crossover(self, other, rng=None):
+    def crossover(self, other, rng=None):
         if isinstance(self.space, dict):
             return False
         

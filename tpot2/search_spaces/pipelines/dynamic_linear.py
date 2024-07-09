@@ -65,7 +65,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         return step.mutate(rng)
     
 
-    def _crossover(self, other, rng=None):
+    def crossover(self, other, rng=None):
         #swap a random step in the pipeline with the corresponding step in the other pipeline
 
         rng = np.random.default_rng(rng)

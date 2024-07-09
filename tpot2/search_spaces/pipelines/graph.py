@@ -111,35 +111,33 @@ class GraphPipelineIndividual(SklearnIndividual):
 
     def mutate(self, rng=None):
         rng = np.random.default_rng(rng)
+        rng.shuffle(self.mutate_methods_list)
+        for mutate_method in self.mutate_methods_list:
+            if mutate_method(rng=rng):
+                
+                if self.merge_duplicated_nodes_toggle:
+                    self._merge_duplicated_nodes()
 
-        for i in range(0,random.randint(1,15)):
-            rng.shuffle(self.mutate_methods_list)
-            for mutate_method in self.mutate_methods_list:
-                if mutate_method(rng=rng):
-                    
-                    if self.merge_duplicated_nodes_toggle:
-                        self._merge_duplicated_nodes()
+                if self.__debug:
+                    print(mutate_method)
+
+                    if self.root not in self.graph.nodes:
+                        print('lost root something went wrong with ', mutate_method)
+
+                    if len(self.graph.predecessors(self.root)) > 0:
+                        print('root has parents ', mutate_method)
+
+                    if any([n in nx.ancestors(self.graph,n) for n in self.graph.nodes]):
+                        print('a node is connecting to itself...')
 
                     if self.__debug:
-                        print(mutate_method)
+                        try:
+                            nx.find_cycle(self.graph)
+                            print('something went wrong with ', mutate_method)
+                        except:
+                            pass
 
-                        if self.root not in self.graph.nodes:
-                            print('lost root something went wrong with ', mutate_method)
-
-                        if len(self.graph.predecessors(self.root)) > 0:
-                            print('root has parents ', mutate_method)
-
-                        if any([n in nx.ancestors(self.graph,n) for n in self.graph.nodes]):
-                            print('a node is connecting to itself...')
-
-                        if self.__debug:
-                            try:
-                                nx.find_cycle(self.graph)
-                                print('something went wrong with ', mutate_method)
-                            except:
-                                pass
-
-                    self.graphkey = None
+                self.graphkey = None
 
         return False
 
@@ -323,7 +321,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         return False
 
 
-    def _crossover(self, ind2, rng=None):
+    def crossover(self, ind2, rng=None):
         '''
         self is the first individual, ind2 is the second individual
         If crossover_same_depth, it will select graphindividuals at the same recursive depth.

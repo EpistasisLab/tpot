@@ -85,7 +85,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return changed
 
 
-    def _crossover(self, other, rng=None):
+    def crossover(self, other, rng=None):
         rng = np.random.default_rng(rng)
 
         cx_funcs = [self._crossover_swap_multiple_nodes, self._crossover_node]
@@ -95,28 +95,8 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
                 return True
 
         return False
-    
-    def _crossover_swap_node(self, other, rng):
-        rng = np.random.default_rng(rng)
-        changed = False
 
-        self_step = rng.choice(list(self.union_dict.values()))
-        other_step = rng.choice(list(other.union_dict.values()))
-
-        if other_step.unique_id() in self.union_dict:
-            self.union_dict[other_step.unique_id()] = other_step
-            self.union_dict.pop(self_step.unique_id())
-            changed = True
-
-        if self_step.unique_id() in other.union_dict:
-            other.union_dict[self_step.unique_id()] = self_step
-            other.union_dict.pop(other_step.unique_id())
-
-        return changed
-        
-
-
-    
+            
     def _crossover_swap_multiple_nodes(self, other, rng):
         rng = np.random.default_rng(rng)
         self_values = list(self.union_dict.values())
@@ -128,6 +108,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         self_idx = rng.integers(0,len(self_values))
         other_idx = rng.integers(0,len(other_values))
 
+        #Note that this is not one-point-crossover since the sequence doesn't matter. this is just a quick way to swap multiple random items
         self_values[:self_idx], other_values[:other_idx] = other_values[:other_idx], self_values[:self_idx]
         
         self.union_dict = {step.unique_id(): step for step in self_values}
