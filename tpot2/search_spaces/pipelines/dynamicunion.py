@@ -41,7 +41,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
             
     
     def mutate(self, rng=None):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         mutation_funcs = [self._mutate_add_step, self._mutate_remove_step, self._mutate_replace_step, self._mutate_inner_step]
         rng.shuffle(mutation_funcs)
         for mutation_func in mutation_funcs:
@@ -49,7 +49,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
                 return True
     
     def _mutate_add_step(self, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         max_attempts = 10
         if len(self.union_dict) < self.max_estimators:
             for _ in range(max_attempts):
@@ -60,20 +60,20 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return False
     
     def _mutate_remove_step(self, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         if len(self.union_dict) > 1:
             self.union_dict.pop( rng.choice(list(self.union_dict.keys())))  
             return True
         return False
 
     def _mutate_replace_step(self, rng):
-        rng = np.random.default_rng()        
+        rng = np.random.default_rng(rng)        
         changed = self._mutate_remove_step(rng) or self._mutate_add_step(rng)
         return changed
     
     #TODO mutate one step or multiple?
     def _mutate_inner_step(self, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         changed = False
         values = list(self.union_dict.values())
         for step in values:
@@ -86,7 +86,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
 
 
     def _crossover(self, other, rng=None):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
 
         cx_funcs = [self._crossover_swap_random_steps, self._crossover_inner_step]
         rng.shuffle(cx_funcs)
@@ -97,7 +97,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return False
     
     def _crossover_swap_step(self, other, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         changed = False
 
         self_step = rng.choice(list(self.union_dict.values()))
@@ -118,7 +118,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
 
     
     def _crossover_swap_random_steps(self, other, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         self_values = list(self.union_dict.values())
         other_values = list(other.union_dict.values())
 
@@ -137,7 +137,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
 
 
     def _crossover_inner_step(self, other, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         
         changed = False
         self_values = list(self.union_dict.values())

@@ -25,7 +25,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
         
     #TODO, mutate all steps or just one?
     def mutate(self, rng=None):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
 
         # mutated = False
         # for step in self.pipeline:
@@ -43,7 +43,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
         if len(self.pipeline) != len(other.pipeline):
             return False
 
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         cx_funcs = [self._crossover_swap_random_steps, self._crossover_swap_segment, self._crossover_inner_step]
 
         rng.shuffle(cx_funcs)
@@ -58,7 +58,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
             return False
         
         
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         idx = rng.integers(1,len(self.pipeline))
 
         self.pipeline[idx], other.pipeline[idx] = other.pipeline[idx], self.pipeline[idx]
@@ -72,7 +72,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
         if len(self.pipeline) < 2:
             return False
     
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
 
         max_steps = int(min(len(self.pipeline), len(other.pipeline))/2)
         max_steps = max(max_steps, 1)
@@ -97,7 +97,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
         if len(self.pipeline) < 2:
             return False
         
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         idx = rng.integers(1,len(self.pipeline))
 
         left = rng.choice([True, False])
@@ -109,7 +109,7 @@ class SequentialPipelineIndividual(SklearnIndividual):
         return True
     
     def _crossover_inner_step(self, other, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         
         # crossover_success = False
         # for idx in range(len(self.pipeline)):

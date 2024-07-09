@@ -26,7 +26,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         self.pipeline = self._generate_pipeline(rng)
 
     def _generate_pipeline(self, rng=None):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         pipeline = []
         length = rng.integers(self.min_length, self.max_length)
         length = min(length, 3)
@@ -37,7 +37,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
     
 
     def mutate(self, rng=None):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         options = []
         if len(self.pipeline) > self.min_length:
             options.append(self._mutate_remove_node)
@@ -48,19 +48,19 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         return rng.choice(options)(rng)
     
     def _mutate_add_node(self, rng=None):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         new_node = self.search_space.generate(rng)
         idx = rng.integers(len(self.pipeline))
         self.pipeline.insert(idx, new_node)
 
     def _mutate_remove_node(self, rng=None):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         idx = rng.integers(len(self.pipeline))
         self.pipeline.pop(idx)
 
     def _mutate_step(self, rng=None):
         #choose a random step in the pipeline and mutate it
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         step = rng.choice(self.pipeline)
         return step.mutate(rng)
     
@@ -68,7 +68,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
     def _crossover(self, other, rng=None):
         #swap a random step in the pipeline with the corresponding step in the other pipeline
 
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         cx_funcs = [self._crossover_swap_random_steps, self._crossover_inner_step]
 
         rng.shuffle(cx_funcs)
@@ -79,7 +79,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         return False
     
     def _crossover_swap_random_steps(self, other, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
 
         max_steps = int(min(len(self.pipeline), len(other.pipeline))/2)
         max_steps = max(max_steps, 1)
@@ -106,14 +106,14 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         if len(self.pipeline) < 2:
             return False
         
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         idx = rng.integers(1,len(self.pipeline))
 
         self.pipeline[idx], other.pipeline[idx] = other.pipeline[idx], self.pipeline[idx]
         return True
 
     def _crossover_inner_step(self, other, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         
         pipeline1_indexes= list(range(len(self.pipeline)))
         pipeline2_indexes= list(range(len(other.pipeline)))
