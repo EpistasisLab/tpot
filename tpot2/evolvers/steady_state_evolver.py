@@ -299,17 +299,18 @@ class SteadyStateEvolver():
                                 eval_error = "INVALID"
                     else: #if future is not done
 
-                        #check if the future has been running for too long, cancel the future
-                        if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_seconds*1.25:
-                            completed_future.cancel()
+                        if self.max_eval_time_seconds is not None:
+                            #check if the future has been running for too long, cancel the future
+                            if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_seconds*1.25:
+                                completed_future.cancel()
 
-                            if self.verbose >= 4:
-                                print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {submitted_futures[completed_future]} \n')
+                                if self.verbose >= 4:
+                                    print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {submitted_futures[completed_future]} \n')
 
-                            scores = [np.nan for _ in range(len(self.objective_names))]
-                            eval_error = "TIMEOUT"
-                        else:
-                            continue #otherwise, continue to next future
+                                scores = [np.nan for _ in range(len(self.objective_names))]
+                                eval_error = "TIMEOUT"
+                            else:
+                                continue #otherwise, continue to next future
 
 
 
