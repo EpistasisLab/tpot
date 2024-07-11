@@ -1,6 +1,6 @@
 import numpy as np
 
-def lexicase_selection(scores, k, rng_=None, n_parents=1,):
+def lexicase_selection(scores, k, rng=None, n_parents=1,):
     """Select the best individual according to Lexicase Selection, *k* times.
     The returned list contains the indices of the chosen *individuals*.
     :param scores: The score matrix, where rows the individulas and the columns are the corresponds to scores on different objectives.
@@ -8,7 +8,7 @@ def lexicase_selection(scores, k, rng_=None, n_parents=1,):
     This function uses the :func:`~random.choice` function from the python base
     :mod:`random` module.
     """
-    rng = np.random.default_rng(rng_)
+    rng = np.random.default_rng(rng)
     chosen =[]
     for i in range(k*n_parents):
         candidates = list(range(len(scores)))

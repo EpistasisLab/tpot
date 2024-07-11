@@ -1,103 +1,155 @@
-from functools import partial
+from ConfigSpace import ConfigurationSpace
+from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
+from ConfigSpace import EqualsCondition, OrConjunction, NotEqualsCondition, InCondition
 import numpy as np
 
-from tpot2.builtin_modules import ZeroCount, OneHotEncoder, ColumnOneHotEncoder
-from sklearn.preprocessing import Binarizer
-from sklearn.decomposition import FastICA
-from sklearn.cluster import FeatureAgglomeration
-from sklearn.preprocessing import MaxAbsScaler
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import Normalizer
-from sklearn.kernel_approximation import Nystroem
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.kernel_approximation import RBFSampler
-from sklearn.preprocessing import RobustScaler
-from sklearn.preprocessing import StandardScaler
-
-
-def params_sklearn_preprocessing_Binarizer(trial, name=None):
-    return {
-        'threshold': trial.suggest_float(f'threshold_{name}', 0.0, 1.0),
+Binarizer_configspace = ConfigurationSpace(
+    space = {
+        'threshold': Float('threshold', bounds=(0.0, 1.0)),
     }
+)
 
-def params_sklearn_decomposition_FastICA(trial, random_state=None, name=None, n_features=100):
-    return {
-        'n_components': trial.suggest_int(f'n_components_{name}', 1, n_features), # number of components wrt number of features
-        'algorithm': trial.suggest_categorical(f'algorithm_{name}', ['parallel', 'deflation']),
+Normalizer_configspace = ConfigurationSpace(
+    space={'norm': Categorical('norm', ['l1', 'l2', 'max'])}
+)
+
+PCA_configspace = ConfigurationSpace(
+    space={'n_components': Float('n_components', bounds=(0.5, 0.999))}
+)
+
+ZeroCount_configspace = {}
+
+PolynomialFeatures_configspace = ConfigurationSpace(
+    space = {
+        'degree': Integer('degree', bounds=(2, 3)),
+        'interaction_only': Categorical('interaction_only', [True, False]),
+    }
+)
+
+OneHotEncoder_configspace = {} #TODO include the parameter for max unique values
+
+def get_FastICA_configspace(n_features=100, random_state=None):
+    
+    space = {
+        'n_components': Integer('n_components', bounds=(1, n_features)),
+        'algorithm': Categorical('algorithm', ['parallel', 'deflation']),
         'whiten':'unit-variance',
-        'random_state': random_state
+    }
+            
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
+    
+    return ConfigurationSpace(
+        space = space
+
+    )
+
+def get_FeatureAgglomeration_configspace(n_samples):
+
+    linkage = Categorical('linkage', ['ward', 'complete', 'average'])
+    metric = Categorical('metric', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine'])
+    n_clusters = Integer('n_clusters', bounds=(2, min(n_samples,400)))
+    pooling_func = Categorical('pooling_func', ['mean', 'median', 'max'])
+
+    metric_condition = NotEqualsCondition(metric, linkage, 'ward')
+
+    cs =  ConfigurationSpace()
+    cs.add_hyperparameters([linkage, metric, n_clusters, pooling_func])
+    cs.add_condition(metric_condition)
+    
+    return cs
+
+
+def FeatureAgglomeration_hyperparameter_parser(params):
+    new_params = params.copy()
+    if "pooling_func" in new_params:
+        if new_params["pooling_func"] == "mean":
+            new_params["pooling_func"] = np.mean
+        elif new_params["pooling_func"] == "median":
+            new_params["pooling_func"] = np.median
+        elif new_params["pooling_func"] == "max":
+            new_params["pooling_func"] = np.max
+        elif new_params["pooling_func"] == "min":
+            new_params["pooling_func"] = np.min
+
+    return new_params
+
+
+def get_Nystroem_configspace(n_features=100, random_state=None,):
+
+    space = {
+        'gamma': Float('gamma', bounds=(0.0, 1.0)),
+        'kernel': Categorical('kernel', ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']),
+        'n_components': Integer('n_components', bounds=(1, n_features)),
     }
 
-def params_sklearn_cluster_FeatureAgglomeration(trial, name=None, n_features=100):
 
-    linkage = trial.suggest_categorical(f'linkage_{name}', ['ward', 'complete', 'average'])
-    if linkage == 'ward':
-        metric = 'euclidean'
-    else:
-        metric = trial.suggest_categorical(f'metric_{name}', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine'])
-    return {
-        'linkage': linkage,
-        'metric': metric,
-        'n_clusters': trial.suggest_int(f'n_clusters_{name}', 2, n_features-1), #TODO perhaps a percentage of n_features
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
+    
+    return ConfigurationSpace(
+        space = space
+
+    )
+
+def get_RBFSampler_configspace(n_features=100, random_state=None):
+
+    space = {
+        'gamma': Float('gamma', bounds=(0.0, 1.0)),
+        'n_components': Integer('n_components', bounds=(1, n_features)),
     }
 
-def params_sklearn_preprocessing_Normalizer(trial, name=None):
-    return {
-        'norm': trial.suggest_categorical(f'norm_{name}', ['l1', 'l2', 'max']),
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
+    
+    return ConfigurationSpace(
+        space = space
+
+    )
+
+
+def get_QuantileTransformer_configspace(random_state=None):
+
+    space = {
+        'n_quantiles': Integer('n_quantiles', bounds=(10, 2000)),
+        'output_distribution': Categorical('output_distribution', ['uniform', 'normal']),
     }
 
-def params_sklearn_kernel_approximation_Nystroem(trial, random_state=None, name=None, n_features=100):
-    return {
-        'gamma': trial.suggest_float(f'gamma_{name}', 0.0, 1.0),
-        'kernel': trial.suggest_categorical(f'kernel_{name}', ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 'poly', 'linear', 'additive_chi2', 'sigmoid']),
-        'n_components': trial.suggest_int(f'n_components_{name}', 1, n_features),
-        'random_state': random_state
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
+    
+    return ConfigurationSpace(
+        space = space
+
+    )
+
+
+def get_passkbinsdiscretizer_configspace(random_state=None):
+    space = {
+        'n_bins': Integer('n_bins', bounds=(3, 100)),
+        'encode': 'onehot-dense',
+        'strategy': Categorical('strategy', ['uniform', 'quantile', 'kmeans']),
+        # 'subsample': Categorical('subsample', ['auto', 'warn', 'ignore']),
     }
 
-def params_sklearn_decomposition_PCA(trial, random_state=None, name=None, n_features=100):
-    # keep the number of components required to explain 'variance_explained' of the variance
-    variance_explained = 1.0 - trial.suggest_float(f'n_components_{name}', 0.001, 0.5, log=True) #values closer to 1 are more likely
+    if random_state is not None: #This is required because configspace doesn't allow None as a value
+        space['random_state'] = random_state
+    
+    return ConfigurationSpace(
+        space = space
 
-    return {
-        'n_components': variance_explained,
-        'random_state': random_state
-    }
+    )
 
-def params_sklearn_kernel_approximation_RBFSampler(trial, random_state=None, name=None, n_features=100):
-    return {
-        'n_components': trial.suggest_int(f'n_components_{name}', 1, n_features),
-        'gamma': trial.suggest_float(f'gamma_{name}', 0.0, 1.0),
-        'random_state': random_state
-    }
 
-def params_tpot_builtins_ZeroCount(trial, name=None):
+### ROBUST SCALER
 
-    return {}
+RobustScaler_configspace = ConfigurationSpace({
+            "q_min": Float("q_min", bounds=(0.001, 0.3)),
+            "q_max": Float("q_max", bounds=(0.7, 0.999)),
+        })
 
-def params_tpot_builtins_OneHotEncoder(trial, name=None):
+def robust_scaler_hyperparameter_parser(params):
+    return {"quantile_range": (params["q_min"], params["q_max"])}
 
-    return {}
 
-def make_transformer_config_dictionary(random_state=None, n_features=10):
-    #n_features = min(n_features,100) #TODO optimize this
-    return {
-                Binarizer: params_sklearn_preprocessing_Binarizer,
-                FastICA: partial(params_sklearn_decomposition_FastICA, random_state=random_state, n_features=n_features),
-                FeatureAgglomeration: partial(params_sklearn_cluster_FeatureAgglomeration,n_features=n_features),
-                MaxAbsScaler: {},
-                MinMaxScaler: {},
-                Normalizer: params_sklearn_preprocessing_Normalizer,
-                Nystroem: partial(params_sklearn_kernel_approximation_Nystroem, random_state=random_state, n_features=n_features),
-                PCA: partial(params_sklearn_decomposition_PCA, random_state=random_state, n_features=n_features),
-                PolynomialFeatures: {
-                                        'degree': 2,
-                                        'include_bias': False,
-                                        'interaction_only': False,
-                                    },
-                RBFSampler: partial(params_sklearn_kernel_approximation_RBFSampler, random_state=random_state, n_features=n_features),
-                RobustScaler: {},
-                StandardScaler: {},
-                ZeroCount: params_tpot_builtins_ZeroCount,
-                ColumnOneHotEncoder: params_tpot_builtins_OneHotEncoder,
-            }
+

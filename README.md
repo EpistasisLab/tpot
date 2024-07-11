@@ -38,6 +38,34 @@ conda create --name tpot2env python=3.10
 conda activate tpot2env
 ```
 
+### Packages Used
+
+python version <3.12
+numpy
+scipy
+scikit-learn
+update_checker
+tqdm
+stopit
+pandas
+joblib
+xgboost
+matplotlib
+traitlets
+lightgbm
+optuna
+baikal
+jupyter
+networkx>
+dask
+distributed
+dask-ml
+dask-jobqueue
+func_timeout
+configspace
+
+Many of the hyperparameter ranges used in our configspaces were adapted from either the original TPOT package or the AutoSklearn package. 
+
 ### Note for M1 Mac or other Arm-based CPU users
 
 You need to install the lightgbm package directly from conda using the following command before installing TPOT2. 
@@ -157,16 +185,6 @@ Setting `verbose` to 5 can be helpful during debugging as it will print out the 
 ## Contributing to TPOT2
 
 We welcome you to check the existing issues for bugs or enhancements to work on. If you have an idea for an extension to TPOT2, please file a new issue so we can discuss it.
-
-
-### Known issues
-* TPOT2 uses the func_timeout package to terminate long running pipelines. The early termination signal may fail on particular estimators and cause TPOT2 to run for longer than intended. If you are using your own custom configuration dictionaries, and are noticing that TPOT2 is running for longer than intended, this may be the issue. We are currently looking into it. Sometimes restarting TPOT2 resolves the issue.
-* Periodic checkpoint folder may not correctly resume if using budget and/or initial_population size.
-* Population class is slow to add new individuals. The Population class needs to be updated to use a dictionary for storage rather than a pandas dataframe.
-* Crossover may sometimes go over the size restrictions.
-* Memory caching with GraphPipeline may miss some nodes where the ordering on inputs happens to be different between two nodes. 
-
-
 
 
 ### Support for TPOT2
