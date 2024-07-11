@@ -15,7 +15,12 @@ from abc import ABC, abstractmethod
 
 
 
+
 class SklearnIndividual(tpot2.BaseIndividual):
+
+    def __init_subclass__(cls):
+        cls.crossover = cls.validate_same_type(cls.crossover)
+
 
     def __init__(self,) -> None:
         super().__init__()
@@ -23,15 +28,18 @@ class SklearnIndividual(tpot2.BaseIndividual):
     def mutate(self, rng=None):
         return
 
-    @final
     def crossover(self, other, rng=None, **kwargs):
-        if not isinstance(other, type(self)):
-            return False
-        return self._crossover(other, rng=rng, **kwargs)
+        return 
     
-    @abstractmethod
-    def _crossover(self, other, rng=None):
-        return
+    @final
+    def validate_same_type(func):
+
+        def wrapper(self, other, rng=None, **kwargs):
+            if not isinstance(other, type(self)):
+                return False
+            return func(self, other, rng=None, **kwargs)
+
+        return wrapper
 
     def export_pipeline(self) -> BaseEstimator:
         return

@@ -41,15 +41,15 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
             
     
     def mutate(self, rng=None):
-        rng = np.random.default_rng()
-        mutation_funcs = [self._mutate_add_step, self._mutate_remove_step, self._mutate_replace_step, self._mutate_inner_step]
+        rng = np.random.default_rng(rng)
+        mutation_funcs = [self._mutate_add_step, self._mutate_remove_step, self._mutate_replace_step, self._mutate_note]
         rng.shuffle(mutation_funcs)
         for mutation_func in mutation_funcs:
             if mutation_func(rng):
                 return True
     
     def _mutate_add_step(self, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         max_attempts = 10
         if len(self.union_dict) < self.max_estimators:
             for _ in range(max_attempts):
@@ -60,20 +60,20 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return False
     
     def _mutate_remove_step(self, rng):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         if len(self.union_dict) > 1:
             self.union_dict.pop( rng.choice(list(self.union_dict.keys())))  
             return True
         return False
 
     def _mutate_replace_step(self, rng):
-        rng = np.random.default_rng()        
+        rng = np.random.default_rng(rng)        
         changed = self._mutate_remove_step(rng) or self._mutate_add_step(rng)
         return changed
     
     #TODO mutate one step or multiple?
-    def _mutate_inner_step(self, rng):
-        rng = np.random.default_rng()
+    def _mutate_note(self, rng):
+        rng = np.random.default_rng(rng)
         changed = False
         values = list(self.union_dict.values())
         for step in values:
@@ -85,40 +85,20 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return changed
 
 
-    def _crossover(self, other, rng=None):
-        rng = np.random.default_rng()
+    def crossover(self, other, rng=None):
+        rng = np.random.default_rng(rng)
 
-        cx_funcs = [self._crossover_swap_random_steps, self._crossover_inner_step]
+        cx_funcs = [self._crossover_swap_multiple_nodes, self._crossover_node]
         rng.shuffle(cx_funcs)
         for cx_func in cx_funcs:
             if cx_func(other, rng):
                 return True
 
         return False
-    
-    def _crossover_swap_step(self, other, rng):
-        rng = np.random.default_rng()
-        changed = False
 
-        self_step = rng.choice(list(self.union_dict.values()))
-        other_step = rng.choice(list(other.union_dict.values()))
-
-        if other_step.unique_id() in self.union_dict:
-            self.union_dict[other_step.unique_id()] = other_step
-            self.union_dict.pop(self_step.unique_id())
-            changed = True
-
-        if self_step.unique_id() in other.union_dict:
-            other.union_dict[self_step.unique_id()] = self_step
-            other.union_dict.pop(other_step.unique_id())
-
-        return changed
-        
-
-
-    
-    def _crossover_swap_random_steps(self, other, rng):
-        rng = np.random.default_rng()
+            
+    def _crossover_swap_multiple_nodes(self, other, rng):
+        rng = np.random.default_rng(rng)
         self_values = list(self.union_dict.values())
         other_values = list(other.union_dict.values())
 
@@ -128,6 +108,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         self_idx = rng.integers(0,len(self_values))
         other_idx = rng.integers(0,len(other_values))
 
+        #Note that this is not one-point-crossover since the sequence doesn't matter. this is just a quick way to swap multiple random items
         self_values[:self_idx], other_values[:other_idx] = other_values[:other_idx], self_values[:self_idx]
         
         self.union_dict = {step.unique_id(): step for step in self_values}
@@ -136,8 +117,8 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return True
 
 
-    def _crossover_inner_step(self, other, rng):
-        rng = np.random.default_rng()
+    def _crossover_node(self, other, rng):
+        rng = np.random.default_rng(rng)
         
         changed = False
         self_values = list(self.union_dict.values())

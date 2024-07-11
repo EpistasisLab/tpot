@@ -31,16 +31,16 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
                     start_p=0.2,
                     mutation_rate = 0.5,
                     crossover_rate = 0.5,
-                    mutation_rate_rate = 0,
-                    crossover_rate_rate = 0,
                     rng=None,
                 ):
 
         self.start_p = start_p
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
-        self.mutation_rate_rate = mutation_rate_rate
-        self.crossover_rate_rate = crossover_rate_rate
+        self.mutation_rate_rate = 0
+        self.crossover_rate_rate = 0
+
+
 
         rng = np.random.default_rng(rng)
 
@@ -69,7 +69,7 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
         
         return rng.choice(self.mutation_list)(rng)
     
-    def _crossover(self, other, rng=None):
+    def crossover(self, other, rng=None):
         rng = np.random.default_rng(rng)
         
         if rng.uniform() < self.crossover_rate_rate:

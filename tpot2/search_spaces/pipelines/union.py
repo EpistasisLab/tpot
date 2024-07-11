@@ -25,16 +25,16 @@ class UnionPipelineIndividual(SklearnIndividual):
             self.pipeline.append(space.generate(rng))
     
     def mutate(self, rng=None):
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
         step = rng.choice(self.pipeline)
         return step.mutate(rng)
      
 
-    def _crossover(self, other, rng=None):
+    def crossover(self, other, rng=None):
         #swap a random step in the pipeline with the corresponding step in the other pipeline
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng)
 
-        cx_funcs = [self._crossover_inner_step]
+        cx_funcs = [self._crossover_node, self._crossover_swap_node]
         rng.shuffle(cx_funcs)
         for cx_func in cx_funcs:
             if cx_func(other, rng):
@@ -42,36 +42,15 @@ class UnionPipelineIndividual(SklearnIndividual):
 
         return False
     
-    def _crossover_swap_step(self, other, rng):
-        rng = np.random.default_rng()
+    def _crossover_swap_node(self, other, rng):
+        rng = np.random.default_rng(rng)
         idx = rng.integers(1,len(self.pipeline))
 
         self.pipeline[idx], other.pipeline[idx] = other.pipeline[idx], self.pipeline[idx]
         return True
-    
-    def _crossover_swap_random_steps(self, other, rng):
-        rng = np.random.default_rng()
 
-        max_steps = int(min(len(self.pipeline), len(other.pipeline))/2)
-        max_steps = max(max_steps, 1)
-        
-        if max_steps == 1:
-            n_steps_to_swap = 1
-        else:
-            n_steps_to_swap = rng.integers(1, max_steps)
-
-        other_indexes_to_take = rng.choice(len(other.pipeline), n_steps_to_swap, replace=False)
-        self_indexes_to_replace = rng.choice(len(self.pipeline), n_steps_to_swap, replace=False)
-
-        # self.pipeline[self_indexes_to_replace], other.pipeline[other_indexes_to_take] = other.pipeline[other_indexes_to_take], self.pipeline[self_indexes_to_replace]
-        
-        for self_idx, other_idx in zip(self_indexes_to_replace, other_indexes_to_take):
-            self.pipeline[self_idx], other.pipeline[other_idx] = other.pipeline[other_idx], self.pipeline[self_idx]
-        
-        return True
-
-    def _crossover_inner_step(self, other, rng):
-        rng = np.random.default_rng()
+    def _crossover_node(self, other, rng):
+        rng = np.random.default_rng(rng)
         
         crossover_success = False
         for idx in range(len(self.pipeline)):

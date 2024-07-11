@@ -218,7 +218,7 @@ def parallel_eval_objective_list2(individual_list,
                 
 
                 #check if the future has been running for too long, cancel the future
-                if time.time() - submitted_futures[completed_future]["time"] > max_eval_time_seconds*1.25:
+                if max_eval_time_seconds is not None and time.time() - submitted_futures[completed_future]["time"] > max_eval_time_seconds*1.25:
                     completed_future.cancel()
                     
                     if verbose >= 4:
