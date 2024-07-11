@@ -58,7 +58,6 @@ def test_tpot_estimator_predict(tpot_estimator_with_pipeline,sample_dataset):
     assert len(y_pred) == len(X_test)
     assert tpot_estimator_with_pipeline.fitted_pipeline_ is not None
 
-
 def test_tpot_estimator_generations_type():
     with pytest.raises(TypeError):
         tpot2.TPOTEstimator(generations="two", population_size=10, verbosity=2)
