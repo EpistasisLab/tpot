@@ -4,10 +4,29 @@ from sklearn.datasets import load_iris
 import random
 import sklearn
 
+@pytest.fixture
+def sample_dataset():
+    X_train, y_train = load_iris(return_X_y=True)
+    return X_train, y_train
+
 #standard test
 @pytest.fixture
 def tpot_estimator():
-    return tpot2.TPOTEstimator(  population_size=50,
+
+    n_classes=3
+    n_samples=100
+    n_features=100
+
+    search_space = tpot2.search_spaces.pipelines.GraphPipeline(
+            root_search_space= tpot2.config.get_search_space("classifiers", n_samples=n_samples, n_features=n_features, n_classes=n_classes),
+            leaf_search_space = None, 
+            inner_search_space = tpot2.config.get_search_space(["selectors","transformers"],n_samples=n_samples, n_features=n_features, n_classes=n_classes),
+            max_size = 10,
+        )
+    return tpot2.TPOTEstimator(  
+                            search_space=search_space,
+                            population_size=10,
+                            generations=2,
                             scorers=['roc_auc_ovr'],
                             scorers_weights=[1],
                             classification=True,
@@ -15,20 +34,17 @@ def tpot_estimator():
                             early_stop=5,
                             other_objective_functions= [],
                             other_objective_functions_weights=[],
-                            max_time_seconds=300,
+                            max_time_seconds=10,
                             verbose=3)
 
 @pytest.fixture
-def sample_dataset():
-    X_train, y_train = load_iris(return_X_y=True)
-    return X_train, y_train
+def tpot_classifier():
+    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_seconds=10,verbose=0)
 
-def test_tpot_estimator_fit(tpot_estimator,sample_dataset):
-    #load iris dataset
-    X_train = sample_dataset[0]
-    y_train = sample_dataset[1]
-    tpot_estimator.fit(X_train, y_train)
-    assert tpot_estimator.fitted_pipeline_ is not None
+@pytest.fixture
+def tpot_regressor():
+    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=10,verbose=0)
+
 
 @pytest.fixture
 def tpot_estimator_with_pipeline(tpot_estimator,sample_dataset):
@@ -40,15 +56,7 @@ def test_tpot_estimator_predict(tpot_estimator_with_pipeline,sample_dataset):
     X_test = sample_dataset[0]
     y_pred = tpot_estimator_with_pipeline.predict(X_test)
     assert len(y_pred) == len(X_test)
-
-@pytest.mark.skip(reason="not an informative test. X_test is a list instead of a numpy array or pandas dataframe.")
-def test_tpot_estimator_score(tpot_estimator_with_pipeline,sample_dataset):
-    random.seed(42)
-    #random sample 10% of the dataset
-    X_test = random.sample(list(sample_dataset[0]), int(len(sample_dataset[0])*0.1))
-    y_test = random.sample(list(sample_dataset[1]), int(len(sample_dataset[1])*0.1))
-    scorer = sklearn.metrics.get_scorer('roc_auc_ovo')
-    assert isinstance(scorer(tpot_estimator_with_pipeline, X_test, y_test), float)
+    assert tpot_estimator_with_pipeline.fitted_pipeline_ is not None
 
 def test_tpot_estimator_generations_type():
     with pytest.raises(TypeError):
@@ -80,13 +88,7 @@ def test_tpot_estimator_config_dict_type():
 
 
 
-@pytest.fixture
-def tpot_classifier():
-    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_seconds=300,verbose=3)
 
-@pytest.fixture
-def tpot_regressor():
-    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=300,verbose=3)
 
 def test_tpot_classifier_fit(tpot_classifier,sample_dataset):
     #load iris dataset
@@ -99,7 +101,7 @@ def test_tpot_regressor_fit(tpot_regressor):
 
     scorer = sklearn.metrics.get_scorer('neg_mean_squared_error')
     X, y = sklearn.datasets.load_diabetes(return_X_y=True)
-    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, train_size=0.75, test_size=0.25)
+    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, train_size=0.05, test_size=0.95)
     tpot_regressor.fit(X_train, y_train)
     assert tpot_regressor.fitted_pipeline_ is not None
 

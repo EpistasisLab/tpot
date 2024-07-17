@@ -37,13 +37,14 @@ def _X_selected(X, selected):
 class ColumnOneHotEncoder(BaseEstimator, TransformerMixin):
 
 
-    def __init__(self, columns='auto', drop=None, handle_unknown='error', sparse_output=False, min_frequency=None,max_categories=None):
+    def __init__(self, columns='auto', drop=None, handle_unknown='infrequent_if_exist', sparse_output=False, min_frequency=None,max_categories=None):
         '''
         
         Parameters
         ----------
 
         columns : str, list, default='auto'
+            Determines which columns to onehot encode with sklearn.preprocessing.OneHotEncoder.
             - 'auto' : Automatically select categorical features based on columns with less than 10 unique values
             - 'categorical' : Automatically select categorical features
             - 'numeric' : Automatically select numeric features
