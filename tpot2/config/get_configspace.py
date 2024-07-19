@@ -45,7 +45,7 @@ from sklearn.feature_selection import SelectFwe, SelectPercentile, VarianceThres
 from sklearn.feature_selection import f_classif, f_regression #TODO create a selectomixin using these?
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from sklearn.gaussian_process import GaussianProcessRegressor, GaussianProcessClassifier
-from sklearn.impute import SimpleImputer
+from sklearn.impute import SimpleImputer, IterativeImputer, KNNImputer
 
 all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, MLPClassifier, DecisionTreeClassifier, XGBClassifier, KNeighborsClassifier, SVC, LogisticRegression, LGBMClassifier, LinearSVC, GaussianNB, BernoulliNB, MultinomialNB, ExtraTreesRegressor, RandomForestRegressor, GradientBoostingRegressor, BaggingRegressor, DecisionTreeRegressor, KNeighborsRegressor, XGBRegressor,  ZeroCount, ColumnOneHotEncoder, Binarizer, FastICA, FeatureAgglomeration, MaxAbsScaler, MinMaxScaler, Normalizer, Nystroem, PCA, PolynomialFeatures, RBFSampler, RobustScaler, StandardScaler, SelectFwe, SelectPercentile, VarianceThreshold, SGDRegressor, Ridge, Lasso, ElasticNet, Lars, LassoLars, LassoLarsCV, RidgeCV, SVR, LinearSVR, AdaBoostRegressor, GradientBoostingRegressor, RandomForestRegressor, BaggingRegressor, ExtraTreesRegressor, DecisionTreeRegressor, KNeighborsRegressor, ElasticNetCV,
                AdaBoostClassifier,MLPRegressor,
@@ -56,7 +56,7 @@ all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, Grad
                GaussianProcessClassifier, BaggingClassifier,LGBMRegressor,
                Passthrough,SkipTransformer,
                PassKBinsDiscretizer,
-               SimpleImputer,
+               SimpleImputer, IterativeImputer, KNNImputer
                ]
 
 
@@ -124,7 +124,7 @@ GROUPNAMES = {
         "all_transformers" : ["transformers", "scalers"],
 
         "arithmatic": ["AddTransformer", "mul_neg_1_Transformer", "MulTransformer", "SafeReciprocalTransformer", "EQTransformer", "NETransformer", "GETransformer", "GTTransformer", "LETransformer", "LTTransformer", "MinTransformer", "MaxTransformer"],
-        "imputers": ["SimpleImputer"],
+        "imputers": ["SimpleImputer", "IterativeImputer", "KNNImputer"],
         "skrebate": ["ReliefF", "SURF", "SURFstar", "MultiSURF"],
         "genetic_encoders": ["DominantEncoder", "RecessiveEncoder", "HeterosisEncoder", "UnderDominanceEncoder", "OverDominanceEncoder"],
 
@@ -136,8 +136,6 @@ GROUPNAMES = {
 
 def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_state=None):
     match name:
-        case "SimpleImputer":
-            return imputers.simple_imputer_cs
 
         #autoqtl_builtins.py
         case "FeatureEncodingFrequencySelector":
@@ -352,6 +350,12 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
             ) 
         
         #imputers.py
+        case "SimpleImputer":
+            return imputers.simple_imputer_cs
+        case "IterativeImputer":
+            return imputers.get_IterativeImputer_config_space(n_features=n_features, random_state=random_state)
+        case "KNNImputer":
+            return imputers.get_KNNImputer_config_space(n_samples=n_samples)
 
         #mdr_configs.py
         case "MDR":
@@ -443,8 +447,17 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
         sfm_sp = get_configspace(name="SelectFromModel", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         ext = get_node("ExtraTreesRegressor", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return WrapperPipeline(estimator_search_space=ext, method=SelectFromModel, space=sfm_sp)
-    
+    # TODO Add IterativeImputer with more estimator methods
+    '''
+    if name == "IterativeImputer_learnedestimators":
+        iteative_sp = get_configspace(name="IterativeImputer", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        regessor_searchspace = get_search_space(["LinearRegression", ..], n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return WrapperPipeline(estimator_search_space=regressor_searchspace, method=ItartiveImputer, space=iteative_sp)
+    '''
     #these are nodes that have special search spaces which require custom parsing of the hyperparameters
+    if name == "IterativeImputer":
+        configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=imputers.IterativeImputer_hyperparameter_parser)
     if name == "RobustScaler":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=transformers.robust_scaler_hyperparameter_parser)
