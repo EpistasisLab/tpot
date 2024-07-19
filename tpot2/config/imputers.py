@@ -1,9 +1,10 @@
+import sklearn
 import sklearn.ensemble
 import sklearn.linear_model
 import sklearn.neighbors
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
-import sklearn
+
 
 simple_imputer_cs = ConfigurationSpace(
     space = {
@@ -20,7 +21,7 @@ def get_IterativeImputer_config_space(n_features, random_state):
     space = { 
             'estimator' : Categorical('estimator', 
                                       ['Bayesian', 'RFR', 'Ridge', 
-                                       'KNN', 'RandomForest']),
+                                       'KNN']),
             'sample_posterior' : Categorical('sample_posterior', [True, False]),
             'initial_strategy' : Categorical('initial_strategy', 
                                              ['mean', 'median', 
