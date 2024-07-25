@@ -54,16 +54,20 @@ def IterativeImputer_hyperparameter_parser(params):
     match est:
         case 'Bayesian':
                 estimator = sklearn.linear_model.BayesianRidge()
+                posterior = params['sample_posterior']
         case 'RFR':
                 estimator = sklearn.ensemble.RandomForestRegressor()
+                posterior = False
         case 'Ridge':
                 estimator = sklearn.linear_model.Ridge()
+                posterior = False
         case 'KNN':
                 estimator = sklearn.neighbors.KNeighborsRegressor()
+                posterior = False
     
     final_params = {
             'estimator' : estimator,
-            'sample_posterior' : params['sample_posterior'],
+            'sample_posterior' : posterior,
             'initial_strategy' : params['initial_strategy'],
             'n_nearest_features' : params['n_nearest_features'],
             'imputation_order' : params['imputation_order'],
