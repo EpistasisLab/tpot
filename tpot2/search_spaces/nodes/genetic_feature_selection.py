@@ -19,6 +19,11 @@ class MaskSelector(BaseEstimator, SelectorMixin):
         self.mask = mask
 
     def fit(self, X, y=None):
+        self.n_features_in_ = X.shape[1]
+        if isinstance(X, pd.DataFrame):
+            self.feature_names_in_ = X.columns
+        #     self.set_output(transform="pandas")
+        self.is_fitted_ = True #so sklearn knows it's fitted
         return self
 
     def _get_tags(self):
@@ -28,6 +33,8 @@ class MaskSelector(BaseEstimator, SelectorMixin):
     def _get_support_mask(self):
         return np.array(self.mask)
 
+    def get_feature_names_out(self, input_features=None):
+        return self.feature_names_in_[self.get_support()]
 
 class GeneticFeatureSelectorIndividual(SklearnIndividual):
     def __init__(   self,
