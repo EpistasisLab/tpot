@@ -15,8 +15,11 @@ from ..base import SklearnIndividual, SklearnIndividualGenerator
 class MaskSelector(BaseEstimator, SelectorMixin):
     """Select predefined feature subsets."""
 
-    def __init__(self, mask):
+    def __init__(self, mask, set_output_transform=None):
         self.mask = mask
+        self.set_output_transform = set_output_transform
+        if set_output_transform is not None:
+            self.set_output(transform=set_output_transform)
 
     def fit(self, X, y=None):
         self.n_features_in_ = X.shape[1]
