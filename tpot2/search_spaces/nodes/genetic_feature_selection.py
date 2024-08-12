@@ -21,6 +21,10 @@ class MaskSelector(BaseEstimator, SelectorMixin):
     def fit(self, X, y=None):
         return self
 
+    def _get_tags(self):
+        tags = {"allow_nan": True, "requires_y": False}
+        return tags
+
     def _get_support_mask(self):
         return np.array(self.mask)
 
