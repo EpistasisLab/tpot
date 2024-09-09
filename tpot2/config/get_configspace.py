@@ -401,12 +401,12 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
     raise ValueError(f"Could not find configspace for {name}")
    
 
-def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_state=None, return_choice_pipeline=True):
+def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_state=None, return_choice_pipeline=True, base_node=EstimatorNode):
 
 
     #if list of names, return a list of EstimatorNodes
     if isinstance(name, list) or isinstance(name, np.ndarray):
-        search_spaces = [get_search_space(n, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state, return_choice_pipeline=False) for n in name]
+        search_spaces = [get_search_space(n, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state, return_choice_pipeline=False, base_node=base_node) for n in name]
         #remove Nones
         search_spaces = [s for s in search_spaces if s is not None]
 
@@ -417,12 +417,12 @@ def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_st
     
     if name in GROUPNAMES:
         name_list = GROUPNAMES[name]
-        return get_search_space(name_list, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state, return_choice_pipeline=return_choice_pipeline)
+        return get_search_space(name_list, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state, return_choice_pipeline=return_choice_pipeline, base_node=base_node)
     
-    return get_node(name, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
+    return get_node(name, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state, base_node=base_node)
 
 
-def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None):
+def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None, base_node=EstimatorNode):
 
     #these are wrappers that take in another estimator as a parameter
     # TODO Add AdaBoostRegressor, AdaBoostClassifier as wrappers? wrap a decision tree with different params?
@@ -447,34 +447,34 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
     #these are nodes that have special search spaces which require custom parsing of the hyperparameters
     if name == "RobustScaler":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=transformers.robust_scaler_hyperparameter_parser)
+        return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=transformers.robust_scaler_hyperparameter_parser)
     if name == "GradientBoostingClassifier":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.GradientBoostingClassifier_hyperparameter_parser)
+        return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.GradientBoostingClassifier_hyperparameter_parser)
     if name == "HistGradientBoostingClassifier":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.HistGradientBoostingClassifier_hyperparameter_parser)
+        return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.HistGradientBoostingClassifier_hyperparameter_parser)
     if name == "GradientBoostingRegressor":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.GradientBoostingRegressor_hyperparameter_parser)
+        return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.GradientBoostingRegressor_hyperparameter_parser)
     if  name == "HistGradientBoostingRegressor":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.HistGradientBoostingRegressor_hyperparameter_parser)
+        return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.HistGradientBoostingRegressor_hyperparameter_parser)
     if name == "MLPClassifier":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.MLPClassifier_hyperparameter_parser)
+        return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.MLPClassifier_hyperparameter_parser)
     if name == "MLPRegressor":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.MLPRegressor_hyperparameter_parser)
+        return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.MLPRegressor_hyperparameter_parser)
     if name == "GaussianProcessRegressor":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.GaussianProcessRegressor_hyperparameter_parser)
+        return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=regressors.GaussianProcessRegressor_hyperparameter_parser)
     if name == "GaussianProcessClassifier":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.GaussianProcessClassifier_hyperparameter_parser)
+        return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.GaussianProcessClassifier_hyperparameter_parser)
     if name == "FeatureAgglomeration":
         configspace = get_configspace(name, n_features=n_features)
-        return EstimatorNode(STRING_TO_CLASS[name], configspace, hyperparameter_parser=transformers.FeatureAgglomeration_hyperparameter_parser)
+        return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=transformers.FeatureAgglomeration_hyperparameter_parser)
 
     configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)
     if configspace is None:
@@ -482,4 +482,4 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
         warnings.warn(f"Could not find configspace for {name}")
         return None
     
-    return EstimatorNode(STRING_TO_CLASS[name], configspace)
+    return base_node(STRING_TO_CLASS[name], configspace)
