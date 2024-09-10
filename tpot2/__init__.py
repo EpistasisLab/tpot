@@ -8,9 +8,9 @@ from .graphsklearn import GraphPipeline
 from .population import Population
 
 from . import builtin_modules
-from . import utils
 from . import config
 from . import search_spaces
+from . import utils
 from . import evolvers
 from . import objectives
 from . import selectors
