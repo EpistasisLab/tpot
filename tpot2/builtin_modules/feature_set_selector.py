@@ -92,6 +92,9 @@ class FeatureSetSelector(BaseEstimator, SelectorMixin):
 
     # def transform(self, X):
     
+    def _get_tags(self):
+        tags = {"allow_nan": True, "requires_y": False}
+        return tags
 
     def _get_support_mask(self):
         """

@@ -53,7 +53,8 @@ A Python tool that automatically creates and optimizes machine learning pipeline
     extras_require={
         'skrebate': ['skrebate>=0.3.4'],
         'mdr': ['scikit-mdr>=0.4.4'],
-        'sklearnex' : ['scikit-learn-intelex>=2023.2.1']
+        'sklearnex' : ['scikit-learn-intelex>=2023.2.1'],
+        'amltk' : ['amltk>=1.12.1'],
     },
     classifiers=[
         'Intended Audience :: Science/Research',

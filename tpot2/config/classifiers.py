@@ -535,7 +535,7 @@ def MLPClassifier_hyperparameter_parser(params):
 def get_GaussianProcessClassifier_ConfigurationSpace(n_features, random_state):
     space = {
         'n_features': n_features,
-        'alpha': Float("alpha", bounds=(1e-14, 1.0), log=True),
+        'alpha': Float("alpha", bounds=(1e-10, 1.0), log=True),
         'thetaL': Float("thetaL", bounds=(1e-10, 1e-3), log=True),
         'thetaU': Float("thetaU", bounds=(1.0, 100000), log=True),
     }
