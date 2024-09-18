@@ -47,8 +47,8 @@ class BaseEvolver():
                     early_stop_tol = 0.001,
 
 
-                    max_time_seconds=float("inf"),
-                    max_eval_time_seconds=60*5,
+                    max_time_mins=float("inf"),
+                    max_eval_time_mins=5,
 
                     n_jobs=1,
                     memory_limit="4GB",
@@ -127,9 +127,9 @@ class BaseEvolver():
                 If an index of the list is None, that item will not be used for early stopping
             -int
                 If an int is given, it will be used as the tolerance for all objectives
-        max_time_seconds : float, default=float("inf")
+        max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
-        max_eval_time_seconds : float, default=60*5
+        max_eval_time_mins : float, default=5
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
         n_jobs : int, default=1
             Number of processes to run in parallel.
@@ -239,16 +239,16 @@ class BaseEvolver():
 
 
 
-        if max_time_seconds is None:
-            self.max_time_seconds = float("inf")
+        if max_time_mins is None:
+            self.max_time_mins = float("inf")
         else:
-            self.max_time_seconds = max_time_seconds
+            self.max_time_mins = max_time_mins
 
         #functools requires none for infinite time, doesn't support inf
-        if max_eval_time_seconds is not None and math.isinf(max_eval_time_seconds ):
-            self.max_eval_time_seconds = None
+        if max_eval_time_mins is not None and math.isinf(max_eval_time_mins ):
+            self.max_eval_time_mins = None
         else:
-            self.max_eval_time_seconds = max_eval_time_seconds
+            self.max_eval_time_mins = max_eval_time_mins
 
 
 
@@ -398,7 +398,7 @@ class BaseEvolver():
         best_scores = [-np.inf for _ in range(len(self.objective_function_weights))]
 
 
-        self.scheduled_timeout_time = time.time() + self.max_time_seconds
+        self.scheduled_timeout_time = time.time() + self.max_time_mins*60
 
 
         try:
@@ -433,7 +433,7 @@ class BaseEvolver():
                     self.generation += 1
                 # Generation 1 is the first generation after the initial population
                 else:
-                    if time.time() - start_time > self.max_time_seconds:
+                    if time.time() - start_time > self.max_time_mins*60:
                         break
                     self.step()
 
@@ -613,8 +613,8 @@ class BaseEvolver():
                 print("No new individuals to evaluate")
             return
 
-        if self.max_eval_time_seconds is not None:
-            theoretical_timeout = self.max_eval_time_seconds * math.ceil(len(individuals_to_evaluate) / self.n_jobs)
+        if self.max_eval_time_mins is not None:
+            theoretical_timeout = self.max_eval_time_mins * math.ceil(len(individuals_to_evaluate) / self.n_jobs)
             theoretical_timeout = theoretical_timeout*2
         else:
             theoretical_timeout = np.inf
@@ -623,8 +623,8 @@ class BaseEvolver():
         if parallel_timeout < 0:
             parallel_timeout = 10
 
-        #scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
-        scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(individuals_to_evaluate, self.objective_functions, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, scheduled_timeout_time=self.scheduled_timeout_time, **self.objective_kwargs)
+        #scores = tpot2.utils.eval_utils.parallel_eval_objective_list(individuals_to_evaluate, self.objective_functions, self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_mins, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, parallel_timeout=parallel_timeout, **self.objective_kwargs)
+        scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(individuals_to_evaluate, self.objective_functions, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins, budget=budget, n_expected_columns=len(self.objective_names), client=self._client, scheduled_timeout_time=self.scheduled_timeout_time, **self.objective_kwargs)
 
         self.population.update_column(individuals_to_evaluate, column_names=self.objective_names, data=scores)
         if budget is not None:
@@ -686,8 +686,8 @@ class BaseEvolver():
                     print("No new individuals to evaluate")
                 continue
 
-            if self.max_eval_time_seconds is not None:
-                theoretical_timeout = self.max_eval_time_seconds * math.ceil(len(unevaluated_individuals_this_step) / self.n_jobs)
+            if self.max_eval_time_mins is not None:
+                theoretical_timeout = self.max_eval_time_mins * math.ceil(len(unevaluated_individuals_this_step) / self.n_jobs)*60
                 theoretical_timeout = theoretical_timeout*2
             else:
                 theoretical_timeout = np.inf
@@ -699,7 +699,7 @@ class BaseEvolver():
             scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(individual_list=unevaluated_individuals_this_step,
                                     objective_list=self.objective_functions,
                                     verbose=self.verbose,
-                                    max_eval_time_seconds=self.max_eval_time_seconds,
+                                    max_eval_time_mins=self.max_eval_time_mins,
                                     step=step,
                                     budget = self.budget,
                                     generation = self.generation,

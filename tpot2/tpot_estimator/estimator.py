@@ -54,8 +54,8 @@ class TPOTEstimator(BaseEstimator):
                         population_scaling = .5,
                         generations_until_end_population = 1,
                         generations = None,
-                        max_time_seconds=3600,
-                        max_eval_time_seconds=60*10,
+                        max_time_mins=60,
+                        max_eval_time_mins=5,
                         validation_strategy = "none",
                         validation_fraction = .2,
                         disable_label_encoder = False,
@@ -203,10 +203,10 @@ class TPOTEstimator(BaseEstimator):
         generations : int, default=50
             Number of generations to run
 
-        max_time_seconds : float, default=float("inf")
+        max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
 
-        max_eval_time_seconds : float, default=60*5
+        max_eval_time_mins : float, default=5
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
 
         validation_strategy : str, default='none'
@@ -327,7 +327,7 @@ class TPOTEstimator(BaseEstimator):
             3. best individual
             4. warnings
             >=5. full warnings trace
-            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
+            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_mins in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
         scatter : bool, default=True
             If True, will scatter the data to the dask workers. If False, will not scatter the data. This can be useful for debugging.
@@ -401,8 +401,8 @@ class TPOTEstimator(BaseEstimator):
         self.early_stop = early_stop
         self.scorers_early_stop_tol = scorers_early_stop_tol
         self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
-        self.max_time_seconds = max_time_seconds
-        self.max_eval_time_seconds = max_eval_time_seconds
+        self.max_time_mins = max_time_mins
+        self.max_eval_time_mins = max_eval_time_mins
         self.n_jobs= n_jobs
         self.memory_limit = memory_limit
         self.client = client
@@ -707,8 +707,8 @@ class TPOTEstimator(BaseEstimator):
                                             initial_population_size = self._initial_population_size,
                                             n_jobs=self.n_jobs,
                                             verbose = self.verbose,
-                                            max_time_seconds =      self.max_time_seconds ,
-                                            max_eval_time_seconds = self.max_eval_time_seconds,
+                                            max_time_mins =      self.max_time_mins ,
+                                            max_eval_time_mins = self.max_eval_time_mins,
 
                                             periodic_checkpoint_folder = self.periodic_checkpoint_folder,
                                             threshold_evaluation_early_stop = self.threshold_evaluation_early_stop,
@@ -794,8 +794,8 @@ class TPOTEstimator(BaseEstimator):
             objective_kwargs = {"X": X_future, "y": y_future}
             # val_scores = tpot2.utils.eval_utils.parallel_eval_objective_list(
             #     best_pareto_front,
-            #     val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
-            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+            #     val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_mins,n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
 
 
 
@@ -851,7 +851,7 @@ class TPOTEstimator(BaseEstimator):
                                                         **kwargs,
                                                         )]
 
-            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
 
 
 

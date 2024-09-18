@@ -34,16 +34,16 @@ def tpot_estimator():
                             early_stop=5,
                             other_objective_functions= [],
                             other_objective_functions_weights=[],
-                            max_time_seconds=10,
+                            max_time_mins=10/60,
                             verbose=3)
 
 @pytest.fixture
 def tpot_classifier():
-    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_seconds=10,verbose=0)
+    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_mins=10/60,verbose=0)
 
 @pytest.fixture
 def tpot_regressor():
-    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=10,verbose=0)
+    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_mins=10/60,verbose=0)
 
 
 @pytest.fixture

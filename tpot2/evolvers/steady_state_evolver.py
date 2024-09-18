@@ -43,8 +43,8 @@ class SteadyStateEvolver():
                     early_stop_tol = 0.001,
 
 
-                    max_time_seconds=float("inf"),
-                    max_eval_time_seconds=60*5,
+                    max_time_mins=float("inf"),
+                    max_eval_time_mins=5,
 
                     n_jobs=1,
                     memory_limit="4GB",
@@ -94,16 +94,16 @@ class SteadyStateEvolver():
         self.callback = callback
         self.n_jobs = n_jobs
 
-        if max_time_seconds is None:
-            self.max_time_seconds = float("inf")
+        if max_time_mins is None:
+            self.max_time_mins = float("inf")
         else:
-            self.max_time_seconds = max_time_seconds
+            self.max_time_mins = max_time_mins
 
         #functools requires none for infinite time, doesn't support inf
-        if max_eval_time_seconds is not None and math.isinf(max_eval_time_seconds ):
-            self.max_eval_time_seconds = None
+        if max_eval_time_mins is not None and math.isinf(max_eval_time_mins ):
+            self.max_eval_time_mins = None
         else:
-            self.max_eval_time_seconds = max_eval_time_seconds
+            self.max_eval_time_mins = max_eval_time_mins
 
         self.initial_population_size = initial_population_size
         self.budget_range = budget_range
@@ -210,7 +210,7 @@ class SteadyStateEvolver():
         generations_without_improvement = np.array([0 for _ in range(len(self.objective_function_weights))])
         timestamp_of_last_improvement = np.array([time.time() for _ in range(len(self.objective_function_weights))])
         best_scores = [-np.inf for _ in range(len(self.objective_function_weights))]
-        scheduled_timeout_time = time.time() + self.max_time_seconds
+        scheduled_timeout_time = time.time() + self.max_time_mins*60
         budget = None
 
         submitted_futures = {}
@@ -234,7 +234,7 @@ class SteadyStateEvolver():
             for individual in individuals_to_evaluate:
                 if len(submitted_futures) >= self.max_queue_size:
                     break
-                future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
+                future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_mins,**self.objective_kwargs)
 
                 submitted_futures[future] = {"individual": individual,
                                             "time": time.time(),
@@ -254,7 +254,7 @@ class SteadyStateEvolver():
 
                 #wait for at least one future to finish or timeout
                 try:
-                    next(distributed.as_completed(submitted_futures, timeout=self.max_eval_time_seconds))
+                    next(distributed.as_completed(submitted_futures, timeout=self.max_eval_time_mins*60))
                 except dask.distributed.TimeoutError:
                     pass
                 except dask.distributed.CancelledError:
@@ -299,9 +299,9 @@ class SteadyStateEvolver():
                                 eval_error = "INVALID"
                     else: #if future is not done
 
-                        if self.max_eval_time_seconds is not None:
+                        if self.max_eval_time_mins is not None:
                             #check if the future has been running for too long, cancel the future
-                            if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_seconds*1.25:
+                            if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_mins*1.25*60:
                                 completed_future.cancel()
 
                                 if self.verbose >= 4:
@@ -382,7 +382,7 @@ class SteadyStateEvolver():
                                 break
 
                 #if we evaluated enough individuals or time is up, stop
-                if self.max_time_seconds is not None and time.time() - start_time > self.max_time_seconds:
+                if self.max_time_mins is not None and time.time() - start_time > self.max_time_mins*60:
                     if self.verbose >= 3:
                         print("Time limit reached")
                     done = True
@@ -400,7 +400,7 @@ class SteadyStateEvolver():
                 individuals_to_evaluate = [ind for ind in individuals_to_evaluate if ind.unique_id() not in submitted_inds]
                 for individual in individuals_to_evaluate:
                     if self.max_queue_size > len(submitted_futures):
-                        future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
+                        future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_mins,**self.objective_kwargs)
 
                         submitted_futures[future] = {"individual": individual,
                                                     "time": time.time(),
@@ -518,7 +518,7 @@ class SteadyStateEvolver():
                 individuals_to_evaluate = [ind for ind in individuals_to_evaluate if ind.unique_id() not in submitted_inds]
                 for individual in individuals_to_evaluate:
                     if self.max_queue_size > len(submitted_futures):
-                        future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
+                        future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_mins,**self.objective_kwargs)
 
                         submitted_futures[future] = {"individual": individual,
                                                     "time": time.time(),

@@ -60,8 +60,8 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         early_stop_seconds = None,
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol = None,
-                        max_time_seconds=None,
-                        max_eval_time_seconds=60*10,
+                        max_time_mins=None,
+                        max_eval_time_mins=5,
                         n_jobs=1,
                         memory_limit = "4GB",
                         client = None,
@@ -284,10 +284,10 @@ class TPOTEstimatorSteadyState(BaseEstimator):
             -int
                 If an int is given, it will be used as the tolerance for all objectives
 
-        max_time_seconds : float, default=float("inf")
+        max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
 
-        max_eval_time_seconds : float, default=60*5
+        max_eval_time_mins : float, default=60*5
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
 
         n_jobs : int, default=1
@@ -452,8 +452,8 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.early_stop_seconds = early_stop_seconds
         self.scorers_early_stop_tol = scorers_early_stop_tol
         self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
-        self.max_time_seconds = max_time_seconds
-        self.max_eval_time_seconds = max_eval_time_seconds
+        self.max_time_mins = max_time_mins
+        self.max_eval_time_mins = max_eval_time_mins
         self.n_jobs= n_jobs
         self.memory_limit = memory_limit
         self.client = client
@@ -715,8 +715,8 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                             initial_population_size = self._initial_population_size,
                                             n_jobs=self.n_jobs,
                                             verbose = self.verbose,
-                                            max_time_seconds =      self.max_time_seconds ,
-                                            max_eval_time_seconds = self.max_eval_time_seconds,
+                                            max_time_mins =      self.max_time_mins ,
+                                            max_eval_time_mins = self.max_eval_time_mins,
 
 
 
@@ -757,7 +757,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
         if self.optuna_optimize_pareto_front:
             pareto_front_inds = self.pareto_front['Individual'].values
-            all_graphs, all_scores = tpot2.individual_representations.graph_pipeline_individual.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, storage=self.optuna_storage, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, max_time_seconds=self.optuna_optimize_pareto_front_timeout, **{"X": X, "y": y})
+            all_graphs, all_scores = tpot2.individual_representations.graph_pipeline_individual.simple_parallel_optuna(pareto_front_inds,  objective_function, self.objective_function_weights, _client, storage=self.optuna_storage, steps=self.optuna_optimize_pareto_front_trials, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins, max_time_mins=self.optuna_optimize_pareto_front_timeout, **{"X": X, "y": y})
             all_scores = tpot2.utils.eval_utils.process_scores(all_scores, len(self.objective_function_weights))
 
             if len(all_graphs) > 0:
@@ -811,7 +811,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                                                                                 )]
 
             objective_kwargs = {"X": X_future, "y": y_future}
-            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
 
             val_objective_names = ['validation_'+name for name in self.objective_names]
             self.objective_names_for_selection = val_objective_names
@@ -863,7 +863,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                                         **kwargs,
                                                         )]
 
-            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
 
 
 
