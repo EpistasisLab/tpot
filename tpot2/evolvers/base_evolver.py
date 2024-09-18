@@ -434,6 +434,8 @@ class BaseEvolver():
                 # Generation 1 is the first generation after the initial population
                 else:
                     if time.time() - start_time > self.max_time_mins*60:
+                        if self.population.evaluated_individuals[self.objective_names].isnull().all().iloc[0]:
+                            raise Exception("No individuals could be evaluated in the initial population as the max_eval_mins time limit was reached before any individuals could be evaluated.")
                         break
                     self.step()
 

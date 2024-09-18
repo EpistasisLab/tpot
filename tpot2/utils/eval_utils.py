@@ -153,10 +153,9 @@ def parallel_eval_objective_list(individual_list,
                         scores = [np.nan for _ in range(n_expected_columns)]
                         eval_error = "INVALID"
             else: #if future is not done
-                
-                
 
-                #check if the future has been running for too long, cancel the future
+                # check if the future has been running for too long, cancel the future
+                # we multiply max_eval_time_mins by 1.25 since the objective function in the future should be able to cancel itself. This is a backup in case it doesn't.
                 if max_eval_time_mins is not None and time.time() - submitted_futures[completed_future]["time"] > max_eval_time_mins*1.25*60:
                     completed_future.cancel()
                     
@@ -172,7 +171,7 @@ def parallel_eval_objective_list(individual_list,
                         print(f'WARNING AN INDIVIDUAL TIMED OUT (max_time_mins): \n {submitted_futures[completed_future]} \n')
                     
                     scores = [np.nan for _ in range(n_expected_columns)]
-                    eval_error = None
+                    eval_error = None #eval error is None because these individuals were not evaluated or did not have time to reach max_eval_time_mins. this allows them to be reused if warm_start=True
 
                 else:
                     continue #otherwise, continue to next future
