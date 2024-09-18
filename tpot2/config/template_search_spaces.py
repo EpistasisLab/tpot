@@ -1,7 +1,7 @@
 import tpot2
 from tpot2.search_spaces.pipelines import *
 from tpot2.search_spaces.nodes import *
-from tpot2.config import get_search_space
+from .get_configspace import get_search_space
 
 
 
@@ -85,7 +85,7 @@ def get_graph_search_space(classification=True, inner_predictors=True, **get_sea
 
     return search_space
 
-def get_default_search_space(default_search_space, classification=True, inner_predictors=True, **get_search_space_params):
+def get_template_search_spaces(default_search_space, classification=True, inner_predictors=True, **get_search_space_params):
     if isinstance(default_search_space, str):
         if default_search_space == "linear":
             return get_linear_search_space(classification, inner_predictors, **get_search_space_params)

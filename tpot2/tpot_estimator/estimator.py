@@ -20,7 +20,7 @@ from .estimator_utils import *
 from dask import config as cfg
 from sklearn.experimental import enable_iterative_imputer
 
-from .default_search_spaces import get_default_search_space
+from ..config.template_search_spaces import get_template_search_spaces
 
 def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
@@ -658,7 +658,7 @@ class TPOTEstimator(BaseEstimator):
                         "n_features":X.shape[1], 
                         "random_state":self.random_state}
 
-        self._search_space = get_default_search_space(self.search_space, classification=True, inner_predictors=True, **get_search_space_params)
+        self._search_space = get_template_search_spaces(self.search_space, classification=self.classification, inner_predictors=True, **get_search_space_params)
 
 
         # TODO : Add check for empty values in X and if so, add imputation to the search space

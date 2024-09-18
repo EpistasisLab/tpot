@@ -6,7 +6,7 @@ from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 #TODO These do not follow sklearn conventions of __init__
 
-from ..default_search_spaces import get_default_search_space
+from ...config.template_search_spaces import get_template_search_spaces
 
 class TPOTRegressor(TPOTEstimator):
     def __init__(       self,
@@ -228,7 +228,7 @@ class TPOTRegressor(TPOTEstimator):
                                         "n_features":X.shape[1], 
                                         "random_state":self.random_state}
 
-            search_space = get_default_search_space(self.search_space, classification=True, inner_predictors=self.allow_inner_regressors, **get_search_space_params)
+            search_space = get_template_search_spaces(self.search_space, classification=False, inner_predictors=self.allow_inner_regressors, **get_search_space_params)
 
             super(TPOTRegressor,self).__init__(
                 search_space=search_space,
@@ -481,7 +481,7 @@ class TPOTClassifier(TPOTEstimator):
                                        "n_features":X.shape[1], 
                                        "random_state":self.random_state}
 
-            search_space = get_default_search_space(self.search_space, classification=True, inner_predictors=self.allow_inner_classifiers, **get_search_space_params)
+            search_space = get_template_search_spaces(self.search_space, classification=True, inner_predictors=self.allow_inner_classifiers, **get_search_space_params)
 
 
             super(TPOTClassifier,self).__init__(
