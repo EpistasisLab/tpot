@@ -25,15 +25,13 @@ class SequentialPipelineIndividual(SklearnIndividual):
         
     #TODO, mutate all steps or just one?
     def mutate(self, rng=None):
-        rng = np.random.default_rng(rng)
-
         # mutated = False
         # for step in self.pipeline:
         #     if rng.random() < 0.5:
         #         if step.mutate(rng):
         #             mutated = True
         # return mutated
-
+        rng = np.random.default_rng(rng)
         step = rng.choice(self.pipeline)
         return step.mutate(rng)
      

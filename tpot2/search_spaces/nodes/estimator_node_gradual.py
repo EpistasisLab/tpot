@@ -124,7 +124,7 @@ def gradual_hyperparameter_update(params:dict, configspace:ConfigurationSpace, r
                     new_params[param] = configspace[param].upper
             #if parameter is integer, add normal distribution
             elif issubclass(type(configspace[param]), ConfigSpace.hyperparameters.hyperparameter.IntegerHyperparameter):
-                new_params[param] = params[param] * np.random.normal(0, 1)
+                new_params[param] = params[param] * rng.normal(0, 1)
                 # if check if above or below min and cap
                 if new_params[param] < configspace[param].lower:
                     new_params[param] = configspace[param].lower

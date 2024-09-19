@@ -506,7 +506,7 @@ class SteadyStateEvolver():
 
                         n_individuals_to_create = self.max_queue_size - len(submitted_futures)
                         initial_population = [next(self.individual_generator) for _ in range(n_individuals_to_create)]
-                        self.population.add_to_population(initial_population)
+                        self.population.add_to_population(initial_population, rng=self.rng)
 
 
 

@@ -423,7 +423,7 @@ class BaseEvolver():
                     attempts = 2
                     while len(self.population.population) == 0 and attempts > 0:
                         new_initial_population = [next(self.individual_generator) for _ in range(self.cur_population_size)]
-                        self.population.add_to_population(new_initial_population)
+                        self.population.add_to_population(new_initial_population, rng=self.rng)
                         attempts -= 1
                         self.evaluate_population()
 
@@ -773,7 +773,9 @@ class BaseEvolver():
                         max_to_remove = min(len(cur_individuals) - self.n_jobs, len(invalids))
 
                         if max_to_remove < len(invalids):
-                            invalids = np.random.choice(invalids, max_to_remove, replace=False)
+                            # invalids = np.random.choice(invalids, max_to_remove, replace=False)
+                            invalids = self.rng.choice(invalids, max_to_remove, replace=False)
+
 
                         cur_individuals = remove_items(cur_individuals,invalids)
                         offspring_scores = remove_items(offspring_scores,invalids)
