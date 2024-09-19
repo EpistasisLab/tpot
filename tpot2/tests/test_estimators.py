@@ -30,11 +30,11 @@ def tpot_estimator():
                             scorers=['roc_auc_ovr'],
                             scorers_weights=[1],
                             classification=True,
-                            n_jobs=1, 
+                            n_jobs=4, 
                             early_stop=5,
                             other_objective_functions= [],
                             other_objective_functions_weights=[],
-                            max_time_mins=10/60,
+                            max_time_mins=20/60,
                             verbose=3)
 
 @pytest.fixture
