@@ -21,10 +21,10 @@ plugins:
             docstring_style: numpy
             show_root_full_path: False
             # show_root_toc_entry: False
-  # # temp plugin
-  # - exclude:
-  #     glob:
-  #       - tutorial/*
+
+extra:
+  version:
+    provider: mike
 
 extra_css:
   - css/extra.css

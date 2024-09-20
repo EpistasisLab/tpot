@@ -41,6 +41,14 @@ jobs:
         run: |
           bash docs/scripts/build_mkdocs.sh
 
-      - name: Build and Deploy Docs
+      - name: Build and Deploy Legacy Docs
         run: |
-          mkdocs gh-deploy --force --clean --verbose
+          mike deploy legacy --config-file mkdocs_legacy.yml --push
+
+      - name: Build and Deploy Latest Docs
+        run: |
+          mike deploy latest --push
+
+      - name: Set Default Version
+        run: |
+          mike set-default latest --push
