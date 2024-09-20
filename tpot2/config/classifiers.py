@@ -42,7 +42,6 @@ def get_KNeighborsClassifier_ConfigurationSpace(n_samples):
                     'n_neighbors': Integer("n_neighbors", bounds=(1, min(100,n_samples)), log=True),
                     'weights': Categorical("weights", ['uniform', 'distance']),
                     'p': Integer("p", bounds=(1, 3)),
-                    'metric': Categorical("metric", ['euclidean', 'minkowski']),
                     'n_jobs': 1,
                 }
             ) 
@@ -79,7 +78,7 @@ def get_DecisionTreeClassifier_ConfigurationSpace(n_featues, random_state):
     space = {
         'criterion': Categorical("criterion", ['gini', 'entropy']),
         'max_depth': Integer("max_depth", bounds=(1, min(20,2*n_featues))), #max of 20? log scale?
-        'min_samples_split': Integer("min_samples_split", bounds=(1, 20)),
+        'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
         'max_features': Categorical("max_features", [NONE_SPECIAL_STRING, 'sqrt', 'log2']),
         'min_weight_fraction_leaf': 0.0,

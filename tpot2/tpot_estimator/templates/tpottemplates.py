@@ -29,11 +29,11 @@ class TPOTRegressor(TPOTEstimator):
                         early_stop = None,
                         warm_start = False,
                         periodic_checkpoint_folder = None, 
-                        verbose = 0,
+                        verbose = 2,
                         memory_limit = "4GB",
                         client = None,
                         random_state=None,
-                        allow_inner_regressors=True,
+                        allow_inner_regressors=None,
                         **tpotestimator_kwargs,
         ):
         '''
@@ -282,11 +282,11 @@ class TPOTClassifier(TPOTEstimator):
                         early_stop = None,
                         warm_start = False,
                         periodic_checkpoint_folder = None, 
-                        verbose = 0,
+                        verbose = 2,
                         memory_limit = "4GB",
                         client = None,
                         random_state=None,
-                        allow_inner_classifiers=True,
+                        allow_inner_classifiers=None,
                         **tpotestimator_kwargs,
                         
         ):

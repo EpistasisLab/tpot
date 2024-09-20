@@ -36,7 +36,7 @@ class TPOTEstimator(BaseEstimator):
                         scorers,
                         scorers_weights,
                         classification,
-                        cv = 5,
+                        cv = 10,
                         other_objective_functions=[],
                         other_objective_functions_weights = [],
                         objective_function_names = None,

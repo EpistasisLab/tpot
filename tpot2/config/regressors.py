@@ -240,9 +240,7 @@ def get_KNeighborsRegressor_ConfigurationSpace(n_samples):
         space = {
             'n_neighbors': Integer("n_neighbors", bounds=(1, min(100,n_samples))),
             'weights': Categorical("weights", ['uniform', 'distance']),
-            'p': Integer("p", bounds=(1, 3)),
-            'metric': Categorical("metric", ['minkowski', 'euclidean', 'manhattan']),
-        }
+            'p': Integer("p", bounds=(1, 3)),        }
     )
 
 
