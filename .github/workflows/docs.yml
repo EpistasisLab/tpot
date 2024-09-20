@@ -22,7 +22,6 @@ jobs:
           pip install --upgrade pip
           pip install .
           pip install -r docs/requirements_docs.txt
-          pip install mkdocstrings[python] griffe
 
       # - name: Convert notebooks to HTML
       #   # if: ${{ github.event_name == 'push' && contains(github.event.head_commit.modified, 'Tutorial/') && contains(github.event.head_commit.modified, '.ipynb') }}
