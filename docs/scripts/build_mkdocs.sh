@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cat > mkdocs.yml <<EOF
-site_name: TPOT2
+site_name: TPOT
 site_url: http://epistasislab.github.io/tpot2
 
 repo_url: https://github.com/epistasislab/tpot2

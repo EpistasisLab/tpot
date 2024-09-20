@@ -31,7 +31,7 @@ extra:
     provider: mike
 
 extra_css:
-  - css/extra.css
+  - ../css/extra.css
 
 markdown_extensions:
   - tables
