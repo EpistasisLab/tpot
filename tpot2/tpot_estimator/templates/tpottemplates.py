@@ -129,7 +129,7 @@ class TPOTRegressor(TPOTEstimator):
           EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
 
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered. In general a value of around 5-20 is good.
 
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
@@ -383,7 +383,7 @@ class TPOTClassifier(TPOTEstimator):
           EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
 
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered. In general a value of around 5-20 is good.
 
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.

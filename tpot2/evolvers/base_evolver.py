@@ -120,7 +120,7 @@ class BaseEvolver():
         generations : int, default=50
             Number of generations to run
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered. In general a value of around 5-20 is good.
         early_stop_tol : float, list of floats, or None, default=0.001
             -list of floats
                 list of tolerances for each objective function. If the difference between the best score and the current score is less than the tolerance, the individual is considered to have converged

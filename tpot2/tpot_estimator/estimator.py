@@ -224,7 +224,7 @@ class TPOTEstimator(BaseEstimator):
             If False, no additional label encoders will be used.
 
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered. In general a value of around 5-20 is good.
 
         scorers_early_stop_tol :
             -list of floats
