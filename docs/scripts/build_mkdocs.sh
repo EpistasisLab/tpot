@@ -31,6 +31,7 @@ extra_css:
 
 theme:
   name: material
+  logo: assets/tpot-logo.jpg
   features:
     # - toc.integrate
     - search.suggest

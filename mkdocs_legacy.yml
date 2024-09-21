@@ -10,6 +10,7 @@ site_dir: target/legacy_site
   #theme: readthedocs
 theme:
   name: material
+  logo: assets/tpot-logo.jpg
   custom_dir: docs/overrides
   features:
     - toc.integrate
@@ -31,7 +32,7 @@ extra:
     provider: mike
 
 extra_css:
-  - ../css/extra.css
+  - css/legacy.css
 
 markdown_extensions:
   - tables
