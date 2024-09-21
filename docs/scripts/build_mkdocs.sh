@@ -33,18 +33,21 @@ theme:
   name: material
   logo: assets/tpot-logo.jpg
   features:
-    # - toc.integrate
+    - toc.integrate
+    - navigation.top
     - search.suggest
     - search.highlight
   palette:
     # light mode
     - scheme: default
+      primary: teal
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
 
     # dark mode
     - scheme: slate
+      primary: teal
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -64,6 +67,8 @@ markdown_extensions:
 
 docs_dir: docs
 site_dir: target/site
+
+copyright: Developed by Pedro Ribeiro and others at Cedars Sinai Department of Computational Biomedicine
 
 nav:
   - Home: index.md
