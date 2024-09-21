@@ -1,3 +1,10 @@
+<div style="border: 2px solid #f39c12; background-color: #fdf3e7; padding: 15px; border-radius: 5px; color: #c0392b; margin-bottom: 20px; font-family: Arial, sans-serif;">
+
+  <strong>⚠️ Warning</strong>  
+  <p>This is documentation for the legacy version of TPOT. For the latest version, <a href="../latest/" style="color: #2980b9; text-decoration: none; font-weight: bold;">click here</a>.</p>
+
+</div>
+
 # TPOT API
 
 ## Classification

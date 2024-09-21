@@ -11,19 +11,20 @@ site_dir: target/legacy_site
 theme:
   name: material
   logo: assets/tpot-logo.jpg
-  custom_dir: docs/overrides
   features:
     - toc.integrate
     - navigation.top
   palette:
     # light mode
     - scheme: default
+      primary: grey
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
 
     # dark mode
     - scheme: slate
+      primary: grey
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -43,6 +44,9 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+
+plugins:
+  - include-markdown
 
 copyright: Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania
 

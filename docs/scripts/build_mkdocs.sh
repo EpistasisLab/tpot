@@ -40,14 +40,12 @@ theme:
   palette:
     # light mode
     - scheme: default
-      primary: teal
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
 
     # dark mode
     - scheme: slate
-      primary: teal
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
