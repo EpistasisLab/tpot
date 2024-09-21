@@ -160,7 +160,7 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
 
         self.mask = np.where(mask, self.mask, ss2.mask)
     
-    def export_pipeline(self):
+    def export_pipeline(self,  **kwargs):
         return MaskSelector(mask=self.mask)
     
 

@@ -19,7 +19,7 @@ def apply_make_pipeline(graphindividual, preprocessing_pipeline=None, export_gra
         if export_graphpipeline:
             est = graphindividual.export_flattened_graphpipeline(**pipeline_kwargs)
         else:
-            est = graphindividual.export_pipeline()
+            est = graphindividual.export_pipeline(**pipeline_kwargs)
 
 
         if preprocessing_pipeline is None:
@@ -38,7 +38,7 @@ def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_fun
     if export_graphpipeline:
         pipeline = pipeline.export_flattened_graphpipeline(**pipeline_kwargs)
     else:
-        pipeline = pipeline.export_pipeline()
+        pipeline = pipeline.export_pipeline(**pipeline_kwargs)
 
     if budget is not None and budget < 1:
         if is_classification:
@@ -70,7 +70,7 @@ def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test,
     if export_graphpipeline:
         pipeline = pipeline.export_flattened_graphpipeline(**pipeline_kwargs)
     else:
-        pipeline = pipeline.export_pipeline()
+        pipeline = pipeline.export_pipeline(**pipeline_kwargs)
 
     fitted_pipeline = sklearn.base.clone(pipeline)
     fitted_pipeline.fit(X_train, y_train)

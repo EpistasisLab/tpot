@@ -127,8 +127,8 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
                     crossover_success = True
         return crossover_success
     
-    def export_pipeline(self):
-        return sklearn.pipeline.make_pipeline(*[step.export_pipeline() for step in self.pipeline])
+    def export_pipeline(self, memory=None, **kwargs):
+        return sklearn.pipeline.make_pipeline(*[step.export_pipeline() for step in self.pipeline], memory=memory)
     
     def unique_id(self):
         l = [step.unique_id() for step in self.pipeline]

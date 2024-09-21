@@ -100,14 +100,14 @@ class WrapperPipelineIndividual(SklearnIndividual):
                     self.hyperparameters[key] = False
 
 
-    def export_pipeline(self):
+    def export_pipeline(self, **kwargs):
         
         if self.hyperparameters_parser is not None:
             final_params = self.hyperparameters_parser(self.hyperparameters)
         else:
             final_params = self.hyperparameters
 
-        est = self.node.export_pipeline()
+        est = self.node.export_pipeline(**kwargs)
         wrapped_est = self.method(est, **final_params)
         return wrapped_est
     

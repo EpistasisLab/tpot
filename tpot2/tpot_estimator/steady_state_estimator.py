@@ -893,7 +893,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         if self.export_graphpipeline:
             best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
         else:
-            best_individual_pipeline = best_individual.export_pipeline()
+            best_individual_pipeline = best_individual.export_pipeline(memory=self.memory)
 
         if self.preprocessing:
             self.fitted_pipeline_ = sklearn.pipeline.make_pipeline(sklearn.base.clone(self._preprocessing_pipeline), best_individual_pipeline )

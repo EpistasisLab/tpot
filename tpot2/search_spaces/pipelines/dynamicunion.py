@@ -136,7 +136,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
 
         return changed
 
-    def export_pipeline(self):
+    def export_pipeline(self, **kwargs):
         values = list(self.union_dict.values())
         return sklearn.pipeline.make_union(*[step.export_pipeline() for step in values])
     

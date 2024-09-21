@@ -33,8 +33,8 @@ class ChoicePipelineIndividual(SklearnIndividual):
     def crossover(self, other, rng=None):
         return self.node.crossover(other.node, rng)
     
-    def export_pipeline(self):
-        return self.node.export_pipeline()
+    def export_pipeline(self, **kwargs):
+        return self.node.export_pipeline(**kwargs)
     
     def unique_id(self):
         return self.node.unique_id()

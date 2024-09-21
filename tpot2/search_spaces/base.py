@@ -33,7 +33,7 @@ class SklearnIndividual(tpot2.BaseIndividual):
 
         return wrapper
 
-    def export_pipeline(self) -> BaseEstimator:
+    def export_pipeline(self, **kwargs) -> BaseEstimator:
         return
     
     def unique_id(self):

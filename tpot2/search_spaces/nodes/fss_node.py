@@ -55,7 +55,7 @@ class FSSIndividual(SklearnIndividual):
         self.selected_subset_name = other.selected_subset_name
         self.sel_subset = other.sel_subset
 
-    def export_pipeline(self):
+    def export_pipeline(self, **kwargs):
         return FeatureSetSelector(sel_subset=self.sel_subset, name=self.selected_subset_name)
     
 

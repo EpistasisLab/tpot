@@ -85,7 +85,6 @@ class GraphPipelineIndividual(SklearnIndividual):
 
         self.cross_val_predict_cv = cross_val_predict_cv
         self.method = method
-        self.memory = memory
         self.use_label_encoder = use_label_encoder
 
         self.root = self.root_search_space.generate(rng)
@@ -597,7 +596,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         return graph_changed
 
 
-    def export_pipeline(self):
+    def export_pipeline(self, memory=None, **kwargs):
         estimator_graph = self.graph.copy()
 
         #mapping = {node:node.method_class(**node.hyperparameters) for node in estimator_graph}
@@ -623,7 +622,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         for label, instance in label_to_instance.items():
             estimator_graph.nodes[label]["instance"] = instance
 
-        return tpot2.GraphPipeline(graph=estimator_graph, memory=self.memory, use_label_encoder=self.use_label_encoder, method=self.method, cross_val_predict_cv=self.cross_val_predict_cv)
+        return tpot2.GraphPipeline(graph=estimator_graph, memory=memory, use_label_encoder=self.use_label_encoder, method=self.method, cross_val_predict_cv=self.cross_val_predict_cv)
     
     
     def plot(self):
@@ -749,13 +748,12 @@ class GraphPipeline(SklearnIndividualGenerator):
 
         self.cross_val_predict_cv = cross_val_predict_cv
         self.method = method
-        self.memory = memory
         self.use_label_encoder = use_label_encoder
 
     def generate(self, rng=None):
         rng = np.random.default_rng(rng)
         ind =  GraphPipelineIndividual(self.root_search_space, self.leaf_search_space, self.inner_search_space, self.max_size, self.crossover_same_depth, 
-                                       self.cross_val_predict_cv, self.method, self.memory, self.use_label_encoder, rng=rng)  
+                                       self.cross_val_predict_cv, self.method, self.use_label_encoder, rng=rng)  
             # if user specified limit, grab a random number between that limit
         
         if self.max_size is None or self.max_size == np.inf:
