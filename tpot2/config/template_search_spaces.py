@@ -67,14 +67,43 @@ def get_graph_search_space(classification=True, inner_predictors=True, **get_sea
 
     if classification:
         if inner_predictors:
-            inner_search_space = tpot2.config.get_search_space(["classifiers","transformers","scalers","selectors_regression"],**get_search_space_params)
+            inner_search_space = tpot2.config.get_search_space(["classifiers","transformers","scalers","selectors_classification"],**get_search_space_params)
         else:
-            inner_search_space = tpot2.config.get_search_space(["transformers","scalers","selectors_regression"],**get_search_space_params)
+            inner_search_space = tpot2.config.get_search_space(["transformers","scalers","selectors_classification"],**get_search_space_params)
     else:
         if inner_predictors:
             inner_search_space = tpot2.config.get_search_space(["regressors", "transformers","scalers","selectors_regression"],**get_search_space_params)
         else:
             inner_search_space = tpot2.config.get_search_space(["transformers","scalers","selectors_regression"],**get_search_space_params)
+
+
+    search_space = tpot2.search_spaces.pipelines.GraphPipeline(
+        root_search_space= root_search_space,
+        leaf_search_space = None, 
+        inner_search_space = inner_search_space,
+    )
+
+    return search_space
+
+
+def get_graph_search_space_light(classification=True, inner_predictors=True, **get_search_space_params ):
+
+    if classification:
+        root_search_space = get_search_space(['BernoulliNB', 'DecisionTreeClassifier', 'GaussianNB', 'KNeighborsClassifier', 'LogisticRegression', 'MultinomialNB'], **get_search_space_params)
+    else:
+        root_search_space = get_search_space(["RidgeCV", "LinearSVR", "LassoLarsCV", "KNeighborsRegressor", "DecisionTreeRegressor", "ElasticNetCV"], **get_search_space_params)
+        
+
+    if classification:
+        if inner_predictors:
+            inner_search_space = tpot2.config.get_search_space(['BernoulliNB', 'DecisionTreeClassifier', 'GaussianNB', 'KNeighborsClassifier', 'LogisticRegression', 'MultinomialNB',"transformers","scalers","SelectFwe", "SelectPercentile", "VarianceThreshold"],**get_search_space_params)
+        else:
+            inner_search_space = tpot2.config.get_search_space(["transformers","scalers","SelectFwe", "SelectPercentile", "VarianceThreshold"],**get_search_space_params)
+    else:
+        if inner_predictors:
+            inner_search_space = tpot2.config.get_search_space(["RidgeCV", "LinearSVR", "LassoLarsCV", "KNeighborsRegressor", "DecisionTreeRegressor", "ElasticNetCV", "transformers","scalers", "SelectFwe", "SelectPercentile", "VarianceThreshold"],**get_search_space_params)
+        else:
+            inner_search_space = tpot2.config.get_search_space(["transformers", "scalers", "SelectFwe", "SelectPercentile", "VarianceThreshold"],**get_search_space_params)
 
 
     search_space = tpot2.search_spaces.pipelines.GraphPipeline(
@@ -168,6 +197,8 @@ def get_template_search_spaces(default_search_space, classification=True, inner_
             return get_linear_search_space(classification, inner_predictors, **get_search_space_params)
         elif default_search_space == "graph":
             return get_graph_search_space(classification, inner_predictors, **get_search_space_params)
+        elif default_search_space == "graph_light":
+            return get_graph_search_space_light(classification, inner_predictors, **get_search_space_params)
         elif default_search_space == "light":
             return get_light_search_space(classification, inner_predictors, **get_search_space_params)
         elif default_search_space == "mdr":
