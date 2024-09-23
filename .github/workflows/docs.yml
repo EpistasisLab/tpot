@@ -49,13 +49,13 @@ jobs:
         run: |
           bash docs/scripts/build_mkdocs.sh
 
-      - name: Build and Deploy Legacy Docs
-        run: |
-          mike deploy --config-file mkdocs_legacy.yml --push --branch gh-pages legacy
-
       - name: Build and Deploy Latest Docs
         run: |
           mike deploy --push --branch gh-pages latest 
+  
+      - name: Build and Deploy Archived Docs
+        run: |
+          mike deploy --config-file mkdocs_archived.yml --push --branch gh-pages archived
 
       - name: Set Default Version
         run: |
