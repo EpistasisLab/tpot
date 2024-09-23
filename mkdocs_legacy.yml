@@ -11,6 +11,7 @@ site_dir: target/legacy_site
 theme:
   name: material
   logo: assets/tpot-logo.jpg
+  favicon: assets/favicon.ico
   features:
     - toc.integrate
     - navigation.top

@@ -17,6 +17,14 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('docs/requirements_docs.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip
@@ -43,12 +51,16 @@ jobs:
 
       - name: Build and Deploy Legacy Docs
         run: |
-          mike deploy legacy --config-file mkdocs_legacy.yml --push
+          mike deploy --config-file mkdocs_legacy.yml --push --branch gh-pages legacy
 
       - name: Build and Deploy Latest Docs
         run: |
-          mike deploy latest --push
+          mike deploy --push --branch gh-pages latest 
 
       - name: Set Default Version
         run: |
-          mike set-default latest --push
+          mike set-default latest --push --branch gh-pages
+
+      - name: Create alias for Latest Docs
+        run: |
+          mike alias latest stable --push --branch gh-pages

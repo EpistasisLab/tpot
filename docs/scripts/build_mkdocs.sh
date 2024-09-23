@@ -32,6 +32,7 @@ extra_css:
 theme:
   name: material
   logo: assets/tpot-logo.jpg
+  favicon: assets/favicon.ico
   features:
     - toc.integrate
     - navigation.top
