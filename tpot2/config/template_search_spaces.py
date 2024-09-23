@@ -187,7 +187,7 @@ def get_mdr_search_space(classification=True, **get_search_space_params ):
 def get_template_search_spaces(default_search_space, classification=True, inner_predictors=None, **get_search_space_params):
     
     if inner_predictors is None:
-        if default_search_space == "light":
+        if default_search_space == "light" or default_search_space == "graph_light":
             inner_predictors = False
         else:
             inner_predictors = True
@@ -197,9 +197,9 @@ def get_template_search_spaces(default_search_space, classification=True, inner_
             return get_linear_search_space(classification, inner_predictors, **get_search_space_params)
         elif default_search_space == "graph":
             return get_graph_search_space(classification, inner_predictors, **get_search_space_params)
-        elif default_search_space == "graph_light":
+        elif default_search_space == "graph-light":
             return get_graph_search_space_light(classification, inner_predictors, **get_search_space_params)
-        elif default_search_space == "light":
+        elif default_search_space == "linear-light":
             return get_light_search_space(classification, inner_predictors, **get_search_space_params)
         elif default_search_space == "mdr":
             return get_mdr_search_space(classification, **get_search_space_params)

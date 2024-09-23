@@ -15,7 +15,7 @@ ElasticNetCV_configspace = {
 def get_RandomForestRegressor_ConfigurationSpace(random_state):
     space =  {
         'n_estimators': 100,
-        'criterion': Categorical("criterion", ['mse', 'mae', "friedman_mse"]),
+        'criterion': Categorical("criterion", ['friedman_mse', 'poisson', 'absolute_error', 'squared_error']),
         'max_features': Float("max_features", bounds=(0.05, 1.0)),
         'bootstrap': Categorical("bootstrap", [True, False]),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
@@ -221,7 +221,7 @@ def get_Perceptron_ConfigurationSpace(random_state):
 
 def get_DecisionTreeRegressor_ConfigurationSpace(random_state):
     space = {
-        'criterion': Categorical("criterion", ['squared_error', 'friedman_mse', 'mae']),
+        'criterion': Categorical("criterion", ['friedman_mse', 'poisson', 'absolute_error', 'squared_error']),
         # 'max_depth': Integer("max_depth", bounds=(1, n_features*2)),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 21)),
@@ -334,7 +334,7 @@ def get_AdaBoostRegressor_ConfigurationSpace(random_state):
 def get_ExtraTreesRegressor_ConfigurationSpace(random_state):
     space = {
         'n_estimators': 100,
-        'criterion': Categorical("criterion", ["squared_error", "friedman_mse", "mae"]),
+        'criterion': Categorical("criterion", ['friedman_mse', 'poisson', 'absolute_error', 'squared_error']),
         'max_features': Float("max_features", bounds=(0.05, 1.0)),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 21)),

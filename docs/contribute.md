@@ -45,17 +45,12 @@ GitHub:
 
 5. Start making changes on your newly created branch, remembering to never work on the ``main`` branch! Work on this copy on your computer using Git to do the version control.
 
-6. Once some changes are saved locally, you can use your tweaked version of TPOT by navigating to the project's base directory and running TPOT directly from the command line:
 
-          $ python -m tpot.driver
+6. Check your changes haven't broken any existing tests and pass all your new tests. Navigate the terminal into the `tpot2/tpot2/` folder and run the command `pytest` to start all tests. (note, you must have the `pytest` package installed within your dev environment for this to work):
 
-    or by running script that imports and uses the TPOT module with code similar to `from tpot import TPOTClassifier`
+          $ pytest
 
-7. To check your changes haven't broken any existing tests and to check new tests you've added pass run the following (note, you must have the `pytest` package installed within your dev environment for this to work):
-
-          $ pytest -s -v
-
-8. When you're done editing and local testing, run:
+7. When you're done editing and local testing, run:
 
           $ git add modified_files
           $ git commit

@@ -10,7 +10,7 @@ from ...config.template_search_spaces import get_template_search_spaces
 
 class TPOTRegressor(TPOTEstimator):
     def __init__(       self,
-                        search_space = "linear",
+                        search_space = "linear-light",
                         scorers=['neg_mean_squared_error'], 
                         scorers_weights=[1],
                         cv = 10, #remove this and use a value based on dataset size?
@@ -44,7 +44,16 @@ class TPOTRegressor(TPOTEstimator):
         ----------
 
         search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
-            - String : The default search space to use for the optimization. This can be either "linear" or "graph". If "linear", will use the default linear pipeline search space. If "graph", will use the default graph pipeline search space.
+                        - String : The default search space to use for the optimization.
+            | String     | Description      |
+            | :---        |    :----:   |
+            | linear  | A linear pipeline with the structure of "Selector->(transformers+Passthrough)->(classifiers/regressors+Passthrough)->final classifier/regressor." For both the transformer and inner estimator layers, TPOT may choose one or more transformers/classifiers, or it may choose none. The inner classifier/regressor layer is optional. |
+            | linear-light | Same search space as linear, but without the inner classifier/regressor layer and with a reduced set of faster running estimators. |
+            | graph | TPOT will optimize a pipeline in the shape of a directed acyclic graph. The nodes of the graph can include selectors, scalers, transformers, or classifiers/regressors (inner classifiers/regressors can optionally be not included). This will return a custom GraphPipeline rather than an sklearn Pipeline. More details in Tutorial 6. |
+            | graph-light | Same as graph search space, but without the inner classifier/regressors and with a reduced set of faster running estimators. |
+            | mdr |TPOT will search over a series of feature selectors and Multifactor Dimensionality Reduction models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for genome-wide association studies (GWAS), and is described in detail online here.
+
+            Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
             - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
                 The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
                 TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
@@ -263,7 +272,7 @@ class TPOTRegressor(TPOTEstimator):
 
 class TPOTClassifier(TPOTEstimator):
     def __init__(       self,
-                        search_space = "linear",
+                        search_space = "linear-light",
                         scorers=['roc_auc_ovr'], 
                         scorers_weights=[1],
                         cv = 10,
@@ -298,7 +307,16 @@ class TPOTClassifier(TPOTEstimator):
         ----------
 
         search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
-            - String : The default search space to use for the optimization. This can be either "linear" or "graph". If "linear", will use the default linear pipeline search space. If "graph", will use the default graph pipeline search space.
+            - String : The default search space to use for the optimization.
+            | String     | Description      |
+            | :---        |    :----:   |
+            | linear  | A linear pipeline with the structure of "Selector->(transformers+Passthrough)->(classifiers/regressors+Passthrough)->final classifier/regressor." For both the transformer and inner estimator layers, TPOT may choose one or more transformers/classifiers, or it may choose none. The inner classifier/regressor layer is optional. |
+            | linear-light | Same search space as linear, but without the inner classifier/regressor layer and with a reduced set of faster running estimators. |
+            | graph | TPOT will optimize a pipeline in the shape of a directed acyclic graph. The nodes of the graph can include selectors, scalers, transformers, or classifiers/regressors (inner classifiers/regressors can optionally be not included). This will return a custom GraphPipeline rather than an sklearn Pipeline. More details in Tutorial 6. |
+            | graph-light | Same as graph search space, but without the inner classifier/regressors and with a reduced set of faster running estimators. |
+            | mdr |TPOT will search over a series of feature selectors and Multifactor Dimensionality Reduction models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for genome-wide association studies (GWAS), and is described in detail online here.
+
+            Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
             - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
                 The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
                 TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.

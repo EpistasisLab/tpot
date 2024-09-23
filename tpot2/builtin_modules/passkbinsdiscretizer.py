@@ -15,7 +15,7 @@ class PassKBinsDiscretizer(BaseEstimator, TransformerMixin):
     """
     Same as sklearn.preprocessing.KBinsDiscretizer, but passes through columns that are not discretized due to having fewer than n_bins unique values instead of ignoring them.
     """
-    def __init__(self, n_bins=5,  encode='onehot-dense', strategy='quantile', subsample='warn', random_state=None):
+    def __init__(self, n_bins=5,  encode='onehot-dense', strategy='quantile', subsample=None, random_state=None):
         self.n_bins = n_bins
         self.encode = encode
         self.strategy = strategy

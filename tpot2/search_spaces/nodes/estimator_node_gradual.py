@@ -131,6 +131,9 @@ def gradual_hyperparameter_update(params:dict, configspace:ConfigurationSpace, r
                 elif new_params[param] > configspace[param].upper:
                     new_params[param] = configspace[param].upper
                 new_params[param] = int(new_params[param])
+            # TODO : add support for categorical hyperparameters
+            else:
+                new_params[param] = params[param]
         except:
             pass
 
