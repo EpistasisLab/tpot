@@ -5,7 +5,7 @@ from .get_configspace import get_search_space
 
 
 
-def get_linear_search_space(classification=True, inner_predictors=True, **get_search_space_params ):
+def get_linear_search_space(classification=True, inner_predictors=True, cross_val_predict_cv=0, **get_search_space_params ):
 
     if classification:
         selectors = get_search_space(["selectors","selectors_classification", "Passthrough"], **get_search_space_params)
@@ -16,7 +16,7 @@ def get_linear_search_space(classification=True, inner_predictors=True, **get_se
 
     # this allows us to wrap the classifiers in the EstimatorTransformer
     # this is necessary so that classifiers can be used inside of sklearn pipelines
-    wrapped_estimators = WrapperPipeline(tpot2.builtin_modules.EstimatorTransformer, {}, estimators)
+    wrapped_estimators = WrapperPipeline(tpot2.builtin_modules.EstimatorTransformer, {'cross_val_predict_cv':cross_val_predict_cv}, estimators)
 
     scalers = get_search_space(["scalers","Passthrough"], **get_search_space_params)
 
@@ -56,7 +56,7 @@ def get_linear_search_space(classification=True, inner_predictors=True, **get_se
     return search_space
 
 
-def get_graph_search_space(classification=True, inner_predictors=True, **get_search_space_params ):
+def get_graph_search_space(classification=True, inner_predictors=True, cross_val_predict_cv=0, **get_search_space_params ):
 
     if classification:
         root_search_space = get_search_space(["classifiers"], **get_search_space_params)
@@ -77,16 +77,17 @@ def get_graph_search_space(classification=True, inner_predictors=True, **get_sea
             inner_search_space = tpot2.config.get_search_space(["transformers","scalers","selectors_regression"],**get_search_space_params)
 
 
-    search_space = tpot2.search_spaces.pipelines.GraphPipeline(
+    search_space = tpot2.search_spaces.pipelines.GraphSearchPipeline(
         root_search_space= root_search_space,
         leaf_search_space = None, 
         inner_search_space = inner_search_space,
+        cross_val_predict_cv=cross_val_predict_cv,
     )
 
     return search_space
 
 
-def get_graph_search_space_light(classification=True, inner_predictors=True, **get_search_space_params ):
+def get_graph_search_space_light(classification=True, inner_predictors=True, cross_val_predict_cv=0, **get_search_space_params ):
 
     if classification:
         root_search_space = get_search_space(['BernoulliNB', 'DecisionTreeClassifier', 'GaussianNB', 'KNeighborsClassifier', 'LogisticRegression', 'MultinomialNB'], **get_search_space_params)
@@ -106,16 +107,17 @@ def get_graph_search_space_light(classification=True, inner_predictors=True, **g
             inner_search_space = tpot2.config.get_search_space(["transformers", "scalers", "SelectFwe", "SelectPercentile", "VarianceThreshold"],**get_search_space_params)
 
 
-    search_space = tpot2.search_spaces.pipelines.GraphPipeline(
+    search_space = tpot2.search_spaces.pipelines.GraphSearchPipeline(
         root_search_space= root_search_space,
         leaf_search_space = None, 
         inner_search_space = inner_search_space,
+        cross_val_predict_cv=cross_val_predict_cv,
     )
 
     return search_space
 
 
-def get_light_search_space(classification=True, inner_predictors=False, **get_search_space_params ):
+def get_light_search_space(classification=True, inner_predictors=False, cross_val_predict_cv=0, **get_search_space_params ):
 
     selectors = get_search_space(["SelectFwe", "SelectPercentile", "VarianceThreshold","Passthrough"], **get_search_space_params)
 
@@ -126,7 +128,7 @@ def get_light_search_space(classification=True, inner_predictors=False, **get_se
 
     # this allows us to wrap the classifiers in the EstimatorTransformer
     # this is necessary so that classifiers can be used inside of sklearn pipelines
-    wrapped_estimators = WrapperPipeline(tpot2.builtin_modules.EstimatorTransformer, {}, estimators)
+    wrapped_estimators = WrapperPipeline(tpot2.builtin_modules.EstimatorTransformer, {'cross_val_predict_cv':cross_val_predict_cv}, estimators)
 
     scalers = get_search_space(["scalers","Passthrough"], **get_search_space_params)
 
@@ -184,7 +186,7 @@ def get_mdr_search_space(classification=True, **get_search_space_params ):
 
 
 
-def get_template_search_spaces(default_search_space, classification=True, inner_predictors=None, **get_search_space_params):
+def get_template_search_spaces(default_search_space, classification=True, inner_predictors=None, cross_val_predict_cv=0, **get_search_space_params):
     
     if inner_predictors is None:
         if default_search_space == "light" or default_search_space == "graph_light":
@@ -194,13 +196,13 @@ def get_template_search_spaces(default_search_space, classification=True, inner_
     
     if isinstance(default_search_space, str):
         if default_search_space == "linear":
-            return get_linear_search_space(classification, inner_predictors, **get_search_space_params)
+            return get_linear_search_space(classification, inner_predictors, cross_val_predict_cv=cross_val_predict_cv, **get_search_space_params)
         elif default_search_space == "graph":
-            return get_graph_search_space(classification, inner_predictors, **get_search_space_params)
+            return get_graph_search_space(classification, inner_predictors, cross_val_predict_cv=cross_val_predict_cv, **get_search_space_params)
         elif default_search_space == "graph-light":
-            return get_graph_search_space_light(classification, inner_predictors, **get_search_space_params)
+            return get_graph_search_space_light(classification, inner_predictors, cross_val_predict_cv=cross_val_predict_cv, **get_search_space_params)
         elif default_search_space == "linear-light":
-            return get_light_search_space(classification, inner_predictors, **get_search_space_params)
+            return get_light_search_space(classification, inner_predictors, cross_val_predict_cv=cross_val_predict_cv, **get_search_space_params)
         elif default_search_space == "mdr":
             return get_mdr_search_space(classification, **get_search_space_params)
         else:

@@ -150,14 +150,14 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         return TupleIndex(frozenset(l))
 
 class DynamicUnionPipeline(SklearnIndividualGenerator):
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator],max_estimators=None, allow_repeats=False ) -> None:
+    def __init__(self, search_space : SklearnIndividualGenerator, max_estimators=None, allow_repeats=False ) -> None:
         """
         Takes in a list of search spaces. will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
         """
         
-        self.search_spaces = search_spaces
+        self.search_space = search_space
         self.max_estimators = max_estimators
         self.allow_repeats = allow_repeats
 
     def generate(self, rng=None):
-        return DynamicUnionPipelineIndividual(self.search_spaces, max_estimators=self.max_estimators, allow_repeats=self.allow_repeats, rng=rng)
+        return DynamicUnionPipelineIndividual(self.search_space, max_estimators=self.max_estimators, allow_repeats=self.allow_repeats, rng=rng)

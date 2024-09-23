@@ -145,7 +145,7 @@ def get_SVC_ConfigurationSpace(random_state):
 def get_RandomForestClassifier_ConfigurationSpace( random_state):
     space = {
             'n_estimators': 128, #as recommended by Oshiro et al. (2012
-            'max_features': Float("max_features", bounds=(0.01,1)), #log scale like autosklearn?
+            'max_features': Float("max_features", bounds=(0.01,1), log=True), #log scale like autosklearn?
             'criterion': Categorical("criterion", ['gini', 'entropy']),
             'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
             'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),

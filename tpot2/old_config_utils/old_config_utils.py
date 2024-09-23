@@ -3,7 +3,7 @@ from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 from ConfigSpace import EqualsCondition, OrConjunction, NotEqualsCondition, InCondition
 from ..search_spaces.nodes.estimator_node import NONE_SPECIAL_STRING, TRUE_SPECIAL_STRING, FALSE_SPECIAL_STRING
 from ..search_spaces.nodes import EstimatorNode
-from ..search_spaces.pipelines import WrapperPipeline, ChoicePipeline, GraphPipeline
+from ..search_spaces.pipelines import WrapperPipeline, ChoicePipeline, GraphSearchPipeline
 import ConfigSpace
 import sklearn
 from functools import partial
@@ -136,5 +136,5 @@ def convert_config_dict_to_graphpipeline(config_dict):
     root_space = ChoicePipeline(root_search_spaces)
     inner_space = ChoicePipeline(inner_search_spaces)
 
-    final_space = GraphPipeline(root_search_space=root_space, inner_search_space=inner_space)
+    final_space = GraphSearchPipeline(root_search_space=root_space, inner_search_space=inner_space)
     return final_space

@@ -10,7 +10,7 @@ import networkx as nx
 import copy
 import matplotlib.pyplot as plt
 
-from .graph import GraphPipelineIndividual, GraphPipeline
+from .graph import GraphPipelineIndividual
 
 
 from ..graph_utils import *

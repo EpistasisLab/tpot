@@ -17,7 +17,7 @@ def tpot_estimator():
     n_samples=100
     n_features=100
 
-    search_space = tpot2.search_spaces.pipelines.GraphPipeline(
+    search_space = tpot2.search_spaces.pipelines.GraphSearchPipeline(
             root_search_space= tpot2.config.get_search_space("classifiers", n_samples=n_samples, n_features=n_features, n_classes=n_classes),
             leaf_search_space = None, 
             inner_search_space = tpot2.config.get_search_space(["selectors","transformers"],n_samples=n_samples, n_features=n_features, n_classes=n_classes),

@@ -8,15 +8,34 @@ from sklearn.utils.validation import check_is_fitted
 
 class EstimatorTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, estimator, method='auto', passthrough=False, cross_val_predict_cv=0):
+        """
+        A class for using a sklearn estimator as a transformer.
+
+        Parameters
+        ----------
+        estimator : sklear.base. BaseEstimator
+            The estimator to use as a transformer.
+        method : str, default='auto'
+            The method to use for the transformation. If 'auto', will try to use predict_proba, decision_function, or predict in that order.
+            - predict_proba: use the predict_proba method of the estimator.
+            - decision_function: use the decision_function method of the estimator.
+            - predict: use the predict method of the estimator.
+        passthrough : bool, default=False
+            Whether to pass the original input through.
+        cross_val_predict_cv : int, default=0
+            If greater than 0, will use cross_val_predict with the specified cv value to generate the transformed output.
+
+        """
         self.estimator = estimator
         self.method = method
         self.passthrough = passthrough
         self.cross_val_predict_cv = cross_val_predict_cv
     
     def fit(self, X, y=None):
-        return self.estimator.fit(X, y)
+        self.estimator.fit(X, y)
+        return self
     
-    def transform(self, X):
+    def transform(self, X, y=None):
         if self.method == 'auto':
             if hasattr(self.estimator, 'predict_proba'):
                 method = 'predict_proba'
@@ -31,6 +50,13 @@ class EstimatorTransformer(BaseEstimator, TransformerMixin):
         
         output = getattr(self.estimator, method)(X)
         output=np.array(output)
+
+        if self.cross_val_predict_cv > 0:
+            output = cross_val_predict(self.estimator, X, y=y, cv=self.cross_val_predict_cv)
+            
+        else:
+            output = getattr(self.estimator, method)(X)
+            #reshape if needed
         
         if len(output.shape) == 1:
             output = output.reshape(-1,1)

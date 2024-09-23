@@ -67,7 +67,6 @@ class GraphPipelineIndividual(SklearnIndividual):
             crossover_same_depth: bool = False,
             cross_val_predict_cv: Union[int, Callable] = 0, #signature function(estimator, X, y=none)
             method: str = 'auto',
-            memory=None,
             use_label_encoder: bool = False,
             rng=None):
         
@@ -107,6 +106,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         self.merge_duplicated_nodes_toggle = True
 
         self.graphkey = None
+
 
     def mutate(self, rng=None):
         rng = np.random.default_rng(rng)
@@ -686,7 +686,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         return self.graphkey
     
 
-class GraphPipeline(SklearnIndividualGenerator):
+class GraphSearchPipeline(SklearnIndividualGenerator):
     def __init__(self, 
         root_search_space: SklearnIndividualGenerator, 
         leaf_search_space: SklearnIndividualGenerator = None, 
