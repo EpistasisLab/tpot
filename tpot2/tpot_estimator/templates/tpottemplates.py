@@ -87,7 +87,7 @@ class TPOTRegressor(TPOTEstimator):
 
 
         memory: Memory object or string, default=None
-            If supplied, pipeline will cache each transformer after calling fit. This feature
+            If supplied, pipeline will cache each transformer after calling fit with joblib.Memory. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
             and input data are identical with another fitted pipeline during optimization process.
             - String 'auto':
@@ -341,7 +341,7 @@ class TPOTClassifier(TPOTEstimator):
 
 
         memory: Memory object or string, default=None
-            If supplied, pipeline will cache each transformer after calling fit. This feature
+            If supplied, pipeline will cache each transformer after calling fit with joblib.Memory. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
             and input data are identical with another fitted pipeline during optimization process.
             - String 'auto':
