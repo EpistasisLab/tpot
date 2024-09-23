@@ -36,6 +36,7 @@ class EstimatorTransformer(BaseEstimator, TransformerMixin):
         return self
     
     def transform(self, X, y=None):
+        #Does not do cross val predict, just uses the estimator to transform the data. This is used for the actual transformation in practice, so the real transformation without fitting is needed
         if self.method == 'auto':
             if hasattr(self.estimator, 'predict_proba'):
                 method = 'predict_proba'
@@ -50,13 +51,6 @@ class EstimatorTransformer(BaseEstimator, TransformerMixin):
         
         output = getattr(self.estimator, method)(X)
         output=np.array(output)
-
-        if self.cross_val_predict_cv > 0:
-            output = cross_val_predict(self.estimator, X, y=y, cv=self.cross_val_predict_cv)
-            
-        else:
-            output = getattr(self.estimator, method)(X)
-            #reshape if needed
         
         if len(output.shape) == 1:
             output = output.reshape(-1,1)
@@ -69,6 +63,7 @@ class EstimatorTransformer(BaseEstimator, TransformerMixin):
 
         
     def fit_transform(self, X, y=None):
+        #Does use cross_val_predict if cross_val_predict_cv is greater than 0. this function is only used in training the model. 
         self.estimator.fit(X,y)
 
         if self.method == 'auto':
@@ -85,7 +80,6 @@ class EstimatorTransformer(BaseEstimator, TransformerMixin):
         
         if self.cross_val_predict_cv > 0:
             output = cross_val_predict(self.estimator, X, y=y, cv=self.cross_val_predict_cv)
-            
         else:
             output = getattr(self.estimator, method)(X)
             #reshape if needed
