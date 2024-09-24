@@ -12,10 +12,9 @@ class SequentialPipelineIndividual(SklearnIndividual):
     # takes in a list of search spaces. each space is a list of SklearnIndividualGenerators.
     # will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
 
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator], memory=None, rng=None) -> None:
+    def __init__(self, search_spaces : List[SklearnIndividualGenerator], rng=None) -> None:
         super().__init__()
         self.search_spaces = search_spaces
-        self.memory = memory
         self.pipeline = []
 
         for space in self.search_spaces:

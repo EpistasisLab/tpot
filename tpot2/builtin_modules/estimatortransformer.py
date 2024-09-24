@@ -23,7 +23,11 @@ class EstimatorTransformer(BaseEstimator, TransformerMixin):
         passthrough : bool, default=False
             Whether to pass the original input through.
         cross_val_predict_cv : int, default=0
-            If greater than 0, will use cross_val_predict with the specified cv value to generate the transformed output.
+            Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
+
+            - 0-1 : When set to 0 or 1, the cross_val_predict function will not be used. The next layer will get the outputs from fitting and transforming the full dataset.
+            - >=2 : When fitting pipelines with inner classifiers or regressors, they will still be fit on the full dataset.
+                    However, the output to the next node will come from cross_val_predict with the specified number of folds.
 
         """
         self.estimator = estimator

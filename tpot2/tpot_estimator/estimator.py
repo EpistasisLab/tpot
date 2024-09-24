@@ -43,7 +43,6 @@ class TPOTEstimator(BaseEstimator):
                         bigger_is_better = True,
 
                         export_graphpipeline = False,
-                        cross_val_predict_cv = 0,
                         memory = None,
 
                         categorical_features = None,
@@ -157,13 +156,6 @@ class TPOTEstimator(BaseEstimator):
         bigger_is_better : bool, default=True
             If True, the objective function is maximized. If False, the objective function is minimized. Use negative weights to reverse the direction.
         
-        cross_val_predict_cv : int, default=0
-            Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
-
-            - 0-1 : When set to 0 or 1, the cross_val_predict function will not be used. The next layer will get the outputs from fitting and transforming the full dataset.
-            - >=2 : When fitting pipelines with inner classifiers or regressors, they will still be fit on the full dataset.
-                    However, the output to the next node will come from cross_val_predict with the specified number of folds.
-
         memory: Memory object or string, default=None
             If supplied, pipeline will cache each transformer after calling fit with joblib.Memory. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
@@ -390,12 +382,7 @@ class TPOTEstimator(BaseEstimator):
         self.search_space = search_space
 
         self.export_graphpipeline = export_graphpipeline
-        self.cross_val_predict_cv = cross_val_predict_cv
         self.memory = memory
-
-        if self.cross_val_predict_cv !=0 or self.memory is not None:
-            if not self.export_graphpipeline:
-                raise ValueError("cross_val_predict_cv and memory parameters are parameters for GraphPipeline. To enable these options export_graphpipeline to be True. Otherwise these can be passed into the relevant Search spaces as parameters.")
 
         self.categorical_features = categorical_features
         self.subsets = subsets
@@ -629,7 +616,6 @@ class TPOTEstimator(BaseEstimator):
                                             other_objective_functions=self.other_objective_functions,
                                             export_graphpipeline=self.export_graphpipeline,
                                             memory=self.memory,
-                                            cross_val_predict_cv=self.cross_val_predict_cv,
                                             **kwargs):
             return objective_function_generator(
                 pipeline_individual,
@@ -641,7 +627,6 @@ class TPOTEstimator(BaseEstimator):
                 other_objective_functions=other_objective_functions,
                 export_graphpipeline=export_graphpipeline,
                 memory=memory,
-                cross_val_predict_cv=cross_val_predict_cv,
                 **kwargs,
             )
 
@@ -786,8 +771,6 @@ class TPOTEstimator(BaseEstimator):
                                                     other_objective_functions=self.other_objective_functions,
                                                     export_graphpipeline=self.export_graphpipeline,
                                                     memory=self.memory,
-                                                    cross_val_predict_cv=self.cross_val_predict_cv,
-
                                                     **kwargs: objective_function_generator(
                                                                                                 ind,
                                                                                                 X,
@@ -798,7 +781,6 @@ class TPOTEstimator(BaseEstimator):
                                                                                                 other_objective_functions=other_objective_functions,
                                                                                                 export_graphpipeline=export_graphpipeline,
                                                                                                 memory=memory,
-                                                                                                cross_val_predict_cv=cross_val_predict_cv,
                                                                                                 **kwargs,
                                                                                                 )]
 
@@ -844,7 +826,6 @@ class TPOTEstimator(BaseEstimator):
                                                     other_objective_functions=self.other_objective_functions,
                                                     export_graphpipeline=self.export_graphpipeline,
                                                     memory=self.memory,
-                                                    cross_val_predict_cv=self.cross_val_predict_cv,
                                                     **kwargs: val_objective_function_generator(
                                                         ind,
                                                         X,
@@ -855,7 +836,6 @@ class TPOTEstimator(BaseEstimator):
                                                         other_objective_functions=other_objective_functions,
                                                         export_graphpipeline=export_graphpipeline,
                                                         memory=memory,
-                                                        cross_val_predict_cv=cross_val_predict_cv,
                                                         **kwargs,
                                                         )]
 
@@ -890,7 +870,7 @@ class TPOTEstimator(BaseEstimator):
         #TODO
         #best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
         if self.export_graphpipeline:
-            best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
+            best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory)
         else:
             best_individual_pipeline = best_individual.export_pipeline(memory=self.memory)
 
@@ -982,7 +962,7 @@ class TPOTEstimator(BaseEstimator):
             self.evaluated_individuals = self.evaluated_individuals.set_index(self.evaluated_individuals.index.map(object_to_int))
             self.evaluated_individuals['Parents'] = self.evaluated_individuals['Parents'].apply(lambda row: convert_parents_tuples_to_integers(row, object_to_int))
 
-            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline, export_graphpipeline=self.export_graphpipeline, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv))
+            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline, export_graphpipeline=self.export_graphpipeline, memory=self.memory))
 
         return self.evaluated_individuals
 

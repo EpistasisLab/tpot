@@ -695,7 +695,6 @@ class GraphSearchPipeline(SklearnIndividualGenerator):
         crossover_same_depth: bool = False,
         cross_val_predict_cv: Union[int, Callable] = 0, #signature function(estimator, X, y=none)
         method: str = 'auto',
-        memory=None,
         use_label_encoder: bool = False):
         
         """
@@ -723,8 +722,12 @@ class GraphSearchPipeline(SklearnIndividualGenerator):
         crossover_same_depth: bool, optional
             If True, crossover will only occur between nodes at the same depth in the graph. If False, crossover will occur between nodes at any depth.
         
-        cross_val_predict_cv: int, cross-validation generator or an iterable, optional
-            Determines the cross-validation splitting strategy used in inner classifiers or regressors
+        cross_val_predict_cv : int, default=0
+            Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
+
+            - 0-1 : When set to 0 or 1, the cross_val_predict function will not be used. The next layer will get the outputs from fitting and transforming the full dataset.
+            - >=2 : When fitting pipelines with inner classifiers or regressors, they will still be fit on the full dataset.
+                    However, the output to the next node will come from cross_val_predict with the specified number of folds.
 
         method: str, optional
             The prediction method to use for the inner classifiers or regressors. If 'auto', it will try to use predict_proba, decision_function, or predict in that order.
