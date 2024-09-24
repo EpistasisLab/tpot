@@ -84,9 +84,6 @@ class TPOTEstimator(BaseEstimator):
                         generations_until_end_budget = 1,
                         stepwise_steps = 5,
 
-
-
-
                         #dask parameters
                         n_jobs=1,
                         memory_limit = None,

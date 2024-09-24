@@ -355,6 +355,9 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
             return imputers.simple_imputer_cs
         case "IterativeImputer":
             return imputers.get_IterativeImputer_config_space(n_features=n_features, random_state=random_state)
+        case "IterativeImputer_no_estimator":
+            return imputers.get_IterativeImputer_config_space_no_estimator(n_features=n_features, random_state=random_state)
+        
         case "KNNImputer":
             return imputers.get_KNNImputer_config_space(n_samples=n_samples)
 
@@ -449,12 +452,10 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
         ext = get_node("ExtraTreesRegressor", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return WrapperPipeline(estimator_search_space=ext, method=SelectFromModel, space=sfm_sp)
     # TODO Add IterativeImputer with more estimator methods
-    '''
-    if name == "IterativeImputer_learnedestimators":
-        iteative_sp = get_configspace(name="IterativeImputer", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        regessor_searchspace = get_search_space(["LinearRegression", ..], n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return WrapperPipeline(estimator_search_space=regressor_searchspace, method=ItartiveImputer, space=iteative_sp)
-    '''
+    if name == "IterativeImputer_learned_estimators":
+        iteative_sp = get_configspace(name="IterativeImputer_no_estimator", n_features=n_features, random_state=random_state)
+        regressor_searchspace = get_node("ExtraTreesRegressor", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return WrapperPipeline(estimator_search_space=regressor_searchspace, method=IterativeImputer, space=iteative_sp)
     #these are nodes that have special search spaces which require custom parsing of the hyperparameters
     if name == "IterativeImputer":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)

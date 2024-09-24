@@ -42,6 +42,25 @@ def get_IterativeImputer_config_space(n_features, random_state):
     cs.add([sampling_condition])
     return cs
 
+def get_IterativeImputer_config_space_no_estimator(n_features, random_state):
+    space = { 'initial_strategy' : Categorical('initial_strategy', 
+                                             ['mean', 'median', 
+                                              'most_frequent', 'constant']),
+                'n_nearest_features' : Integer('n_nearest_features', 
+                                           bounds=(1, n_features)),
+                'imputation_order' : Categorical('imputation_order', 
+                                             ['ascending', 'descending', 
+                                              'roman', 'arabic', 'random']),
+    }
+
+    if random_state is not None: 
+            #This is required because configspace doesn't allow None as a value
+            space['random_state'] = random_state
+
+    cs = ConfigurationSpace(space=space)
+
+    return cs
+
 def get_KNNImputer_config_space(n_samples):
     space = {
             'n_neighbors': Integer('n_neighbors', bounds=(1, max(n_samples,100))),
