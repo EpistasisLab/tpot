@@ -38,8 +38,8 @@ def get_IterativeImputer_config_space(n_features, random_state):
             space['random_state'] = random_state
 
     cs = ConfigurationSpace(space=space)
-    cs.add_hyperparameters([estimator, sample_posterior])
-    cs.add_conditions([sampling_condition])
+    cs.add([estimator, sample_posterior])
+    cs.add([sampling_condition])
     return cs
 
 def get_KNNImputer_config_space(n_samples):

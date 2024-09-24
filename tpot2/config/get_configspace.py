@@ -285,7 +285,7 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
         case "PowerTransformer":
             return {}
         case "QuantileTransformer":
-            return transformers.get_QuantileTransformer_configspace(random_state=random_state)
+            return transformers.get_QuantileTransformer_configspace(n_samples=n_samples, random_state=random_state)
         case "RobustScaler":
             return transformers.RobustScaler_configspace
         case "ColumnOneHotEncoder":

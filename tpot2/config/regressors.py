@@ -62,10 +62,10 @@ def get_SGDRegressor_ConfigurationSpace(random_state):
     eta0_in_inv_con = InCondition(eta0, learning_rate, ["invscaling", "constant"])
     power_t_condition = EqualsCondition(power_t, learning_rate, "invscaling")
 
-    cs.add_hyperparameters(
+    cs.add(
         [l1_ratio, penalty, epsilon, loss, eta0, learning_rate, power_t]
     )
-    cs.add_conditions(
+    cs.add(
         [elasticnet, epsilon_condition, power_t_condition, eta0_in_inv_con]
     )
 
@@ -283,8 +283,8 @@ def get_SVR_ConfigurationSpace():
     gamma_condition = InCondition(gamma, kernel, ['poly', 'rbf',])
     coef0_condition = InCondition(coef0, kernel, ['poly', 'sigmoid'])
 
-    cs.add_hyperparameters([kernel, degree, gamma, coef0])
-    cs.add_conditions([degree_condition,gamma_condition])
+    cs.add([kernel, degree, gamma, coef0])
+    cs.add([degree_condition,gamma_condition])
     
     return cs
 
@@ -409,8 +409,8 @@ def get_GradientBoostingRegressor_ConfigurationSpace(random_state):
     cs = ConfigurationSpace(
         space = space
     )
-    cs.add_hyperparameters([n_iter_no_change, validation_fraction, early_stop ])
-    cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
+    cs.add([n_iter_no_change, validation_fraction, early_stop ])
+    cs.add([validation_fraction_cond, n_iter_no_change_cond])
     return cs
 
 def GradientBoostingRegressor_hyperparameter_parser(params):
@@ -479,8 +479,8 @@ def get_HistGradientBoostingRegressor_ConfigurationSpace(random_state):
     cs = ConfigurationSpace(
         space = space
     )
-    cs.add_hyperparameters([n_iter_no_change, validation_fraction, early_stop ])
-    cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
+    cs.add([n_iter_no_change, validation_fraction, early_stop ])
+    cs.add([validation_fraction_cond, n_iter_no_change_cond])
 
     return cs
 
@@ -549,7 +549,7 @@ def get_MLPRegressor_ConfigurationSpace(random_state):
     learning_rate_init = Float("learning_rate_init", bounds=(1e-4, 1e-1), log=True)
     learning_rate = Categorical("learning_rate", ['constant', 'invscaling', 'adaptive'])
 
-    cs.add_hyperparameters([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping, learning_rate_init])
+    cs.add([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping, learning_rate_init])
 
     return cs
 
@@ -592,8 +592,8 @@ def get_BaggingRegressor_ConfigurationSpace(random_state):
         space = space
     )
 
-    cs.add_hyperparameters([bootstrap, oob_score])
-    cs.add_conditions([oob_condition])
+    cs.add([bootstrap, oob_score])
+    cs.add([oob_condition])
 
     return cs
 

@@ -54,8 +54,8 @@ def get_FeatureAgglomeration_configspace(n_samples):
     metric_condition = NotEqualsCondition(metric, linkage, 'ward')
 
     cs =  ConfigurationSpace()
-    cs.add_hyperparameters([linkage, metric, n_clusters, pooling_func])
-    cs.add_condition(metric_condition)
+    cs.add([linkage, metric, n_clusters, pooling_func])
+    cs.add(metric_condition)
     
     return cs
 
@@ -108,10 +108,10 @@ def get_RBFSampler_configspace(n_features=100, random_state=None):
     )
 
 
-def get_QuantileTransformer_configspace(random_state=None):
+def get_QuantileTransformer_configspace(random_state=None, n_samples=1000):
 
     space = {
-        'n_quantiles': Integer('n_quantiles', bounds=(10, 2000)),
+        'n_quantiles': Integer('n_quantiles', bounds=(10, n_samples)),
         'output_distribution': Categorical('output_distribution', ['uniform', 'normal']),
     }
 
