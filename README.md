@@ -1,5 +1,11 @@
 # TPOT2 ALPHA
 
+<center>
+<img src="https://raw.githubusercontent.com/EpistasisLab/tpot/master/images/tpot-logo.jpg" width=300 />
+</center>
+
+<br>
+
 ![Tests](https://github.com/EpistasisLab/tpot2/actions/workflows/tests.yml/badge.svg)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/tpot2?label=pypi%20downloads)](https://pypi.org/project/TPOT2)
 [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/tpot2?label=conda%20downloads)](https://anaconda.org/conda-forge/tpot2)
