@@ -45,14 +45,16 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
                     start_p=0.2,
                     mutation_rate = 0.5,
                     crossover_rate = 0.5,
+                    mutation_rate_rate = 0,
+                    crossover_rate_rate = 0,
                     rng=None,
                 ):
 
         self.start_p = start_p
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
-        self.mutation_rate_rate = 0
-        self.crossover_rate_rate = 0
+        self.mutation_rate_rate = mutation_rate_rate
+        self.crossover_rate_rate = crossover_rate_rate
 
 
 
@@ -174,11 +176,30 @@ class GeneticFeatureSelectorNode(SklearnIndividualGenerator):
     def __init__(self,                     
                     n_features,
                     start_p=0.2,
-                    mutation_rate = 0.5,
-                    crossover_rate = 0.5,
+                    mutation_rate = 0.1,
+                    crossover_rate = 0.1,
                     mutation_rate_rate = 0,
                     crossover_rate_rate = 0,
                     ):
+        """
+        A node that generates a GeneticFeatureSelectorIndividual. Uses genetic algorithm to select novel subsets of features.
+
+        Parameters
+        ----------
+        n_features : int
+            Number of features in the dataset.
+        start_p : float
+            Probability of selecting a given feature for the initial subset of features.
+        mutation_rate : float
+            Probability of adding/removing a feature from the subset of features.
+        crossover_rate : float
+            Probability of swapping a feature between two subsets of features.
+        mutation_rate_rate : float
+            Probability of changing the mutation rate. (experimental)
+        crossover_rate_rate : float
+            Probability of changing the crossover rate. (experimental)
+        
+        """
         
         self.n_features = n_features
         self.start_p = start_p
