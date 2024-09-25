@@ -178,8 +178,8 @@ class GeneticFeatureSelectorNode(SklearnIndividualGenerator):
                     start_p=0.2,
                     mutation_rate = 0.1,
                     crossover_rate = 0.1,
-                    mutation_rate_rate = 0,
-                    crossover_rate_rate = 0,
+                    mutation_rate_rate = 0, # These are still experimental but seem to help. Theory is that it takes slower steps as it gets closer to the optimal solution.
+                    crossover_rate_rate = 0,# Otherwise is mutation_rate is too small, it takes forever, and if its too large, it never converges.
                     ):
         """
         A node that generates a GeneticFeatureSelectorIndividual. Uses genetic algorithm to select novel subsets of features.
