@@ -2,7 +2,8 @@ import tpot2
 from tpot2.search_spaces.pipelines import *
 from tpot2.search_spaces.nodes import *
 from .get_configspace import get_search_space
-
+import sklearn.model_selection
+import sklearn
 
 
 def get_linear_search_space(classification=True, inner_predictors=True, cross_val_predict_cv=0, **get_search_space_params ):
@@ -169,11 +170,13 @@ def get_light_search_space(classification=True, inner_predictors=False, cross_va
 
 def get_mdr_search_space(classification=True, **get_search_space_params ):
 
-    mdr_sp = DynamicLinearPipeline(get_search_space(["ReliefF", "SURF", "SURFstar", "MultiSURF", "ContinuousMDR"], **get_search_space_params), max_length=10)
+    
 
     if classification:
+        mdr_sp = DynamicLinearPipeline(get_search_space(["ReliefF", "SURF", "SURFstar", "MultiSURF", "MDR"], **get_search_space_params), max_length=10)
         estimators = get_search_space(['LogisticRegression'], **get_search_space_params)
     else:
+        mdr_sp = DynamicLinearPipeline(get_search_space(["ReliefF", "SURF", "SURFstar", "MultiSURF", "ContinuousMDR"], **get_search_space_params), max_length=10)
         estimators = get_search_space(["ElasticNetCV"], **get_search_space_params)
 
     search_space = SequentialPipeline(search_spaces=[
@@ -186,26 +189,63 @@ def get_mdr_search_space(classification=True, **get_search_space_params ):
 
 
 
-def get_template_search_spaces(default_search_space, classification=True, inner_predictors=None, cross_val_predict_cv=0, **get_search_space_params):
+def get_template_search_spaces(search_space, classification=True, inner_predictors=None, cross_val_predict_cv=None, **get_search_space_params):
+    """
+    Returns a search space which can be optimized by TPOT.
+
+    Parameters
+    ----------
+    search_space: str or SearchSpace
+        The default search space to use. If a string, it should be one of the following:
+            - 'linear': A search space for linear pipelines
+            - 'linear-light': A search space for linear pipelines with a smaller, faster search space
+            - 'graph': A search space for graph pipelines
+            - 'graph-light': A search space for graph pipelines with a smaller, faster search space
+            - 'mdr': A search space for MDR pipelines
+        If a SearchSpace object, it should be a valid search space object for TPOT.
     
+    classification: bool, default=True
+        Whether the problem is a classification problem or a regression problem.
+
+    inner_predictors: bool, default=None
+        Whether to include additional classifiers/regressors before the final classifier/regressor (allowing for ensembles). 
+        Defaults to False for 'linear-light' and 'graph-light' search spaces, and True otherwise. (Not used for 'mdr' search space)
+    
+    cross_val_predict_cv: int, default=None
+        The number of folds to use for cross_val_predict. 
+        Defaults to 0 for 'linear-light' and 'graph-light' search spaces, and 5 otherwise. (Not used for 'mdr' search space)
+
+    get_search_space_params: dict
+        Additional parameters to pass to the get_search_space function.
+    
+    """
     if inner_predictors is None:
-        if default_search_space == "light" or default_search_space == "graph_light":
+        if search_space == "light" or search_space == "graph_light":
             inner_predictors = False
         else:
             inner_predictors = True
+
+    if cross_val_predict_cv is None:
+        if search_space == "light" or search_space == "graph_light":
+            cross_val_predict_cv = 0
+        else:
+            if classification:
+                cross_val_predict_cv = sklearn.model_selection.StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            else:
+                cross_val_predict_cv = sklearn.model_selection.KFold(n_splits=5, shuffle=True, random_state=42)
     
-    if isinstance(default_search_space, str):
-        if default_search_space == "linear":
+    if isinstance(search_space, str):
+        if search_space == "linear":
             return get_linear_search_space(classification, inner_predictors, cross_val_predict_cv=cross_val_predict_cv, **get_search_space_params)
-        elif default_search_space == "graph":
+        elif search_space == "graph":
             return get_graph_search_space(classification, inner_predictors, cross_val_predict_cv=cross_val_predict_cv, **get_search_space_params)
-        elif default_search_space == "graph-light":
+        elif search_space == "graph-light":
             return get_graph_search_space_light(classification, inner_predictors, cross_val_predict_cv=cross_val_predict_cv, **get_search_space_params)
-        elif default_search_space == "linear-light":
+        elif search_space == "linear-light":
             return get_light_search_space(classification, inner_predictors, cross_val_predict_cv=cross_val_predict_cv, **get_search_space_params)
-        elif default_search_space == "mdr":
+        elif search_space == "mdr":
             return get_mdr_search_space(classification, **get_search_space_params)
         else:
             raise ValueError("Invalid search space")
     else:
-        return default_search_space
+        return search_space
