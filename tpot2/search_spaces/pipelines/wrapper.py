@@ -5,7 +5,7 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 from ConfigSpace import ConfigurationSpace
 from ..tuple_index import TupleIndex
 
@@ -19,7 +19,7 @@ class WrapperPipelineIndividual(SklearnIndividual):
             self, 
             method: type, 
             space: ConfigurationSpace,
-            estimator_search_space: SklearnIndividualGenerator, 
+            estimator_search_space: SearchSpace, 
             hyperparameter_parser: callable = None,
             wrapped_param_name: str = None,
             rng=None) -> None:
@@ -124,12 +124,12 @@ class WrapperPipelineIndividual(SklearnIndividual):
         return TupleIndex(("WrapperPipeline", id_str, self.node.unique_id()))
     
 
-class WrapperPipeline(SklearnIndividualGenerator):
+class WrapperPipeline(SearchSpace):
     def __init__(
             self, 
             method: type, 
             space: ConfigurationSpace,
-            estimator_search_space: SklearnIndividualGenerator,
+            estimator_search_space: SearchSpace,
             hyperparameter_parser: callable = None, 
             wrapped_param_name: str = None
             ) -> None:

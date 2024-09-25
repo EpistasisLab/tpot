@@ -5,7 +5,7 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 
 import copy
 from ..tuple_index import TupleIndex
@@ -14,7 +14,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
     # takes in a single search space.
     # will produce a pipeline of variable length. Each step in the pipeline will be pulled from the search space provided.
 
-    def __init__(self, search_space : SklearnIndividualGenerator, max_length: int , rng=None) -> None:
+    def __init__(self, search_space : SearchSpace, max_length: int , rng=None) -> None:
         super().__init__()
 
         rng = np.random.default_rng(rng)
@@ -136,8 +136,8 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         return TupleIndex(tuple(l))
     
 
-class DynamicLinearPipeline(SklearnIndividualGenerator):
-    def __init__(self, search_space : SklearnIndividualGenerator, max_length: int ) -> None:
+class DynamicLinearPipeline(SearchSpace):
+    def __init__(self, search_space : SearchSpace, max_length: int ) -> None:
         self.search_space = search_space
         self.max_length = max_length
 

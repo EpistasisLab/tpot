@@ -43,7 +43,7 @@ class TPOTRegressor(TPOTEstimator):
         Parameters
         ----------
 
-        search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
+        search_space : (String, tpot2.search_spaces.SearchSpace)
                         - String : The default search space to use for the optimization.
             | String     | Description      |
             | :---        |    :----:   |
@@ -54,8 +54,8 @@ class TPOTRegressor(TPOTEstimator):
             | mdr |TPOT will search over a series of feature selectors and Multifactor Dimensionality Reduction models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for genome-wide association studies (GWAS), and is described in detail online here.
 
             Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
-            - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
-                The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
+            - SearchSpace : The search space to use for the optimization. This should be an instance of a SearchSpace.
+                The search space to use for the optimization. This should be an instance of a SearchSpace.
                 TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
         
         scorers : (list, scorer)
@@ -306,7 +306,7 @@ class TPOTClassifier(TPOTEstimator):
         Parameters
         ----------
 
-        search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
+        search_space : (String, tpot2.search_spaces.SearchSpace)
             - String : The default search space to use for the optimization.
             | String     | Description      |
             | :---        |    :----:   |
@@ -317,8 +317,8 @@ class TPOTClassifier(TPOTEstimator):
             | mdr |TPOT will search over a series of feature selectors and Multifactor Dimensionality Reduction models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for genome-wide association studies (GWAS), and is described in detail online here.
 
             Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
-            - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
-                The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
+            - SearchSpace : The search space to use for the optimization. This should be an instance of a SearchSpace.
+                The search space to use for the optimization. This should be an instance of a SearchSpace.
                 TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
         
         scorers : (list, scorer)

@@ -5,7 +5,7 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 from ..tuple_index import TupleIndex
 
 class DynamicUnionPipelineIndividual(SklearnIndividual):
@@ -16,7 +16,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
     
     """
 
-    def __init__(self, search_space : SklearnIndividualGenerator, max_estimators=None, allow_repeats=False, rng=None) -> None:
+    def __init__(self, search_space : SearchSpace, max_estimators=None, allow_repeats=False, rng=None) -> None:
         super().__init__()
         self.search_space = search_space
         
@@ -149,8 +149,8 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         l = ["FeatureUnion"] + l
         return TupleIndex(frozenset(l))
 
-class DynamicUnionPipeline(SklearnIndividualGenerator):
-    def __init__(self, search_space : SklearnIndividualGenerator, max_estimators=None, allow_repeats=False ) -> None:
+class DynamicUnionPipeline(SearchSpace):
+    def __init__(self, search_space : SearchSpace, max_estimators=None, allow_repeats=False ) -> None:
         """
         Takes in a list of search spaces. will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
         """

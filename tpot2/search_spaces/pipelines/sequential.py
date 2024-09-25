@@ -5,14 +5,14 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 from ..tuple_index import TupleIndex
 
 class SequentialPipelineIndividual(SklearnIndividual):
-    # takes in a list of search spaces. each space is a list of SklearnIndividualGenerators.
+    # takes in a list of search spaces. each space is a list of SearchSpaces.
     # will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
 
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator], rng=None) -> None:
+    def __init__(self, search_spaces : List[SearchSpace], rng=None) -> None:
         super().__init__()
         self.search_spaces = search_spaces
         self.pipeline = []
@@ -136,8 +136,8 @@ class SequentialPipelineIndividual(SklearnIndividual):
 
 
 
-class SequentialPipeline(SklearnIndividualGenerator):
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator] ) -> None:
+class SequentialPipeline(SearchSpace):
+    def __init__(self, search_spaces : List[SearchSpace] ) -> None:
         """
         Takes in a list of search spaces. will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
         """

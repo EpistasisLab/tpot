@@ -10,7 +10,7 @@ import os, os.path
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection._base import SelectorMixin
 
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 
 class MaskSelector(BaseEstimator, SelectorMixin):
     """Select predefined feature subsets."""
@@ -172,7 +172,7 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
         return id_str
     
 
-class GeneticFeatureSelectorNode(SklearnIndividualGenerator):
+class GeneticFeatureSelectorNode(SearchSpace):
     def __init__(self,                     
                     n_features,
                     start_p=0.2,

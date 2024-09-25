@@ -5,18 +5,18 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 from ..tuple_index import TupleIndex
 
 class UnionPipelineIndividual(SklearnIndividual):
     """
-    Takes in a list of search spaces. each space is a list of SklearnIndividualGenerators.
+    Takes in a list of search spaces. each space is a list of SearchSpaces.
     Will produce a FeatureUnion pipeline. Each step in the pipeline will correspond to the the search space provided in the same index.
     The resulting pipeline will be a FeatureUnion of the steps in the pipeline.
     
     """
 
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator], rng=None) -> None:
+    def __init__(self, search_spaces : List[SearchSpace], rng=None) -> None:
         super().__init__()
         self.search_spaces = search_spaces
 
@@ -69,8 +69,8 @@ class UnionPipelineIndividual(SklearnIndividual):
         return TupleIndex(tuple(l))
 
 
-class UnionPipeline(SklearnIndividualGenerator):
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator] ) -> None:
+class UnionPipeline(SearchSpace):
+    def __init__(self, search_spaces : List[SearchSpace] ) -> None:
         """
         Takes in a list of search spaces. will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
         """

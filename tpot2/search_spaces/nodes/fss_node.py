@@ -10,7 +10,7 @@ import os, os.path
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection._base import SelectorMixin
 
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 
 from ...builtin_modules.feature_set_selector import FeatureSetSelector
 
@@ -66,7 +66,7 @@ class FSSIndividual(SklearnIndividual):
         return id_str
     
 
-class FSSNode(SklearnIndividualGenerator):
+class FSSNode(SearchSpace):
     def __init__(self,                     
                     subsets,
                     rng=None,

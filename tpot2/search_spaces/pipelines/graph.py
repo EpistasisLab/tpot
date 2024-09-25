@@ -1,7 +1,7 @@
 import tpot2
 import numpy as np
 from typing import Generator, List, Tuple, Union
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 import networkx as nx
 import copy
 import matplotlib.pyplot as plt
@@ -27,13 +27,13 @@ class GraphPipelineIndividual(SklearnIndividual):
         Parameters
         ----------
 
-        root_search_space: SklearnIndividualGenerator
+        root_search_space: SearchSpace
             The search space for the root node of the graph. This node will be the final estimator in the pipeline.
         
-        inner_search_space: SklearnIndividualGenerator, optional
+        inner_search_space: SearchSpace, optional
             The search space for the inner nodes of the graph. If not defined, there will be no inner nodes.
         
-        leaf_search_space: SklearnIndividualGenerator, optional
+        leaf_search_space: SearchSpace, optional
             The search space for the leaf nodes of the graph. If not defined, the leaf nodes will be drawn from the inner_search_space.
             
         crossover_same_depth: bool, optional
@@ -60,9 +60,9 @@ class GraphPipelineIndividual(SklearnIndividual):
     
     def __init__(
             self,  
-            root_search_space: SklearnIndividualGenerator, 
-            leaf_search_space: SklearnIndividualGenerator = None, 
-            inner_search_space: SklearnIndividualGenerator = None, 
+            root_search_space: SearchSpace, 
+            leaf_search_space: SearchSpace = None, 
+            inner_search_space: SearchSpace = None, 
             max_size: int = np.inf,
             crossover_same_depth: bool = False,
             cross_val_predict_cv: Union[int, Callable] = 0, #signature function(estimator, X, y=none)
@@ -686,11 +686,11 @@ class GraphPipelineIndividual(SklearnIndividual):
         return self.graphkey
     
 
-class GraphSearchPipeline(SklearnIndividualGenerator):
+class GraphSearchPipeline(SearchSpace):
     def __init__(self, 
-        root_search_space: SklearnIndividualGenerator, 
-        leaf_search_space: SklearnIndividualGenerator = None, 
-        inner_search_space: SklearnIndividualGenerator = None, 
+        root_search_space: SearchSpace, 
+        leaf_search_space: SearchSpace = None, 
+        inner_search_space: SearchSpace = None, 
         max_size: int = np.inf,
         crossover_same_depth: bool = False,
         cross_val_predict_cv: Union[int, Callable] = 0, #signature function(estimator, X, y=none)
@@ -710,13 +710,13 @@ class GraphSearchPipeline(SklearnIndividualGenerator):
         Parameters
         ----------
 
-        root_search_space: SklearnIndividualGenerator
+        root_search_space: SearchSpace
             The search space for the root node of the graph. This node will be the final estimator in the pipeline.
         
-        inner_search_space: SklearnIndividualGenerator, optional
+        inner_search_space: SearchSpace, optional
             The search space for the inner nodes of the graph. If not defined, there will be no inner nodes.
         
-        leaf_search_space: SklearnIndividualGenerator, optional
+        leaf_search_space: SearchSpace, optional
             The search space for the leaf nodes of the graph. If not defined, the leaf nodes will be drawn from the inner_search_space.
             
         crossover_same_depth: bool, optional

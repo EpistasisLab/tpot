@@ -5,10 +5,10 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 
 class ChoicePipelineIndividual(SklearnIndividual):
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator], rng=None) -> None:
+    def __init__(self, search_spaces : List[SearchSpace], rng=None) -> None:
         super().__init__()
         rng = np.random.default_rng(rng)
         self.search_spaces = search_spaces
@@ -40,8 +40,8 @@ class ChoicePipelineIndividual(SklearnIndividual):
         return self.node.unique_id()
     
 
-class ChoicePipeline(SklearnIndividualGenerator):
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator] ) -> None:
+class ChoicePipeline(SearchSpace):
+    def __init__(self, search_spaces : List[SearchSpace] ) -> None:
         self.search_spaces = search_spaces
 
     """

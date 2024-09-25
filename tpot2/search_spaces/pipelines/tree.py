@@ -5,7 +5,7 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 import networkx as nx
 import copy
 import matplotlib.pyplot as plt
@@ -26,10 +26,10 @@ class TreePipelineIndividual(GraphPipelineIndividual):
  
     
 
-class TreePipeline(SklearnIndividualGenerator):
-    def __init__(self, root_search_space : SklearnIndividualGenerator, 
-                        leaf_search_space : SklearnIndividualGenerator = None, 
-                        inner_search_space : SklearnIndividualGenerator =None, 
+class TreePipeline(SearchSpace):
+    def __init__(self, root_search_space : SearchSpace, 
+                        leaf_search_space : SearchSpace = None, 
+                        inner_search_space : SearchSpace =None, 
                         min_size: int = 2, 
                         max_size: int = 10,
                         crossover_same_depth=False) -> None:
