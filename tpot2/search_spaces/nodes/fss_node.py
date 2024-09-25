@@ -47,7 +47,9 @@ class FSSIndividual(SklearnIndividual):
 
     def mutate(self, rng=None):
         rng = np.random.default_rng(rng)
-        self.selected_subset_name = rng.choice(self.names_list)
+        #get list of names not including the current one
+        names = [name for name in self.names_list if name != self.selected_subset_name]
+        self.selected_subset_name = rng.choice(names)
         self.sel_subset = self.subset_dict[self.selected_subset_name]
         
     
