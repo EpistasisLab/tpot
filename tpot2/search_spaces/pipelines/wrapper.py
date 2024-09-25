@@ -148,4 +148,5 @@ class WrapperPipeline(SklearnIndividualGenerator):
         self.wrapped_param_name = wrapped_param_name
 
     def generate(self, rng=None):
+        rng = np.random.default_rng(rng)
         return WrapperPipelineIndividual(method=self.method, space=self.space, estimator_search_space=self.estimator_search_space, hyperparameter_parser=self.hyperparameter_parser, wrapped_param_name=self.wrapped_param_name,  rng=rng)

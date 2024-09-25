@@ -196,14 +196,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
             - None : If None, TPOT2 will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
             - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
 
-        subsets : str or list, default=None
-            Sets the subsets that the FeatureSetSeletor will select from if set as an option in one of the configuration dictionaries.
-            - str : If a string, it is assumed to be a path to a csv file with the subsets.
-                The first column is assumed to be the name of the subset and the remaining columns are the features in the subset.
-            - list or np.ndarray : If a list or np.ndarray, it is assumed to be a list of subsets.
-            - None : If None, each column will be treated as a subset. One column will be selected per subset.
-            If subsets is None, each column will be treated as a subset. One column will be selected per subset.
-
 
         memory: Memory object or string, default=None
             If supplied, pipeline will cache each transformer after calling fit with joblib.Memory. This feature
@@ -426,7 +418,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.memory = memory
 
         self.categorical_features = categorical_features
-        self.subsets = subsets
         self.preprocessing = preprocessing
         self.validation_strategy = validation_strategy
         self.validation_fraction = validation_fraction

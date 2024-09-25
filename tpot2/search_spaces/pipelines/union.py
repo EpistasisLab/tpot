@@ -78,4 +78,5 @@ class UnionPipeline(SklearnIndividualGenerator):
         self.search_spaces = search_spaces
 
     def generate(self, rng=None):
+        rng = np.random.default_rng(rng)
         return UnionPipelineIndividual(self.search_spaces, rng=rng)

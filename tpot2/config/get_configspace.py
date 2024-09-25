@@ -131,6 +131,8 @@ GROUPNAMES = {
 
         "classifiers_sklearnex" : ["RandomForestClassifier_sklearnex", "LogisticRegression_sklearnex", "KNeighborsClassifier_sklearnex", "SVC_sklearnex","NuSVC_sklearnex"],
         "regressors_sklearnex" : ["LinearRegression_sklearnex", "Ridge_sklearnex", "Lasso_sklearnex", "ElasticNet_sklearnex", "SVR_sklearnex", "NuSVR_sklearnex", "RandomForestRegressor_sklearnex", "KNeighborsRegressor_sklearnex"],
+        "genetic encoders" : ["DominantEncoder", "RecessiveEncoder", "HeterosisEncoder", "UnderDominanceEncoder", "OverDominanceEncoder"],
+
 }
 
 
@@ -456,6 +458,7 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
         iteative_sp = get_configspace(name="IterativeImputer_no_estimator", n_features=n_features, random_state=random_state)
         regressor_searchspace = get_node("ExtraTreesRegressor", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return WrapperPipeline(estimator_search_space=regressor_searchspace, method=IterativeImputer, space=iteative_sp)
+    
     #these are nodes that have special search spaces which require custom parsing of the hyperparameters
     if name == "IterativeImputer":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)

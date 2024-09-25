@@ -50,4 +50,5 @@ class ChoicePipeline(SklearnIndividualGenerator):
     """
 
     def generate(self, rng=None):
+        rng = np.random.default_rng(rng)
         return ChoicePipelineIndividual(self.search_spaces, rng=rng)

@@ -148,4 +148,5 @@ class DynamicLinearPipeline(SklearnIndividualGenerator):
     """
 
     def generate(self, rng=None):
+        rng = np.random.default_rng(rng)
         return DynamicLinearPipelineIndividual(self.search_space, self.max_length, rng=rng)   

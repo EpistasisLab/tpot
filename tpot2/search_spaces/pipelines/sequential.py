@@ -145,4 +145,5 @@ class SequentialPipeline(SklearnIndividualGenerator):
         self.search_spaces = search_spaces
 
     def generate(self, rng=None):
+        rng = np.random.default_rng(rng)
         return SequentialPipelineIndividual(self.search_spaces, rng=rng)

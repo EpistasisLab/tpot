@@ -160,4 +160,5 @@ class DynamicUnionPipeline(SklearnIndividualGenerator):
         self.allow_repeats = allow_repeats
 
     def generate(self, rng=None):
+        rng = np.random.default_rng(rng)
         return DynamicUnionPipelineIndividual(self.search_space, max_estimators=self.max_estimators, allow_repeats=self.allow_repeats, rng=rng)

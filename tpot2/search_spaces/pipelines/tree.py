@@ -47,4 +47,5 @@ class TreePipeline(SklearnIndividualGenerator):
         self.crossover_same_depth = crossover_same_depth
 
     def generate(self, rng=None):
+        rng = np.random.default_rng(rng)
         return TreePipelineIndividual(self.search_space, self.leaf_search_space, self.inner_search_space, self.min_size, self.max_size, self.crossover_same_depth, rng=rng) 
