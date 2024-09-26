@@ -19,6 +19,32 @@ class FSSIndividual(SklearnIndividual):
                     subsets,
                     rng=None,
                 ):
+        
+        """
+        An individual for representing a specific FeatureSetSelector. 
+        The FeatureSetSelector selects a feature list of list of predefined feature subsets.
+
+        This instance will select one set initially. Mutation and crossover can swap the selected subset with another.
+
+        Parameters
+        ----------
+        subsets : str or list, default=None
+            Sets the subsets that the FeatureSetSeletor will select from if set as an option in one of the configuration dictionaries. 
+            Features are defined by column names if using a Pandas data frame, or ints corresponding to indexes if using numpy arrays.
+            - str : If a string, it is assumed to be a path to a csv file with the subsets. 
+                The first column is assumed to be the name of the subset and the remaining columns are the features in the subset.
+            - list or np.ndarray : If a list or np.ndarray, it is assumed to be a list of subsets (i.e a list of lists).
+            - dict : A dictionary where keys are the names of the subsets and the values are the list of features.
+            - int : If an int, it is assumed to be the number of subsets to generate. Each subset will contain one feature.
+            - None : If None, each column will be treated as a subset. One column will be selected per subset.
+        rng : int, np.random.Generator, optional
+            The random number generator. The default is None.
+            Only used to select the first subset.
+
+        Returns
+        -------
+        None    
+        """
 
         subsets = subsets
         rng = np.random.default_rng(rng)
@@ -69,11 +95,30 @@ class FSSIndividual(SklearnIndividual):
 class FSSNode(SearchSpace):
     def __init__(self,                     
                     subsets,
-                    rng=None,
                 ):
+        """
+        A search space for a FeatureSetSelector. 
+        The FeatureSetSelector selects a feature list of list of predefined feature subsets.
+
+        Parameters
+        ----------
+        subsets : str or list, default=None
+            Sets the subsets that the FeatureSetSeletor will select from if set as an option in one of the configuration dictionaries. 
+            Features are defined by column names if using a Pandas data frame, or ints corresponding to indexes if using numpy arrays.
+            - str : If a string, it is assumed to be a path to a csv file with the subsets. 
+                The first column is assumed to be the name of the subset and the remaining columns are the features in the subset.
+            - list or np.ndarray : If a list or np.ndarray, it is assumed to be a list of subsets (i.e a list of lists).
+            - dict : A dictionary where keys are the names of the subsets and the values are the list of features.
+            - int : If an int, it is assumed to be the number of subsets to generate. Each subset will contain one feature.
+            - None : If None, each column will be treated as a subset. One column will be selected per subset.
+
+        Returns
+        -------
+        None    
+        
+        """
         
         self.subsets = subsets
-        self.rng = rng
 
     def generate(self, rng=None) -> SklearnIndividual:
         return FSSIndividual(   
