@@ -32,7 +32,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         scorers= [],
                         scorers_weights = [],
                         classification = False,
-                        cv = 5,
+                        cv = 10,
                         other_objective_functions=[], #tpot2.objectives.estimator_objective_functions.number_of_nodes_objective],
                         other_objective_functions_weights = [],
                         objective_function_names = None,
@@ -60,9 +60,9 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol = None,
                         max_time_mins=None,
-                        max_eval_time_mins=5,
+                        max_eval_time_mins=10,
                         n_jobs=1,
-                        memory_limit = "4GB",
+                        memory_limit = None,
                         client = None,
 
                         crossover_probability=.2,
@@ -472,7 +472,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.max_evaluated_individuals = max_evaluated_individuals
 
         #Initialize other used params
-
 
         if self.initial_population_size is None:
             self._initial_population_size = self.population_size

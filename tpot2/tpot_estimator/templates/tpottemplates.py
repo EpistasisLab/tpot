@@ -10,7 +10,7 @@ from ...config.template_search_spaces import get_template_search_spaces
 
 class TPOTRegressor(TPOTEstimator):
     def __init__(       self,
-                        search_space = "linear-light",
+                        search_space = "linear",
                         scorers=['neg_mean_squared_error'], 
                         scorers_weights=[1],
                         cv = 10, #remove this and use a value based on dataset size?
@@ -22,7 +22,7 @@ class TPOTRegressor(TPOTEstimator):
                         memory = None,
                         preprocessing = False,
                         max_time_mins=60, 
-                        max_eval_time_mins=5, 
+                        max_eval_time_mins=10, 
                         n_jobs = 1,
                         validation_strategy = "none",
                         validation_fraction = .2, 
@@ -30,7 +30,7 @@ class TPOTRegressor(TPOTEstimator):
                         warm_start = False,
                         periodic_checkpoint_folder = None, 
                         verbose = 2,
-                        memory_limit = "4GB",
+                        memory_limit = None,
                         client = None,
                         random_state=None,
                         allow_inner_regressors=None,
@@ -272,7 +272,7 @@ class TPOTRegressor(TPOTEstimator):
 
 class TPOTClassifier(TPOTEstimator):
     def __init__(       self,
-                        search_space = "linear-light",
+                        search_space = "linear",
                         scorers=['roc_auc_ovr'], 
                         scorers_weights=[1],
                         cv = 10,
@@ -292,7 +292,7 @@ class TPOTClassifier(TPOTEstimator):
                         warm_start = False,
                         periodic_checkpoint_folder = None, 
                         verbose = 2,
-                        memory_limit = "4GB",
+                        memory_limit = None,
                         client = None,
                         random_state=None,
                         allow_inner_classifiers=None,

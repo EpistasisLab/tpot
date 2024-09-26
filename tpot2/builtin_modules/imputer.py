@@ -1,34 +1,4 @@
-# %%
-# -*- coding: utf-8 -*-
 
-"""Copyright (c) 2015 The auto-sklearn developers. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-  a. Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-  b. Redistributions in binary form must reproduce the above copyright
-     notice, this list of conditions and the following disclaimer in the
-     documentation and/or other materials provided with the distribution.
-  c. Neither the name of the auto-sklearn Developers  nor the names of
-     its contributors may be used to endorse or promote products
-     derived from this software without specific prior written
-     permission.
-
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-DAMAGE.
-"""
 #TODO support np arrays
 
 import numpy as np
@@ -53,6 +23,23 @@ class ColumnSimpleImputer(BaseEstimator, TransformerMixin):
                         copy=True,
                         add_indicator=False,
                         keep_empty_features=False,):
+        """"
+        A wrapper for SimpleImputer that allows for imputation of specific columns in a DataFrame or np array.
+        Passes through columns that are not imputed.
+
+        Parameters
+        ----------
+        columns : str, list, default='all'
+            Determines which columns to impute with sklearn.impute.SimpleImputer.
+            - 'categorical' : Automatically select categorical features
+            - 'numeric' : Automatically select numeric features
+            - 'all' : Select all features
+            - list : A list of columns to select
+
+        # See documentation from sklearn.impute.SimpleImputer for the following parameters
+        missing_values, strategy, fill_value, copy, add_indicator, keep_empty_features
+               
+        """
         
         self.columns = columns
         self.missing_values = missing_values
@@ -64,19 +51,6 @@ class ColumnSimpleImputer(BaseEstimator, TransformerMixin):
 
 
     def fit(self, X, y=None):
-        """Fit OneHotEncoder to X, then transform X.
-
-        Equivalent to self.fit(X).transform(X), but more convenient and more
-        efficient. See fit for the parameters, transform for the return value.
-
-        Parameters
-        ----------
-        X : array-like or sparse matrix, shape=(n_samples, n_features)
-            Dense array or sparse matrix.
-        y: array-like {n_samples,} (Optional, ignored)
-            Feature labels
-        """
-
         if (self.columns == "categorical" or self.columns == "numeric") and not isinstance(X, pd.DataFrame):
             raise ValueError(f"Invalid value for columns: {self.columns}. "
                              "Only 'all' or <list> is supported for np arrays")
@@ -116,18 +90,6 @@ class ColumnSimpleImputer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Transform X using one-hot encoding.
-
-        Parameters
-        ----------
-        X : array-like or sparse matrix, shape=(n_samples, n_features)
-            Dense array or sparse matrix.
-
-        Returns
-        -------
-        X_out : sparse matrix if sparse=True else a 2-d array, dtype=int
-            Transformed input.
-        """
         if len(self.columns_) == 0:
             return X
 

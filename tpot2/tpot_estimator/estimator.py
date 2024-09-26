@@ -21,6 +21,7 @@ from dask import config as cfg
 from sklearn.experimental import enable_iterative_imputer
 
 from ..config.template_search_spaces import get_template_search_spaces
+import warnings
 
 def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
@@ -53,7 +54,7 @@ class TPOTEstimator(BaseEstimator):
                         generations_until_end_population = 1,
                         generations = None,
                         max_time_mins=60,
-                        max_eval_time_mins=5,
+                        max_eval_time_mins=10,
                         validation_strategy = "none",
                         validation_fraction = .2,
                         disable_label_encoder = False,
@@ -417,6 +418,9 @@ class TPOTEstimator(BaseEstimator):
         self.scatter = scatter
 
 
+        timer_set = self.max_time_mins != float("inf") and self.max_time_mins is not None
+        if self.generations is not None and timer_set:
+            warnings.warn("Both generations and max_time_mins are set. TPOT will terminate when the first condition is met.")
 
         # create random number generator based on rngseed
         self.rng = np.random.default_rng(random_state)

@@ -33,7 +33,11 @@ from sklearn.feature_selection._base import SelectorMixin
 
 #TODO clean this up and make sure it works
 class FeatureSetSelector(BaseEstimator, SelectorMixin):
-    """Select predefined feature subsets."""
+    """
+    Select predefined feature subsets.
+    
+    
+    """
 
     def __init__(self, sel_subset=None, name=None):
         """Create a FeatureSetSelector object.
