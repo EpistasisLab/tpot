@@ -150,7 +150,7 @@ class BaseEvolver():
                 If an int is given, it will be used as the tolerance for all objectives
         max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
-        max_eval_time_mins : float, default=5
+        max_eval_time_mins : float, default=10
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
         n_jobs : int, default=1
             Number of processes to run in parallel.
@@ -177,6 +177,7 @@ class BaseEvolver():
         parent_selector : function, default=parent_select_NSGA2
             Function to use to select pairs parents for crossover and individuals for mutation. Must take a matrix of scores and return selected indexes.
         budget_range : list [start, end], default=None
+            This parameter is used for the successive halving algorithm.
             A starting and ending budget to use for the budget scaling. The evolver will interpolate between these values over the generations_until_end_budget.
             Use is dependent on the objective functions. (In TPOTEstimator this corresponds to the percentage of the data to sample.)
         budget_scaling float : [0,1], default=0.5
@@ -184,7 +185,7 @@ class BaseEvolver():
         generations_until_end_budget : int, default=1
             The number of generations to run before reaching the max budget.
         stepwise_steps : int, default=1
-            The number of staircase steps to take when scaling the budget and population size.
+            The number of staircase steps to take when interpolating the budget and population size.
         threshold_evaluation_early_stop : list [start, end], default=None
             Starting and ending percentile to use as a threshold for the evaluation early stopping. The evolver will interpolate between these values over the evaluation_early_stop_steps.
             Values between 0 and 100.
@@ -230,6 +231,14 @@ class BaseEvolver():
                 Will be used to create and lock in Generator instance with 'numpy.random.default_rng()'. Note this will be the same Generator passed in.
             - None
                 Will be used to create Generator for 'numpy.random.default_rng()' where a fresh, unpredictable entropy will be pulled from the OS
+        
+        Attributes
+        ----------
+        population : tpot2.Population
+            The population of individuals.
+            Use population.population to access the individuals in the current population.
+            Use population.evaluated_individuals to access a data frame of all individuals that have been explored.
+        
         """
 
         self.rng = np.random.default_rng(rng)

@@ -11,6 +11,19 @@ import inspect
 import numpy as np
 
 def load_get_module_from_string(module_string):
+    """
+    Takes a string in the form of 'module.submodule.class' and returns the class.
+
+    Parameters
+    ----------
+    module_string : str
+        The string representation of the module and class to load.
+
+    Returns
+    -------
+    class
+        The class that was loaded from the module string.
+    """
     module_name, class_name = module_string.rsplit('.', 1)
     module = __import__(module_name, fromlist=[class_name])
     return getattr(module, class_name)
@@ -24,6 +37,20 @@ def hyperparameter_parser(hdict, function_params_conversion_dict):
 
 
 def get_node_space(module_string, params):
+    """
+    Create the search space for a single node in the TPOT2 config.
+
+    Parameters
+    ----------
+    module_string : str
+        The string representation of the module and class to load. E.g. 'sklearn.ensemble.RandomForestClassifier'
+    params : dict
+        The dictionary representation of the hyperparameter search space for the module_string.
+
+    Returns
+    -------
+    EstimatorNode or WrapperPipeline
+    """
     method = load_get_module_from_string(module_string)
     config_space = ConfigurationSpace()
     sub_space = None
@@ -49,9 +76,9 @@ def get_node_space(module_string, params):
                 elif type(p) == bool:
                     p = TRUE_SPECIAL_STRING if p else FALSE_SPECIAL_STRING
                 
-                config_space.add_hyperparameter(ConfigSpace.hyperparameters.Constant(param_name, p))
+                config_space.add(ConfigSpace.hyperparameters.Constant(param_name, p))
             else:
-                config_space.add_hyperparameter(Categorical(param_name, param))
+                config_space.add(Categorical(param_name, param))
             # if all(isinstance(i, int) for i in param):
             #     config_space.add_hyperparameter(Integer(param_name, (min(param), max(param))))
             # elif all(isinstance(i, float) for i in param):
@@ -78,7 +105,7 @@ def get_node_space(module_string, params):
         
         else:
             # config_space.add_hyperparameter(Categorical(param_name, param))
-            config_space.add_hyperparameter(ConfigSpace.hyperparameters.Constant(param_name, param))
+            config_space.add(ConfigSpace.hyperparameters.Constant(param_name, param))
 
     parser=None
     if len(function_params_conversion_dict) > 0:
@@ -100,7 +127,22 @@ def get_node_space(module_string, params):
             return WrapperPipeline(method=method, space=config_space, estimator_search_space=sub_space, wrapped_param_name=sub_space_name)
 
 
+### Below are the functions that convert the old config dicts to the new search spaces to be used by users.
+
 def convert_config_dict_to_list(config_dict):
+    """
+    Takes in a TPOT2 config dictionary and returns a list of search spaces (EstimatorNode, WrapperPipeline)
+
+    Parameters
+    ----------
+    config_dict : dict
+        The dictionary representation of the TPOT2 config.
+    
+    Returns
+    -------
+    list
+        A list of search spaces (EstimatorNode, WrapperPipeline) that represent the config_dict.
+    """
     search_spaces = []
     for key, value in config_dict.items():
         search_spaces.append(get_node_space(key, value))
@@ -108,6 +150,20 @@ def convert_config_dict_to_list(config_dict):
 
 
 def convert_config_dict_to_choicepipeline(config_dict):
+    """
+    Takes in a TPOT2 config dictionary and returns a ChoicePipeline search space that represents the config_dict.
+    This space will sample from all included modules in the config_dict.
+
+    Parameters
+    ----------
+    config_dict : dict
+        The dictionary representation of the TPOT2 config.
+    
+    Returns
+    -------
+    ChoicePipeline
+        A ChoicePipeline search space that represents the config_dict.
+    """
     search_spaces = []
     for key, value in config_dict.items():
         search_spaces.append(get_node_space(key, value))
@@ -115,6 +171,21 @@ def convert_config_dict_to_choicepipeline(config_dict):
 
 #Note doesn't convert estimators so they passthrough inputs like in TPOT1
 def convert_config_dict_to_graphpipeline(config_dict):
+    """
+    Takes in a TPOT2 config dictionary and returns a GraphSearchPipeline search space that represents the config_dict.
+    This space will sample from all included modules in the config_dict. It will also identify classifiers/regressors to set the search space for the root node.
+
+    Note doesn't convert estimators so they passthrough inputs like in TPOT1
+    Parameters
+    ----------
+    config_dict : dict
+        The dictionary representation of the TPOT2 config.
+    
+    Returns
+    -------
+    GraphSearchPipeline
+        A GraphSearchPipeline search space that represents the config_dict.
+    """
     root_search_spaces = []
     inner_search_spaces = []
 
