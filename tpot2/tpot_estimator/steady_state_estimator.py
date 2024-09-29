@@ -56,7 +56,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
 
                         early_stop = None,
-                        early_stop_seconds = None,
+                        early_stop_mins = None,
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol = None,
                         max_time_mins=None,
@@ -251,7 +251,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         early_stop : int, default=None
             Number of evaluated individuals without improvement before early stopping. Counted across all objectives independently. Triggered when all objectives have not improved by the given number of individuals.
 
-        early_stop_seconds : float, default=None
+        early_stop_mins : float, default=None
             Number of seconds without improvement before early stopping. All objectives must not have improved for the given number of seconds for this to be triggered.
 
         scorers_early_stop_tol :
@@ -277,7 +277,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         n_jobs : int, default=1
             Number of processes to run in parallel.
 
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
 
         client : dask.distributed.Client, default=None
@@ -314,7 +314,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         stepwise_steps : int, default=1
             The number of staircase steps to take when scaling the budget and population size.
 
-        threshold_evaluation_early_stop : list [start, end], default=None
+        threshold_evaluation_pruning : list [start, end], default=None
             starting and ending percentile to use as a threshold for the evaluation early stopping.
             Values between 0 and 100.
 
@@ -325,7 +325,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         min_history_threshold : int, default=0
             The minimum number of previous scores needed before using threshold early stopping.
 
-        selection_evaluation_early_stop : list, default=None
+        selection_evaluation_pruning : list, default=None
             A lower and upper percent of the population size to select each round of CV.
             Values between 0 and 1.
 
@@ -426,7 +426,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.initial_population_size = initial_population_size
 
         self.early_stop = early_stop
-        self.early_stop_seconds = early_stop_seconds
+        self.early_stop_mins = early_stop_mins
         self.scorers_early_stop_tol = scorers_early_stop_tol
         self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
         self.max_time_mins = max_time_mins
@@ -699,7 +699,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
                                             early_stop_tol = self.early_stop_tol,
                                             early_stop= self.early_stop,
-                                            early_stop_seconds =  self.early_stop_seconds,
+                                            early_stop_mins =  self.early_stop_mins,
 
                                             budget_range = self.budget_range,
                                             budget_scaling = self.budget_scaling,

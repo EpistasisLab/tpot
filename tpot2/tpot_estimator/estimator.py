@@ -63,9 +63,9 @@ class TPOTEstimator(BaseEstimator):
                         early_stop = None,
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol =None,
-                        threshold_evaluation_early_stop = None,
+                        threshold_evaluation_pruning = None,
                         threshold_evaluation_scaling = .5,
-                        selection_evaluation_early_stop = None,
+                        selection_evaluation_pruning = None,
                         selection_evaluation_scaling = .5,
                         min_history_threshold = 20,
 
@@ -175,7 +175,7 @@ class TPOTEstimator(BaseEstimator):
             - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
 
         preprocessing : bool or BaseEstimator/Pipeline,
-            EXPERIMENTAL
+            EXPERIMENTAL - will be changed in future versions
             A pipeline that will be used to preprocess the data before CV. Note that the parameters for these steps are not optimized. Add them to the search space to be optimized.
             - bool : If True, will use a default preprocessing pipeline which includes imputation followed by one hot encoding.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
@@ -232,7 +232,7 @@ class TPOTEstimator(BaseEstimator):
             -int
                 If an int is given, it will be used as the tolerance for all objectives
 
-        threshold_evaluation_early_stop : list [start, end], default=None
+        threshold_evaluation_pruning : list [start, end], default=None
             starting and ending percentile to use as a threshold for the evaluation early stopping.
             Values between 0 and 100.
 
@@ -240,7 +240,7 @@ class TPOTEstimator(BaseEstimator):
             A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
             Must be greater than zero. Higher numbers will move the threshold to the end faster.
 
-        selection_evaluation_early_stop : list, default=None
+        selection_evaluation_pruning : list, default=None
             A lower and upper percent of the population size to select each round of CV.
             Values between 0 and 1.
 
@@ -290,7 +290,7 @@ class TPOTEstimator(BaseEstimator):
         n_jobs : int, default=1
             Number of processes to run in parallel.
 
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
 
         client : dask.distributed.Client, default=None
@@ -403,10 +403,10 @@ class TPOTEstimator(BaseEstimator):
         self.budget_scaling = budget_scaling
         self.generations_until_end_budget = generations_until_end_budget
         self.stepwise_steps = stepwise_steps
-        self.threshold_evaluation_early_stop =threshold_evaluation_early_stop
+        self.threshold_evaluation_pruning =threshold_evaluation_pruning
         self.threshold_evaluation_scaling =  threshold_evaluation_scaling
         self.min_history_threshold = min_history_threshold
-        self.selection_evaluation_early_stop = selection_evaluation_early_stop
+        self.selection_evaluation_pruning = selection_evaluation_pruning
         self.selection_evaluation_scaling =  selection_evaluation_scaling
         self.warm_start = warm_start
         self.verbose = verbose
@@ -623,7 +623,7 @@ class TPOTEstimator(BaseEstimator):
 
 
 
-        if self.threshold_evaluation_early_stop is not None or self.selection_evaluation_early_stop is not None:
+        if self.threshold_evaluation_pruning is not None or self.selection_evaluation_pruning is not None:
             evaluation_early_stop_steps = self.cv
         else:
             evaluation_early_stop_steps = None
@@ -698,11 +698,11 @@ class TPOTEstimator(BaseEstimator):
                                             max_eval_time_mins = self.max_eval_time_mins,
 
                                             periodic_checkpoint_folder = self.periodic_checkpoint_folder,
-                                            threshold_evaluation_early_stop = self.threshold_evaluation_early_stop,
+                                            threshold_evaluation_pruning = self.threshold_evaluation_pruning,
                                             threshold_evaluation_scaling =  self.threshold_evaluation_scaling,
                                             min_history_threshold = self.min_history_threshold,
 
-                                            selection_evaluation_early_stop = self.selection_evaluation_early_stop,
+                                            selection_evaluation_pruning = self.selection_evaluation_pruning,
                                             selection_evaluation_scaling =  self.selection_evaluation_scaling,
                                             evaluation_early_stop_steps = evaluation_early_stop_steps,
 

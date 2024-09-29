@@ -97,10 +97,10 @@ class BaseEvolver():
                     generations_until_end_budget = 1,
                     stepwise_steps = 5,
 
-                    threshold_evaluation_early_stop = None,
+                    threshold_evaluation_pruning = None,
                     threshold_evaluation_scaling = .5,
                     min_history_threshold = 20,
-                    selection_evaluation_early_stop = None,
+                    selection_evaluation_pruning = None,
                     selection_evaluation_scaling = .5,
                     evaluation_early_stop_steps = None,
                     final_score_strategy = "mean",
@@ -154,7 +154,7 @@ class BaseEvolver():
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
         n_jobs : int, default=1
             Number of processes to run in parallel.
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
         client : dask.distributed.Client, default=None
             A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit.
@@ -186,7 +186,7 @@ class BaseEvolver():
             The number of generations to run before reaching the max budget.
         stepwise_steps : int, default=1
             The number of staircase steps to take when interpolating the budget and population size.
-        threshold_evaluation_early_stop : list [start, end], default=None
+        threshold_evaluation_pruning : list [start, end], default=None
             Starting and ending percentile to use as a threshold for the evaluation early stopping. The evolver will interpolate between these values over the evaluation_early_stop_steps.
             Values between 0 and 100.
             At each step of the evaluation, a threshold is calculated based on the previous evaluations. All individuals that are below the performance threshold are not evaluated for further steps.
@@ -196,7 +196,7 @@ class BaseEvolver():
             Must be greater than zero. Higher numbers will move the threshold to the end faster.
         min_history_threshold : int, default=0
             The minimum number of previous scores needed before using threshold early stopping.
-        selection_evaluation_early_stop : list, default=None
+        selection_evaluation_pruning : list, default=None
             A lower and upper percent of the population size to select each round of CV.
             Values between 0 and 1.
             Selects a percentage of the population to evaluate at each step of the evaluation. 
@@ -243,9 +243,9 @@ class BaseEvolver():
 
         self.rng = np.random.default_rng(rng)
 
-        if threshold_evaluation_early_stop is not None or selection_evaluation_early_stop is not None:
+        if threshold_evaluation_pruning is not None or selection_evaluation_pruning is not None:
             if evaluation_early_stop_steps is None:
-                raise ValueError("evaluation_early_stop_steps must be set when using threshold_evaluation_early_stop or selection_evaluation_early_stop")
+                raise ValueError("evaluation_early_stop_steps must be set when using threshold_evaluation_pruning or selection_evaluation_pruning")
 
         self.individual_generator = individual_generator
         self.population_size = population_size
@@ -292,11 +292,11 @@ class BaseEvolver():
         self.generation = 0
 
 
-        self.threshold_evaluation_early_stop =threshold_evaluation_early_stop
+        self.threshold_evaluation_pruning =threshold_evaluation_pruning
         self.threshold_evaluation_scaling =  max(0.00001,threshold_evaluation_scaling )
         self.min_history_threshold = min_history_threshold
 
-        self.selection_evaluation_early_stop = selection_evaluation_early_stop
+        self.selection_evaluation_pruning = selection_evaluation_pruning
         self.selection_evaluation_scaling =  max(0.00001,selection_evaluation_scaling )
         self.evaluation_early_stop_steps = evaluation_early_stop_steps
         self.final_score_strategy = final_score_strategy
@@ -616,21 +616,21 @@ class BaseEvolver():
 
         #Get the current thresholds per step
         self.thresholds = None
-        if self.threshold_evaluation_early_stop is not None:
+        if self.threshold_evaluation_pruning is not None:
             old_data = self.population.evaluated_individuals[self.objective_names]
             old_data = old_data[old_data[self.objective_names].notnull().all(axis=1)]
             if len(old_data) >= self.min_history_threshold:
                 self.thresholds = np.array([get_thresholds(old_data[obj_name],
-                                                            start=self.threshold_evaluation_early_stop[0],
-                                                            end=self.threshold_evaluation_early_stop[1],
+                                                            start=self.threshold_evaluation_pruning[0],
+                                                            end=self.threshold_evaluation_pruning[1],
                                                             scale=self.threshold_evaluation_scaling,
                                                             n=self.evaluation_early_stop_steps)
                                         for obj_name in self.objective_names]).T
 
         #Get the selectors survival rates per step
-        if self.selection_evaluation_early_stop is not None:
-            lower = self.cur_population_size*self.selection_evaluation_early_stop[0]
-            upper = self.cur_population_size*self.selection_evaluation_early_stop[1]
+        if self.selection_evaluation_pruning is not None:
+            lower = self.cur_population_size*self.selection_evaluation_pruning[0]
+            upper = self.cur_population_size*self.selection_evaluation_pruning[1]
             #survival_counts = self.cur_population_size*(scipy.special.betainc(1,self.selection_evaluation_scaling,np.linspace(0,1,self.evaluation_early_stop_steps))*(upper-lower)+lower)
 
             survival_counts = np.array(beta_interpolation(start=lower, end=upper, scale=self.selection_evaluation_scaling, n=self.evaluation_early_stop_steps, n_steps=self.evaluation_early_stop_steps))

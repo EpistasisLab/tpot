@@ -144,7 +144,7 @@ class SteadyStateEvolver():
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
         n_jobs : int, default=1
             Number of processes to run in parallel.
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
         client : dask.distributed.Client, default=None
             A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit.

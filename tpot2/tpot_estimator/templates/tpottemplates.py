@@ -159,7 +159,7 @@ class TPOTRegressor(TPOTEstimator):
             6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_mins in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
 
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
 
         client : dask.distributed.Client, default=None
@@ -422,7 +422,7 @@ class TPOTClassifier(TPOTEstimator):
             6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_mins in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
 
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
 
         client : dask.distributed.Client, default=None
