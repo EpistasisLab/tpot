@@ -286,7 +286,6 @@ class TPOTEstimator(BaseEstimator):
         stepwise_steps : int, default=1
             The number of staircase steps to take when scaling the budget and population size.
 
-
         n_jobs : int, default=1
             Number of processes to run in parallel.
 
@@ -299,7 +298,6 @@ class TPOTEstimator(BaseEstimator):
         processes : bool, default=True
             If True, will use multiprocessing to parallelize the optimization process. If False, will use threading.
             True seems to perform better. However, False is required for interactive debugging.
-
 
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
