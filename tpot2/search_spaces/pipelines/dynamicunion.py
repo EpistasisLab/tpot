@@ -138,7 +138,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
 
     def export_pipeline(self, **kwargs):
         values = list(self.union_dict.values())
-        return sklearn.pipeline.make_union(*[step.export_pipeline() for step in values])
+        return sklearn.pipeline.make_union(*[step.export_pipeline(**kwargs) for step in values])
     
     def unique_id(self):
         values = list(self.union_dict.values())

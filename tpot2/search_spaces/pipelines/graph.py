@@ -604,7 +604,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         label_to_instance = {}
 
         for node in estimator_graph:
-            this_pipeline_node = node.export_pipeline()
+            this_pipeline_node = node.export_pipeline(memory=memory, **kwargs)
             found_unique_label = False
             i=1
             while not found_unique_label:

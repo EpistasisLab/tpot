@@ -9,7 +9,8 @@ from sklearn.utils.validation import check_is_fitted
 class EstimatorTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, estimator, method='auto', passthrough=False, cross_val_predict_cv=0):
         """
-        A class for using a sklearn estimator as a transformer.
+        A class for using a sklearn estimator as a transformer. When calling fit_transform, this class returns the out put of cross_val_predict
+        and trains the estimator on the full dataset. When calling transform, this class uses the estimator fit on the full dataset to transform the data.
 
         Parameters
         ----------
