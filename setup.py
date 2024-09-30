@@ -47,7 +47,7 @@ A Python tool that automatically creates and optimizes machine learning pipeline
                       'dask-expr>=1.0.12',
                       'dask-jobqueue>=0.8.5',
                       'func_timeout>=4.3.5',
-                      'configspace>=0.7.1',
+                      'configspace>=1.1.1',
                      ],
     extras_require={
         'skrebate': ['skrebate>=0.3.4'],
