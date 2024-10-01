@@ -838,6 +838,14 @@ class BaseEvolver():
             elif self.final_score_strategy == 'last':
                 offspring_scores = offspring_scores[-1]
 
+            #remove individuals with nan scores
+            invalids = []
+            for i in range(len(offspring_scores)):
+                if any(np.isnan(offspring_scores[i])):
+                    invalids.append(i)
+            
+            cur_individuals = remove_items(cur_individuals,invalids)
+            offspring_scores = remove_items(offspring_scores,invalids)
 
             #if last step, add the final metrics
             if step == self.evaluation_early_stop_steps-1:
@@ -865,11 +873,10 @@ class BaseEvolver():
                             # invalids = np.random.choice(invalids, max_to_remove, replace=False)
                             invalids = self.rng.choice(invalids, max_to_remove, replace=False)
 
-
                         cur_individuals = remove_items(cur_individuals,invalids)
                         offspring_scores = remove_items(offspring_scores,invalids)
 
-                #Remove based on selection
+                # Remove based on selection
                 if survival_counts is not None:
                     if step < self.evaluation_early_stop_steps - 1 and survival_counts[step]>1: #don't do selection for the last loop since they are completed
                         k = survival_counts[step] + len(invalids) #TODO can remove the min if the selections method can ignore k>population size
@@ -878,3 +885,4 @@ class BaseEvolver():
 
                             new_population_index = survival_selector(weighted_scores, k=k)
                             cur_individuals = np.array(cur_individuals)[new_population_index]
+                            offspring_scores = offspring_scores[new_population_index]
