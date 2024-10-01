@@ -465,9 +465,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.rng = np.random.default_rng(random_state)
         # save random state passed to us for other functions that use random_state
         self.random_state = random_state
-        # set the numpy seed so anything using it will be consistent as well
-        np.random.seed(random_state)
-
 
         self.max_evaluated_individuals = max_evaluated_individuals
 
