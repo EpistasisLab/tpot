@@ -68,7 +68,7 @@ def estimator_fit_transform_override_cross_val_predict(estimator, X, y, cv=5, me
 
     method = _method_name(name=estimator.__class__.__name__, estimator=estimator, method=method)
     
-    if cv > 1:
+    if (isinstance(cv, int) and cv>1) or (not isinstance(cv, int) and cv is not None):
         preds = sklearn.model_selection.cross_val_predict(estimator=estimator, X=X, y=y, cv=cv, method=method, **fit_params)
         estimator.fit(X,y, **fit_params)
     
