@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 #TODO update this
 from setuptools import setup, find_packages
-#test
 
 def calculate_version():
     initpy = open('tpot2/_version.py').read().split('\n')
