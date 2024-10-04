@@ -12,7 +12,7 @@ class ChoicePipelineIndividual(SklearnIndividual):
         super().__init__()
         
         self.search_spaces = search_spaces
-        self.node = np.random.default_rng(rng).choice(self.search_spaces).generate()
+        self.node = np.random.default_rng(rng).choice(self.search_spaces).generate(rng=rng)
         
 
     def mutate(self, rng=None):
@@ -23,7 +23,7 @@ class ChoicePipelineIndividual(SklearnIndividual):
             return self._mutate_node(rng)
     
     def _mutate_select_new_node(self, rng=None):
-        self.node = random.choice(self.search_spaces).generate()
+        self.node = random.choice(self.search_spaces).generate(rng=rng)
         return True
     
     def _mutate_node(self, rng=None):
