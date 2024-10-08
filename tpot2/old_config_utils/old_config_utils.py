@@ -1,7 +1,7 @@
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 from ConfigSpace import EqualsCondition, OrConjunction, NotEqualsCondition, InCondition
-from ..search_spaces.nodes.estimator_node import NONE_SPECIAL_STRING, TRUE_SPECIAL_STRING, FALSE_SPECIAL_STRING
+
 from ..search_spaces.nodes import EstimatorNode
 from ..search_spaces.pipelines import WrapperPipeline, ChoicePipeline, GraphSearchPipeline
 import ConfigSpace
@@ -63,7 +63,7 @@ def get_node_space(module_string, params):
 
     for param_name, param in params.items():
         if param is None:
-            config_space.add_hyperparameter(Categorical(param_name, [NONE_SPECIAL_STRING]))
+            config_space.add(Categorical(param_name, [None]))
 
         if isinstance(param, range):
             param = list(param)
@@ -71,11 +71,6 @@ def get_node_space(module_string, params):
         if isinstance(param, list) or isinstance(param, np.ndarray):
             if len(param) == 0:
                 p = param[0]
-                if p is None:
-                    p = NONE_SPECIAL_STRING
-                elif type(p) == bool:
-                    p = TRUE_SPECIAL_STRING if p else FALSE_SPECIAL_STRING
-                
                 config_space.add(ConfigSpace.hyperparameters.Constant(param_name, p))
             else:
                 config_space.add(Categorical(param_name, param))

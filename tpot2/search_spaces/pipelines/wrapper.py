@@ -9,10 +9,6 @@ from ..base import SklearnIndividual, SearchSpace
 from ConfigSpace import ConfigurationSpace
 from ..tuple_index import TupleIndex
 
-NONE_SPECIAL_STRING = "<NONE>"
-TRUE_SPECIAL_STRING = "<TRUE>"
-FALSE_SPECIAL_STRING = "<FALSE>"
-
 
 class WrapperPipelineIndividual(SklearnIndividual):
     def __init__(
@@ -41,8 +37,6 @@ class WrapperPipelineIndividual(SklearnIndividual):
             self.space.seed(rng.integers(0, 2**32))
             self.hyperparameters = dict(self.space.sample_configuration())
 
-        self.check_hyperparameters_for_None()
-
     def mutate(self, rng=None):
         rng = np.random.default_rng(rng)
         if rng.choice([True, False]):
@@ -56,7 +50,6 @@ class WrapperPipelineIndividual(SklearnIndividual):
         rng = np.random.default_rng(rng)
         self.space.seed(rng.integers(0, 2**32))
         self.hyperparameters = dict(self.space.sample_configuration())
-        self.check_hyperparameters_for_None()
         return True
     
     def _mutate_node(self, rng=None):
@@ -84,20 +77,7 @@ class WrapperPipelineIndividual(SklearnIndividual):
                 if hyperparameter in other.hyperparameters:
                     self.hyperparameters[hyperparameter] = other.hyperparameters[hyperparameter]
 
-        self.check_hyperparameters_for_None()
-
         return True
-
-    def check_hyperparameters_for_None(self):
-        for key, value in self.hyperparameters.items():
-            #if string
-            if isinstance(value, str):
-                if value == NONE_SPECIAL_STRING:
-                    self.hyperparameters[key] = None
-                elif value == TRUE_SPECIAL_STRING:
-                    self.hyperparameters[key] = True
-                elif value == FALSE_SPECIAL_STRING:
-                    self.hyperparameters[key] = False
 
 
     def export_pipeline(self, **kwargs):

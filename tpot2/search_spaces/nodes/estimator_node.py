@@ -5,10 +5,6 @@ from ..base import SklearnIndividual, SearchSpace
 from ConfigSpace import ConfigurationSpace
 from typing import final
 
-NONE_SPECIAL_STRING = "<NONE>"
-TRUE_SPECIAL_STRING = "<TRUE>"
-FALSE_SPECIAL_STRING = "<FALSE>"
-
 
 def default_hyperparameter_parser(params:dict) -> dict:
     return params
@@ -47,8 +43,6 @@ class EstimatorNodeIndividual(SklearnIndividual):
             self.space.seed(rng.integers(0, 2**32))
             self.hyperparameters = dict(self.space.sample_configuration())
 
-        self.check_hyperparameters_for_None()
-
     def mutate(self, rng=None):
         if isinstance(self.space, dict): 
             return False
@@ -56,8 +50,6 @@ class EstimatorNodeIndividual(SklearnIndividual):
         rng = np.random.default_rng(rng)
         self.space.seed(rng.integers(0, 2**32))
         self.hyperparameters = dict(self.space.sample_configuration())
-
-        self.check_hyperparameters_for_None()
         return True
 
     def crossover(self, other, rng=None):
@@ -74,20 +66,9 @@ class EstimatorNodeIndividual(SklearnIndividual):
                 if hyperparameter in other.hyperparameters:
                     self.hyperparameters[hyperparameter] = other.hyperparameters[hyperparameter]
 
-        self.check_hyperparameters_for_None()
-
         return True
 
-    def check_hyperparameters_for_None(self):
-        for key, value in self.hyperparameters.items():
-            #if string
-            if isinstance(value, str):
-                if value == NONE_SPECIAL_STRING:
-                    self.hyperparameters[key] = None
-                elif value == TRUE_SPECIAL_STRING:
-                    self.hyperparameters[key] = True
-                elif value == FALSE_SPECIAL_STRING:
-                    self.hyperparameters[key] = False
+
 
     @final #this method should not be overridden, instead override hyperparameter_parser
     def export_pipeline(self, **kwargs):

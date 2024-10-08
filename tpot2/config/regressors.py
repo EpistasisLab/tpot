@@ -2,7 +2,7 @@ import sklearn
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 from ConfigSpace import EqualsCondition, OrConjunction, NotEqualsCondition, InCondition
-from ..search_spaces.nodes.estimator_node import NONE_SPECIAL_STRING, TRUE_SPECIAL_STRING, FALSE_SPECIAL_STRING
+
 import numpy as np
 #TODO: fill in remaining
 #TODO check for places were we could use log scaling
@@ -203,7 +203,7 @@ def get_TheilSenRegressor_ConfigurationSpace(random_state):
 
 def get_Perceptron_ConfigurationSpace(random_state):
     space = {
-        'penalty': Categorical("penalty", [NONE_SPECIAL_STRING, 'l2', 'l1', 'elasticnet']),
+        'penalty': Categorical("penalty", [None, 'l2', 'l1', 'elasticnet']),
         'alpha': Float("alpha", bounds=(1e-5, 1e-1), log=True),
         'l1_ratio': Float("l1_ratio", bounds=(0.0, 1.0)),
         'learning_rate': Categorical("learning_rate", ['constant', 'optimal', 'invscaling']),
@@ -399,7 +399,7 @@ def get_GradientBoostingRegressor_ConfigurationSpace(random_state):
         'subsample': Float("subsample", bounds=(0.1, 1.0)),
         'max_features': Float("max_features", bounds=(0.01, 1.00)),
         'max_leaf_nodes': Integer("max_leaf_nodes", bounds=(3, 2047)),
-        'max_depth':NONE_SPECIAL_STRING, #'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
+        'max_depth':None, #'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
         'tol': 1e-4,
     }
 
@@ -468,7 +468,7 @@ def get_HistGradientBoostingRegressor_ConfigurationSpace(random_state):
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 200)),
         'max_features': Float("max_features", bounds=(0.1,1.0)), 
         'max_leaf_nodes': Integer("max_leaf_nodes", bounds=(3, 2047)),
-        'max_depth':NONE_SPECIAL_STRING, #'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
+        'max_depth':None, #'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
         'l2_regularization': Float("l2_regularization", bounds=(1e-10, 1), log=True),
         'tol': 1e-4,
     }
