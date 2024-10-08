@@ -44,11 +44,11 @@ def get_FastICA_configspace(n_features=100, random_state=None):
 
     )
 
-def get_FeatureAgglomeration_configspace(n_samples):
+def get_FeatureAgglomeration_configspace(n_features):
 
     linkage = Categorical('linkage', ['ward', 'complete', 'average'])
     metric = Categorical('metric', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine'])
-    n_clusters = Integer('n_clusters', bounds=(2, min(n_samples,400)))
+    n_clusters = Integer('n_clusters', bounds=(2, min(n_features,400)))
     pooling_func = Categorical('pooling_func', ['mean', 'median', 'max'])
 
     metric_condition = NotEqualsCondition(metric, linkage, 'ward')
