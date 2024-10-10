@@ -36,11 +36,13 @@ from xgboost import XGBClassifier, XGBRegressor
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import SVC, SVR, LinearSVR, LinearSVC
 from lightgbm import LGBMClassifier, LGBMRegressor
+import sklearn
+import sklearn.calibration as calibration
 from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
 from sklearn.decomposition import FastICA, PCA
 from sklearn.cluster import FeatureAgglomeration
 from sklearn.kernel_approximation import Nystroem, RBFSampler
-from sklearn.preprocessing import StandardScaler, PowerTransformer, QuantileTransformer, RobustScaler, PolynomialFeatures, Normalizer, MinMaxScaler, MaxAbsScaler, Binarizer
+from sklearn.preprocessing import StandardScaler, PowerTransformer, QuantileTransformer, RobustScaler, PolynomialFeatures, Normalizer, MinMaxScaler, MaxAbsScaler, Binarizer, KBinsDiscretizer
 from sklearn.feature_selection import SelectFwe, SelectPercentile, VarianceThreshold, RFE, SelectFromModel
 from sklearn.feature_selection import f_classif, f_regression #TODO create a selectomixin using these?
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
@@ -57,7 +59,8 @@ all_methods = [SGDClassifier, RandomForestClassifier, ExtraTreesClassifier, Grad
                GaussianProcessClassifier, BaggingClassifier,LGBMRegressor,
                Passthrough,SkipTransformer,
                PassKBinsDiscretizer,
-               SimpleImputer, IterativeImputer, KNNImputer
+               SimpleImputer, IterativeImputer, KNNImputer,
+               KBinsDiscretizer,
                ]
 
 
@@ -116,11 +119,11 @@ GROUPNAMES = {
         "selectors": ["SelectFwe", "SelectPercentile", "VarianceThreshold",],
         "selectors_classification": ["SelectFwe", "SelectPercentile", "VarianceThreshold", "RFE_classification", "SelectFromModel_classification"],
         "selectors_regression": ["SelectFwe", "SelectPercentile", "VarianceThreshold", "RFE_regression", "SelectFromModel_regression"],
-        "classifiers" :  ["LGBMClassifier", "BaggingClassifier", 'AdaBoostClassifier', 'BernoulliNB', 'DecisionTreeClassifier', 'ExtraTreesClassifier', 'GaussianNB', 'HistGradientBoostingClassifier', 'KNeighborsClassifier','LinearDiscriminantAnalysis', 'LogisticRegression', "LinearSVC", "SVC", 'MLPClassifier', 'MultinomialNB',  "QuadraticDiscriminantAnalysis", 'RandomForestClassifier', 'SGDClassifier', 'XGBClassifier'],
+        "classifiers" :  ["LGBMClassifier", "BaggingClassifier", 'AdaBoostClassifier', 'BernoulliNB', 'DecisionTreeClassifier', 'ExtraTreesClassifier', 'GaussianNB', 'HistGradientBoostingClassifier', 'KNeighborsClassifier','LinearDiscriminantAnalysis', 'LogisticRegression', "LinearSVC_wrapped", "SVC", 'MLPClassifier', 'MultinomialNB',  "QuadraticDiscriminantAnalysis", 'RandomForestClassifier', 'SGDClassifier', 'XGBClassifier'],
         "regressors" : ["LGBMRegressor", 'AdaBoostRegressor', "ARDRegression", 'DecisionTreeRegressor', 'ExtraTreesRegressor', 'HistGradientBoostingRegressor', 'KNeighborsRegressor',  'LinearSVR', "MLPRegressor", 'RandomForestRegressor', 'SGDRegressor', 'SVR', 'XGBRegressor'],
         
         
-        "transformers":  ["PassKBinsDiscretizer", "Binarizer", "PCA", "ZeroCount", "ColumnOneHotEncoder", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer"],
+        "transformers":  ["KBinsDiscretizer", "Binarizer", "PCA", "ZeroCount", "ColumnOneHotEncoder", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer"],
         "scalers": ["MinMaxScaler", "RobustScaler", "StandardScaler", "MaxAbsScaler", "Normalizer", ],
         "all_transformers" : ["transformers", "scalers"],
 
@@ -131,11 +134,33 @@ GROUPNAMES = {
 
         "classifiers_sklearnex" : ["RandomForestClassifier_sklearnex", "LogisticRegression_sklearnex", "KNeighborsClassifier_sklearnex", "SVC_sklearnex","NuSVC_sklearnex"],
         "regressors_sklearnex" : ["LinearRegression_sklearnex", "Ridge_sklearnex", "Lasso_sklearnex", "ElasticNet_sklearnex", "SVR_sklearnex", "NuSVR_sklearnex", "RandomForestRegressor_sklearnex", "KNeighborsRegressor_sklearnex"],
+        "genetic encoders" : ["DominantEncoder", "RecessiveEncoder", "HeterosisEncoder", "UnderDominanceEncoder", "OverDominanceEncoder"],
+
 }
 
 
 
 def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_state=None):
+    """
+    This function returns the ConfigSpace.ConfigurationSpace with the hyperparameter ranges for the given
+    scikit-learn method. It also uses the n_classes, n_samples, n_features, and random_state to set the
+    hyperparameters that depend on these values.
+
+    Parameters
+    ----------
+    name : str
+        The str name of the scikit-learn method for which to create the ConfigurationSpace. (e.g. 'RandomForestClassifier' for sklearn.ensemble.RandomForestClassifier)
+    n_classes : int
+        The number of classes in the target variable. Default is 3.
+    n_samples : int
+        The number of samples in the dataset. Default is 1000.
+    n_features : int
+        The number of features in the dataset. Default is 100.
+    random_state : int
+        The random_state to use in the ConfigurationSpace. Default is None.
+        If None, the random_state hyperparameter is not included in the ConfigurationSpace.
+        Use this to set the random state for the individual methods if you want to ensure reproducibility.
+    """
     match name:
 
         #autoqtl_builtins.py
@@ -275,7 +300,7 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
         case "FastICA":
             return transformers.get_FastICA_configspace(n_features=n_features, random_state=random_state)
         case "FeatureAgglomeration":
-            return transformers.get_FeatureAgglomeration_configspace(n_samples=n_samples)
+            return transformers.get_FeatureAgglomeration_configspace(n_features=n_features)
         case "Nystroem":
             return transformers.get_Nystroem_configspace(n_features=n_features, random_state=random_state)
         case "RBFSampler":
@@ -285,7 +310,7 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
         case "PowerTransformer":
             return {}
         case "QuantileTransformer":
-            return transformers.get_QuantileTransformer_configspace(random_state=random_state)
+            return transformers.get_QuantileTransformer_configspace(n_samples=n_samples, random_state=random_state)
         case "RobustScaler":
             return transformers.RobustScaler_configspace
         case "ColumnOneHotEncoder":
@@ -297,6 +322,8 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
         case "StandardScaler":
             return {}
         case "PassKBinsDiscretizer":
+            return transformers.get_passkbinsdiscretizer_configspace(random_state=random_state)
+        case "KBinsDiscretizer":
             return transformers.get_passkbinsdiscretizer_configspace(random_state=random_state)
 
         #selectors.py
@@ -355,6 +382,9 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
             return imputers.simple_imputer_cs
         case "IterativeImputer":
             return imputers.get_IterativeImputer_config_space(n_features=n_features, random_state=random_state)
+        case "IterativeImputer_no_estimator":
+            return imputers.get_IterativeImputer_config_space_no_estimator(n_features=n_features, random_state=random_state)
+        
         case "KNNImputer":
             return imputers.get_KNNImputer_config_space(n_samples=n_samples)
 
@@ -406,8 +436,40 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
     raise ValueError(f"Could not find configspace for {name}")
    
 
-def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_state=None, return_choice_pipeline=True, base_node=EstimatorNode):
-
+def get_search_space(name, n_classes=3, n_samples=1000, n_features=100, random_state=None, return_choice_pipeline=True, base_node=EstimatorNode):
+    """
+    Returns a TPOT search space for a given scikit-learn method or group of methods.
+    
+    Parameters
+    ----------
+    name : str or list
+        The name of the scikit-learn method or group of methods for which to create the search space.
+        - str: The name of the scikit-learn method. (e.g. 'RandomForestClassifier' for sklearn.ensemble.RandomForestClassifier)
+        Alternatively, the name of a group of methods. (e.g. 'classifiers' for all classifiers).
+        - list: A list of scikit-learn method names. (e.g. ['RandomForestClassifier', 'ExtraTreesClassifier'])
+    n_classes : int (default=3)
+        The number of classes in the target variable.
+    n_samples : int (default=1000)
+        The number of samples in the dataset.
+    n_features : int (default=100)
+        The number of features in the dataset.
+    random_state : int (default=None)
+        A fixed random_state to pass through to all methods that have a random_state hyperparameter. 
+    return_choice_pipeline : bool (default=True)
+        If False, returns a list of TPOT2.search_spaces.nodes.EstimatorNode objects.
+        If True, returns a single TPOT2.search_spaces.pipelines.ChoicePipeline that includes and samples from all EstimatorNodes.
+    base_node: TPOT2.search_spaces.base.SearchSpace (default=TPOT2.search_spaces.nodes.EstimatorNode)
+        The SearchSpace to pass the configuration space to. If you want to experiment with custom mutation/crossover operators, you can pass a custom SearchSpace node here.
+        
+    Returns
+    -------
+        Returns an SearchSpace object that can be optimized by TPOT.
+        - TPOT2.search_spaces.nodes.EstimatorNode (or base_node) if there is only one search space.
+        - List of TPOT2.search_spaces.nodes.EstimatorNode (or base_node) objects if there are multiple search spaces.
+        - TPOT2.search_spaces.pipelines.ChoicePipeline object if return_choice_pipeline is True.
+        Note: for some special cases with methods using wrapped estimators, the returned search space is a TPOT2.search_spaces.pipelines.WrapperPipeline object.
+        
+    """
 
     #if list of names, return a list of EstimatorNodes
     if isinstance(name, list) or isinstance(name, np.ndarray):
@@ -428,10 +490,43 @@ def get_search_space(name, n_classes=3, n_samples=100, n_features=100, random_st
 
 
 def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None, base_node=EstimatorNode):
+    """
+    Helper function for get_search_space. Returns a single EstimatorNode for the given scikit-learn method. Also includes special cases for nodes that require custom parsing of the hyperparameters or methods that wrap other methods.
+        
+    Parameters
+    ----------
 
-    #these are wrappers that take in another estimator as a parameter
-    # TODO Add AdaBoostRegressor, AdaBoostClassifier as wrappers? wrap a decision tree with different params?
-    # TODO add other meta-estimators?
+    name : str or list
+        The name of the scikit-learn method or group of methods for which to create the search space.
+        - str: The name of the scikit-learn method. (e.g. 'RandomForestClassifier' for sklearn.ensemble.RandomForestClassifier)
+        Alternatively, the name of a group of methods. (e.g. 'classifiers' for all classifiers).
+        - list: A list of scikit-learn method names. (e.g. ['RandomForestClassifier', 'ExtraTreesClassifier'])
+    n_classes : int (default=3)
+        The number of classes in the target variable.
+    n_samples : int (default=1000)
+        The number of samples in the dataset.
+    n_features : int (default=100)
+        The number of features in the dataset.
+    random_state : int (default=None)
+        A fixed random_state to pass through to all methods that have a random_state hyperparameter. 
+    return_choice_pipeline : bool (default=True)
+        If False, returns a list of TPOT2.search_spaces.nodes.EstimatorNode objects.
+        If True, returns a single TPOT2.search_spaces.pipelines.ChoicePipeline that includes and samples from all EstimatorNodes.
+    base_node: TPOT2.search_spaces.base.SearchSpace (default=TPOT2.search_spaces.nodes.EstimatorNode)
+        The SearchSpace to pass the configuration space to. If you want to experiment with custom mutation/crossover operators, you can pass a custom SearchSpace node here.
+    
+    Returns
+    -------
+        Returns an SearchSpace object that can be optimized by TPOT.
+        - TPOT2.search_spaces.nodes.EstimatorNode (or base_node).
+        - TPOT2.search_spaces.pipelines.WrapperPipeline object if the method requires a wrapped estimator.
+    
+    
+    """
+    
+    if name == "LinearSVC_wrapped":
+        ext = get_node("LinearSVC", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return WrapperPipeline(estimator_search_space=ext, method=calibration.CalibratedClassifierCV, space={})
     if name == "RFE_classification":
         rfe_sp = get_configspace(name="RFE", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         ext = get_node("ExtraTreesClassifier", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
@@ -449,12 +544,11 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
         ext = get_node("ExtraTreesRegressor", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return WrapperPipeline(estimator_search_space=ext, method=SelectFromModel, space=sfm_sp)
     # TODO Add IterativeImputer with more estimator methods
-    '''
-    if name == "IterativeImputer_learnedestimators":
-        iteative_sp = get_configspace(name="IterativeImputer", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        regessor_searchspace = get_search_space(["LinearRegression", ..], n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return WrapperPipeline(estimator_search_space=regressor_searchspace, method=ItartiveImputer, space=iteative_sp)
-    '''
+    if name == "IterativeImputer_learned_estimators":
+        iteative_sp = get_configspace(name="IterativeImputer_no_estimator", n_features=n_features, random_state=random_state)
+        regressor_searchspace = get_node("ExtraTreesRegressor", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
+        return WrapperPipeline(estimator_search_space=regressor_searchspace, method=IterativeImputer, space=iteative_sp)
+    
     #these are nodes that have special search spaces which require custom parsing of the hyperparameters
     if name == "IterativeImputer":
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
@@ -487,7 +581,7 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
         configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=classifiers.GaussianProcessClassifier_hyperparameter_parser)
     if name == "FeatureAgglomeration":
-        configspace = get_configspace(name, n_features=n_features)
+        configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         return base_node(STRING_TO_CLASS[name], configspace, hyperparameter_parser=transformers.FeatureAgglomeration_hyperparameter_parser)
 
     configspace = get_configspace(name, n_classes=n_classes, n_samples=n_samples, n_features=n_features, random_state=random_state)

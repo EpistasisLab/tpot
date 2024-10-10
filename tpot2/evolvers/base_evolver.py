@@ -20,11 +20,32 @@ from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominate
 import math
 from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
 
+# Evolvers allow you to pass in custom mutation and crossover functions. By default,
+# the evolver will just use these functions to call ind.mutate or ind.crossover
 def ind_mutate(ind, rng):
+    """
+    Calls the ind.mutate method on the individual
+
+    Parameters
+    ----------
+    ind : tpot2.BaseIndividual
+        The individual to mutate
+    rng : int or numpy.random.Generator
+        A numpy random generator to use for reproducibility
+    """
     rng = np.random.default_rng(rng)
     return ind.mutate(rng=rng)
 
 def ind_crossover(ind1, ind2, rng):
+    """
+    Calls the ind1.crossover(ind2, rng=rng)
+    Parameters
+    ----------
+    ind1 : tpot2.BaseIndividual
+    ind2 : tpot2.BaseIndividual
+    rng : int or numpy.random.Generator
+        A numpy random generator to use for reproducibility
+    """
     rng = np.random.default_rng(rng)
     return ind1.crossover(ind2, rng=rng)
 
@@ -76,10 +97,10 @@ class BaseEvolver():
                     generations_until_end_budget = 1,
                     stepwise_steps = 5,
 
-                    threshold_evaluation_early_stop = None,
+                    threshold_evaluation_pruning = None,
                     threshold_evaluation_scaling = .5,
                     min_history_threshold = 20,
-                    selection_evaluation_early_stop = None,
+                    selection_evaluation_pruning = None,
                     selection_evaluation_scaling = .5,
                     evaluation_early_stop_steps = None,
                     final_score_strategy = "mean",
@@ -120,7 +141,7 @@ class BaseEvolver():
         generations : int, default=50
             Number of generations to run
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered. In general a value of around 5-20 is good.
         early_stop_tol : float, list of floats, or None, default=0.001
             -list of floats
                 list of tolerances for each objective function. If the difference between the best score and the current score is less than the tolerance, the individual is considered to have converged
@@ -129,11 +150,11 @@ class BaseEvolver():
                 If an int is given, it will be used as the tolerance for all objectives
         max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
-        max_eval_time_mins : float, default=5
+        max_eval_time_mins : float, default=10
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
         n_jobs : int, default=1
             Number of processes to run in parallel.
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
         client : dask.distributed.Client, default=None
             A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit.
@@ -156,24 +177,31 @@ class BaseEvolver():
         parent_selector : function, default=parent_select_NSGA2
             Function to use to select pairs parents for crossover and individuals for mutation. Must take a matrix of scores and return selected indexes.
         budget_range : list [start, end], default=None
-            A starting and ending budget to use for the budget scaling.
+            This parameter is used for the successive halving algorithm.
+            A starting and ending budget to use for the budget scaling. The evolver will interpolate between these values over the generations_until_end_budget.
+            Use is dependent on the objective functions. (In TPOTEstimator this corresponds to the percentage of the data to sample.)
         budget_scaling float : [0,1], default=0.5
             A scaling factor to use when determining how fast we move the budget from the start to end budget.
         generations_until_end_budget : int, default=1
             The number of generations to run before reaching the max budget.
         stepwise_steps : int, default=1
-            The number of staircase steps to take when scaling the budget and population size.
-        threshold_evaluation_early_stop : list [start, end], default=None
-            starting and ending percentile to use as a threshold for the evaluation early stopping.
+            The number of staircase steps to take when interpolating the budget and population size.
+        threshold_evaluation_pruning : list [start, end], default=None
+            Starting and ending percentile to use as a threshold for the evaluation early stopping. The evolver will interpolate between these values over the evaluation_early_stop_steps.
             Values between 0 and 100.
+            At each step of the evaluation, a threshold is calculated based on the previous evaluations. All individuals that are below the performance threshold are not evaluated for further steps.
+            For example, if the threshold is set to the 90th percentile of the previous evaluations, all individuals that are below the 90th percentile are not evaluated further. This can save computation by not evaluating all individuals for all steps of cross validation.
         threshold_evaluation_scaling : float [0,inf), default=0.5
             A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
             Must be greater than zero. Higher numbers will move the threshold to the end faster.
         min_history_threshold : int, default=0
             The minimum number of previous scores needed before using threshold early stopping.
-        selection_evaluation_early_stop : list, default=None
+        selection_evaluation_pruning : list, default=None
             A lower and upper percent of the population size to select each round of CV.
             Values between 0 and 1.
+            Selects a percentage of the population to evaluate at each step of the evaluation. 
+            For example, one strategy is to evaluate different steps of cross validation one at a time, and only select the best N individuals for subsequent steps. 
+            This can save computation by not evaluating all individuals for all steps of cross validation. By default this selection is done with the NSGA2 selector.
         selection_evaluation_scaling : float, default=0.5
             A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
             Must be greater than zero. Higher numbers will move the threshold to the end faster.
@@ -203,13 +231,21 @@ class BaseEvolver():
                 Will be used to create and lock in Generator instance with 'numpy.random.default_rng()'. Note this will be the same Generator passed in.
             - None
                 Will be used to create Generator for 'numpy.random.default_rng()' where a fresh, unpredictable entropy will be pulled from the OS
+        
+        Attributes
+        ----------
+        population : tpot2.Population
+            The population of individuals.
+            Use population.population to access the individuals in the current population.
+            Use population.evaluated_individuals to access a data frame of all individuals that have been explored.
+        
         """
 
         self.rng = np.random.default_rng(rng)
 
-        if threshold_evaluation_early_stop is not None or selection_evaluation_early_stop is not None:
+        if threshold_evaluation_pruning is not None or selection_evaluation_pruning is not None:
             if evaluation_early_stop_steps is None:
-                raise ValueError("evaluation_early_stop_steps must be set when using threshold_evaluation_early_stop or selection_evaluation_early_stop")
+                raise ValueError("evaluation_early_stop_steps must be set when using threshold_evaluation_pruning or selection_evaluation_pruning")
 
         self.individual_generator = individual_generator
         self.population_size = population_size
@@ -256,11 +292,11 @@ class BaseEvolver():
         self.generation = 0
 
 
-        self.threshold_evaluation_early_stop =threshold_evaluation_early_stop
+        self.threshold_evaluation_pruning =threshold_evaluation_pruning
         self.threshold_evaluation_scaling =  max(0.00001,threshold_evaluation_scaling )
         self.min_history_threshold = min_history_threshold
 
-        self.selection_evaluation_early_stop = selection_evaluation_early_stop
+        self.selection_evaluation_pruning = selection_evaluation_pruning
         self.selection_evaluation_scaling =  max(0.00001,selection_evaluation_scaling )
         self.evaluation_early_stop_steps = evaluation_early_stop_steps
         self.final_score_strategy = final_score_strategy
@@ -369,6 +405,16 @@ class BaseEvolver():
 
 
     def optimize(self, generations=None):
+        """
+        Creates an initial population and runs the evolutionary algorithm for the given number of generations. 
+        If generations is None, will use self.generations.
+
+        Parameters
+        ----------
+        generations : int, default=None
+            Number of generations to run. If None, will use self.generations.
+        
+        """
 
         if self.client is not None: #If user passed in a client manually
            self._client = self.client
@@ -503,6 +549,12 @@ class BaseEvolver():
         tpot2.utils.get_pareto_frontier(self.population.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights)
 
     def step(self,):
+        """
+        Runs a single generation of the evolutionary algorithm. This includes selecting individuals for survival, generating offspring, and evaluating the offspring.
+        
+        """
+
+
         if self.population_size_list is not None:
             if self.generation < len(self.population_size_list):
                 self.cur_population_size = self.population_size_list[self.generation]
@@ -532,6 +584,10 @@ class BaseEvolver():
         self.generation += 1
 
     def generate_offspring(self, ): #your EA Algorithm goes here
+        """
+        Create population_size new individuals from the current population. 
+        This includes selecting parents, applying mutation and crossover, and adding the new individuals to the population.
+        """
         parents = self.population.parent_select(selector=self.parent_selector, weights=self.objective_function_weights, columns_names=self.objective_names, k=self.cur_population_size, n_parents=2, rng=self.rng)
         p = np.array([self.crossover_probability, self.mutate_then_crossover_probability, self.crossover_then_mutate_probability, self.mutate_probability])
         p = p / p.sum()
@@ -545,17 +601,12 @@ class BaseEvolver():
 
         self.population.update_column(offspring, column_names="Generation", data=self.generation, )
 
-
-
-
-
-
-
-
     # Gets a list of unevaluated individuals in the livepopulation, evaluates them, and removes failed attempts
     # TODO This could probably be an independent function?
     def evaluate_population(self,):
-
+        """
+        Evaluates the individuals in the population that have not been evaluated yet.
+        """
         #Update the sliding scales and thresholds
         # Save population, TODO remove some of these
         if self.population_file is not None: # and time.time() - last_save_time > 60*10:
@@ -565,21 +616,21 @@ class BaseEvolver():
 
         #Get the current thresholds per step
         self.thresholds = None
-        if self.threshold_evaluation_early_stop is not None:
+        if self.threshold_evaluation_pruning is not None:
             old_data = self.population.evaluated_individuals[self.objective_names]
             old_data = old_data[old_data[self.objective_names].notnull().all(axis=1)]
             if len(old_data) >= self.min_history_threshold:
                 self.thresholds = np.array([get_thresholds(old_data[obj_name],
-                                                            start=self.threshold_evaluation_early_stop[0],
-                                                            end=self.threshold_evaluation_early_stop[1],
+                                                            start=self.threshold_evaluation_pruning[0],
+                                                            end=self.threshold_evaluation_pruning[1],
                                                             scale=self.threshold_evaluation_scaling,
                                                             n=self.evaluation_early_stop_steps)
                                         for obj_name in self.objective_names]).T
 
         #Get the selectors survival rates per step
-        if self.selection_evaluation_early_stop is not None:
-            lower = self.cur_population_size*self.selection_evaluation_early_stop[0]
-            upper = self.cur_population_size*self.selection_evaluation_early_stop[1]
+        if self.selection_evaluation_pruning is not None:
+            lower = self.cur_population_size*self.selection_evaluation_pruning[0]
+            upper = self.cur_population_size*self.selection_evaluation_pruning[1]
             #survival_counts = self.cur_population_size*(scipy.special.betainc(1,self.selection_evaluation_scaling,np.linspace(0,1,self.evaluation_early_stop_steps))*(upper-lower)+lower)
 
             survival_counts = np.array(beta_interpolation(start=lower, end=upper, scale=self.selection_evaluation_scaling, n=self.evaluation_early_stop_steps, n_steps=self.evaluation_early_stop_steps))
@@ -606,6 +657,10 @@ class BaseEvolver():
             last_save_time = time.time()
 
     def evaluate_population_full(self, budget=None):
+        """
+        Evaluates all individuals in the population that have not been evaluated yet.
+        This is the normal/default strategy for evaluating individuals without any early stopping of individual evaluation functions. (e.g., no threshold or selection early stopping). Early stopping by generation is still possible.
+        """
         individuals_to_evaluate = self.get_unevaluated_individuals(self.objective_names, budget=budget,)
 
         #print("evaluating this many individuals: ", len(individuals_to_evaluate))
@@ -638,6 +693,19 @@ class BaseEvolver():
         self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="TIMEOUT")
 
     def get_unevaluated_individuals(self, column_names, budget=None, individual_list=None):
+        """
+        This function is used to get a list of individuals in the current population that have not been evaluated yet.
+
+        Parameters
+        ----------
+        column_names : list of strings
+            Names of the columns to check for unevaluated individuals (generally objective functions).
+        budget : float, default=None
+            Budget to use when checking for unevaluated individuals. If None, will not check the budget column.
+            Finds individuals who have not been evaluated with the given budget on column names.
+        individual_list : list of individuals, default=None
+            List of individuals to check for unevaluated individuals. If None, will use the current population.
+        """
         if individual_list is not None:
             cur_pop = np.array(individual_list)
         else:
@@ -660,7 +728,28 @@ class BaseEvolver():
             return cur_pop
 
     def evaluate_population_selection_early_stop(self,survival_counts, thresholds=None, budget=None):
+        """
+        This function tries to save computation by partially evaluating the individuals and then selecting which individuals to evaluate further based on the results of the partial evaluation. 
+        
+        Two strategies are implemented:
+            1.  Selection early stopping: Selects a percentage of the population to evaluate at each step of the evaluation. 
+                for example, one strategy is to evaluate different steps of cross validation one at a time, and only select the best N individuals for subsequent steps. 
+                This can save computation by not evaluating all individuals for all steps of cross validation. By default this selection is done with the NSGA2 selector.
+            2.  Threshold early stopping: At each step of the evaluation, a threshold is calculated based on the previous evaluations. All individuals that are below the performance threshold are not evaluated for further steps.
+                For example, if the threshold is set to the 90th percentile of the previous evaluations, all individuals that are below the 90th percentile are not evaluated further. This can save computation by not evaluating all individuals for all steps of cross validation.
 
+        Both of these strategies can be used simultaneously. Individuals must pass both the selection and threshold criteria to be evaluated further.
+
+        Parameters
+        ----------
+        survival_counts : list of ints, default=None
+            Number of individuals to select for survival at each step of the evaluation. If None, will not use selection early stopping.
+            For example: [10, 5, 2] would select 10 individuals for the first step, 5 for the second, and 2 for the third.
+        thresholds : list of floats, default=None
+            Thresholds to use for early stopping at each step of the evaluation. If None, will not use threshold early stopping.
+        budget : float, default=None
+            Budget to use when evaluating individuals. Use is dependent on the objective functions. (In TPOTEstimator this corresponds to the percentage of the data to sample.)
+        """
 
         survival_selector = tpot2.selectors.survival_select_NSGA2
 
@@ -749,6 +838,14 @@ class BaseEvolver():
             elif self.final_score_strategy == 'last':
                 offspring_scores = offspring_scores[-1]
 
+            #remove individuals with nan scores
+            invalids = []
+            for i in range(len(offspring_scores)):
+                if any(np.isnan(offspring_scores[i])):
+                    invalids.append(i)
+            
+            cur_individuals = remove_items(cur_individuals,invalids)
+            offspring_scores = remove_items(offspring_scores,invalids)
 
             #if last step, add the final metrics
             if step == self.evaluation_early_stop_steps-1:
@@ -776,11 +873,10 @@ class BaseEvolver():
                             # invalids = np.random.choice(invalids, max_to_remove, replace=False)
                             invalids = self.rng.choice(invalids, max_to_remove, replace=False)
 
-
                         cur_individuals = remove_items(cur_individuals,invalids)
                         offspring_scores = remove_items(offspring_scores,invalids)
 
-                #Remove based on selection
+                # Remove based on selection
                 if survival_counts is not None:
                     if step < self.evaluation_early_stop_steps - 1 and survival_counts[step]>1: #don't do selection for the last loop since they are completed
                         k = survival_counts[step] + len(invalids) #TODO can remove the min if the selections method can ignore k>population size
@@ -789,3 +885,4 @@ class BaseEvolver():
 
                             new_population_index = survival_selector(weighted_scores, k=k)
                             cur_individuals = np.array(cur_individuals)[new_population_index]
+                            offspring_scores = offspring_scores[new_population_index]

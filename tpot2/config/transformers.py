@@ -44,18 +44,18 @@ def get_FastICA_configspace(n_features=100, random_state=None):
 
     )
 
-def get_FeatureAgglomeration_configspace(n_samples):
+def get_FeatureAgglomeration_configspace(n_features):
 
     linkage = Categorical('linkage', ['ward', 'complete', 'average'])
     metric = Categorical('metric', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine'])
-    n_clusters = Integer('n_clusters', bounds=(2, min(n_samples,400)))
+    n_clusters = Integer('n_clusters', bounds=(2, min(n_features,400)))
     pooling_func = Categorical('pooling_func', ['mean', 'median', 'max'])
 
     metric_condition = NotEqualsCondition(metric, linkage, 'ward')
 
     cs =  ConfigurationSpace()
-    cs.add_hyperparameters([linkage, metric, n_clusters, pooling_func])
-    cs.add_condition(metric_condition)
+    cs.add([linkage, metric, n_clusters, pooling_func])
+    cs.add(metric_condition)
     
     return cs
 
@@ -108,10 +108,10 @@ def get_RBFSampler_configspace(n_features=100, random_state=None):
     )
 
 
-def get_QuantileTransformer_configspace(random_state=None):
+def get_QuantileTransformer_configspace(random_state=None, n_samples=1000):
 
     space = {
-        'n_quantiles': Integer('n_quantiles', bounds=(10, 2000)),
+        'n_quantiles': Integer('n_quantiles', bounds=(10, n_samples)),
         'output_distribution': Categorical('output_distribution', ['uniform', 'normal']),
     }
 

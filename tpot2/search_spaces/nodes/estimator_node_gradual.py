@@ -1,7 +1,7 @@
 # try https://automl.github.io/ConfigSpace/main/api/hyperparameters.html
 
 import numpy as np
-from tpot2.search_spaces.base import SklearnIndividual, SklearnIndividualGenerator
+from tpot2.search_spaces.base import SklearnIndividual, SearchSpace
 from ConfigSpace import ConfigurationSpace
 from typing import final
 import ConfigSpace
@@ -131,12 +131,15 @@ def gradual_hyperparameter_update(params:dict, configspace:ConfigurationSpace, r
                 elif new_params[param] > configspace[param].upper:
                     new_params[param] = configspace[param].upper
                 new_params[param] = int(new_params[param])
+            # TODO : add support for categorical hyperparameters
+            else:
+                new_params[param] = params[param]
         except:
             pass
 
     return new_params
 
-class EstimatorNode_gradual(SklearnIndividualGenerator):
+class EstimatorNode_gradual(SearchSpace):
     def __init__(self, method, space, hyperparameter_parser=default_hyperparameter_parser):
         self.method = method
         self.space = space

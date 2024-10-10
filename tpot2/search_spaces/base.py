@@ -33,7 +33,7 @@ class SklearnIndividual(tpot2.BaseIndividual):
 
         return wrapper
 
-    def export_pipeline(self) -> BaseEstimator:
+    def export_pipeline(self, **kwargs) -> BaseEstimator:
         return
     
     def unique_id(self):
@@ -64,7 +64,7 @@ class SklearnIndividual(tpot2.BaseIndividual):
     def export_flattened_graphpipeline(self, **graphpipeline_kwargs) -> tpot2.GraphPipeline:
         return flatten_to_graphpipeline(self.export_pipeline(), **graphpipeline_kwargs)
 
-class SklearnIndividualGenerator():
+class SearchSpace():
     def __init__(self,):
         pass
 

@@ -1,7 +1,7 @@
 import tpot2
 import numpy as np
 from typing import Generator, List, Tuple, Union
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 import networkx as nx
 import copy
 import matplotlib.pyplot as plt
@@ -27,13 +27,13 @@ class GraphPipelineIndividual(SklearnIndividual):
         Parameters
         ----------
 
-        root_search_space: SklearnIndividualGenerator
+        root_search_space: SearchSpace
             The search space for the root node of the graph. This node will be the final estimator in the pipeline.
         
-        inner_search_space: SklearnIndividualGenerator, optional
+        inner_search_space: SearchSpace, optional
             The search space for the inner nodes of the graph. If not defined, there will be no inner nodes.
         
-        leaf_search_space: SklearnIndividualGenerator, optional
+        leaf_search_space: SearchSpace, optional
             The search space for the leaf nodes of the graph. If not defined, the leaf nodes will be drawn from the inner_search_space.
             
         crossover_same_depth: bool, optional
@@ -60,14 +60,13 @@ class GraphPipelineIndividual(SklearnIndividual):
     
     def __init__(
             self,  
-            root_search_space: SklearnIndividualGenerator, 
-            leaf_search_space: SklearnIndividualGenerator = None, 
-            inner_search_space: SklearnIndividualGenerator = None, 
+            root_search_space: SearchSpace, 
+            leaf_search_space: SearchSpace = None, 
+            inner_search_space: SearchSpace = None, 
             max_size: int = np.inf,
             crossover_same_depth: bool = False,
             cross_val_predict_cv: Union[int, Callable] = 0, #signature function(estimator, X, y=none)
             method: str = 'auto',
-            memory=None,
             use_label_encoder: bool = False,
             rng=None):
         
@@ -85,7 +84,6 @@ class GraphPipelineIndividual(SklearnIndividual):
 
         self.cross_val_predict_cv = cross_val_predict_cv
         self.method = method
-        self.memory = memory
         self.use_label_encoder = use_label_encoder
 
         self.root = self.root_search_space.generate(rng)
@@ -108,6 +106,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         self.merge_duplicated_nodes_toggle = True
 
         self.graphkey = None
+
 
     def mutate(self, rng=None):
         rng = np.random.default_rng(rng)
@@ -597,7 +596,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         return graph_changed
 
 
-    def export_pipeline(self):
+    def export_pipeline(self, memory=None, **kwargs):
         estimator_graph = self.graph.copy()
 
         #mapping = {node:node.method_class(**node.hyperparameters) for node in estimator_graph}
@@ -605,7 +604,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         label_to_instance = {}
 
         for node in estimator_graph:
-            this_pipeline_node = node.export_pipeline()
+            this_pipeline_node = node.export_pipeline(memory=memory, **kwargs)
             found_unique_label = False
             i=1
             while not found_unique_label:
@@ -623,7 +622,7 @@ class GraphPipelineIndividual(SklearnIndividual):
         for label, instance in label_to_instance.items():
             estimator_graph.nodes[label]["instance"] = instance
 
-        return tpot2.GraphPipeline(graph=estimator_graph, memory=self.memory, use_label_encoder=self.use_label_encoder, method=self.method, cross_val_predict_cv=self.cross_val_predict_cv)
+        return tpot2.GraphPipeline(graph=estimator_graph, memory=memory, use_label_encoder=self.use_label_encoder, method=self.method, cross_val_predict_cv=self.cross_val_predict_cv)
     
     
     def plot(self):
@@ -687,16 +686,15 @@ class GraphPipelineIndividual(SklearnIndividual):
         return self.graphkey
     
 
-class GraphPipeline(SklearnIndividualGenerator):
+class GraphSearchPipeline(SearchSpace):
     def __init__(self, 
-        root_search_space: SklearnIndividualGenerator, 
-        leaf_search_space: SklearnIndividualGenerator = None, 
-        inner_search_space: SklearnIndividualGenerator = None, 
+        root_search_space: SearchSpace, 
+        leaf_search_space: SearchSpace = None, 
+        inner_search_space: SearchSpace = None, 
         max_size: int = np.inf,
         crossover_same_depth: bool = False,
         cross_val_predict_cv: Union[int, Callable] = 0, #signature function(estimator, X, y=none)
         method: str = 'auto',
-        memory=None,
         use_label_encoder: bool = False):
         
         """
@@ -712,20 +710,24 @@ class GraphPipeline(SklearnIndividualGenerator):
         Parameters
         ----------
 
-        root_search_space: SklearnIndividualGenerator
+        root_search_space: SearchSpace
             The search space for the root node of the graph. This node will be the final estimator in the pipeline.
         
-        inner_search_space: SklearnIndividualGenerator, optional
+        inner_search_space: SearchSpace, optional
             The search space for the inner nodes of the graph. If not defined, there will be no inner nodes.
         
-        leaf_search_space: SklearnIndividualGenerator, optional
+        leaf_search_space: SearchSpace, optional
             The search space for the leaf nodes of the graph. If not defined, the leaf nodes will be drawn from the inner_search_space.
             
         crossover_same_depth: bool, optional
             If True, crossover will only occur between nodes at the same depth in the graph. If False, crossover will occur between nodes at any depth.
         
-        cross_val_predict_cv: int, cross-validation generator or an iterable, optional
-            Determines the cross-validation splitting strategy used in inner classifiers or regressors
+        cross_val_predict_cv : int, default=0
+            Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
+
+            - 0-1 : When set to 0 or 1, the cross_val_predict function will not be used. The next layer will get the outputs from fitting and transforming the full dataset.
+            - >=2 : When fitting pipelines with inner classifiers or regressors, they will still be fit on the full dataset.
+                    However, the output to the next node will come from cross_val_predict with the specified number of folds.
 
         method: str, optional
             The prediction method to use for the inner classifiers or regressors. If 'auto', it will try to use predict_proba, decision_function, or predict in that order.
@@ -749,13 +751,12 @@ class GraphPipeline(SklearnIndividualGenerator):
 
         self.cross_val_predict_cv = cross_val_predict_cv
         self.method = method
-        self.memory = memory
         self.use_label_encoder = use_label_encoder
 
     def generate(self, rng=None):
         rng = np.random.default_rng(rng)
         ind =  GraphPipelineIndividual(self.root_search_space, self.leaf_search_space, self.inner_search_space, self.max_size, self.crossover_same_depth, 
-                                       self.cross_val_predict_cv, self.method, self.memory, self.use_label_encoder, rng=rng)  
+                                       self.cross_val_predict_cv, self.method, self.use_label_encoder, rng=rng)  
             # if user specified limit, grab a random number between that limit
         
         if self.max_size is None or self.max_size == np.inf:

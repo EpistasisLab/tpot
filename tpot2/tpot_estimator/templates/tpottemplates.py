@@ -22,18 +22,18 @@ class TPOTRegressor(TPOTEstimator):
                         memory = None,
                         preprocessing = False,
                         max_time_mins=60, 
-                        max_eval_time_mins=5, 
+                        max_eval_time_mins=10, 
                         n_jobs = 1,
                         validation_strategy = "none",
                         validation_fraction = .2, 
                         early_stop = None,
                         warm_start = False,
                         periodic_checkpoint_folder = None, 
-                        verbose = 0,
-                        memory_limit = "4GB",
+                        verbose = 2,
+                        memory_limit = None,
                         client = None,
                         random_state=None,
-                        allow_inner_regressors=True,
+                        allow_inner_regressors=None,
                         **tpotestimator_kwargs,
         ):
         '''
@@ -43,10 +43,19 @@ class TPOTRegressor(TPOTEstimator):
         Parameters
         ----------
 
-        search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
-            - String : The default search space to use for the optimization. This can be either "linear" or "graph". If "linear", will use the default linear pipeline search space. If "graph", will use the default graph pipeline search space.
-            - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
-                The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
+        search_space : (String, tpot2.search_spaces.SearchSpace)
+                        - String : The default search space to use for the optimization.
+            | String     | Description      |
+            | :---        |    :----:   |
+            | linear  | A linear pipeline with the structure of "Selector->(transformers+Passthrough)->(classifiers/regressors+Passthrough)->final classifier/regressor." For both the transformer and inner estimator layers, TPOT may choose one or more transformers/classifiers, or it may choose none. The inner classifier/regressor layer is optional. |
+            | linear-light | Same search space as linear, but without the inner classifier/regressor layer and with a reduced set of faster running estimators. |
+            | graph | TPOT will optimize a pipeline in the shape of a directed acyclic graph. The nodes of the graph can include selectors, scalers, transformers, or classifiers/regressors (inner classifiers/regressors can optionally be not included). This will return a custom GraphPipeline rather than an sklearn Pipeline. More details in Tutorial 6. |
+            | graph-light | Same as graph search space, but without the inner classifier/regressors and with a reduced set of faster running estimators. |
+            | mdr |TPOT will search over a series of feature selectors and Multifactor Dimensionality Reduction models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for genome-wide association studies (GWAS), and is described in detail online here.
+
+            Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
+            - SearchSpace : The search space to use for the optimization. This should be an instance of a SearchSpace.
+                The search space to use for the optimization. This should be an instance of a SearchSpace.
                 TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
         
         scorers : (list, scorer)
@@ -87,7 +96,7 @@ class TPOTRegressor(TPOTEstimator):
 
 
         memory: Memory object or string, default=None
-            If supplied, pipeline will cache each transformer after calling fit. This feature
+            If supplied, pipeline will cache each transformer after calling fit with joblib.Memory. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
             and input data are identical with another fitted pipeline during optimization process.
             - String 'auto':
@@ -129,7 +138,7 @@ class TPOTRegressor(TPOTEstimator):
           EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
 
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered. In general a value of around 5-20 is good.
 
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
@@ -150,7 +159,7 @@ class TPOTRegressor(TPOTEstimator):
             6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_mins in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
 
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
 
         client : dask.distributed.Client, default=None
@@ -282,11 +291,11 @@ class TPOTClassifier(TPOTEstimator):
                         early_stop = None,
                         warm_start = False,
                         periodic_checkpoint_folder = None, 
-                        verbose = 0,
-                        memory_limit = "4GB",
+                        verbose = 2,
+                        memory_limit = None,
                         client = None,
                         random_state=None,
-                        allow_inner_classifiers=True,
+                        allow_inner_classifiers=None,
                         **tpotestimator_kwargs,
                         
         ):
@@ -297,10 +306,19 @@ class TPOTClassifier(TPOTEstimator):
         Parameters
         ----------
 
-        search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
-            - String : The default search space to use for the optimization. This can be either "linear" or "graph". If "linear", will use the default linear pipeline search space. If "graph", will use the default graph pipeline search space.
-            - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
-                The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
+        search_space : (String, tpot2.search_spaces.SearchSpace)
+            - String : The default search space to use for the optimization.
+            | String     | Description      |
+            | :---        |    :----:   |
+            | linear  | A linear pipeline with the structure of "Selector->(transformers+Passthrough)->(classifiers/regressors+Passthrough)->final classifier/regressor." For both the transformer and inner estimator layers, TPOT may choose one or more transformers/classifiers, or it may choose none. The inner classifier/regressor layer is optional. |
+            | linear-light | Same search space as linear, but without the inner classifier/regressor layer and with a reduced set of faster running estimators. |
+            | graph | TPOT will optimize a pipeline in the shape of a directed acyclic graph. The nodes of the graph can include selectors, scalers, transformers, or classifiers/regressors (inner classifiers/regressors can optionally be not included). This will return a custom GraphPipeline rather than an sklearn Pipeline. More details in Tutorial 6. |
+            | graph-light | Same as graph search space, but without the inner classifier/regressors and with a reduced set of faster running estimators. |
+            | mdr |TPOT will search over a series of feature selectors and Multifactor Dimensionality Reduction models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for genome-wide association studies (GWAS), and is described in detail online here.
+
+            Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
+            - SearchSpace : The search space to use for the optimization. This should be an instance of a SearchSpace.
+                The search space to use for the optimization. This should be an instance of a SearchSpace.
                 TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
         
         scorers : (list, scorer)
@@ -341,7 +359,7 @@ class TPOTClassifier(TPOTEstimator):
 
 
         memory: Memory object or string, default=None
-            If supplied, pipeline will cache each transformer after calling fit. This feature
+            If supplied, pipeline will cache each transformer after calling fit with joblib.Memory. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
             and input data are identical with another fitted pipeline during optimization process.
             - String 'auto':
@@ -383,7 +401,7 @@ class TPOTClassifier(TPOTEstimator):
           EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
 
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered. In general a value of around 5-20 is good.
 
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
@@ -404,7 +422,7 @@ class TPOTClassifier(TPOTEstimator):
             6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_mins in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
 
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
 
         client : dask.distributed.Client, default=None

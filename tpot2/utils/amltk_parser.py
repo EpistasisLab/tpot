@@ -52,11 +52,20 @@ def split_to_unionpipeline(split: Split) -> UnionPipeline:
 
 def tpot2_parser(
     node: Node,
-    # *,
-    # flat: bool = False,
-    # conditionals: bool = False,
-    # delim: str = ":",
     ):
+    """
+    Convert amltk pipeline search space into a tpot2 pipeline search space.
+
+    Parameters
+    ----------
+    node: amltk.pipeline.Node
+        The node to convert.
+
+    Returns
+    -------
+    tpot2.search_spaces.base.SearchSpace
+        The equivalent TPOT search space which can be optimized by TPOT.
+    """
 
     if isinstance(node, Component):
         return component_to_estimatornode(node)

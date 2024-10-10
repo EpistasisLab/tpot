@@ -32,7 +32,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         scorers= [],
                         scorers_weights = [],
                         classification = False,
-                        cv = 5,
+                        cv = 10,
                         other_objective_functions=[], #tpot2.objectives.estimator_objective_functions.number_of_nodes_objective],
                         other_objective_functions_weights = [],
                         objective_function_names = None,
@@ -40,7 +40,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
                         
                         export_graphpipeline = False,
-                        cross_val_predict_cv = 0,
                         memory = None,
 
                         categorical_features = None,
@@ -57,13 +56,13 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
 
                         early_stop = None,
-                        early_stop_seconds = None,
+                        early_stop_mins = None,
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol = None,
                         max_time_mins=None,
-                        max_eval_time_mins=5,
+                        max_eval_time_mins=10,
                         n_jobs=1,
-                        memory_limit = "4GB",
+                        memory_limit = None,
                         client = None,
 
                         crossover_probability=.2,
@@ -192,29 +191,14 @@ class TPOTEstimatorSteadyState(BaseEstimator):
             - list : a list of strings out of the above options to include the corresponding methods in the configuration dictionary.
             - None : If None, a leaf will not be required (i.e. the pipeline can be a single root node). Leaf nodes will be generated from the inner_config_dict.
 
-        cross_val_predict_cv : int, default=0
-            Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
-
-            - 0-1 : When set to 0 or 1, the cross_val_predict function will not be used. The next layer will get the outputs from fitting and transforming the full dataset.
-            - >=2 : When fitting pipelines with inner classifiers or regressors, they will still be fit on the full dataset.
-                    However, the output to the next node will come from cross_val_predict with the specified number of folds.
-
         categorical_features: list or None
             Categorical columns to inpute and/or one hot encode during the preprocessing step. Used only if preprocessing is not False.
             - None : If None, TPOT2 will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
             - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
 
-        subsets : str or list, default=None
-            Sets the subsets that the FeatureSetSeletor will select from if set as an option in one of the configuration dictionaries.
-            - str : If a string, it is assumed to be a path to a csv file with the subsets.
-                The first column is assumed to be the name of the subset and the remaining columns are the features in the subset.
-            - list or np.ndarray : If a list or np.ndarray, it is assumed to be a list of subsets.
-            - None : If None, each column will be treated as a subset. One column will be selected per subset.
-            If subsets is None, each column will be treated as a subset. One column will be selected per subset.
-
 
         memory: Memory object or string, default=None
-            If supplied, pipeline will cache each transformer after calling fit. This feature
+            If supplied, pipeline will cache each transformer after calling fit with joblib.Memory. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
             and input data are identical with another fitted pipeline during optimization process.
             - String 'auto':
@@ -267,7 +251,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         early_stop : int, default=None
             Number of evaluated individuals without improvement before early stopping. Counted across all objectives independently. Triggered when all objectives have not improved by the given number of individuals.
 
-        early_stop_seconds : float, default=None
+        early_stop_mins : float, default=None
             Number of seconds without improvement before early stopping. All objectives must not have improved for the given number of seconds for this to be triggered.
 
         scorers_early_stop_tol :
@@ -293,7 +277,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         n_jobs : int, default=1
             Number of processes to run in parallel.
 
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
 
         client : dask.distributed.Client, default=None
@@ -330,7 +314,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         stepwise_steps : int, default=1
             The number of staircase steps to take when scaling the budget and population size.
 
-        threshold_evaluation_early_stop : list [start, end], default=None
+        threshold_evaluation_pruning : list [start, end], default=None
             starting and ending percentile to use as a threshold for the evaluation early stopping.
             Values between 0 and 100.
 
@@ -341,7 +325,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         min_history_threshold : int, default=0
             The minimum number of previous scores needed before using threshold early stopping.
 
-        selection_evaluation_early_stop : list, default=None
+        selection_evaluation_pruning : list, default=None
             A lower and upper percent of the population size to select each round of CV.
             Values between 0 and 1.
 
@@ -431,16 +415,9 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.bigger_is_better = bigger_is_better
 
         self.export_graphpipeline = export_graphpipeline
-        self.cross_val_predict_cv = cross_val_predict_cv
         self.memory = memory
 
-        if self.cross_val_predict_cv !=0 or self.memory is not None:
-            if not self.export_graphpipeline:
-                raise ValueError("cross_val_predict_cv and memory parameters are parameters for GraphPipeline. To enable these options export_graphpipeline to be True. Otherwise these can be passed into the relevant Search spaces as parameters.")
-
-
         self.categorical_features = categorical_features
-        self.subsets = subsets
         self.preprocessing = preprocessing
         self.validation_strategy = validation_strategy
         self.validation_fraction = validation_fraction
@@ -449,7 +426,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.initial_population_size = initial_population_size
 
         self.early_stop = early_stop
-        self.early_stop_seconds = early_stop_seconds
+        self.early_stop_mins = early_stop_mins
         self.scorers_early_stop_tol = scorers_early_stop_tol
         self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
         self.max_time_mins = max_time_mins
@@ -488,14 +465,10 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         self.rng = np.random.default_rng(random_state)
         # save random state passed to us for other functions that use random_state
         self.random_state = random_state
-        # set the numpy seed so anything using it will be consistent as well
-        np.random.seed(random_state)
-
 
         self.max_evaluated_individuals = max_evaluated_individuals
 
         #Initialize other used params
-
 
         if self.initial_population_size is None:
             self._initial_population_size = self.population_size
@@ -673,7 +646,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                             other_objective_functions=self.other_objective_functions,
                                             export_graphpipeline=self.export_graphpipeline,
                                             memory=self.memory,
-                                            cross_val_predict_cv=self.cross_val_predict_cv,
                                             **kwargs):
             return objective_function_generator(
                 pipeline_individual,
@@ -685,7 +657,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                 other_objective_functions=other_objective_functions,
                 export_graphpipeline=export_graphpipeline,
                 memory=memory,
-                cross_val_predict_cv=cross_val_predict_cv,
                 **kwargs,
             )
 
@@ -725,7 +696,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
                                             early_stop_tol = self.early_stop_tol,
                                             early_stop= self.early_stop,
-                                            early_stop_seconds =  self.early_stop_seconds,
+                                            early_stop_mins =  self.early_stop_mins,
 
                                             budget_range = self.budget_range,
                                             budget_scaling = self.budget_scaling,
@@ -794,7 +765,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                                     other_objective_functions=self.other_objective_functions,
                                                     export_graphpipeline=self.export_graphpipeline,
                                                     memory=self.memory,
-                                                    cross_val_predict_cv=self.cross_val_predict_cv,
 
                                                     **kwargs: objective_function_generator(
                                                                                                 ind,
@@ -806,7 +776,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                                                                                 other_objective_functions=other_objective_functions,
                                                                                                 export_graphpipeline=export_graphpipeline,
                                                                                                 memory=memory,
-                                                                                                cross_val_predict_cv=cross_val_predict_cv,
                                                                                                 **kwargs,
                                                                                                 )]
 
@@ -848,7 +817,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                                     other_objective_functions=self.other_objective_functions,
                                                     export_graphpipeline=self.export_graphpipeline,
                                                     memory=self.memory,
-                                                    cross_val_predict_cv=self.cross_val_predict_cv,
                                                     **kwargs: val_objective_function_generator(
                                                         ind,
                                                         X,
@@ -859,7 +827,6 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                                                         other_objective_functions=other_objective_functions,
                                                         export_graphpipeline=export_graphpipeline,
                                                         memory=memory,
-                                                        cross_val_predict_cv=cross_val_predict_cv,
                                                         **kwargs,
                                                         )]
 
@@ -891,9 +858,9 @@ class TPOTEstimatorSteadyState(BaseEstimator):
 
 
         if self.export_graphpipeline:
-            best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
+            best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory)
         else:
-            best_individual_pipeline = best_individual.export_pipeline()
+            best_individual_pipeline = best_individual.export_pipeline(memory=self.memory)
 
         if self.preprocessing:
             self.fitted_pipeline_ = sklearn.pipeline.make_pipeline(sklearn.base.clone(self._preprocessing_pipeline), best_individual_pipeline )
@@ -981,7 +948,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
             self.evaluated_individuals = self.evaluated_individuals.set_index(self.evaluated_individuals.index.map(object_to_int))
             self.evaluated_individuals['Parents'] = self.evaluated_individuals['Parents'].apply(lambda row: convert_parents_tuples_to_integers(row, object_to_int))
 
-            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline, export_graphpipeline=self.export_graphpipeline, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv))
+            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline, export_graphpipeline=self.export_graphpipeline, memory=self.memory))
 
         return self.evaluated_individuals
 

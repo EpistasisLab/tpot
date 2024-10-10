@@ -5,17 +5,16 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 from ..tuple_index import TupleIndex
 
 class SequentialPipelineIndividual(SklearnIndividual):
-    # takes in a list of search spaces. each space is a list of SklearnIndividualGenerators.
+    # takes in a list of search spaces. each space is a list of SearchSpaces.
     # will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
 
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator], memory=None, rng=None) -> None:
+    def __init__(self, search_spaces : List[SearchSpace], rng=None) -> None:
         super().__init__()
         self.search_spaces = search_spaces
-        self.memory = memory
         self.pipeline = []
 
         for space in self.search_spaces:
@@ -126,8 +125,8 @@ class SequentialPipelineIndividual(SklearnIndividual):
                 
         return crossover_success
     
-    def export_pipeline(self):
-        return sklearn.pipeline.make_pipeline(*[step.export_pipeline() for step in self.pipeline], memory=self.memory)
+    def export_pipeline(self, memory=None, **kwargs):
+        return sklearn.pipeline.make_pipeline(*[step.export_pipeline(memory=memory, **kwargs) for step in self.pipeline], memory=memory)
     
     def unique_id(self):
         l = [step.unique_id() for step in self.pipeline]
@@ -137,14 +136,14 @@ class SequentialPipelineIndividual(SklearnIndividual):
 
 
 
-class SequentialPipeline(SklearnIndividualGenerator):
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator], memory=None ) -> None:
+class SequentialPipeline(SearchSpace):
+    def __init__(self, search_spaces : List[SearchSpace] ) -> None:
         """
         Takes in a list of search spaces. will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
         """
         
         self.search_spaces = search_spaces
-        self.memory = memory
 
     def generate(self, rng=None):
-        return SequentialPipelineIndividual(self.search_spaces, memory=self.memory, rng=rng)
+        rng = np.random.default_rng(rng)
+        return SequentialPipelineIndividual(self.search_spaces, rng=rng)

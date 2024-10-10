@@ -28,8 +28,8 @@ def get_LogisticRegression_ConfigurationSpace(random_state):
     
 
     cs = ConfigurationSpace(space)
-    cs.add_hyperparameters([penalty, C, l1_ratio, class_weight])
-    cs.add_conditions([l1_ratio_condition])
+    cs.add([penalty, C, l1_ratio, class_weight])
+    cs.add([l1_ratio_condition])
 
     return cs
 
@@ -42,7 +42,6 @@ def get_KNeighborsClassifier_ConfigurationSpace(n_samples):
                     'n_neighbors': Integer("n_neighbors", bounds=(1, min(100,n_samples)), log=True),
                     'weights': Categorical("weights", ['uniform', 'distance']),
                     'p': Integer("p", bounds=(1, 3)),
-                    'metric': Categorical("metric", ['euclidean', 'minkowski']),
                     'n_jobs': 1,
                 }
             ) 
@@ -69,8 +68,8 @@ def get_BaggingClassifier_ConfigurationSpace(random_state):
         space = space
     )
 
-    cs.add_hyperparameters([bootstrap, oob_score])
-    cs.add_conditions([oob_condition])
+    cs.add([bootstrap, oob_score])
+    cs.add([oob_condition])
 
     return cs
 
@@ -79,7 +78,7 @@ def get_DecisionTreeClassifier_ConfigurationSpace(n_featues, random_state):
     space = {
         'criterion': Categorical("criterion", ['gini', 'entropy']),
         'max_depth': Integer("max_depth", bounds=(1, min(20,2*n_featues))), #max of 20? log scale?
-        'min_samples_split': Integer("min_samples_split", bounds=(1, 20)),
+        'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
         'max_features': Categorical("max_features", [NONE_SPECIAL_STRING, 'sqrt', 'log2']),
         'min_weight_fraction_leaf': 0.0,
@@ -108,8 +107,8 @@ def get_LinearSVC_ConfigurationSpace(random_state):
 
 
     cs = ConfigurationSpace(space)
-    cs.add_hyperparameters([penalty, C, loss])
-    cs.add_conditions([loss_condition])
+    cs.add([penalty, C, loss])
+    cs.add([loss_condition])
 
     return cs
 
@@ -137,8 +136,8 @@ def get_SVC_ConfigurationSpace(random_state):
 
 
     cs = ConfigurationSpace(space)
-    cs.add_hyperparameters([kernel, C, coef0, degree, gamma, shrinking, class_weight])
-    cs.add_conditions([degree_condition, gamma_condition, coef0_condition])
+    cs.add([kernel, C, coef0, degree, gamma, shrinking, class_weight])
+    cs.add([degree_condition, gamma_condition, coef0_condition])
 
     return cs
 
@@ -146,7 +145,7 @@ def get_SVC_ConfigurationSpace(random_state):
 def get_RandomForestClassifier_ConfigurationSpace( random_state):
     space = {
             'n_estimators': 128, #as recommended by Oshiro et al. (2012
-            'max_features': Float("max_features", bounds=(0.01,1)), #log scale like autosklearn?
+            'max_features': Float("max_features", bounds=(0.01,1), log=True), #log scale like autosklearn?
             'criterion': Categorical("criterion", ['gini', 'entropy']),
             'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
             'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
@@ -251,8 +250,8 @@ def get_SGDClassifier_ConfigurationSpace(random_state):
         space = space
     )
 
-    cs.add_hyperparameters([power_t, learning_rate])
-    cs.add_conditions([powertcond])
+    cs.add([power_t, learning_rate])
+    cs.add([powertcond])
 
     return cs
 
@@ -322,8 +321,8 @@ def get_LinearDiscriminantAnalysis_ConfigurationSpace():
     shrinkcond = NotEqualsCondition(shrinkage, solver, 'svd')
 
     cs = ConfigurationSpace()
-    cs.add_hyperparameters([solver, shrinkage])
-    cs.add_conditions([shrinkcond])
+    cs.add([solver, shrinkage])
+    cs.add([shrinkcond])
 
     return cs
 
@@ -361,8 +360,8 @@ def get_GradientBoostingClassifier_ConfigurationSpace(n_classes, random_state):
     cs = ConfigurationSpace(
         space = space
     )
-    cs.add_hyperparameters([n_iter_no_change, validation_fraction, early_stop ])
-    cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
+    cs.add([n_iter_no_change, validation_fraction, early_stop ])
+    cs.add([validation_fraction_cond, n_iter_no_change_cond])
     return cs
 
 def GradientBoostingClassifier_hyperparameter_parser(params):
@@ -430,8 +429,8 @@ def get_HistGradientBoostingClassifier_ConfigurationSpace(random_state):
     cs = ConfigurationSpace(
         space = space
     )
-    cs.add_hyperparameters([n_iter_no_change, validation_fraction, early_stop ])
-    cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
+    cs.add([n_iter_no_change, validation_fraction, early_stop ])
+    cs.add([validation_fraction_cond, n_iter_no_change_cond])
 
     return cs
 
@@ -507,7 +506,7 @@ def get_MLPClassifier_ConfigurationSpace(random_state):
     learning_rate_init = Float("learning_rate_init", bounds=(1e-4, 1e-1), log=True)
     learning_rate = Categorical("learning_rate", ['constant', 'invscaling', 'adaptive'])
 
-    cs.add_hyperparameters([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping, learning_rate_init])
+    cs.add([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping, learning_rate_init])
 
     return cs
 

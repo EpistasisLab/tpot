@@ -2,7 +2,24 @@ import numpy as np
 #TODO make these functions take in a predetermined set of bins rather than calculating a new set each time
 
 def create_nd_matrix(matrix, grid_steps=None, bins=None):
+    """
+    Create an n-dimensional matrix with the highest score for each cell
+    
+    Parameters
+    ----------
+    matrix : np.ndarray
+        The score matrix, where the first column is the score and the rest are the features for the map-elites algorithm.
+    grid_steps : int, optional
+        The number of steps to use for each feature to automatically create the bin thresholds. The default is None.
+    bins : list, optional
+        A list of lists containing the bin edges for each feature (other than the score). The default is None.
 
+    Returns
+    -------
+    np.ndarray
+        An n-dimensional matrix with the highest score for each cell and the index of the individual with that score.
+        The value in the cell is a dictionary with the keys "score" and "idx" containing the score and index of the individual respectively.
+    """
     if grid_steps is not None and bins is not None:
         raise ValueError("Either grid_steps or bins must be provided but not both")
 
@@ -30,9 +47,47 @@ def create_nd_matrix(matrix, grid_steps=None, bins=None):
     return nd_matrix
 
 def manhattan(a, b):
+    """
+    Calculate the Manhattan distance between two points.
+    
+    Parameters
+    ----------
+    a : np.ndarray
+        The first point.
+    b : np.ndarray
+        The second point.
+
+    Returns
+    -------
+    float
+        The Manhattan distance between the two points.
+    """
     return sum(abs(val1-val2) for val1, val2 in zip(a,b))
 
 def map_elites_survival_selector(scores,  k=None, rng=None, grid_steps= 10, bins=None):
+    """
+    Takes a matrix of scores and returns the indexes of the individuals that are in the best cells of the map-elites grid.
+    Can either take a grid_steps parameter to automatically create the bins or a bins parameter to specify the bins manually.
+    
+    Parameters
+    ----------
+    scores : np.ndarray
+        The score matrix, where the first column is the score and the rest are the features for the map-elites algorithm.
+    k : int, optional
+        The number of individuals to select. The default is None.
+    rng : int, np.random.Generator, optional
+        The random number generator. The default is None.
+    grid_steps : int, optional
+        The number of steps to use for each feature to automatically create the bin thresholds. The default is None.
+    bins : list, optional
+        A list of lists containing the bin edges for each feature (other than the score). The default is None.
+
+    Returns
+    -------
+    np.ndarray
+        An array of indexes of the individuals in the best cells of the map-elites grid (without repeats).
+        
+    """
 
     if grid_steps is not None and bins is not None:
         raise ValueError("Either grid_steps or bins must be provided but not both")
@@ -48,7 +103,34 @@ def map_elites_survival_selector(scores,  k=None, rng=None, grid_steps= 10, bins
 
     return np.unique(indexes)
 
-def map_elites_parent_selector(scores,  k, rng=None, manhattan_distance = 2, n_parents=1, grid_steps= 10, bins=None):
+def map_elites_parent_selector(scores,  k, n_parents=1, rng=None, manhattan_distance = 2,  grid_steps= 10, bins=None):
+    """
+    A parent selection algorithm for the map-elites algorithm. First creates a grid of the best individuals per cell and then selects parents based on the Manhattan distance between the cells of the best individuals.
+    
+    Parameters
+    ----------
+    scores : np.ndarray
+        The score matrix, where the first column is the score and the rest are the features for the map-elites algorithm.
+    k : int
+        The number of individuals to select.
+    n_parents : int, optional
+        The number of parents to select per individual. The default is 1.
+    rng : int, np.random.Generator, optional
+        The random number generator. The default is None.
+    manhattan_distance : int, optional
+        The maximum Manhattan distance between parents. The default is 2. If no parents are found within this distance, the distance is increased by 1 until at least one other parent is found.
+    grid_steps : int, optional
+        The number of steps to use for each feature to automatically create the bin thresholds. The default is None.
+    bins : list, optional
+        A list of lists containing the bin edges for each feature (other than the score). The default is None.
+
+    Returns
+    -------
+    np.ndarray
+        An array of indexes of the parents selected for each individual
+
+    """
+
     
     if grid_steps is not None and bins is not None:
         raise ValueError("Either grid_steps or bins must be provided but not both")
@@ -108,6 +190,19 @@ def map_elites_parent_selector(scores,  k, rng=None, manhattan_distance = 2, n_p
 
 
 def get_bins_quantiles(arr, k=None, q=None):
+    """
+    Takes a matrix and returns the bin thresholds based on quantiles.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        The matrix to calculate the bins for.
+    k : int, optional
+        The number of bins to create. This parameter creates k equally spaced quantiles. 
+        For example, k=3 will create quantiles at array([0.25, 0.5 , 0.75]).
+    q : np.ndarray, optional
+        Custom quantiles to use for the bins. This parameter creates bins based on the quantiles of the data. The default is None.
+    """
     bins = []
 
     if q is not None and k is not None:
@@ -116,13 +211,29 @@ def get_bins_quantiles(arr, k=None, q=None):
     if q is not None:
         final_q = q
     elif k is not None:
-        final_q = np.linspace(0, 1, k)
+        final_q = np.linspace(0, 1, k+2)[1:-1]
 
     for i in range(arr.shape[1]):
         bins.append(np.quantile(arr[:,i], final_q))
     return bins
 
 def get_bins(arr, k):
+    """
+    Get equally spaced bin thresholds between the min and max values for the array of scores.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        The list of values to calculate the bins for.
+    k : int
+        The number of bins to create.
+
+    Returns
+    -------
+    list
+        A list of bin thresholds calculated to be k equally spaced bins between the min and max of the array.
+    
+    """
     min_vals = np.min(arr, axis=0)
     max_vals = np.max(arr, axis=0)
     [np.linspace(min_vals[i], max_vals[i], k) for i in range(len(min_vals))]

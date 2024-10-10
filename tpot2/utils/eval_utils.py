@@ -95,7 +95,7 @@ def parallel_eval_objective_list(individual_list,
     global_timeout_triggered = False
     while len(submitted_futures) < max_queue_size and len(individual_stack)>0:
         individual = individual_stack.pop()
-        future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_mins,**objective_kwargs)
+        future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_mins*60,**objective_kwargs)
         
         submitted_futures[future] = {"individual": individual,
                                     "time": time.time(),}
@@ -202,7 +202,7 @@ def parallel_eval_objective_list(individual_list,
         #submit new futures
         while len(submitted_futures) < max_queue_size and len(individual_stack)>0:
             individual = individual_stack.pop()
-            future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_mins,**objective_kwargs)
+            future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_mins*60,**objective_kwargs)
             
             submitted_futures[future] = {"individual": individual,
                                         "time": time.time(),}

@@ -5,8 +5,19 @@ import numpy as np
 
 def nondominated_sorting(matrix):
     """
-    Returns the indexes of the matrix
-    bigger is better
+    Returns the indices of the non-dominated rows in the scores matrix.
+    Rows are considered samples, and columns are considered objectives.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        The score matrix, where rows the individuals and the columns are the corresponds to scores on different objectives.
+
+    Returns
+    -------
+    list
+        A list of lists of indices of the non-dominated rows in the scores matrix.
+
     """
     # Initialize the front list and the rank list
 
@@ -55,12 +66,38 @@ def nondominated_sorting(matrix):
 def dominates(list1, list2):
     """
     returns true is all values in list1 are not strictly worse than list2 AND at least one item in list1 is better than list2
+    
+    Parameters
+    ----------
+    list1 : list
+        The first list of values to compare.
+    list2 : list
+        The second list of values to compare.
+    
+    Returns
+    -------
+    bool
+        True if all values in list1 are not strictly worse than list2 AND at least one item in list1 is better than list2, False otherwise.
+    
     """
     return all(list1[i] >= list2[i] for i in range(len(list1))) and any(list1[i] > list2[i] for i in range(len(list1)))
 
 #adapted from deap + gtp
 #bigger is better
 def crowding_distance(matrix):
+    """
+    Takes a matrix of scores and returns the crowding distance for each point.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        The score matrix, where rows the individuals and the columns are the corresponds to scores on different objectives.
+
+    Returns
+    -------
+    list
+        A list of the crowding distances for each point in the score matrix.
+    """
     matrix = np.array(matrix)
     # Initialize the crowding distance for each point to zero
     crowding_distances = [0 for _ in range(len(matrix))]
@@ -88,6 +125,24 @@ def crowding_distance(matrix):
 
 
 def survival_select_NSGA2(scores, k, rng=None):
+    """
+    Select the top k individuals from the scores matrix using the NSGA-II algorithm.
+
+    Parameters
+    ----------
+    scores : np.ndarray
+        The score matrix, where rows the individuals and the columns are the corresponds to scores on different objectives.
+    k : int
+        The number of individuals to select.
+    rng : int, np.random.Generator, optional
+        The random number generator. The default is None.
+
+    Returns
+    -------
+    list
+        A list of indices of the selected individuals (without repeats).
+    
+    """
 
     pareto_fronts = nondominated_sorting(scores)
 
