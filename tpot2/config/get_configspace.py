@@ -10,6 +10,7 @@ from ..search_spaces.pipelines import ChoicePipeline, WrapperPipeline
 from . import classifiers
 from . import transformers
 from . import selectors
+from . import column_encoders
 from . import regressors
 from . import autoqtl_builtins
 from . import imputers
@@ -119,10 +120,10 @@ GROUPNAMES = {
         "classifiers" :  ["LGBMClassifier", "BaggingClassifier", 'AdaBoostClassifier', 'BernoulliNB', 'DecisionTreeClassifier', 'ExtraTreesClassifier', 'GaussianNB', 'HistGradientBoostingClassifier', 'KNeighborsClassifier','LinearDiscriminantAnalysis', 'LogisticRegression', "LinearSVC", "SVC", 'MLPClassifier', 'MultinomialNB',  "QuadraticDiscriminantAnalysis", 'RandomForestClassifier', 'SGDClassifier', 'XGBClassifier'],
         "regressors" : ["LGBMRegressor", 'AdaBoostRegressor', "ARDRegression", 'DecisionTreeRegressor', 'ExtraTreesRegressor', 'HistGradientBoostingRegressor', 'KNeighborsRegressor',  'LinearSVR', "MLPRegressor", 'RandomForestRegressor', 'SGDRegressor', 'SVR', 'XGBRegressor'],
         
-        
-        "transformers":  ["PassKBinsDiscretizer", "Binarizer", "PCA", "ZeroCount", "ColumnOneHotEncoder", "ColumnOrdinalEncoder", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer"],
+        "column_encoders" : ["ColumnOneHotEncoder", "ColumnOrdinalEncoder"],
+        "transformers":  ["PassKBinsDiscretizer", "Binarizer", "PCA", "ZeroCount", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer"],
         "scalers": ["MinMaxScaler", "RobustScaler", "StandardScaler", "MaxAbsScaler", "Normalizer", ],
-        "all_transformers" : ["transformers", "scalers"],
+        "all_transformers" : ["transformers", "scalers", "column_encoders"],
 
         "arithmatic": ["AddTransformer", "mul_neg_1_Transformer", "MulTransformer", "SafeReciprocalTransformer", "EQTransformer", "NETransformer", "GETransformer", "GTTransformer", "LETransformer", "LTTransformer", "MinTransformer", "MaxTransformer"],
         "imputers": ["SimpleImputer", "IterativeImputer", "KNNImputer"],
@@ -288,10 +289,6 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
             return transformers.get_QuantileTransformer_configspace(random_state=random_state)
         case "RobustScaler":
             return transformers.RobustScaler_configspace
-        case "ColumnOneHotEncoder":
-            return {}
-        case "ColumnOrdinalEncoder":
-            return {}
         case "MaxAbsScaler":
             return {}
         case "PolynomialFeatures":
@@ -300,6 +297,12 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
             return {}
         case "PassKBinsDiscretizer":
             return transformers.get_passkbinsdiscretizer_configspace(random_state=random_state)
+
+        #column_encoders.py
+        case "ColumnOneHotEncoder":
+            return column_encoders.OneHotEncoder_configspace
+        case "ColumnOrdinalEncoder":
+            return column_encoders.OrdinalEncoder_configspace
 
         #selectors.py
         case "SelectFwe":
