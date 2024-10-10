@@ -29,7 +29,7 @@ class SklearnIndividual(tpot2.BaseIndividual):
         def wrapper(self, other, rng=None, **kwargs):
             if not isinstance(other, type(self)):
                 return False
-            return func(self, other, rng=None, **kwargs)
+            return func(self, other, rng=rng, **kwargs)
 
         return wrapper
 

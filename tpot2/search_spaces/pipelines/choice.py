@@ -10,9 +10,9 @@ from ..base import SklearnIndividual, SklearnIndividualGenerator
 class ChoicePipelineIndividual(SklearnIndividual):
     def __init__(self, search_spaces : List[SklearnIndividualGenerator], rng=None) -> None:
         super().__init__()
-        
+        rng = np.random.default_rng(rng)
         self.search_spaces = search_spaces
-        self.node = np.random.default_rng(rng).choice(self.search_spaces).generate(rng=rng)
+        self.node = rng.choice(self.search_spaces).generate(rng=rng)
         
 
     def mutate(self, rng=None):
@@ -23,7 +23,8 @@ class ChoicePipelineIndividual(SklearnIndividual):
             return self._mutate_node(rng)
     
     def _mutate_select_new_node(self, rng=None):
-        self.node = random.choice(self.search_spaces).generate(rng=rng)
+        rng = np.random.default_rng(rng)
+        self.node = rng.choice(self.search_spaces).generate(rng=rng)
         return True
     
     def _mutate_node(self, rng=None):

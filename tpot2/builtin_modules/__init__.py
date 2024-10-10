@@ -7,3 +7,10 @@ from .passthrough import Passthrough, SkipTransformer
 from .imputer import ColumnSimpleImputer
 from .estimatortransformer import EstimatorTransformer
 from .passkbinsdiscretizer import PassKBinsDiscretizer
+
+try:
+    from .nn import PytorchLRClassifier, PytorchMLPClassifier
+except (ModuleNotFoundError, ImportError):
+    pass
+    # import warnings
+    # warnings.warn("Warning: optional dependency `torch` is not available. - skipping import of NN models.")

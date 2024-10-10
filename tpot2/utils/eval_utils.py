@@ -77,72 +77,11 @@ def eval_objective_list(ind, objective_list, verbose=0,**objective_kwargs):
     scores = np.concatenate([objective_nan_wrapper(ind, obj, verbose,**objective_kwargs) for obj in objective_list ])
     return scores
 
+
 def parallel_eval_objective_list(individual_list,
                                 objective_list,
-                                n_jobs = 1,
                                 verbose=0,
-                                timeout=None,
-                                n_expected_columns=None,
-                                client=None,
-                                parallel_timeout=None,
-                                **objective_kwargs):
-
-    #offspring_scores = Parallel(n_jobs=n_jobs)(delayed(eval_objective_list)(ind,  objective_list, verbose, timeout=timeout)  for ind in individual_list )
-    
-    # delayed_values = [dask.delayed(eval_objective_list)(ind,  objective_list, verbose, timeout=timeout,**objective_kwargs)  for ind in individual_list]
-    # with TqdmCallback(desc="Evaluating Individuals", disable=verbose<2, leave=False):
-    #     offspring_scores = list(dask.compute( *delayed_values,
-    #                             num_workers=n_jobs))
-    # del delayed_values
-    if client is None:
-        client = dask.distributed.get_client()
-    futures = [client.submit(eval_objective_list, ind,  objective_list, verbose, timeout=timeout,**objective_kwargs)  for ind in individual_list]
-    
-    if verbose >= 6:
-        dask.distributed.progress(futures, notebook=False)
-    
-    try: 
-        if parallel_timeout is not None and np.isinf(parallel_timeout):
-            parallel_timeout = None
-        dask.distributed.wait(futures, timeout=parallel_timeout)
-    except dask.distributed.TimeoutError:
-        print("terminating parallel evaluation due to timeout")
-        pass
-    except dask.distributed.CancelledError:
-        print("dask.distributed.CancelledError")
-    
-    offspring_scores = []
-    # todo optimize this
-    for individual, future in zip(individual_list, futures):
-        if not future.done():
-            future.cancel()
-            offspring_scores.append(["TIMEOUT"])
-            if verbose >= 4:
-                print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {individual} \n')
-        elif future.exception():
-            offspring_scores.append(["INVALID"])
-            if verbose == 4:
-                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION (Dask Future) \n {individual} \n {future.exception()} \n')
-            if verbose >= 5:
-                print(f'WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION (Dask Future) \n {individual} \n {future.exception()} \n {future.traceback()}')
-        elif future.cancelled():
-            offspring_scores.append(["INVALID"])
-            if verbose == 4:
-                print(f'WARNING THIS INDIVIDUAL WAS CANCELED BY DASK (likely memory issue) \n {individual}')
-
-        else:
-            offspring_scores.append(future.result())
-            
-
-    if n_expected_columns is not None:
-        offspring_scores = process_scores(offspring_scores, n_expected_columns)
-    return offspring_scores
-
-
-def parallel_eval_objective_list2(individual_list,
-                                objective_list,
-                                verbose=0,
-                                max_eval_time_seconds=None,
+                                max_eval_time_mins=None,
                                 n_expected_columns=None,
                                 client=None,
                                 scheduled_timeout_time=None,
@@ -156,7 +95,7 @@ def parallel_eval_objective_list2(individual_list,
     global_timeout_triggered = False
     while len(submitted_futures) < max_queue_size and len(individual_stack)>0:
         individual = individual_stack.pop()
-        future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_seconds,**objective_kwargs)
+        future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_mins,**objective_kwargs)
         
         submitted_futures[future] = {"individual": individual,
                                     "time": time.time(),}
@@ -168,7 +107,7 @@ def parallel_eval_objective_list2(individual_list,
     while len(individual_stack)>0 or len(submitted_futures)>0:
         #wait for at least one future to finish or timeout
         try:
-            next(distributed.as_completed(submitted_futures, timeout=max_eval_time_seconds))
+            next(distributed.as_completed(submitted_futures, timeout=max_eval_time_mins*60))
         except dask.distributed.TimeoutError:
             pass
         except dask.distributed.CancelledError:
@@ -214,11 +153,10 @@ def parallel_eval_objective_list2(individual_list,
                         scores = [np.nan for _ in range(n_expected_columns)]
                         eval_error = "INVALID"
             else: #if future is not done
-                
-                
 
-                #check if the future has been running for too long, cancel the future
-                if max_eval_time_seconds is not None and time.time() - submitted_futures[completed_future]["time"] > max_eval_time_seconds*1.25:
+                # check if the future has been running for too long, cancel the future
+                # we multiply max_eval_time_mins by 1.25 since the objective function in the future should be able to cancel itself. This is a backup in case it doesn't.
+                if max_eval_time_mins is not None and time.time() - submitted_futures[completed_future]["time"] > max_eval_time_mins*1.25*60:
                     completed_future.cancel()
                     
                     if verbose >= 4:
@@ -230,10 +168,10 @@ def parallel_eval_objective_list2(individual_list,
                     completed_future.cancel()
                     
                     if verbose >= 4:
-                        print(f'WARNING AN INDIVIDUAL TIMED OUT (max_time_seconds): \n {submitted_futures[completed_future]} \n')
+                        print(f'WARNING AN INDIVIDUAL TIMED OUT (max_time_mins): \n {submitted_futures[completed_future]} \n')
                     
                     scores = [np.nan for _ in range(n_expected_columns)]
-                    eval_error = None
+                    eval_error = None #eval error is None because these individuals were not evaluated or did not have time to reach max_eval_time_mins. this allows them to be reused if warm_start=True
 
                 else:
                     continue #otherwise, continue to next future
@@ -264,7 +202,7 @@ def parallel_eval_objective_list2(individual_list,
         #submit new futures
         while len(submitted_futures) < max_queue_size and len(individual_stack)>0:
             individual = individual_stack.pop()
-            future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_seconds,**objective_kwargs)
+            future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_mins,**objective_kwargs)
             
             submitted_futures[future] = {"individual": individual,
                                         "time": time.time(),}

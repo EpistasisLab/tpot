@@ -41,7 +41,6 @@ A Python tool that automatically creates and optimizes machine learning pipeline
                       'traitlets>=5.8.0',
                       'lightgbm>=3.3.3',
                       'optuna>=3.0.5',
-                      'baikal>=0.4.2',
                       'networkx>=3.0',
                       'dask>=2024.4.2',
                       'distributed>=2024.4.2',

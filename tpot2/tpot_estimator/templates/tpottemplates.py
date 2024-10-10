@@ -6,7 +6,7 @@ from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 #TODO These do not follow sklearn conventions of __init__
 
-from ..default_search_spaces import get_default_search_space
+from ...config.template_search_spaces import get_template_search_spaces
 
 class TPOTRegressor(TPOTEstimator):
     def __init__(       self,
@@ -21,8 +21,8 @@ class TPOTRegressor(TPOTEstimator):
                         categorical_features = None,
                         memory = None,
                         preprocessing = False,
-                        max_time_seconds=3600, 
-                        max_eval_time_seconds=60*10, 
+                        max_time_mins=60, 
+                        max_eval_time_mins=5, 
                         n_jobs = 1,
                         validation_strategy = "none",
                         validation_fraction = .2, 
@@ -108,10 +108,10 @@ class TPOTRegressor(TPOTEstimator):
             - bool : If True, will use a default preprocessing pipeline which includes imputation followed by one hot encoding.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
 
-        max_time_seconds : float, default=float("inf")
+        max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
 
-        max_eval_time_seconds : float, default=60*5
+        max_eval_time_mins : float, default=60*5
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
 
     
@@ -147,7 +147,7 @@ class TPOTRegressor(TPOTEstimator):
             3. best individual
             4. warnings
             >=5. full warnings trace
-            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
+            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_mins in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
 
         memory_limit : str, default="4GB"
@@ -202,8 +202,8 @@ class TPOTRegressor(TPOTEstimator):
         self.categorical_features = categorical_features
         self.memory = memory
         self.preprocessing = preprocessing
-        self.max_time_seconds = max_time_seconds
-        self.max_eval_time_seconds = max_eval_time_seconds
+        self.max_time_mins = max_time_mins
+        self.max_eval_time_mins = max_eval_time_mins
         self.n_jobs = n_jobs
         self.validation_strategy = validation_strategy
         self.validation_fraction = validation_fraction
@@ -228,7 +228,7 @@ class TPOTRegressor(TPOTEstimator):
                                         "n_features":X.shape[1], 
                                         "random_state":self.random_state}
 
-            search_space = get_default_search_space(self.search_space, classification=True, inner_predictors=self.allow_inner_regressors, **get_search_space_params)
+            search_space = get_template_search_spaces(self.search_space, classification=False, inner_predictors=self.allow_inner_regressors, **get_search_space_params)
 
             super(TPOTRegressor,self).__init__(
                 search_space=search_space,
@@ -242,8 +242,8 @@ class TPOTRegressor(TPOTEstimator):
                 categorical_features = self.categorical_features,
                 memory = self.memory,
                 preprocessing = self.preprocessing,
-                max_time_seconds=self.max_time_seconds, 
-                max_eval_time_seconds=self.max_eval_time_seconds, 
+                max_time_mins=self.max_time_mins, 
+                max_eval_time_mins=self.max_eval_time_mins, 
                 n_jobs=self.n_jobs,
                 validation_strategy = self.validation_strategy,
                 validation_fraction = self.validation_fraction, 
@@ -274,8 +274,8 @@ class TPOTClassifier(TPOTEstimator):
                         categorical_features = None,
                         memory = None,
                         preprocessing = False,
-                        max_time_seconds=3600, 
-                        max_eval_time_seconds=60*10, 
+                        max_time_mins=60, 
+                        max_eval_time_mins=10, 
                         n_jobs = 1,
                         validation_strategy = "none",
                         validation_fraction = .2, 
@@ -362,10 +362,10 @@ class TPOTClassifier(TPOTEstimator):
             - bool : If True, will use a default preprocessing pipeline which includes imputation followed by one hot encoding.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
 
-        max_time_seconds : float, default=float("inf")
+        max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
 
-        max_eval_time_seconds : float, default=60*5
+        max_eval_time_mins : float, default=60*5
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
 
     
@@ -401,7 +401,7 @@ class TPOTClassifier(TPOTEstimator):
             3. best individual
             4. warnings
             >=5. full warnings trace
-            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
+            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_mins in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
 
         memory_limit : str, default="4GB"
@@ -455,8 +455,8 @@ class TPOTClassifier(TPOTEstimator):
         self.categorical_features = categorical_features
         self.memory = memory
         self.preprocessing = preprocessing
-        self.max_time_seconds = max_time_seconds
-        self.max_eval_time_seconds = max_eval_time_seconds
+        self.max_time_mins = max_time_mins
+        self.max_eval_time_mins = max_eval_time_mins
         self.n_jobs = n_jobs
         self.validation_strategy = validation_strategy
         self.validation_fraction = validation_fraction
@@ -481,7 +481,7 @@ class TPOTClassifier(TPOTEstimator):
                                        "n_features":X.shape[1], 
                                        "random_state":self.random_state}
 
-            search_space = get_default_search_space(self.search_space, classification=True, inner_predictors=self.allow_inner_classifiers, **get_search_space_params)
+            search_space = get_template_search_spaces(self.search_space, classification=True, inner_predictors=self.allow_inner_classifiers, **get_search_space_params)
 
 
             super(TPOTClassifier,self).__init__(
@@ -496,8 +496,8 @@ class TPOTClassifier(TPOTEstimator):
                 categorical_features = self.categorical_features,
                 memory = self.memory,
                 preprocessing = self.preprocessing,
-                max_time_seconds=self.max_time_seconds, 
-                max_eval_time_seconds=self.max_eval_time_seconds, 
+                max_time_mins=self.max_time_mins, 
+                max_eval_time_mins=self.max_eval_time_mins, 
                 n_jobs=self.n_jobs,
                 validation_strategy = self.validation_strategy,
                 validation_fraction = self.validation_fraction, 
