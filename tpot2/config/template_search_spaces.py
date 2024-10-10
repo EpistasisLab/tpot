@@ -83,6 +83,7 @@ def get_graph_search_space(classification=True, inner_predictors=True, cross_val
         leaf_search_space = None, 
         inner_search_space = inner_search_space,
         cross_val_predict_cv=cross_val_predict_cv,
+        max_size=15,
     )
 
     return search_space
@@ -113,6 +114,7 @@ def get_graph_search_space_light(classification=True, inner_predictors=True, cro
         leaf_search_space = None, 
         inner_search_space = inner_search_space,
         cross_val_predict_cv=cross_val_predict_cv,
+        max_size=15,
     )
 
     return search_space
