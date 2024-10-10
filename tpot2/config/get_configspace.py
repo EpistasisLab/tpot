@@ -37,6 +37,7 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import SVC, SVR, LinearSVR, LinearSVC
 from lightgbm import LGBMClassifier, LGBMRegressor
 import sklearn
+import sklearn.calibration as calibration
 from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
 from sklearn.decomposition import FastICA, PCA
 from sklearn.cluster import FeatureAgglomeration
@@ -525,7 +526,7 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
     
     if name == "LinearSVC_wrapped":
         ext = get_node("LinearSVC", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
-        return WrapperPipeline(estimator_search_space=ext, method=sklearn.calibration.CalibratedClassifierCV, space={})
+        return WrapperPipeline(estimator_search_space=ext, method=calibration.CalibratedClassifierCV, space={})
     if name == "RFE_classification":
         rfe_sp = get_configspace(name="RFE", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
         ext = get_node("ExtraTreesClassifier", n_classes=n_classes, n_samples=n_samples, random_state=random_state)
