@@ -5,7 +5,7 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 
 import copy
 from ..tuple_index import TupleIndex
@@ -14,7 +14,7 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
     # takes in a single search space.
     # will produce a pipeline of variable length. Each step in the pipeline will be pulled from the search space provided.
 
-    def __init__(self, search_space : SklearnIndividualGenerator, max_length: int , rng=None) -> None:
+    def __init__(self, search_space : SearchSpace, max_length: int , rng=None) -> None:
         super().__init__()
 
         rng = np.random.default_rng(rng)
@@ -127,8 +127,8 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
                     crossover_success = True
         return crossover_success
     
-    def export_pipeline(self):
-        return sklearn.pipeline.make_pipeline(*[step.export_pipeline() for step in self.pipeline])
+    def export_pipeline(self, memory=None, **kwargs):
+        return sklearn.pipeline.make_pipeline(*[step.export_pipeline(memory=memory, **kwargs) for step in self.pipeline], memory=memory)
     
     def unique_id(self):
         l = [step.unique_id() for step in self.pipeline]
@@ -136,8 +136,8 @@ class DynamicLinearPipelineIndividual(SklearnIndividual):
         return TupleIndex(tuple(l))
     
 
-class DynamicLinearPipeline(SklearnIndividualGenerator):
-    def __init__(self, search_space : SklearnIndividualGenerator, max_length: int ) -> None:
+class DynamicLinearPipeline(SearchSpace):
+    def __init__(self, search_space : SearchSpace, max_length: int ) -> None:
         self.search_space = search_space
         self.max_length = max_length
 
@@ -148,4 +148,5 @@ class DynamicLinearPipeline(SklearnIndividualGenerator):
     """
 
     def generate(self, rng=None):
+        rng = np.random.default_rng(rng)
         return DynamicLinearPipelineIndividual(self.search_space, self.max_length, rng=rng)   

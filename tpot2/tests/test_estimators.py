@@ -17,7 +17,7 @@ def tpot_estimator():
     n_samples=100
     n_features=100
 
-    search_space = tpot2.search_spaces.pipelines.GraphPipeline(
+    search_space = tpot2.search_spaces.pipelines.GraphSearchPipeline(
             root_search_space= tpot2.config.get_search_space("classifiers", n_samples=n_samples, n_features=n_features, n_classes=n_classes),
             leaf_search_space = None, 
             inner_search_space = tpot2.config.get_search_space(["selectors","transformers"],n_samples=n_samples, n_features=n_features, n_classes=n_classes),
@@ -30,20 +30,20 @@ def tpot_estimator():
                             scorers=['roc_auc_ovr'],
                             scorers_weights=[1],
                             classification=True,
-                            n_jobs=1, 
+                            n_jobs=4, 
                             early_stop=5,
                             other_objective_functions= [],
                             other_objective_functions_weights=[],
-                            max_time_seconds=10,
+                            max_time_mins=20/60,
                             verbose=3)
 
 @pytest.fixture
 def tpot_classifier():
-    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_seconds=10,verbose=0)
+    return tpot2.tpot_estimator.templates.TPOTClassifier(max_time_mins=10/60,verbose=0)
 
 @pytest.fixture
 def tpot_regressor():
-    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_seconds=10,verbose=0)
+    return tpot2.tpot_estimator.templates.TPOTRegressor(max_time_mins=10/60,verbose=0)
 
 
 @pytest.fixture

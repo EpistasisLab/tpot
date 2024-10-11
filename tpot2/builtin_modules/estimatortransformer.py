@@ -7,16 +7,41 @@ import numpy as np
 from sklearn.utils.validation import check_is_fitted
 
 class EstimatorTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, estimator, method='auto', passthrough=False, cross_val_predict_cv=0):
+    def __init__(self, estimator, method='auto', passthrough=False, cross_val_predict_cv=None):
+        """
+        A class for using a sklearn estimator as a transformer. When calling fit_transform, this class returns the out put of cross_val_predict
+        and trains the estimator on the full dataset. When calling transform, this class uses the estimator fit on the full dataset to transform the data.
+
+        Parameters
+        ----------
+        estimator : sklear.base. BaseEstimator
+            The estimator to use as a transformer.
+        method : str, default='auto'
+            The method to use for the transformation. If 'auto', will try to use predict_proba, decision_function, or predict in that order.
+            - predict_proba: use the predict_proba method of the estimator.
+            - decision_function: use the decision_function method of the estimator.
+            - predict: use the predict method of the estimator.
+        passthrough : bool, default=False
+            Whether to pass the original input through.
+        cross_val_predict_cv : int, default=0
+            Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
+
+            - 0-1 : When set to 0 or 1, the cross_val_predict function will not be used. The next layer will get the outputs from fitting and transforming the full dataset.
+            - >=2 : When fitting pipelines with inner classifiers or regressors, they will still be fit on the full dataset.
+                    However, the output to the next node will come from cross_val_predict with the specified number of folds.
+
+        """
         self.estimator = estimator
         self.method = method
         self.passthrough = passthrough
         self.cross_val_predict_cv = cross_val_predict_cv
     
     def fit(self, X, y=None):
-        return self.estimator.fit(X, y)
+        self.estimator.fit(X, y)
+        return self
     
-    def transform(self, X):
+    def transform(self, X, y=None):
+        #Does not do cross val predict, just uses the estimator to transform the data. This is used for the actual transformation in practice, so the real transformation without fitting is needed
         if self.method == 'auto':
             if hasattr(self.estimator, 'predict_proba'):
                 method = 'predict_proba'
@@ -43,6 +68,7 @@ class EstimatorTransformer(BaseEstimator, TransformerMixin):
 
         
     def fit_transform(self, X, y=None):
+        #Does use cross_val_predict if cross_val_predict_cv is greater than 0. this function is only used in training the model. 
         self.estimator.fit(X,y)
 
         if self.method == 'auto':
@@ -57,9 +83,8 @@ class EstimatorTransformer(BaseEstimator, TransformerMixin):
         else:
             method = self.method
         
-        if self.cross_val_predict_cv > 0:
+        if self.cross_val_predict_cv is not None:
             output = cross_val_predict(self.estimator, X, y=y, cv=self.cross_val_predict_cv)
-            
         else:
             output = getattr(self.estimator, method)(X)
             #reshape if needed

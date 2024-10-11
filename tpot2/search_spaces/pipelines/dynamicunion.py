@@ -5,7 +5,7 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 from ..tuple_index import TupleIndex
 
 class DynamicUnionPipelineIndividual(SklearnIndividual):
@@ -16,7 +16,7 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
     
     """
 
-    def __init__(self, search_space : SklearnIndividualGenerator, max_estimators=None, allow_repeats=False, rng=None) -> None:
+    def __init__(self, search_space : SearchSpace, max_estimators=None, allow_repeats=False, rng=None) -> None:
         super().__init__()
         self.search_space = search_space
         
@@ -136,9 +136,9 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
 
         return changed
 
-    def export_pipeline(self):
+    def export_pipeline(self, **kwargs):
         values = list(self.union_dict.values())
-        return sklearn.pipeline.make_union(*[step.export_pipeline() for step in values])
+        return sklearn.pipeline.make_union(*[step.export_pipeline(**kwargs) for step in values])
     
     def unique_id(self):
         values = list(self.union_dict.values())
@@ -149,15 +149,16 @@ class DynamicUnionPipelineIndividual(SklearnIndividual):
         l = ["FeatureUnion"] + l
         return TupleIndex(frozenset(l))
 
-class DynamicUnionPipeline(SklearnIndividualGenerator):
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator],max_estimators=None, allow_repeats=False ) -> None:
+class DynamicUnionPipeline(SearchSpace):
+    def __init__(self, search_space : SearchSpace, max_estimators=None, allow_repeats=False ) -> None:
         """
         Takes in a list of search spaces. will produce a pipeline of Sequential length. Each step in the pipeline will correspond to the the search space provided in the same index.
         """
         
-        self.search_spaces = search_spaces
+        self.search_space = search_space
         self.max_estimators = max_estimators
         self.allow_repeats = allow_repeats
 
     def generate(self, rng=None):
-        return DynamicUnionPipelineIndividual(self.search_spaces, max_estimators=self.max_estimators, allow_repeats=self.allow_repeats, rng=rng)
+        rng = np.random.default_rng(rng)
+        return DynamicUnionPipelineIndividual(self.search_space, max_estimators=self.max_estimators, allow_repeats=self.allow_repeats, rng=rng)

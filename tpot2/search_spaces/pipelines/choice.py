@@ -5,14 +5,14 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 
 class ChoicePipelineIndividual(SklearnIndividual):
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator], rng=None) -> None:
+    def __init__(self, search_spaces : List[SearchSpace], rng=None) -> None:
         super().__init__()
-        
+        rng = np.random.default_rng(rng)
         self.search_spaces = search_spaces
-        self.node = np.random.default_rng(rng).choice(self.search_spaces).generate(rng=rng)
+        self.node = rng.choice(self.search_spaces).generate(rng=rng)
         
 
     def mutate(self, rng=None):
@@ -23,7 +23,8 @@ class ChoicePipelineIndividual(SklearnIndividual):
             return self._mutate_node(rng)
     
     def _mutate_select_new_node(self, rng=None):
-        self.node = random.choice(self.search_spaces).generate(rng=rng)
+        rng = np.random.default_rng(rng)
+        self.node = rng.choice(self.search_spaces).generate(rng=rng)
         return True
     
     def _mutate_node(self, rng=None):
@@ -32,15 +33,15 @@ class ChoicePipelineIndividual(SklearnIndividual):
     def crossover(self, other, rng=None):
         return self.node.crossover(other.node, rng)
     
-    def export_pipeline(self):
-        return self.node.export_pipeline()
+    def export_pipeline(self, **kwargs):
+        return self.node.export_pipeline(**kwargs)
     
     def unique_id(self):
         return self.node.unique_id()
     
 
-class ChoicePipeline(SklearnIndividualGenerator):
-    def __init__(self, search_spaces : List[SklearnIndividualGenerator] ) -> None:
+class ChoicePipeline(SearchSpace):
+    def __init__(self, search_spaces : List[SearchSpace] ) -> None:
         self.search_spaces = search_spaces
 
     """
@@ -49,4 +50,5 @@ class ChoicePipeline(SklearnIndividualGenerator):
     """
 
     def generate(self, rng=None):
+        rng = np.random.default_rng(rng)
         return ChoicePipelineIndividual(self.search_spaces, rng=rng)

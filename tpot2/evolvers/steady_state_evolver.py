@@ -16,12 +16,32 @@ from tpot2.utils.utils import get_thresholds, beta_interpolation, remove_items, 
 import dask
 import warnings
 
-
+# Evolvers allow you to pass in custom mutation and crossover functions. By default,
+# the evolver will just use these functions to call ind.mutate or ind.crossover
 def ind_mutate(ind, rng):
+    """
+    Calls the ind.mutate method on the individual
+
+    Parameters
+    ----------
+    ind : tpot2.BaseIndividual
+        The individual to mutate
+    rng : int or numpy.random.Generator
+        A numpy random generator to use for reproducibility
+    """
     rng = np.random.default_rng(rng)
     return ind.mutate(rng=rng)
 
 def ind_crossover(ind1, ind2, rng):
+    """
+    Calls the ind1.crossover(ind2, rng=rng)
+    Parameters
+    ----------
+    ind1 : tpot2.BaseIndividual
+    ind2 : tpot2.BaseIndividual
+    rng : int or numpy.random.Generator
+        A numpy random generator to use for reproducibility
+    """
     rng = np.random.default_rng(rng)
     return ind1.crossover(ind2, rng=rng)
 
@@ -36,20 +56,19 @@ class SteadyStateEvolver():
                     bigger_is_better = True,
 
                     initial_population_size = 50,
-                    population_size = 50,
+                    population_size = 300,
                     max_evaluated_individuals = None,
                     early_stop = None,
-                    early_stop_seconds = None,
+                    early_stop_mins = None,
                     early_stop_tol = 0.001,
 
 
-                    max_time_seconds=float("inf"),
-                    max_eval_time_seconds=60*5,
+                    max_time_mins=float("inf"),
+                    max_eval_time_mins=10,
 
                     n_jobs=1,
                     memory_limit="4GB",
                     client=None,
-
 
                     crossover_probability=.2,
                     mutate_probability=.7,
@@ -65,13 +84,125 @@ class SteadyStateEvolver():
                     individuals_until_end_budget = 1,
                     stepwise_steps = 5,
 
-
                     verbose = 0,
                     periodic_checkpoint_folder = None,
                     callback = None,
 
                     rng=None
                     ) -> None:
+        """
+        Whereas the base_evolver uses a generational approach, the steady state evolver continuously generates individuals as resources become available.
+
+        This evolver will simultaneously evaluated n_jobs individuals. As soon as one individual is evaluated, the current population is updated with survival_selector, 
+        a new individual is generated from parents selected with parent_selector, and the new individual is immediately submitted for evaluation.
+        In contrast, the base_evolver batches evaluations in generations, and only updates the population and creates new individuals after all individuals in the current generation are evaluated.
+
+        In practice, this means that steady state evolver is more likely to use all cores at all times, allowing for flexibility is duration of evaluations and number of evaluations. However, it 
+        may also generate less diverse populations as a result.
+
+        Parameters
+        ----------
+        individual_generator : generator
+            Generator that yields new base individuals. Used to generate initial population.
+        objective_functions : list of callables
+            list of functions that get applied to the individual and return a float or list of floats
+            If an objective function returns multiple values, they are all concatenated in order
+            with respect to objective_function_weights and early_stop_tol.
+        objective_function_weights : list of floats
+            list of weights for each objective function. Sign flips whether bigger is better or not
+        objective_names : list of strings, default=None
+            Names of the objectives. If None, objective0, objective1, etc. will be used
+        objective_kwargs : dict, default=None
+            Dictionary of keyword arguments to pass to the objective function
+        bigger_is_better : bool, default=True
+            If True, the objective function is maximized. If False, the objective function is minimized. Use negative weights to reverse the direction.
+
+        initial_population_size : int, default=50
+            Number of random individuals to generate in the initial population. These will all be randomly sampled, all other subsequent individuals will be generated from the population.
+        population_size : int, default=50
+            Note: This is different from the base_evolver. 
+            In steady_state_evolver, the population_size is the number of individuals to keep in the live population. This is the total number of best individuals (as determined by survival_selector) to keep in the population.
+            New individuals are generated from this population size.
+            In base evolver, this is also the number of individuals to generate in each generation, however, here, we generate individuals as resources become available so there is no concept of a generation.
+            It is recommended to use a higher population_size to ensure diversity in the population.
+        max_evaluated_individuals : int, default=None
+            Maximum number of individuals to evaluate after which training is terminated. If None, will evaluate until time limit is reached.
+        early_stop : int, default=None
+            If the best individual has not improved in this many evaluations, stop training.
+            Note: Also different from base_evolver. In base evolver, this is the number of generations without improvement. Here, it is the number of individuals evaluated without improvement. Naturally, a higher value is recommended.
+        early_stop_mins : int, default=None
+            If the best individual has not improved in this many minutes, stop training.
+                early_stop_tol : float, list of floats, or None, default=0.001
+            -list of floats
+                list of tolerances for each objective function. If the difference between the best score and the current score is less than the tolerance, the individual is considered to have converged
+                If an index of the list is None, that item will not be used for early stopping
+            -int
+                If an int is given, it will be used as the tolerance for all objectives
+        max_time_mins : float, default=float("inf")
+            Maximum time to run the optimization. If none or inf, will run until the end of the generations.
+        max_eval_time_mins : float, default=10
+            Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
+        n_jobs : int, default=1
+            Number of processes to run in parallel.
+        memory_limit : str, default=None
+            Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
+        client : dask.distributed.Client, default=None
+            A dask client to use for parallelization. If not None, this will override the n_jobs and memory_limit parameters. If None, will create a new client with num_workers=n_jobs and memory_limit=memory_limit.
+        crossover_probability : float, default=.2
+            Probability of generating a new individual by crossover between two individuals.
+        mutate_probability : float, default=.7
+            Probability of generating a new individual by crossover between one individuals.
+        mutate_then_crossover_probability : float, default=.05
+            Probability of generating a new individual by mutating two individuals followed by crossover.
+        crossover_then_mutate_probability : float, default=.05
+            Probability of generating a new individual by crossover between two individuals followed by a mutation of the resulting individual.
+        n_parents : int, default=2
+            Number of parents to use for crossover. Must be greater than 1.
+        survival_selector : function, default=survival_select_NSGA2
+            Function to use to select individuals for survival. Must take a matrix of scores and return selected indexes.
+            Used to selected population_size * survival_percentage individuals at the start of each generation to use for mutation and crossover.
+        parent_selector : function, default=parent_select_NSGA2
+            Function to use to select pairs parents for crossover and individuals for mutation. Must take a matrix of scores and return selected indexes.     
+        
+        budget_range : list [start, end], default=None
+            This parameter is used for the successive halving algorithm.
+            A starting and ending budget to use for the budget scaling. The evolver will interpolate between these values over the generations_until_end_budget.
+            Use is dependent on the objective functions. (In TPOTEstimator this corresponds to the percentage of the data to sample.)
+        budget_scaling float : [0,1], default=0.5
+            A scaling factor to use when determining how fast we move the budget from the start to end budget.
+        evaluations_until_end_budget : int, default=1
+            The number of evaluations to run before reaching the max budget.
+        stepwise_steps : int, default=1
+            The number of staircase steps to take when interpolating the budget.
+        verbose : int, default=0
+            How much information to print during the optimization process. Higher values include the information from lower values.
+            0. nothing
+            1. progress bar
+            2. evaluations progress bar
+            3. best individual
+            4. warnings
+            >=5. full warnings trace
+        periodic_checkpoint_folder : str, default=None
+            Folder to save the population to periodically. If None, no periodic saving will be done.
+            If provided, training will resume from this checkpoint.
+        callback : tpot2.CallBackInterface, default=None
+            Callback object. Not implemented
+        rng : Numpy.Random.Generator, None, default=None
+            An object for reproducability of experiments. This value will be passed to numpy.random.default_rng() to create an instnce of the genrator to pass to other classes
+
+            - Numpy.Random.Generator
+                Will be used to create and lock in Generator instance with 'numpy.random.default_rng()'. Note this will be the same Generator passed in.
+            - None
+                Will be used to create Generator for 'numpy.random.default_rng()' where a fresh, unpredictable entropy will be pulled from the OS
+        
+        Attributes
+        ----------
+        population : tpot2.Population
+            The population of individuals.
+            Use population.population to access the individuals in the current population.
+            Use population.evaluated_individuals to access a data frame of all individuals that have been explored.
+        
+        """
 
         self.rng = np.random.default_rng(rng)
 
@@ -94,16 +225,16 @@ class SteadyStateEvolver():
         self.callback = callback
         self.n_jobs = n_jobs
 
-        if max_time_seconds is None:
-            self.max_time_seconds = float("inf")
+        if max_time_mins is None:
+            self.max_time_mins = float("inf")
         else:
-            self.max_time_seconds = max_time_seconds
+            self.max_time_mins = max_time_mins
 
         #functools requires none for infinite time, doesn't support inf
-        if max_eval_time_seconds is not None and math.isinf(max_eval_time_seconds ):
-            self.max_eval_time_seconds = None
+        if max_eval_time_mins is not None and math.isinf(max_eval_time_mins ):
+            self.max_eval_time_mins = None
         else:
-            self.max_eval_time_seconds = max_eval_time_seconds
+            self.max_eval_time_mins = max_eval_time_mins
 
         self.initial_population_size = initial_population_size
         self.budget_range = budget_range
@@ -155,7 +286,7 @@ class SteadyStateEvolver():
 
 
         self.early_stop_tol = early_stop_tol
-        self.early_stop_seconds = early_stop_seconds
+        self.early_stop_mins = early_stop_mins
         self.early_stop = early_stop
 
         if isinstance(self.early_stop_tol, float):
@@ -183,6 +314,10 @@ class SteadyStateEvolver():
 
 
     def optimize(self):
+        """
+        Creates an initial population and runs the evolutionary algorithm for the given number of generations. 
+        If generations is None, will use self.generations.
+        """
 
         #intialize the client
         if self.client is not None: #If user passed in a client manually
@@ -210,7 +345,7 @@ class SteadyStateEvolver():
         generations_without_improvement = np.array([0 for _ in range(len(self.objective_function_weights))])
         timestamp_of_last_improvement = np.array([time.time() for _ in range(len(self.objective_function_weights))])
         best_scores = [-np.inf for _ in range(len(self.objective_function_weights))]
-        scheduled_timeout_time = time.time() + self.max_time_seconds
+        scheduled_timeout_time = time.time() + self.max_time_mins*60
         budget = None
 
         submitted_futures = {}
@@ -234,7 +369,7 @@ class SteadyStateEvolver():
             for individual in individuals_to_evaluate:
                 if len(submitted_futures) >= self.max_queue_size:
                     break
-                future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
+                future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_mins*60,**self.objective_kwargs)
 
                 submitted_futures[future] = {"individual": individual,
                                             "time": time.time(),
@@ -254,7 +389,7 @@ class SteadyStateEvolver():
 
                 #wait for at least one future to finish or timeout
                 try:
-                    next(distributed.as_completed(submitted_futures, timeout=self.max_eval_time_seconds))
+                    next(distributed.as_completed(submitted_futures, timeout=self.max_eval_time_mins*60))
                 except dask.distributed.TimeoutError:
                     pass
                 except dask.distributed.CancelledError:
@@ -299,9 +434,9 @@ class SteadyStateEvolver():
                                 eval_error = "INVALID"
                     else: #if future is not done
 
-                        if self.max_eval_time_seconds is not None:
+                        if self.max_eval_time_mins is not None:
                             #check if the future has been running for too long, cancel the future
-                            if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_seconds*1.25:
+                            if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_mins*1.25*60:
                                 completed_future.cancel()
 
                                 if self.verbose >= 4:
@@ -349,7 +484,7 @@ class SteadyStateEvolver():
                     for i, obj in enumerate(self.objective_names):
                         print(f"Best {obj} score: {cur_best_scores[i]}")
 
-                if self.early_stop or self.early_stop_seconds:
+                if self.early_stop or self.early_stop_mins:
                     if self.budget is None or self.budget>=self.budget_range[-1]: #self.budget>=1:
                         #get sign of objective_function_weights
                         sign = np.sign(self.objective_function_weights)
@@ -375,14 +510,14 @@ class SteadyStateEvolver():
                                     print(f"Early stop ({self.early_stop} individuals evaluated without improvement)")
                                 break
 
-                        if self.early_stop_seconds:
-                            if any(time.time() - timestamp_of_last_improvement > self.early_stop_seconds):
+                        if self.early_stop_mins:
+                            if any(time.time() - timestamp_of_last_improvement > self.early_stop_mins*60):
                                 if self.verbose >= 3:
-                                    print(f"Early stop  ({self.early_stop_seconds} seconds passed without improvement)")
+                                    print(f"Early stop  ({self.early_stop_mins} seconds passed without improvement)")
                                 break
 
                 #if we evaluated enough individuals or time is up, stop
-                if self.max_time_seconds is not None and time.time() - start_time > self.max_time_seconds:
+                if self.max_time_mins is not None and time.time() - start_time > self.max_time_mins*60:
                     if self.verbose >= 3:
                         print("Time limit reached")
                     done = True
@@ -400,7 +535,7 @@ class SteadyStateEvolver():
                 individuals_to_evaluate = [ind for ind in individuals_to_evaluate if ind.unique_id() not in submitted_inds]
                 for individual in individuals_to_evaluate:
                     if self.max_queue_size > len(submitted_futures):
-                        future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
+                        future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_mins*60,**self.objective_kwargs)
 
                         submitted_futures[future] = {"individual": individual,
                                                     "time": time.time(),
@@ -506,7 +641,7 @@ class SteadyStateEvolver():
 
                         n_individuals_to_create = self.max_queue_size - len(submitted_futures)
                         initial_population = [next(self.individual_generator) for _ in range(n_individuals_to_create)]
-                        self.population.add_to_population(initial_population)
+                        self.population.add_to_population(initial_population, rng=self.rng)
 
 
 
@@ -518,7 +653,7 @@ class SteadyStateEvolver():
                 individuals_to_evaluate = [ind for ind in individuals_to_evaluate if ind.unique_id() not in submitted_inds]
                 for individual in individuals_to_evaluate:
                     if self.max_queue_size > len(submitted_futures):
-                        future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_seconds,**self.objective_kwargs)
+                        future = self._client.submit(tpot2.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_mins*60,**self.objective_kwargs)
 
                         submitted_futures[future] = {"individual": individual,
                                                     "time": time.time(),
@@ -560,8 +695,20 @@ class SteadyStateEvolver():
         tpot2.utils.get_pareto_frontier(self.population.evaluated_individuals, column_names=self.objective_names, weights=self.objective_function_weights)
 
 
-
     def get_unevaluated_individuals(self, column_names, budget=None, individual_list=None):
+        """
+        This function is used to get a list of individuals in the current population that have not been evaluated yet.
+
+        Parameters
+        ----------
+        column_names : list of strings
+            Names of the columns to check for unevaluated individuals (generally objective functions).
+        budget : float, default=None
+            Budget to use when checking for unevaluated individuals. If None, will not check the budget column.
+            Finds individuals who have not been evaluated with the given budget on column names.
+        individual_list : list of individuals, default=None
+            List of individuals to check for unevaluated individuals. If None, will use the current population.
+        """
         if individual_list is not None:
             cur_pop = np.array(individual_list)
         else:

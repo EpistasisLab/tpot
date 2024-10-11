@@ -39,7 +39,8 @@ class ColumnOneHotEncoder(BaseEstimator, TransformerMixin):
 
     def __init__(self, columns='auto', drop=None, handle_unknown='infrequent_if_exist', sparse_output=False, min_frequency=None,max_categories=None):
         '''
-        
+        A wrapper for OneHotEncoder that allows for onehot encoding of specific columns in a DataFrame or np array.
+
         Parameters
         ----------
 

@@ -1,7 +1,7 @@
 # try https://automl.github.io/ConfigSpace/main/api/hyperparameters.html
 
 import numpy as np
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 from ConfigSpace import ConfigurationSpace
 from typing import final
 
@@ -103,7 +103,7 @@ class EstimatorNodeIndividual(SklearnIndividual):
         
         return id_str
 
-class EstimatorNode(SklearnIndividualGenerator):
+class EstimatorNode(SearchSpace):
     def __init__(self, method, space, hyperparameter_parser=default_hyperparameter_parser):
         self.method = method
         self.space = space

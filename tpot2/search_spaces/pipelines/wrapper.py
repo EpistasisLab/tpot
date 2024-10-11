@@ -5,7 +5,7 @@ import sklearn
 from tpot2 import config
 from typing import Generator, List, Tuple, Union
 import random
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 from ConfigSpace import ConfigurationSpace
 from ..tuple_index import TupleIndex
 
@@ -19,7 +19,7 @@ class WrapperPipelineIndividual(SklearnIndividual):
             self, 
             method: type, 
             space: ConfigurationSpace,
-            estimator_search_space: SklearnIndividualGenerator, 
+            estimator_search_space: SearchSpace, 
             hyperparameter_parser: callable = None,
             wrapped_param_name: str = None,
             rng=None) -> None:
@@ -100,14 +100,14 @@ class WrapperPipelineIndividual(SklearnIndividual):
                     self.hyperparameters[key] = False
 
 
-    def export_pipeline(self):
+    def export_pipeline(self, **kwargs):
         
         if self.hyperparameters_parser is not None:
             final_params = self.hyperparameters_parser(self.hyperparameters)
         else:
             final_params = self.hyperparameters
 
-        est = self.node.export_pipeline()
+        est = self.node.export_pipeline(**kwargs)
         wrapped_est = self.method(est, **final_params)
         return wrapped_est
     
@@ -124,12 +124,12 @@ class WrapperPipelineIndividual(SklearnIndividual):
         return TupleIndex(("WrapperPipeline", id_str, self.node.unique_id()))
     
 
-class WrapperPipeline(SklearnIndividualGenerator):
+class WrapperPipeline(SearchSpace):
     def __init__(
             self, 
             method: type, 
             space: ConfigurationSpace,
-            estimator_search_space: SklearnIndividualGenerator,
+            estimator_search_space: SearchSpace,
             hyperparameter_parser: callable = None, 
             wrapped_param_name: str = None
             ) -> None:
@@ -148,4 +148,5 @@ class WrapperPipeline(SklearnIndividualGenerator):
         self.wrapped_param_name = wrapped_param_name
 
     def generate(self, rng=None):
+        rng = np.random.default_rng(rng)
         return WrapperPipelineIndividual(method=self.method, space=self.space, estimator_search_space=self.estimator_search_space, hyperparameter_parser=self.hyperparameter_parser, wrapped_param_name=self.wrapped_param_name,  rng=rng)

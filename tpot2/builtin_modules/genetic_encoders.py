@@ -1,5 +1,8 @@
-"""This file contains the class definition for all the genetic encoders.
-All the genetic encoder classes inherit the Scikit learn BaseEstimator and TransformerMixin classes to follow the Scikit learn paradigm. """
+"""
+Code from https://github.com/EpistasisLab/autoqtl
+This file contains the class definition for all the genetic encoders.
+All the genetic encoder classes inherit the Scikit learn BaseEstimator and TransformerMixin classes to follow the Scikit-learn paradigm. 
+"""
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin

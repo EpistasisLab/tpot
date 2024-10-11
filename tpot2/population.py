@@ -12,7 +12,7 @@ import copy
 import pickle
 import dask
 
-def mutate(individual, rng=None):
+def mutate(individual, rng):
     rng = np.random.default_rng(rng)
     if isinstance(individual, collections.abc.Iterable):
         for ind in individual:
@@ -21,19 +21,19 @@ def mutate(individual, rng=None):
         individual.mutate(rng=rng)
     return individual
 
-def crossover(parents, rng=None):
+def crossover(parents, rng):
     rng = np.random.default_rng(rng)
     parents[0].crossover(parents[1], rng=rng)
     return parents[0]
 
-def mutate_and_crossover(parents, rng=None):
+def mutate_and_crossover(parents, rng):
     rng = np.random.default_rng(rng)
     parents[0].crossover(parents[1], rng=rng)
     parents[0].mutate(rng=rng)
     parents[1].mutate(rng=rng)
     return parents
 
-def crossover_and_mutate(parents, rng=None):
+def crossover_and_mutate(parents, rng):
     rng = np.random.default_rng(rng)
     for p in parents:
         p.mutate(rng=rng)
@@ -91,7 +91,7 @@ class Population():
         self.callback=callback
         self.population = []
 
-    def survival_select(self, selector, weights, columns_names, n_survivors, rng=None, inplace=True):
+    def survival_select(self, selector, weights, columns_names, n_survivors, rng, inplace=True):
         rng = np.random.default_rng(rng)
         weighted_scores = self.get_column(self.population, column_names=columns_names) * weights
         new_population_index = np.ravel(selector(weighted_scores, k=n_survivors, rng=rng)) #TODO make it clear that we are concatenating scores...
@@ -100,7 +100,7 @@ class Population():
             self.set_population(new_population, rng=rng)
         return new_population
 
-    def parent_select(self, selector, weights, columns_names, k, n_parents, rng=None):
+    def parent_select(self, selector, weights, columns_names, k, n_parents, rng):
         rng = np.random.default_rng(rng)
         weighted_scores = self.get_column(self.population, column_names=columns_names) * weights
         parents_index = selector(weighted_scores, k=k, n_parents=n_parents, rng=rng)
@@ -136,7 +136,7 @@ class Population():
     # returns a list of individuals added to the live population
     #TODO make keep repeats allow for previously evaluated individuals,
     #but make sure that the live population only includes one of each, no repeats
-    def add_to_population(self, individuals: typing.List[BaseIndividual], rng=None, keep_repeats=False, mutate_until_unique=True):
+    def add_to_population(self, individuals: typing.List[BaseIndividual], rng, keep_repeats=False, mutate_until_unique=True):
         '''
         Add individuals to the live population. Add individuals to the evaluated_individuals if they are not already there.
 
@@ -252,7 +252,7 @@ class Population():
     #     return self.evaluated_individuals[~self.evaluated_individuals[column_names_to_check].isin(invalid_values).any(axis=1)]
 
     #the live population empied and is set to new_population
-    def set_population(self,  new_population, rng=None, keep_repeats=True):
+    def set_population(self,  new_population, rng, keep_repeats=True):
         '''
         sets population to new population
         for selection?
@@ -262,7 +262,7 @@ class Population():
         self.add_to_population(new_population, rng=rng, keep_repeats=keep_repeats)
 
     #TODO should we just generate one offspring per crossover?
-    def create_offspring(self, parents_list, var_op_list, rng=None, add_to_population=True, keep_repeats=False, mutate_until_unique=True, n_jobs=1):
+    def create_offspring(self, parents_list, var_op_list, rng, add_to_population=True, keep_repeats=False, mutate_until_unique=True, n_jobs=1):
         '''
         parents_list: a list of lists of parents.
         var_op_list: a list of var_ops to apply to each list of parents. Should be the same length as parents_list.
@@ -322,7 +322,7 @@ class Population():
 
 
     #TODO should we just generate one offspring per crossover?
-    def create_offspring2(self, parents_list, var_op_list, mutation_functions,mutation_function_weights, crossover_functions,crossover_function_weights, rng=None, add_to_population=True, keep_repeats=False, mutate_until_unique=True):
+    def create_offspring2(self, parents_list, var_op_list, mutation_functions,mutation_function_weights, crossover_functions,crossover_function_weights, rng, add_to_population=True, keep_repeats=False, mutate_until_unique=True):
 
         rng = np.random.default_rng(rng)
         new_offspring = []
@@ -405,7 +405,7 @@ class Population():
 def get_id(individual):
     return individual.unique_id()
 
-def parallel_create_offspring(parents_list, var_op_list, rng=None, n_jobs=1):
+def parallel_create_offspring(parents_list, var_op_list, rng, n_jobs=1):
     rng = np.random.default_rng(rng)
     if n_jobs == 1:
         return nonparallel_create_offpring(parents_list, var_op_list, rng=rng)
@@ -421,7 +421,7 @@ def parallel_create_offspring(parents_list, var_op_list, rng=None, n_jobs=1):
                                 num_workers=n_jobs, threads_per_worker=1)
         return offspring
 
-def nonparallel_create_offpring(parents_list, var_op_list, rng=None, n_jobs=1):
+def nonparallel_create_offpring(parents_list, var_op_list, rng, n_jobs=1):
     rng = np.random.default_rng(rng)
     offspring = []
     for parents, var_op in zip(parents_list,var_op_list):
@@ -435,7 +435,7 @@ def nonparallel_create_offpring(parents_list, var_op_list, rng=None, n_jobs=1):
 
 
 
-def copy_and_change(parents, var_op, rng=None):
+def copy_and_change(parents, var_op, rng):
     rng = np.random.default_rng(rng)
     offspring = copy.deepcopy(parents)
     offspring = var_op(offspring, rng=rng)
@@ -443,7 +443,7 @@ def copy_and_change(parents, var_op, rng=None):
         offspring = offspring[0]
     return offspring
 
-def copy_and_mutate(parents, var_op, rng=None):
+def copy_and_mutate(parents, var_op, rng):
     rng = np.random.default_rng(rng)
     offspring = copy.deepcopy(parents)
     var_op(offspring, rng=rng)
@@ -451,7 +451,7 @@ def copy_and_mutate(parents, var_op, rng=None):
         offspring = offspring[0]
     return offspring
 
-def copy_and_crossover(parents, var_op, rng=None):
+def copy_and_crossover(parents, var_op, rng):
     rng = np.random.default_rng(rng)
     offspring = copy.deepcopy(parents)
     var_op(offspring[0],offspring[1], rng=rng)

@@ -1,15 +1,28 @@
 import numpy as np
 
-def tournament_selection(scores, k, rng=None, n_parents=1, tournament_size=2, score_index=0):
-    """Select the best individual among *tournsize* randomly chosen
+def tournament_selection(scores, k, n_parents=1, rng=None, tournament_size=2, score_index=0):
+    """
+    Select the best individual among *tournsize* randomly chosen
     individuals, *k* times. The returned list contains the indices of the chosen *individuals*.
-    :param scores: The score matrix, where rows the individulas and the columns are the corresponds to scores on different objectives.
-    :param k: The number of individuals to select.
-    :param tournsize: The number of individuals participating in each tournament.
-    :param score_index: The number of individuals participating in each tournament.
-    :returns: A list of indices of selected individuals.
-    This function uses the :func:`~random.choice` function from the python base
-    :mod:`random` module.
+    
+    Parameters
+    ----------
+    scores : np.ndarray
+        The score matrix, where rows the individuals and the columns are the corresponds to scores on different objectives.
+    k : int
+        The number of individuals to select.
+    n_parents : int, optional
+        The number of parents to select per individual. The default is 1.
+    rng : int, np.random.Generator, optional
+        The random number generator. The default is None.
+    tournament_size : int, optional
+        The number of individuals participating in each tournament.
+    score_index : int, str, optional
+        The index of the score to use for selection. If "average" is passed, the average score is used. The default is 0 (only the first score is used).
+
+    Returns
+    -------
+        A array of indices of selected individuals of shape (k, n_parents).
     """
 
     rng = np.random.default_rng(rng)

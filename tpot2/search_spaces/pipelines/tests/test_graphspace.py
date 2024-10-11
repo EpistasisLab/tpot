@@ -26,7 +26,7 @@ def test_merge_duplicate_nodes():
     )
 
 
-    graph_search_space = tpot2.search_spaces.pipelines.GraphPipeline(
+    graph_search_space = tpot2.search_spaces.pipelines.GraphSearchPipeline(
     root_search_space= knn_node,
     leaf_search_space = scaler_node, 
     inner_search_space = None,

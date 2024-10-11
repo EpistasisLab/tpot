@@ -228,6 +228,20 @@ def calculate_model_complexity(est):
         return 1
 
 
-def complexity_scorer(est, X, y):
+def complexity_scorer(est, X=None, y=None):
+    """
+    Estimates the number of learned parameters across all classifiers and regressors in the pipelines. 
+    Additionally, currently transformers add 1 point and selectors add 0 points (since they don't affect the complexity of the "final" predictive pipeline.
+    
+    Parameters
+    ----------
+    est: sklearn.base.BaseEstimator
+        The estimator or pipeline to compute the complexity for
+    X: array-like
+        The input samples (unused)
+    y: array-like
+        The target values (unused)
+
+    """
     return calculate_model_complexity(est)
 

@@ -8,7 +8,7 @@
 
 ## Process to reproduce the issue
 
-[ordered list the process to finding and recreating the issue, example below]
+[ordered list the process to finding and recreating the issue, example below. A minimally reproducible example would be ideal. This refers to the minimum amount of code necessary to reproduce the issue.]
 
 1. User creates TPOT instance
 2. User calls TPOT `fit()` function with training data
