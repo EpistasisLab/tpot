@@ -6,13 +6,13 @@ import numpy as np
 import sklearn
 
 
-def get_LogisticRegression_ConfigurationSpace(random_state):
+def get_LogisticRegression_ConfigurationSpace(random_state, n_jobs=1):
 
     dual = False
 
     space = {"solver":"saga",
                     "max_iter":1000,
-                    "n_jobs":1,
+                    "n_jobs":n_jobs,
                     "dual":dual,
                     }
     
@@ -34,7 +34,7 @@ def get_LogisticRegression_ConfigurationSpace(random_state):
     return cs
 
 
-def get_KNeighborsClassifier_ConfigurationSpace(n_samples):
+def get_KNeighborsClassifier_ConfigurationSpace(n_samples, n_jobs=1):
         return ConfigurationSpace(
 
                 space = {
@@ -42,18 +42,18 @@ def get_KNeighborsClassifier_ConfigurationSpace(n_samples):
                     'n_neighbors': Integer("n_neighbors", bounds=(1, min(100,n_samples)), log=True),
                     'weights': Categorical("weights", ['uniform', 'distance']),
                     'p': Integer("p", bounds=(1, 3)),
-                    'n_jobs': 1,
+                    'n_jobs': n_jobs,
                 }
             ) 
 
-def get_BaggingClassifier_ConfigurationSpace(random_state):
+def get_BaggingClassifier_ConfigurationSpace(random_state, n_jobs=1):
     space = {
             'n_estimators': Integer("n_estimators", bounds=(3, 100)),
             'max_samples': Float("max_samples", bounds=(0.1, 1.0)),
             'max_features': Float("max_features", bounds=(0.1, 1.0)),
             
             'bootstrap_features': Categorical("bootstrap_features", [True, False]),
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -142,7 +142,7 @@ def get_SVC_ConfigurationSpace(random_state):
     return cs
 
 
-def get_RandomForestClassifier_ConfigurationSpace( random_state):
+def get_RandomForestClassifier_ConfigurationSpace( random_state, n_jobs=1):
     space = {
             'n_estimators': 128, #as recommended by Oshiro et al. (2012
             'max_features': Float("max_features", bounds=(0.01,1), log=True), #log scale like autosklearn?
@@ -151,6 +151,7 @@ def get_RandomForestClassifier_ConfigurationSpace( random_state):
             'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
             'bootstrap': Categorical("bootstrap", [True, False]),
             'class_weight': Categorical("class_weight", [None, 'balanced']),
+            'n_jobs': n_jobs,
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -161,7 +162,7 @@ def get_RandomForestClassifier_ConfigurationSpace( random_state):
     )
 
 
-def get_XGBClassifier_ConfigurationSpace(random_state,):
+def get_XGBClassifier_ConfigurationSpace(random_state, n_jobs=1):
     
     space = {
             'n_estimators': 100,
@@ -172,7 +173,7 @@ def get_XGBClassifier_ConfigurationSpace(random_state,):
             'max_depth': Integer("max_depth", bounds=(3, 18)),
             'reg_alpha': Float("reg_alpha", bounds=(1e-4, 100), log=True),
             'reg_lambda': Float("reg_lambda", bounds=(1e-4, 1), log=True),
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
             'nthread': 1,
             'verbosity': 0,
         }
@@ -184,7 +185,7 @@ def get_XGBClassifier_ConfigurationSpace(random_state,):
         space = space
     )
 
-def get_LGBMClassifier_ConfigurationSpace(random_state,):
+def get_LGBMClassifier_ConfigurationSpace(random_state, n_jobs=1):
 
     space = {
             'boosting_type': Categorical("boosting_type", ['gbdt', 'dart', 'goss']),
@@ -193,7 +194,7 @@ def get_LGBMClassifier_ConfigurationSpace(random_state,):
             'n_estimators': Integer("n_estimators", bounds=(10, 100)),
             'class_weight': Categorical("class_weight", [None, 'balanced']),
             'verbose':-1,
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
         }
 
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -204,7 +205,7 @@ def get_LGBMClassifier_ConfigurationSpace(random_state,):
     )
 
 
-def get_ExtraTreesClassifier_ConfigurationSpace(random_state):
+def get_ExtraTreesClassifier_ConfigurationSpace(random_state, n_jobs=1):
     space = {
             'n_estimators': 100,
             'criterion': Categorical("criterion", ["gini", "entropy"]),
@@ -213,7 +214,7 @@ def get_ExtraTreesClassifier_ConfigurationSpace(random_state):
             'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
             'bootstrap': Categorical("bootstrap", [True, False]),
             'class_weight': Categorical("class_weight", [None, 'balanced']),
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -225,7 +226,7 @@ def get_ExtraTreesClassifier_ConfigurationSpace(random_state):
 
 
 
-def get_SGDClassifier_ConfigurationSpace(random_state):
+def get_SGDClassifier_ConfigurationSpace(random_state, n_jobs=1):
     
     space = {
             'loss': Categorical("loss", ['modified_huber']), #don't include hinge because we have LinearSVC, don't include log because we have LogisticRegression. TODO 'squared_hinge'? doesn't support predict proba
@@ -233,7 +234,7 @@ def get_SGDClassifier_ConfigurationSpace(random_state):
             'alpha': Float("alpha", bounds=(1e-5, 0.01), log=True),
             'l1_ratio': Float("l1_ratio", bounds=(0.0, 1.0)),
             'eta0': Float("eta0", bounds=(0.01, 1.0)),
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
             'fit_intercept': Categorical("fit_intercept", [True]),
             'class_weight': Categorical("class_weight", [None, 'balanced']),
         }

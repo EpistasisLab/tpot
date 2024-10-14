@@ -12,7 +12,7 @@ ElasticNetCV_configspace = {
     "l1_ratio" :  np.arange(0.0, 1.01, 0.05),
 }
 
-def get_RandomForestRegressor_ConfigurationSpace(random_state):
+def get_RandomForestRegressor_ConfigurationSpace(random_state, n_jobs=1):
     space =  {
         'n_estimators': 100,
         'criterion': Categorical("criterion", ['friedman_mse', 'poisson', 'absolute_error', 'squared_error']),
@@ -20,6 +20,7 @@ def get_RandomForestRegressor_ConfigurationSpace(random_state):
         'bootstrap': Categorical("bootstrap", [True, False]),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 21)),
+        'n_jobs': n_jobs,
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -235,12 +236,14 @@ def get_DecisionTreeRegressor_ConfigurationSpace(random_state):
     )
 
 
-def get_KNeighborsRegressor_ConfigurationSpace(n_samples):
+def get_KNeighborsRegressor_ConfigurationSpace(n_samples, n_jobs=1):
     return ConfigurationSpace(
         space = {
             'n_neighbors': Integer("n_neighbors", bounds=(1, min(100,n_samples))),
             'weights': Categorical("weights", ['uniform', 'distance']),
-            'p': Integer("p", bounds=(1, 3)),        }
+            'p': Integer("p", bounds=(1, 3)),       
+            'n_jobs': n_jobs,
+              }
     )
 
 
@@ -291,7 +294,7 @@ def get_SVR_ConfigurationSpace():
 
 
 
-def get_XGBRegressor_ConfigurationSpace(random_state):
+def get_XGBRegressor_ConfigurationSpace(random_state, n_jobs=1):
     space = {
         'n_estimators': 100,
         'learning_rate': Float("learning_rate", bounds=(1e-3, 1), log=True),
@@ -301,7 +304,7 @@ def get_XGBRegressor_ConfigurationSpace(random_state):
         'max_depth': Integer("max_depth", bounds=(3, 18)),
         'reg_alpha': Float("reg_alpha", bounds=(1e-4, 100), log=True),
         'reg_lambda': Float("reg_lambda", bounds=(1e-4, 1), log=True),
-        'n_jobs': 1,
+        'n_jobs': n_jobs,
         'nthread': 1,
         'verbosity': 0,
         'objective': 'reg:squarederror',
@@ -331,7 +334,7 @@ def get_AdaBoostRegressor_ConfigurationSpace(random_state):
         space = space
     )
 
-def get_ExtraTreesRegressor_ConfigurationSpace(random_state):
+def get_ExtraTreesRegressor_ConfigurationSpace(random_state, n_jobs=1):
     space = {
         'n_estimators': 100,
         'criterion': Categorical("criterion", ['friedman_mse', 'poisson', 'absolute_error', 'squared_error']),
@@ -339,6 +342,7 @@ def get_ExtraTreesRegressor_ConfigurationSpace(random_state):
         'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 21)),
         'bootstrap': Categorical("bootstrap", [True, False]),
+        'n_jobs': n_jobs,
     }
 
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -570,14 +574,14 @@ def MLPRegressor_hyperparameter_parser(params):
     return hyperparameters
 
 
-def get_BaggingRegressor_ConfigurationSpace(random_state):
+def get_BaggingRegressor_ConfigurationSpace(random_state, n_jobs=1):
     space = {
             'n_estimators': Integer("n_estimators", bounds=(3, 100)),
             'max_samples': Float("max_samples", bounds=(0.1, 1.0)),
             'max_features': Float("max_features", bounds=(0.1, 1.0)),
             
             'bootstrap_features': Categorical("bootstrap_features", [True, False]),
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -597,7 +601,7 @@ def get_BaggingRegressor_ConfigurationSpace(random_state):
 
     return cs
 
-def get_LGBMRegressor_ConfigurationSpace(random_state,):
+def get_LGBMRegressor_ConfigurationSpace(random_state, n_jobs=1):
 
     space = {
             'boosting_type': Categorical("boosting_type", ['gbdt', 'dart', 'goss']),
@@ -605,7 +609,7 @@ def get_LGBMRegressor_ConfigurationSpace(random_state,):
             'max_depth': Integer("max_depth", bounds=(1, 10)),
             'n_estimators': Integer("n_estimators", bounds=(10, 100)),
             'verbose':-1,
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
         }
 
     if random_state is not None: #This is required because configspace doesn't allow None as a value

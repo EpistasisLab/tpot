@@ -2,13 +2,13 @@ from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 
 
-def get_RandomForestClassifier_ConfigurationSpace(random_state):
+def get_RandomForestClassifier_ConfigurationSpace(random_state, n_jobs=1):
     space = {
             'n_estimators': 100, #TODO make this a higher number? learned?
             'bootstrap': Categorical("bootstrap", [True, False]),
             'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
             'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
             
         }
     
