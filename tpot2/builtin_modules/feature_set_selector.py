@@ -1,12 +1,22 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""This file is part of the TPOT library.
+"""
+This file is part of the TPOT library.
 
-TPOT was primarily developed at the University of Pennsylvania by:
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
     - Randal S. Olson (rso@randalolson.com)
     - Weixuan Fu (weixuanf@upenn.edu)
     - Daniel Angell (dpa34@drexel.edu)
-    - and many more generous open source contributors
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -20,7 +30,9 @@ GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
 """
+
 #TODO handle sparse input?
 
 import numpy as np
