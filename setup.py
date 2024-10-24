@@ -14,7 +14,7 @@ package_version = calculate_version()
 
 setup(
     name='TPOT2',
-    python_requires='<3.12', #for configspace compatibility
+    python_requires='>=3.10, <3.12', #for configspace compatibility
     version=package_version,
     author='Pedro Ribeiro',
     packages=find_packages(),

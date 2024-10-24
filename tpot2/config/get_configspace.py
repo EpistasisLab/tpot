@@ -71,6 +71,7 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import SVC, SVR, LinearSVR, LinearSVC
 from lightgbm import LGBMClassifier, LGBMRegressor
 import sklearn
+import sklearn.calibration as calibration
 from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
 from sklearn.decomposition import FastICA, PCA
 from sklearn.cluster import FeatureAgglomeration
