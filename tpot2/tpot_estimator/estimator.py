@@ -876,31 +876,40 @@ class TPOTEstimator(BaseEstimator):
         else:
             self.objective_names_for_selection = self.objective_names
         
-        val_scores = self.evaluated_individuals[~self.evaluated_individuals[self.objective_names_for_selection].isna().all(1)][self.objective_names_for_selection]
+        val_scores = self.evaluated_individuals[self.evaluated_individuals[self.objective_names_for_selection].isna().all(1).ne(True)][self.objective_names_for_selection]
         weighted_scores = val_scores*self.objective_function_weights
 
         if self.bigger_is_better:
-            best_idx = weighted_scores[self.objective_names_for_selection[0]].idxmax()
+            best_indices = list(weighted_scores.sort_values(by=self.objective_names_for_selection, ascending=False).index)
         else:
-            best_idx = weighted_scores[self.objective_names_for_selection[0]].idxmin()
+            best_indices = list(weighted_scores.sort_values(by=self.objective_names_for_selection, ascending=True).index)
 
-        best_individual = self.evaluated_individuals.loc[best_idx]['Individual']
-        self.selected_best_score =  self.evaluated_individuals.loc[best_idx]
+        for best_idx in best_indices:
+
+            best_individual = self.evaluated_individuals.loc[best_idx]['Individual']
+            self.selected_best_score =  self.evaluated_individuals.loc[best_idx]
 
 
-        #TODO
-        #best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
-        if self.export_graphpipeline:
-            best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory)
-        else:
-            best_individual_pipeline = best_individual.export_pipeline(memory=self.memory)
+            #TODO
+            #best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
+            if self.export_graphpipeline:
+                best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory)
+            else:
+                best_individual_pipeline = best_individual.export_pipeline(memory=self.memory)
 
-        if self.preprocessing:
-            self.fitted_pipeline_ = sklearn.pipeline.make_pipeline(sklearn.base.clone(self._preprocessing_pipeline), best_individual_pipeline )
-        else:
-            self.fitted_pipeline_ = best_individual_pipeline
+            if self.preprocessing:
+                self.fitted_pipeline_ = sklearn.pipeline.make_pipeline(sklearn.base.clone(self._preprocessing_pipeline), best_individual_pipeline )
+            else:
+                self.fitted_pipeline_ = best_individual_pipeline
 
-        self.fitted_pipeline_.fit(X_original,y_original) #TODO use y_original as well?
+            try:
+                self.fitted_pipeline_.fit(X_original,y_original) #TODO use y_original as well?
+                break
+            except Exception as e:
+                if self.verbose >= 4:
+                    warnings.warn("Final pipeline failed to fit. Rarely, the pipeline might work on the objective function but fail on the full dataset. Generally due to interactions with different features being selected or transformations having different properties. Trying next pipeline")
+                    print(e)
+                continue
 
 
         if self.client is None: #no client was passed in
