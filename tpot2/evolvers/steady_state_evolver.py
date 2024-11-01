@@ -508,7 +508,7 @@ class SteadyStateEvolver():
                 self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="TIMEOUT")
 
                 #I am not entirely sure if this is necessary. I believe that calling release on the futures should be enough to free up memory. If memory issues persist, this may be a good place to start.
-                # client.run(gc.collect) #run garbage collection to free up memory
+                client.run(gc.collect) #run garbage collection to free up memory
 
                 ###############################
                 # Step 2: Early Stopping
@@ -723,7 +723,7 @@ class SteadyStateEvolver():
             future.release() #release the future
 
         #I am not entirely sure if this is necessary. I believe that calling release on the futures should be enough to free up memory. If memory issues persist, this may be a good place to start.
-        # client.run(gc.collect) #run garbage collection to free up memory
+        client.run(gc.collect) #run garbage collection to free up memory
 
         #checkpoint
         if self.population_file is not None:
