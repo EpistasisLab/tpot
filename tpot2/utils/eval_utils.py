@@ -164,6 +164,7 @@ def parallel_eval_objective_list(individual_list,
                     print("Cancelled future (likely memory related)")
                     scores = [np.nan for _ in range(n_expected_columns)]
                     eval_error = "INVALID"
+                    client.run(gc.collect)
                 else: #if the future is done and did not throw an error, get the scores
                     try:
                         scores = completed_future.result()
