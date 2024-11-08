@@ -444,6 +444,7 @@ class SteadyStateEvolver():
                             print("Cancelled future (likely memory related)")
                             scores = [np.nan for _ in range(len(self.objective_names))]
                             eval_error = "INVALID"
+                            client.run(gc.collect)
                         else: #if the future is done and did not throw an error, get the scores
                             try:
                                 scores = completed_future.result()
