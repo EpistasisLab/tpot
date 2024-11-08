@@ -228,7 +228,7 @@ def parallel_eval_objective_list(individual_list,
         
 
         #I am not entirely sure if this is necessary. I believe that calling release on the futures should be enough to free up memory. If memory issues persist, this may be a good place to start.
-        client.run(gc.collect) #run garbage collection to free up memory
+        #client.run(gc.collect) #run garbage collection to free up memory
 
         #break if timeout
         if global_timeout_triggered:
@@ -252,7 +252,7 @@ def parallel_eval_objective_list(individual_list,
             submitted_inds.add(individual.unique_id())
 
     #I am not entirely sure if this is necessary. I believe that calling release on the futures should be enough to free up memory. If memory issues persist, this may be a good place to start.
-    client.run(gc.collect) #run garbage collection to free up memory
+    #client.run(gc.collect) #run garbage collection to free up memory
 
     #collect remaining futures
     final_scores = [scores_dict[individual]["scores"] for individual in individual_list]
