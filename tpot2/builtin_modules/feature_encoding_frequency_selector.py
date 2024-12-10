@@ -1,3 +1,7 @@
+"""
+From https://github.com/EpistasisLab/autoqtl
+"""
+
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection._base import SelectorMixin

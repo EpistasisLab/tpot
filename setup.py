@@ -14,7 +14,7 @@ package_version = calculate_version()
 
 setup(
     name='TPOT2',
-    python_requires='<3.12', #for configspace compatibility
+    python_requires='>=3.10, <3.12', #for configspace compatibility
     version=package_version,
     author='Pedro Ribeiro',
     packages=find_packages(),
@@ -41,14 +41,13 @@ A Python tool that automatically creates and optimizes machine learning pipeline
                       'traitlets>=5.8.0',
                       'lightgbm>=3.3.3',
                       'optuna>=3.0.5',
-                      'baikal>=0.4.2',
                       'networkx>=3.0',
                       'dask>=2024.4.2',
                       'distributed>=2024.4.2',
                       'dask-expr>=1.0.12',
                       'dask-jobqueue>=0.8.5',
                       'func_timeout>=4.3.5',
-                      'configspace>=0.7.1',
+                      'configspace>=1.1.1',
                      ],
     extras_require={
         'skrebate': ['skrebate>=0.3.4'],

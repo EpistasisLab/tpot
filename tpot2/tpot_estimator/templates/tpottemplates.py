@@ -1,3 +1,37 @@
+"""
+This file is part of the TPOT library.
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+"""
 import tpot2
 import numpy as np
 import pandas as pd
@@ -6,7 +40,7 @@ from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from tpot2.selectors import survival_select_NSGA2, tournament_selection_dominated
 #TODO These do not follow sklearn conventions of __init__
 
-from ..default_search_spaces import get_default_search_space
+from ...config.template_search_spaces import get_template_search_spaces
 
 class TPOTRegressor(TPOTEstimator):
     def __init__(       self,
@@ -21,19 +55,19 @@ class TPOTRegressor(TPOTEstimator):
                         categorical_features = None,
                         memory = None,
                         preprocessing = False,
-                        max_time_seconds=3600, 
-                        max_eval_time_seconds=60*10, 
+                        max_time_mins=60, 
+                        max_eval_time_mins=10, 
                         n_jobs = 1,
                         validation_strategy = "none",
                         validation_fraction = .2, 
                         early_stop = None,
                         warm_start = False,
                         periodic_checkpoint_folder = None, 
-                        verbose = 0,
-                        memory_limit = "4GB",
+                        verbose = 2,
+                        memory_limit = None,
                         client = None,
                         random_state=None,
-                        allow_inner_regressors=True,
+                        allow_inner_regressors=None,
                         **tpotestimator_kwargs,
         ):
         '''
@@ -43,10 +77,19 @@ class TPOTRegressor(TPOTEstimator):
         Parameters
         ----------
 
-        search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
-            - String : The default search space to use for the optimization. This can be either "linear" or "graph". If "linear", will use the default linear pipeline search space. If "graph", will use the default graph pipeline search space.
-            - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
-                The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
+        search_space : (String, tpot2.search_spaces.SearchSpace)
+                        - String : The default search space to use for the optimization.
+            | String     | Description      |
+            | :---        |    :----:   |
+            | linear  | A linear pipeline with the structure of "Selector->(transformers+Passthrough)->(classifiers/regressors+Passthrough)->final classifier/regressor." For both the transformer and inner estimator layers, TPOT may choose one or more transformers/classifiers, or it may choose none. The inner classifier/regressor layer is optional. |
+            | linear-light | Same search space as linear, but without the inner classifier/regressor layer and with a reduced set of faster running estimators. |
+            | graph | TPOT will optimize a pipeline in the shape of a directed acyclic graph. The nodes of the graph can include selectors, scalers, transformers, or classifiers/regressors (inner classifiers/regressors can optionally be not included). This will return a custom GraphPipeline rather than an sklearn Pipeline. More details in Tutorial 6. |
+            | graph-light | Same as graph search space, but without the inner classifier/regressors and with a reduced set of faster running estimators. |
+            | mdr |TPOT will search over a series of feature selectors and Multifactor Dimensionality Reduction models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for genome-wide association studies (GWAS), and is described in detail online here.
+
+            Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
+            - SearchSpace : The search space to use for the optimization. This should be an instance of a SearchSpace.
+                The search space to use for the optimization. This should be an instance of a SearchSpace.
                 TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
         
         scorers : (list, scorer)
@@ -87,7 +130,7 @@ class TPOTRegressor(TPOTEstimator):
 
 
         memory: Memory object or string, default=None
-            If supplied, pipeline will cache each transformer after calling fit. This feature
+            If supplied, pipeline will cache each transformer after calling fit with joblib.Memory. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
             and input data are identical with another fitted pipeline during optimization process.
             - String 'auto':
@@ -108,10 +151,10 @@ class TPOTRegressor(TPOTEstimator):
             - bool : If True, will use a default preprocessing pipeline which includes imputation followed by one hot encoding.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
 
-        max_time_seconds : float, default=float("inf")
+        max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
 
-        max_eval_time_seconds : float, default=60*5
+        max_eval_time_mins : float, default=60*5
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
 
     
@@ -129,7 +172,7 @@ class TPOTRegressor(TPOTEstimator):
           EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
 
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered. In general a value of around 5-20 is good.
 
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
@@ -147,10 +190,10 @@ class TPOTRegressor(TPOTEstimator):
             3. best individual
             4. warnings
             >=5. full warnings trace
-            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
+            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_mins in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
 
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
 
         client : dask.distributed.Client, default=None
@@ -202,8 +245,8 @@ class TPOTRegressor(TPOTEstimator):
         self.categorical_features = categorical_features
         self.memory = memory
         self.preprocessing = preprocessing
-        self.max_time_seconds = max_time_seconds
-        self.max_eval_time_seconds = max_eval_time_seconds
+        self.max_time_mins = max_time_mins
+        self.max_eval_time_mins = max_eval_time_mins
         self.n_jobs = n_jobs
         self.validation_strategy = validation_strategy
         self.validation_fraction = validation_fraction
@@ -228,7 +271,7 @@ class TPOTRegressor(TPOTEstimator):
                                         "n_features":X.shape[1], 
                                         "random_state":self.random_state}
 
-            search_space = get_default_search_space(self.search_space, classification=True, inner_predictors=self.allow_inner_regressors, **get_search_space_params)
+            search_space = get_template_search_spaces(self.search_space, classification=False, inner_predictors=self.allow_inner_regressors, **get_search_space_params)
 
             super(TPOTRegressor,self).__init__(
                 search_space=search_space,
@@ -242,8 +285,8 @@ class TPOTRegressor(TPOTEstimator):
                 categorical_features = self.categorical_features,
                 memory = self.memory,
                 preprocessing = self.preprocessing,
-                max_time_seconds=self.max_time_seconds, 
-                max_eval_time_seconds=self.max_eval_time_seconds, 
+                max_time_mins=self.max_time_mins, 
+                max_eval_time_mins=self.max_eval_time_mins, 
                 n_jobs=self.n_jobs,
                 validation_strategy = self.validation_strategy,
                 validation_fraction = self.validation_fraction, 
@@ -274,19 +317,19 @@ class TPOTClassifier(TPOTEstimator):
                         categorical_features = None,
                         memory = None,
                         preprocessing = False,
-                        max_time_seconds=3600, 
-                        max_eval_time_seconds=60*10, 
+                        max_time_mins=60, 
+                        max_eval_time_mins=10, 
                         n_jobs = 1,
                         validation_strategy = "none",
                         validation_fraction = .2, 
                         early_stop = None,
                         warm_start = False,
                         periodic_checkpoint_folder = None, 
-                        verbose = 0,
-                        memory_limit = "4GB",
+                        verbose = 2,
+                        memory_limit = None,
                         client = None,
                         random_state=None,
-                        allow_inner_classifiers=True,
+                        allow_inner_classifiers=None,
                         **tpotestimator_kwargs,
                         
         ):
@@ -297,10 +340,19 @@ class TPOTClassifier(TPOTEstimator):
         Parameters
         ----------
 
-        search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
-            - String : The default search space to use for the optimization. This can be either "linear" or "graph". If "linear", will use the default linear pipeline search space. If "graph", will use the default graph pipeline search space.
-            - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
-                The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
+        search_space : (String, tpot2.search_spaces.SearchSpace)
+            - String : The default search space to use for the optimization.
+            | String     | Description      |
+            | :---        |    :----:   |
+            | linear  | A linear pipeline with the structure of "Selector->(transformers+Passthrough)->(classifiers/regressors+Passthrough)->final classifier/regressor." For both the transformer and inner estimator layers, TPOT may choose one or more transformers/classifiers, or it may choose none. The inner classifier/regressor layer is optional. |
+            | linear-light | Same search space as linear, but without the inner classifier/regressor layer and with a reduced set of faster running estimators. |
+            | graph | TPOT will optimize a pipeline in the shape of a directed acyclic graph. The nodes of the graph can include selectors, scalers, transformers, or classifiers/regressors (inner classifiers/regressors can optionally be not included). This will return a custom GraphPipeline rather than an sklearn Pipeline. More details in Tutorial 6. |
+            | graph-light | Same as graph search space, but without the inner classifier/regressors and with a reduced set of faster running estimators. |
+            | mdr |TPOT will search over a series of feature selectors and Multifactor Dimensionality Reduction models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for genome-wide association studies (GWAS), and is described in detail online here.
+
+            Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
+            - SearchSpace : The search space to use for the optimization. This should be an instance of a SearchSpace.
+                The search space to use for the optimization. This should be an instance of a SearchSpace.
                 TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
         
         scorers : (list, scorer)
@@ -341,7 +393,7 @@ class TPOTClassifier(TPOTEstimator):
 
 
         memory: Memory object or string, default=None
-            If supplied, pipeline will cache each transformer after calling fit. This feature
+            If supplied, pipeline will cache each transformer after calling fit with joblib.Memory. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
             and input data are identical with another fitted pipeline during optimization process.
             - String 'auto':
@@ -362,10 +414,10 @@ class TPOTClassifier(TPOTEstimator):
             - bool : If True, will use a default preprocessing pipeline which includes imputation followed by one hot encoding.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
 
-        max_time_seconds : float, default=float("inf")
+        max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
 
-        max_eval_time_seconds : float, default=60*5
+        max_eval_time_mins : float, default=60*5
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
 
     
@@ -383,7 +435,7 @@ class TPOTClassifier(TPOTEstimator):
           EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
 
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered. In general a value of around 5-20 is good.
 
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
@@ -401,10 +453,10 @@ class TPOTClassifier(TPOTEstimator):
             3. best individual
             4. warnings
             >=5. full warnings trace
-            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
+            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_mins in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
 
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
 
         client : dask.distributed.Client, default=None
@@ -455,8 +507,8 @@ class TPOTClassifier(TPOTEstimator):
         self.categorical_features = categorical_features
         self.memory = memory
         self.preprocessing = preprocessing
-        self.max_time_seconds = max_time_seconds
-        self.max_eval_time_seconds = max_eval_time_seconds
+        self.max_time_mins = max_time_mins
+        self.max_eval_time_mins = max_eval_time_mins
         self.n_jobs = n_jobs
         self.validation_strategy = validation_strategy
         self.validation_fraction = validation_fraction
@@ -481,7 +533,7 @@ class TPOTClassifier(TPOTEstimator):
                                        "n_features":X.shape[1], 
                                        "random_state":self.random_state}
 
-            search_space = get_default_search_space(self.search_space, classification=True, inner_predictors=self.allow_inner_classifiers, **get_search_space_params)
+            search_space = get_template_search_spaces(self.search_space, classification=True, inner_predictors=self.allow_inner_classifiers, **get_search_space_params)
 
 
             super(TPOTClassifier,self).__init__(
@@ -496,8 +548,8 @@ class TPOTClassifier(TPOTEstimator):
                 categorical_features = self.categorical_features,
                 memory = self.memory,
                 preprocessing = self.preprocessing,
-                max_time_seconds=self.max_time_seconds, 
-                max_eval_time_seconds=self.max_eval_time_seconds, 
+                max_time_mins=self.max_time_mins, 
+                max_eval_time_mins=self.max_eval_time_mins, 
                 n_jobs=self.n_jobs,
                 validation_strategy = self.validation_strategy,
                 validation_fraction = self.validation_fraction, 

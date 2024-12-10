@@ -1,3 +1,37 @@
+"""
+This file is part of the TPOT library.
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+"""
 import random
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -9,6 +43,28 @@ class ArithmeticTransformer(BaseEstimator,TransformerMixin):
 
     #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self, function,):
+        """
+        A transformer that applies a function to the input array along axis 1.
+        Parameters
+        ----------
+
+        function : str
+            The function to apply to the input array. The following functions are supported:
+            - 'add' : Add all elements along axis 1
+            - 'mul_neg_1' : Multiply all elements along axis 1 by -1
+            - 'mul' : Multiply all elements along axis 1
+            - 'safe_reciprocal' : Take the reciprocal of all elements along axis 1, with a safe division by zero
+            - 'eq' : Check if all elements along axis 1 are equal
+            - 'ne' : Check if all elements along axis 1 are not equal
+            - 'ge' : Check if all elements along axis 1 are greater than or equal to 0
+            - 'gt' : Check if all elements along axis 1 are greater than 0
+            - 'le' : Check if all elements along axis 1 are less than or equal to 0
+            - 'lt' : Check if all elements along axis 1 are less than 0
+            - 'min' : Take the minimum of all elements along axis 1
+            - 'max' : Take the maximum of all elements along axis 1
+            - '0' : Return an array of zeros
+            - '1' : Return an array of ones
+        """
         self.function = function
 
     def fit(self, X, y=None):
@@ -84,9 +140,10 @@ def issorted(x, rev=False):
 
 
 class AddTransformer(BaseEstimator,TransformerMixin):
-
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
+          """
+          A transformer that adds all elements along axis 1.
+          """
           pass
 
     def fit(self, X, y=None):
@@ -106,10 +163,11 @@ class AddTransformer(BaseEstimator,TransformerMixin):
         return np.expand_dims(np.sum(X,1),1)
 
 class mul_neg_1_Transformer(BaseEstimator,TransformerMixin):
-
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
-          pass
+        """
+        A transformer that multiplies all elements by -1.
+        """
+        pass
 
     def fit(self, X, y=None):
         return self
@@ -129,9 +187,11 @@ class mul_neg_1_Transformer(BaseEstimator,TransformerMixin):
     
 class MulTransformer(BaseEstimator,TransformerMixin):
 
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
-          pass
+        """
+        A transformer that multiplies all elements along axis 1.
+        """
+        pass
 
     def fit(self, X, y=None):
         return self
@@ -151,9 +211,11 @@ class MulTransformer(BaseEstimator,TransformerMixin):
 
 class SafeReciprocalTransformer(BaseEstimator,TransformerMixin):
 
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
-          pass
+        """
+        A transformer that takes the reciprocal of all elements, with a safe division by zero.
+        """
+        pass
 
     def fit(self, X, y=None):
         return self
@@ -173,9 +235,11 @@ class SafeReciprocalTransformer(BaseEstimator,TransformerMixin):
 
 class EQTransformer(BaseEstimator,TransformerMixin):
 
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
-          pass
+        """
+        A transformer that takes checks if all elements in a row are equal.
+        """
+        pass
 
     def fit(self, X, y=None):
         return self
@@ -195,9 +259,11 @@ class EQTransformer(BaseEstimator,TransformerMixin):
 
 class NETransformer(BaseEstimator,TransformerMixin):
 
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
-          pass
+        """
+        A transformer that takes checks if all elements in a row are not equal.
+        """  
+        pass
 
     def fit(self, X, y=None):
         return self
@@ -219,9 +285,11 @@ class NETransformer(BaseEstimator,TransformerMixin):
 
 class GETransformer(BaseEstimator,TransformerMixin):
 
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
-          pass
+        """
+        A transformer that takes checks if all elements in a row are greater than or equal to 0.
+        """
+        pass
 
     def fit(self, X, y=None):
         return self
@@ -242,33 +310,10 @@ class GETransformer(BaseEstimator,TransformerMixin):
 
 
 class GTTransformer(BaseEstimator,TransformerMixin):
-
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
-          pass
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        transformed_X = np.array(self.transform_helper(np.array(X)))
-        if transformed_X.dtype != float:
-            transformed_X = transformed_X.astype(float)
-        
-        return transformed_X
-
-    def transform_helper(self, X):
-        X = np.array(X)
-        if len(X.shape) == 1:
-            X = np.expand_dims(X,0)
-        result = X > 0
-        return  result.astype(float)
-
-
-class GTTransformer(BaseEstimator,TransformerMixin):
-
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
-    def __init__(self):
+          """
+          A transformer that takes checks if all elements in a row are greater than 0.
+          """
           pass
 
     def fit(self, X, y=None):
@@ -290,10 +335,11 @@ class GTTransformer(BaseEstimator,TransformerMixin):
 
 
 class LETransformer(BaseEstimator,TransformerMixin):
-
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
-          pass
+        """
+        A transformer that takes checks if all elements in a row are less than or equal to 0.
+        """
+        pass
 
     def fit(self, X, y=None):
         return self
@@ -314,10 +360,11 @@ class LETransformer(BaseEstimator,TransformerMixin):
 
 
 class LTTransformer(BaseEstimator,TransformerMixin):
-
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
-          pass
+        """
+        A transformer that takes checks if all elements in a row are less than 0.
+        """
+        pass
 
     def fit(self, X, y=None):
         return self
@@ -338,10 +385,11 @@ class LTTransformer(BaseEstimator,TransformerMixin):
 
 
 class MinTransformer(BaseEstimator,TransformerMixin):
-
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
-          pass
+        """
+        A transformer that takes the minimum of all elements in a row.
+        """
+        pass
 
     def fit(self, X, y=None):
         return self
@@ -363,8 +411,10 @@ class MinTransformer(BaseEstimator,TransformerMixin):
 
 class MaxTransformer(BaseEstimator,TransformerMixin):
 
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
+          """
+          A transformer that takes the maximum of all elements in a row.
+          """
           pass
 
     def fit(self, X, y=None):
@@ -386,8 +436,10 @@ class MaxTransformer(BaseEstimator,TransformerMixin):
 
 class ZeroTransformer(BaseEstimator,TransformerMixin):
 
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
+          """
+        A transformer that returns an array of zeros.
+          """
           pass
 
     def fit(self, X, y=None):
@@ -408,9 +460,10 @@ class ZeroTransformer(BaseEstimator,TransformerMixin):
 
 
 class OneTransformer(BaseEstimator,TransformerMixin):
-
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self):
+          """
+          A transformer that returns an array of ones.
+          """
           pass
 
     def fit(self, X, y=None):
@@ -432,8 +485,10 @@ class OneTransformer(BaseEstimator,TransformerMixin):
 
 class NTransformer(BaseEstimator,TransformerMixin):
 
-    #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self, n):
+        """
+        A transformer that returns an array of n.
+        """
         self.n = n
 
     def fit(self, X, y=None):

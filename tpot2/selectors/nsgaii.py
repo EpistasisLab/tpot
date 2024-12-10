@@ -1,3 +1,37 @@
+"""
+This file is part of the TPOT library.
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+"""
 import numpy as np
 
 # Deb, Pratab, Agarwal, and Meyarivan, “A fast elitist non-dominated sorting genetic algorithm for multi-objective optimization: NSGA-II”, 2002.
@@ -5,8 +39,19 @@ import numpy as np
 
 def nondominated_sorting(matrix):
     """
-    Returns the indexes of the matrix
-    bigger is better
+    Returns the indices of the non-dominated rows in the scores matrix.
+    Rows are considered samples, and columns are considered objectives.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        The score matrix, where rows the individuals and the columns are the corresponds to scores on different objectives.
+
+    Returns
+    -------
+    list
+        A list of lists of indices of the non-dominated rows in the scores matrix.
+
     """
     # Initialize the front list and the rank list
 
@@ -55,12 +100,38 @@ def nondominated_sorting(matrix):
 def dominates(list1, list2):
     """
     returns true is all values in list1 are not strictly worse than list2 AND at least one item in list1 is better than list2
+    
+    Parameters
+    ----------
+    list1 : list
+        The first list of values to compare.
+    list2 : list
+        The second list of values to compare.
+    
+    Returns
+    -------
+    bool
+        True if all values in list1 are not strictly worse than list2 AND at least one item in list1 is better than list2, False otherwise.
+    
     """
     return all(list1[i] >= list2[i] for i in range(len(list1))) and any(list1[i] > list2[i] for i in range(len(list1)))
 
 #adapted from deap + gtp
 #bigger is better
 def crowding_distance(matrix):
+    """
+    Takes a matrix of scores and returns the crowding distance for each point.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        The score matrix, where rows the individuals and the columns are the corresponds to scores on different objectives.
+
+    Returns
+    -------
+    list
+        A list of the crowding distances for each point in the score matrix.
+    """
     matrix = np.array(matrix)
     # Initialize the crowding distance for each point to zero
     crowding_distances = [0 for _ in range(len(matrix))]
@@ -88,6 +159,24 @@ def crowding_distance(matrix):
 
 
 def survival_select_NSGA2(scores, k, rng=None):
+    """
+    Select the top k individuals from the scores matrix using the NSGA-II algorithm.
+
+    Parameters
+    ----------
+    scores : np.ndarray
+        The score matrix, where rows the individuals and the columns are the corresponds to scores on different objectives.
+    k : int
+        The number of individuals to select.
+    rng : int, np.random.Generator, optional
+        The random number generator. The default is None.
+
+    Returns
+    -------
+    list
+        A list of indices of the selected individuals (without repeats).
+    
+    """
 
     pareto_fronts = nondominated_sorting(scores)
 

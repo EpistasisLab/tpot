@@ -1,3 +1,37 @@
+"""
+This file is part of the TPOT library.
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+"""
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 from ConfigSpace import EqualsCondition, OrConjunction, NotEqualsCondition, InCondition
@@ -44,18 +78,18 @@ def get_FastICA_configspace(n_features=100, random_state=None):
 
     )
 
-def get_FeatureAgglomeration_configspace(n_samples):
+def get_FeatureAgglomeration_configspace(n_features):
 
     linkage = Categorical('linkage', ['ward', 'complete', 'average'])
     metric = Categorical('metric', ['euclidean', 'l1', 'l2', 'manhattan', 'cosine'])
-    n_clusters = Integer('n_clusters', bounds=(2, min(n_samples,400)))
+    n_clusters = Integer('n_clusters', bounds=(2, min(n_features,400)))
     pooling_func = Categorical('pooling_func', ['mean', 'median', 'max'])
 
     metric_condition = NotEqualsCondition(metric, linkage, 'ward')
 
     cs =  ConfigurationSpace()
-    cs.add_hyperparameters([linkage, metric, n_clusters, pooling_func])
-    cs.add_condition(metric_condition)
+    cs.add([linkage, metric, n_clusters, pooling_func])
+    cs.add(metric_condition)
     
     return cs
 
@@ -108,10 +142,10 @@ def get_RBFSampler_configspace(n_features=100, random_state=None):
     )
 
 
-def get_QuantileTransformer_configspace(random_state=None):
+def get_QuantileTransformer_configspace(random_state=None, n_samples=1000):
 
     space = {
-        'n_quantiles': Integer('n_quantiles', bounds=(10, 2000)),
+        'n_quantiles': Integer('n_quantiles', bounds=(10, n_samples)),
         'output_distribution': Categorical('output_distribution', ['uniform', 'normal']),
     }
 

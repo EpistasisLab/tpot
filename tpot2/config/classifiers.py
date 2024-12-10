@@ -1,25 +1,59 @@
+"""
+This file is part of the TPOT library.
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+"""
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 from ConfigSpace import EqualsCondition, OrConjunction, NotEqualsCondition, InCondition
-from ..search_spaces.nodes.estimator_node import NONE_SPECIAL_STRING, TRUE_SPECIAL_STRING, FALSE_SPECIAL_STRING
+
 import numpy as np
 import sklearn
 
 
-def get_LogisticRegression_ConfigurationSpace(random_state):
+def get_LogisticRegression_ConfigurationSpace(random_state, n_jobs=1):
 
-    dual = FALSE_SPECIAL_STRING
+    dual = False
 
     space = {"solver":"saga",
                     "max_iter":1000,
-                    "n_jobs":1,
+                    "n_jobs":n_jobs,
                     "dual":dual,
                     }
     
     penalty = Categorical('penalty', ['l1', 'l2',"elasticnet"], default='l2')
     C = Float('C',  (0.01, 1e5), log=True)
     l1_ratio = Float('l1_ratio', (0.0, 1.0))
-    class_weight = Categorical('class_weight', [NONE_SPECIAL_STRING, 'balanced'])
+    class_weight = Categorical('class_weight', [None, 'balanced'])
 
     l1_ratio_condition = EqualsCondition(l1_ratio, penalty, 'elasticnet')
     
@@ -28,13 +62,13 @@ def get_LogisticRegression_ConfigurationSpace(random_state):
     
 
     cs = ConfigurationSpace(space)
-    cs.add_hyperparameters([penalty, C, l1_ratio, class_weight])
-    cs.add_conditions([l1_ratio_condition])
+    cs.add([penalty, C, l1_ratio, class_weight])
+    cs.add([l1_ratio_condition])
 
     return cs
 
 
-def get_KNeighborsClassifier_ConfigurationSpace(n_samples):
+def get_KNeighborsClassifier_ConfigurationSpace(n_samples, n_jobs=1):
         return ConfigurationSpace(
 
                 space = {
@@ -42,19 +76,18 @@ def get_KNeighborsClassifier_ConfigurationSpace(n_samples):
                     'n_neighbors': Integer("n_neighbors", bounds=(1, min(100,n_samples)), log=True),
                     'weights': Categorical("weights", ['uniform', 'distance']),
                     'p': Integer("p", bounds=(1, 3)),
-                    'metric': Categorical("metric", ['euclidean', 'minkowski']),
-                    'n_jobs': 1,
+                    'n_jobs': n_jobs,
                 }
             ) 
 
-def get_BaggingClassifier_ConfigurationSpace(random_state):
+def get_BaggingClassifier_ConfigurationSpace(random_state, n_jobs=1):
     space = {
             'n_estimators': Integer("n_estimators", bounds=(3, 100)),
             'max_samples': Float("max_samples", bounds=(0.1, 1.0)),
             'max_features': Float("max_features", bounds=(0.1, 1.0)),
             
             'bootstrap_features': Categorical("bootstrap_features", [True, False]),
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -69,8 +102,8 @@ def get_BaggingClassifier_ConfigurationSpace(random_state):
         space = space
     )
 
-    cs.add_hyperparameters([bootstrap, oob_score])
-    cs.add_conditions([oob_condition])
+    cs.add([bootstrap, oob_score])
+    cs.add([oob_condition])
 
     return cs
 
@@ -79,11 +112,11 @@ def get_DecisionTreeClassifier_ConfigurationSpace(n_featues, random_state):
     space = {
         'criterion': Categorical("criterion", ['gini', 'entropy']),
         'max_depth': Integer("max_depth", bounds=(1, min(20,2*n_featues))), #max of 20? log scale?
-        'min_samples_split': Integer("min_samples_split", bounds=(1, 20)),
+        'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
-        'max_features': Categorical("max_features", [NONE_SPECIAL_STRING, 'sqrt', 'log2']),
+        'max_features': Categorical("max_features", [None, 'sqrt', 'log2']),
         'min_weight_fraction_leaf': 0.0,
-        'class_weight' : Categorical('class_weight', [NONE_SPECIAL_STRING, 'balanced']),
+        'class_weight' : Categorical('class_weight', [None, 'balanced']),
     }
     
 
@@ -108,8 +141,8 @@ def get_LinearSVC_ConfigurationSpace(random_state):
 
 
     cs = ConfigurationSpace(space)
-    cs.add_hyperparameters([penalty, C, loss])
-    cs.add_conditions([loss_condition])
+    cs.add([penalty, C, loss])
+    cs.add([loss_condition])
 
     return cs
 
@@ -118,7 +151,7 @@ def get_SVC_ConfigurationSpace(random_state):
 
     space = {
             'max_iter': 3000,
-            'probability':TRUE_SPECIAL_STRING}
+            'probability':True}
         
     kernel = Categorical("kernel", ['poly', 'rbf', 'sigmoid', 'linear'])
     C = Float('C',  (0.01, 1e5), log=True)
@@ -126,7 +159,7 @@ def get_SVC_ConfigurationSpace(random_state):
     gamma = Float("gamma", bounds=(1e-5, 8), log=True)
     shrinking = Categorical("shrinking", [True, False])
     coef0 = Float("coef0", bounds=(-1, 1))
-    class_weight = Categorical('class_weight', [NONE_SPECIAL_STRING, 'balanced'])
+    class_weight = Categorical('class_weight', [None, 'balanced'])
 
     degree_condition = EqualsCondition(degree, kernel, 'poly')
     gamma_condition = InCondition(gamma, kernel, ['rbf', 'poly'])
@@ -137,21 +170,22 @@ def get_SVC_ConfigurationSpace(random_state):
 
 
     cs = ConfigurationSpace(space)
-    cs.add_hyperparameters([kernel, C, coef0, degree, gamma, shrinking, class_weight])
-    cs.add_conditions([degree_condition, gamma_condition, coef0_condition])
+    cs.add([kernel, C, coef0, degree, gamma, shrinking, class_weight])
+    cs.add([degree_condition, gamma_condition, coef0_condition])
 
     return cs
 
 
-def get_RandomForestClassifier_ConfigurationSpace( random_state):
+def get_RandomForestClassifier_ConfigurationSpace( random_state, n_jobs=1):
     space = {
             'n_estimators': 128, #as recommended by Oshiro et al. (2012
-            'max_features': Float("max_features", bounds=(0.01,1)), #log scale like autosklearn?
+            'max_features': Float("max_features", bounds=(0.01,1), log=True), #log scale like autosklearn?
             'criterion': Categorical("criterion", ['gini', 'entropy']),
             'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
             'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
             'bootstrap': Categorical("bootstrap", [True, False]),
-            'class_weight': Categorical("class_weight", [NONE_SPECIAL_STRING, 'balanced']),
+            'class_weight': Categorical("class_weight", [None, 'balanced']),
+            'n_jobs': n_jobs,
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -162,7 +196,7 @@ def get_RandomForestClassifier_ConfigurationSpace( random_state):
     )
 
 
-def get_XGBClassifier_ConfigurationSpace(random_state,):
+def get_XGBClassifier_ConfigurationSpace(random_state, n_jobs=1):
     
     space = {
             'n_estimators': 100,
@@ -173,7 +207,7 @@ def get_XGBClassifier_ConfigurationSpace(random_state,):
             'max_depth': Integer("max_depth", bounds=(3, 18)),
             'reg_alpha': Float("reg_alpha", bounds=(1e-4, 100), log=True),
             'reg_lambda': Float("reg_lambda", bounds=(1e-4, 1), log=True),
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
             'nthread': 1,
             'verbosity': 0,
         }
@@ -185,16 +219,16 @@ def get_XGBClassifier_ConfigurationSpace(random_state,):
         space = space
     )
 
-def get_LGBMClassifier_ConfigurationSpace(random_state,):
+def get_LGBMClassifier_ConfigurationSpace(random_state, n_jobs=1):
 
     space = {
             'boosting_type': Categorical("boosting_type", ['gbdt', 'dart', 'goss']),
             'num_leaves': Integer("num_leaves", bounds=(2, 256)),
             'max_depth': Integer("max_depth", bounds=(1, 10)),
             'n_estimators': Integer("n_estimators", bounds=(10, 100)),
-            'class_weight': Categorical("class_weight", [NONE_SPECIAL_STRING, 'balanced']),
+            'class_weight': Categorical("class_weight", [None, 'balanced']),
             'verbose':-1,
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
         }
 
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -205,7 +239,7 @@ def get_LGBMClassifier_ConfigurationSpace(random_state,):
     )
 
 
-def get_ExtraTreesClassifier_ConfigurationSpace(random_state):
+def get_ExtraTreesClassifier_ConfigurationSpace(random_state, n_jobs=1):
     space = {
             'n_estimators': 100,
             'criterion': Categorical("criterion", ["gini", "entropy"]),
@@ -213,8 +247,8 @@ def get_ExtraTreesClassifier_ConfigurationSpace(random_state):
             'min_samples_split': Integer("min_samples_split", bounds=(2, 20)),
             'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 20)),
             'bootstrap': Categorical("bootstrap", [True, False]),
-            'class_weight': Categorical("class_weight", [NONE_SPECIAL_STRING, 'balanced']),
-            'n_jobs': 1,
+            'class_weight': Categorical("class_weight", [None, 'balanced']),
+            'n_jobs': n_jobs,
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -226,7 +260,7 @@ def get_ExtraTreesClassifier_ConfigurationSpace(random_state):
 
 
 
-def get_SGDClassifier_ConfigurationSpace(random_state):
+def get_SGDClassifier_ConfigurationSpace(random_state, n_jobs=1):
     
     space = {
             'loss': Categorical("loss", ['modified_huber']), #don't include hinge because we have LinearSVC, don't include log because we have LogisticRegression. TODO 'squared_hinge'? doesn't support predict proba
@@ -234,9 +268,9 @@ def get_SGDClassifier_ConfigurationSpace(random_state):
             'alpha': Float("alpha", bounds=(1e-5, 0.01), log=True),
             'l1_ratio': Float("l1_ratio", bounds=(0.0, 1.0)),
             'eta0': Float("eta0", bounds=(0.01, 1.0)),
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
             'fit_intercept': Categorical("fit_intercept", [True]),
-            'class_weight': Categorical("class_weight", [NONE_SPECIAL_STRING, 'balanced']),
+            'class_weight': Categorical("class_weight", [None, 'balanced']),
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -251,8 +285,8 @@ def get_SGDClassifier_ConfigurationSpace(random_state):
         space = space
     )
 
-    cs.add_hyperparameters([power_t, learning_rate])
-    cs.add_conditions([powertcond])
+    cs.add([power_t, learning_rate])
+    cs.add([powertcond])
 
     return cs
 
@@ -322,8 +356,8 @@ def get_LinearDiscriminantAnalysis_ConfigurationSpace():
     shrinkcond = NotEqualsCondition(shrinkage, solver, 'svd')
 
     cs = ConfigurationSpace()
-    cs.add_hyperparameters([solver, shrinkage])
-    cs.add_conditions([shrinkcond])
+    cs.add([solver, shrinkage])
+    cs.add([shrinkcond])
 
     return cs
 
@@ -346,7 +380,7 @@ def get_GradientBoostingClassifier_ConfigurationSpace(n_classes, random_state):
         'subsample': Float("subsample", bounds=(0.1, 1.0)),
         'max_features': Float("max_features", bounds=(0.01, 1.00)),
         'max_leaf_nodes': Integer("max_leaf_nodes", bounds=(3, 2047)),
-        'max_depth':NONE_SPECIAL_STRING,   # 'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
+        'max_depth':None,   # 'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
         'tol': 1e-4,
     }
 
@@ -361,8 +395,8 @@ def get_GradientBoostingClassifier_ConfigurationSpace(n_classes, random_state):
     cs = ConfigurationSpace(
         space = space
     )
-    cs.add_hyperparameters([n_iter_no_change, validation_fraction, early_stop ])
-    cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
+    cs.add([n_iter_no_change, validation_fraction, early_stop ])
+    cs.add([validation_fraction_cond, n_iter_no_change_cond])
     return cs
 
 def GradientBoostingClassifier_hyperparameter_parser(params):
@@ -419,7 +453,7 @@ def get_HistGradientBoostingClassifier_ConfigurationSpace(random_state):
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 200)),
         'max_features': Float("max_features", bounds=(0.1,1.0)), 
         'max_leaf_nodes': Integer("max_leaf_nodes", bounds=(3, 2047)),
-        'max_depth':NONE_SPECIAL_STRING, # 'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
+        'max_depth':None, # 'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
         'l2_regularization': Float("l2_regularization", bounds=(1e-10, 1), log=True),
         'tol': 1e-4,
     }
@@ -430,8 +464,8 @@ def get_HistGradientBoostingClassifier_ConfigurationSpace(random_state):
     cs = ConfigurationSpace(
         space = space
     )
-    cs.add_hyperparameters([n_iter_no_change, validation_fraction, early_stop ])
-    cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
+    cs.add([n_iter_no_change, validation_fraction, early_stop ])
+    cs.add([validation_fraction_cond, n_iter_no_change_cond])
 
     return cs
 
@@ -507,7 +541,7 @@ def get_MLPClassifier_ConfigurationSpace(random_state):
     learning_rate_init = Float("learning_rate_init", bounds=(1e-4, 1e-1), log=True)
     learning_rate = Categorical("learning_rate", ['constant', 'invscaling', 'adaptive'])
 
-    cs.add_hyperparameters([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping, learning_rate_init])
+    cs.add([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping, learning_rate_init])
 
     return cs
 

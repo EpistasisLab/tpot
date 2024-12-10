@@ -1,3 +1,37 @@
+"""
+This file is part of the TPOT library.
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+"""
 import sklearn
 import sklearn.ensemble
 import sklearn.linear_model
@@ -38,8 +72,27 @@ def get_IterativeImputer_config_space(n_features, random_state):
             space['random_state'] = random_state
 
     cs = ConfigurationSpace(space=space)
-    cs.add_hyperparameters([estimator, sample_posterior])
-    cs.add_conditions([sampling_condition])
+    cs.add([estimator, sample_posterior])
+    cs.add([sampling_condition])
+    return cs
+
+def get_IterativeImputer_config_space_no_estimator(n_features, random_state):
+    space = { 'initial_strategy' : Categorical('initial_strategy', 
+                                             ['mean', 'median', 
+                                              'most_frequent', 'constant']),
+                'n_nearest_features' : Integer('n_nearest_features', 
+                                           bounds=(1, n_features)),
+                'imputation_order' : Categorical('imputation_order', 
+                                             ['ascending', 'descending', 
+                                              'roman', 'arabic', 'random']),
+    }
+
+    if random_state is not None: 
+            #This is required because configspace doesn't allow None as a value
+            space['random_state'] = random_state
+
+    cs = ConfigurationSpace(space=space)
+
     return cs
 
 def get_KNNImputer_config_space(n_samples):

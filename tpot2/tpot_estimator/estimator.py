@@ -1,3 +1,37 @@
+"""
+This file is part of the TPOT library.
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+"""
 from sklearn.base import BaseEstimator
 from sklearn.utils.metaestimators import available_if
 import numpy as np
@@ -20,7 +54,8 @@ from .estimator_utils import *
 from dask import config as cfg
 from sklearn.experimental import enable_iterative_imputer
 
-from .default_search_spaces import get_default_search_space
+from ..config.template_search_spaces import get_template_search_spaces
+import warnings
 
 def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
@@ -36,26 +71,24 @@ class TPOTEstimator(BaseEstimator):
                         scorers,
                         scorers_weights,
                         classification,
-                        cv = 5,
+                        cv = 10,
                         other_objective_functions=[],
                         other_objective_functions_weights = [],
                         objective_function_names = None,
                         bigger_is_better = True,
 
                         export_graphpipeline = False,
-                        cross_val_predict_cv = 0,
                         memory = None,
 
                         categorical_features = None,
-                        subsets = None,
                         preprocessing = False,
                         population_size = 50,
                         initial_population_size = None,
                         population_scaling = .5,
                         generations_until_end_population = 1,
                         generations = None,
-                        max_time_seconds=3600,
-                        max_eval_time_seconds=60*10,
+                        max_time_mins=60,
+                        max_eval_time_mins=10,
                         validation_strategy = "none",
                         validation_fraction = .2,
                         disable_label_encoder = False,
@@ -64,9 +97,9 @@ class TPOTEstimator(BaseEstimator):
                         early_stop = None,
                         scorers_early_stop_tol = 0.001,
                         other_objectives_early_stop_tol =None,
-                        threshold_evaluation_early_stop = None,
+                        threshold_evaluation_pruning = None,
                         threshold_evaluation_scaling = .5,
-                        selection_evaluation_early_stop = None,
+                        selection_evaluation_pruning = None,
                         selection_evaluation_scaling = .5,
                         min_history_threshold = 20,
 
@@ -84,9 +117,6 @@ class TPOTEstimator(BaseEstimator):
                         budget_scaling = .5,
                         generations_until_end_budget = 1,
                         stepwise_steps = 5,
-
-
-
 
                         #dask parameters
                         n_jobs=1,
@@ -112,10 +142,21 @@ class TPOTEstimator(BaseEstimator):
 
         Parameters
         ----------
-        search_space : (String, tpot2.search_spaces.SklearnIndividualGenerator)
-            - String : The default search space to use for the optimization. This can be either "linear" or "graph". If "linear", will use the default linear pipeline search space. If "graph", will use the default graph pipeline search space.
-            - SklearnIndividualGenerator : The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
-                The search space to use for the optimization. This should be an instance of a SklearnIndividualGenerator.
+        search_space : (String, tpot2.search_spaces.SearchSpace)
+            - String : The default search space to use for the optimization.
+            | String     | Description      |
+            | :---        |    :----:   |
+            | linear  | A linear pipeline with the structure of "Selector->(transformers+Passthrough)->(classifiers/regressors+Passthrough)->final classifier/regressor." For both the transformer and inner estimator layers, TPOT may choose one or more transformers/classifiers, or it may choose none. The inner classifier/regressor layer is optional. |
+            | linear-light | Same search space as linear, but without the inner classifier/regressor layer and with a reduced set of faster running estimators. |
+            | graph | TPOT will optimize a pipeline in the shape of a directed acyclic graph. The nodes of the graph can include selectors, scalers, transformers, or classifiers/regressors (inner classifiers/regressors can optionally be not included). This will return a custom GraphPipeline rather than an sklearn Pipeline. More details in Tutorial 6. |
+            | graph-light | Same as graph search space, but without the inner classifier/regressors and with a reduced set of faster running estimators. |
+            | mdr |TPOT will search over a series of feature selectors and Multifactor Dimensionality Reduction models to find a series of operators that maximize prediction accuracy. The TPOT MDR configuration is specialized for genome-wide association studies (GWAS), and is described in detail online here.
+
+            Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
+            
+            
+            - SearchSpace : The search space to use for the optimization. This should be an instance of a SearchSpace.
+                The search space to use for the optimization. This should be an instance of a SearchSpace.
                 TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
         
         scorers : (list, scorer)
@@ -146,15 +187,8 @@ class TPOTEstimator(BaseEstimator):
         bigger_is_better : bool, default=True
             If True, the objective function is maximized. If False, the objective function is minimized. Use negative weights to reverse the direction.
         
-        cross_val_predict_cv : int, default=0
-            Number of folds to use for the cross_val_predict function for inner classifiers and regressors. Estimators will still be fit on the full dataset, but the following node will get the outputs from cross_val_predict.
-
-            - 0-1 : When set to 0 or 1, the cross_val_predict function will not be used. The next layer will get the outputs from fitting and transforming the full dataset.
-            - >=2 : When fitting pipelines with inner classifiers or regressors, they will still be fit on the full dataset.
-                    However, the output to the next node will come from cross_val_predict with the specified number of folds.
-
         memory: Memory object or string, default=None
-            If supplied, pipeline will cache each transformer after calling fit. This feature
+            If supplied, pipeline will cache each transformer after calling fit with joblib.Memory. This feature
             is used to avoid computing the fit transformers within a pipeline if the parameters
             and input data are identical with another fitted pipeline during optimization process.
             - String 'auto':
@@ -174,16 +208,8 @@ class TPOTEstimator(BaseEstimator):
             - None : If None, TPOT2 will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
             - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
 
-        subsets : str or list, default=None
-            Sets the subsets that the FeatureSetSeletor will select from if set as an option in one of the configuration dictionaries.
-            - str : If a string, it is assumed to be a path to a csv file with the subsets.
-                The first column is assumed to be the name of the subset and the remaining columns are the features in the subset.
-            - list or np.ndarray : If a list or np.ndarray, it is assumed to be a list of subsets.
-            - None : If None, each column will be treated as a subset. One column will be selected per subset.
-            If subsets is None, each column will be treated as a subset. One column will be selected per subset.
-
         preprocessing : bool or BaseEstimator/Pipeline,
-            EXPERIMENTAL
+            EXPERIMENTAL - will be changed in future versions
             A pipeline that will be used to preprocess the data before CV. Note that the parameters for these steps are not optimized. Add them to the search space to be optimized.
             - bool : If True, will use a default preprocessing pipeline which includes imputation followed by one hot encoding.
             - Pipeline : If an instance of a pipeline is given, will use that pipeline as the preprocessing pipeline.
@@ -203,10 +229,10 @@ class TPOTEstimator(BaseEstimator):
         generations : int, default=50
             Number of generations to run
 
-        max_time_seconds : float, default=float("inf")
+        max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
 
-        max_eval_time_seconds : float, default=60*5
+        max_eval_time_mins : float, default=5
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
 
         validation_strategy : str, default='none'
@@ -224,7 +250,7 @@ class TPOTEstimator(BaseEstimator):
             If False, no additional label encoders will be used.
 
         early_stop : int, default=None
-            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered.
+            Number of generations without improvement before early stopping. All objectives must have converged within the tolerance for this to be triggered. In general a value of around 5-20 is good.
 
         scorers_early_stop_tol :
             -list of floats
@@ -240,7 +266,7 @@ class TPOTEstimator(BaseEstimator):
             -int
                 If an int is given, it will be used as the tolerance for all objectives
 
-        threshold_evaluation_early_stop : list [start, end], default=None
+        threshold_evaluation_pruning : list [start, end], default=None
             starting and ending percentile to use as a threshold for the evaluation early stopping.
             Values between 0 and 100.
 
@@ -248,7 +274,7 @@ class TPOTEstimator(BaseEstimator):
             A scaling factor to use when determining how fast we move the threshold moves from the start to end percentile.
             Must be greater than zero. Higher numbers will move the threshold to the end faster.
 
-        selection_evaluation_early_stop : list, default=None
+        selection_evaluation_pruning : list, default=None
             A lower and upper percent of the population size to select each round of CV.
             Values between 0 and 1.
 
@@ -294,11 +320,10 @@ class TPOTEstimator(BaseEstimator):
         stepwise_steps : int, default=1
             The number of staircase steps to take when scaling the budget and population size.
 
-
         n_jobs : int, default=1
             Number of processes to run in parallel.
 
-        memory_limit : str, default="4GB"
+        memory_limit : str, default=None
             Memory limit for each job. See Dask [LocalCluster documentation](https://distributed.dask.org/en/stable/api.html#distributed.Client) for more information.
 
         client : dask.distributed.Client, default=None
@@ -307,7 +332,6 @@ class TPOTEstimator(BaseEstimator):
         processes : bool, default=True
             If True, will use multiprocessing to parallelize the optimization process. If False, will use threading.
             True seems to perform better. However, False is required for interactive debugging.
-
 
         warm_start : bool, default=False
             If True, will use the continue the evolutionary algorithm from the last generation of the previous run.
@@ -327,7 +351,7 @@ class TPOTEstimator(BaseEstimator):
             3. best individual
             4. warnings
             >=5. full warnings trace
-            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_seconds in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
+            6. evaluations progress bar. (Temporary: This used to be 2. Currently, using evaluation progress bar may prevent some instances were we terminate a generation early due to it reaching max_time_mins in the middle of a generation OR a pipeline failed to be terminated normally and we need to manually terminate it.)
 
         scatter : bool, default=True
             If True, will scatter the data to the dask workers. If False, will not scatter the data. This can be useful for debugging.
@@ -379,15 +403,9 @@ class TPOTEstimator(BaseEstimator):
         self.search_space = search_space
 
         self.export_graphpipeline = export_graphpipeline
-        self.cross_val_predict_cv = cross_val_predict_cv
         self.memory = memory
 
-        if self.cross_val_predict_cv !=0 or self.memory is not None:
-            if not self.export_graphpipeline:
-                raise ValueError("cross_val_predict_cv and memory parameters are parameters for GraphPipeline. To enable these options export_graphpipeline to be True. Otherwise these can be passed into the relevant Search spaces as parameters.")
-
         self.categorical_features = categorical_features
-        self.subsets = subsets
         
         self.preprocessing = preprocessing
         self.validation_strategy = validation_strategy
@@ -401,8 +419,8 @@ class TPOTEstimator(BaseEstimator):
         self.early_stop = early_stop
         self.scorers_early_stop_tol = scorers_early_stop_tol
         self.other_objectives_early_stop_tol = other_objectives_early_stop_tol
-        self.max_time_seconds = max_time_seconds
-        self.max_eval_time_seconds = max_eval_time_seconds
+        self.max_time_mins = max_time_mins
+        self.max_eval_time_mins = max_eval_time_mins
         self.n_jobs= n_jobs
         self.memory_limit = memory_limit
         self.client = client
@@ -417,10 +435,10 @@ class TPOTEstimator(BaseEstimator):
         self.budget_scaling = budget_scaling
         self.generations_until_end_budget = generations_until_end_budget
         self.stepwise_steps = stepwise_steps
-        self.threshold_evaluation_early_stop =threshold_evaluation_early_stop
+        self.threshold_evaluation_pruning =threshold_evaluation_pruning
         self.threshold_evaluation_scaling =  threshold_evaluation_scaling
         self.min_history_threshold = min_history_threshold
-        self.selection_evaluation_early_stop = selection_evaluation_early_stop
+        self.selection_evaluation_pruning = selection_evaluation_pruning
         self.selection_evaluation_scaling =  selection_evaluation_scaling
         self.warm_start = warm_start
         self.verbose = verbose
@@ -432,13 +450,14 @@ class TPOTEstimator(BaseEstimator):
         self.scatter = scatter
 
 
+        timer_set = self.max_time_mins != float("inf") and self.max_time_mins is not None
+        if self.generations is not None and timer_set:
+            warnings.warn("Both generations and max_time_mins are set. TPOT will terminate when the first condition is met.")
 
         # create random number generator based on rngseed
         self.rng = np.random.default_rng(random_state)
         # save random state passed to us for other functions that use random_state
         self.random_state = random_state
-        # set the numpy seed so anything using it will be consistent as well
-        np.random.seed(random_state)
 
         #Initialize other used params
 
@@ -618,7 +637,6 @@ class TPOTEstimator(BaseEstimator):
                                             other_objective_functions=self.other_objective_functions,
                                             export_graphpipeline=self.export_graphpipeline,
                                             memory=self.memory,
-                                            cross_val_predict_cv=self.cross_val_predict_cv,
                                             **kwargs):
             return objective_function_generator(
                 pipeline_individual,
@@ -630,13 +648,12 @@ class TPOTEstimator(BaseEstimator):
                 other_objective_functions=other_objective_functions,
                 export_graphpipeline=export_graphpipeline,
                 memory=memory,
-                cross_val_predict_cv=cross_val_predict_cv,
                 **kwargs,
             )
 
 
 
-        if self.threshold_evaluation_early_stop is not None or self.selection_evaluation_early_stop is not None:
+        if self.threshold_evaluation_pruning is not None or self.selection_evaluation_pruning is not None:
             evaluation_early_stop_steps = self.cv
         else:
             evaluation_early_stop_steps = None
@@ -658,7 +675,7 @@ class TPOTEstimator(BaseEstimator):
                         "n_features":X.shape[1], 
                         "random_state":self.random_state}
 
-        self._search_space = get_default_search_space(self.search_space, classification=True, inner_predictors=True, **get_search_space_params)
+        self._search_space = get_template_search_spaces(self.search_space, classification=self.classification, inner_predictors=True, **get_search_space_params)
 
 
         # TODO : Add check for empty values in X and if so, add imputation to the search space
@@ -707,15 +724,15 @@ class TPOTEstimator(BaseEstimator):
                                             initial_population_size = self._initial_population_size,
                                             n_jobs=self.n_jobs,
                                             verbose = self.verbose,
-                                            max_time_seconds =      self.max_time_seconds ,
-                                            max_eval_time_seconds = self.max_eval_time_seconds,
+                                            max_time_mins =      self.max_time_mins ,
+                                            max_eval_time_mins = self.max_eval_time_mins,
 
                                             periodic_checkpoint_folder = self.periodic_checkpoint_folder,
-                                            threshold_evaluation_early_stop = self.threshold_evaluation_early_stop,
+                                            threshold_evaluation_pruning = self.threshold_evaluation_pruning,
                                             threshold_evaluation_scaling =  self.threshold_evaluation_scaling,
                                             min_history_threshold = self.min_history_threshold,
 
-                                            selection_evaluation_early_stop = self.selection_evaluation_early_stop,
+                                            selection_evaluation_pruning = self.selection_evaluation_pruning,
                                             selection_evaluation_scaling =  self.selection_evaluation_scaling,
                                             evaluation_early_stop_steps = evaluation_early_stop_steps,
 
@@ -775,8 +792,6 @@ class TPOTEstimator(BaseEstimator):
                                                     other_objective_functions=self.other_objective_functions,
                                                     export_graphpipeline=self.export_graphpipeline,
                                                     memory=self.memory,
-                                                    cross_val_predict_cv=self.cross_val_predict_cv,
-
                                                     **kwargs: objective_function_generator(
                                                                                                 ind,
                                                                                                 X,
@@ -787,15 +802,11 @@ class TPOTEstimator(BaseEstimator):
                                                                                                 other_objective_functions=other_objective_functions,
                                                                                                 export_graphpipeline=export_graphpipeline,
                                                                                                 memory=memory,
-                                                                                                cross_val_predict_cv=cross_val_predict_cv,
                                                                                                 **kwargs,
                                                                                                 )]
 
             objective_kwargs = {"X": X_future, "y": y_future}
-            # val_scores = tpot2.utils.eval_utils.parallel_eval_objective_list(
-            #     best_pareto_front,
-            #     val_objective_function_list, n_jobs=self.n_jobs, verbose=self.verbose, timeout=self.max_eval_time_seconds,n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
-            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
 
 
 
@@ -836,7 +847,6 @@ class TPOTEstimator(BaseEstimator):
                                                     other_objective_functions=self.other_objective_functions,
                                                     export_graphpipeline=self.export_graphpipeline,
                                                     memory=self.memory,
-                                                    cross_val_predict_cv=self.cross_val_predict_cv,
                                                     **kwargs: val_objective_function_generator(
                                                         ind,
                                                         X,
@@ -847,11 +857,10 @@ class TPOTEstimator(BaseEstimator):
                                                         other_objective_functions=other_objective_functions,
                                                         export_graphpipeline=export_graphpipeline,
                                                         memory=memory,
-                                                        cross_val_predict_cv=cross_val_predict_cv,
                                                         **kwargs,
                                                         )]
 
-            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list2(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_seconds=self.max_eval_time_seconds, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
+            val_scores, start_times, end_times, eval_errors = tpot2.utils.eval_utils.parallel_eval_objective_list(best_pareto_front, val_objective_function_list, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins, n_expected_columns=len(self.objective_names), client=_client, **objective_kwargs)
 
 
 
@@ -867,31 +876,40 @@ class TPOTEstimator(BaseEstimator):
         else:
             self.objective_names_for_selection = self.objective_names
         
-        val_scores = self.evaluated_individuals[~self.evaluated_individuals[self.objective_names_for_selection].isna().all(1)][self.objective_names_for_selection]
+        val_scores = self.evaluated_individuals[self.evaluated_individuals[self.objective_names_for_selection].isna().all(1).ne(True)][self.objective_names_for_selection]
         weighted_scores = val_scores*self.objective_function_weights
 
         if self.bigger_is_better:
-            best_idx = weighted_scores[self.objective_names_for_selection[0]].idxmax()
+            best_indices = list(weighted_scores.sort_values(by=self.objective_names_for_selection, ascending=False).index)
         else:
-            best_idx = weighted_scores[self.objective_names_for_selection[0]].idxmin()
+            best_indices = list(weighted_scores.sort_values(by=self.objective_names_for_selection, ascending=True).index)
 
-        best_individual = self.evaluated_individuals.loc[best_idx]['Individual']
-        self.selected_best_score =  self.evaluated_individuals.loc[best_idx]
+        for best_idx in best_indices:
+
+            best_individual = self.evaluated_individuals.loc[best_idx]['Individual']
+            self.selected_best_score =  self.evaluated_individuals.loc[best_idx]
 
 
-        #TODO
-        #best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
-        if self.export_graphpipeline:
-            best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
-        else:
-            best_individual_pipeline = best_individual.export_pipeline()
+            #TODO
+            #best_individual_pipeline = best_individual.export_pipeline(memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv)
+            if self.export_graphpipeline:
+                best_individual_pipeline = best_individual.export_flattened_graphpipeline(memory=self.memory)
+            else:
+                best_individual_pipeline = best_individual.export_pipeline(memory=self.memory)
 
-        if self.preprocessing:
-            self.fitted_pipeline_ = sklearn.pipeline.make_pipeline(sklearn.base.clone(self._preprocessing_pipeline), best_individual_pipeline )
-        else:
-            self.fitted_pipeline_ = best_individual_pipeline
+            if self.preprocessing:
+                self.fitted_pipeline_ = sklearn.pipeline.make_pipeline(sklearn.base.clone(self._preprocessing_pipeline), best_individual_pipeline )
+            else:
+                self.fitted_pipeline_ = best_individual_pipeline
 
-        self.fitted_pipeline_.fit(X_original,y_original) #TODO use y_original as well?
+            try:
+                self.fitted_pipeline_.fit(X_original,y_original) #TODO use y_original as well?
+                break
+            except Exception as e:
+                if self.verbose >= 4:
+                    warnings.warn("Final pipeline failed to fit. Rarely, the pipeline might work on the objective function but fail on the full dataset. Generally due to interactions with different features being selected or transformations having different properties. Trying next pipeline")
+                    print(e)
+                continue
 
 
         if self.client is None: #no client was passed in
@@ -974,7 +992,7 @@ class TPOTEstimator(BaseEstimator):
             self.evaluated_individuals = self.evaluated_individuals.set_index(self.evaluated_individuals.index.map(object_to_int))
             self.evaluated_individuals['Parents'] = self.evaluated_individuals['Parents'].apply(lambda row: convert_parents_tuples_to_integers(row, object_to_int))
 
-            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline, export_graphpipeline=self.export_graphpipeline, memory=self.memory, cross_val_predict_cv=self.cross_val_predict_cv))
+            self.evaluated_individuals["Instance"] = self.evaluated_individuals["Individual"].apply(lambda ind: apply_make_pipeline(ind, preprocessing_pipeline=self._preprocessing_pipeline, export_graphpipeline=self.export_graphpipeline, memory=self.memory))
 
         return self.evaluated_individuals
 

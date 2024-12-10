@@ -1,3 +1,37 @@
+"""
+This file is part of the TPOT library.
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+"""
 import tpot2
 import sklearn
 from sklearn.base import BaseEstimator
@@ -29,11 +63,11 @@ class SklearnIndividual(tpot2.BaseIndividual):
         def wrapper(self, other, rng=None, **kwargs):
             if not isinstance(other, type(self)):
                 return False
-            return func(self, other, rng=None, **kwargs)
+            return func(self, other, rng=rng, **kwargs)
 
         return wrapper
 
-    def export_pipeline(self) -> BaseEstimator:
+    def export_pipeline(self, **kwargs) -> BaseEstimator:
         return
     
     def unique_id(self):
@@ -64,7 +98,7 @@ class SklearnIndividual(tpot2.BaseIndividual):
     def export_flattened_graphpipeline(self, **graphpipeline_kwargs) -> tpot2.GraphPipeline:
         return flatten_to_graphpipeline(self.export_pipeline(), **graphpipeline_kwargs)
 
-class SklearnIndividualGenerator():
+class SearchSpace():
     def __init__(self,):
         pass
 

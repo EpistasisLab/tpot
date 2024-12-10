@@ -1,8 +1,42 @@
+"""
+This file is part of the TPOT library.
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+"""
 import sklearn
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ConfigurationSpace, Integer, Float, Categorical, Normal
 from ConfigSpace import EqualsCondition, OrConjunction, NotEqualsCondition, InCondition
-from ..search_spaces.nodes.estimator_node import NONE_SPECIAL_STRING, TRUE_SPECIAL_STRING, FALSE_SPECIAL_STRING
+
 import numpy as np
 #TODO: fill in remaining
 #TODO check for places were we could use log scaling
@@ -12,14 +46,15 @@ ElasticNetCV_configspace = {
     "l1_ratio" :  np.arange(0.0, 1.01, 0.05),
 }
 
-def get_RandomForestRegressor_ConfigurationSpace(random_state):
+def get_RandomForestRegressor_ConfigurationSpace(random_state, n_jobs=1):
     space =  {
         'n_estimators': 100,
-        'criterion': Categorical("criterion", ['mse', 'mae', "friedman_mse"]),
+        'criterion': Categorical("criterion", ['friedman_mse', 'poisson', 'absolute_error', 'squared_error']),
         'max_features': Float("max_features", bounds=(0.05, 1.0)),
         'bootstrap': Categorical("bootstrap", [True, False]),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 21)),
+        'n_jobs': n_jobs,
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -62,10 +97,10 @@ def get_SGDRegressor_ConfigurationSpace(random_state):
     eta0_in_inv_con = InCondition(eta0, learning_rate, ["invscaling", "constant"])
     power_t_condition = EqualsCondition(power_t, learning_rate, "invscaling")
 
-    cs.add_hyperparameters(
+    cs.add(
         [l1_ratio, penalty, epsilon, loss, eta0, learning_rate, power_t]
     )
-    cs.add_conditions(
+    cs.add(
         [elasticnet, epsilon_condition, power_t_condition, eta0_in_inv_con]
     )
 
@@ -203,7 +238,7 @@ def get_TheilSenRegressor_ConfigurationSpace(random_state):
 
 def get_Perceptron_ConfigurationSpace(random_state):
     space = {
-        'penalty': Categorical("penalty", [NONE_SPECIAL_STRING, 'l2', 'l1', 'elasticnet']),
+        'penalty': Categorical("penalty", [None, 'l2', 'l1', 'elasticnet']),
         'alpha': Float("alpha", bounds=(1e-5, 1e-1), log=True),
         'l1_ratio': Float("l1_ratio", bounds=(0.0, 1.0)),
         'learning_rate': Categorical("learning_rate", ['constant', 'optimal', 'invscaling']),
@@ -221,7 +256,7 @@ def get_Perceptron_ConfigurationSpace(random_state):
 
 def get_DecisionTreeRegressor_ConfigurationSpace(random_state):
     space = {
-        'criterion': Categorical("criterion", ['squared_error', 'friedman_mse', 'mae']),
+        'criterion': Categorical("criterion", ['friedman_mse', 'poisson', 'absolute_error', 'squared_error']),
         # 'max_depth': Integer("max_depth", bounds=(1, n_features*2)),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 21)),
@@ -235,14 +270,14 @@ def get_DecisionTreeRegressor_ConfigurationSpace(random_state):
     )
 
 
-def get_KNeighborsRegressor_ConfigurationSpace(n_samples):
+def get_KNeighborsRegressor_ConfigurationSpace(n_samples, n_jobs=1):
     return ConfigurationSpace(
         space = {
             'n_neighbors': Integer("n_neighbors", bounds=(1, min(100,n_samples))),
             'weights': Categorical("weights", ['uniform', 'distance']),
-            'p': Integer("p", bounds=(1, 3)),
-            'metric': Categorical("metric", ['minkowski', 'euclidean', 'manhattan']),
-        }
+            'p': Integer("p", bounds=(1, 3)),       
+            'n_jobs': n_jobs,
+              }
     )
 
 
@@ -285,15 +320,15 @@ def get_SVR_ConfigurationSpace():
     gamma_condition = InCondition(gamma, kernel, ['poly', 'rbf',])
     coef0_condition = InCondition(coef0, kernel, ['poly', 'sigmoid'])
 
-    cs.add_hyperparameters([kernel, degree, gamma, coef0])
-    cs.add_conditions([degree_condition,gamma_condition])
+    cs.add([kernel, degree, gamma, coef0])
+    cs.add([degree_condition,gamma_condition])
     
     return cs
 
 
 
 
-def get_XGBRegressor_ConfigurationSpace(random_state):
+def get_XGBRegressor_ConfigurationSpace(random_state, n_jobs=1):
     space = {
         'n_estimators': 100,
         'learning_rate': Float("learning_rate", bounds=(1e-3, 1), log=True),
@@ -303,7 +338,7 @@ def get_XGBRegressor_ConfigurationSpace(random_state):
         'max_depth': Integer("max_depth", bounds=(3, 18)),
         'reg_alpha': Float("reg_alpha", bounds=(1e-4, 100), log=True),
         'reg_lambda': Float("reg_lambda", bounds=(1e-4, 1), log=True),
-        'n_jobs': 1,
+        'n_jobs': n_jobs,
         'nthread': 1,
         'verbosity': 0,
         'objective': 'reg:squarederror',
@@ -333,14 +368,15 @@ def get_AdaBoostRegressor_ConfigurationSpace(random_state):
         space = space
     )
 
-def get_ExtraTreesRegressor_ConfigurationSpace(random_state):
+def get_ExtraTreesRegressor_ConfigurationSpace(random_state, n_jobs=1):
     space = {
         'n_estimators': 100,
-        'criterion': Categorical("criterion", ["squared_error", "friedman_mse", "mae"]),
+        'criterion': Categorical("criterion", ['friedman_mse', 'poisson', 'absolute_error', 'squared_error']),
         'max_features': Float("max_features", bounds=(0.05, 1.0)),
         'min_samples_split': Integer("min_samples_split", bounds=(2, 21)),
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 21)),
         'bootstrap': Categorical("bootstrap", [True, False]),
+        'n_jobs': n_jobs,
     }
 
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -401,7 +437,7 @@ def get_GradientBoostingRegressor_ConfigurationSpace(random_state):
         'subsample': Float("subsample", bounds=(0.1, 1.0)),
         'max_features': Float("max_features", bounds=(0.01, 1.00)),
         'max_leaf_nodes': Integer("max_leaf_nodes", bounds=(3, 2047)),
-        'max_depth':NONE_SPECIAL_STRING, #'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
+        'max_depth':None, #'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
         'tol': 1e-4,
     }
 
@@ -411,8 +447,8 @@ def get_GradientBoostingRegressor_ConfigurationSpace(random_state):
     cs = ConfigurationSpace(
         space = space
     )
-    cs.add_hyperparameters([n_iter_no_change, validation_fraction, early_stop ])
-    cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
+    cs.add([n_iter_no_change, validation_fraction, early_stop ])
+    cs.add([validation_fraction_cond, n_iter_no_change_cond])
     return cs
 
 def GradientBoostingRegressor_hyperparameter_parser(params):
@@ -470,7 +506,7 @@ def get_HistGradientBoostingRegressor_ConfigurationSpace(random_state):
         'min_samples_leaf': Integer("min_samples_leaf", bounds=(1, 200)),
         'max_features': Float("max_features", bounds=(0.1,1.0)), 
         'max_leaf_nodes': Integer("max_leaf_nodes", bounds=(3, 2047)),
-        'max_depth':NONE_SPECIAL_STRING, #'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
+        'max_depth':None, #'max_depth': Integer("max_depth", bounds=(1, 2*n_features)),
         'l2_regularization': Float("l2_regularization", bounds=(1e-10, 1), log=True),
         'tol': 1e-4,
     }
@@ -481,8 +517,8 @@ def get_HistGradientBoostingRegressor_ConfigurationSpace(random_state):
     cs = ConfigurationSpace(
         space = space
     )
-    cs.add_hyperparameters([n_iter_no_change, validation_fraction, early_stop ])
-    cs.add_conditions([validation_fraction_cond, n_iter_no_change_cond])
+    cs.add([n_iter_no_change, validation_fraction, early_stop ])
+    cs.add([validation_fraction_cond, n_iter_no_change_cond])
 
     return cs
 
@@ -551,7 +587,7 @@ def get_MLPRegressor_ConfigurationSpace(random_state):
     learning_rate_init = Float("learning_rate_init", bounds=(1e-4, 1e-1), log=True)
     learning_rate = Categorical("learning_rate", ['constant', 'invscaling', 'adaptive'])
 
-    cs.add_hyperparameters([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping, learning_rate_init])
+    cs.add([n_hidden_layers, n_nodes_per_layer, activation, alpha, learning_rate, early_stopping, learning_rate_init])
 
     return cs
 
@@ -572,14 +608,14 @@ def MLPRegressor_hyperparameter_parser(params):
     return hyperparameters
 
 
-def get_BaggingRegressor_ConfigurationSpace(random_state):
+def get_BaggingRegressor_ConfigurationSpace(random_state, n_jobs=1):
     space = {
             'n_estimators': Integer("n_estimators", bounds=(3, 100)),
             'max_samples': Float("max_samples", bounds=(0.1, 1.0)),
             'max_features': Float("max_features", bounds=(0.1, 1.0)),
             
             'bootstrap_features': Categorical("bootstrap_features", [True, False]),
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value
@@ -594,12 +630,12 @@ def get_BaggingRegressor_ConfigurationSpace(random_state):
         space = space
     )
 
-    cs.add_hyperparameters([bootstrap, oob_score])
-    cs.add_conditions([oob_condition])
+    cs.add([bootstrap, oob_score])
+    cs.add([oob_condition])
 
     return cs
 
-def get_LGBMRegressor_ConfigurationSpace(random_state,):
+def get_LGBMRegressor_ConfigurationSpace(random_state, n_jobs=1):
 
     space = {
             'boosting_type': Categorical("boosting_type", ['gbdt', 'dart', 'goss']),
@@ -607,7 +643,7 @@ def get_LGBMRegressor_ConfigurationSpace(random_state,):
             'max_depth': Integer("max_depth", bounds=(1, 10)),
             'n_estimators': Integer("n_estimators", bounds=(10, 100)),
             'verbose':-1,
-            'n_jobs': 1,
+            'n_jobs': n_jobs,
         }
 
     if random_state is not None: #This is required because configspace doesn't allow None as a value

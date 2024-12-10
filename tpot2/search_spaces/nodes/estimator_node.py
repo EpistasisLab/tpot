@@ -1,13 +1,43 @@
+"""
+This file is part of the TPOT library.
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
+
+"""
 # try https://automl.github.io/ConfigSpace/main/api/hyperparameters.html
 
 import numpy as np
-from ..base import SklearnIndividual, SklearnIndividualGenerator
+from ..base import SklearnIndividual, SearchSpace
 from ConfigSpace import ConfigurationSpace
 from typing import final
-
-NONE_SPECIAL_STRING = "<NONE>"
-TRUE_SPECIAL_STRING = "<TRUE>"
-FALSE_SPECIAL_STRING = "<FALSE>"
 
 
 def default_hyperparameter_parser(params:dict) -> dict:
@@ -47,8 +77,6 @@ class EstimatorNodeIndividual(SklearnIndividual):
             self.space.seed(rng.integers(0, 2**32))
             self.hyperparameters = dict(self.space.sample_configuration())
 
-        self.check_hyperparameters_for_None()
-
     def mutate(self, rng=None):
         if isinstance(self.space, dict): 
             return False
@@ -56,8 +84,6 @@ class EstimatorNodeIndividual(SklearnIndividual):
         rng = np.random.default_rng(rng)
         self.space.seed(rng.integers(0, 2**32))
         self.hyperparameters = dict(self.space.sample_configuration())
-
-        self.check_hyperparameters_for_None()
         return True
 
     def crossover(self, other, rng=None):
@@ -74,20 +100,9 @@ class EstimatorNodeIndividual(SklearnIndividual):
                 if hyperparameter in other.hyperparameters:
                     self.hyperparameters[hyperparameter] = other.hyperparameters[hyperparameter]
 
-        self.check_hyperparameters_for_None()
-
         return True
 
-    def check_hyperparameters_for_None(self):
-        for key, value in self.hyperparameters.items():
-            #if string
-            if isinstance(value, str):
-                if value == NONE_SPECIAL_STRING:
-                    self.hyperparameters[key] = None
-                elif value == TRUE_SPECIAL_STRING:
-                    self.hyperparameters[key] = True
-                elif value == FALSE_SPECIAL_STRING:
-                    self.hyperparameters[key] = False
+
 
     @final #this method should not be overridden, instead override hyperparameter_parser
     def export_pipeline(self, **kwargs):
@@ -103,7 +118,7 @@ class EstimatorNodeIndividual(SklearnIndividual):
         
         return id_str
 
-class EstimatorNode(SklearnIndividualGenerator):
+class EstimatorNode(SearchSpace):
     def __init__(self, method, space, hyperparameter_parser=default_hyperparameter_parser):
         self.method = method
         self.space = space
