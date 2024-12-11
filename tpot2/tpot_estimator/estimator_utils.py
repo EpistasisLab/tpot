@@ -66,11 +66,11 @@ def convert_parents_tuples_to_integers(row, object_to_int):
 #TODO add kwargs
 def apply_make_pipeline(ind, preprocessing_pipeline=None, export_graphpipeline=False, **pipeline_kwargs):
     """
-    Helper function to create a column of sklearn pipelines from the tpot2 individual class.
+    Helper function to create a column of sklearn pipelines from the tpot individual class.
 
     Parameters
     ----------
-    ind: tpot2.SklearnIndividual
+    ind: tpot.SklearnIndividual
         The individual to convert to a pipeline.
     preprocessing_pipeline: sklearn.pipeline.Pipeline, optional
         The preprocessing pipeline to include before the individual's pipeline.
@@ -109,7 +109,7 @@ def objective_function_generator(pipeline, x,y, scorers, cv, other_objective_fun
 
     Parameters
     ----------
-    pipeline: tpot2.SklearnIndividual
+    pipeline: tpot.SklearnIndividual
         The individual to evaluate.
     x: np.ndarray
         The feature matrix.
@@ -179,7 +179,7 @@ def val_objective_function_generator(pipeline, X_train, y_train, X_test, y_test,
     Parameters
     ----------
 
-    pipeline: tpot2.SklearnIndividual
+    pipeline: tpot.SklearnIndividual
         The individual to evaluate.
     X_train: np.ndarray
         The feature matrix of the training set.

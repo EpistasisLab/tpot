@@ -88,7 +88,7 @@ def tpot2_parser(
     node: Node,
     ):
     """
-    Convert amltk pipeline search space into a tpot2 pipeline search space.
+    Convert amltk pipeline search space into a tpot pipeline search space.
 
     Parameters
     ----------
@@ -97,7 +97,7 @@ def tpot2_parser(
 
     Returns
     -------
-    tpot2.search_spaces.base.SearchSpace
+    tpot.search_spaces.base.SearchSpace
         The equivalent TPOT search space which can be optimized by TPOT.
     """
 

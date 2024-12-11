@@ -142,7 +142,7 @@ class TPOTEstimator(BaseEstimator):
 
         Parameters
         ----------
-        search_space : (String, tpot2.search_spaces.SearchSpace)
+        search_space : (String, tpot.search_spaces.SearchSpace)
             - String : The default search space to use for the optimization.
             | String     | Description      |
             | :---        |    :----:   |
@@ -157,7 +157,7 @@ class TPOTEstimator(BaseEstimator):
             
             - SearchSpace : The search space to use for the optimization. This should be an instance of a SearchSpace.
                 The search space to use for the optimization. This should be an instance of a SearchSpace.
-                TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
+                TPOT has groups of search spaces found in the following folders, tpot.search_spaces.nodes for the nodes in the pipeline and tpot.search_spaces.pipelines for the pipeline structure.
         
         scorers : (list, scorer)
             A scorer or list of scorers to be used in the cross-validation process.
@@ -205,7 +205,7 @@ class TPOTEstimator(BaseEstimator):
 
         categorical_features: list or None
             Categorical columns to inpute and/or one hot encode during the preprocessing step. Used only if preprocessing is not False.
-            - None : If None, TPOT2 will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
+            - None : If None, TPOT will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
             - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
 
         preprocessing : bool or BaseEstimator/Pipeline,
@@ -236,7 +236,7 @@ class TPOTEstimator(BaseEstimator):
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
 
         validation_strategy : str, default='none'
-            EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT2 may overfit the cross validation score. A second validation set can be used to select the final pipeline.
+            EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT may overfit the cross validation score. A second validation set can be used to select the final pipeline.
             - 'auto' : Automatically determine the validation strategy based on the dataset shape.
             - 'reshuffled' : Use the same data for cross validation and final validation, but with different splits for the folds. This is the default for small datasets.
             - 'split' : Use a separate validation set for final validation. Data will be split according to validation_fraction. This is the default for medium datasets.
@@ -246,7 +246,7 @@ class TPOTEstimator(BaseEstimator):
           EXPERIMENTAL The fraction of the dataset to use for the validation set when validation_strategy is 'split'. Must be between 0 and 1.
 
         disable_label_encoder : bool, default=False
-            If True, TPOT will check if the target needs to be relabeled to be sequential ints from 0 to N. This is necessary for XGBoost compatibility. If the labels need to be encoded, TPOT2 will use sklearn.preprocessing.LabelEncoder to encode the labels. The encoder can be accessed via the self.label_encoder_ attribute.
+            If True, TPOT will check if the target needs to be relabeled to be sequential ints from 0 to N. This is necessary for XGBoost compatibility. If the labels need to be encoded, TPOT will use sklearn.preprocessing.LabelEncoder to encode the labels. The encoder can be accessed via the self.label_encoder_ attribute.
             If False, no additional label encoders will be used.
 
         early_stop : int, default=None
@@ -340,7 +340,7 @@ class TPOTEstimator(BaseEstimator):
             Folder to save the population to periodically. If None, no periodic saving will be done.
             If provided, training will resume from this checkpoint.
 
-        callback : tpot2.CallBackInterface, default=None
+        callback : tpot.CallBackInterface, default=None
             Callback object. Not implemented
 
         verbose : int, default=1

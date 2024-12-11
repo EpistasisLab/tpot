@@ -76,7 +76,7 @@ class SklearnIndividual(tpot2.BaseIndividual):
         """
         return self
     
-    #TODO currently TPOT2 population class manually uses the unique_id to generate the index for the population data frame.
+    #TODO currently TPOT population class manually uses the unique_id to generate the index for the population data frame.
     #alternatively, the index could be the individual itself, with the __eq__ and __hash__ methods implemented.
 
     # Though this breaks the graphpipeline. When a mutation is called, it changes the __eq__ and __hash__ outputs.

@@ -41,5 +41,5 @@ try:
 except ImportError:
     # Handle the case when amltk is not installed
     pass
-    # print("amltk is not installed. Please install it to use tpot2_parser.")
+    # print("amltk is not installed. Please install it to use tpot_parser.")
     # Optional: raise an exception or provide alternative functionality

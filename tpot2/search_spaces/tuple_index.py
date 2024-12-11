@@ -36,7 +36,7 @@ import numpy as np
 
 class TupleIndex():
     """
-    TPOT2 uses tuples to create a unique id for some pipeline search spaces. However, tuples sometimes don't interact correctly with pandas indexes.
+    TPOT uses tuples to create a unique id for some pipeline search spaces. However, tuples sometimes don't interact correctly with pandas indexes.
     This class is a wrapper around a tuple that allows it to be used as a key in a dictionary, without it being an itereable.
 
     An alternative could be to make unique id return a string, but this would not work with graphpipelines, which require a special object.

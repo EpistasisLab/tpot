@@ -48,7 +48,7 @@ class TPOTRegressor(TPOTEstimator):
                         scorers=['neg_mean_squared_error'], 
                         scorers_weights=[1],
                         cv = 10, #remove this and use a value based on dataset size?
-                        other_objective_functions=[], #tpot2.objectives.estimator_objective_functions.number_of_nodes_objective],
+                        other_objective_functions=[], #tpot.objectives.estimator_objective_functions.number_of_nodes_objective],
                         other_objective_functions_weights = [],
                         objective_function_names = None,
                         bigger_is_better = True,
@@ -77,7 +77,7 @@ class TPOTRegressor(TPOTEstimator):
         Parameters
         ----------
 
-        search_space : (String, tpot2.search_spaces.SearchSpace)
+        search_space : (String, tpot.search_spaces.SearchSpace)
                         - String : The default search space to use for the optimization.
             | String     | Description      |
             | :---        |    :----:   |
@@ -90,7 +90,7 @@ class TPOTRegressor(TPOTEstimator):
             Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
             - SearchSpace : The search space to use for the optimization. This should be an instance of a SearchSpace.
                 The search space to use for the optimization. This should be an instance of a SearchSpace.
-                TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
+                TPOT has groups of search spaces found in the following folders, tpot.search_spaces.nodes for the nodes in the pipeline and tpot.search_spaces.pipelines for the pipeline structure.
         
         scorers : (list, scorer)
             A scorer or list of scorers to be used in the cross-validation process.
@@ -125,7 +125,7 @@ class TPOTRegressor(TPOTEstimator):
             
         categorical_features: list or None
             Categorical columns to inpute and/or one hot encode during the preprocessing step. Used only if preprocessing is not False.
-            - None : If None, TPOT2 will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
+            - None : If None, TPOT will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
             - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
 
 
@@ -162,7 +162,7 @@ class TPOTRegressor(TPOTEstimator):
             Number of processes to run in parallel.
             
         validation_strategy : str, default='none'
-            EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT2 may overfit the cross validation score. A second validation set can be used to select the final pipeline.
+            EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT may overfit the cross validation score. A second validation set can be used to select the final pipeline.
             - 'auto' : Automatically determine the validation strategy based on the dataset shape.
             - 'reshuffled' : Use the same data for cross validation and final validation, but with different splits for the folds. This is the default for small datasets.
             - 'split' : Use a separate validation set for final validation. Data will be split according to validation_fraction. This is the default for medium datasets.
@@ -278,7 +278,7 @@ class TPOTRegressor(TPOTEstimator):
                 scorers=self.scorers, 
                 scorers_weights=self.scorers_weights,
                 cv=self.cv,
-                other_objective_functions=self.other_objective_functions, #tpot2.objectives.estimator_objective_functions.number_of_nodes_objective],
+                other_objective_functions=self.other_objective_functions, #tpot.objectives.estimator_objective_functions.number_of_nodes_objective],
                 other_objective_functions_weights = self.other_objective_functions_weights,
                 objective_function_names = self.objective_function_names,
                 bigger_is_better = self.bigger_is_better,
@@ -310,7 +310,7 @@ class TPOTClassifier(TPOTEstimator):
                         scorers=['roc_auc_ovr'], 
                         scorers_weights=[1],
                         cv = 10,
-                        other_objective_functions=[], #tpot2.objectives.estimator_objective_functions.number_of_nodes_objective],
+                        other_objective_functions=[], #tpot.objectives.estimator_objective_functions.number_of_nodes_objective],
                         other_objective_functions_weights = [],
                         objective_function_names = None,
                         bigger_is_better = True,
@@ -340,7 +340,7 @@ class TPOTClassifier(TPOTEstimator):
         Parameters
         ----------
 
-        search_space : (String, tpot2.search_spaces.SearchSpace)
+        search_space : (String, tpot.search_spaces.SearchSpace)
             - String : The default search space to use for the optimization.
             | String     | Description      |
             | :---        |    :----:   |
@@ -353,7 +353,7 @@ class TPOTClassifier(TPOTEstimator):
             Note that TPOT MDR may be slow to run because the feature selection routines are computationally expensive, especially on large datasets. |
             - SearchSpace : The search space to use for the optimization. This should be an instance of a SearchSpace.
                 The search space to use for the optimization. This should be an instance of a SearchSpace.
-                TPOT2 has groups of search spaces found in the following folders, tpot2.search_spaces.nodes for the nodes in the pipeline and tpot2.search_spaces.pipelines for the pipeline structure.
+                TPOT has groups of search spaces found in the following folders, tpot.search_spaces.nodes for the nodes in the pipeline and tpot.search_spaces.pipelines for the pipeline structure.
         
         scorers : (list, scorer)
             A scorer or list of scorers to be used in the cross-validation process.
@@ -388,7 +388,7 @@ class TPOTClassifier(TPOTEstimator):
             
         categorical_features: list or None
             Categorical columns to inpute and/or one hot encode during the preprocessing step. Used only if preprocessing is not False.
-            - None : If None, TPOT2 will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
+            - None : If None, TPOT will automatically use object columns in pandas dataframes as objects for one hot encoding in preprocessing.
             - List of categorical features. If X is a dataframe, this should be a list of column names. If X is a numpy array, this should be a list of column indices
 
 
@@ -425,7 +425,7 @@ class TPOTClassifier(TPOTEstimator):
             Number of processes to run in parallel.
             
         validation_strategy : str, default='none'
-            EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT2 may overfit the cross validation score. A second validation set can be used to select the final pipeline.
+            EXPERIMENTAL The validation strategy to use for selecting the final pipeline from the population. TPOT may overfit the cross validation score. A second validation set can be used to select the final pipeline.
             - 'auto' : Automatically determine the validation strategy based on the dataset shape.
             - 'reshuffled' : Use the same data for cross validation and final validation, but with different splits for the folds. This is the default for small datasets.
             - 'split' : Use a separate validation set for final validation. Data will be split according to validation_fraction. This is the default for medium datasets.
@@ -541,7 +541,7 @@ class TPOTClassifier(TPOTEstimator):
                 scorers=self.scorers, 
                 scorers_weights=self.scorers_weights,
                 cv = self.cv,
-                other_objective_functions=self.other_objective_functions, #tpot2.objectives.estimator_objective_functions.number_of_nodes_objective],
+                other_objective_functions=self.other_objective_functions, #tpot.objectives.estimator_objective_functions.number_of_nodes_objective],
                 other_objective_functions_weights = self.other_objective_functions_weights,
                 objective_function_names = self.objective_function_names,
                 bigger_is_better = self.bigger_is_better,
