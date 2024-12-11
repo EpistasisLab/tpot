@@ -511,9 +511,9 @@ def get_search_space(name, n_classes=3, n_samples=1000, n_features=100, random_s
     random_state : int (default=None)
         A fixed random_state to pass through to all methods that have a random_state hyperparameter. 
     return_choice_pipeline : bool (default=True)
-        If False, returns a list of TPOT2.search_spaces.nodes.EstimatorNode objects.
-        If True, returns a single TPOT2.search_spaces.pipelines.ChoicePipeline that includes and samples from all EstimatorNodes.
-    base_node: TPOT2.search_spaces.base.SearchSpace (default=TPOT2.search_spaces.nodes.EstimatorNode)
+        If False, returns a list of TPOT.search_spaces.nodes.EstimatorNode objects.
+        If True, returns a single TPOT.search_spaces.pipelines.ChoicePipeline that includes and samples from all EstimatorNodes.
+    base_node: TPOT.search_spaces.base.SearchSpace (default=TPOT.search_spaces.nodes.EstimatorNode)
         The SearchSpace to pass the configuration space to. If you want to experiment with custom mutation/crossover operators, you can pass a custom SearchSpace node here.
     n_jobs : int (default=1)
         Sets the n_jobs parameter for estimators that have it. Default is 1.
@@ -521,10 +521,10 @@ def get_search_space(name, n_classes=3, n_samples=1000, n_features=100, random_s
     Returns
     -------
         Returns an SearchSpace object that can be optimized by TPOT.
-        - TPOT2.search_spaces.nodes.EstimatorNode (or base_node) if there is only one search space.
-        - List of TPOT2.search_spaces.nodes.EstimatorNode (or base_node) objects if there are multiple search spaces.
-        - TPOT2.search_spaces.pipelines.ChoicePipeline object if return_choice_pipeline is True.
-        Note: for some special cases with methods using wrapped estimators, the returned search space is a TPOT2.search_spaces.pipelines.WrapperPipeline object.
+        - TPOT.search_spaces.nodes.EstimatorNode (or base_node) if there is only one search space.
+        - List of TPOT.search_spaces.nodes.EstimatorNode (or base_node) objects if there are multiple search spaces.
+        - TPOT.search_spaces.pipelines.ChoicePipeline object if return_choice_pipeline is True.
+        Note: for some special cases with methods using wrapped estimators, the returned search space is a TPOT.search_spaces.pipelines.WrapperPipeline object.
         
     """
     name = flatten_group_names(name)
@@ -568,9 +568,9 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
     random_state : int (default=None)
         A fixed random_state to pass through to all methods that have a random_state hyperparameter. 
     return_choice_pipeline : bool (default=True)
-        If False, returns a list of TPOT2.search_spaces.nodes.EstimatorNode objects.
-        If True, returns a single TPOT2.search_spaces.pipelines.ChoicePipeline that includes and samples from all EstimatorNodes.
-    base_node: TPOT2.search_spaces.base.SearchSpace (default=TPOT2.search_spaces.nodes.EstimatorNode)
+        If False, returns a list of TPOT.search_spaces.nodes.EstimatorNode objects.
+        If True, returns a single TPOT.search_spaces.pipelines.ChoicePipeline that includes and samples from all EstimatorNodes.
+    base_node: TPOT.search_spaces.base.SearchSpace (default=TPOT.search_spaces.nodes.EstimatorNode)
         The SearchSpace to pass the configuration space to. If you want to experiment with custom mutation/crossover operators, you can pass a custom SearchSpace node here.
     n_jobs : int (default=1)
         Sets the n_jobs parameter for estimators that have it. Default is 1.
@@ -578,8 +578,8 @@ def get_node(name, n_classes=3, n_samples=100, n_features=100, random_state=None
     Returns
     -------
         Returns an SearchSpace object that can be optimized by TPOT.
-        - TPOT2.search_spaces.nodes.EstimatorNode (or base_node).
-        - TPOT2.search_spaces.pipelines.WrapperPipeline object if the method requires a wrapped estimator.
+        - TPOT.search_spaces.nodes.EstimatorNode (or base_node).
+        - TPOT.search_spaces.pipelines.WrapperPipeline object if the method requires a wrapped estimator.
     
     
     """
