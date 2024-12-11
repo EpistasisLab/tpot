@@ -2,9 +2,9 @@
 
 cat > mkdocs.yml <<EOF
 site_name: TPOT
-site_url: http://epistasislab.github.io/tpot2
+site_url: http://epistasislab.github.io/tpot
 
-repo_url: https://github.com/epistasislab/tpot2
+repo_url: https://github.com/epistasislab/tpot
 edit_uri: edit/main/source
 
 plugins: 
@@ -72,13 +72,13 @@ copyright: Developed by Pedro Ribeiro and others at Cedars Sinai Department of C
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Using TPOT2: using.md
+  - Using TPOT: using.md
 EOF
 # static pages
-echo "  - TPOT2 API:" >> mkdocs.yml
-echo "    - tpot2_api/estimator.md" >> mkdocs.yml
-echo "    - tpot2_api/classifier.md" >> mkdocs.yml
-echo "    - tpot2_api/regressor.md" >> mkdocs.yml
+echo "  - TPOT API:" >> mkdocs.yml
+echo "    - tpot_api/estimator.md" >> mkdocs.yml
+echo "    - tpot_api/classifier.md" >> mkdocs.yml
+echo "    - tpot_api/regressor.md" >> mkdocs.yml
 echo "  - Examples:" >> mkdocs.yml
 for file in docs/Tutorial/*.ipynb; do
   base=$(basename $file .ipynb)
