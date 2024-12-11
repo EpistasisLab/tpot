@@ -32,7 +32,7 @@ GitHub:
 
 2. Clone this copy to your local disk:
 
-          $ git clone git@github.com:YourUsername/tpot2.git
+          $ git clone git@github.com:YourUsername/tpot.git
           $ cd tpot
 
 3. Create a branch to hold your changes:
@@ -46,7 +46,7 @@ GitHub:
 5. Start making changes on your newly created branch, remembering to never work on the ``main`` branch! Work on this copy on your computer using Git to do the version control.
 
 
-6. Check your changes haven't broken any existing tests and pass all your new tests. Navigate the terminal into the `tpot2/tpot2/` folder and run the command `pytest` to start all tests. (note, you must have the `pytest` package installed within your dev environment for this to work):
+6. Check your changes haven't broken any existing tests and pass all your new tests. Navigate the terminal into the `tpot/tpot/` folder and run the command `pytest` to start all tests. (note, you must have the `pytest` package installed within your dev environment for this to work):
 
           $ pytest
 
