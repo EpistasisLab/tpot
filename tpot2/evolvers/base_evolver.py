@@ -62,7 +62,7 @@ def ind_mutate(ind, rng):
 
     Parameters
     ----------
-    ind : tpot2.BaseIndividual
+    ind : tpot.BaseIndividual
         The individual to mutate
     rng : int or numpy.random.Generator
         A numpy random generator to use for reproducibility
@@ -75,8 +75,8 @@ def ind_crossover(ind1, ind2, rng):
     Calls the ind1.crossover(ind2, rng=rng)
     Parameters
     ----------
-    ind1 : tpot2.BaseIndividual
-    ind2 : tpot2.BaseIndividual
+    ind1 : tpot.BaseIndividual
+    ind2 : tpot.BaseIndividual
     rng : int or numpy.random.Generator
         A numpy random generator to use for reproducibility
     """
@@ -256,7 +256,7 @@ class BaseEvolver():
         periodic_checkpoint_folder : str, default=None
             Folder to save the population to periodically. If None, no periodic saving will be done.
             If provided, training will resume from this checkpoint.
-        callback : tpot2.CallBackInterface, default=None
+        callback : tpot.CallBackInterface, default=None
             Callback object. Not implemented
         rng : Numpy.Random.Generator, None, default=None
             An object for reproducability of experiments. This value will be passed to numpy.random.default_rng() to create an instnce of the genrator to pass to other classes
@@ -268,7 +268,7 @@ class BaseEvolver():
         
         Attributes
         ----------
-        population : tpot2.Population
+        population : tpot.Population
             The population of individuals.
             Use population.population to access the individuals in the current population.
             Use population.evaluated_individuals to access a data frame of all individuals that have been explored.
