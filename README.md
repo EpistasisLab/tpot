@@ -1,4 +1,4 @@
-# TPOT2
+# TPOT
 
 <center>
 <img src="https://raw.githubusercontent.com/EpistasisLab/tpot/master/images/tpot-logo.jpg" width=300 />
@@ -39,8 +39,8 @@ The original version of TPOT was primarily developed at the University of Pennsy
 
 ## License
 
-Please see the [repository license](https://github.com/EpistasisLab/tpot2/blob/main/LICENSE) for the licensing and usage information for TPOT2.
-Generally, we have licensed TPOT2 to make it as widely usable as possible.
+Please see the [repository license](https://github.com/EpistasisLab/tpot2/blob/main/LICENSE) for the licensing and usage information for TPOT.
+Generally, we have licensed TPOT to make it as widely usable as possible.
 
 TPOT is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -63,17 +63,17 @@ We also recommend looking at the Tutorials folder for jupyter notebooks with exa
 
 ## Installation
 
-TPOT2 requires a working installation of Python.
+TPOT requires a working installation of Python.
 
 ### Creating a conda environment (optional)
 
-We recommend using conda environments for installing TPOT2, though it would work equally well if manually installed without it.
+We recommend using conda environments for installing TPOT, though it would work equally well if manually installed without it.
 
 [More information on making anaconda environments found here.](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
 
 ```
-conda create --name tpot2env python=3.10
-conda activate tpot2env
+conda create --name tpotenv python=3.10
+conda activate tpotenv
 ```
 
 ### Packages Used
@@ -105,7 +105,7 @@ Many of the hyperparameter ranges used in our configspaces were adapted from eit
 
 ### Note for M1 Mac or other Arm-based CPU users
 
-You need to install the lightgbm package directly from conda using the following command before installing TPOT2. 
+You need to install the lightgbm package directly from conda using the following command before installing TPOT. 
 
 This is to ensure that you get the version that is compatible with your system.
 
@@ -115,10 +115,10 @@ conda install --yes -c conda-forge 'lightgbm>=3.3.3'
 
 ### Installing Extra Features with pip
 
-If you want to utilize the additional features provided by TPOT2 along with `scikit-learn` extensions, you can install them using `pip`. The command to install TPOT2 with these extra features is as follows:
+If you want to utilize the additional features provided by TPOT along with `scikit-learn` extensions, you can install them using `pip`. The command to install TPOT with these extra features is as follows:
 
 ```
-pip install tpot2[sklearnex]
+pip install tpot[sklearnex]
 ```
 
 Please note that while these extensions can speed up scikit-learn packages, there are some important considerations:
@@ -132,11 +132,11 @@ We recommend using Python 3.9 when installing these extra features, as it provid
 
 
 ```
-pip install -e /path/to/tpot2repo
+pip install -e /path/to/tpotrepo
 ```
 
-If you downloaded with git pull, then the repository folder will be named TPOT2. (Note: this folder is the one that includes setup.py inside of it and not the folder of the same name inside it).
-If you downloaded as a zip, the folder may be called tpot2-main. 
+If you downloaded with git pull, then the repository folder will be named TPOT. (Note: this folder is the one that includes setup.py inside of it and not the folder of the same name inside it).
+If you downloaded as a zip, the folder may be called tpot-main. 
 
 
 ## Usage 
@@ -146,17 +146,17 @@ See the Tutorials Folder for more instructions and examples.
 ### Best Practices
 
 #### 1 
-TPOT2 uses dask for parallel processing. When Python is parallelized, each module is imported within each processes. Therefore it is important to protect all code within a `if __name__ == "__main__"` when running TPOT2 from a script. This is not required when running TPOT2 from a notebook.
+TPOT uses dask for parallel processing. When Python is parallelized, each module is imported within each processes. Therefore it is important to protect all code within a `if __name__ == "__main__"` when running TPOT from a script. This is not required when running TPOT from a notebook.
 
 For example:
 
 ```
 #my_analysis.py
 
-import tpot2
+import tpot
 if __name__ == "__main__":
     X, y = load_my_data()
-    est = tpot2.TPOTClassifier()
+    est = tpot.TPOTClassifier()
     est.fit(X,y)
     #rest of analysis
 ```
@@ -213,15 +213,15 @@ good_function = lambda est, a=a, b=b : new_objective(est=est, a=a, b=b)
 
 ### Tips
 
-TPOT2 will not check if your data is correctly formatted. It will assume that you have passed in operators that can handle the type of data that was passed in. For instance, if you pass in a pandas dataframe with categorical features and missing data, then you should also include in your configuration operators that can handle those feautures of the data. Alternatively, if you pass in `preprocessing = True`, TPOT2 will impute missing values, one hot encode categorical features, then standardize the data. (Note that this is currently fitted and transformed on the entire training set before splitting for CV. Later there will be an option to apply per fold, and have the parameters be learnable.)
+TPOT will not check if your data is correctly formatted. It will assume that you have passed in operators that can handle the type of data that was passed in. For instance, if you pass in a pandas dataframe with categorical features and missing data, then you should also include in your configuration operators that can handle those feautures of the data. Alternatively, if you pass in `preprocessing = True`, TPOT will impute missing values, one hot encode categorical features, then standardize the data. (Note that this is currently fitted and transformed on the entire training set before splitting for CV. Later there will be an option to apply per fold, and have the parameters be learnable.)
 
 
 Setting `verbose` to 5 can be helpful during debugging as it will print out the error generated by failing pipelines. 
 
 
-## Contributing to TPOT2
+## Contributing to TPOT
 
-We welcome you to check the existing issues for bugs or enhancements to work on. If you have an idea for an extension to TPOT2, please file a new issue so we can discuss it.
+We welcome you to check the existing issues for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please file a new issue so we can discuss it.
 
 ## Citing TPOT
 
@@ -287,8 +287,8 @@ BibTeX entry:
 }
 ```
 
-### Support for TPOT2
+### Support for TPOT
 
-TPOT2 was developed in the [Artificial Intelligence Innovation (A2I) Lab](http://epistasis.org/) at Cedars-Sinai with funding from the [NIH](http://www.nih.gov/) under grants U01 AG066833 and R01 LM010098. We are incredibly grateful for the support of the NIH and the Cedars-Sinai during the development of this project.
+TPOT was developed in the [Artificial Intelligence Innovation (A2I) Lab](http://epistasis.org/) at Cedars-Sinai with funding from the [NIH](http://www.nih.gov/) under grants U01 AG066833 and R01 LM010098. We are incredibly grateful for the support of the NIH and the Cedars-Sinai during the development of this project.
 
 The TPOT logo was designed by Todd Newmuis, who generously donated his time to the project.
