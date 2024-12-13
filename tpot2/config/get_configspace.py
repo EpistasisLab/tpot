@@ -44,7 +44,6 @@ from ..search_spaces.pipelines import ChoicePipeline, WrapperPipeline
 from . import classifiers
 from . import transformers
 from . import selectors
-from . import column_encoders
 from . import regressors
 from . import autoqtl_builtins
 from . import imputers
@@ -157,9 +156,9 @@ GROUPNAMES = {
         "selectors_classification": ["SelectFwe", "SelectPercentile", "VarianceThreshold", "RFE_classification", "SelectFromModel_classification"],
         "selectors_regression": ["SelectFwe", "SelectPercentile", "VarianceThreshold", "RFE_regression", "SelectFromModel_regression"],
  
-        "classifiers" :  ["LGBMClassifier", "BaggingClassifier", 'AdaBoostClassifier', 'BernoulliNB', 'DecisionTreeClassifier', 'ExtraTreesClassifier', 'GaussianNB', 'HistGradientBoostingClassifier', 'KNeighborsClassifier','LinearDiscriminantAnalysis', 'LogisticRegression', "LinearSVC_wrapped", "SVC", 'MLPClassifier', 'MultinomialNB',  "QuadraticDiscriminantAnalysis", 'RandomForestClassifier', 'SGDClassifier', 'XGBClassifier'],
-        "regressors" : ["LGBMRegressor", 'AdaBoostRegressor', "ARDRegression", 'DecisionTreeRegressor', 'ExtraTreesRegressor', 'HistGradientBoostingRegressor', 'KNeighborsRegressor',  'LinearSVR', "MLPRegressor", 'RandomForestRegressor', 'SGDRegressor', 'SVR', 'XGBRegressor'],
-        "transformers":  ["PassKBinsDiscretizer", "Binarizer", "PCA", "ZeroCount", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer", "ColumnOneHotEncoder", "ColumnOrdinalEncoder"],
+        "classifiers" :  ["LGBMClassifier", "BaggingClassifier", 'AdaBoostClassifier', 'BernoulliNB', 'DecisionTreeClassifier', 'ExtraTreesClassifier', 'GaussianNB', 'HistGradientBoostingClassifier', 'KNeighborsClassifier','LinearDiscriminantAnalysis', 'LogisticRegression', 'MLPClassifier', 'MultinomialNB',  "QuadraticDiscriminantAnalysis", 'RandomForestClassifier', 'SGDClassifier', 'XGBClassifier'],
+        "regressors" : ["LGBMRegressor", 'AdaBoostRegressor', "ARDRegression", 'DecisionTreeRegressor', 'ExtraTreesRegressor', 'HistGradientBoostingRegressor', 'KNeighborsRegressor',  'LinearSVR', "MLPRegressor", 'RandomForestRegressor', 'SGDRegressor', 'XGBRegressor'],
+        "transformers":  ["KBinsDiscretizer", "Binarizer", "PCA", "ZeroCount", "FastICA", "FeatureAgglomeration", "Nystroem", "RBFSampler", "QuantileTransformer", "PowerTransformer", "ColumnOneHotEncoder", "ColumnOrdinalEncoder"],
 
         "scalers": ["MinMaxScaler", "RobustScaler", "StandardScaler", "MaxAbsScaler", "Normalizer", ],
         "all_transformers" : ["transformers", "scalers"],
@@ -361,12 +360,10 @@ def get_configspace(name, n_classes=3, n_samples=1000, n_features=100, random_st
             return transformers.get_passkbinsdiscretizer_configspace(random_state=random_state)
         case "KBinsDiscretizer":
             return transformers.get_passkbinsdiscretizer_configspace(random_state=random_state)
-
-        #column_encoders.py
         case "ColumnOneHotEncoder":
-            return column_encoders.OneHotEncoder_configspace
+            return {}
         case "ColumnOrdinalEncoder":
-            return column_encoders.OrdinalEncoder_configspace
+            return {}
 
         #selectors.py
         case "SelectFwe":

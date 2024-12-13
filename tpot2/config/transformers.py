@@ -60,6 +60,10 @@ PolynomialFeatures_configspace = ConfigurationSpace(
     }
 )
 
+OneHotEncoder_configspace = {} #TODO include the parameter for max unique values
+
+OrdinalEncoder_configspace = {} #TODO include the parameter for max unique values
+
 def get_FastICA_configspace(n_features=100, random_state=None):
     
     space = {
