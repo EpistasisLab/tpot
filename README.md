@@ -1,21 +1,53 @@
-# TPOT2 ALPHA
+# TPOT2
 
 ![Tests](https://github.com/EpistasisLab/tpot2/actions/workflows/tests.yml/badge.svg)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/tpot2?label=pypi%20downloads)](https://pypi.org/project/TPOT2)
 [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/tpot2?label=conda%20downloads)](https://anaconda.org/conda-forge/tpot2)
 
-TPOT stands for Tree-based Pipeline Optimization Tool. TPOT2 is a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming. Consider TPOT2 your Data Science Assistant.
+TPOT stands for Tree-based Pipeline Optimization Tool. TPOT is a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming. Consider TPOT your Data Science Assistant.
 
-TPOT2 is a rewrite of TPOT with some additional functionality. Notably, we added support for graph-based pipelines and additional parameters to better specify the desired search space. 
-TPOT2 is currently in Alpha. This means that there will likely be some backwards incompatible changes to the API as we develop. Some implemented features may be buggy. There is a list of known issues written at the bottom of this README. Some features have placeholder names or are listed as "Experimental" in the doc string. These are features that may not be fully implemented and may or may not work with all other features.
+## Contributors
 
-If you are interested in using the current stable release of TPOT, you can do that here: [https://github.com/EpistasisLab/tpot/](https://github.com/EpistasisLab/tpot/). 
+TPOT recently went through a major refactoring. The package was rewritten from scratch to improve efficiency and performance, support new features, and fix numerous bugs. New features include genetic feature selection, a significantly expanded and more flexible method of defining search spaces, multi-objective optimization, a more modular framework allowing for easier customization of the evolutionary algorithm, and more. While in development, this new version was referred to as "TPOT2" but we have now merged what was once TPOT2 into the main TPOT package. You can learn more about this new version of TPOT in our GPTP paper titled "TPOT2: A New Graph-Based Implementation of the Tree-Based Pipeline Optimization Tool for Automated Machine Learning."
+
+    Ribeiro, P. et al. (2024). TPOT2: A New Graph-Based Implementation of the Tree-Based Pipeline Optimization Tool for Automated Machine Learning. In: Winkler, S., Trujillo, L., Ofria, C., Hu, T. (eds) Genetic Programming Theory and Practice XX. Genetic and Evolutionary Computation. Springer, Singapore. https://doi.org/10.1007/978-981-99-8413-8_1
+
+The current version of TPOT was developed at Cedars-Sinai by:
+    - Pedro Henrique Ribeiro (Lead developer - https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
+    - Anil Saini (anil.saini@cshs.org)
+    - Jose Hernandez (jgh9094@gmail.com)
+    - Jay Moran (jay.moran@cshs.org)
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
+    - Hyunjun Choi (hyunjun.choi@cshs.org)
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
+    - Jason Moore (moorejh28@gmail.com)
+
+The original version of TPOT was primarily developed at the University of Pennsylvania by:
+    - Randal S. Olson (rso@randalolson.com)
+    - Weixuan Fu (weixuanf@upenn.edu)
+    - Daniel Angell (dpa34@drexel.edu)
+    - Jason Moore (moorejh28@gmail.com)
+    - and many more generous open-source contributors
+
 
 
 ## License
 
 Please see the [repository license](https://github.com/EpistasisLab/tpot2/blob/main/LICENSE) for the licensing and usage information for TPOT2.
 Generally, we have licensed TPOT2 to make it as widely usable as possible.
+
+TPOT is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+TPOT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 ## Documentation
 
@@ -54,9 +86,8 @@ matplotlib
 traitlets
 lightgbm
 optuna
-baikal
 jupyter
-networkx>
+networkx
 dask
 distributed
 dask-ml
@@ -186,6 +217,69 @@ Setting `verbose` to 5 can be helpful during debugging as it will print out the 
 
 We welcome you to check the existing issues for bugs or enhancements to work on. If you have an idea for an extension to TPOT2, please file a new issue so we can discuss it.
 
+## Citing TPOT
+
+If you use TPOT in a scientific publication, please consider citing at least one of the following papers:
+
+Trang T. Le, Weixuan Fu and Jason H. Moore (2020). [Scaling tree-based automated machine learning to biomedical big data with a feature set selector](https://academic.oup.com/bioinformatics/article/36/1/250/5511404). *Bioinformatics*.36(1): 250-256.
+
+BibTeX entry:
+
+```bibtex
+@article{le2020scaling,
+  title={Scaling tree-based automated machine learning to biomedical big data with a feature set selector},
+  author={Le, Trang T and Fu, Weixuan and Moore, Jason H},
+  journal={Bioinformatics},
+  volume={36},
+  number={1},
+  pages={250--256},
+  year={2020},
+  publisher={Oxford University Press}
+}
+```
+
+
+Randal S. Olson, Ryan J. Urbanowicz, Peter C. Andrews, Nicole A. Lavender, La Creis Kidd, and Jason H. Moore (2016). [Automating biomedical data science through tree-based pipeline optimization](http://link.springer.com/chapter/10.1007/978-3-319-31204-0_9). *Applications of Evolutionary Computation*, pages 123-137.
+
+BibTeX entry:
+
+```bibtex
+@inbook{Olson2016EvoBio,
+    author={Olson, Randal S. and Urbanowicz, Ryan J. and Andrews, Peter C. and Lavender, Nicole A. and Kidd, La Creis and Moore, Jason H.},
+    editor={Squillero, Giovanni and Burelli, Paolo},
+    chapter={Automating Biomedical Data Science Through Tree-Based Pipeline Optimization},
+    title={Applications of Evolutionary Computation: 19th European Conference, EvoApplications 2016, Porto, Portugal, March 30 -- April 1, 2016, Proceedings, Part I},
+    year={2016},
+    publisher={Springer International Publishing},
+    pages={123--137},
+    isbn={978-3-319-31204-0},
+    doi={10.1007/978-3-319-31204-0_9},
+    url={http://dx.doi.org/10.1007/978-3-319-31204-0_9}
+}
+```
+
+Randal S. Olson, Nathan Bartley, Ryan J. Urbanowicz, and Jason H. Moore (2016). [Evaluation of a Tree-based Pipeline Optimization Tool for Automating Data Science](http://dl.acm.org/citation.cfm?id=2908918). *Proceedings of GECCO 2016*, pages 485-492.
+
+BibTeX entry:
+
+```bibtex
+@inproceedings{OlsonGECCO2016,
+    author = {Olson, Randal S. and Bartley, Nathan and Urbanowicz, Ryan J. and Moore, Jason H.},
+    title = {Evaluation of a Tree-based Pipeline Optimization Tool for Automating Data Science},
+    booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference 2016},
+    series = {GECCO '16},
+    year = {2016},
+    isbn = {978-1-4503-4206-3},
+    location = {Denver, Colorado, USA},
+    pages = {485--492},
+    numpages = {8},
+    url = {http://doi.acm.org/10.1145/2908812.2908918},
+    doi = {10.1145/2908812.2908918},
+    acmid = {2908918},
+    publisher = {ACM},
+    address = {New York, NY, USA},
+}
+```
 
 ### Support for TPOT2
 
