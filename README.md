@@ -6,9 +6,9 @@
 
 <br>
 
-![Tests](https://github.com/EpistasisLab/tpot2/actions/workflows/tests.yml/badge.svg)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/tpot2?label=pypi%20downloads)](https://pypi.org/project/TPOT2)
-[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/tpot2?label=conda%20downloads)](https://anaconda.org/conda-forge/tpot2)
+![Tests](https://github.com/EpistasisLab/tpot/actions/workflows/tests.yml/badge.svg)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/tpot?label=pypi%20downloads)](https://pypi.org/project/TPOT)
+[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/tpot?label=conda%20downloads)](https://anaconda.org/conda-forge/tpot)
 
 TPOT stands for Tree-based Pipeline Optimization Tool. TPOT is a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming. Consider TPOT your Data Science Assistant.
 
@@ -39,7 +39,7 @@ The original version of TPOT was primarily developed at the University of Pennsy
 
 ## License
 
-Please see the [repository license](https://github.com/EpistasisLab/tpot2/blob/main/LICENSE) for the licensing and usage information for TPOT.
+Please see the [repository license](https://github.com/EpistasisLab/tpot/blob/main/LICENSE) for the licensing and usage information for TPOT.
 Generally, we have licensed TPOT to make it as widely usable as possible.
 
 TPOT is free software: you can redistribute it and/or modify
@@ -57,7 +57,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 ## Documentation
 
-[The documentation webpage can be found here.](https://epistasislab.github.io/tpot2/)
+[The documentation webpage can be found here.](https://epistasislab.github.io/tpot/)
 
 We also recommend looking at the Tutorials folder for jupyter notebooks with examples and guides.
 

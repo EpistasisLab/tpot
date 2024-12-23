@@ -1,1 +1,1 @@
-::: tpot2.tpot_estimator.templates.tpottemplates.TPOTRegressor
+::: tpot.tpot_estimator.templates.tpottemplates.TPOTRegressor

@@ -1,1 +1,1 @@
-::: tpot2.tpot_estimator.templates.tpottemplates.TPOTClassifier
+::: tpot.tpot_estimator.templates.tpottemplates.TPOTClassifier

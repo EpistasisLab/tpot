@@ -1,1 +1,1 @@
-::: tpot2.tpot_estimator.estimator
+::: tpot.tpot_estimator.estimator

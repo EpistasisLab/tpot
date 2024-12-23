@@ -22,4 +22,4 @@ function iterate_files() {
     done
 }
 
-iterate_files "tpot2"
+iterate_files "tpot"
