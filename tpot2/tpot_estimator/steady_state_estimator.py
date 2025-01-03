@@ -624,7 +624,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                 if self.categorical_features is not None: #if categorical features are specified, use those
                     pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnSimpleImputer(self.categorical_features, strategy='most_frequent')))
                     pipeline_steps.append(("impute_numeric", tpot2.builtin_modules.ColumnSimpleImputer("numeric", strategy='mean')))
-                    pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnOneHotEncoder(self.categorical_features, strategy='most_frequent')))
+                    pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnOneHotEncoder(self.categorical_features, min_frequency=0.0001)))
 
                 else:
                     if isinstance(X, pd.DataFrame):
@@ -632,7 +632,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                         if len(categorical_columns) > 0:
                             pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnSimpleImputer("categorical", strategy='most_frequent')))
                             pipeline_steps.append(("impute_numeric", tpot2.builtin_modules.ColumnSimpleImputer("numeric", strategy='mean')))
-                            pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnOneHotEncoder("categorical", strategy='most_frequent')))
+                            pipeline_steps.append(("impute_categorical", tpot2.builtin_modules.ColumnOneHotEncoder("categorical", min_frequency=0.0001)))
                         else:
                             pipeline_steps.append(("impute_numeric", tpot2.builtin_modules.ColumnSimpleImputer("all", strategy='mean')))
                     else:
