@@ -3,7 +3,6 @@
 #TODO update this
 from setuptools import setup, find_packages
 
-
 def calculate_version():
     initpy = open('tpot2/_version.py').read().split('\n')
     version = list(filter(lambda x: '__version__' in x, initpy))[0].split('\'')[1]
