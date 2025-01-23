@@ -444,6 +444,7 @@ class SteadyStateEvolver():
                             print("Cancelled future (likely memory related)")
                             scores = [np.nan for _ in range(len(self.objective_names))]
                             eval_error = "INVALID"
+                            client.run(gc.collect)
                         else: #if the future is done and did not throw an error, get the scores
                             try:
                                 scores = completed_future.result()
@@ -466,13 +467,14 @@ class SteadyStateEvolver():
                                 print("cancelld ", completed_future.cancelled())
                                 scores = [np.nan for _ in range(len(self.objective_names))]
                                 eval_error = "INVALID"
+                        completed_future.release() #release the future
                     else: #if future is not done
 
                         if self.max_eval_time_mins is not None:
                             #check if the future has been running for too long, cancel the future
                             if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_mins*1.25*60:
                                 completed_future.cancel()
-
+                                completed_future.release() #release the future
                                 if self.verbose >= 4:
                                     print(f'WARNING AN INDIVIDUAL TIMED OUT (Fallback): \n {submitted_futures[completed_future]} \n')
 
@@ -506,6 +508,8 @@ class SteadyStateEvolver():
                 self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="INVALID")
                 self.population.remove_invalid_from_population(column_names="Eval Error", invalid_value="TIMEOUT")
 
+                #I am not entirely sure if this is necessary. I believe that calling release on the futures should be enough to free up memory. If memory issues persist, this may be a good place to start.
+                #client.run(gc.collect) #run garbage collection to free up memory
 
                 ###############################
                 # Step 2: Early Stopping
@@ -717,6 +721,10 @@ class SteadyStateEvolver():
         #done, cleanup futures
         for future in submitted_futures.keys():
             future.cancel()
+            future.release() #release the future
+
+        #I am not entirely sure if this is necessary. I believe that calling release on the futures should be enough to free up memory. If memory issues persist, this may be a good place to start.
+        #client.run(gc.collect) #run garbage collection to free up memory
 
         #checkpoint
         if self.population_file is not None:
