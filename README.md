@@ -18,24 +18,22 @@ TPOT recently went through a major refactoring. The package was rewritten from s
 
     Ribeiro, P. et al. (2024). TPOT2: A New Graph-Based Implementation of the Tree-Based Pipeline Optimization Tool for Automated Machine Learning. In: Winkler, S., Trujillo, L., Ofria, C., Hu, T. (eds) Genetic Programming Theory and Practice XX. Genetic and Evolutionary Computation. Springer, Singapore. https://doi.org/10.1007/978-981-99-8413-8_1
 
-The current version of TPOT was developed at Cedars-Sinai by:
-    - Pedro Henrique Ribeiro (Lead developer - https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)
-    - Anil Saini (anil.saini@cshs.org)
-    - Jose Hernandez (jgh9094@gmail.com)
-    - Jay Moran (jay.moran@cshs.org)
-    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)
-    - Hyunjun Choi (hyunjun.choi@cshs.org)
-    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)
-    - Jason Moore (moorejh28@gmail.com)
+The current version of TPOT was developed at Cedars-Sinai by:  
+    - Pedro Henrique Ribeiro (Lead developer - https://github.com/perib, https://www.linkedin.com/in/pedro-ribeiro/)  
+    - Anil Saini (anil.saini@cshs.org)  
+    - Jose Hernandez (jgh9094@gmail.com)  
+    - Jay Moran (jay.moran@cshs.org)  
+    - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)  
+    - Hyunjun Choi (hyunjun.choi@cshs.org)  
+    - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)  
+    - Jason Moore (moorejh28@gmail.com)  
 
-The original version of TPOT was primarily developed at the University of Pennsylvania by:
-    - Randal S. Olson (rso@randalolson.com)
-    - Weixuan Fu (weixuanf@upenn.edu)
-    - Daniel Angell (dpa34@drexel.edu)
-    - Jason Moore (moorejh28@gmail.com)
-    - and many more generous open-source contributors
-
-
+The original version of TPOT was primarily developed at the University of Pennsylvania by:  
+    - Randal S. Olson (rso@randalolson.com)  
+    - Weixuan Fu (weixuanf@upenn.edu)  
+    - Daniel Angell (dpa34@drexel.edu)  
+    - Jason Moore (moorejh28@gmail.com)  
+    - and many more generous open-source contributors  
 
 ## License
 
