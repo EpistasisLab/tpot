@@ -1,0 +1,64 @@
+site_name: TPOT
+site_url: http://epistasislab.github.io/tpot
+site_author: Randal S. Olson
+site_description: Documentation for TPOT, a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming.
+
+repo_url: https://github.com/epistasislab/tpot
+edit_uri: edit/master/docs/archived/
+docs_dir: docs/archived/
+site_dir: target/archived_site
+  #theme: readthedocs
+theme:
+  name: material
+  logo: assets/tpot-logo.jpg
+  favicon: assets/favicon.ico
+  features:
+    - toc.integrate
+    - navigation.top
+  palette:
+    # light mode
+    - scheme: default
+      primary: grey
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # dark mode
+    - scheme: slate
+      primary: grey
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+extra:
+  version:
+    provider: mike
+
+extra_css:
+  - css/archived.css
+
+markdown_extensions:
+  - tables
+  - fenced_code
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+plugins:
+  - include-markdown
+
+copyright: Developed by <a href="http://www.randalolson.com">Randal S. Olson</a> and others at the University of Pennsylvania
+
+nav:
+- Home: index.md
+- Installation: installing.md
+- Using TPOT: using.md
+- TPOT API: api.md
+- Examples: examples.md
+- Contributing: contributing.md
+- Release Notes: releases.md
+- Citing TPOT: citing.md
+- Support: support.md
+- Related: related.md

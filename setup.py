@@ -4,7 +4,7 @@
 from setuptools import setup, find_packages
 
 def calculate_version():
-    initpy = open('tpot2/_version.py').read().split('\n')
+    initpy = open('tpot/_version.py').read().split('\n')
     version = list(filter(lambda x: '__version__' in x, initpy))[0].split('\'')[1]
     return version
 
@@ -12,14 +12,14 @@ def calculate_version():
 package_version = calculate_version()
 
 setup(
-    name='TPOT2',
+    name='TPOT',
     python_requires='>=3.10, <3.12', #for configspace compatibility
     version=package_version,
     author='Pedro Ribeiro',
     packages=find_packages(),
-    url='https://github.com/EpistasisLab/tpot2',
+    url='https://github.com/EpistasisLab/tpot',
     license='GNU/LGPLv3', #TODO
-    entry_points={'console_scripts': ['tpot2=tpot2:main', ]},
+    entry_points={'console_scripts': ['tpot=tpot:main', ]},
     description=('Tree-based Pipeline Optimization Tool'),
     long_description='''
 A Python tool that automatically creates and optimizes machine learning pipelines using genetic programming.

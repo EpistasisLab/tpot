@@ -1,10 +1,10 @@
 #!/bin/bash
 
 cat > mkdocs.yml <<EOF
-site_name: TPOT2
-site_url: http://epistasislab.github.io/tpot2
+site_name: TPOT
+site_url: http://epistasislab.github.io/tpot
 
-repo_url: https://github.com/epistasislab/tpot2
+repo_url: https://github.com/epistasislab/tpot
 edit_uri: edit/main/source
 
 plugins: 
@@ -21,18 +21,21 @@ plugins:
             docstring_style: numpy
             show_root_full_path: False
             # show_root_toc_entry: False
-  # # temp plugin
-  # - exclude:
-  #     glob:
-  #       - tutorial/*
+
+extra:
+  version:
+    provider: mike
 
 extra_css:
   - css/extra.css
 
 theme:
   name: material
+  logo: assets/tpot-logo.jpg
+  favicon: assets/favicon.ico
   features:
-    # - toc.integrate
+    - toc.integrate
+    - navigation.top
     - search.suggest
     - search.highlight
   palette:
@@ -64,16 +67,18 @@ markdown_extensions:
 docs_dir: docs
 site_dir: target/site
 
+copyright: Developed by Pedro Ribeiro and others at Cedars Sinai Department of Computational Biomedicine
+
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Using TPOT2: using.md
+  - Using TPOT: using.md
 EOF
 # static pages
-echo "  - TPOT2 API:" >> mkdocs.yml
-echo "    - tpot2_api/estimator.md" >> mkdocs.yml
-echo "    - tpot2_api/classifier.md" >> mkdocs.yml
-echo "    - tpot2_api/regressor.md" >> mkdocs.yml
+echo "  - TPOT API:" >> mkdocs.yml
+echo "    - tpot_api/estimator.md" >> mkdocs.yml
+echo "    - tpot_api/classifier.md" >> mkdocs.yml
+echo "    - tpot_api/regressor.md" >> mkdocs.yml
 echo "  - Examples:" >> mkdocs.yml
 for file in docs/Tutorial/*.ipynb; do
   base=$(basename $file .ipynb)

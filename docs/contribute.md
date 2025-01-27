@@ -4,11 +4,11 @@ We welcome you to check the existing issues for bugs or enhancements to work on.
 
 # Contribution Guide
 
-We welcome you to [check the existing issues](https://github.com/EpistasisLab/tpot2/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/EpistasisLab/tpot2/issues/new) so we can discuss it.
+We welcome you to [check the existing issues](https://github.com/EpistasisLab/tpot/issues/) for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please [file a new issue](https://github.com/EpistasisLab/tpot/issues/new) so we can discuss it.
 
 ## Project layout
 
-The latest stable release of TPOT is on the [main branch](https://github.com/EpistasisLab/tpot2/tree/main), whereas the latest version of TPOT in development is on the [development branch](https://github.com/EpistasisLab/tpot2/tree/dev). Make sure you are looking at and working on the correct branch if you're looking to contribute code.
+The latest stable release of TPOT is on the [main branch](https://github.com/EpistasisLab/tpot/tree/main), whereas the latest version of TPOT in development is on the [development branch](https://github.com/EpistasisLab/tpot/tree/dev). Make sure you are looking at and working on the correct branch if you're looking to contribute code.
 
 In terms of directory structure:
 
@@ -23,16 +23,16 @@ Make sure to familiarize yourself with the project layout before making any majo
 ## How to contribute
 
 The preferred way to contribute to TPOT is to fork the
-[main repository](https://github.com/EpistasisLab/tpot2/) on
+[main repository](https://github.com/EpistasisLab/tpot/) on
 GitHub:
 
-1. Fork the [project repository](https://github.com/EpistasisLab/tpot2):
+1. Fork the [project repository](https://github.com/EpistasisLab/tpot):
    click on the 'Fork' button near the top of the page. This creates
    a copy of the code under your account on the GitHub server.
 
 2. Clone this copy to your local disk:
 
-          $ git clone git@github.com:YourUsername/tpot2.git
+          $ git clone git@github.com:YourUsername/tpot.git
           $ cd tpot
 
 3. Create a branch to hold your changes:
@@ -46,7 +46,7 @@ GitHub:
 5. Start making changes on your newly created branch, remembering to never work on the ``main`` branch! Work on this copy on your computer using Git to do the version control.
 
 
-6. Check your changes haven't broken any existing tests and pass all your new tests. Navigate the terminal into the `tpot2/tpot2/` folder and run the command `pytest` to start all tests. (note, you must have the `pytest` package installed within your dev environment for this to work):
+6. Check your changes haven't broken any existing tests and pass all your new tests. Navigate the terminal into the `tpot/tpot/` folder and run the command `pytest` to start all tests. (note, you must have the `pytest` package installed within your dev environment for this to work):
 
           $ pytest
 
@@ -70,13 +70,13 @@ Before you submit a pull request for your contribution, please work through this
 
 If your contribution changes TPOT in any way:
 
-* Update the [documentation](https://github.com/EpistasisLab/tpot2/tree/main/docs) so all of your changes are reflected there.
+* Update the [documentation](https://github.com/EpistasisLab/tpot/tree/main/docs) so all of your changes are reflected there.
 
-* Update the [README](https://github.com/EpistasisLab/tpot2/blob/main/README.md) if anything there has changed.
+* Update the [README](https://github.com/EpistasisLab/tpot/blob/main/README.md) if anything there has changed.
 
 If your contribution involves any code changes:
 
-* Update the [project unit tests](https://github.com/EpistasisLab/tpot2/tree/main/tpot2/tests) to test your code changes.
+* Update the [project unit tests](https://github.com/EpistasisLab/tpot/tree/main/tpot/tests) to test your code changes.
 
 * Make sure that your code is properly commented with [docstrings](https://www.python.org/dev/peps/pep-0257/) and comments explaining your rationale behind non-obvious coding practices.
 

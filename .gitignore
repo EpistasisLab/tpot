@@ -1,6 +1,7 @@
 *.pyc
 .pytest_cache/
-TPOT2.egg-info
+TPOT.egg-info
+TPOT.egg-info
 *.tar.gz
 *.pkl
 *.json
@@ -15,3 +16,5 @@ target/
 build/*
 *.egg
 *.coverage*
+docs/documentation/
+mkdocs.yml
