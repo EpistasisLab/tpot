@@ -8,6 +8,9 @@ on:
 jobs:
   build_docs:
     runs-on: ubuntu-latest
+    env:
+      GIT_COMMITTER_NAME: "Doc Build Bot"
+      GIT_COMMITTER_EMAIL: "jay-m-dev@users.noreply.github.com"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
