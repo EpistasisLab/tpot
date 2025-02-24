@@ -1,0 +1,9 @@
+griffe==1.3.1
+mike==2.1.3
+mkdocs==1.6.1
+mkdocs-include-markdown-plugin==6.2.2
+mkdocs-jupyter==0.25.0
+mkdocs-material==9.5.35
+mkdocstrings==0.26.1
+mkdocstrings-python==1.11.1
+nbconvert==7.16.5
