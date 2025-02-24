@@ -2,7 +2,9 @@
   {
     "version": "latest",
     "title": "latest",
-    "aliases": []
+    "aliases": [
+      "stable"
+    ]
   },
   {
     "version": "archived",
