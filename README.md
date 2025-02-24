@@ -25,6 +25,7 @@ The current version of TPOT was developed at Cedars-Sinai by:
     - Jay Moran (jay.moran@cshs.org)  
     - Nicholas Matsumoto (nicholas.matsumoto@cshs.org)  
     - Hyunjun Choi (hyunjun.choi@cshs.org)  
+    - Gabriel Ketron (gabriel.ketron@cshs.org)
     - Miguel E. Hernandez (miguel.e.hernandez@cshs.org)  
     - Jason Moore (moorejh28@gmail.com)  
 
