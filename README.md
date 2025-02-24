@@ -15,6 +15,11 @@ Package information: [![Python 3.7](https://img.shields.io/badge/python-3.7-blue
 </p>
 
 ---
+**The master branch is now deprecated. The new default branch is `main`, which contains the latest codebase originally developed in `tpot2`**
+
+- - - -
+
+---
 To try the ![NEW!](https://raw.githubusercontent.com/EpistasisLab/tpot/master/images/NEW-small.gif "NEW!") TPOT2 (*alpha*) please go [here](https://github.com/EpistasisLab/tpot2)!
 
 - - - -
