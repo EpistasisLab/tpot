@@ -1,6 +1,114 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
+         <loc>http://epistasislab.github.io/tpot/latest/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/cite/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/contribute/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/installation/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/related/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/support/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/using/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/Tutorial/1_Using_TPOT/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/Tutorial/2_Search_Spaces/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/Tutorial/3_Feature_Set_Selector/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/Tutorial/4_Genetic_Feature_Selection/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/Tutorial/5_GraphPipeline/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/Tutorial/6_Symbolic_Regression_and_Classification/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/Tutorial/7_dask_parallelization/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/Tutorial/8_SH_and_cv_early_pruning/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/Tutorial/9_Genetic_Algorithm_Overview/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/Tutorial/amltk_search_space_parser_example/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/archived/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/archived/api/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/archived/citing/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/archived/contributing/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/archived/examples/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/archived/installing/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/archived/related/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/archived/releases/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/archived/support/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/archived/using/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
          <loc>http://epistasislab.github.io/tpot/latest/documentation/tpot/_version/</loc>
          <lastmod>2025-02-25</lastmod>
     </url>
@@ -262,6 +370,18 @@
     </url>
     <url>
          <loc>http://epistasislab.github.io/tpot/latest/documentation/tpot/utils/utils/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/tpot_api/classifier/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/tpot_api/estimator/</loc>
+         <lastmod>2025-02-25</lastmod>
+    </url>
+    <url>
+         <loc>http://epistasislab.github.io/tpot/latest/tpot_api/regressor/</loc>
          <lastmod>2025-02-25</lastmod>
     </url>
 </urlset>
