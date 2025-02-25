@@ -57,6 +57,7 @@ jobs:
           git fetch origin gh-pages
           git checkout gh-pages || git checkout --orphan gh-pages
           git pull origin gh-pages || echo "No remote changes to pull"
+          git checkout main # Switch back before continuing
 
       - name: Build and Deploy Latest Docs
         run: |
