@@ -52,6 +52,12 @@ jobs:
         run: |
           bash docs/scripts/build_mkdocs.sh
 
+      - name: Checkout gh-pages
+        run: |
+          git fetch origin gh-pages
+          git checkout gh-pages || git checkout --orphan gh-pages
+          git pull origin gh-pages || echo "No remote changes to pull"
+
       - name: Build and Deploy Latest Docs
         run: |
           mike deploy --push --branch gh-pages latest 
