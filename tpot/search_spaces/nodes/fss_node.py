@@ -109,14 +109,21 @@ class FSSIndividual(SklearnIndividual):
     def mutate(self, rng=None):
         rng = np.random.default_rng(rng)
         #get list of names not including the current one
-        names = [name for name in self.names_list if name != self.selected_subset_name]
-        self.selected_subset_name = rng.choice(names)
-        self.sel_subset = self.subset_dict[self.selected_subset_name]
+        if len(self.names_list)>1:
+            names = [name for name in self.names_list if name != self.selected_subset_name]
+            self.selected_subset_name = rng.choice(names)
+            self.sel_subset = self.subset_dict[self.selected_subset_name]
+            return True
+        else:
+            return False
         
     
     def crossover(self, other, rng=None):
+        if self.selected_subset_name == other.selected_subset_name:
+            return False
         self.selected_subset_name = other.selected_subset_name
         self.sel_subset = other.sel_subset
+        return True
 
     def export_pipeline(self, **kwargs):
         return FeatureSetSelector(sel_subset=self.sel_subset, name=self.selected_subset_name)
