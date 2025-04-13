@@ -3,10 +3,12 @@ import tpot
 from sklearn.datasets import load_iris
 import random
 import sklearn
+import warnings
 
 import tpot.config
 
 from ..get_configspace import STRING_TO_CLASS, GROUPNAMES
+import importlib.util
 
 def test_loop_through_all_hyperparameters():
 
@@ -30,6 +32,17 @@ def test_loop_through_groupnames():
     n_samples=100
     n_features=100
     random_state=None
+    # Check if skrebate is installed
+    is_skrebate_installed = importlib.util.find_spec("skrebate") is not None
+
+    # Check if sklearnx is installed
+    is_sklearnx_installed = importlib.util.find_spec("sklearnx") is not None
+
+    if is_skrebate_installed:
+        warnings.warn("skrebate not installed, skipping those estimators")
+
+    if is_sklearnx_installed:
+        warnings.warn("sklearnx not installed, skipping those estimators")
 
     for groupname, group in GROUPNAMES.items():
         for class_name in group:

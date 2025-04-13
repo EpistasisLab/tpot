@@ -48,7 +48,8 @@ from sklearn.utils.validation import check_memory
 from sklearn.preprocessing import LabelEncoder
 
 from sklearn.base import is_classifier, is_regressor
-
+from sklearn.utils._tags import get_tags
+import copy
 #labels - str
 #attributes - "instance" -> instance of the type
 
@@ -434,3 +435,28 @@ class GraphPipeline(_BaseComposition):
     @property
     def _estimator_type(self):
         return self.graph.nodes[self.root]["instance"]._estimator_type
+    
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        final_step = self.graph.nodes[self.root]["instance"]
+
+        try:
+            last_step_tags = final_step.__sklearn_tags__()
+        except:
+            last_step_tags = get_tags(final_step)
+        
+        tags.estimator_type = last_step_tags.estimator_type
+        tags.target_tags.multi_output = last_step_tags.target_tags.multi_output
+        tags.classifier_tags = copy.deepcopy(last_step_tags.classifier_tags)
+        tags.regressor_tags = copy.deepcopy(last_step_tags.regressor_tags)
+        tags.transformer_tags = copy.deepcopy(last_step_tags.transformer_tags)
+
+        tags.input_tags.sparse = all(
+            self.graph.nodes[step]['instance'].__sklearn_tags__().input_tags.sparse
+            for step in self.topo_sorted_nodes
+        )
+
+        tags.input_tags.pairwise = last_step_tags.input_tags.pairwise
+
+        return tags

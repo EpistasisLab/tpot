@@ -64,8 +64,10 @@ class MaskSelector(SelectorMixin, BaseEstimator):
         self.is_fitted_ = True #so sklearn knows it's fitted
         return self
 
-    def _get_tags(self):
-        tags = {"allow_nan": True, "requires_y": False}
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.input_tags.allow_nan = True
+        tags.target_tags.required = False # formally requires_y
         return tags
 
     def _get_support_mask(self):
