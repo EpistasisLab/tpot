@@ -54,6 +54,9 @@ from dask import config as cfg
 from .estimator_utils import *
 import warnings
 
+from sklearn.utils._tags import get_tags
+import copy
+
 def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
     cfg.set({'distributed.scheduler.allowed-failures':1})
@@ -984,6 +987,28 @@ class TPOTEstimatorSteadyState(BaseEstimator):
     @property
     def _estimator_type(self):
         return self.fitted_pipeline_._estimator_type
+    
+    def __sklearn_tags__(self):
+
+        if hasattr(self, 'fitted_pipeline_'): #if fitted
+            try:
+                tags = copy.deepcopy(self.fitted_pipeline_.__sklearn_tags__())
+            except:
+                tags = copy.deepcopy(get_tags(self.fitted_pipeline_))
+                    
+        else: #if not fitted
+            tags = super().__sklearn_tags__()
+        
+            if self.random_state is None:
+                tags.non_deterministic = False
+
+            if self.classification:
+                if tags.classifier_tags is None:
+                    tags.classifier_tags = sklearn.utils.ClassifierTags()
+                tags.classifier_tags.multi_class = True
+                tags.classifier_tags.multi_label = True
+
+        return tags
 
     def make_evaluated_individuals(self):
         #check if _evolver_instance exists
