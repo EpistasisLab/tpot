@@ -47,7 +47,7 @@ from sklearn.feature_selection._base import SelectorMixin
 
 from ..base import SklearnIndividual, SearchSpace
 
-class MaskSelector(BaseEstimator, SelectorMixin):
+class MaskSelector(SelectorMixin, BaseEstimator):
     """Select predefined feature subsets."""
 
     def __init__(self, mask, set_output_transform=None):

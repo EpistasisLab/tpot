@@ -109,7 +109,7 @@ class PytorchEstimator(BaseEstimator):
         return self
 
 
-class PytorchClassifier(PytorchEstimator, ClassifierMixin):
+class PytorchClassifier(ClassifierMixin, PytorchEstimator):
     @abstractmethod
     def _init_model(self, X, y): # pragma: no cover
         pass
