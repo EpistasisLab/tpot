@@ -1,5 +1,6 @@
 import pytest
 import tpot
+import sys
 from sklearn.datasets import load_iris
 import random
 import sklearn
@@ -24,6 +25,7 @@ def test_loop_through_all_hyperparameters():
             estnode = estnode_gen.generate()
             est = estnode.export_pipeline()
     
+@pytest.mark.skipif(sys.platform == 'darwin', reason="sklearnex dependency not available on macOS")
 def test_loop_through_groupnames():
 
     n_classes=3

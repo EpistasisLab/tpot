@@ -77,7 +77,7 @@ conda activate tpotenv
 
 ### Packages Used
 
-python version <3.12
+python version >=3.10, <3.13
 numpy
 scipy
 scikit-learn
