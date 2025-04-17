@@ -13,7 +13,7 @@ package_version = calculate_version()
 
 setup(
     name='TPOT',
-    python_requires='>=3.10, <3.13',
+    python_requires='>=3.10, <3.14',
     version=package_version,
     author='Pedro Ribeiro',
     packages=find_packages(),
@@ -62,6 +62,7 @@ A Python tool that automatically creates and optimizes machine learning pipeline
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Topic :: Scientific/Engineering :: Artificial Intelligence'
     ],
     keywords=['pipeline optimization', 'hyperparameter optimization', 'data science', 'machine learning', 'genetic programming', 'evolutionary computation'],
