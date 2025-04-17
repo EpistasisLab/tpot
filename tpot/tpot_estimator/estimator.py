@@ -229,13 +229,13 @@ class TPOTEstimator(BaseEstimator):
         generations_until_end_population : int, default=1
             Number of generations until the population size reaches population_size
 
-        generations : int, default=50
+        generations : int, default=None
             Number of generations to run
 
-        max_time_mins : float, default=float("inf")
+        max_time_mins : float, default=60
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
 
-        max_eval_time_mins : float, default=5
+        max_eval_time_mins : float, default=10
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
 
         validation_strategy : str, default='none'

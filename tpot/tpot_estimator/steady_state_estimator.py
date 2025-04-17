@@ -56,6 +56,7 @@ import warnings
 
 from sklearn.utils._tags import get_tags
 import copy
+from ..config.template_search_spaces import get_template_search_spaces
 
 def set_dask_settings():
     cfg.set({'distributed.scheduler.worker-ttl': None})
@@ -274,7 +275,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         population_size : int, default=50
             Size of the population
 
-        initial_population_size : int, default=None
+        initial_population_size : int, default=50
             Size of the initial population. If None, population_size will be used.
 
         population_scaling : int, default=0.5
@@ -309,7 +310,7 @@ class TPOTEstimatorSteadyState(BaseEstimator):
         max_time_mins : float, default=float("inf")
             Maximum time to run the optimization. If none or inf, will run until the end of the generations.
 
-        max_eval_time_mins : float, default=60*5
+        max_eval_time_mins : float, default=10
             Maximum time to evaluate a single individual. If none or inf, there will be no time limit per evaluation.
 
         n_jobs : int, default=1
@@ -698,10 +699,22 @@ class TPOTEstimatorSteadyState(BaseEstimator):
                 **kwargs,
             )
 
+        if self.classification:
+            n_classes = len(np.unique(y))
+        else:
+            n_classes = None
+
+        get_search_space_params = {"n_classes": n_classes, 
+                        "n_samples":len(y), 
+                        "n_features":X.shape[1], 
+                        "random_state":self.random_state}
+
+        self._search_space = get_template_search_spaces(self.search_space, classification=self.classification, inner_predictors=True, **get_search_space_params)
+
         def ind_generator(rng):
             rng = np.random.default_rng(rng)
             while True:
-                yield self.search_space.generate(rng)
+                yield self._search_space.generate(rng)
 
 
 
