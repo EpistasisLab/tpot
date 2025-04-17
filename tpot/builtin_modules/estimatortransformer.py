@@ -34,14 +34,14 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 from numpy import ndarray
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator 
 from sklearn.model_selection import cross_val_predict
 from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.metaestimators import available_if
 import numpy as np
 from sklearn.utils.validation import check_is_fitted
 
-class EstimatorTransformer(BaseEstimator, TransformerMixin):
+class EstimatorTransformer(TransformerMixin, BaseEstimator ):
     def __init__(self, estimator, method='auto', passthrough=False, cross_val_predict_cv=None):
         """
         A class for using a sklearn estimator as a transformer. When calling fit_transform, this class returns the out put of cross_val_predict
