@@ -9,7 +9,7 @@ We recommend using conda environments for installing TPOT, though it would work 
 [More information on making anaconda environments found here.](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
 
 ```
-conda create --name tpotenv python=3.12
+conda create --name tpotenv python=3.13
 conda activate tpotenv
 ```
 
