@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection._base import SelectorMixin
 
-class FeatureEncodingFrequencySelector(BaseEstimator, SelectorMixin):
+class FeatureEncodingFrequencySelector(SelectorMixin, BaseEstimator):
     """Feature selector based on Encoding Frequency. Encoding frequency is the frequency of each unique element(0/1/2/3) present in a feature set. 
      Features are selected on the basis of a threshold assigned for encoding frequency. If frequency of any unique element is less than or equal to threshold, the feature is removed.  """
 
