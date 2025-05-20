@@ -36,7 +36,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from scipy import sparse
 
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator 
 from sklearn.utils import check_array
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 import sklearn
@@ -69,7 +69,7 @@ def _X_selected(X, selected):
 
 
 
-class ColumnOneHotEncoder(BaseEstimator, TransformerMixin):
+class ColumnOneHotEncoder(TransformerMixin, BaseEstimator ):
 
 
     def __init__(self, columns='auto', drop=None, handle_unknown='infrequent_if_exist', sparse_output=False, min_frequency=None,max_categories=None):
@@ -205,7 +205,7 @@ class ColumnOneHotEncoder(BaseEstimator, TransformerMixin):
             else:
                 return np.hstack((X_not_sel, X_sel))
 
-class ColumnOrdinalEncoder(BaseEstimator, TransformerMixin):
+class ColumnOrdinalEncoder(TransformerMixin, BaseEstimator ):
 
 
     def __init__(self, columns='auto', handle_unknown='error', unknown_value = -1, encoded_missing_value = np.nan, min_frequency=None,max_categories=None):

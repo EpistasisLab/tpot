@@ -34,7 +34,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator 
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import KBinsDiscretizer
 import numpy as np
@@ -62,7 +62,7 @@ def select_features(X, min_unique=10,):
     else:
         return [i for i in range(X.shape[1]) if len(np.unique(X[:, i])) > min_unique]
 
-class PassKBinsDiscretizer(BaseEstimator, TransformerMixin):
+class PassKBinsDiscretizer(TransformerMixin, BaseEstimator ):
     def __init__(self, n_bins=5,  encode='onehot-dense', strategy='quantile', subsample=None, random_state=None):
         self.n_bins = n_bins
         self.encode = encode
