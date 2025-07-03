@@ -2773,7 +2773,7 @@
 <h1 id="contribution-guide">Contribution Guide<a class="headerlink" href="#contribution-guide" title="Permanent link">&para;</a></h1>
 <p>We welcome you to <a href="https://github.com/EpistasisLab/tpot/issues/">check the existing issues</a> for bugs or enhancements to work on. If you have an idea for an extension to TPOT, please <a href="https://github.com/EpistasisLab/tpot/issues/new">file a new issue</a> so we can discuss it.</p>
 <h2 id="project-layout">Project layout<a class="headerlink" href="#project-layout" title="Permanent link">&para;</a></h2>
-<p>The latest stable release of TPOT is on the <a href="https://github.com/EpistasisLab/tpot/tree/main">main branch</a>, whereas the latest version of TPOT in development is on the <a href="https://github.com/EpistasisLab/tpot/tree/dev">development branch</a>. Make sure you are looking at and working on the correct branch if you're looking to contribute code.</p>
+<p>Both the latest stable release and the development version of TPOT are on the <a href="https://github.com/EpistasisLab/tpot/tree/main">main branch</a>. Ensure you are working from the correct commit when contributing.</p>
 <p>In terms of directory structure:</p>
 <ul>
 <li>All of TPOT's code sources are in the <code>tpot</code> directory</li>
@@ -2782,7 +2782,7 @@
 <li>Tutorials for TPOT are in the <code>tutorials</code> directory</li>
 <li>Unit tests for TPOT are in the <code>tests.py</code> file</li>
 </ul>
-<p>Make sure to familiarize yourself with the project layout before making any major contributions, and especially make sure to send all code changes to the <code>development</code> branch.</p>
+<p>Make sure to familiarize yourself with the project layout before making any major contributions, and especially make sure to send all code changes to the <code>main</code> branch.</p>
 <h2 id="how-to-contribute">How to contribute<a class="headerlink" href="#how-to-contribute" title="Permanent link">&para;</a></h2>
 <p>The preferred way to contribute to TPOT is to fork the
 <a href="https://github.com/EpistasisLab/tpot/">main repository</a> on
@@ -2801,16 +2801,16 @@ GitHub:</p>
 </li>
 <li>
 <p>Create a branch to hold your changes:</p>
-<div class="highlight"><pre><span></span><code>  $ git checkout -b my-contribution
+<div class="highlight"><pre><span></span><code>  $ git checkout main
+  $ git pull origin main
+  $ git checkout -b my-contribution
 </code></pre></div>
 </li>
 <li>
-<p>Make sure your local environment is setup correctly for development. Installation instructions are almost identical to <a href="installing.md">the user instructions</a> except that TPOT should <em>not</em> be installed. If you have TPOT installed on your computer then make sure you are using a virtual environment that does not have TPOT installed. Furthermore, you should make sure you have installed the <code>pytest</code> package into your development environment so that you can test changes locally.</p>
-<div class="highlight"><pre><span></span><code>  $ conda install pytest
-</code></pre></div>
+<p>Make sure your local environment is setup correctly for development. Set up your local environment following the <a href="installing.md#developerlatest-branch-installation">Developer Installation instructions</a>. Ensure you also install <code>pytest</code> (<code>conda install pytest</code> or <code>pip install pytest</code>) into your development environment so that you can test changes locally.</p>
 </li>
 <li>
-<p>Start making changes on your newly created branch, remembering to never work on the <code>main</code> branch! Work on this copy on your computer using Git to do the version control.</p>
+<p>Start making changes on your newly created branch. Work on this copy on your computer using Git to do the version control.</p>
 </li>
 <li>
 <p>Check your changes haven't broken any existing tests and pass all your new tests. Navigate the terminal into the <code>tpot/tpot/</code> folder and run the command <code>pytest</code> to start all tests. (note, you must have the <code>pytest</code> package installed within your dev environment for this to work):</p>
@@ -2827,7 +2827,7 @@ GitHub:</p>
 <p>to record your changes in Git, then push them to GitHub with:</p>
 <div class="highlight"><pre><span></span><code>      $ git push -u origin my-contribution
 </code></pre></div>
-<p>Finally, go to the web page of your fork of the TPOT repo, and click 'Pull Request' (PR) to send your changes to the maintainers for review. Make sure that you send your PR to the <code>dev</code> branch, as the <code>main</code> branch is reserved for the latest stable release. This will start the CI server to check all the project's unit tests run and send an email to the maintainers.</p>
+<p>Finally, go to the web page of your fork of the TPOT repo, and click 'Pull Request' (PR) to send your changes to the maintainers for review. Make sure that you send your PR to the <code>main</code> branch. This will start the CI server to check all the project's unit tests run and send an email to the maintainers.</p>
 <p>(If any of the above seems like magic to you, then look up the
 <a href="http://git-scm.com/documentation">Git documentation</a> on the web.)</p>
 <h2 id="before-submitting-your-pull-request">Before submitting your pull request<a class="headerlink" href="#before-submitting-your-pull-request" title="Permanent link">&para;</a></h2>
