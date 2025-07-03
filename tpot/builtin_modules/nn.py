@@ -109,7 +109,7 @@ class PytorchEstimator(BaseEstimator):
         return self
 
 
-class PytorchClassifier(PytorchEstimator, ClassifierMixin):
+class PytorchClassifier(ClassifierMixin, PytorchEstimator):
     @abstractmethod
     def _init_model(self, X, y): # pragma: no cover
         pass
@@ -131,7 +131,6 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
         self
             Fitted estimator.
         """
-        # pylint: disable=no-member
 
         self._init_model(X, y)
 
@@ -193,7 +192,6 @@ class PytorchClassifier(PytorchEstimator, ClassifierMixin):
         return (X, y)
 
     def predict(self, X):
-        # pylint: disable=no-member
 
         X = check_array(X, accept_sparse=True)
         check_is_fitted(self, 'is_fitted_')
@@ -295,8 +293,11 @@ class PytorchLRClassifier(PytorchClassifier):
         self.train_dset_len = len(train_dset)
         self.device = device
 
-    def _more_tags(self):
-        return {'non_deterministic': True, 'binary_only': True}
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.non_deterministic = True
+        tags.target_tags.single_output = True
+        return tags
 
 class PytorchMLPClassifier(PytorchClassifier):
     """Multilayer Perceptron, implemented in PyTorch, for use with TPOT.
@@ -347,6 +348,9 @@ class PytorchMLPClassifier(PytorchClassifier):
         )
         self.train_dset_len = len(train_dset)
         self.device = device
-
-    def _more_tags(self):
-        return {'non_deterministic': True, 'binary_only': True}
+    
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.non_deterministic = True
+        tags.target_tags.single_output = True
+        return tags

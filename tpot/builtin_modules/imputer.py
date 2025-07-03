@@ -39,7 +39,7 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from scipy import sparse
 
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator 
 from sklearn.utils import check_array
 from sklearn.preprocessing import OneHotEncoder
 import sklearn
@@ -50,7 +50,7 @@ from pandas.api.types import is_numeric_dtype
 import sklearn.compose
 
 
-class ColumnSimpleImputer(BaseEstimator, TransformerMixin):
+class ColumnSimpleImputer(TransformerMixin, BaseEstimator ):
     def __init__(self,  columns="all",         
                         missing_values=np.nan,
                         strategy="mean",
