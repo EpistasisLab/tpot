@@ -2895,7 +2895,7 @@
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code>, <code><span title="sklearn.feature_selection._base.SelectorMixin">SelectorMixin</span></code></p>
+              Bases: <code><span title="sklearn.feature_selection._base.SelectorMixin">SelectorMixin</span></code>, <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code></p>
 
 
         <p>Feature selector based on Encoding Frequency. Encoding frequency is the frequency of each unique element(0/1/2/3) present in a feature set. 
@@ -3033,7 +3033,7 @@ Features are selected on the basis of a threshold assigned for encoding frequenc
 <span class="normal"><a href="#__codelineno-0-136">136</a></span>
 <span class="normal"><a href="#__codelineno-0-137">137</a></span>
 <span class="normal"><a href="#__codelineno-0-138">138</a></span>
-<span class="normal"><a href="#__codelineno-0-139">139</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">FeatureEncodingFrequencySelector</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">SelectorMixin</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-139">139</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">FeatureEncodingFrequencySelector</span><span class="p">(</span><span class="n">SelectorMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">):</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Feature selector based on Encoding Frequency. Encoding frequency is the frequency of each unique element(0/1/2/3) present in a feature set. </span>
 <a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="sd">     Features are selected on the basis of a threshold assigned for encoding frequency. If frequency of any unique element is less than or equal to threshold, the feature is removed.  &quot;&quot;&quot;</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12"></a>

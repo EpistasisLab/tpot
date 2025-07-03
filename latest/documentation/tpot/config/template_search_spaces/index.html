@@ -4521,7 +4521,7 @@ Features are defined by column names if using a Pandas data frame, or ints corre
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code>, <code><span title="sklearn.feature_selection._base.SelectorMixin">SelectorMixin</span></code></p>
+              Bases: <code><span title="sklearn.feature_selection._base.SelectorMixin">SelectorMixin</span></code>, <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code></p>
 
 
         <p>Select predefined feature subsets.</p>
@@ -4605,7 +4605,9 @@ Features are defined by column names if using a Pandas data frame, or ints corre
 <span class="normal"><a href="#__codelineno-0-122">122</a></span>
 <span class="normal"><a href="#__codelineno-0-123">123</a></span>
 <span class="normal"><a href="#__codelineno-0-124">124</a></span>
-<span class="normal"><a href="#__codelineno-0-125">125</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="k">class</span><span class="w"> </span><span class="nc">FeatureSetSelector</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">SelectorMixin</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-125">125</a></span>
+<span class="normal"><a href="#__codelineno-0-126">126</a></span>
+<span class="normal"><a href="#__codelineno-0-127">127</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="k">class</span><span class="w"> </span><span class="nc">FeatureSetSelector</span><span class="p">(</span><span class="n">SelectorMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">):</span>
 <a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">    Select predefined feature subsets.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
@@ -4669,20 +4671,22 @@ Features are defined by column names if using a Pandas data frame, or ints corre
 <a id="__codelineno-0-109" name="__codelineno-0-109"></a>
 <a id="__codelineno-0-110" name="__codelineno-0-110"></a>    <span class="c1"># def transform(self, X):</span>
 <a id="__codelineno-0-111" name="__codelineno-0-111"></a>
-<a id="__codelineno-0-112" name="__codelineno-0-112"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_get_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-113" name="__codelineno-0-113"></a>        <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;allow_nan&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;requires_y&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
-<a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="k">return</span> <span class="n">tags</span>
-<a id="__codelineno-0-115" name="__codelineno-0-115"></a>
-<a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_get_support_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-117" name="__codelineno-0-117"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-118" name="__codelineno-0-118"></a><span class="sd">        Get the boolean mask indicating which features are selected</span>
-<a id="__codelineno-0-119" name="__codelineno-0-119"></a><span class="sd">        Returns</span>
-<a id="__codelineno-0-120" name="__codelineno-0-120"></a><span class="sd">        -------</span>
-<a id="__codelineno-0-121" name="__codelineno-0-121"></a><span class="sd">        support : boolean array of shape [# input features]</span>
-<a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="sd">            An element is True iff its corresponding feature is selected for</span>
-<a id="__codelineno-0-123" name="__codelineno-0-123"></a><span class="sd">            retention.</span>
-<a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-125" name="__codelineno-0-125"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span>
+<a id="__codelineno-0-112" name="__codelineno-0-112"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__sklearn_tags__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-113" name="__codelineno-0-113"></a>        <span class="n">tags</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__sklearn_tags__</span><span class="p">()</span>
+<a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="n">tags</span><span class="o">.</span><span class="n">input_tags</span><span class="o">.</span><span class="n">allow_nan</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-0-115" name="__codelineno-0-115"></a>        <span class="n">tags</span><span class="o">.</span><span class="n">target_tags</span><span class="o">.</span><span class="n">required</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># formally requires_y</span>
+<a id="__codelineno-0-116" name="__codelineno-0-116"></a>        <span class="k">return</span> <span class="n">tags</span>
+<a id="__codelineno-0-117" name="__codelineno-0-117"></a>
+<a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_get_support_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-119" name="__codelineno-0-119"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-120" name="__codelineno-0-120"></a><span class="sd">        Get the boolean mask indicating which features are selected</span>
+<a id="__codelineno-0-121" name="__codelineno-0-121"></a><span class="sd">        Returns</span>
+<a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="sd">        -------</span>
+<a id="__codelineno-0-123" name="__codelineno-0-123"></a><span class="sd">        support : boolean array of shape [# input features]</span>
+<a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">            An element is True iff its corresponding feature is selected for</span>
+<a id="__codelineno-0-125" name="__codelineno-0-125"></a><span class="sd">            retention.</span>
+<a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-127" name="__codelineno-0-127"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -4981,9 +4985,7 @@ int: index of a single column</p>
 
               <details class="quote">
                 <summary>Source code in <code>tpot/search_spaces/nodes/genetic_feature_selection.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-210">210</a></span>
-<span class="normal"><a href="#__codelineno-0-211">211</a></span>
-<span class="normal"><a href="#__codelineno-0-212">212</a></span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-212">212</a></span>
 <span class="normal"><a href="#__codelineno-0-213">213</a></span>
 <span class="normal"><a href="#__codelineno-0-214">214</a></span>
 <span class="normal"><a href="#__codelineno-0-215">215</a></span>
@@ -5026,52 +5028,54 @@ int: index of a single column</p>
 <span class="normal"><a href="#__codelineno-0-252">252</a></span>
 <span class="normal"><a href="#__codelineno-0-253">253</a></span>
 <span class="normal"><a href="#__codelineno-0-254">254</a></span>
-<span class="normal"><a href="#__codelineno-0-255">255</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="k">class</span><span class="w"> </span><span class="nc">GeneticFeatureSelectorNode</span><span class="p">(</span><span class="n">SearchSpace</span><span class="p">):</span>
-<a id="__codelineno-0-211" name="__codelineno-0-211"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>                     
-<a id="__codelineno-0-212" name="__codelineno-0-212"></a>                    <span class="n">n_features</span><span class="p">,</span>
-<a id="__codelineno-0-213" name="__codelineno-0-213"></a>                    <span class="n">start_p</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
-<a id="__codelineno-0-214" name="__codelineno-0-214"></a>                    <span class="n">mutation_rate</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
-<a id="__codelineno-0-215" name="__codelineno-0-215"></a>                    <span class="n">crossover_rate</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
-<a id="__codelineno-0-216" name="__codelineno-0-216"></a>                    <span class="n">mutation_rate_rate</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="c1"># These are still experimental but seem to help. Theory is that it takes slower steps as it gets closer to the optimal solution.</span>
-<a id="__codelineno-0-217" name="__codelineno-0-217"></a>                    <span class="n">crossover_rate_rate</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span><span class="c1"># Otherwise is mutation_rate is too small, it takes forever, and if its too large, it never converges.</span>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a>                    <span class="p">):</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">        A node that generates a GeneticFeatureSelectorIndividual. Uses genetic algorithm to select novel subsets of features.</span>
-<a id="__codelineno-0-221" name="__codelineno-0-221"></a>
-<a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">        Parameters</span>
-<a id="__codelineno-0-223" name="__codelineno-0-223"></a><span class="sd">        ----------</span>
-<a id="__codelineno-0-224" name="__codelineno-0-224"></a><span class="sd">        n_features : int</span>
-<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">            Number of features in the dataset.</span>
-<a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">        start_p : float</span>
-<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">            Probability of selecting a given feature for the initial subset of features.</span>
-<a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">        mutation_rate : float</span>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">            Probability of adding/removing a feature from the subset of features.</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">        crossover_rate : float</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">            Probability of swapping a feature between two subsets of features.</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">        mutation_rate_rate : float</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">            Probability of changing the mutation rate. (experimental)</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">        crossover_rate_rate : float</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="sd">            Probability of changing the crossover rate. (experimental)</span>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">        &quot;&quot;&quot;</span>
+<span class="normal"><a href="#__codelineno-0-255">255</a></span>
+<span class="normal"><a href="#__codelineno-0-256">256</a></span>
+<span class="normal"><a href="#__codelineno-0-257">257</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="k">class</span><span class="w"> </span><span class="nc">GeneticFeatureSelectorNode</span><span class="p">(</span><span class="n">SearchSpace</span><span class="p">):</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>                     
+<a id="__codelineno-0-214" name="__codelineno-0-214"></a>                    <span class="n">n_features</span><span class="p">,</span>
+<a id="__codelineno-0-215" name="__codelineno-0-215"></a>                    <span class="n">start_p</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+<a id="__codelineno-0-216" name="__codelineno-0-216"></a>                    <span class="n">mutation_rate</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-217" name="__codelineno-0-217"></a>                    <span class="n">crossover_rate</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a>                    <span class="n">mutation_rate_rate</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="c1"># These are still experimental but seem to help. Theory is that it takes slower steps as it gets closer to the optimal solution.</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a>                    <span class="n">crossover_rate_rate</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span><span class="c1"># Otherwise is mutation_rate is too small, it takes forever, and if its too large, it never converges.</span>
+<a id="__codelineno-0-220" name="__codelineno-0-220"></a>                    <span class="p">):</span>
+<a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">        A node that generates a GeneticFeatureSelectorIndividual. Uses genetic algorithm to select novel subsets of features.</span>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a><span class="sd">        Parameters</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">        ----------</span>
+<a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">        n_features : int</span>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">            Number of features in the dataset.</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">        start_p : float</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">            Probability of selecting a given feature for the initial subset of features.</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">        mutation_rate : float</span>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">            Probability of adding/removing a feature from the subset of features.</span>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">        crossover_rate : float</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">            Probability of swapping a feature between two subsets of features.</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">        mutation_rate_rate : float</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="sd">            Probability of changing the mutation rate. (experimental)</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">        crossover_rate_rate : float</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">            Probability of changing the crossover rate. (experimental)</span>
 <a id="__codelineno-0-238" name="__codelineno-0-238"></a>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span> <span class="o">=</span> <span class="n">n_features</span>
-<a id="__codelineno-0-240" name="__codelineno-0-240"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">start_p</span> <span class="o">=</span> <span class="n">start_p</span>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate</span> <span class="o">=</span> <span class="n">mutation_rate</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate</span> <span class="o">=</span> <span class="n">crossover_rate</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate_rate</span> <span class="o">=</span> <span class="n">mutation_rate_rate</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate_rate</span> <span class="o">=</span> <span class="n">crossover_rate_rate</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SklearnIndividual</span><span class="p">:</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a>        <span class="k">return</span> <span class="n">GeneticFeatureSelectorIndividual</span><span class="p">(</span>   <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_features</span><span class="p">,</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a>                                                    <span class="n">start_p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_p</span><span class="p">,</span>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a>                                                    <span class="n">mutation_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate</span><span class="p">,</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a>                                                    <span class="n">crossover_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate</span><span class="p">,</span>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a>                                                    <span class="n">mutation_rate_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate_rate</span><span class="p">,</span>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a>                                                    <span class="n">crossover_rate_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate_rate</span><span class="p">,</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a>                                                    <span class="n">rng</span><span class="o">=</span><span class="n">rng</span>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a>                                                <span class="p">)</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-240" name="__codelineno-0-240"></a>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span> <span class="o">=</span> <span class="n">n_features</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">start_p</span> <span class="o">=</span> <span class="n">start_p</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate</span> <span class="o">=</span> <span class="n">mutation_rate</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate</span> <span class="o">=</span> <span class="n">crossover_rate</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate_rate</span> <span class="o">=</span> <span class="n">mutation_rate_rate</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate_rate</span> <span class="o">=</span> <span class="n">crossover_rate_rate</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SklearnIndividual</span><span class="p">:</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a>        <span class="k">return</span> <span class="n">GeneticFeatureSelectorIndividual</span><span class="p">(</span>   <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_features</span><span class="p">,</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a>                                                    <span class="n">start_p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_p</span><span class="p">,</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a>                                                    <span class="n">mutation_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate</span><span class="p">,</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a>                                                    <span class="n">crossover_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate</span><span class="p">,</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a>                                                    <span class="n">mutation_rate_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate_rate</span><span class="p">,</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a>                                                    <span class="n">crossover_rate_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate_rate</span><span class="p">,</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a>                                                    <span class="n">rng</span><span class="o">=</span><span class="n">rng</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a>                                                <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -5201,9 +5205,7 @@ int: index of a single column</p>
 
             <details class="quote">
               <summary>Source code in <code>tpot/search_spaces/nodes/genetic_feature_selection.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-211">211</a></span>
-<span class="normal"><a href="#__codelineno-0-212">212</a></span>
-<span class="normal"><a href="#__codelineno-0-213">213</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-213">213</a></span>
 <span class="normal"><a href="#__codelineno-0-214">214</a></span>
 <span class="normal"><a href="#__codelineno-0-215">215</a></span>
 <span class="normal"><a href="#__codelineno-0-216">216</a></span>
@@ -5234,40 +5236,42 @@ int: index of a single column</p>
 <span class="normal"><a href="#__codelineno-0-241">241</a></span>
 <span class="normal"><a href="#__codelineno-0-242">242</a></span>
 <span class="normal"><a href="#__codelineno-0-243">243</a></span>
-<span class="normal"><a href="#__codelineno-0-244">244</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>                     
-<a id="__codelineno-0-212" name="__codelineno-0-212"></a>                <span class="n">n_features</span><span class="p">,</span>
-<a id="__codelineno-0-213" name="__codelineno-0-213"></a>                <span class="n">start_p</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
-<a id="__codelineno-0-214" name="__codelineno-0-214"></a>                <span class="n">mutation_rate</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
-<a id="__codelineno-0-215" name="__codelineno-0-215"></a>                <span class="n">crossover_rate</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
-<a id="__codelineno-0-216" name="__codelineno-0-216"></a>                <span class="n">mutation_rate_rate</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="c1"># These are still experimental but seem to help. Theory is that it takes slower steps as it gets closer to the optimal solution.</span>
-<a id="__codelineno-0-217" name="__codelineno-0-217"></a>                <span class="n">crossover_rate_rate</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span><span class="c1"># Otherwise is mutation_rate is too small, it takes forever, and if its too large, it never converges.</span>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a>                <span class="p">):</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    A node that generates a GeneticFeatureSelectorIndividual. Uses genetic algorithm to select novel subsets of features.</span>
-<a id="__codelineno-0-221" name="__codelineno-0-221"></a>
-<a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-223" name="__codelineno-0-223"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-224" name="__codelineno-0-224"></a><span class="sd">    n_features : int</span>
-<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">        Number of features in the dataset.</span>
-<a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">    start_p : float</span>
-<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">        Probability of selecting a given feature for the initial subset of features.</span>
-<a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">    mutation_rate : float</span>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">        Probability of adding/removing a feature from the subset of features.</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">    crossover_rate : float</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">        Probability of swapping a feature between two subsets of features.</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">    mutation_rate_rate : float</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">        Probability of changing the mutation rate. (experimental)</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">    crossover_rate_rate : float</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="sd">        Probability of changing the crossover rate. (experimental)</span>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    &quot;&quot;&quot;</span>
+<span class="normal"><a href="#__codelineno-0-244">244</a></span>
+<span class="normal"><a href="#__codelineno-0-245">245</a></span>
+<span class="normal"><a href="#__codelineno-0-246">246</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>                     
+<a id="__codelineno-0-214" name="__codelineno-0-214"></a>                <span class="n">n_features</span><span class="p">,</span>
+<a id="__codelineno-0-215" name="__codelineno-0-215"></a>                <span class="n">start_p</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+<a id="__codelineno-0-216" name="__codelineno-0-216"></a>                <span class="n">mutation_rate</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-217" name="__codelineno-0-217"></a>                <span class="n">crossover_rate</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a>                <span class="n">mutation_rate_rate</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="c1"># These are still experimental but seem to help. Theory is that it takes slower steps as it gets closer to the optimal solution.</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a>                <span class="n">crossover_rate_rate</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span><span class="c1"># Otherwise is mutation_rate is too small, it takes forever, and if its too large, it never converges.</span>
+<a id="__codelineno-0-220" name="__codelineno-0-220"></a>                <span class="p">):</span>
+<a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    A node that generates a GeneticFeatureSelectorIndividual. Uses genetic algorithm to select novel subsets of features.</span>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">    n_features : int</span>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">        Number of features in the dataset.</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">    start_p : float</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">        Probability of selecting a given feature for the initial subset of features.</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">    mutation_rate : float</span>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">        Probability of adding/removing a feature from the subset of features.</span>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">    crossover_rate : float</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">        Probability of swapping a feature between two subsets of features.</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">    mutation_rate_rate : float</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="sd">        Probability of changing the mutation rate. (experimental)</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">    crossover_rate_rate : float</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">        Probability of changing the crossover rate. (experimental)</span>
 <a id="__codelineno-0-238" name="__codelineno-0-238"></a>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span> <span class="o">=</span> <span class="n">n_features</span>
-<a id="__codelineno-0-240" name="__codelineno-0-240"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">start_p</span> <span class="o">=</span> <span class="n">start_p</span>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate</span> <span class="o">=</span> <span class="n">mutation_rate</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate</span> <span class="o">=</span> <span class="n">crossover_rate</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate_rate</span> <span class="o">=</span> <span class="n">mutation_rate_rate</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate_rate</span> <span class="o">=</span> <span class="n">crossover_rate_rate</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-240" name="__codelineno-0-240"></a>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span> <span class="o">=</span> <span class="n">n_features</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">start_p</span> <span class="o">=</span> <span class="n">start_p</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate</span> <span class="o">=</span> <span class="n">mutation_rate</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate</span> <span class="o">=</span> <span class="n">crossover_rate</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">mutation_rate_rate</span> <span class="o">=</span> <span class="n">mutation_rate_rate</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">crossover_rate_rate</span> <span class="o">=</span> <span class="n">crossover_rate_rate</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7573,7 +7577,7 @@ Can also be a sklearn.preprocessing.LabelEncoder object. If so, that label encod
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code>, <code><span title="sklearn.feature_selection._base.SelectorMixin">SelectorMixin</span></code></p>
+              Bases: <code><span title="sklearn.feature_selection._base.SelectorMixin">SelectorMixin</span></code>, <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code></p>
 
 
         <p>Select predefined feature subsets.</p>
@@ -7605,7 +7609,9 @@ Can also be a sklearn.preprocessing.LabelEncoder object. If so, that label encod
 <span class="normal"><a href="#__codelineno-0-72">72</a></span>
 <span class="normal"><a href="#__codelineno-0-73">73</a></span>
 <span class="normal"><a href="#__codelineno-0-74">74</a></span>
-<span class="normal"><a href="#__codelineno-0-75">75</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="k">class</span><span class="w"> </span><span class="nc">MaskSelector</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">SelectorMixin</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-75">75</a></span>
+<span class="normal"><a href="#__codelineno-0-76">76</a></span>
+<span class="normal"><a href="#__codelineno-0-77">77</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="k">class</span><span class="w"> </span><span class="nc">MaskSelector</span><span class="p">(</span><span class="n">SelectorMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">):</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Select predefined feature subsets.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a>
 <a id="__codelineno-0-53" name="__codelineno-0-53"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">set_output_transform</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -7622,15 +7628,17 @@ Can also be a sklearn.preprocessing.LabelEncoder object. If so, that label encod
 <a id="__codelineno-0-64" name="__codelineno-0-64"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">is_fitted_</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1">#so sklearn knows it&#39;s fitted</span>
 <a id="__codelineno-0-65" name="__codelineno-0-65"></a>        <span class="k">return</span> <span class="bp">self</span>
 <a id="__codelineno-0-66" name="__codelineno-0-66"></a>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_get_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a>        <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;allow_nan&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;requires_y&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a>        <span class="k">return</span> <span class="n">tags</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_get_support_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span>
-<a id="__codelineno-0-73" name="__codelineno-0-73"></a>
-<a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_feature_names_out</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_features</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_names_in_</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_support</span><span class="p">()]</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__sklearn_tags__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>        <span class="n">tags</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__sklearn_tags__</span><span class="p">()</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>        <span class="n">tags</span><span class="o">.</span><span class="n">input_tags</span><span class="o">.</span><span class="n">allow_nan</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>        <span class="n">tags</span><span class="o">.</span><span class="n">target_tags</span><span class="o">.</span><span class="n">required</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># formally requires_y</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>        <span class="k">return</span> <span class="n">tags</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_get_support_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_feature_names_out</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_features</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_names_in_</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_support</span><span class="p">()]</span>
 </code></pre></div></td></tr></table></div>
               </details>
 

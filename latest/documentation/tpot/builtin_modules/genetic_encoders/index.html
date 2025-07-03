@@ -3011,7 +3011,7 @@ All the genetic encoder classes inherit the Scikit learn BaseEstimator and Trans
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code>, <code><span title="sklearn.base.TransformerMixin">TransformerMixin</span></code></p>
+              Bases: <code><span title="sklearn.base.TransformerMixin">TransformerMixin</span></code>, <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code></p>
 
 
         <p>This class contains the function definition for encoding the input features as a Dominant genetic model.
@@ -3055,7 +3055,7 @@ The encoding used is AA(0)-&gt;1, Aa(1)-&gt;1, aa(2)-&gt;0.</p>
 <span class="normal"><a href="#__codelineno-0-45">45</a></span>
 <span class="normal"><a href="#__codelineno-0-46">46</a></span>
 <span class="normal"><a href="#__codelineno-0-47">47</a></span>
-<span class="normal"><a href="#__codelineno-0-48">48</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">DominantEncoder</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-48">48</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">DominantEncoder</span><span class="p">(</span><span class="n">TransformerMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span> <span class="p">):</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;This class contains the function definition for encoding the input features as a Dominant genetic model.</span>
 <a id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="sd">    The encoding used is AA(0)-&gt;1, Aa(1)-&gt;1, aa(2)-&gt;0. &quot;&quot;&quot;</span>
 <a id="__codelineno-0-15" name="__codelineno-0-15"></a>
@@ -3329,7 +3329,7 @@ and n_components is the number of components (number of features).</p>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code>, <code><span title="sklearn.base.TransformerMixin">TransformerMixin</span></code></p>
+              Bases: <code><span title="sklearn.base.TransformerMixin">TransformerMixin</span></code>, <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code></p>
 
 
         <p>This class contains the function definition for encoding the input features as a Heterozygote Advantage genetic model.
@@ -3373,7 +3373,7 @@ The encoding used is AA(0)-&gt;0, Aa(1)-&gt;1, aa(2)-&gt;0.</p>
 <span class="normal"><a href="#__codelineno-0-121">121</a></span>
 <span class="normal"><a href="#__codelineno-0-122">122</a></span>
 <span class="normal"><a href="#__codelineno-0-123">123</a></span>
-<span class="normal"><a href="#__codelineno-0-124">124</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="k">class</span><span class="w"> </span><span class="nc">HeterosisEncoder</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-124">124</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="k">class</span><span class="w"> </span><span class="nc">HeterosisEncoder</span><span class="p">(</span><span class="n">TransformerMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span> <span class="p">):</span>
 <a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;This class contains the function definition for encoding the input features as a Heterozygote Advantage genetic model.</span>
 <a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">    The encoding used is AA(0)-&gt;0, Aa(1)-&gt;1, aa(2)-&gt;0. &quot;&quot;&quot;</span>
 <a id="__codelineno-0-91" name="__codelineno-0-91"></a>
@@ -3647,7 +3647,7 @@ and n_components is the number of components (number of features).</p>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code>, <code><span title="sklearn.base.TransformerMixin">TransformerMixin</span></code></p>
+              Bases: <code><span title="sklearn.base.TransformerMixin">TransformerMixin</span></code>, <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code></p>
 
 
         <p>This class contains the function definition for encoding the input features as a Over Dominance genetic model.
@@ -3691,7 +3691,7 @@ The encoding used is AA(0)-&gt;1, Aa(1)-&gt;2, aa(2)-&gt;0.</p>
 <span class="normal"><a href="#__codelineno-0-198">198</a></span>
 <span class="normal"><a href="#__codelineno-0-199">199</a></span>
 <span class="normal"><a href="#__codelineno-0-200">200</a></span>
-<span class="normal"><a href="#__codelineno-0-201">201</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="k">class</span><span class="w"> </span><span class="nc">OverDominanceEncoder</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-201">201</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="k">class</span><span class="w"> </span><span class="nc">OverDominanceEncoder</span><span class="p">(</span><span class="n">TransformerMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span> <span class="p">):</span>
 <a id="__codelineno-0-166" name="__codelineno-0-166"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;This class contains the function definition for encoding the input features as a Over Dominance genetic model.</span>
 <a id="__codelineno-0-167" name="__codelineno-0-167"></a><span class="sd">    The encoding used is AA(0)-&gt;1, Aa(1)-&gt;2, aa(2)-&gt;0. &quot;&quot;&quot;</span>
 <a id="__codelineno-0-168" name="__codelineno-0-168"></a>
@@ -3965,7 +3965,7 @@ and n_components is the number of components (number of features).</p>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code>, <code><span title="sklearn.base.TransformerMixin">TransformerMixin</span></code></p>
+              Bases: <code><span title="sklearn.base.TransformerMixin">TransformerMixin</span></code>, <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code></p>
 
 
         <p>This class contains the function definition for encoding the input features as a Recessive genetic model.
@@ -4009,7 +4009,7 @@ The encoding used is AA(0)-&gt;0, Aa(1)-&gt;1, aa(2)-&gt;1.</p>
 <span class="normal"><a href="#__codelineno-0-83">83</a></span>
 <span class="normal"><a href="#__codelineno-0-84">84</a></span>
 <span class="normal"><a href="#__codelineno-0-85">85</a></span>
-<span class="normal"><a href="#__codelineno-0-86">86</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="k">class</span><span class="w"> </span><span class="nc">RecessiveEncoder</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-86">86</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="k">class</span><span class="w"> </span><span class="nc">RecessiveEncoder</span><span class="p">(</span><span class="n">TransformerMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span> <span class="p">):</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;This class contains the function definition for encoding the input features as a Recessive genetic model.</span>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    The encoding used is AA(0)-&gt;0, Aa(1)-&gt;1, aa(2)-&gt;1. &quot;&quot;&quot;</span>
 <a id="__codelineno-0-53" name="__codelineno-0-53"></a>
@@ -4283,7 +4283,7 @@ and n_components is the number of components (number of features).</p>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code>, <code><span title="sklearn.base.TransformerMixin">TransformerMixin</span></code></p>
+              Bases: <code><span title="sklearn.base.TransformerMixin">TransformerMixin</span></code>, <code><span title="sklearn.base.BaseEstimator">BaseEstimator</span></code></p>
 
 
         <p>This class contains the function definition for encoding the input features as a Under Dominance genetic model.
@@ -4327,7 +4327,7 @@ The encoding used is AA(0)-&gt;2, Aa(1)-&gt;0, aa(2)-&gt;1.</p>
 <span class="normal"><a href="#__codelineno-0-159">159</a></span>
 <span class="normal"><a href="#__codelineno-0-160">160</a></span>
 <span class="normal"><a href="#__codelineno-0-161">161</a></span>
-<span class="normal"><a href="#__codelineno-0-162">162</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="k">class</span><span class="w"> </span><span class="nc">UnderDominanceEncoder</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-162">162</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="k">class</span><span class="w"> </span><span class="nc">UnderDominanceEncoder</span><span class="p">(</span><span class="n">TransformerMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span> <span class="p">):</span>
 <a id="__codelineno-0-127" name="__codelineno-0-127"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;This class contains the function definition for encoding the input features as a Under Dominance genetic model.</span>
 <a id="__codelineno-0-128" name="__codelineno-0-128"></a><span class="sd">    The encoding used is AA(0)-&gt;2, Aa(1)-&gt;0, aa(2)-&gt;1. &quot;&quot;&quot;</span>
 <a id="__codelineno-0-129" name="__codelineno-0-129"></a>
