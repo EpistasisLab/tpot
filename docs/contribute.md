@@ -8,7 +8,7 @@ We welcome you to [check the existing issues](https://github.com/EpistasisLab/tp
 
 ## Project layout
 
-The latest stable release of TPOT is on the [main branch](https://github.com/EpistasisLab/tpot/tree/main), whereas the latest version of TPOT in development is on the [development branch](https://github.com/EpistasisLab/tpot/tree/dev). Make sure you are looking at and working on the correct branch if you're looking to contribute code.
+Both the latest stable release and the development version of TPOT are on the [main branch](https://github.com/EpistasisLab/tpot/tree/main). Ensure you are working from the correct commit when contributing.
 
 In terms of directory structure:
 
@@ -18,7 +18,7 @@ In terms of directory structure:
 * Tutorials for TPOT are in the `tutorials` directory
 * Unit tests for TPOT are in the `tests.py` file
 
-Make sure to familiarize yourself with the project layout before making any major contributions, and especially make sure to send all code changes to the `development` branch.
+Make sure to familiarize yourself with the project layout before making any major contributions, and especially make sure to send all code changes to the `main` branch.
 
 ## How to contribute
 
@@ -37,14 +37,13 @@ GitHub:
 
 3. Create a branch to hold your changes:
 
+          $ git checkout main
+          $ git pull origin main
           $ git checkout -b my-contribution
 
-4. Make sure your local environment is setup correctly for development. Installation instructions are almost identical to [the user instructions](installing.md) except that TPOT should *not* be installed. If you have TPOT installed on your computer then make sure you are using a virtual environment that does not have TPOT installed. Furthermore, you should make sure you have installed the `pytest` package into your development environment so that you can test changes locally.
+4. Make sure your local environment is setup correctly for development. Set up your local environment following the [Developer Installation instructions](installing.md#developerlatest-branch-installation). Ensure you also install `pytest` (`conda install pytest` or `pip install pytest`) into your development environment so that you can test changes locally.
 
-          $ conda install pytest
-
-5. Start making changes on your newly created branch, remembering to never work on the ``main`` branch! Work on this copy on your computer using Git to do the version control.
-
+5. Start making changes on your newly created branch. Work on this copy on your computer using Git to do the version control.
 
 6. Check your changes haven't broken any existing tests and pass all your new tests. Navigate the terminal into the `tpot/tpot/` folder and run the command `pytest` to start all tests. (note, you must have the `pytest` package installed within your dev environment for this to work):
 
@@ -59,7 +58,7 @@ GitHub:
 
           $ git push -u origin my-contribution
 
-Finally, go to the web page of your fork of the TPOT repo, and click 'Pull Request' (PR) to send your changes to the maintainers for review. Make sure that you send your PR to the `dev` branch, as the `main` branch is reserved for the latest stable release. This will start the CI server to check all the project's unit tests run and send an email to the maintainers.
+Finally, go to the web page of your fork of the TPOT repo, and click 'Pull Request' (PR) to send your changes to the maintainers for review. Make sure that you send your PR to the `main` branch. This will start the CI server to check all the project's unit tests run and send an email to the maintainers.
 
 (If any of the above seems like magic to you, then look up the
 [Git documentation](http://git-scm.com/documentation) on the web.)
