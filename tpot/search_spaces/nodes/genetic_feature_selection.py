@@ -183,8 +183,9 @@ class GeneticFeatureSelectorIndividual(SklearnIndividual):
         p = to_remove / num_pos
         p = min(p, .5)
 
-        remove_mask = rng.choice([True, False], size=self.mask.shape, p=[p,1-p])
-        self.mask = np.logical_and(self.mask, remove_mask)
+        # bugfix for logic flaw
+        keep_mask = rng.choice([False, True], size=self.mask.shape, p=[p,1-p])
+        self.mask = np.logical_and(self.mask, keep_mask)
 
 
         if sum(self.mask) == 0:

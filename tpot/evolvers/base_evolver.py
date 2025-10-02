@@ -890,8 +890,8 @@ class BaseEvolver():
                     threshold = thresholds[step]
                     invalids = []
                     for i in range(len(offspring_scores)):
-
-                        if all([s*w>t*w for s,t,w in zip(offspring_scores[i],threshold,objective_function_signs)  ]):
+                        # fix: 'not' needed to fix logic (bug in original TPOT code meaning threshold logic was inverted); >= to make this work for scores that might be the same across all individuals in certain cases (e.g. on first of multiple stateful runs)
+                        if not all([s*w>=t*w for s,t,w in zip(offspring_scores[i],threshold,objective_function_signs)  ]):
                             invalids.append(i)
 
                     if len(invalids) > 0:
@@ -908,7 +908,7 @@ class BaseEvolver():
                 # Remove based on selection
                 if survival_counts is not None:
                     if step < self.evaluation_early_stop_steps - 1 and survival_counts[step]>1: #don't do selection for the last loop since they are completed
-                        k = survival_counts[step] + len(invalids) #TODO can remove the min if the selections method can ignore k>population size
+                        k = survival_counts[step] # ambiguous which invalids objects from above this is supposed to refer to; removed (tbc)
                         if len(cur_individuals)> 1 and k > self.n_jobs and k < len(cur_individuals):
                             weighted_scores = np.array([s * self.objective_function_weights for s in offspring_scores ])
 

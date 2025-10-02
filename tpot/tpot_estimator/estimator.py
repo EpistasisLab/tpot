@@ -657,7 +657,7 @@ class TPOTEstimator(BaseEstimator):
 
 
         if self.threshold_evaluation_pruning is not None or self.selection_evaluation_pruning is not None:
-            evaluation_early_stop_steps = self.cv
+            evaluation_early_stop_steps = n_folds # fix to work with cv object instead of int
         else:
             evaluation_early_stop_steps = None
 
