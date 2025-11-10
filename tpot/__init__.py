@@ -37,6 +37,8 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 #TODO: are all the imports in the init files done correctly?
 #TODO clean up import organization
 
+import warnings
+
 from .individual import BaseIndividual
 
 from .graphsklearn import GraphPipeline
@@ -54,6 +56,15 @@ from . import old_config_utils
 
 from .tpot_estimator import TPOTClassifier, TPOTRegressor, TPOTEstimator, TPOTEstimatorSteadyState
 
-from update_checker import update_check
-from ._version import __version__
-update_check("tpot",__version__)
+# Optionally import update_checker and use it to noisily complain if this isn't exactly the latest
+# TPOT release.
+try:
+    from update_checker import update_check
+    from ._version import __version__
+    update_check("tpot",__version__)
+except ImportError:
+    warnings.warn(
+        ImportWarning(
+            "Optional update_check import is missing.  Recency of TPOT version won't be checked."
+        )
+    )

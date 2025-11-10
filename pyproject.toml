@@ -1,15 +1,21 @@
 [build-system]
-requires = ["setuptools>=61", "setuptools_scm>=7.0", "wheel"]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "TPOT"
 description = "Tree-based Pipeline Optimization Tool"
+dynamic = ["version"]
+# TODO: this doesn't seem to match code comments
+authors = [{ name = "Pedro Ribioro", email = "pedroribeiroh@gmail.com" }]
 readme = "README.md"
-requires-python = ">=3.10,<3.14"
-license = { text = "LGPL-3.0" }
-authors = [
-    { name = "Pedro Ribeiro" }
+classifiers=[
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 keywords = [
     "pipeline optimization",
@@ -19,42 +25,28 @@ keywords = [
     "genetic programming",
     "evolutionary computation"
 ]
-classifiers = [
-    "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence"
-]
+license = "LGPL-3.0-only"
+requires-python=">=3.10.0,<3.14.0"
+
 dependencies = [
-    "numpy>=1.26.4",
-    "scipy>=1.3.1",
-    "scikit-learn>=1.6",
-    "update_checker>=0.16",
-    "tqdm>=4.36.1",
-    "stopit>=1.1.1",
-    "pandas>=2.2.0",
-    "joblib>=1.1.1",
-    "xgboost>=3.0.0",
-    "matplotlib>=3.6.2",
-    "traitlets>=5.8.0",
-    "lightgbm>=3.3.3",
-    "optuna>=3.0.5",
-    "networkx>=3.0",
-    "dask>=2024.4.2",
+    "ConfigSpace>=1.1.1",
     "distributed>=2024.4.2",
-    "dask-expr>=1.0.12",
-    "dask-jobqueue>=0.8.5",
     "func_timeout>=4.3.5",
-    "configspace>=1.1.1",
-    "dill>=0.3.9",
-    "seaborn>=0.13.2",
+    "joblib>=1.1.1",
+    "lightgbm>=3.3.3",
+    "networkx>=3.0",
+    "nose",
+    "numpy>=1.26.4",
+    "pandas>=2.2.0",
+    "scikit-learn>=1.6",
+    "scipy>=1.3.1",
+    # see [tool.uv.sources] below, upstream using deprecated pkg_resources
+    "stopit>=1.1.1",
+    "tqdm>=4.36.1",
+    "traitlets>=5.8.0",
 ]
 
-dynamic = ["version"]
-
-[project.optional-dependencies]
+[dependency-groups]
 skrebate = ["skrebate>=0.3.4"]
 mdr = ["scikit-mdr>=0.4.4"]
 sklearnex = ["scikit-learn-intelex>=2023.2.1"]
@@ -66,9 +58,14 @@ testing = [
     "flake8>=3.9",
     "tox>=3.24"
 ]
+cpu = ["xgboost-cpu (>=3.0) ; extra != 'cuda'"]
+cuda = ["xgboost (>=3.0) ; extra != 'cpu'"]
+nn = ["torch"]
+plot = ["matplotlib>=3.6.2"]
 
 [project.urls]
-Homepage = "https://github.com/EpistasisLab/tpot"
+Repository = "https://github.com/EpistasisLab/tpot"
+Documentation = "https://epistasislab.github.io/tpot/"
 
 [project.scripts]
 tpot = "tpot:main"
@@ -86,3 +83,11 @@ max-line-length = 120
 [tool.setuptools_scm]
 # setuptools_scm gets the version from Git tags, e.g git tag v1.1.0
 # then python -m build embeds the version into the package
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+publish-url = "https://upload.pypi.org/tpot/"
+
+[tool.uv.sources]
+stopit = { git = "https://github.com/jikamens/stopit" }
