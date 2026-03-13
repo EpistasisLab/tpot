@@ -33,6 +33,23 @@ You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
+
+# pkg_resources.get_distribution() replacement for stopit compatibility
+import importlib.util
+
+if importlib.util.find_spec("pkg_resources") is None:
+    from types import ModuleType
+    from importlib.metadata import version
+    import sys
+    fake_pkg_resources = ModuleType("pkg_resources")
+    setattr(
+        fake_pkg_resources,
+        "get_distribution",
+        lambda name: type("Distribution", (), {"version": version(name)})(),
+    )
+    sys.modules["pkg_resources"] = fake_pkg_resources
+
+
 import types
 from abc import abstractmethod
 import numpy as np
