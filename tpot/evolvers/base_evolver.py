@@ -421,7 +421,7 @@ class BaseEvolver():
                 self.population = pickle.load(open(self.population_file, "rb"))
 
                 if len(self.population.evaluated_individuals)>0 and "Generation" in self.population.evaluated_individuals.columns:
-                    self.generation = self.population.evaluated_individuals['Generation'].max() + 1 #TODO check if this is empty?
+                    self.generation = int(self.population.evaluated_individuals['Generation'].max()) + 1 #TODO check if this is empty?
 
         init_names = self.objective_names
         if self.budget_range is not None:
