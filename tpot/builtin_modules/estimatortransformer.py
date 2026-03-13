@@ -179,3 +179,4 @@ class EstimatorTransformer(TransformerMixin, BaseEstimator ):
     def classes_(self):
         """The classes labels. Only exist if the last step is a classifier."""
         return self.estimator._classes
+

@@ -33,7 +33,6 @@ dependencies = [
     "scikit-learn>=1.6",
     "update_checker>=0.16",
     "tqdm>=4.36.1",
-    "stopit>=1.1.1",
     "pandas>=2.2.0",
     "joblib>=1.1.1",
     "xgboost>=3.0.0",

@@ -40,11 +40,9 @@ from joblib import Parallel, delayed
 import traceback
 from collections.abc import Iterable
 import warnings
-from stopit import threading_timeoutable, TimeoutException
 from tpot.selectors import survival_select_NSGA2
 import time
 import dask
-import stopit
 from dask.diagnostics import ProgressBar
 from tqdm.dask import TqdmCallback
 from dask.distributed import progress
@@ -268,48 +266,4 @@ def parallel_eval_objective_list(individual_list,
     final_eval_errors = [scores_dict[individual]["eval_error"] for individual in individual_list]
     final_scores = process_scores(final_scores, n_expected_columns)
     return final_scores, final_start_times, final_end_times, final_eval_errors
-
-
-###################
-# Parallel optimization
-#############
-
-@threading_timeoutable(np.nan) #TODO timeout behavior
-def optimize_objective(ind, objective, steps=5, verbose=0):
-    
-    with warnings.catch_warnings(record=True) as w:  #catches all warnings in w so it can be supressed by verbose                
-        try:
-            value = ind.optimize(objective, steps=steps)
-            if not isinstance(value, Iterable):
-                value = [value]               
-
-            if len(w) and verbose>=2:
-                warnings.warn(w[0].message)
-            return value
-        except Exception as e:
-            if verbose >= 2:
-                print('WARNING THIS INDIVIDUAL CAUSED AND EXCEPTION')
-                print(e)
-                print()
-            if verbose >= 3:
-                print(traceback.format_exc())
-                print()
-            return [np.nan]
-
-
-
-def parallel_optimize_objective(individual_list,
-                                objective,
-                                n_jobs = 1,
-                                verbose=0,
-                                steps=5,
-                                timeout=None,
-                                **objective_kwargs,  ):
-
-    Parallel(n_jobs=n_jobs)(delayed(optimize_objective)(ind,  objective,  steps, verbose, timeout=timeout)  for ind in individual_list ) #TODO: parallelize
-
-
-
-
-
 

@@ -100,6 +100,11 @@ class CategoricalSelector(TransformerMixin, BaseEstimator ):
             ohe = OneHotEncoder(categorical_features='all', sparse=False, minimum_fraction=self.minimum_fraction)
             return ohe.fit_transform(X_sel)
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
 
 class ContinuousSelector(TransformerMixin, BaseEstimator ):
     """Meta-transformer for selecting continuous features and transform them using PCA.
@@ -176,3 +181,9 @@ class ContinuousSelector(TransformerMixin, BaseEstimator ):
         else:
             pca = PCA(svd_solver=self.svd_solver, iterated_power=self.iterated_power, random_state=self.random_state)
             return pca.fit_transform(X_sel)
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+

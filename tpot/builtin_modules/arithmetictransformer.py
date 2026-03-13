@@ -125,6 +125,12 @@ class ArithmeticTransformer(TransformerMixin, BaseEstimator):
         elif self.function ==  "1":
                 return np.ones((X.shape[0],1))
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
+
 def issorted(x, rev=False):
     if rev:
         s = sorted(x)
@@ -163,6 +169,12 @@ class AddTransformer(TransformerMixin, BaseEstimator):
             X = np.expand_dims(X,0)
         return np.expand_dims(np.sum(X,1),1)
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
+
 class mul_neg_1_Transformer(TransformerMixin, BaseEstimator):
     def __init__(self):
         """
@@ -185,7 +197,13 @@ class mul_neg_1_Transformer(TransformerMixin, BaseEstimator):
         if len(X.shape) == 1:
             X = np.expand_dims(X,0)
         return X*-1
-    
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
+
 class MulTransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self):
@@ -209,6 +227,12 @@ class MulTransformer(TransformerMixin, BaseEstimator):
         if len(X.shape) == 1:
             X = np.expand_dims(X,0)
         return np.expand_dims(np.prod(X,1),1)
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
 
 class SafeReciprocalTransformer(TransformerMixin, BaseEstimator):
 
@@ -234,6 +258,12 @@ class SafeReciprocalTransformer(TransformerMixin, BaseEstimator):
             X = np.expand_dims(X,0)
         return np.divide(1.0, X.astype(float), out=np.zeros_like(X).astype(float), where=X!=0) #TODO remove astypefloat?
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
+
 class EQTransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self):
@@ -257,6 +287,12 @@ class EQTransformer(TransformerMixin, BaseEstimator):
         if len(X.shape) == 1:
             X = np.expand_dims(X,0)
         return np.expand_dims(np.all(X == X[0,:], axis = 1),1).astype(float)
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
 
 class NETransformer(TransformerMixin, BaseEstimator):
 
@@ -282,6 +318,10 @@ class NETransformer(TransformerMixin, BaseEstimator):
             X = np.expand_dims(X,0)
         return 1- np.expand_dims(np.all(X == X[0,:], axis = 1),1).astype(float)
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
 
 
 class GETransformer(TransformerMixin, BaseEstimator):
@@ -309,6 +349,11 @@ class GETransformer(TransformerMixin, BaseEstimator):
         result = X >= 0
         return  result.astype(float)
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
 
 class GTTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
@@ -333,6 +378,11 @@ class GTTransformer(TransformerMixin, BaseEstimator):
             X = np.expand_dims(X,0)
         result = X > 0
         return  result.astype(float)
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
 
 
 class LETransformer(TransformerMixin, BaseEstimator):
@@ -359,6 +409,11 @@ class LETransformer(TransformerMixin, BaseEstimator):
         result = X <= 0
         return  result.astype(float)
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
 
 class LTTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
@@ -384,6 +439,11 @@ class LTTransformer(TransformerMixin, BaseEstimator):
         result = X < 0
         return  result.astype(float)
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
 
 class MinTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
@@ -408,6 +468,10 @@ class MinTransformer(TransformerMixin, BaseEstimator):
             X = np.expand_dims(X,0)
         return np.expand_dims(np.amin(X,1),1)
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
 
 
 class MaxTransformer(TransformerMixin, BaseEstimator):
@@ -434,6 +498,11 @@ class MaxTransformer(TransformerMixin, BaseEstimator):
             X = np.expand_dims(X,0)
         return np.expand_dims(np.amax(X,1),1)
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
 
 class ZeroTransformer(TransformerMixin, BaseEstimator):
 
@@ -459,6 +528,11 @@ class ZeroTransformer(TransformerMixin, BaseEstimator):
             X = np.expand_dims(X,0)
         return np.zeros((X.shape[0],1))
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
 
 class OneTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
@@ -482,6 +556,11 @@ class OneTransformer(TransformerMixin, BaseEstimator):
         if len(X.shape) == 1:
             X = np.expand_dims(X,0)
         return np.ones((X.shape[0],1))
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
 
 
 class NTransformer(TransformerMixin, BaseEstimator):
@@ -507,3 +586,9 @@ class NTransformer(TransformerMixin, BaseEstimator):
         if len(X.shape) == 1:
             X = np.expand_dims(X,0)
         return np.ones((X.shape[0],1))*self.n
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+

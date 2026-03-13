@@ -47,6 +47,12 @@ class DominantEncoder(TransformerMixin, BaseEstimator ):
 
         return X_transformed
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
+
 class RecessiveEncoder(TransformerMixin, BaseEstimator ):
     """This class contains the function definition for encoding the input features as a Recessive genetic model.
     The encoding used is AA(0)->0, Aa(1)->1, aa(2)->1. """
@@ -84,6 +90,12 @@ class RecessiveEncoder(TransformerMixin, BaseEstimator ):
         X_transformed = mapping_function(X)
 
         return X_transformed
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
 
 class HeterosisEncoder(TransformerMixin, BaseEstimator ):
     """This class contains the function definition for encoding the input features as a Heterozygote Advantage genetic model.
@@ -123,6 +135,12 @@ class HeterosisEncoder(TransformerMixin, BaseEstimator ):
 
         return X_transformed
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
+
 class UnderDominanceEncoder(TransformerMixin, BaseEstimator ):
     """This class contains the function definition for encoding the input features as a Under Dominance genetic model.
     The encoding used is AA(0)->2, Aa(1)->0, aa(2)->1. """
@@ -160,6 +178,11 @@ class UnderDominanceEncoder(TransformerMixin, BaseEstimator ):
         X_transformed = mapping_function(X)
 
         return X_transformed
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
 
 
 class OverDominanceEncoder(TransformerMixin, BaseEstimator ):
@@ -200,7 +223,8 @@ class OverDominanceEncoder(TransformerMixin, BaseEstimator ):
 
         return X_transformed
 
-
-
-
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
 

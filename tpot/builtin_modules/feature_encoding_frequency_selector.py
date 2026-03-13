@@ -85,8 +85,8 @@ class FeatureEncodingFrequencySelector(SelectorMixin, BaseEstimator):
     def fit(self, X, y=None) :
         """Fit FeatureEncodingFrequencySelector for feature selection. This function gets the appropriate features. """
        
-        self.selected_feature_indexes = []
-        self.no_of_original_features = X.shape[1]
+        self.selected_feature_indexes_ = []
+        self.no_of_original_features_ = X.shape[1]
 
         # Finding the frequency of all the unique elements present featurewise in the input variable X
         for i in range(0, X.shape[1]):
@@ -105,19 +105,19 @@ class FeatureEncodingFrequencySelector(SelectorMixin, BaseEstimator):
                     break
             
             if feature_column_selected == True :
-                self.selected_feature_indexes.append(i)
+                self.selected_feature_indexes_.append(i)
         
-        if not len(self.selected_feature_indexes):
+        if not len(self.selected_feature_indexes_):
             """msg = "No feature in X meets the encoding frequency threshold {0:.5f}"
             raise ValueError(msg.format(self.threshold))"""
             for i in range(0, X.shape[1]):
-                self.selected_feature_indexes.append(i)
+                self.selected_feature_indexes_.append(i)
         
         return self
 
     def transform(self, X):
         """ Make subset after fit. This function returns a transformed version of X.  """
-        X_transformed = X[:, self.selected_feature_indexes]
+        X_transformed = X[:, self.selected_feature_indexes_]
 
         return X_transformed
 
@@ -132,8 +132,8 @@ class FeatureEncodingFrequencySelector(SelectorMixin, BaseEstimator):
         support : boolean array of shape [# input features]
             An element is True iff its corresponding feature is selected for retention.
             """
-        n_features = self.no_of_original_features
+        n_features = self.no_of_original_features_
         mask = np.zeros(n_features, dtype=bool)
-        mask[np.asarray(self.selected_feature_indexes)] = True
+        mask[np.asarray(self.selected_feature_indexes_)] = True
 
         return mask

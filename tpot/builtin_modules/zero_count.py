@@ -76,3 +76,9 @@ class ZeroCount(TransformerMixin, BaseEstimator ):
         X_transformed = np.hstack((zero_col, X_transformed))
 
         return X_transformed
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+

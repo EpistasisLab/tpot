@@ -53,6 +53,11 @@ class Passthrough(TransformerMixin,BaseEstimator):
         """
         return X
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
 
 class SkipTransformer(TransformerMixin,BaseEstimator):
     """
@@ -69,4 +74,9 @@ class SkipTransformer(TransformerMixin,BaseEstimator):
         returns an empty array.
         """
         return np.array([]).reshape(X.shape[0],0)
-    
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.requires_fit = False
+        return tags
+
