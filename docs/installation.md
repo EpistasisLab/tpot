@@ -15,7 +15,7 @@ conda activate tpotenv
 
 ### Note for M1 Mac or other Arm-based CPU users
 
-You need to install the lightgbm package directly from conda using the following command before installing TPOT. 
+You need to install the lightgbm package directly from conda using the following command before installing TPOT.
 
 This is to ensure that you get the version that is compatible with your system.
 
@@ -31,4 +31,4 @@ pip install -e /path/to/tpotrepo
 ```
 
 If you downloaded with git pull, then the repository folder will be named TPOT. (Note: this folder is the one that includes setup.py inside of it and not the folder of the same name inside it).
-If you downloaded as a zip, the folder may be called tpot-main. 
+If you downloaded as a zip, the folder may be called tpot-main.
