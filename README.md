@@ -73,6 +73,7 @@ We recommend using conda environments for installing TPOT, though it would work 
 ```
 conda create --name tpotenv python=3.10
 conda activate tpotenv
+conda install -c conda-forge tpot
 ```
 
 ### Packages Used
