@@ -1,23 +1,36 @@
 # Citing TPOT
 If you use TPOT in a scientific publication, please consider citing at least one of the following papers:
 
-Trang T. Le, Weixuan Fu and Jason H. Moore (2020). [Scaling tree-based automated machine learning to biomedical big data with a feature set selector](https://academic.oup.com/bioinformatics/article/36/1/250/5511404). *Bioinformatics*.36(1): 250-256.
+Hernandez, J. G., Saini, A. K., Ghosh, A., & Moore, J. H. (2025). [The tree-based pipeline optimization tool: Tackling biomedical research problems with genetic programming and automated machine learning](https://www.cell.com/patterns/fulltext/S2666-3899(25)00162-X). Patterns, 6(7).
 
 BibTeX entry:
 
-```bibtex
-@article{le2020scaling,
-  title={Scaling tree-based automated machine learning to biomedical big data with a feature set selector},
-  author={Le, Trang T and Fu, Weixuan and Moore, Jason H},
-  journal={Bioinformatics},
-  volume={36},
-  number={1},
-  pages={250--256},
-  year={2020},
-  publisher={Oxford University Press}
+```bibtext
+@article{hernandez2025tree,
+  title={The tree-based pipeline optimization tool: Tackling biomedical research problems with genetic programming and automated machine learning},
+  author={Hernandez, Jose Guadalupe and Saini, Anil Kumar and Ghosh, Attri and Moore, Jason H},
+  journal={Patterns},
+  volume={6},
+  number={7},
+  year={2025},
+  publisher={Elsevier}
 }
 ```
 
+Ribeiro, P., Saini, A., Moran, J., Matsumoto, N., Choi, H., Hernandez, M., & Moore, J. H. (2024). [TPOT2: A New Graph-Based Implementation of the Tree-Based Pipeline Optimization Tool for Automated Machine Learning](https://link.springer.com/chapter/10.1007/978-981-99-8413-8_1). In Genetic programming theory and practice XX (pp. 1-17). Singapore: Springer Nature Singapore.
+
+BitTex entry:
+
+```bibtex
+@incollection{ribeiro2024tpot2,
+  title={TPOT2: A New Graph-Based Implementation of the Tree-Based Pipeline Optimization Tool for Automated Machine Learning},
+  author={Ribeiro, Pedro and Saini, Anil and Moran, Jay and Matsumoto, Nicholas and Choi, Hyunjun and Hernandez, Miguel and Moore, Jason H},
+  booktitle={Genetic programming theory and practice XX},
+  pages={1--17},
+  year={2024},
+  publisher={Springer}
+}
+```
 
 Randal S. Olson, Ryan J. Urbanowicz, Peter C. Andrews, Nicole A. Lavender, La Creis Kidd, and Jason H. Moore (2016). [Automating biomedical data science through tree-based pipeline optimization](http://link.springer.com/chapter/10.1007/978-3-319-31204-0_9). *Applications of Evolutionary Computation*, pages 123-137.
 

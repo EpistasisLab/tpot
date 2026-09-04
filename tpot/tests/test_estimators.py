@@ -74,11 +74,11 @@ def tpot_estimator():
 
 @pytest.fixture
 def tpot_classifier():
-    return tpot.tpot_estimator.templates.TPOTClassifier(max_time_mins=10/60,verbose=0)
+    return tpot.tpot_estimator.templates.TPOTClassifier(max_time_mins=60/60,verbose=0)
 
 @pytest.fixture
 def tpot_regressor():
-    return tpot.tpot_estimator.templates.TPOTRegressor(max_time_mins=10/60,verbose=0)
+    return tpot.tpot_estimator.templates.TPOTRegressor(max_time_mins=60/60,verbose=0)
 
 
 @pytest.fixture

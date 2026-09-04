@@ -18,3 +18,4 @@ build/*
 *.coverage*
 docs/documentation/
 mkdocs.yml
+dist/

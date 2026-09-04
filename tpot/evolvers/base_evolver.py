@@ -54,6 +54,7 @@ from dask.distributed import LocalCluster
 from tpot.selectors import survival_select_NSGA2, tournament_selection_dominated
 import math
 from tpot.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
+import gc
 
 # Evolvers allow you to pass in custom mutation and crossover functions. By default,
 # the evolver will just use these functions to call ind.mutate or ind.crossover
@@ -315,14 +316,7 @@ class BaseEvolver():
         else:
             self.max_time_mins = max_time_mins
 
-        #functools requires none for infinite time, doesn't support inf
-        if max_eval_time_mins is not None and math.isinf(max_eval_time_mins ):
-            self.max_eval_time_mins = None
-        else:
-            self.max_eval_time_mins = max_eval_time_mins
-
-
-
+        self.max_eval_time_mins = max_eval_time_mins
 
         self.generation = 0
 

@@ -33,7 +33,7 @@ You should have received a copy of the GNU Lesser General Public
 License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 """
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator 
 import numpy as np
 
 class Passthrough(TransformerMixin,BaseEstimator):

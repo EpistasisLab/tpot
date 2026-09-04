@@ -35,12 +35,12 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 """
 import random
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator 
 
 
 #operations are done along axis
 #TODO potentially we could do operations on every combo (mul would be all possible pairs multiplied with each other)
-class ArithmeticTransformer(BaseEstimator,TransformerMixin):
+class ArithmeticTransformer(TransformerMixin, BaseEstimator):
 
     #functions = ["add", "mul_neg_1", "mul", "safe_reciprocal", "eq","ne","ge","gt","le","lt", "min","max","0","1"]
     def __init__(self, function,):
@@ -140,7 +140,7 @@ def issorted(x, rev=False):
 
 
 
-class AddTransformer(BaseEstimator,TransformerMixin):
+class AddTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
           """
           A transformer that adds all elements along axis 1.
@@ -163,7 +163,7 @@ class AddTransformer(BaseEstimator,TransformerMixin):
             X = np.expand_dims(X,0)
         return np.expand_dims(np.sum(X,1),1)
 
-class mul_neg_1_Transformer(BaseEstimator,TransformerMixin):
+class mul_neg_1_Transformer(TransformerMixin, BaseEstimator):
     def __init__(self):
         """
         A transformer that multiplies all elements by -1.
@@ -186,7 +186,7 @@ class mul_neg_1_Transformer(BaseEstimator,TransformerMixin):
             X = np.expand_dims(X,0)
         return X*-1
     
-class MulTransformer(BaseEstimator,TransformerMixin):
+class MulTransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self):
         """
@@ -210,7 +210,7 @@ class MulTransformer(BaseEstimator,TransformerMixin):
             X = np.expand_dims(X,0)
         return np.expand_dims(np.prod(X,1),1)
 
-class SafeReciprocalTransformer(BaseEstimator,TransformerMixin):
+class SafeReciprocalTransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self):
         """
@@ -234,7 +234,7 @@ class SafeReciprocalTransformer(BaseEstimator,TransformerMixin):
             X = np.expand_dims(X,0)
         return np.divide(1.0, X.astype(float), out=np.zeros_like(X).astype(float), where=X!=0) #TODO remove astypefloat?
 
-class EQTransformer(BaseEstimator,TransformerMixin):
+class EQTransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self):
         """
@@ -258,7 +258,7 @@ class EQTransformer(BaseEstimator,TransformerMixin):
             X = np.expand_dims(X,0)
         return np.expand_dims(np.all(X == X[0,:], axis = 1),1).astype(float)
 
-class NETransformer(BaseEstimator,TransformerMixin):
+class NETransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self):
         """
@@ -284,7 +284,7 @@ class NETransformer(BaseEstimator,TransformerMixin):
 
 
 
-class GETransformer(BaseEstimator,TransformerMixin):
+class GETransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self):
         """
@@ -310,7 +310,7 @@ class GETransformer(BaseEstimator,TransformerMixin):
         return  result.astype(float)
 
 
-class GTTransformer(BaseEstimator,TransformerMixin):
+class GTTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
           """
           A transformer that takes checks if all elements in a row are greater than 0.
@@ -335,7 +335,7 @@ class GTTransformer(BaseEstimator,TransformerMixin):
         return  result.astype(float)
 
 
-class LETransformer(BaseEstimator,TransformerMixin):
+class LETransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
         """
         A transformer that takes checks if all elements in a row are less than or equal to 0.
@@ -360,7 +360,7 @@ class LETransformer(BaseEstimator,TransformerMixin):
         return  result.astype(float)
 
 
-class LTTransformer(BaseEstimator,TransformerMixin):
+class LTTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
         """
         A transformer that takes checks if all elements in a row are less than 0.
@@ -385,7 +385,7 @@ class LTTransformer(BaseEstimator,TransformerMixin):
         return  result.astype(float)
 
 
-class MinTransformer(BaseEstimator,TransformerMixin):
+class MinTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
         """
         A transformer that takes the minimum of all elements in a row.
@@ -410,7 +410,7 @@ class MinTransformer(BaseEstimator,TransformerMixin):
 
 
 
-class MaxTransformer(BaseEstimator,TransformerMixin):
+class MaxTransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self):
           """
@@ -435,7 +435,7 @@ class MaxTransformer(BaseEstimator,TransformerMixin):
         return np.expand_dims(np.amax(X,1),1)
 
 
-class ZeroTransformer(BaseEstimator,TransformerMixin):
+class ZeroTransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self):
           """
@@ -460,7 +460,7 @@ class ZeroTransformer(BaseEstimator,TransformerMixin):
         return np.zeros((X.shape[0],1))
 
 
-class OneTransformer(BaseEstimator,TransformerMixin):
+class OneTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
           """
           A transformer that returns an array of ones.
@@ -484,7 +484,7 @@ class OneTransformer(BaseEstimator,TransformerMixin):
         return np.ones((X.shape[0],1))
 
 
-class NTransformer(BaseEstimator,TransformerMixin):
+class NTransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self, n):
         """

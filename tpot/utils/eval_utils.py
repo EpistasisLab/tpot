@@ -51,6 +51,7 @@ from dask.distributed import progress
 import distributed
 import func_timeout
 import gc
+import math
 
 def process_scores(scores, n):
     '''
@@ -78,15 +79,15 @@ def process_scores(scores, n):
 def objective_nan_wrapper(  individual, 
                             objective_function,
                             verbose=0,
-                            timeout=None,
+                            max_eval_time_mins=None,
                             **objective_kwargs):
     with warnings.catch_warnings(record=True) as w:  #catches all warnings in w so it can be supressed by verbose                
         try:
             
-            if timeout is None:
+            if max_eval_time_mins is None or math.isinf(max_eval_time_mins):
                 value = objective_function(individual, **objective_kwargs)
             else:
-                value = func_timeout.func_timeout(timeout, objective_function, args=[individual], kwargs=objective_kwargs)
+                value = func_timeout.func_timeout(max_eval_time_mins*60, objective_function, args=[individual], kwargs=objective_kwargs)
             
             if not isinstance(value, Iterable):
                 value = [value]               
@@ -131,7 +132,7 @@ def parallel_eval_objective_list(individual_list,
     global_timeout_triggered = False
     while len(submitted_futures) < max_queue_size and len(individual_stack)>0:
         individual = individual_stack.pop()
-        future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, timeout=max_eval_time_mins*60,**objective_kwargs)
+        future = client.submit(eval_objective_list, individual,  objective_list, verbose=verbose, max_eval_time_mins=max_eval_time_mins,**objective_kwargs)
         
         submitted_futures[future] = {"individual": individual,
                                     "time": time.time(),}
@@ -143,7 +144,11 @@ def parallel_eval_objective_list(individual_list,
     while len(individual_stack)>0 or len(submitted_futures)>0:
         #wait for at least one future to finish or timeout
         try:
-            next(distributed.as_completed(submitted_futures, timeout=max_eval_time_mins*60))
+            if max_eval_time_mins is None or math.isinf(max_eval_time_mins):
+                next(distributed.as_completed(submitted_futures))
+            else:
+                next(distributed.as_completed(submitted_futures, timeout=max_eval_time_mins*60))
+                
         except dask.distributed.TimeoutError:
             pass
         except dask.distributed.CancelledError:

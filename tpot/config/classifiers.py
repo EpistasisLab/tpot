@@ -317,7 +317,6 @@ def get_AdaBoostClassifier_ConfigurationSpace(random_state):
     space = {
             'n_estimators': Integer("n_estimators", bounds=(50, 500)),
             'learning_rate': Float("learning_rate", bounds=(0.01, 2), log=True),
-            'algorithm': Categorical("algorithm", ['SAMME', 'SAMME.R']),
         }
     
     if random_state is not None: #This is required because configspace doesn't allow None as a value

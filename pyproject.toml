@@ -1,23 +1,88 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61", "setuptools_scm>=7.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.pytest.ini_options]
-addopts = "--cov=tpot"
-testpaths = [
-    "tpot/tests",
+[project]
+name = "TPOT"
+description = "Tree-based Pipeline Optimization Tool"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+license = { text = "LGPL-3.0" }
+authors = [
+    { name = "Pedro Ribeiro" }
+]
+keywords = [
+    "pipeline optimization",
+    "hyperparameter optimization",
+    "data science",
+    "machine learning",
+    "genetic programming",
+    "evolutionary computation"
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+dependencies = [
+    "numpy>=1.26.4",
+    "scipy>=1.3.1",
+    "scikit-learn>=1.6",
+    "update_checker>=0.16",
+    "tqdm>=4.36.1",
+    "stopit>=1.1.1",
+    "pandas>=2.2.0",
+    "joblib>=1.1.1",
+    "xgboost>=3.0.0",
+    "matplotlib>=3.6.2",
+    "traitlets>=5.8.0",
+    "lightgbm>=3.3.3",
+    "optuna>=3.0.5",
+    "networkx>=3.0",
+    "dask>=2024.4.2",
+    "distributed>=2024.4.2",
+    "dask-expr>=1.0.12",
+    "dask-jobqueue>=0.8.5",
+    "func_timeout>=4.3.5",
+    "configspace>=1.1.1",
+    "dill>=0.3.9",
+    "seaborn>=0.13.2",
 ]
 
-[tool.mypy]
-mypy_path = "tpot"
-check_untyped_defs = true
-disallow_any_generics = true
-ignore_missing_imports = true
-no_implicit_optional = true
-show_error_codes = true
-strict_equality = true
-warn_redundant_casts = true
-warn_return_any = true
-warn_unreachable = true
-warn_unused_configs = true
-no_implicit_reexport = true
+dynamic = ["version"]
+
+[project.optional-dependencies]
+skrebate = ["skrebate>=0.3.4"]
+mdr = ["scikit-mdr>=0.4.4"]
+sklearnex = ["scikit-learn-intelex>=2023.2.1"]
+amltk = ["amltk>=1.12.1"]
+testing = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "mypy>=0.910",
+    "flake8>=3.9",
+    "tox>=3.24"
+]
+
+[project.urls]
+Homepage = "https://github.com/EpistasisLab/tpot"
+
+[project.scripts]
+tpot = "tpot:main"
+
+[tool.setuptools]
+packages = ["tpot"]
+zip-safe = true
+
+[tool.setuptools.package-data]
+tpot = ["py.typed"]
+
+[tool.flake8]
+max-line-length = 120
+
+[tool.setuptools_scm]
+# setuptools_scm gets the version from Git tags, e.g git tag v1.1.0
+# then python -m build embeds the version into the package

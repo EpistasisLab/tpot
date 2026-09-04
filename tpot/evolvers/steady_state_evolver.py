@@ -50,6 +50,7 @@ import math
 from tpot.utils.utils import get_thresholds, beta_interpolation, remove_items, equalize_list
 import dask
 import warnings
+import gc
 
 # Evolvers allow you to pass in custom mutation and crossover functions. By default,
 # the evolver will just use these functions to call ind.mutate or ind.crossover
@@ -404,7 +405,7 @@ class SteadyStateEvolver():
             for individual in individuals_to_evaluate:
                 if len(submitted_futures) >= self.max_queue_size:
                     break
-                future = self._client.submit(tpot.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_mins*60,**self.objective_kwargs)
+                future = self._client.submit(tpot.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins, **self.objective_kwargs)
 
                 submitted_futures[future] = {"individual": individual,
                                             "time": time.time(),
@@ -424,7 +425,10 @@ class SteadyStateEvolver():
 
                 #wait for at least one future to finish or timeout
                 try:
-                    next(distributed.as_completed(submitted_futures, timeout=self.max_eval_time_mins*60))
+                    if self.max_eval_time_mins is None or math.isinf(self.max_eval_time_mins):
+                        next(distributed.as_completed(submitted_futures, timeout=5*60))
+                    else:
+                        next(distributed.as_completed(submitted_futures, timeout=self.max_eval_time_mins*60))
                 except dask.distributed.TimeoutError:
                     pass
                 except dask.distributed.CancelledError:
@@ -445,7 +449,7 @@ class SteadyStateEvolver():
                             print("Cancelled future (likely memory related)")
                             scores = [np.nan for _ in range(len(self.objective_names))]
                             eval_error = "INVALID"
-                            client.run(gc.collect)
+                            self._client.run(gc.collect)
                         else: #if the future is done and did not throw an error, get the scores
                             try:
                                 scores = completed_future.result()
@@ -471,7 +475,8 @@ class SteadyStateEvolver():
                         completed_future.release() #release the future
                     else: #if future is not done
 
-                        if self.max_eval_time_mins is not None:
+
+                        if (self.max_eval_time_mins is not None) and (not math.isinf(self.max_eval_time_mins)): #if max_eval_time_mins is set to a value
                             #check if the future has been running for too long, cancel the future
                             if time.time() - submitted_futures[completed_future]["time"] > self.max_eval_time_mins*1.25*60:
                                 completed_future.cancel()
@@ -484,7 +489,11 @@ class SteadyStateEvolver():
                             else:
                                 continue #otherwise, continue to next future
 
-
+                        
+                        else:
+                            #this future is not done and we don't have a time limit so let it keep goooooiiiinnnggggg
+                            #there must be another future that did complete
+                            continue
 
                     #update population
                     this_individual = submitted_futures[completed_future]["individual"]
@@ -574,7 +583,7 @@ class SteadyStateEvolver():
                 individuals_to_evaluate = [ind for ind in individuals_to_evaluate if ind.unique_id() not in submitted_inds]
                 for individual in individuals_to_evaluate:
                     if self.max_queue_size > len(submitted_futures):
-                        future = self._client.submit(tpot.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_mins*60,**self.objective_kwargs)
+                        future = self._client.submit(tpot.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins,**self.objective_kwargs)
 
                         submitted_futures[future] = {"individual": individual,
                                                     "time": time.time(),
@@ -692,7 +701,7 @@ class SteadyStateEvolver():
                 individuals_to_evaluate = [ind for ind in individuals_to_evaluate if ind.unique_id() not in submitted_inds]
                 for individual in individuals_to_evaluate:
                     if self.max_queue_size > len(submitted_futures):
-                        future = self._client.submit(tpot.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, timeout=self.max_eval_time_mins*60,**self.objective_kwargs)
+                        future = self._client.submit(tpot.utils.eval_utils.eval_objective_list, individual,  self.objective_functions, verbose=self.verbose, max_eval_time_mins=self.max_eval_time_mins,**self.objective_kwargs)
 
                         submitted_futures[future] = {"individual": individual,
                                                     "time": time.time(),

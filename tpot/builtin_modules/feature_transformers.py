@@ -38,14 +38,14 @@ License along with TPOT. If not, see <http://www.gnu.org/licenses/>.
 
 
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator 
 from sklearn.utils import check_array
 from sklearn.decomposition import PCA
 
 from .one_hot_encoder import OneHotEncoder, auto_select_categorical_features, _X_selected
 
 
-class CategoricalSelector(BaseEstimator, TransformerMixin):
+class CategoricalSelector(TransformerMixin, BaseEstimator ):
     """Meta-transformer for selecting categorical features and transform them using OneHotEncoder.
 
     Parameters
@@ -101,7 +101,7 @@ class CategoricalSelector(BaseEstimator, TransformerMixin):
             return ohe.fit_transform(X_sel)
 
 
-class ContinuousSelector(BaseEstimator, TransformerMixin):
+class ContinuousSelector(TransformerMixin, BaseEstimator ):
     """Meta-transformer for selecting continuous features and transform them using PCA.
 
     Parameters

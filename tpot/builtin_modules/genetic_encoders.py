@@ -5,11 +5,11 @@ All the genetic encoder classes inherit the Scikit learn BaseEstimator and Trans
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator 
 from sklearn.utils import check_array
 
     
-class DominantEncoder(BaseEstimator, TransformerMixin):
+class DominantEncoder(TransformerMixin, BaseEstimator ):
     """This class contains the function definition for encoding the input features as a Dominant genetic model.
     The encoding used is AA(0)->1, Aa(1)->1, aa(2)->0. """
 
@@ -47,7 +47,7 @@ class DominantEncoder(BaseEstimator, TransformerMixin):
 
         return X_transformed
 
-class RecessiveEncoder(BaseEstimator, TransformerMixin):
+class RecessiveEncoder(TransformerMixin, BaseEstimator ):
     """This class contains the function definition for encoding the input features as a Recessive genetic model.
     The encoding used is AA(0)->0, Aa(1)->1, aa(2)->1. """
     
@@ -85,7 +85,7 @@ class RecessiveEncoder(BaseEstimator, TransformerMixin):
 
         return X_transformed
 
-class HeterosisEncoder(BaseEstimator, TransformerMixin):
+class HeterosisEncoder(TransformerMixin, BaseEstimator ):
     """This class contains the function definition for encoding the input features as a Heterozygote Advantage genetic model.
     The encoding used is AA(0)->0, Aa(1)->1, aa(2)->0. """
 
@@ -123,7 +123,7 @@ class HeterosisEncoder(BaseEstimator, TransformerMixin):
 
         return X_transformed
 
-class UnderDominanceEncoder(BaseEstimator, TransformerMixin):
+class UnderDominanceEncoder(TransformerMixin, BaseEstimator ):
     """This class contains the function definition for encoding the input features as a Under Dominance genetic model.
     The encoding used is AA(0)->2, Aa(1)->0, aa(2)->1. """
 
@@ -162,7 +162,7 @@ class UnderDominanceEncoder(BaseEstimator, TransformerMixin):
         return X_transformed
 
 
-class OverDominanceEncoder(BaseEstimator, TransformerMixin):
+class OverDominanceEncoder(TransformerMixin, BaseEstimator ):
     """This class contains the function definition for encoding the input features as a Over Dominance genetic model.
     The encoding used is AA(0)->1, Aa(1)->2, aa(2)->0. """
 
