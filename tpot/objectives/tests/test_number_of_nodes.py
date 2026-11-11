@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import FeatureUnion, Pipeline
 import networkx as nx
 import tpot
 from tpot import GraphPipeline
@@ -113,3 +113,19 @@ def test_number_of_nodes_objective_pipeline_in_pipeline():
     pipe2 = Pipeline([("pipe", pipe), ("svc", SVC())])
 
     assert tpot.objectives.number_of_nodes.number_of_nodes_objective(pipe2) == 3
+
+
+def test_number_of_nodes_objective_ignores_inactive_steps():
+    features = FeatureUnion([
+        ("scale", StandardScaler()),
+        ("skip", "passthrough"),
+        ("discard", "drop"),
+    ])
+    pipeline = Pipeline([
+        ("skip_none", None),
+        ("skip_string", "passthrough"),
+        ("features", features),
+        ("classifier", SVC()),
+    ])
+
+    assert tpot.objectives.number_of_nodes_objective(pipeline) == 2
