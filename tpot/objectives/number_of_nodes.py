@@ -39,7 +39,7 @@ import sklearn
 
 def number_of_nodes_objective(est):
     """
-    Calculates the number of leaves (input nodes) in an sklearn pipeline
+    Counts estimator nodes in a pipeline, excluding passthrough and dropped steps.
 
     Parameters
     ----------
@@ -47,6 +47,9 @@ def number_of_nodes_objective(est):
         The pipeline to compute the number of nodes from.
     """
         
+    if est is None or (isinstance(est, str) and est in ("passthrough", "drop")):
+        return 0
+
     if isinstance(est, GraphPipeline):
         return sum(number_of_nodes_objective(est.graph.nodes[node]["instance"]) for node in est.graph.nodes)
     if isinstance(est, Pipeline):
